@@ -1,0 +1,147 @@
+import * as Icons from 'lucide-react';
+import { Check, CheckCircle2, Clock, MapPin } from 'lucide-react';
+import type { Job } from '@/types/job';
+import { LhCard } from '@/components/design-system/LhCard';
+import { clsx } from 'clsx';
+
+export type HelperOpportunityCardTab = 'match' | 'recentes' | 'emergencia';
+
+type TFn = (key: string, options?: Record<string, string | number>) => string;
+type TranslateFn = (raw: string, t: (key: string) => string) => string;
+
+export type HelperOpportunityCardProps = {
+  job: Job;
+  activeTab: HelperOpportunityCardTab;
+  hasApplied: boolean;
+  isApplying: boolean;
+  onApply: (jobId: string) => void;
+  t: TFn;
+  translateCategory: TranslateFn;
+  formatJobSchedule: (date: Job['date'], t: TFn) => string;
+};
+
+function jobMatchTier(job: Job, activeTab: HelperOpportunityCardTab): 'urgent' | 'best' | 'normal' {
+  if (job.urgency === 'high') return 'urgent';
+  if (activeTab === 'match') {
+    const n = job.id.replace(/\D/g, '') || '0';
+    const h = Number.parseInt(n.slice(-2), 10) || 0;
+    return h % 3 === 0 ? 'best' : 'normal';
+  }
+  return 'normal';
+}
+
+export function HelperOpportunityCard({
+  job,
+  activeTab,
+  hasApplied,
+  isApplying,
+  onApply,
+  t,
+  translateCategory,
+  formatJobSchedule,
+}: HelperOpportunityCardProps) {
+  const tier = jobMatchTier(job, activeTab);
+
+  const header =
+    tier === 'urgent' ? (
+      <div className="px-4 py-2.5 flex items-center justify-between border-b border-rose-200/70 bg-rose-50/90">
+        <div className="flex items-center gap-2 min-w-0">
+          <Icons.AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span className="text-[11px] font-bold text-rose-900 tracking-wide uppercase">{t('helper_dashboard.job_card_urgent')}</span>
+        </div>
+        <span className="text-[10px] font-bold text-rose-900 bg-white/95 border border-rose-200/90 px-2 py-1 rounded-md shrink-0">
+          {t('helper_dashboard.job_card_high_priority')}
+        </span>
+      </div>
+    ) : tier === 'best' ? (
+      <div className="px-4 py-2.5 flex items-center justify-between border-b border-emerald-200/70 bg-emerald-50/85">
+        <div className="flex items-center gap-2 min-w-0">
+          <Icons.Sparkles className="w-4 h-4 text-emerald-700 shrink-0" />
+          <span className="text-[11px] font-bold text-emerald-950 tracking-wide uppercase">{t('helper_dashboard.job_card_best_match')}</span>
+        </div>
+        <span className="text-[10px] font-bold text-emerald-900 bg-white/95 border border-emerald-200/90 px-2 py-1 rounded-md flex items-center gap-1 shrink-0 tabular-nums">
+          <Icons.Zap className="w-3 h-3 text-emerald-600 shrink-0" /> {t('helper_dashboard.compatibility', { pct: 95 })}
+        </span>
+      </div>
+    ) : (
+      <div className="px-4 py-2 border-b border-slate-100/90 bg-slate-50/70">
+        <div className="flex items-center gap-2 min-w-0">
+          <Icons.CircleDot className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.12em]">{t('helper_dashboard.job_card_standard')}</span>
+        </div>
+      </div>
+    );
+
+  const ctaBase =
+    'flex-1 inline-flex min-h-[48px] px-4 rounded-[var(--lh-radius-md)] font-bold text-sm items-center justify-center gap-2 transition-all duration-200';
+
+  return (
+    <LhCard
+      padding="none"
+      className={clsx(
+        'group/card overflow-hidden border bg-white/95 transition-all duration-300',
+        'hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/10 motion-reduce:transform-none',
+        'hover:ring-2 hover:ring-blue-500/15',
+        tier === 'urgent' &&
+          'border-rose-200/90 ring-1 ring-rose-200/50 shadow-md shadow-rose-500/10 motion-reduce:animate-none animate-pulse',
+        tier === 'best' && 'border-emerald-200/80 ring-1 ring-emerald-100/60 shadow-sm shadow-emerald-500/10',
+        tier === 'normal' && 'border-slate-200/80',
+      )}
+    >
+      {header}
+
+      <div className="p-5">
+        <div className="flex items-center gap-3 mb-3">
+          <img
+            src={job.clientAvatar}
+            alt=""
+            className="w-11 h-11 rounded-full object-cover border border-slate-100 shadow-sm"
+          />
+          <div className="min-w-0">
+            <h3 className="font-bold text-slate-900 leading-tight hover:text-blue-700 transition-colors cursor-pointer truncate">
+              {job.clientName}
+            </h3>
+            <p className="text-xs text-slate-500 flex items-center gap-1 font-medium truncate">{translateCategory(job.category, t)}</p>
+          </div>
+        </div>
+        <h4 className="text-base sm:text-lg font-bold text-slate-900 mb-2 leading-snug">{job.title}</h4>
+        <p className="text-sm text-slate-600 mb-4 leading-relaxed">{job.description}</p>
+        <div className="flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-slate-50/80 px-2.5 py-1.5 text-xs font-medium text-slate-700">
+            <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {formatJobSchedule(job.date, t)}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800">
+            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {job.location}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-slate-50/90 px-2.5 py-1.5 text-xs font-semibold text-slate-700">
+            <Icons.Handshake className="w-3.5 h-3.5 text-slate-500 shrink-0" /> {t('helper_dashboard.compensation_neutral')}
+          </span>
+        </div>
+      </div>
+      <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/60 flex gap-3">
+        {hasApplied ? (
+          <button type="button" disabled className={`${ctaBase} cursor-not-allowed bg-emerald-100 text-emerald-800 border border-emerald-200/80`}>
+            <CheckCircle2 className="w-4 h-4 shrink-0" /> {t('helper_dashboard.applied_sent')}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onApply(job.id)}
+            disabled={isApplying}
+            className={`${ctaBase} bg-blue-600 text-white border border-blue-600/90 hover:bg-blue-700 hover:shadow-md hover:shadow-blue-600/15 active:scale-[0.99] disabled:opacity-70 disabled:pointer-events-none`}
+          >
+            {isApplying ? (
+              <>
+                <Icons.Loader2 className="w-4 h-4 animate-spin shrink-0" /> {t('helper_dashboard.apply_sending')}
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4 shrink-0" /> {t('helper_dashboard.apply_now')}
+              </>
+            )}
+          </button>
+        )}
+      </div>
+    </LhCard>
+  );
+}

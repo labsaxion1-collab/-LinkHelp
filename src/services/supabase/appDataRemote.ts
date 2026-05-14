@@ -1,0 +1,273 @@
+import { getSupabase } from '@/lib/supabase';
+import type { Job } from '@/types/job';
+import type { Application, ApplicationStatus } from '@/types/application';
+import type { UpcomingJob } from '@/types/upcoming';
+import type { AppNotification } from '@/types/notification';
+import type { ApplicationRow, NotificationRow, RequestRow, UpcomingJobRow } from '@/types/database';
+import {
+  applicationRowToApp,
+  notificationRowToApp,
+  requestRowToJob,
+  upcomingRowToUpcoming,
+} from '@/services/supabase/mappers';
+import { fetchProfilesAsMapperMap } from '@/services/supabase/fetchUserViews';
+
+export async function fetchRemoteJobsAndApps(): Promise<{
+  jobs: Job[];
+  applications: Application[];
+  upcomingJobs: UpcomingJob[];
+  notifications: AppNotification[];
+}> {
+  const sb = getSupabase();
+  if (!sb) {
+    return { jobs: [], applications: [], upcomingJobs: [], notifications: [] };
+  }
+
+  const [{ data: reqRows, error: reqErr }, { data: appRows, error: appErr }, { data: upRows }, { data: notifRows, error: nErr }] =
+    await Promise.all([
+      sb.from('requests').select('*').order('created_at', { ascending: false }),
+      sb.from('applications').select('*').order('created_at', { ascending: false }),
+      sb.from('upcoming_jobs').select('*').order('scheduled_at', { ascending: true }),
+      sb.from('notifications').select('*').order('created_at', { ascending: false }),
+    ]);
+
+  if (reqErr) console.error(reqErr);
+  if (appErr) console.error(appErr);
+  if (nErr) console.error(nErr);
+
+  const requests = (reqRows ?? []) as RequestRow[];
+  const applicationsRaw = (appRows ?? []) as ApplicationRow[];
+  const upcomingRaw = (upRows ?? []) as UpcomingJobRow[];
+  const notifsRaw = (notifRows ?? []) as NotificationRow[];
+
+  const userIds = new Set<string>();
+  for (const r of requests) userIds.add(r.client_id);
+  for (const a of applicationsRaw) {
+    userIds.add(a.helper_id);
+    userIds.add(a.client_id);
+  }
+  const profilesMap = await fetchProfilesAsMapperMap([...userIds]);
+
+  const jobs: Job[] = requests.map((r) => {
+    const c = profilesMap.get(r.client_id);
+    return requestRowToJob(r, c ?? { name: null, avatar_url: null, rating: null, jobs_completed: null, plan_type: null });
+  });
+
+  const applications: Application[] = applicationsRaw.map((a) => {
+    const h = profilesMap.get(a.helper_id);
+    return applicationRowToApp(
+      a,
+      h ?? { name: null, avatar_url: null, rating: null, jobs_completed: null, plan_type: null },
+    );
+  });
+
+  const upcomingJobs = upcomingRaw.map(upcomingRowToUpcoming);
+  const notifications = notifsRaw.map(notificationRowToApp);
+
+  return { jobs, applications, upcomingJobs, notifications };
+}
+
+export function subscribeRemoteData(onChange: () => void): () => void {
+  const sb = getSupabase();
+  if (!sb) return () => {};
+
+  const ch = sb
+    .channel('linkhelp-app-data')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'upcoming_jobs' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, onChange)
+    .subscribe();
+
+  return () => {
+    sb.removeChannel(ch);
+  };
+}
+
+export async function remoteCreateRequest(input: {
+  clientId: string;
+  category: string;
+  subcategory?: string | null;
+  title: string;
+  description: string;
+  urgency: string;
+  location: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  dateLabel: string;
+  budgetHint: string;
+}): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+  const { error } = await sb.from('requests').insert({
+    client_id: input.clientId,
+    category: input.category,
+    subcategory: input.subcategory ?? null,
+    title: input.title,
+    description: input.description,
+    urgency: input.urgency,
+    location: input.location,
+    latitude: input.latitude ?? null,
+    longitude: input.longitude ?? null,
+    budget: input.budgetHint?.trim() ? input.budgetHint : null,
+    status: 'open',
+  });
+  if (error) throw error;
+}
+
+export async function remoteApply(input: {
+  requestId: string;
+  helperId: string;
+  clientId: string;
+  message?: string | null;
+}): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+
+  const { error } = await sb.from('applications').insert({
+    request_id: input.requestId,
+    helper_id: input.helperId,
+    client_id: input.clientId,
+    message: input.message ?? null,
+    status: 'pending',
+  });
+
+  if (error) {
+    if (error.code === '23505') throw new Error('ALREADY_APPLIED');
+    throw error;
+  }
+
+  const { data: req } = await sb.from('requests').select('title').eq('id', input.requestId).maybeSingle();
+  const title = (req as { title?: string } | null)?.title ?? 'Request';
+
+  const { data: helper } = await sb.from('profiles').select('name').eq('id', input.helperId).maybeSingle();
+  const hName = (helper as { name?: string } | null)?.name ?? 'A helper';
+
+  await sb.from('notifications').insert({
+    user_id: input.clientId,
+    type: 'application',
+    title: 'New application',
+    description: `${hName} applied to "${title}".`,
+    action_url: '/client/dashboard',
+    read: false,
+  });
+}
+
+export async function remoteUpdateApplicationStatus(
+  applicationId: string,
+  status: ApplicationStatus,
+  jobSnapshot: Job,
+): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+
+  const { data: appRow, error: fetchErr } = await sb.from('applications').select('*').eq('id', applicationId).single();
+  if (fetchErr || !appRow) throw fetchErr ?? new Error('NOT_FOUND');
+
+  const app = appRow as ApplicationRow;
+
+  const { error: upErr } = await sb.from('applications').update({ status }).eq('id', applicationId);
+  if (upErr) throw upErr;
+
+  if (status === 'accepted') {
+    await sb.from('requests').update({ status: 'in_progress' }).eq('id', app.request_id);
+
+    const { data: existingConv } = await sb
+      .from('conversations')
+      .select('id')
+      .eq('request_id', app.request_id)
+      .eq('helper_id', app.helper_id)
+      .maybeSingle();
+
+    if (!existingConv) {
+      const { error: convInsErr } = await sb.from('conversations').insert({
+        request_id: app.request_id,
+        client_id: app.client_id,
+        helper_id: app.helper_id,
+        contact_unlocked: true,
+      });
+      if (convInsErr) throw convInsErr;
+    } else {
+      await sb
+        .from('conversations')
+        .update({ contact_unlocked: true })
+        .eq('id', (existingConv as { id: string }).id);
+    }
+
+    const scheduledAt = new Date(Date.now() + 48 * 3600000).toISOString();
+    await sb.from('upcoming_jobs').insert({
+      request_id: app.request_id,
+      helper_id: app.helper_id,
+      client_name: jobSnapshot.clientName,
+      client_avatar: jobSnapshot.clientAvatar,
+      title: jobSnapshot.title,
+      category: jobSnapshot.category,
+      description: jobSnapshot.description,
+      location: jobSnapshot.location,
+      value_hint: jobSnapshot.value,
+      urgency: jobSnapshot.urgency,
+      scheduled_at: scheduledAt,
+      workflow_status: 'scheduled',
+    });
+
+    await sb.from('notifications').insert({
+      user_id: app.helper_id,
+      type: 'application',
+      title: 'Application accepted',
+      description: `The client accepted your application for "${jobSnapshot.title}".`,
+      action_url: '/helper/jobs',
+      read: false,
+    });
+  } else if (status === 'rejected') {
+    await sb.from('notifications').insert({
+      user_id: app.helper_id,
+      type: 'application',
+      title: 'Application update',
+      description: `The client chose another helper this time.`,
+      action_url: '/helper/opportunities',
+      read: false,
+    });
+  } else if (status === 'cancelled') {
+    await sb.from('notifications').insert({
+      user_id: app.client_id,
+      type: 'application',
+      title: 'Application withdrawn',
+      description: `A helper cancelled their application for your request.`,
+      action_url: '/client/dashboard',
+      read: false,
+    });
+  }
+}
+
+export async function remoteInsertNotification(n: Omit<AppNotification, 'id' | 'createdAt' | 'read'>): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) return;
+  await sb.from('notifications').insert({
+    user_id: n.userId,
+    type: n.type,
+    title: n.title,
+    description: n.message,
+    action_url: n.actionUrl ?? null,
+    read: false,
+  });
+}
+
+export async function remoteMarkNotificationRead(id: string, read: boolean): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) return;
+  await sb.from('notifications').update({ read }).eq('id', id);
+}
+
+export async function remoteMarkAllNotificationsRead(userId: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) return;
+  await sb.from('notifications').update({ read: true }).eq('user_id', userId).eq('read', false);
+}
+
+export async function remoteUpdateUpcomingWorkflow(id: string, workflowStatus: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) return;
+  await sb.from('upcoming_jobs').update({ workflow_status: workflowStatus }).eq('id', id);
+}

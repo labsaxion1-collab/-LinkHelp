@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
-import { HiddenFileInput, useFileInputOpener } from '@/components/common/HiddenFileInput';
+import { useEffect, useId, useState } from 'react';
+import { FilePickerLabel, NativeFileInput } from '@/components/common/HiddenFileInput';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { GraduationCap, Settings, Bell, Shield, User, Loader2, Camera } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -20,9 +20,9 @@ export default function SettingsPage() {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const avatarInputRef = useRef<HTMLInputElement>(null);
-
+  const avatarInputId = useId();
   const [avatarLocalPreview, setAvatarLocalPreview] = useState<string | null>(null);
+  const [avatarSelectedFile, setAvatarSelectedFile] = useState<File | null>(null);
   const [avatarPicking, setAvatarPicking] = useState(false);
   const [avatarSaving, setAvatarSaving] = useState(false);
 
@@ -60,8 +60,6 @@ export default function SettingsPage() {
   }, [location.hash, location.pathname]);
 
   const avatarDisplay = avatarLocalPreview ?? profile?.avatar_url?.trim() ?? null;
-  const openAvatarPicker = useFileInputOpener(avatarInputRef, !isConfigured || avatarPicking || avatarSaving);
-
   const saveAccount = async () => {
     if (!isConfigured || !profile) {
       showToast(t('app_pages.settings_saved'), 'info');
@@ -108,10 +106,12 @@ export default function SettingsPage() {
   const onAvatarFile = async (files: FileList | null) => {
     const f = files?.[0];
     if (!f) return;
+    setAvatarSelectedFile(f);
     setAvatarPicking(true);
     try {
       setAvatarLocalPreview(await cropSquareAvatarFromFile(f));
     } catch {
+      setAvatarSelectedFile(null);
       showToast(t('profile_setup.avatar_error'), 'error');
     } finally {
       setAvatarPicking(false);
@@ -131,6 +131,7 @@ export default function SettingsPage() {
       }
       await refreshProfile();
       setAvatarLocalPreview(null);
+      setAvatarSelectedFile(null);
       showToast(t('app_pages.settings_avatar_saved'), 'success');
     } catch (e) {
       const raw = formatStorageError(e);
@@ -213,19 +214,16 @@ export default function SettingsPage() {
           <p className="text-sm text-gray-600 mb-4">{t('app_pages.settings_avatar_hint')}</p>
           <div className="flex flex-col sm:flex-row gap-6 items-start">
             <div className="relative shrink-0">
-              <HiddenFileInput
-                ref={avatarInputRef}
+              <NativeFileInput
+                inputId={avatarInputId}
                 accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
                 disabled={!isConfigured || avatarPicking || avatarSaving}
                 onFiles={(files) => void onAvatarFile(files)}
               />
-              <button
-                type="button"
-                onClick={openAvatarPicker}
+              <FilePickerLabel
+                inputId={avatarInputId}
                 disabled={!isConfigured || avatarPicking || avatarSaving}
-                className={`relative block h-28 w-28 rounded-full overflow-hidden border-4 border-gray-100 bg-gray-100 shadow-inner cursor-pointer disabled:opacity-50 ${
-                  !isConfigured ? 'cursor-not-allowed' : ''
-                }`}
+                className="relative block h-28 w-28 rounded-full overflow-hidden border-4 border-gray-100 bg-gray-100 shadow-inner"
               >
                 {avatarDisplay ? (
                   <img src={avatarDisplay} alt="" className="h-full w-full object-cover" />
@@ -239,20 +237,24 @@ export default function SettingsPage() {
                     <Loader2 className="h-8 w-8 text-white animate-spin" />
                   </div>
                 ) : null}
-              </button>
+              </FilePickerLabel>
             </div>
             <div className="flex-1 min-w-0 space-y-3">
-              <button
-                type="button"
-                onClick={openAvatarPicker}
+              {avatarSelectedFile ? (
+                <p className="text-xs font-semibold text-gray-600 truncate" title={avatarSelectedFile.name}>
+                  {avatarSelectedFile.name}
+                </p>
+              ) : null}
+              <FilePickerLabel
+                inputId={avatarInputId}
                 disabled={!isConfigured || avatarPicking || avatarSaving}
-                className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-50 cursor-pointer min-h-[44px] disabled:opacity-50"
+                className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-50 min-h-[44px]"
               >
                 {t('app_pages.settings_avatar_choose')}
-              </button>
+              </FilePickerLabel>
               <button
                 type="button"
-                disabled={!avatarLocalPreview || avatarSaving || !isConfigured}
+                disabled={!avatarSelectedFile || !avatarLocalPreview || avatarSaving || !isConfigured}
                 onClick={() => void saveAvatar()}
                 className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white hover:bg-blue-700 disabled:opacity-50 min-h-[44px]"
               >

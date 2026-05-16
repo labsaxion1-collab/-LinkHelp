@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import * as Icons from 'lucide-react';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 export { SkillsProfileModal } from './SkillsProfileModal';
-import { HiddenFileInput, useFileInputOpener } from '@/components/common/HiddenFileInput';
+import { FilePickerLabel, FilePickerZone, NativeFileInput } from '@/components/common/HiddenFileInput';
 import type { HelperPortfolioPersist, PortfolioMediaItem } from '@/utils/helperPortfolioState';
 import {
   buildPhotoItemFromFile,
@@ -111,13 +111,16 @@ export function AvatarProfileModal({
   t: TFn;
   onToast: (msg: string) => void;
 }) {
-  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputId = useId();
   const [preview, setPreview] = useState<string | null>(initialPreview);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
-  const openAvatarPicker = useFileInputOpener(avatarInputRef, busy);
 
   useEffect(() => {
-    if (open) setPreview(initialPreview);
+    if (open) {
+      setPreview(initialPreview);
+      setSelectedFile(null);
+    }
   }, [open, initialPreview]);
 
   if (!open) return null;
@@ -130,11 +133,13 @@ export function AvatarProfileModal({
       onToast(t(contactGuardToastKey(nameHit)));
       return;
     }
+    setSelectedFile(file);
     setBusy(true);
     try {
       const dataUrl = await cropSquareAvatarFromFile(file);
       setPreview(dataUrl);
     } catch {
+      setSelectedFile(null);
       onToast(t('profile_setup.avatar_error'));
     } finally {
       setBusy(false);
@@ -164,7 +169,7 @@ export function AvatarProfileModal({
           </button>
           <button
             type="button"
-            disabled={!preview || busy}
+            disabled={!selectedFile || !preview || busy}
             onClick={() => void save()}
             className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black disabled:opacity-40 min-h-[44px]"
           >
@@ -173,18 +178,17 @@ export function AvatarProfileModal({
         </div>
       }
     >
-      <HiddenFileInput
-        ref={avatarInputRef}
+      <NativeFileInput
+        inputId={avatarInputId}
         accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
         disabled={busy}
         onFiles={(files) => void onPick(files)}
       />
       <div className="flex flex-col items-center gap-4">
-        <button
-          type="button"
-          onClick={openAvatarPicker}
+        <FilePickerLabel
+          inputId={avatarInputId}
           disabled={busy}
-          className="relative w-32 h-32 rounded-full ring-4 ring-slate-100 overflow-hidden bg-slate-100 shadow-inner cursor-pointer block disabled:opacity-60"
+          className="relative block w-32 h-32 rounded-full ring-4 ring-slate-100 overflow-hidden bg-slate-100 shadow-inner"
         >
           {preview ? (
             <img src={preview} alt="" className="w-full h-full object-cover" />
@@ -198,16 +202,20 @@ export function AvatarProfileModal({
               <Icons.Loader2 className="w-8 h-8 text-white animate-spin" />
             </div>
           ) : null}
-        </button>
+        </FilePickerLabel>
+        {selectedFile ? (
+          <p className="text-xs font-semibold text-slate-600 truncate max-w-full px-2" title={selectedFile.name}>
+            {selectedFile.name}
+          </p>
+        ) : null}
         <p className="text-xs text-center text-slate-500 leading-relaxed max-w-sm">{t('profile_setup.avatar_hint')}</p>
-        <button
-          type="button"
-          onClick={openAvatarPicker}
+        <FilePickerLabel
+          inputId={avatarInputId}
           disabled={busy}
-          className="text-sm font-bold text-sky-700 hover:text-sky-900 cursor-pointer min-h-[44px] inline-flex items-center disabled:opacity-50"
+          className="text-sm font-bold text-sky-700 hover:text-sky-900 min-h-[44px] inline-flex items-center"
         >
           {t('profile_setup.avatar_choose')}
-        </button>
+        </FilePickerLabel>
       </div>
     </ModalChrome>
   );
@@ -238,7 +246,6 @@ export function PortfolioUploadModal({
   helperUserId: string | null;
   uploadToSupabase?: boolean;
 }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
@@ -293,7 +300,6 @@ export function PortfolioUploadModal({
   const acceptVideo = 'video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm';
   const accept = kind === 'photo' ? acceptPhoto : acceptVideo;
   const pickDisabled = atPhotoCap || atVideoCap || busy;
-  const openFilePicker = useFileInputOpener(fileInputRef, pickDisabled);
 
   const onFile = async (files: FileList | null) => {
     const f = files?.[0];
@@ -439,37 +445,38 @@ export function PortfolioUploadModal({
         </div>
       }
     >
-      <HiddenFileInput
-        ref={fileInputRef}
-        accept={accept}
-        disabled={pickDisabled}
-        onFiles={(files) => void onFile(files)}
-      />
-
       {(atPhotoCap || atVideoCap) && (
         <div className="mb-4 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-xs font-medium text-amber-950">
           {t('profile_setup.cap_reached', { kind: kind === 'photo' ? t('profile_setup.kind_photos') : t('profile_setup.kind_videos') })}
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={openFilePicker}
+      <FilePickerZone
+        accept={accept}
         disabled={pickDisabled}
-        className={`${dropClass} ${pickDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onFiles={(files) => void onFile(files)}
+        className={pickDisabled ? 'opacity-50 cursor-not-allowed' : ''}
       >
-        {kind === 'photo' && photoPreviewUrl ? (
-          <img src={photoPreviewUrl} alt="" className="max-h-40 rounded-lg object-contain pointer-events-none" />
-        ) : kind === 'video' && videoPreviewUrl ? (
-          <span className="text-sm font-semibold text-slate-600">{t('profile_setup.tap_to_change_file')}</span>
-        ) : (
-          <>
-            {kind === 'photo' ? <Icons.ImagePlus className="w-10 h-10 text-slate-400" /> : <Icons.Clapperboard className="w-10 h-10 text-slate-400" />}
-            <span className="text-sm font-bold text-slate-700">{t('profile_setup.tap_to_upload')}</span>
-            <span className="text-[11px] text-slate-500">{kind === 'video' ? t('profile_setup.video_duration_hint') : ''}</span>
-          </>
-        )}
-      </button>
+        <div className={dropClass}>
+          {kind === 'photo' && photoPreviewUrl ? (
+            <img src={photoPreviewUrl} alt="" className="max-h-40 rounded-lg object-contain" />
+          ) : kind === 'video' && videoPreviewUrl ? (
+            <span className="text-sm font-semibold text-slate-600">{t('profile_setup.tap_to_change_file')}</span>
+          ) : (
+            <>
+              {kind === 'photo' ? <Icons.ImagePlus className="w-10 h-10 text-slate-400" /> : <Icons.Clapperboard className="w-10 h-10 text-slate-400" />}
+              <span className="text-sm font-bold text-slate-700">{t('profile_setup.tap_to_upload')}</span>
+              <span className="text-[11px] text-slate-500">{kind === 'video' ? t('profile_setup.video_duration_hint') : ''}</span>
+            </>
+          )}
+        </div>
+      </FilePickerZone>
+
+      {file ? (
+        <p className="mb-3 text-xs font-semibold text-slate-600 truncate text-center" title={file.name}>
+          {file.name}
+        </p>
+      ) : null}
 
       {kind === 'video' && videoPreviewUrl ? (
         <video

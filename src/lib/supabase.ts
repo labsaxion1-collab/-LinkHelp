@@ -96,6 +96,7 @@ export function getSupabase(): SupabaseClient<Database> | null {
 
   browserClient = createClient<Database>(env.url, env.anonKey, {
     auth: {
+      /** PKCE + persisted browser session — required for Google OAuth on Vercel */
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,

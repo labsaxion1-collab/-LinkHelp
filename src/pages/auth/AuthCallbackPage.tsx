@@ -6,12 +6,10 @@ import { useAuth, type AuthProfile } from '@/context/AuthContext';
 import { ROUTES } from '@/utils/constants';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { authFlowLog } from '@/lib/authDebug';
-import { LINKHELP_DEV_OAUTH_ORIGIN } from '@/utils/oauthRedirect';
 import { resolvePostOAuthPath } from '@/utils/postOAuthRedirect';
 
 /**
- * Waits for `getSession()` or `onAuthStateChange` to report a session (or `maxMs`), so we do not
- * navigate away before PKCE persistence and auth listeners have settled.
+ * Waits for `getSession()` or `onAuthStateChange` to report a session (or `maxMs`).
  */
 function waitForAuthSessionSignal(sb: SupabaseClient, maxMs: number): Promise<void> {
   return new Promise((resolve) => {
@@ -51,8 +49,11 @@ async function safeNavigateAwayFromLogin(
 }
 
 /**
- * OAuth / magic-link return. Finishes PKCE/hash handling via `initialize()` + `getSession()` /
- * optional `exchangeCodeForSession`, waits on auth state, hydrates `profiles`, then redirects.
+ * OAuth return: run PKCE exchange from the callback URL, then read session — never send the user
+ * to /auth/login until exchange + getSession have completed.
+ *
+ * `exchangeCodeForSession` expects the authorization `code` query param (GoTrue parses the URL
+ * internally the same way as `new URL(href).searchParams.get('code')`).
  */
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
@@ -76,34 +77,28 @@ export default function AuthCallbackPage() {
       }
 
       try {
-        if (import.meta.env.DEV && typeof window !== 'undefined') {
-          console.log('Current origin', window.location.origin);
-          if (window.location.origin !== LINKHELP_DEV_OAUTH_ORIGIN) {
-            console.warn(
-              `[LinkHelp AuthCallback] For PKCE, use ${LINKHELP_DEV_OAUTH_ORIGIN} (npm run dev). Current origin does not match — code_verifier may be missing on return.`,
-            );
-          }
-        }
-
-        const url = new URL(window.location.href);
-        const authCode = url.searchParams.get('code');
-        if (authCode) {
-          authFlowLog('Auth callback received code', { hasCode: true });
+        const callbackUrl = typeof window !== 'undefined' ? window.location.href : '';
+        const code = callbackUrl ? new URL(callbackUrl).searchParams.get('code') : null;
+        if (code) {
+          authFlowLog('Auth callback received code', { hasCode: true, origin: window.location.origin });
         }
 
         await sb.auth.initialize();
 
-        let session = (await sb.auth.getSession()).data.session;
+        // `initialize()` may have already completed PKCE exchange; only exchange if no session yet.
+        let { data: sessionWrap } = await sb.auth.getSession();
+        let session = sessionWrap.session;
 
-        if (!session && authCode) {
-          const { data: exchangeData, error: exchangeErr } = await sb.auth.exchangeCodeForSession(authCode);
+        if (!session && code) {
+          authFlowLog('Session exchange (PKCE)', { fromCallbackUrl: callbackUrl.split('?')[0] });
+          const { data: exchangeData, error: exchangeErr } = await sb.auth.exchangeCodeForSession(code);
           if (exchangeErr) {
-            authFlowLog('exchangeCodeForSession error', { message: exchangeErr.message });
-          }
-          if (exchangeData?.session) {
+            authFlowLog('exchangeCodeForSession', { message: exchangeErr.message });
+          } else if (exchangeData?.session) {
             authFlowLog('Session created', { userId: exchangeData.session.user.id });
           }
-          session = (await sb.auth.getSession()).data.session;
+          const afterEx = await sb.auth.getSession();
+          session = afterEx.data.session;
         }
 
         if (!session) {
@@ -116,7 +111,7 @@ export default function AuthCallbackPage() {
         if (session) {
           await waitForAuthSessionSignal(sb, 800);
           session = (await sb.auth.getSession()).data.session;
-        } else if (authCode) {
+        } else if (code) {
           await waitForAuthSessionSignal(sb, 4000);
           session = (await sb.auth.getSession()).data.session;
         }
@@ -126,7 +121,7 @@ export default function AuthCallbackPage() {
         if (!session?.user) {
           if (typeof window !== 'undefined' && window.location.search.includes('code=')) {
             console.error(
-              '[LinkHelp AuthCallback] ?code= present but no session. Often: PKCE code_verifier missing from localStorage — start and finish Google login on the same origin/port (dev: localhost:3000). Add redirect URLs in Supabase Auth → URL Configuration (production: https://link-help.vercel.app/auth/callback).',
+              '[LinkHelp AuthCallback] ?code= present but no session. PKCE code_verifier must exist on the same origin that started OAuth — use redirectTo `${window.location.origin}/auth/callback` and add that URL in Supabase Auth settings.',
             );
           }
           if (!(await safeNavigateAwayFromLogin(sb, navigate))) {

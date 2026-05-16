@@ -20,6 +20,7 @@ import { ClientRadarInsights } from '@/components/client/ClientRadarInsights';
 import { LhCard } from '@/components/design-system/LhCard';
 import { UserPresenceBadge } from '@/components/ui/UserPresenceBadge';
 import { markDemoServiceConfirmed } from '@/utils/chatThreadDemo';
+import { UI_VISIBILITY } from '@/config/uiVisibility';
 
 type ModalStep =
   | 'category'
@@ -400,7 +401,7 @@ export default function ClientDashboard() {
       )}
 
       {/* Credits Modal */}
-      {showCreditModal && (
+      {UI_VISIBILITY.clientCredits && showCreditModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => !isProcessingPayment && setShowCreditModal(false)}>
           <div className="bg-white rounded-[2rem] w-full max-w-5xl shadow-[0_0_50px_rgba(0,0,0,0.28)] overflow-hidden flex flex-col lg:flex-row relative max-h-[92vh]" onClick={(e) => e.stopPropagation()}>
              <div className="w-full lg:w-[42%] bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-100 p-8 flex flex-col justify-center overflow-y-auto">
@@ -1459,7 +1460,7 @@ export default function ClientDashboard() {
           {/* Account Status / Monetization */}
           <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3 shrink-0">
             {/* Plan Status */}
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+            <div className={`flex items-center justify-between ${UI_VISIBILITY.clientCredits ? 'pb-3 border-b border-gray-100' : ''}`}>
                <div>
                   <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{t('client_shell.current_plan')}</div>
                   <div className="flex items-center gap-1.5 font-black text-sm text-gray-900">
@@ -1470,7 +1471,7 @@ export default function ClientDashboard() {
                  <Icons.Star className="w-3.5 h-3.5 text-yellow-400" /> {t('client_shell.evolve')}
                </button>
             </div>
-            {/* LinkCredits Balance */}
+            {UI_VISIBILITY.clientCredits ? (
             <div className="flex items-center justify-between pt-1">
                <div className="flex items-center gap-2">
                  <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
@@ -1485,6 +1486,7 @@ export default function ClientDashboard() {
                  <Icons.Plus className="w-4 h-4" />
                </button>
             </div>
+            ) : null}
           </div>
 
           {/* Main Navigation */}
@@ -1507,7 +1509,7 @@ export default function ClientDashboard() {
             </button>
           </nav>
           
-          {/* LinkHelp Ideas Custom Community Card */}
+          {UI_VISIBILITY.ideas ? (
           <Link to={ROUTES.ideas} className="shrink-0 block relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 p-4 xl:p-5 group shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] transition-all hover:-translate-y-0.5 mb-6 border border-gray-700/50">
             <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400/20 rounded-full blur-[50px] group-hover:bg-yellow-400/30 transition-colors pointer-events-none"></div>
             
@@ -1543,6 +1545,7 @@ export default function ClientDashboard() {
               </div>
             </div>
           </Link>
+          ) : null}
           
           {/* Quick Actions / Create Post (Sidebar) */}
           <div className="pt-2">

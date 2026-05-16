@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Logo } from '@/components/ui/Logo';
+import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppMode } from '@/context/AppModeContext';
@@ -49,12 +50,14 @@ export default function Footer() {
             >
               {t('footer.about')}
             </Link>
-            <Link
-              to={ROUTES.ideas}
-              className="text-xs font-semibold text-gray-500 hover:text-blue-600 transition-colors min-h-[44px] flex items-center px-1"
-            >
-              {t('footer.support_ideas')}
-            </Link>
+            {UI_VISIBILITY.ideas ? (
+              <Link
+                to={ROUTES.ideas}
+                className="text-xs font-semibold text-gray-500 hover:text-blue-600 transition-colors min-h-[44px] flex items-center px-1"
+              >
+                {t('footer.support_ideas')}
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>

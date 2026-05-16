@@ -5,6 +5,7 @@ import { Logo } from '@/components/ui/Logo';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useAuth } from '@/context/AuthContext';
+import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
 import { useAppMode } from '@/context/AppModeContext';
 import { useToast } from '@/context/ToastContext';
@@ -385,13 +386,15 @@ export default function Navbar() {
                   >
                     {t('nav.profile_menu_settings')}
                   </Link>
-                  <Link
-                    to={ROUTES.payments}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block rounded-lg px-3 py-3 text-base font-medium text-gray-900 hover:bg-gray-50"
-                  >
-                    {t('nav.profile_menu_credits')}
-                  </Link>
+                  {UI_VISIBILITY.clientCredits ? (
+                    <Link
+                      to={ROUTES.payments}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block rounded-lg px-3 py-3 text-base font-medium text-gray-900 hover:bg-gray-50"
+                    >
+                      {t('nav.profile_menu_credits')}
+                    </Link>
+                  ) : null}
                   {isConfigured && session ? (
                     <button
                       type="button"

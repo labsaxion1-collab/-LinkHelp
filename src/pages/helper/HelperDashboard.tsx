@@ -23,6 +23,7 @@ import { resolveCategoryId, translateCategory } from '@/utils/translateCategory'
 import { formatJobSchedule } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { UI_VISIBILITY } from '@/config/uiVisibility';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import type { Application } from '@/types/application';
 import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
@@ -953,7 +954,7 @@ export default function HelperDashboard() {
       />
 
       {/* Idea Modal */}
-      {showIdeaModal && (
+      {UI_VISIBILITY.ideas && showIdeaModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => setShowIdeaModal(false)}>
            <div className="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col relative" onClick={e => e.stopPropagation()}>
               <div className="absolute top-0 right-0 w-48 h-48 bg-yellow-500/10 rounded-full blur-[60px] pointer-events-none"></div>
@@ -1378,6 +1379,7 @@ export default function HelperDashboard() {
               </div>
             </HelperSidebarDisclosure>
 
+            {UI_VISIBILITY.ideas ? (
             <HelperSidebarDisclosure storageKey="ideas" title={t('helper_dashboard.sidebar_acc_ideas')}>
               <div className="rounded-xl bg-slate-900 p-3 border border-slate-800 shadow-sm">
                 <div className="flex gap-2 mb-2">
@@ -1402,6 +1404,7 @@ export default function HelperDashboard() {
                 </button>
               </div>
             </HelperSidebarDisclosure>
+            ) : null}
           </div>
         </aside>
 

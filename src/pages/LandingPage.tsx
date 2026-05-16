@@ -3,6 +3,7 @@ import { ArrowRight, CheckCircle2, Shield, Star, Users, MapPin, Globe, Clock, La
 import { categories } from '@/data/landingCategories';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
 
 export default function LandingPage() {
@@ -302,8 +303,8 @@ export default function LandingPage() {
             <p className="text-gray-500 max-w-2xl mx-auto">{t('landing.pricing_sub')}</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-12 lg:gap-20">
-            {/* LinkCredits for Clients */}
+          <div className={`grid gap-12 lg:gap-20 ${UI_VISIBILITY.clientCredits ? 'md:grid-cols-2' : 'max-w-xl mx-auto'}`}>
+            {UI_VISIBILITY.clientCredits ? (
             <div className="bg-blue-50/50 p-8 md:p-12 rounded-3xl border border-blue-100">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 font-bold mb-6 text-sm">
                 {t('landing.pricing_clients_badge')}
@@ -330,6 +331,7 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
+            ) : null}
 
             {/* Subscriptions for Helpers */}
             <div>

@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { Home, ClipboardList, MessageCircle, Images, LayoutDashboard, UserRound, MapPin } from 'lucide-react';
+import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
 import { isAppShellPath, isHelperArea, pathImpliesAppMode } from '@/utils/navigation';
 import { useLanguage } from '@/context/LanguageContext';
@@ -44,7 +45,9 @@ export function MobileBottomNav() {
         { kind: 'link', to: ROUTES.clientJobs, labelKey: 'mobile_nav.requests', icon: ClipboardList },
         { kind: 'link', to: ROUTES.map, labelKey: 'mobile_nav.nearby', icon: MapPin },
         { kind: 'link', to: ROUTES.messages, labelKey: 'mobile_nav.messages', icon: MessageCircle },
-        { kind: 'link', to: ROUTES.payments, labelKey: 'mobile_nav.credits', icon: LayoutDashboard },
+        ...(UI_VISIBILITY.clientCredits
+          ? [{ kind: 'link' as const, to: ROUTES.payments, labelKey: 'mobile_nav.credits', icon: LayoutDashboard }]
+          : []),
         { kind: 'link', to: ROUTES.settings, labelKey: 'mobile_nav.profile', icon: UserRound },
       ];
 

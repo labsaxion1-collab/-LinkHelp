@@ -1,5 +1,6 @@
 import { lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
 import Layout from '@/components/layout/Layout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -46,10 +47,16 @@ export function AppRoutes() {
           <Route path={ROUTES.helperTraining} element={<HelperTrainingPage />} />
 
           <Route path={ROUTES.messages} element={<MessagesPage />} />
-          <Route path={ROUTES.ideas} element={<IdeasPage />} />
+          <Route
+            path={ROUTES.ideas}
+            element={UI_VISIBILITY.ideas ? <IdeasPage /> : <Navigate to={ROUTES.clientDashboard} replace />}
+          />
           <Route path={ROUTES.notifications} element={<NotificationsPage />} />
           <Route path={ROUTES.map} element={<LiveMapPage />} />
-          <Route path={ROUTES.payments} element={<PaymentsPage />} />
+          <Route
+            path={ROUTES.payments}
+            element={UI_VISIBILITY.clientCredits ? <PaymentsPage /> : <Navigate to={ROUTES.clientDashboard} replace />}
+          />
           <Route path={ROUTES.settings} element={<SettingsPage />} />
         </Route>
 

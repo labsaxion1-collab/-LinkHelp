@@ -7,6 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
+import { movingNeedsBuildingDetails } from '@/data/movingRequestConfig';
 import { formatJobSchedule } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
 import { avatarUrlForName } from '@/utils/avatarUrl';
@@ -20,8 +21,15 @@ import { LhCard } from '@/components/design-system/LhCard';
 import { UserPresenceBadge } from '@/components/ui/UserPresenceBadge';
 import { markDemoServiceConfirmed } from '@/utils/chatThreadDemo';
 
-type ModalStep = 'category' | 'subcategory' | 'text' | 'media' | 'location' | 'priority' | 'review';
-const ALL_STEPS: ModalStep[] = ['category', 'subcategory', 'text', 'media', 'location', 'priority', 'review'];
+type ModalStep =
+  | 'category'
+  | 'subcategory'
+  | 'moving_access'
+  | 'text'
+  | 'media'
+  | 'location'
+  | 'priority'
+  | 'review';
 
 const RECOMMENDED_HELPERS: {
   id: number;
@@ -72,11 +80,20 @@ const RECOMMENDED_HELPERS: {
 export default function ClientDashboard() {
   const [postText, setPostText] = useState('');
   const [requestTags, setRequestTags] = useState<string[]>([]);
-  const [moveLargeItemsCount, setMoveLargeItemsCount] = useState('');
-  const [moveFloor, setMoveFloor] = useState('');
-  const [moveElevator, setMoveElevator] = useState('');
-  const [moveStairs, setMoveStairs] = useState('');
-  const [moveDistance, setMoveDistance] = useState('');
+  const [moveOriginFloor, setMoveOriginFloor] = useState('');
+  const [moveOriginElevator, setMoveOriginElevator] = useState('');
+  const [moveOriginStairs, setMoveOriginStairs] = useState('');
+  const [moveDestFloor, setMoveDestFloor] = useState('');
+  const [moveDestElevator, setMoveDestElevator] = useState('');
+  const [moveDestStairs, setMoveDestStairs] = useState('');
+  const [moveApproxBoxes, setMoveApproxBoxes] = useState('');
+  const [moveLargeFurniture, setMoveLargeFurniture] = useState('');
+  const [moveNeedDisassembly, setMoveNeedDisassembly] = useState('');
+  const [moveNeedAssembly, setMoveNeedAssembly] = useState('');
+  const [moveFragileItems, setMoveFragileItems] = useState('');
+  const [moveDate, setMoveDate] = useState('');
+  const [movePreferredTime, setMovePreferredTime] = useState('');
+  const [moveDistanceNotes, setMoveDistanceNotes] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [jobLocation, setJobLocation] = useState('');
@@ -143,6 +160,38 @@ export default function ClientDashboard() {
     [language, selectedCategory, selectedSubcategory],
   );
 
+  const createModalSteps = useMemo((): ModalStep[] => {
+    const steps: ModalStep[] = ['category', 'subcategory'];
+    if (selectedCategory === 'moving' && movingNeedsBuildingDetails(selectedSubcategory)) {
+      steps.push('moving_access');
+    }
+    steps.push('text', 'media', 'location', 'priority', 'review');
+    return steps;
+  }, [selectedCategory, selectedSubcategory]);
+
+  const buildingAccessComplete = useMemo(() => {
+    if (selectedCategory !== 'moving' || !movingNeedsBuildingDetails(selectedSubcategory)) {
+      return true;
+    }
+    return (
+      !!moveOriginFloor.trim() &&
+      !!moveOriginElevator &&
+      !!moveOriginStairs &&
+      !!moveDestFloor.trim() &&
+      !!moveDestElevator &&
+      !!moveDestStairs
+    );
+  }, [
+    selectedCategory,
+    selectedSubcategory,
+    moveOriginFloor,
+    moveOriginElevator,
+    moveOriginStairs,
+    moveDestFloor,
+    moveDestElevator,
+    moveDestStairs,
+  ]);
+
   useEffect(() => {
     if (!descriptionCopy) return;
     setRequestTags(Array.from(new Set(descriptionCopy.tags)));
@@ -150,11 +199,20 @@ export default function ClientDashboard() {
 
   useEffect(() => {
     if (selectedCategory && selectedCategory !== 'moving') {
-      setMoveLargeItemsCount('');
-      setMoveFloor('');
-      setMoveElevator('');
-      setMoveStairs('');
-      setMoveDistance('');
+      setMoveOriginFloor('');
+      setMoveOriginElevator('');
+      setMoveOriginStairs('');
+      setMoveDestFloor('');
+      setMoveDestElevator('');
+      setMoveDestStairs('');
+      setMoveApproxBoxes('');
+      setMoveLargeFurniture('');
+      setMoveNeedDisassembly('');
+      setMoveNeedAssembly('');
+      setMoveFragileItems('');
+      setMoveDate('');
+      setMovePreferredTime('');
+      setMoveDistanceNotes('');
     }
   }, [selectedCategory]);
 
@@ -205,11 +263,20 @@ export default function ClientDashboard() {
     setSelectedSubcategory('');
     setRequestTags([]);
     setPriority('flexible');
-    setMoveLargeItemsCount('');
-    setMoveFloor('');
-    setMoveElevator('');
-    setMoveStairs('');
-    setMoveDistance('');
+    setMoveOriginFloor('');
+    setMoveOriginElevator('');
+    setMoveOriginStairs('');
+    setMoveDestFloor('');
+    setMoveDestElevator('');
+    setMoveDestStairs('');
+    setMoveApproxBoxes('');
+    setMoveLargeFurniture('');
+    setMoveNeedDisassembly('');
+    setMoveNeedAssembly('');
+    setMoveFragileItems('');
+    setMoveDate('');
+    setMovePreferredTime('');
+    setMoveDistanceNotes('');
   };
 
   const closeCreateModal = () => {
@@ -233,10 +300,58 @@ export default function ClientDashboard() {
           : v === 'unsure'
             ? t('create_modal.moving_unsure')
             : '—';
-    const movingAppend =
-      selectedCategory === 'moving' && moveLargeItemsCount
-        ? `\n\n—\n${t('create_modal.moving_details_title')}\n${t('create_modal.moving_large_items_label')}: ${moveLargeItemsCount}\n${t('create_modal.moving_floor_label')}: ${moveFloor.trim() || '—'}\n${t('create_modal.moving_elevator_label')}: ${moveElevator ? ynLabel(moveElevator) : '—'}\n${t('create_modal.moving_stairs_label')}: ${moveStairs ? ynLabel(moveStairs) : '—'}\n${t('create_modal.moving_distance_label')}: ${moveDistance.trim() || '—'}`
-        : '';
+
+    let movingAppend = '';
+    if (selectedCategory === 'moving') {
+      const parts: string[] = [];
+      if (movingNeedsBuildingDetails(selectedSubcategory)) {
+        parts.push(
+          t('create_modal.moving_origin_section'),
+          `${t('create_modal.moving_floor_pickup')}: ${moveOriginFloor.trim()}`,
+          `${t('create_modal.moving_elevator_label')}: ${ynLabel(moveOriginElevator)}`,
+          `${t('create_modal.moving_stairs_label')}: ${ynLabel(moveOriginStairs)}`,
+          '',
+          t('create_modal.moving_dest_section'),
+          `${t('create_modal.moving_floor_delivery')}: ${moveDestFloor.trim()}`,
+          `${t('create_modal.moving_elevator_label')}: ${ynLabel(moveDestElevator)}`,
+          `${t('create_modal.moving_stairs_label')}: ${ynLabel(moveDestStairs)}`,
+        );
+      }
+      const optional: string[] = [];
+      if (moveApproxBoxes.trim()) {
+        optional.push(`${t('create_modal.moving_boxes_label')}: ${moveApproxBoxes.trim()}`);
+      }
+      if (moveLargeFurniture) {
+        optional.push(`${t('create_modal.moving_large_furniture_label')}: ${ynLabel(moveLargeFurniture)}`);
+      }
+      if (moveNeedDisassembly) {
+        optional.push(`${t('create_modal.moving_disassembly_label')}: ${ynLabel(moveNeedDisassembly)}`);
+      }
+      if (moveNeedAssembly) {
+        optional.push(`${t('create_modal.moving_assembly_label')}: ${ynLabel(moveNeedAssembly)}`);
+      }
+      if (moveFragileItems) {
+        optional.push(`${t('create_modal.moving_fragile_label')}: ${ynLabel(moveFragileItems)}`);
+      }
+      if (moveDate) {
+        optional.push(`${t('create_modal.moving_move_date')}: ${moveDate}`);
+      }
+      if (movePreferredTime) {
+        optional.push(`${t('create_modal.moving_preferred_time')}: ${movePreferredTime}`);
+      }
+      if (moveDistanceNotes.trim()) {
+        optional.push(`${t('create_modal.moving_distance_label')}: ${moveDistanceNotes.trim()}`);
+      }
+      const core = parts.join('\n');
+      let optBlock = '';
+      if (optional.length) {
+        optBlock = (core ? '\n\n' : '') + `${t('create_modal.moving_optional_section')}\n${optional.join('\n')}`;
+      }
+      if (core || optional.length) {
+        movingAppend = `\n\n—\n${t('create_modal.moving_details_title')}\n${core}${optBlock}`;
+      }
+    }
+
     const fullDescription = `${postText.trim()}${movingAppend}`;
 
     const schedule =
@@ -578,20 +693,23 @@ export default function ClientDashboard() {
                 <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-100 -translate-y-1/2 z-0 rounded-full"></div>
                 <div 
                   className="absolute top-1/2 left-0 h-1 bg-blue-600 -translate-y-1/2 z-0 transition-all duration-500 rounded-full" 
-                  style={{ width: `${(ALL_STEPS.indexOf(createModalStep) / (ALL_STEPS.length - 1)) * 100}%` }}
+                  style={{
+                    width: `${(createModalSteps.indexOf(createModalStep) / Math.max(createModalSteps.length - 1, 1)) * 100}%` 
+                  }}
                 ></div>
                 
-                {ALL_STEPS.map((step, idx) => {
+                {createModalSteps.map((step, idx) => {
                   const stepIcons: Record<ModalStep, any> = { 
                     'category': Icons.Grid, 
                     'subcategory': Icons.List, 
+                    'moving_access': Icons.Building2,
                     'text': Icons.Type, 
                     'media': Icons.Image, 
                     'location': Icons.MapPin, 
                     'priority': Icons.Clock, 
                     'review': Icons.CheckCircle2 
                   };
-                  const currentIndex = ALL_STEPS.indexOf(createModalStep);
+                  const currentIndex = createModalSteps.indexOf(createModalStep);
                   const isPast = idx < currentIndex;
                   const isCurrent = idx === currentIndex;
                   const isActive = isPast || isCurrent;
@@ -658,7 +776,11 @@ export default function ClientDashboard() {
                             key={subKey}
                             onClick={() => {
                               setSelectedSubcategory(subKey);
-                              setCreateModalStep('text');
+                              if (selectedCategory === 'moving' && movingNeedsBuildingDetails(subKey)) {
+                                setCreateModalStep('moving_access');
+                              } else {
+                                setCreateModalStep('text');
+                              }
                             }}
                             className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-blue-600 bg-blue-50 ring-4 ring-blue-50' : 'border-gray-200 hover:border-blue-300 bg-white hover:shadow-sm'}`}
                           >
@@ -674,91 +796,120 @@ export default function ClientDashboard() {
                 );
               })()}
 
+              {/* Building access (apartment / condo / office tower) */}
+              {createModalStep === 'moving_access' && (
+                <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
+                  <div>
+                    <h4 className="text-2xl font-bold text-gray-900 mb-2">{t('create_modal.moving_access_title')}</h4>
+                    <p className="text-gray-500 text-sm leading-relaxed">{t('create_modal.moving_access_sub')}</p>
+                  </div>
+
+                  <div className="rounded-2xl border-2 border-slate-200 bg-slate-50/80 p-4 sm:p-5 space-y-4">
+                    <p className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-3">
+                      <Icons.ArrowUpFromLine className="w-4 h-4 text-blue-600 shrink-0" />
+                      {t('create_modal.moving_origin_section')}
+                    </p>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1.5">
+                        {t('create_modal.moving_floor_pickup')} <span className="text-rose-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={moveOriginFloor}
+                        onChange={(e) => setMoveOriginFloor(e.target.value)}
+                        placeholder={t('create_modal.moving_floor_placeholder')}
+                        className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-50 outline-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1.5">
+                          {t('create_modal.moving_elevator_label')} <span className="text-rose-600">*</span>
+                        </label>
+                        <select
+                          value={moveOriginElevator}
+                          onChange={(e) => setMoveOriginElevator(e.target.value)}
+                          className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-900 focus:border-blue-500 outline-none"
+                        >
+                          <option value="">—</option>
+                          <option value="yes">{t('create_modal.moving_yes')}</option>
+                          <option value="no">{t('create_modal.moving_no')}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1.5">
+                          {t('create_modal.moving_stairs_label')} <span className="text-rose-600">*</span>
+                        </label>
+                        <select
+                          value={moveOriginStairs}
+                          onChange={(e) => setMoveOriginStairs(e.target.value)}
+                          className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-900 focus:border-blue-500 outline-none"
+                        >
+                          <option value="">—</option>
+                          <option value="yes">{t('create_modal.moving_yes')}</option>
+                          <option value="no">{t('create_modal.moving_no')}</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border-2 border-slate-200 bg-slate-50/80 p-4 sm:p-5 space-y-4">
+                    <p className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-3">
+                      <Icons.ArrowDownToLine className="w-4 h-4 text-blue-600 shrink-0" />
+                      {t('create_modal.moving_dest_section')}
+                    </p>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1.5">
+                        {t('create_modal.moving_floor_delivery')} <span className="text-rose-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={moveDestFloor}
+                        onChange={(e) => setMoveDestFloor(e.target.value)}
+                        placeholder={t('create_modal.moving_floor_placeholder')}
+                        className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-50 outline-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1.5">
+                          {t('create_modal.moving_elevator_label')} <span className="text-rose-600">*</span>
+                        </label>
+                        <select
+                          value={moveDestElevator}
+                          onChange={(e) => setMoveDestElevator(e.target.value)}
+                          className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-900 focus:border-blue-500 outline-none"
+                        >
+                          <option value="">—</option>
+                          <option value="yes">{t('create_modal.moving_yes')}</option>
+                          <option value="no">{t('create_modal.moving_no')}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1.5">
+                          {t('create_modal.moving_stairs_label')} <span className="text-rose-600">*</span>
+                        </label>
+                        <select
+                          value={moveDestStairs}
+                          onChange={(e) => setMoveDestStairs(e.target.value)}
+                          className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-900 focus:border-blue-500 outline-none"
+                        >
+                          <option value="">—</option>
+                          <option value="yes">{t('create_modal.moving_yes')}</option>
+                          <option value="no">{t('create_modal.moving_no')}</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Step 2: Text */}
               {createModalStep === 'text' && (
                 <div className="animate-in fade-in slide-in-from-right-4 duration-300 relative h-full flex flex-col">
                   <div className="mb-4 flex-1 flex flex-col">
                     <label className="block text-2xl font-bold text-gray-900 mb-2">{t('create_modal.describe')}</label>
                     <p className="text-gray-500 text-sm mb-4">{t('create_modal.describe_desc')}</p>
-                    {selectedCategory === 'moving' && (
-                      <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50/90 p-4 space-y-3.5">
-                        <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                          <Icons.Package className="w-4 h-4 text-blue-600" />
-                          {t('create_modal.moving_details_title')}
-                        </p>
-                        <div>
-                          <label className="block text-xs font-bold text-gray-500 mb-1.5">
-                            {t('create_modal.moving_large_items_label')} <span className="text-rose-600">*</span>
-                          </label>
-                          <select
-                            value={moveLargeItemsCount}
-                            onChange={(e) => setMoveLargeItemsCount(e.target.value)}
-                            className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-50 outline-none"
-                          >
-                            <option value="">{t('create_modal.moving_large_items_placeholder')}</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5+">5+</option>
-                          </select>
-                          <p className="text-[11px] text-gray-500 mt-1">{t('create_modal.moving_large_items_hint')}</p>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-gray-500 mb-1.5">{t('create_modal.moving_floor_label')}</label>
-                          <input
-                            type="text"
-                            value={moveFloor}
-                            onChange={(e) => setMoveFloor(e.target.value)}
-                            placeholder={t('create_modal.moving_floor_placeholder')}
-                            className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-50 outline-none"
-                          />
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-bold text-gray-500 mb-1.5">{t('create_modal.moving_elevator_label')}</label>
-                            <select
-                              value={moveElevator}
-                              onChange={(e) => setMoveElevator(e.target.value)}
-                              className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-900 focus:border-blue-500 outline-none"
-                            >
-                              <option value="">—</option>
-                              <option value="yes">{t('create_modal.moving_yes')}</option>
-                              <option value="no">{t('create_modal.moving_no')}</option>
-                              <option value="unsure">{t('create_modal.moving_unsure')}</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-gray-500 mb-1.5">{t('create_modal.moving_stairs_label')}</label>
-                            <select
-                              value={moveStairs}
-                              onChange={(e) => setMoveStairs(e.target.value)}
-                              className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-900 focus:border-blue-500 outline-none"
-                            >
-                              <option value="">—</option>
-                              <option value="yes">{t('create_modal.moving_yes')}</option>
-                              <option value="no">{t('create_modal.moving_no')}</option>
-                              <option value="unsure">{t('create_modal.moving_unsure')}</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-gray-500 mb-1.5">{t('create_modal.moving_distance_label')}</label>
-                          <input
-                            type="text"
-                            value={moveDistance}
-                            onChange={(e) => setMoveDistance(e.target.value)}
-                            placeholder={t('create_modal.moving_distance_placeholder')}
-                            className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-900 focus:border-blue-500 outline-none"
-                          />
-                        </div>
-                        <p className="text-[11px] text-gray-600 leading-relaxed border-t border-slate-200/80 pt-3">
-                          <span className="font-bold text-gray-800">{t('create_modal.moving_examples_title')}</span>
-                          {' — '}
-                          {t('create_modal.moving_examples_body')}
-                        </p>
-                      </div>
-                    )}
                     <textarea
                       autoFocus
                       value={postText}
@@ -766,6 +917,120 @@ export default function ClientDashboard() {
                       placeholder={descriptionCopy?.placeholder ?? t('create_modal.placeholder')}
                       className="w-full bg-gray-50/50 border-2 border-gray-200 rounded-2xl px-5 py-4 hover:border-gray-300 focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-500 focus:outline-none transition-all resize-none text-gray-900 placeholder-gray-400 flex-1 text-lg"
                     />
+                    {selectedCategory === 'moving' && (
+                      <details className="mb-4 mt-3 rounded-2xl border border-slate-200 bg-slate-50/90 open:bg-white open:shadow-sm transition-colors group">
+                        <summary className="cursor-pointer list-none flex items-center justify-between gap-2 p-4 font-bold text-sm text-slate-900 [&::-webkit-details-marker]:hidden">
+                          <span className="flex items-center gap-2 min-w-0">
+                            <Icons.SlidersHorizontal className="w-4 h-4 text-blue-600 shrink-0" />
+                            <span className="truncate">{t('create_modal.moving_optional_section')}</span>
+                          </span>
+                          <Icons.ChevronRight className="w-4 h-4 text-slate-400 group-open:rotate-90 transition-transform shrink-0" />
+                        </summary>
+                        <div className="px-4 pb-4 pt-0 space-y-3 border-t border-slate-100">
+                          <p className="text-[11px] text-gray-500 pt-3">{t('create_modal.moving_optional_hint')}</p>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1.5">{t('create_modal.moving_boxes_label')}</label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={moveApproxBoxes}
+                              onChange={(e) => setMoveApproxBoxes(e.target.value)}
+                              placeholder={t('create_modal.moving_boxes_placeholder')}
+                              className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-900 focus:border-blue-500 outline-none"
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 mb-1.5">{t('create_modal.moving_large_furniture_label')}</label>
+                              <select
+                                value={moveLargeFurniture}
+                                onChange={(e) => setMoveLargeFurniture(e.target.value)}
+                                className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-900 focus:border-blue-500 outline-none"
+                              >
+                                <option value="">—</option>
+                                <option value="yes">{t('create_modal.moving_yes')}</option>
+                                <option value="no">{t('create_modal.moving_no')}</option>
+                                <option value="unsure">{t('create_modal.moving_unsure')}</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 mb-1.5">{t('create_modal.moving_fragile_label')}</label>
+                              <select
+                                value={moveFragileItems}
+                                onChange={(e) => setMoveFragileItems(e.target.value)}
+                                className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-900 focus:border-blue-500 outline-none"
+                              >
+                                <option value="">—</option>
+                                <option value="yes">{t('create_modal.moving_yes')}</option>
+                                <option value="no">{t('create_modal.moving_no')}</option>
+                                <option value="unsure">{t('create_modal.moving_unsure')}</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 mb-1.5">{t('create_modal.moving_disassembly_label')}</label>
+                              <select
+                                value={moveNeedDisassembly}
+                                onChange={(e) => setMoveNeedDisassembly(e.target.value)}
+                                className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-900 focus:border-blue-500 outline-none"
+                              >
+                                <option value="">—</option>
+                                <option value="yes">{t('create_modal.moving_yes')}</option>
+                                <option value="no">{t('create_modal.moving_no')}</option>
+                                <option value="unsure">{t('create_modal.moving_unsure')}</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 mb-1.5">{t('create_modal.moving_assembly_label')}</label>
+                              <select
+                                value={moveNeedAssembly}
+                                onChange={(e) => setMoveNeedAssembly(e.target.value)}
+                                className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-900 focus:border-blue-500 outline-none"
+                              >
+                                <option value="">—</option>
+                                <option value="yes">{t('create_modal.moving_yes')}</option>
+                                <option value="no">{t('create_modal.moving_no')}</option>
+                                <option value="unsure">{t('create_modal.moving_unsure')}</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 mb-1.5">{t('create_modal.moving_move_date')}</label>
+                              <input
+                                type="date"
+                                value={moveDate}
+                                onChange={(e) => setMoveDate(e.target.value)}
+                                className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-900 focus:border-blue-500 outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 mb-1.5">{t('create_modal.moving_preferred_time')}</label>
+                              <input
+                                type="time"
+                                value={movePreferredTime}
+                                onChange={(e) => setMovePreferredTime(e.target.value)}
+                                className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-900 focus:border-blue-500 outline-none"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1.5">{t('create_modal.moving_distance_label')}</label>
+                            <input
+                              type="text"
+                              value={moveDistanceNotes}
+                              onChange={(e) => setMoveDistanceNotes(e.target.value)}
+                              placeholder={t('create_modal.moving_distance_placeholder')}
+                              className="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-900 focus:border-blue-500 outline-none"
+                            />
+                          </div>
+                          <p className="text-[11px] text-gray-600 leading-relaxed pt-1">
+                            <span className="font-bold text-gray-800">{t('create_modal.moving_examples_title')}</span>
+                            {' — '}
+                            {t('create_modal.moving_examples_body')}
+                          </p>
+                        </div>
+                      </details>
+                    )}
                     {descriptionCopy && (
                       <>
                         <div className="mt-4">
@@ -940,40 +1205,142 @@ export default function ClientDashboard() {
                     <div>
                       <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">{t('create_modal.description')}</span>
                       <p className="text-gray-800 font-medium whitespace-pre-wrap">{postText}</p>
-                      {selectedCategory === 'moving' && moveLargeItemsCount ? (
-                        <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3 text-sm text-gray-700 space-y-1">
-                          <p className="font-bold text-slate-900 text-xs uppercase tracking-wide">{t('create_modal.moving_details_title')}</p>
-                          <p>
-                            <span className="font-semibold text-gray-600">{t('create_modal.moving_large_items_label')}:</span> {moveLargeItemsCount}
-                          </p>
-                          <p>
-                            <span className="font-semibold text-gray-600">{t('create_modal.moving_floor_label')}:</span> {moveFloor.trim() || '—'}
-                          </p>
-                          <p>
-                            <span className="font-semibold text-gray-600">{t('create_modal.moving_elevator_label')}:</span>{' '}
-                            {moveElevator === 'yes'
-                              ? t('create_modal.moving_yes')
-                              : moveElevator === 'no'
-                                ? t('create_modal.moving_no')
-                                : moveElevator === 'unsure'
-                                  ? t('create_modal.moving_unsure')
-                                  : '—'}
-                          </p>
-                          <p>
-                            <span className="font-semibold text-gray-600">{t('create_modal.moving_stairs_label')}:</span>{' '}
-                            {moveStairs === 'yes'
-                              ? t('create_modal.moving_yes')
-                              : moveStairs === 'no'
-                                ? t('create_modal.moving_no')
-                                : moveStairs === 'unsure'
-                                  ? t('create_modal.moving_unsure')
-                                  : '—'}
-                          </p>
-                          <p>
-                            <span className="font-semibold text-gray-600">{t('create_modal.moving_distance_label')}:</span> {moveDistance.trim() || '—'}
-                          </p>
-                        </div>
-                      ) : null}
+                      {selectedCategory === 'moving' &&
+                        (movingNeedsBuildingDetails(selectedSubcategory) ||
+                          moveApproxBoxes.trim() ||
+                          moveLargeFurniture ||
+                          moveNeedDisassembly ||
+                          moveNeedAssembly ||
+                          moveFragileItems ||
+                          moveDate ||
+                          movePreferredTime ||
+                          moveDistanceNotes.trim()) && (
+                          <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3 text-sm text-gray-700 space-y-3">
+                            <p className="font-bold text-slate-900 text-xs uppercase tracking-wide">{t('create_modal.moving_details_title')}</p>
+                            {movingNeedsBuildingDetails(selectedSubcategory) && (
+                              <>
+                                <div className="space-y-1 text-sm">
+                                  <p className="font-semibold text-gray-800">{t('create_modal.moving_origin_section')}</p>
+                                  <p>
+                                    <span className="font-semibold text-gray-600">{t('create_modal.moving_floor_pickup')}:</span>{' '}
+                                    {moveOriginFloor.trim() || '—'}
+                                  </p>
+                                  <p>
+                                    <span className="font-semibold text-gray-600">{t('create_modal.moving_elevator_label')}:</span>{' '}
+                                    {moveOriginElevator === 'yes'
+                                      ? t('create_modal.moving_yes')
+                                      : moveOriginElevator === 'no'
+                                        ? t('create_modal.moving_no')
+                                        : '—'}
+                                  </p>
+                                  <p>
+                                    <span className="font-semibold text-gray-600">{t('create_modal.moving_stairs_label')}:</span>{' '}
+                                    {moveOriginStairs === 'yes'
+                                      ? t('create_modal.moving_yes')
+                                      : moveOriginStairs === 'no'
+                                        ? t('create_modal.moving_no')
+                                        : '—'}
+                                  </p>
+                                </div>
+                                <div className="space-y-1 text-sm border-t border-slate-200 pt-2">
+                                  <p className="font-semibold text-gray-800">{t('create_modal.moving_dest_section')}</p>
+                                  <p>
+                                    <span className="font-semibold text-gray-600">{t('create_modal.moving_floor_delivery')}:</span>{' '}
+                                    {moveDestFloor.trim() || '—'}
+                                  </p>
+                                  <p>
+                                    <span className="font-semibold text-gray-600">{t('create_modal.moving_elevator_label')}:</span>{' '}
+                                    {moveDestElevator === 'yes'
+                                      ? t('create_modal.moving_yes')
+                                      : moveDestElevator === 'no'
+                                        ? t('create_modal.moving_no')
+                                        : '—'}
+                                  </p>
+                                  <p>
+                                    <span className="font-semibold text-gray-600">{t('create_modal.moving_stairs_label')}:</span>{' '}
+                                    {moveDestStairs === 'yes'
+                                      ? t('create_modal.moving_yes')
+                                      : moveDestStairs === 'no'
+                                        ? t('create_modal.moving_no')
+                                        : '—'}
+                                  </p>
+                                </div>
+                              </>
+                            )}
+                            {(moveApproxBoxes.trim() ||
+                              moveLargeFurniture ||
+                              moveNeedDisassembly ||
+                              moveNeedAssembly ||
+                              moveFragileItems ||
+                              moveDate ||
+                              movePreferredTime ||
+                              moveDistanceNotes.trim()) && (
+                              <div className="space-y-1 text-sm border-t border-slate-200 pt-2">
+                                <p className="font-semibold text-gray-800">{t('create_modal.moving_optional_section')}</p>
+                                {moveApproxBoxes.trim() ? (
+                                  <p>
+                                    <span className="font-semibold text-gray-600">{t('create_modal.moving_boxes_label')}:</span> {moveApproxBoxes.trim()}
+                                  </p>
+                                ) : null}
+                                {moveLargeFurniture ? (
+                                  <p>
+                                    <span className="font-semibold text-gray-600">{t('create_modal.moving_large_furniture_label')}</span>{' '}
+                                    {moveLargeFurniture === 'yes'
+                                      ? t('create_modal.moving_yes')
+                                      : moveLargeFurniture === 'no'
+                                        ? t('create_modal.moving_no')
+                                        : t('create_modal.moving_unsure')}
+                                  </p>
+                                ) : null}
+                                {moveNeedDisassembly ? (
+                                  <p>
+                                    <span className="font-semibold text-gray-600">{t('create_modal.moving_disassembly_label')}</span>{' '}
+                                    {moveNeedDisassembly === 'yes'
+                                      ? t('create_modal.moving_yes')
+                                      : moveNeedDisassembly === 'no'
+                                        ? t('create_modal.moving_no')
+                                        : t('create_modal.moving_unsure')}
+                                  </p>
+                                ) : null}
+                                {moveNeedAssembly ? (
+                                  <p>
+                                    <span className="font-semibold text-gray-600">{t('create_modal.moving_assembly_label')}</span>{' '}
+                                    {moveNeedAssembly === 'yes'
+                                      ? t('create_modal.moving_yes')
+                                      : moveNeedAssembly === 'no'
+                                        ? t('create_modal.moving_no')
+                                        : t('create_modal.moving_unsure')}
+                                  </p>
+                                ) : null}
+                                {moveFragileItems ? (
+                                  <p>
+                                    <span className="font-semibold text-gray-600">{t('create_modal.moving_fragile_label')}</span>{' '}
+                                    {moveFragileItems === 'yes'
+                                      ? t('create_modal.moving_yes')
+                                      : moveFragileItems === 'no'
+                                        ? t('create_modal.moving_no')
+                                        : t('create_modal.moving_unsure')}
+                                  </p>
+                                ) : null}
+                                {moveDate ? (
+                                  <p>
+                                    <span className="font-semibold text-gray-600">{t('create_modal.moving_move_date')}:</span> {moveDate}
+                                  </p>
+                                ) : null}
+                                {movePreferredTime ? (
+                                  <p>
+                                    <span className="font-semibold text-gray-600">{t('create_modal.moving_preferred_time')}:</span> {movePreferredTime}
+                                  </p>
+                                ) : null}
+                                {moveDistanceNotes.trim() ? (
+                                  <p>
+                                    <span className="font-semibold text-gray-600">{t('create_modal.moving_distance_label')}:</span> {moveDistanceNotes.trim()}
+                                  </p>
+                                ) : null}
+                              </div>
+                            )}
+                          </div>
+                        )}
                     </div>
 
                     {requestTags.length > 0 && (
@@ -1023,8 +1390,8 @@ export default function ClientDashboard() {
               ) : (
                 <button 
                   onClick={() => {
-                     const currentIdx = ALL_STEPS.indexOf(createModalStep);
-                     if(currentIdx > 0) setCreateModalStep(ALL_STEPS[currentIdx - 1]);
+                     const currentIdx = createModalSteps.indexOf(createModalStep);
+                     if(currentIdx > 0) setCreateModalStep(createModalSteps[currentIdx - 1]);
                   }} 
                   className="px-5 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
                 >
@@ -1037,13 +1404,13 @@ export default function ClientDashboard() {
                   disabled={
                     createModalStep === 'category' ||
                     (createModalStep === 'subcategory' && !selectedSubcategory) ||
-                    (createModalStep === 'text' &&
-                      (!postText.trim() || (selectedCategory === 'moving' && !moveLargeItemsCount))) ||
+                    (createModalStep === 'moving_access' && !buildingAccessComplete) ||
+                    (createModalStep === 'text' && !postText.trim()) ||
                     (createModalStep === 'location' && !jobLocation)
                   }
                   onClick={() => {
-                     const currentIdx = ALL_STEPS.indexOf(createModalStep);
-                     if(currentIdx < ALL_STEPS.length - 1) setCreateModalStep(ALL_STEPS[currentIdx + 1]);
+                     const currentIdx = createModalSteps.indexOf(createModalStep);
+                     if(currentIdx < createModalSteps.length - 1) setCreateModalStep(createModalSteps[currentIdx + 1]);
                   }} 
                   className="bg-gray-900 hover:bg-black disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 px-8 rounded-xl transition-all shadow-md flex items-center gap-2 ml-auto hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-4 focus:ring-gray-200"
                 >

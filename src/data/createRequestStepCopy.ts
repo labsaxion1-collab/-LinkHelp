@@ -74,38 +74,17 @@ const DATA: Record<Lang, Tree> = {
         exampleHint: 'I need deep cleaning for kitchen and bathrooms.',
       },
     },
-    moving: {
-      residential: {
-        suggestions: ['Small residential move', 'Same-building move', 'Truck + 2 helpers', 'Packing boxes only'],
-        placeholder: 'e.g. Moving a 1-bedroom across town.',
-        tags: ['moving', 'residential', 'truck'],
-        exampleHint: 'I need to move a 1-bedroom apartment locally.',
-      },
-      small_delivery: {
-        suggestions: ['Single heavy item', 'Store pickup to home', 'Same-day small delivery', 'Appliance drop-off'],
-        placeholder: 'e.g. Pick up a washer and deliver to my address.',
-        tags: ['delivery', 'moving', 'same-day'],
-        exampleHint: 'Small delivery — one sofa and two boxes.',
-      },
-      furniture_pickup: {
-        suggestions: ['Sofa removal from 3rd floor', 'Donation pickup', 'Buy & move used furniture', 'Disassembly included'],
-        placeholder: 'e.g. Pick up a sectional from a seller in Laval.',
-        tags: ['moving', 'furniture', 'pickup'],
-        exampleHint: 'Pick up a dining table and six chairs.',
-      },
-      large_items: {
-        suggestions: ['Fridge + stove', 'Sofa + mattress', 'Washer/dryer pair', 'Piano / safe (discuss)'],
-        placeholder: 'e.g. Transport a fridge and a sofa — stairs involved.',
-        tags: ['moving', 'heavy-items', 'appliances'],
-        exampleHint: 'I need to transport a fridge and a sofa.',
-      },
-      urgent: {
-        suggestions: ['Same-day urgent', 'Evening slot only', 'Last-minute help', 'Minimal packing'],
-        placeholder: 'e.g. Urgent move — need help today.',
-        tags: ['moving', 'urgent', 'same-day'],
-        exampleHint: 'Urgent: need two people and a van this afternoon.',
-      },
-    },
+    moving: uniform(catKeys('moving'), {
+      suggestions: [
+        'Local move this month',
+        'Need truck + movers',
+        'Packing + boxes',
+        'Fragile items / appliances',
+      ],
+      placeholder: 'e.g. Describe both addresses, volume, and access (elevator, stairs).',
+      tags: ['moving', 'relocation'],
+      exampleHint: 'I need to move from a 3rd-floor apartment to a house — elevator at pickup.',
+    }),
     translation: {
       government: {
         suggestions: ['Government forms', 'Service Canada visit', 'CRA letter', 'Official correspondence'],
@@ -281,38 +260,17 @@ const DATA: Record<Lang, Tree> = {
         exampleHint: 'Limpeza profunda na cozinha e banheiros.',
       },
     },
-    moving: {
-      residential: {
-        suggestions: ['Mudança residencial pequena', 'Mesmo prédio', 'Caminhão + 2 ajudantes', 'Só embalar caixas'],
-        placeholder: 'Ex.: Mudança de apartamento 1 quarto na cidade.',
-        tags: ['mudança', 'residencial', 'caminhão'],
-        exampleHint: 'Preciso mudar um apartamento de 1 quarto localmente.',
-      },
-      small_delivery: {
-        suggestions: ['Pequena entrega', 'Retirada na loja', 'Entrega urgente mesmo dia', 'Eletrodoméstico'],
-        placeholder: 'Ex.: Buscar máquina de lavar e entregar no meu endereço.',
-        tags: ['entrega', 'mudança', 'urgente'],
-        exampleHint: 'Pequena entrega — um sofá e duas caixas.',
-      },
-      furniture_pickup: {
-        suggestions: ['Retirada de sofá', 'Móveis usados', 'Desmontagem inclusa', 'Doação / descarte'],
-        placeholder: 'Ex.: Buscar mesa de jantar no centro.',
-        tags: ['mudança', 'móveis', 'retirada'],
-        exampleHint: 'Retirar guarda-roupa no 4º andar.',
-      },
-      large_items: {
-        suggestions: ['Geladeira e fogão', 'Sofá e colchão', 'Lavadora e secadora', 'Itens pesados (combinar)'],
-        placeholder: 'Ex.: Transportar geladeira e sofá — tem escada.',
-        tags: ['mudança', 'itens-grandes', 'eletrodomésticos'],
-        exampleHint: 'Preciso transportar uma geladeira e um sofá.',
-      },
-      urgent: {
-        suggestions: ['Mudança urgente hoje', 'Só à noite', 'Última hora', 'Poucas caixas'],
-        placeholder: 'Ex.: Mudança urgente — preciso hoje.',
-        tags: ['mudança', 'urgente', 'hoje'],
-        exampleHint: 'Urgente: preciso de duas pessoas e van hoje à tarde.',
-      },
-    },
+    moving: uniform(catKeys('moving'), {
+      suggestions: [
+        'Mudança local esta semana',
+        'Preciso de caminhão e equipe',
+        'Embalagem e caixas',
+        'Itens frágeis / eletrodomésticos',
+      ],
+      placeholder: 'Ex.: Descreva os dois endereços, volume e acesso (elevador, escadas).',
+      tags: ['mudança', 'transporte'],
+      exampleHint: 'Preciso mudar do apartamento 3º andar para casa — tem elevador na origem.',
+    }),
     translation: {
       government: {
         suggestions: ['Documentos do governo', 'Formulários', 'Serviço presencial', 'Cartas oficiais'],

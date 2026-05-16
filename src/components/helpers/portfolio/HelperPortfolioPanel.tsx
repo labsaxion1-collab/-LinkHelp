@@ -13,8 +13,12 @@ import {
 import { contactGuardToastKey, detectContactInText } from '@/utils/portfolioContactGuard';
 import { portfolioMaxFeatured } from '@/utils/portfolioTierLimits';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
+import { updateHelperPortfolioItemCaption } from '@/services/supabase/portfolioRemote';
 
 type TFn = (key: string, options?: Record<string, string | number>) => string;
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function HelperPortfolioPanel({
   variant,
@@ -26,6 +30,7 @@ export function HelperPortfolioPanel({
   onAddVideo,
   t,
   onToast,
+  onRemoveItem,
 }: {
   variant: 'desktop' | 'mobile';
   portfolio: HelperPortfolioPersist;
@@ -36,6 +41,8 @@ export function HelperPortfolioPanel({
   onAddVideo: () => void;
   t: TFn;
   onToast: (msg: string) => void;
+  /** When set, called before removing from local state (e.g. delete storage + DB row). */
+  onRemoveItem?: (item: PortfolioMediaItem) => void | Promise<void>;
 }) {
   const [editingCaptionId, setEditingCaptionId] = useState<string | null>(null);
   const [draftCaption, setDraftCaption] = useState('');
@@ -53,7 +60,15 @@ export function HelperPortfolioPanel({
     setPortfolio((prev) => reorderPortfolioItems(prev, next));
   };
 
-  const remove = (id: string) => {
+  const remove = async (id: string) => {
+    const item = portfolio.items.find((i) => i.id === id);
+    if (item && onRemoveItem) {
+      try {
+        await onRemoveItem(item);
+      } catch {
+        return;
+      }
+    }
     setPortfolio((prev) => deletePortfolioItem(prev, id));
   };
 
@@ -73,6 +88,17 @@ export function HelperPortfolioPanel({
       }
     }
     setPortfolio((prev) => updatePortfolioItem(prev, id, patch));
+    if (UUID_RE.test(id)) {
+      const remote: {
+        caption?: string | null;
+        skill_id?: string | null;
+        featured?: boolean;
+      } = {};
+      if (patch.caption !== undefined) remote.caption = patch.caption ?? null;
+      if (patch.skillId !== undefined) remote.skill_id = patch.skillId ?? null;
+      if (patch.featured !== undefined) remote.featured = patch.featured;
+      if (Object.keys(remote).length > 0) void updateHelperPortfolioItemCaption(id, remote);
+    }
   };
 
   const startEditCaption = (item: PortfolioMediaItem) => {
@@ -107,13 +133,27 @@ export function HelperPortfolioPanel({
       {previewItems.length > 0 ? (
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5 hide-scrollbar">
           {previewItems.map((item) => {
-            const src = item.kind === 'photo' ? item.fullImageDataUrl || item.thumbDataUrl : item.thumbDataUrl;
+            const src =
+              item.kind === 'photo'
+                ? item.fullImageDataUrl || item.publicUrl || item.thumbDataUrl
+                : item.thumbDataUrl || item.publicUrl;
             return (
               <div
                 key={item.id}
                 className="relative h-16 w-16 shrink-0 rounded-[var(--lh-radius-md)] overflow-hidden bg-slate-100 ring-1 ring-slate-200/80 shadow-sm"
               >
-                {src ? <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" /> : null}
+                {item.kind === 'video' && !item.thumbDataUrl && item.publicUrl ? (
+                  <video
+                    src={item.publicUrl}
+                    className="h-full w-full object-cover"
+                    muted
+                    playsInline
+                    preload="metadata"
+                    aria-hidden
+                  />
+                ) : src ? (
+                  <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
+                ) : null}
                 {item.kind === 'video' ? (
                   <span className="absolute bottom-1 right-1 rounded bg-black/55 text-[8px] font-bold text-white px-1 py-px">▶</span>
                 ) : null}
@@ -164,14 +204,28 @@ export function HelperPortfolioPanel({
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{t('profile_setup.manage_title')}</p>
           <ul className="space-y-2 max-h-[min(52vh,420px)] overflow-y-auto pr-0.5 hide-scrollbar">
             {portfolio.items.map((item, index) => {
-              const src = item.kind === 'photo' ? item.fullImageDataUrl || item.thumbDataUrl : item.thumbDataUrl;
+              const src =
+                item.kind === 'photo'
+                  ? item.fullImageDataUrl || item.publicUrl || item.thumbDataUrl
+                  : item.thumbDataUrl || item.publicUrl;
               return (
                 <li
                   key={item.id}
                   className="rounded-xl border border-slate-200/90 bg-white p-2 shadow-sm flex gap-2 items-start"
                 >
                   <div className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-slate-100 ring-1 ring-slate-100">
-                    {src ? <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" /> : null}
+                    {item.kind === 'video' && !item.thumbDataUrl && item.publicUrl ? (
+                      <video
+                        src={item.publicUrl}
+                        className="w-full h-full object-cover"
+                        muted
+                        playsInline
+                        preload="metadata"
+                        aria-hidden
+                      />
+                    ) : src ? (
+                      <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                    ) : null}
                     {item.kind === 'video' ? (
                       <span className="absolute bottom-0.5 right-0.5 rounded bg-black/60 text-[9px] font-bold text-white px-1">
                         {item.durationSec != null ? `${item.durationSec}s` : '▶'}

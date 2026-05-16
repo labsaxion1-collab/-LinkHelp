@@ -26,6 +26,21 @@ export type ProfileRow = {
   updated_at: string;
 };
 
+export type HelperPortfolioItemRow = {
+  id: string;
+  helper_id: string;
+  type: 'image' | 'video';
+  url: string;
+  storage_path: string;
+  title: string | null;
+  caption: string | null;
+  skill_id: string | null;
+  featured: boolean;
+  duration_sec: number | null;
+  thumb_url: string | null;
+  created_at: string;
+};
+
 /** Minimal profile fields for job/application mappers. */
 export type MapperProfile = {
   name: string | null;

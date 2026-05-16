@@ -1,21 +1,29 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { GraduationCap, Settings, Bell, Shield, User, Loader2 } from 'lucide-react';
+import { useEffect, useState, useId } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { GraduationCap, Settings, Bell, Shield, User, Loader2, Camera } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { ROUTES } from '@/utils/constants';
 import { useAuth } from '@/context/AuthContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { useToast } from '@/context/ToastContext';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
+import { uploadAvatarImage } from '@/lib/storageUpload';
+import { cropSquareAvatarFromFile } from '@/utils/portfolioMediaProcessing';
 import { CityRegionAutocomplete } from '@/components/common/CityRegionAutocomplete';
 import type { QuebecPlace } from '@/data/quebecRegions';
 
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
-  const { profile, updateProfile, signOut, session, isConfigured } = useAuth();
+  const { profile, updateProfile, signOut, session, isConfigured, refreshProfile } = useAuth();
   const { mode, switchToClient, switchToHelper } = useAppMode();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const avatarInputId = useId();
+
+  const [avatarLocalPreview, setAvatarLocalPreview] = useState<string | null>(null);
+  const [avatarPicking, setAvatarPicking] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -41,6 +49,16 @@ export default function SettingsPage() {
     setCountry(profile.country ?? '');
     setBio(profile.bio ?? '');
   }, [profile, session?.user?.email]);
+
+  useEffect(() => {
+    if (location.hash === '#avatar') {
+      requestAnimationFrame(() =>
+        document.getElementById('settings-avatar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      );
+    }
+  }, [location.hash, location.pathname]);
+
+  const avatarDisplay = avatarLocalPreview ?? profile?.avatar_url?.trim() ?? null;
 
   const saveAccount = async () => {
     if (!isConfigured || !profile) {
@@ -83,6 +101,42 @@ export default function SettingsPage() {
     await signOut();
     showToast(t('nav.toast_logout'), 'success');
     navigate(ROUTES.home, { replace: true });
+  };
+
+  const onAvatarFile = async (files: FileList | null) => {
+    const f = files?.[0];
+    if (!f) return;
+    setAvatarPicking(true);
+    try {
+      setAvatarLocalPreview(await cropSquareAvatarFromFile(f));
+    } catch {
+      showToast(t('profile_setup.avatar_error'), 'error');
+    } finally {
+      setAvatarPicking(false);
+    }
+  };
+
+  const saveAvatar = async () => {
+    if (!avatarLocalPreview || !isConfigured || !session?.user?.id) return;
+    setAvatarSaving(true);
+    try {
+      const res = await fetch(avatarLocalPreview);
+      const blob = await res.blob();
+      const file = new File([blob], 'avatar.jpg', { type: blob.type || 'image/jpeg' });
+      const { publicUrl } = await uploadAvatarImage(session.user.id, file);
+      const err = await updateProfile({ avatar_url: publicUrl });
+      if (err) {
+        showToast(t(err.messageKey, err.vars), 'error');
+        return;
+      }
+      await refreshProfile();
+      setAvatarLocalPreview(null);
+      showToast(t('app_pages.settings_avatar_saved'), 'success');
+    } catch {
+      showToast(t('profile_setup.avatar_save_error'), 'error');
+    } finally {
+      setAvatarSaving(false);
+    }
   };
 
   return (
@@ -146,6 +200,65 @@ export default function SettingsPage() {
                 disabled={!isConfigured}
                 placeholder="Montréal, QC…"
               />
+            </div>
+          </div>
+        </section>
+
+        <section id="settings-avatar" className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <Camera className="w-5 h-5 text-violet-600" />
+            <h2 className="text-lg font-black text-gray-900">{t('app_pages.settings_avatar_title')}</h2>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">{t('app_pages.settings_avatar_hint')}</p>
+          <div className="flex flex-col sm:flex-row gap-6 items-start">
+            <div className="relative shrink-0">
+              <input
+                id={avatarInputId}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                className="sr-only"
+                disabled={!isConfigured || avatarPicking}
+                onChange={(e) => {
+                  void onAvatarFile(e.target.files);
+                  e.target.value = '';
+                }}
+              />
+              <label
+                htmlFor={avatarInputId}
+                className={`relative block h-28 w-28 rounded-full overflow-hidden border-4 border-gray-100 bg-gray-100 shadow-inner cursor-pointer ${
+                  !isConfigured ? 'opacity-50 pointer-events-none' : ''
+                }`}
+              >
+                {avatarDisplay ? (
+                  <img src={avatarDisplay} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-gray-400">
+                    <User className="w-12 h-12" />
+                  </div>
+                )}
+                {avatarPicking ? (
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 text-white animate-spin" />
+                  </div>
+                ) : null}
+              </label>
+            </div>
+            <div className="flex-1 min-w-0 space-y-3">
+              <label
+                htmlFor={avatarInputId}
+                className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-50 cursor-pointer min-h-[44px]"
+              >
+                {t('app_pages.settings_avatar_choose')}
+              </label>
+              <button
+                type="button"
+                disabled={!avatarLocalPreview || avatarSaving || !isConfigured}
+                onClick={() => void saveAvatar()}
+                className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white hover:bg-blue-700 disabled:opacity-50 min-h-[44px]"
+              >
+                {avatarSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {t('app_pages.settings_avatar_save')}
+              </button>
             </div>
           </div>
         </section>

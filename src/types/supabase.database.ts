@@ -1,6 +1,7 @@
 import type {
   ApplicationRow,
   ConversationRow,
+  HelperPortfolioItemRow,
   HelperSkillRow,
   MessageRow,
   NotificationRow,
@@ -66,6 +67,12 @@ export type Database = {
         Row: UpcomingJobRow;
         Insert: Record<string, unknown>;
         Update: Partial<UpcomingJobRow>;
+        Relationships: [];
+      };
+      helper_portfolio_items: {
+        Row: HelperPortfolioItemRow;
+        Insert: Omit<HelperPortfolioItemRow, 'id' | 'created_at'> & { id?: string; created_at?: string };
+        Update: Partial<HelperPortfolioItemRow>;
         Relationships: [];
       };
     };

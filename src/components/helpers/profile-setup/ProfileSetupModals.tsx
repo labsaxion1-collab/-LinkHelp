@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import * as Icons from 'lucide-react';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
-import type { HelperPortfolioPersist } from '@/utils/helperPortfolioState';
+import type { HelperPortfolioPersist, PortfolioMediaItem } from '@/utils/helperPortfolioState';
 import {
   buildPhotoItemFromFile,
   buildVideoItemFromFile,
@@ -9,6 +9,15 @@ import {
   portfolioPhotos,
   portfolioVideos,
 } from '@/utils/helperPortfolioState';
+import { insertHelperPortfolioItem } from '@/services/supabase/portfolioRemote';
+import { uploadPortfolioImageFile, uploadPortfolioVideoFile } from '@/lib/storageUpload';
+import {
+  assertVideoDuration,
+  captureVideoThumbnail,
+  compressImageFileToDataUrl,
+  imageToThumbDataUrl,
+  MAX_VIDEO_SEC,
+} from '@/utils/portfolioMediaProcessing';
 import { contactGuardToastKey, detectContactInText } from '@/utils/portfolioContactGuard';
 import { cropSquareAvatarFromFile } from '@/utils/portfolioMediaProcessing';
 import {
@@ -20,6 +29,14 @@ import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import type { VerificationStatus } from '@/utils/helperProfileSettings';
 
 type TFn = (key: string, options?: Record<string, string | number>) => string;
+
+function translateStorageError(e: unknown, t: TFn): string {
+  const m = e instanceof Error ? e.message : String(e);
+  if (m.includes('FILE_TOO_LARGE')) return t('profile_setup.file_too_large');
+  if (m === 'INVALID_IMAGE_TYPE' || m === 'INVALID_VIDEO_TYPE') return t('profile_setup.invalid_file_type');
+  if (m === 'NO_SUPABASE') return t('profile_setup.upload_error');
+  return t('profile_setup.upload_error');
+}
 
 function ModalChrome({
   title,
@@ -84,11 +101,11 @@ export function AvatarProfileModal({
   open: boolean;
   onClose: () => void;
   initialPreview: string | null;
-  onSave: (dataUrl: string) => void;
+  onSave: (dataUrl: string) => void | Promise<void>;
   t: TFn;
   onToast: (msg: string) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const avatarInputId = useId();
   const [preview, setPreview] = useState<string | null>(initialPreview);
   const [busy, setBusy] = useState(false);
 
@@ -117,6 +134,17 @@ export function AvatarProfileModal({
     }
   };
 
+  const save = async () => {
+    if (!preview) return;
+    setBusy(true);
+    try {
+      await onSave(preview);
+      onClose();
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <ModalChrome
       title={t('profile_setup.avatar_title')}
@@ -130,32 +158,28 @@ export function AvatarProfileModal({
           <button
             type="button"
             disabled={!preview || busy}
-            onClick={() => {
-              if (preview) onSave(preview);
-              onClose();
-            }}
+            onClick={() => void save()}
             className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black disabled:opacity-40 min-h-[44px]"
           >
-            {t('profile_setup.save')}
+            {busy ? t('profile_setup.uploading') : t('profile_setup.save')}
           </button>
         </div>
       }
     >
       <input
-        ref={inputRef}
+        id={avatarInputId}
         type="file"
-        accept="image/*"
-        className="hidden"
+        accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+        className="sr-only"
         onChange={(e) => {
           void onPick(e.target.files);
           e.target.value = '';
         }}
       />
       <div className="flex flex-col items-center gap-4">
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="relative w-32 h-32 rounded-full ring-4 ring-slate-100 overflow-hidden bg-slate-100 shadow-inner"
+        <label
+          htmlFor={avatarInputId}
+          className="relative w-32 h-32 rounded-full ring-4 ring-slate-100 overflow-hidden bg-slate-100 shadow-inner cursor-pointer block"
         >
           {preview ? (
             <img src={preview} alt="" className="w-full h-full object-cover" />
@@ -165,19 +189,18 @@ export function AvatarProfileModal({
             </div>
           )}
           {busy ? (
-            <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
               <Icons.Loader2 className="w-8 h-8 text-white animate-spin" />
             </div>
           ) : null}
-        </button>
+        </label>
         <p className="text-xs text-center text-slate-500 leading-relaxed max-w-sm">{t('profile_setup.avatar_hint')}</p>
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="text-sm font-bold text-sky-700 hover:text-sky-900"
+        <label
+          htmlFor={avatarInputId}
+          className="text-sm font-bold text-sky-700 hover:text-sky-900 cursor-pointer min-h-[44px] inline-flex items-center"
         >
           {t('profile_setup.avatar_choose')}
-        </button>
+        </label>
       </div>
     </ModalChrome>
   );
@@ -345,19 +368,25 @@ export function PortfolioUploadModal({
   onAdd,
   t,
   onToast,
+  helperUserId,
+  uploadToSupabase = false,
 }: {
   open: boolean;
   onClose: () => void;
   kind: 'photo' | 'video';
   tier: HelperSubscriptionTier;
   portfolio: HelperPortfolioPersist;
-  onAdd: (item: Awaited<ReturnType<typeof buildPhotoItemFromFile>>) => void;
+  onAdd: (item: PortfolioMediaItem) => void;
   t: TFn;
   onToast: (msg: string) => void;
+  /** When `uploadToSupabase`, portfolio row + storage use this profile id. */
+  helperUserId: string | null;
+  uploadToSupabase?: boolean;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputId = useId();
   const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
   const [skillId, setSkillId] = useState<string>('');
   const [featured, setFeatured] = useState(false);
@@ -366,7 +395,8 @@ export function PortfolioUploadModal({
   useEffect(() => {
     if (!open) {
       setFile(null);
-      setPreviewUrl(null);
+      setPhotoPreviewUrl(null);
+      setVideoPreviewUrl(null);
       setCaption('');
       setSkillId('');
       setFeatured(false);
@@ -376,11 +406,21 @@ export function PortfolioUploadModal({
 
   useEffect(() => {
     if (!file || kind !== 'photo') {
-      setPreviewUrl(null);
+      setPhotoPreviewUrl(null);
       return;
     }
     const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
+    setPhotoPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file, kind]);
+
+  useEffect(() => {
+    if (!file || kind !== 'video') {
+      setVideoPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setVideoPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file, kind]);
 
@@ -393,6 +433,11 @@ export function PortfolioUploadModal({
   const nVideos = portfolioVideos(portfolio).length;
   const atPhotoCap = kind === 'photo' && nPhotos >= maxP;
   const atVideoCap = kind === 'video' && nVideos >= maxV;
+
+  const acceptPhoto = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
+  const acceptVideo = 'video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm';
+  const accept = kind === 'photo' ? acceptPhoto : acceptVideo;
+  const pickDisabled = atPhotoCap || atVideoCap;
 
   const onFile = (files: FileList | null) => {
     const f = files?.[0];
@@ -416,30 +461,100 @@ export function PortfolioUploadModal({
       onToast(t('profile_setup.featured_cap', { count: maxF }));
       return;
     }
+    const meta = {
+      caption: caption.trim() || undefined,
+      skillId: skillId || undefined,
+      featured: featured || undefined,
+    };
+
     setBusy(true);
     try {
-      const meta = {
-        caption: caption.trim() || undefined,
-        skillId: skillId || undefined,
-        featured: featured || undefined,
-      };
-      const item =
-        kind === 'photo'
-          ? await buildPhotoItemFromFile(file, meta)
-          : await buildVideoItemFromFile(file, meta);
-      onAdd(item);
-      onClose();
+      const remote = uploadToSupabase && helperUserId;
+      if (remote) {
+        if (kind === 'photo') {
+          const { path, publicUrl } = await uploadPortfolioImageFile(helperUserId, file);
+          const full = await compressImageFileToDataUrl(file);
+          const thumb = await imageToThumbDataUrl(full);
+          const rowId = await insertHelperPortfolioItem({
+            helper_id: helperUserId,
+            type: 'image',
+            url: publicUrl,
+            storage_path: path,
+            caption: meta.caption ?? null,
+            skill_id: meta.skillId ?? null,
+            featured: Boolean(meta.featured),
+          });
+          if (!rowId) {
+            onToast(t('profile_setup.upload_error'));
+            return;
+          }
+          const item: PortfolioMediaItem = {
+            id: rowId,
+            kind: 'photo',
+            fileName: file.name,
+            caption: meta.caption,
+            skillId: meta.skillId,
+            featured: meta.featured,
+            addedAt: Date.now(),
+            thumbDataUrl: thumb,
+            publicUrl,
+            storagePath: path,
+          };
+          onAdd(item);
+        } else {
+          const durationSec = await assertVideoDuration(file, MAX_VIDEO_SEC);
+          const thumb = await captureVideoThumbnail(file);
+          const { path, publicUrl } = await uploadPortfolioVideoFile(helperUserId, file);
+          const rowId = await insertHelperPortfolioItem({
+            helper_id: helperUserId,
+            type: 'video',
+            url: publicUrl,
+            storage_path: path,
+            caption: meta.caption ?? null,
+            skill_id: meta.skillId ?? null,
+            featured: Boolean(meta.featured),
+            duration_sec: durationSec,
+          });
+          if (!rowId) {
+            onToast(t('profile_setup.upload_error'));
+            return;
+          }
+          const item: PortfolioMediaItem = {
+            id: rowId,
+            kind: 'video',
+            fileName: file.name,
+            caption: meta.caption,
+            skillId: meta.skillId,
+            featured: meta.featured,
+            addedAt: Date.now(),
+            thumbDataUrl: thumb,
+            durationSec: Math.round(durationSec * 10) / 10,
+            publicUrl,
+            storagePath: path,
+          };
+          onAdd(item);
+        }
+        onClose();
+      } else {
+        const item =
+          kind === 'photo'
+            ? await buildPhotoItemFromFile(file, meta)
+            : await buildVideoItemFromFile(file, meta);
+        onAdd(item);
+        onClose();
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : '';
       if (msg === 'VIDEO_TOO_LONG') onToast(t('profile_setup.video_too_long'));
       else if (msg === 'VIDEO_LOAD' || msg === 'INVALID_VIDEO') onToast(t('profile_setup.video_invalid'));
-      else onToast(t('profile_setup.upload_error'));
+      else onToast(translateStorageError(e, t));
     } finally {
       setBusy(false);
     }
   };
 
-  const accept = kind === 'photo' ? 'image/*' : 'video/*';
+  const dropClass =
+    'w-full min-h-[120px] rounded-xl border-2 border-dashed border-slate-200 hover:border-sky-300 hover:bg-sky-50/40 transition-colors flex flex-col items-center justify-center gap-2 mb-4 cursor-pointer';
 
   return (
     <ModalChrome
@@ -463,10 +578,11 @@ export function PortfolioUploadModal({
       }
     >
       <input
-        ref={inputRef}
+        id={fileInputId}
         type="file"
         accept={accept}
-        className="hidden"
+        className="sr-only"
+        disabled={pickDisabled}
         onChange={(e) => {
           onFile(e.target.files);
           e.target.value = '';
@@ -479,13 +595,21 @@ export function PortfolioUploadModal({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        className="w-full min-h-[120px] rounded-xl border-2 border-dashed border-slate-200 hover:border-sky-300 hover:bg-sky-50/40 transition-colors flex flex-col items-center justify-center gap-2 mb-4"
+      <label
+        htmlFor={fileInputId}
+        className={`${dropClass} ${pickDisabled ? 'pointer-events-none opacity-50' : ''}`}
       >
-        {kind === 'photo' && previewUrl ? (
-          <img src={previewUrl} alt="" className="max-h-40 rounded-lg object-contain" />
+        {kind === 'photo' && photoPreviewUrl ? (
+          <img src={photoPreviewUrl} alt="" className="max-h-40 rounded-lg object-contain pointer-events-none" />
+        ) : kind === 'video' && videoPreviewUrl ? (
+          <video
+            src={videoPreviewUrl}
+            className="max-h-40 w-full max-w-sm rounded-lg"
+            controls
+            muted
+            playsInline
+            preload="metadata"
+          />
         ) : (
           <>
             {kind === 'photo' ? <Icons.ImagePlus className="w-10 h-10 text-slate-400" /> : <Icons.Clapperboard className="w-10 h-10 text-slate-400" />}
@@ -493,7 +617,7 @@ export function PortfolioUploadModal({
             <span className="text-[11px] text-slate-500">{kind === 'video' ? t('profile_setup.video_duration_hint') : ''}</span>
           </>
         )}
-      </button>
+      </label>
 
       {file ? (
         <div className="space-y-3">

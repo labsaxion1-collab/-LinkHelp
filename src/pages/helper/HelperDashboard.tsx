@@ -4,6 +4,12 @@ import { Star, Briefcase, Clock, MapPin, Check, X, CheckCircle2, ShieldCheck, Lo
 import * as Icons from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
+import { useAuth } from '@/context/AuthContext';
+import { uploadAvatarImage, removeStorageObjects, STORAGE_BUCKETS } from '@/lib/storageUpload';
+import {
+  fetchHelperPortfolioItems,
+  deleteHelperPortfolioItemRow,
+} from '@/services/supabase/portfolioRemote';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { useAppData, type UpcomingJob } from '@/context/AppDataContext';
@@ -102,6 +108,7 @@ export default function HelperDashboard() {
 
   const { t, language } = useLanguage();
   const me = useSessionViewer();
+  const { session, profile, isConfigured, updateProfile, refreshProfile } = useAuth();
   const { switchToClient } = useAppMode();
 
   useEffect(() => {
@@ -136,6 +143,19 @@ export default function HelperDashboard() {
     saveHelperProfileSettings(profileSettings);
   }, [profileSettings]);
 
+  useEffect(() => {
+    if (!isConfigured || !profile?.id || profile.role !== 'helper') return;
+    let cancelled = false;
+    void (async () => {
+      const remote = await fetchHelperPortfolioItems(profile.id);
+      if (cancelled || remote.length === 0) return;
+      setPortfolioPersist((prev) => ({ ...prev, items: remote }));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isConfigured, profile?.id, profile?.role]);
+
   const portfolioEmpty = portfolioTotalItems(portfolioPersist) === 0;
   const completionBreakdown = React.useMemo(
     () => computeHelperProfileCompletion(portfolioPersist, profileSettings),
@@ -153,8 +173,8 @@ export default function HelperDashboard() {
     const latestPhoto = [...photos].sort((a, b) => b.addedAt - a.addedAt)[0];
     const latestVideo = [...videos].sort((a, b) => b.addedAt - a.addedAt)[0];
     return {
-      latestPhotoThumb: latestPhoto?.thumbDataUrl ?? latestPhoto?.fullImageDataUrl ?? null,
-      latestVideoThumb: latestVideo?.thumbDataUrl ?? null,
+      latestPhotoThumb: latestPhoto?.thumbDataUrl ?? latestPhoto?.fullImageDataUrl ?? latestPhoto?.publicUrl ?? null,
+      latestVideoThumb: latestVideo?.thumbDataUrl ?? latestVideo?.publicUrl ?? null,
       photoCount: photos.length,
       videoCount: videos.length,
     };
@@ -164,6 +184,57 @@ export default function HelperDashboard() {
     setToastNotification({ message, show: true });
     setTimeout(() => setToastNotification({ message: '', show: false }), 4500);
   }, []);
+
+  const handleAvatarSave = React.useCallback(
+    async (dataUrl: string) => {
+      setProfileSettings((p) => ({ ...p, avatarDataUrl: dataUrl }));
+      if (!isConfigured || !session?.user?.id) return;
+      try {
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        const file = new File([blob], 'avatar.jpg', { type: blob.type || 'image/jpeg' });
+        const { publicUrl } = await uploadAvatarImage(session.user.id, file);
+        const err = await updateProfile({ avatar_url: publicUrl });
+        if (err) {
+          pushToast(t(err.messageKey, err.vars));
+          throw err;
+        }
+        await refreshProfile();
+        setProfileSettings((p) => ({ ...p, avatarDataUrl: publicUrl }));
+        pushToast(t('profile_setup.avatar_uploaded_ok'));
+      } catch (e) {
+        const isAuthErr = Boolean(e && typeof e === 'object' && 'messageKey' in e);
+        if (!isAuthErr) pushToast(t('profile_setup.avatar_save_error'));
+        throw e;
+      }
+    },
+    [isConfigured, session?.user?.id, updateProfile, refreshProfile, pushToast, t],
+  );
+
+  const handleRemovePortfolioItem = React.useCallback(
+    async (item: PortfolioMediaItem) => {
+      if (isConfigured && item.storagePath) {
+        try {
+          const bucket =
+            item.kind === 'photo' ? STORAGE_BUCKETS.portfolioImages : STORAGE_BUCKETS.portfolioVideos;
+          await removeStorageObjects(bucket, [item.storagePath]);
+        } catch {
+          pushToast(t('profile_setup.delete_media_error'));
+          throw new Error('STORAGE');
+        }
+      }
+      const isUuid =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(item.id);
+      if (isConfigured && isUuid) {
+        const ok = await deleteHelperPortfolioItemRow(item.id);
+        if (!ok) {
+          pushToast(t('profile_setup.delete_media_error'));
+          throw new Error('ROW');
+        }
+      }
+    },
+    [isConfigured, pushToast, t],
+  );
 
   const onCompletionRowClick = React.useCallback((key: CompletionRowKey) => {
     switch (key) {
@@ -794,8 +865,8 @@ export default function HelperDashboard() {
       <AvatarProfileModal
         open={profileSetupModal === 'avatar'}
         onClose={() => setProfileSetupModal(null)}
-        initialPreview={profileSettings.avatarDataUrl}
-        onSave={(dataUrl) => setProfileSettings((p) => ({ ...p, avatarDataUrl: dataUrl }))}
+        initialPreview={profileSettings.avatarDataUrl ?? profile?.avatar_url ?? null}
+        onSave={handleAvatarSave}
         t={t}
         onToast={pushToast}
       />
@@ -813,6 +884,8 @@ export default function HelperDashboard() {
         tier={helperTier}
         portfolio={portfolioPersist}
         onAdd={handlePortfolioItemAdded}
+        helperUserId={profile?.id ?? null}
+        uploadToSupabase={Boolean(isConfigured && session && profile?.role === 'helper')}
         t={t}
         onToast={pushToast}
       />
@@ -823,6 +896,8 @@ export default function HelperDashboard() {
         tier={helperTier}
         portfolio={portfolioPersist}
         onAdd={handlePortfolioItemAdded}
+        helperUserId={profile?.id ?? null}
+        uploadToSupabase={Boolean(isConfigured && session && profile?.role === 'helper')}
         t={t}
         onToast={pushToast}
       />
@@ -1017,6 +1092,7 @@ export default function HelperDashboard() {
                   onAddVideo={() => setProfileSetupModal('portfolioVideo')}
                   t={t}
                   onToast={pushToast}
+                  onRemoveItem={handleRemovePortfolioItem}
                 />
               </div>
             </HelperSidebarDisclosure>
@@ -1340,6 +1416,7 @@ export default function HelperDashboard() {
                     onAddVideo={() => setProfileSetupModal('portfolioVideo')}
                     t={t}
                     onToast={pushToast}
+                    onRemoveItem={handleRemovePortfolioItem}
                   />
                 </div>
               </div>

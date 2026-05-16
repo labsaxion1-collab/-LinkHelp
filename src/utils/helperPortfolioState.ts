@@ -23,6 +23,10 @@ export interface PortfolioMediaItem {
   durationSec?: number;
   /** Full photo stored as data URL for demo persistence (production: blob URLs + CDN) */
   fullImageDataUrl?: string;
+  /** Supabase Storage public URL when uploaded */
+  publicUrl?: string;
+  /** Path in bucket for delete/replace */
+  storagePath?: string;
 }
 
 export interface HelperPortfolioPersist {

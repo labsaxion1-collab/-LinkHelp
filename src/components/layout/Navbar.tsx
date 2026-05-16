@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, Globe, ChevronDown, User, Settings, Briefcase, LogOut, Search } from 'lucide-react';
+import { Menu, Globe, ChevronDown, User, Settings, Briefcase, LogOut, Search, Camera } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Logo } from '@/components/ui/Logo';
 import { useLanguage } from '@/context/LanguageContext';
@@ -197,6 +197,13 @@ export default function Navbar() {
                           >
                             <Settings className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_settings')}
                           </Link>
+                          <Link
+                            to={`${ROUTES.settings}#avatar`}
+                            onClick={() => setProfileOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                          >
+                            <Camera className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_change_photo')}
+                          </Link>
                           <button
                             type="button"
                             onClick={() => {
@@ -267,6 +274,14 @@ export default function Navbar() {
                     <Link to={ROUTES.settings} onClick={() => setProfileOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50">
                       <Settings className="w-4 h-4 text-gray-400" />
                       {t('nav.profile_menu_settings')}
+                    </Link>
+                    <Link
+                      to={`${ROUTES.settings}#avatar`}
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                    >
+                      <Camera className="w-4 h-4 text-gray-400" />
+                      {t('nav.profile_menu_change_photo')}
                     </Link>
                     <button
                       type="button"

@@ -40,6 +40,8 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   refreshProfile: (userOverride?: User | null) => Promise<AuthProfile | null>;
   updateProfile: (patch: Partial<AuthProfile>) => Promise<AuthError>;
+  /** Re-read session from the client / refresh tokens — use when React state is null but storage may still hold a session. */
+  attemptSessionRecovery: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -152,7 +154,8 @@ async function ensureProfileFromUser(user: User): Promise<AuthProfile | null> {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<AuthProfile | null>(null);
-  const [authLoading, setAuthLoading] = useState(false);
+  /** True until first auth resolution for configured Supabase — avoids treating “unknown” as logged out. */
+  const [authLoading, setAuthLoading] = useState(() => isSupabaseConfigured());
   const [authBootstrapped, setAuthBootstrapped] = useState(false);
 
   const sessionRef = useRef<Session | null>(null);
@@ -173,6 +176,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setProfile(p);
     return p;
+  }, []);
+
+  const attemptSessionRecovery = useCallback(async (): Promise<boolean> => {
+    if (!isSupabaseConfigured()) return false;
+    const sb = getSupabase();
+    if (!sb) return false;
+
+    const { data: d1 } = await sb.auth.getSession();
+    if (d1.session) {
+      authFlowLog('attemptSessionRecovery: getSession found session', { userId: d1.session.user.id });
+      setSession(d1.session);
+      setAuthLoading(true);
+      const targetId = d1.session.user.id;
+      profileSyncTargetRef.current = targetId;
+      try {
+        let p = await fetchProfile(targetId);
+        if (!p && d1.session.user) p = await ensureProfileFromUser(d1.session.user);
+        setProfile(p);
+      } finally {
+        setAuthLoading(false);
+      }
+      return true;
+    }
+
+    authFlowLog('attemptSessionRecovery: calling refreshSession', {});
+    const { data: d2, error } = await sb.auth.refreshSession();
+    if (error) {
+      authFlowLog('attemptSessionRecovery: refreshSession error', { message: error.message });
+    }
+    if (d2.session) {
+      authFlowLog('attemptSessionRecovery: refreshSession restored session', { userId: d2.session.user.id });
+      setSession(d2.session);
+      setAuthLoading(true);
+      const targetId = d2.session.user.id;
+      profileSyncTargetRef.current = targetId;
+      try {
+        let p = await fetchProfile(targetId);
+        if (!p && d2.session.user) p = await ensureProfileFromUser(d2.session.user);
+        setProfile(p);
+      } finally {
+        setAuthLoading(false);
+      }
+      return true;
+    }
+    return false;
   }, []);
 
   useEffect(() => {
@@ -243,6 +291,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: next?.user?.email,
         provider: next?.user?.app_metadata?.provider,
       });
+
+      if (event === 'SIGNED_OUT') {
+        authFlowLog('onAuthStateChange: SIGNED_OUT — clearing session', {});
+        syncSession(null);
+        return;
+      }
+
+      if (!next?.user) {
+        void sb.auth.getSession().then(({ data: verify }) => {
+          if (cancelled) return;
+          if (verify.session) {
+            authFlowLog('onAuthStateChange: recovered session after null payload', {
+              event,
+              userId: verify.session.user.id,
+            });
+            syncSession(verify.session);
+          } else {
+            syncSession(null);
+          }
+        });
+        return;
+      }
+
       syncSession(next);
     });
 
@@ -275,7 +346,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (import.meta.env.DEV && data.session?.user) {
         console.log('[LinkHelp Auth] User authenticated (initial getSession)', data.session.user.id, data.session.user.email);
       }
-      syncSession(data.session ?? null);
+
+      let effectiveSession = data.session ?? null;
+      if (!effectiveSession && typeof window !== 'undefined') {
+        try {
+          const stored = window.localStorage.getItem(LINKHELP_AUTH_STORAGE_KEY);
+          if (stored && stored.length > 4 && stored !== 'null') {
+            authFlowLog('bootstrap: empty getSession but persisted key present — trying refreshSession', {
+              keyLength: stored.length,
+            });
+            const { data: refData, error: refErr } = await sb.auth.refreshSession();
+            authFlowLog('bootstrap: refreshSession after storage hint', {
+              hasSession: !!refData.session,
+              err: refErr?.message,
+            });
+            effectiveSession = refData.session ?? null;
+          }
+        } catch (e) {
+          authFlowLog('bootstrap: refreshSession threw', {
+            message: e instanceof Error ? e.message : String(e),
+          });
+        }
+      }
+
+      syncSession(effectiveSession);
       if (!cancelled) setAuthBootstrapped(true);
     })();
 
@@ -516,6 +610,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signOut,
       refreshProfile,
       updateProfile,
+      attemptSessionRecovery,
     }),
     [
       session,
@@ -528,6 +623,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signOut,
       refreshProfile,
       updateProfile,
+      attemptSessionRecovery,
     ],
   );
 

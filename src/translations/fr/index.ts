@@ -824,6 +824,8 @@ export const fr = {
     portfolio_video_title: 'Ajouter une vidéo',
     portfolio_video_sub: 'Jusqu’à 30 secondes, compressée.',
     tap_to_upload: 'Toucher pour choisir',
+    tap_to_change_file: 'Toucher pour choisir un autre fichier',
+    upload_success: 'Enregistré dans votre portfolio',
     video_duration_hint: 'Max 30 s · horizontal ou vertical',
     caption_label: 'Légende (optionnel)',
     caption_placeholder: 'Décrivez ce que le client voit…',

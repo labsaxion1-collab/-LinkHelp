@@ -143,18 +143,20 @@ export default function HelperDashboard() {
     saveHelperProfileSettings(profileSettings);
   }, [profileSettings]);
 
+  const storageUserId = session?.user?.id ?? profile?.id ?? null;
+
   useEffect(() => {
-    if (!isConfigured || !profile?.id || profile.role !== 'helper') return;
+    if (!isConfigured || !storageUserId) return;
     let cancelled = false;
     void (async () => {
-      const remote = await fetchHelperPortfolioItems(profile.id);
+      const remote = await fetchHelperPortfolioItems(storageUserId);
       if (cancelled || remote.length === 0) return;
       setPortfolioPersist((prev) => ({ ...prev, items: remote }));
     })();
     return () => {
       cancelled = true;
     };
-  }, [isConfigured, profile?.id, profile?.role]);
+  }, [isConfigured, storageUserId]);
 
   const portfolioEmpty = portfolioTotalItems(portfolioPersist) === 0;
   const completionBreakdown = React.useMemo(
@@ -884,8 +886,8 @@ export default function HelperDashboard() {
         tier={helperTier}
         portfolio={portfolioPersist}
         onAdd={handlePortfolioItemAdded}
-        helperUserId={profile?.id ?? null}
-        uploadToSupabase={Boolean(isConfigured && session && profile?.role === 'helper')}
+        helperUserId={storageUserId}
+        uploadToSupabase={Boolean(isConfigured && storageUserId)}
         t={t}
         onToast={pushToast}
       />
@@ -896,8 +898,8 @@ export default function HelperDashboard() {
         tier={helperTier}
         portfolio={portfolioPersist}
         onAdd={handlePortfolioItemAdded}
-        helperUserId={profile?.id ?? null}
-        uploadToSupabase={Boolean(isConfigured && session && profile?.role === 'helper')}
+        helperUserId={storageUserId}
+        uploadToSupabase={Boolean(isConfigured && storageUserId)}
         t={t}
         onToast={pushToast}
       />

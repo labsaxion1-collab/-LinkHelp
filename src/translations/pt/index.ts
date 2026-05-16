@@ -823,6 +823,8 @@ export const pt = {
     portfolio_video_title: 'Adicionar vídeo ao portfólio',
     portfolio_video_sub: 'Até 30 segundos, comprimido para carregar rápido.',
     tap_to_upload: 'Toque para escolher arquivo',
+    tap_to_change_file: 'Toque para escolher outro arquivo',
+    upload_success: 'Salvo no seu portfólio',
     video_duration_hint: 'Máx. 30 segundos · horizontal ou vertical',
     caption_label: 'Legenda (opcional)',
     caption_placeholder: 'Descreva o que o cliente vê…',

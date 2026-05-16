@@ -45,9 +45,9 @@ export async function insertHelperPortfolioItem(row: {
   duration_sec?: number | null;
   thumb_url?: string | null;
   title?: string | null;
-}): Promise<string | null> {
+}): Promise<string> {
   const sb = getSupabase();
-  if (!sb) return null;
+  if (!sb) throw new Error('NO_SUPABASE');
   const { data, error } = await sb
     .from('helper_portfolio_items')
     .insert({
@@ -66,9 +66,11 @@ export async function insertHelperPortfolioItem(row: {
     .single();
   if (error) {
     console.error('[LinkHelp] insertHelperPortfolioItem', error.message);
-    return null;
+    throw new Error(error.message);
   }
-  return (data as { id: string } | null)?.id ?? null;
+  const id = (data as { id: string } | null)?.id;
+  if (!id) throw new Error('INSERT_FAILED');
+  return id;
 }
 
 export async function updateHelperPortfolioItemCaption(

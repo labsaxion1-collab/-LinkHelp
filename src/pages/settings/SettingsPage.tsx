@@ -1,4 +1,5 @@
-import { useEffect, useState, useId } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { HiddenFileInput, useFileInputOpener } from '@/components/common/HiddenFileInput';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { GraduationCap, Settings, Bell, Shield, User, Loader2, Camera } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -7,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { useToast } from '@/context/ToastContext';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
-import { uploadAvatarImage } from '@/lib/storageUpload';
+import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
 import { cropSquareAvatarFromFile } from '@/utils/portfolioMediaProcessing';
 import { CityRegionAutocomplete } from '@/components/common/CityRegionAutocomplete';
 import type { QuebecPlace } from '@/data/quebecRegions';
@@ -19,7 +20,7 @@ export default function SettingsPage() {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const avatarInputId = useId();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const [avatarLocalPreview, setAvatarLocalPreview] = useState<string | null>(null);
   const [avatarPicking, setAvatarPicking] = useState(false);
@@ -59,6 +60,7 @@ export default function SettingsPage() {
   }, [location.hash, location.pathname]);
 
   const avatarDisplay = avatarLocalPreview ?? profile?.avatar_url?.trim() ?? null;
+  const openAvatarPicker = useFileInputOpener(avatarInputRef, !isConfigured || avatarPicking || avatarSaving);
 
   const saveAccount = async () => {
     if (!isConfigured || !profile) {
@@ -120,9 +122,7 @@ export default function SettingsPage() {
     if (!avatarLocalPreview || !isConfigured || !session?.user?.id) return;
     setAvatarSaving(true);
     try {
-      const res = await fetch(avatarLocalPreview);
-      const blob = await res.blob();
-      const file = new File([blob], 'avatar.jpg', { type: blob.type || 'image/jpeg' });
+      const file = await fileFromDataUrl(avatarLocalPreview, 'avatar.jpg', 'image/jpeg');
       const { publicUrl } = await uploadAvatarImage(session.user.id, file);
       const err = await updateProfile({ avatar_url: publicUrl });
       if (err) {
@@ -132,8 +132,9 @@ export default function SettingsPage() {
       await refreshProfile();
       setAvatarLocalPreview(null);
       showToast(t('app_pages.settings_avatar_saved'), 'success');
-    } catch {
-      showToast(t('profile_setup.avatar_save_error'), 'error');
+    } catch (e) {
+      const raw = formatStorageError(e);
+      showToast(raw && raw !== 'NO_SUPABASE' ? raw : t('profile_setup.avatar_save_error'), 'error');
     } finally {
       setAvatarSaving(false);
     }
@@ -212,21 +213,18 @@ export default function SettingsPage() {
           <p className="text-sm text-gray-600 mb-4">{t('app_pages.settings_avatar_hint')}</p>
           <div className="flex flex-col sm:flex-row gap-6 items-start">
             <div className="relative shrink-0">
-              <input
-                id={avatarInputId}
-                type="file"
+              <HiddenFileInput
+                ref={avatarInputRef}
                 accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-                className="sr-only"
-                disabled={!isConfigured || avatarPicking}
-                onChange={(e) => {
-                  void onAvatarFile(e.target.files);
-                  e.target.value = '';
-                }}
+                disabled={!isConfigured || avatarPicking || avatarSaving}
+                onFiles={(files) => void onAvatarFile(files)}
               />
-              <label
-                htmlFor={avatarInputId}
-                className={`relative block h-28 w-28 rounded-full overflow-hidden border-4 border-gray-100 bg-gray-100 shadow-inner cursor-pointer ${
-                  !isConfigured ? 'opacity-50 pointer-events-none' : ''
+              <button
+                type="button"
+                onClick={openAvatarPicker}
+                disabled={!isConfigured || avatarPicking || avatarSaving}
+                className={`relative block h-28 w-28 rounded-full overflow-hidden border-4 border-gray-100 bg-gray-100 shadow-inner cursor-pointer disabled:opacity-50 ${
+                  !isConfigured ? 'cursor-not-allowed' : ''
                 }`}
               >
                 {avatarDisplay ? (
@@ -241,15 +239,17 @@ export default function SettingsPage() {
                     <Loader2 className="h-8 w-8 text-white animate-spin" />
                   </div>
                 ) : null}
-              </label>
+              </button>
             </div>
             <div className="flex-1 min-w-0 space-y-3">
-              <label
-                htmlFor={avatarInputId}
-                className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-50 cursor-pointer min-h-[44px]"
+              <button
+                type="button"
+                onClick={openAvatarPicker}
+                disabled={!isConfigured || avatarPicking || avatarSaving}
+                className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-50 cursor-pointer min-h-[44px] disabled:opacity-50"
               >
                 {t('app_pages.settings_avatar_choose')}
-              </label>
+              </button>
               <button
                 type="button"
                 disabled={!avatarLocalPreview || avatarSaving || !isConfigured}

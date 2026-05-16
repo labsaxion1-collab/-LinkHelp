@@ -1,5 +1,10 @@
 -- LinkHelp — Storage buckets + helper_portfolio_items + policies
 -- Run after 0001–0005. Creates public buckets for avatars + portfolio media.
+--
+-- Apply in Supabase Dashboard → SQL → New query (paste this file), or:
+--   supabase db push
+-- Buckets created: avatars (5MB), portfolio-images (10MB), portfolio-videos (100MB), all public read.
+-- Object paths must start with auth.uid(), e.g. {userId}/avatar.jpg or {userId}/{uuid}.webp
 
 -- ---------------------------------------------------------------------------
 -- helper_portfolio_items

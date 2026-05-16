@@ -821,6 +821,8 @@ export const en = {
     portfolio_video_title: 'Add portfolio video',
     portfolio_video_sub: 'Up to 30 seconds, compressed for fast loading.',
     tap_to_upload: 'Tap to choose file',
+    tap_to_change_file: 'Tap to choose a different file',
+    upload_success: 'Saved to your portfolio',
     video_duration_hint: 'Max 30 seconds · horizontal or vertical OK',
     caption_label: 'Caption (optional)',
     caption_placeholder: 'Describe what the client sees…',

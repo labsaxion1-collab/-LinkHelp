@@ -32,6 +32,20 @@ function assertSize(file: File, max: number, label: string) {
   }
 }
 
+/** Convert a canvas/data URL to a File for Storage upload. */
+export async function fileFromDataUrl(dataUrl: string, fileName: string, mime = 'image/jpeg'): Promise<File> {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  return new File([blob], fileName, { type: blob.type || mime });
+}
+
+export function formatStorageError(error: unknown): string {
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message: string }).message);
+  }
+  return error instanceof Error ? error.message : String(error);
+}
+
 /** Upload avatar image; path `{uid}/avatar.{ext}` with upsert. */
 export async function uploadAvatarImage(userId: string, file: File): Promise<{ path: string; publicUrl: string }> {
   const sb = getSupabase();
@@ -57,11 +71,22 @@ export async function uploadPortfolioImageFile(userId: string, file: File): Prom
   if (!ext) throw new Error('INVALID_IMAGE_TYPE');
   const path = `${userId}/${crypto.randomUUID()}.${ext}`;
   const { data, error } = await sb.storage.from(STORAGE_BUCKETS.portfolioImages).upload(path, file, {
-    contentType: file.type || undefined,
+    contentType: file.type || `image/${ext === 'jpg' ? 'jpeg' : ext}`,
+    upsert: false,
   });
   if (error) throw error;
-  const { data: pub } = sb.storage.from(STORAGE_BUCKETS.portfolioImages).getPublicUrl(data.path);
-  return { path: data.path, publicUrl: pub.publicUrl };
+  const objectPath = data?.path ?? path;
+  const { data: pub } = sb.storage.from(STORAGE_BUCKETS.portfolioImages).getPublicUrl(objectPath);
+  return { path: objectPath, publicUrl: pub.publicUrl };
+}
+
+/** Upload a JPEG thumbnail (e.g. video poster) into portfolio-images. */
+export async function uploadPortfolioThumbFromDataUrl(
+  userId: string,
+  dataUrl: string,
+): Promise<{ path: string; publicUrl: string }> {
+  const file = await fileFromDataUrl(dataUrl, `thumb-${crypto.randomUUID()}.jpg`, 'image/jpeg');
+  return uploadPortfolioImageFile(userId, file);
 }
 
 export async function uploadPortfolioVideoFile(userId: string, file: File): Promise<{ path: string; publicUrl: string }> {
@@ -72,11 +97,13 @@ export async function uploadPortfolioVideoFile(userId: string, file: File): Prom
   if (!ext) throw new Error('INVALID_VIDEO_TYPE');
   const path = `${userId}/${crypto.randomUUID()}.${ext}`;
   const { data, error } = await sb.storage.from(STORAGE_BUCKETS.portfolioVideos).upload(path, file, {
-    contentType: file.type || undefined,
+    contentType: file.type || `video/${ext}`,
+    upsert: false,
   });
   if (error) throw error;
-  const { data: pub } = sb.storage.from(STORAGE_BUCKETS.portfolioVideos).getPublicUrl(data.path);
-  return { path: data.path, publicUrl: pub.publicUrl };
+  const objectPath = data?.path ?? path;
+  const { data: pub } = sb.storage.from(STORAGE_BUCKETS.portfolioVideos).getPublicUrl(objectPath);
+  return { path: objectPath, publicUrl: pub.publicUrl };
 }
 
 export async function removeStorageObjects(bucket: string, paths: string[]): Promise<void> {

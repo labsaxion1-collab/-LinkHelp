@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import * as Icons from 'lucide-react';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 export { SkillsProfileModal } from './SkillsProfileModal';
@@ -99,14 +99,12 @@ function ModalChrome({
 }
 
 export function AvatarProfileModal({
-  open,
   onClose,
   initialPreview,
   onSave,
   t,
   onToast,
 }: {
-  open: boolean;
   onClose: () => void;
   initialPreview: string | null;
   onSave: (file: File) => void | Promise<void>;
@@ -118,66 +116,65 @@ export function AvatarProfileModal({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const objectUrlRef = useRef<string | null>(null);
-  const wasOpenRef = useRef(false);
+  const selectedFileRef = useRef<File | null>(null);
 
-  const revokeObjectUrl = () => {
+  const revokeObjectUrl = useCallback(() => {
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
       objectUrlRef.current = null;
     }
     setPreviewUrl(null);
-  };
+  }, []);
+
+  useEffect(() => () => revokeObjectUrl(), [revokeObjectUrl]);
 
   useEffect(() => {
-    if (!open) {
-      wasOpenRef.current = false;
-      revokeObjectUrl();
-      setSelectedFile(null);
-      setBusy(false);
-      return;
-    }
-    if (!wasOpenRef.current) {
-      setSelectedFile(null);
-      revokeObjectUrl();
-      wasOpenRef.current = true;
-    }
-  }, [open]);
+    if (!selectedFile) return;
+    logMediaPicker('SELECTED FILE STATE UPDATED', { name: selectedFile.name, size: selectedFile.size });
+    if (previewUrl) logMediaPicker('SAVE ENABLED');
+  }, [selectedFile, previewUrl]);
 
-  useEffect(() => () => revokeObjectUrl(), []);
+  const displayPreview = previewUrl ?? initialPreview ?? null;
+  const canSave = selectedFile !== null && !busy;
 
-  if (!open) return null;
-
-  const displayPreview = previewUrl ?? initialPreview;
-
-  const onPick = (files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) return;
-    logMediaPicker('FILE SELECTED:', file);
-    const nameHit = detectContactInText(file.name);
-    if (nameHit) {
-      onToast(t(contactGuardToastKey(nameHit)));
-      return;
-    }
-    revokeObjectUrl();
-    const url = URL.createObjectURL(file);
-    objectUrlRef.current = url;
-    setPreviewUrl(url);
-    setSelectedFile(file);
-    logMediaPicker('PREVIEW CREATED:', url);
-  };
+  const onPick = useCallback(
+    (files: FileList | null) => {
+      const file = files?.[0];
+      if (!file) return;
+      logMediaPicker('FILE SELECTED', { name: file.name, type: file.type, size: file.size });
+      const nameHit = detectContactInText(file.name);
+      if (nameHit) {
+        onToast(t(contactGuardToastKey(nameHit)));
+        return;
+      }
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+      const url = URL.createObjectURL(file);
+      objectUrlRef.current = url;
+      selectedFileRef.current = file;
+      setPreviewUrl(url);
+      setSelectedFile(file);
+      logMediaPicker('PREVIEW CREATED', url);
+    },
+    [onToast, t],
+  );
 
   const save = async () => {
-    if (!selectedFile) return;
+    const file = selectedFileRef.current ?? selectedFile;
+    if (!file) return;
     logMediaPicker('SAVE CLICKED');
     setBusy(true);
     try {
-      let uploadFile: File = selectedFile;
+      let uploadFile: File = file;
       try {
-        const cropped = await cropSquareAvatarFromFile(selectedFile);
+        const cropped = await cropSquareAvatarFromFile(file);
         uploadFile = await fileFromDataUrl(cropped, 'avatar.jpg', 'image/jpeg');
       } catch {
         logMediaPicker('CROP FALLBACK — uploading original file');
       }
+      logMediaPicker('UPLOAD START');
       await onSave(uploadFile);
       logMediaPicker('UPLOAD SUCCESS');
       onClose();
@@ -200,7 +197,7 @@ export function AvatarProfileModal({
           </button>
           <button
             type="button"
-            disabled={!selectedFile || busy}
+            disabled={!canSave}
             onClick={() => void save()}
             className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black disabled:opacity-40 min-h-[44px]"
           >
@@ -254,7 +251,6 @@ export function AvatarProfileModal({
 
 
 export function PortfolioUploadModal({
-  open,
   onClose,
   kind,
   tier,
@@ -265,7 +261,6 @@ export function PortfolioUploadModal({
   helperUserId,
   uploadToSupabase = false,
 }: {
-  open: boolean;
   onClose: () => void;
   kind: 'photo' | 'video';
   tier: HelperSubscriptionTier;
@@ -284,46 +279,49 @@ export function PortfolioUploadModal({
   const [skillId, setSkillId] = useState<string>('');
   const [featured, setFeatured] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [videoValid, setVideoValid] = useState(kind !== 'video');
   const previewObjectUrlRef = useRef<string | null>(null);
+  const fileRef = useRef<File | null>(null);
 
-  const revokePreviewObjectUrl = () => {
+  const revokePreviewObjectUrl = useCallback(() => {
     if (previewObjectUrlRef.current) {
       URL.revokeObjectURL(previewObjectUrlRef.current);
       previewObjectUrlRef.current = null;
     }
     setPhotoPreviewUrl(null);
     setVideoPreviewUrl(null);
-  };
+  }, []);
 
-  const applyPickedFile = (f: File) => {
-    revokePreviewObjectUrl();
-    const url = URL.createObjectURL(f);
-    previewObjectUrlRef.current = url;
-    setFile(f);
-    if (kind === 'photo') {
-      setPhotoPreviewUrl(url);
-      setVideoPreviewUrl(null);
-    } else {
-      setVideoPreviewUrl(url);
-      setPhotoPreviewUrl(null);
-    }
-    logMediaPicker('PREVIEW CREATED:', { kind, url, name: f.name });
-  };
+  const applyPickedFile = useCallback(
+    (f: File) => {
+      if (previewObjectUrlRef.current) {
+        URL.revokeObjectURL(previewObjectUrlRef.current);
+        previewObjectUrlRef.current = null;
+      }
+      const url = URL.createObjectURL(f);
+      previewObjectUrlRef.current = url;
+      fileRef.current = f;
+      setFile(f);
+      if (kind === 'photo') {
+        setPhotoPreviewUrl(url);
+        setVideoPreviewUrl(null);
+        setVideoValid(true);
+      } else {
+        setVideoPreviewUrl(url);
+        setPhotoPreviewUrl(null);
+      }
+      logMediaPicker('PREVIEW CREATED', { kind, url, name: f.name });
+    },
+    [kind],
+  );
+
+  useEffect(() => () => revokePreviewObjectUrl(), [revokePreviewObjectUrl]);
 
   useEffect(() => {
-    if (!open) {
-      setFile(null);
-      revokePreviewObjectUrl();
-      setCaption('');
-      setSkillId('');
-      setFeatured(false);
-      setBusy(false);
-    }
-  }, [open]);
-
-  useEffect(() => () => revokePreviewObjectUrl(), []);
-
-  if (!open) return null;
+    if (!file) return;
+    logMediaPicker('SELECTED FILE STATE UPDATED', { kind, name: file.name, size: file.size });
+    if (kind === 'photo' || videoValid) logMediaPicker('SAVE ENABLED');
+  }, [file, kind, videoValid]);
 
   const maxP = portfolioMaxPhotos(tier);
   const maxV = portfolioMaxVideos(tier);
@@ -341,20 +339,29 @@ export function PortfolioUploadModal({
   const onFile = (files: FileList | null) => {
     const f = files?.[0];
     if (!f) return;
-    logMediaPicker('FILE SELECTED:', f);
+    logMediaPicker('FILE SELECTED', { kind, name: f.name, type: f.type, size: f.size });
     const rn = detectContactInText(f.name);
     if (rn) {
       onToast(t(contactGuardToastKey(rn)));
       return;
     }
     if (kind === 'video') {
+      applyPickedFile(f);
+      setVideoValid(false);
       setBusy(true);
       void assertVideoDuration(f, MAX_VIDEO_SEC)
-        .then(() => applyPickedFile(f))
+        .then(() => {
+          setVideoValid(true);
+          logMediaPicker('SAVE ENABLED');
+        })
         .catch((e: unknown) => {
           const msg = e instanceof Error ? e.message : '';
           if (msg === 'VIDEO_TOO_LONG') onToast(t('profile_setup.video_too_long'));
           else onToast(t('profile_setup.video_invalid'));
+          revokePreviewObjectUrl();
+          fileRef.current = null;
+          setFile(null);
+          setVideoValid(false);
         })
         .finally(() => setBusy(false));
       return;
@@ -362,9 +369,13 @@ export function PortfolioUploadModal({
     applyPickedFile(f);
   };
 
+  const canAdd = file !== null && (kind === 'photo' || videoValid) && !busy && !atPhotoCap && !atVideoCap;
+
   const submit = async () => {
-    if (!file || atPhotoCap || atVideoCap) return;
-    logMediaPicker('SAVE CLICKED', { kind, name: file.name });
+    const uploadFile = fileRef.current ?? file;
+    if (!uploadFile || atPhotoCap || atVideoCap) return;
+    if (kind === 'video' && !videoValid) return;
+    logMediaPicker('SAVE CLICKED', { kind, name: uploadFile.name });
     const capHit = detectContactInText(caption);
     if (capHit) {
       onToast(t(contactGuardToastKey(capHit)));
@@ -383,10 +394,11 @@ export function PortfolioUploadModal({
     setBusy(true);
     try {
       const remote = uploadToSupabase && helperUserId;
+      logMediaPicker('UPLOAD START', { kind, remote: Boolean(remote) });
       if (remote) {
         if (kind === 'photo') {
-          const { path, publicUrl } = await uploadPortfolioImageFile(helperUserId, file);
-          const full = await compressImageFileToDataUrl(file);
+          const { path, publicUrl } = await uploadPortfolioImageFile(helperUserId, uploadFile);
+          const full = await compressImageFileToDataUrl(uploadFile);
           const thumb = await imageToThumbDataUrl(full);
           const rowId = await insertHelperPortfolioItem({
             helper_id: helperUserId,
@@ -411,10 +423,11 @@ export function PortfolioUploadModal({
             storagePath: path,
           };
           onAdd(item);
+          logMediaPicker('PORTFOLIO ITEM CREATED', { id: rowId, kind: 'photo' });
         } else {
-          const durationSec = await assertVideoDuration(file, MAX_VIDEO_SEC);
-          const thumbDataUrl = await captureVideoThumbnail(file);
-          const { path, publicUrl } = await uploadPortfolioVideoFile(helperUserId, file);
+          const durationSec = await assertVideoDuration(uploadFile, MAX_VIDEO_SEC);
+          const thumbDataUrl = await captureVideoThumbnail(uploadFile);
+          const { path, publicUrl } = await uploadPortfolioVideoFile(helperUserId, uploadFile);
           const { publicUrl: thumbPublicUrl } = await uploadPortfolioThumbFromDataUrl(helperUserId, thumbDataUrl);
           const rowId = await insertHelperPortfolioItem({
             helper_id: helperUserId,
@@ -430,7 +443,7 @@ export function PortfolioUploadModal({
           const item: PortfolioMediaItem = {
             id: rowId,
             kind: 'video',
-            fileName: file.name,
+            fileName: uploadFile.name,
             caption: meta.caption,
             skillId: meta.skillId,
             featured: meta.featured,
@@ -441,6 +454,7 @@ export function PortfolioUploadModal({
             storagePath: path,
           };
           onAdd(item);
+          logMediaPicker('PORTFOLIO ITEM CREATED', { id: rowId, kind: 'video' });
         }
         logMediaPicker('UPLOAD SUCCESS');
         onToast(t('profile_setup.upload_success'));
@@ -448,9 +462,10 @@ export function PortfolioUploadModal({
       } else {
         const item =
           kind === 'photo'
-            ? await buildPhotoItemFromFile(file, meta)
-            : await buildVideoItemFromFile(file, meta);
+            ? await buildPhotoItemFromFile(uploadFile, meta)
+            : await buildVideoItemFromFile(uploadFile, meta);
         onAdd(item);
+        logMediaPicker('PORTFOLIO ITEM CREATED', { id: item.id, kind: item.kind });
         onClose();
       }
     } catch (e: unknown) {
@@ -478,7 +493,7 @@ export function PortfolioUploadModal({
           </button>
           <button
             type="button"
-            disabled={!file || busy || atPhotoCap || atVideoCap}
+            disabled={!canAdd}
             onClick={() => void submit()}
             className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black disabled:opacity-40 min-h-[44px] order-1 sm:order-2"
           >

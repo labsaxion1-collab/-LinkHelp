@@ -114,16 +114,22 @@ export default function SettingsPage() {
     navigate(ROUTES.home, { replace: true });
   };
 
+  useEffect(() => {
+    if (!avatarSelectedFile) return;
+    logMediaPicker('SELECTED FILE STATE UPDATED', { name: avatarSelectedFile.name, size: avatarSelectedFile.size });
+    if (avatarPreviewUrl) logMediaPicker('SAVE ENABLED');
+  }, [avatarSelectedFile, avatarPreviewUrl]);
+
   const onAvatarFile = (files: FileList | null) => {
     const f = files?.[0];
     if (!f) return;
-    logMediaPicker('FILE SELECTED:', f);
+    logMediaPicker('FILE SELECTED', { name: f.name, type: f.type, size: f.size });
     revokeAvatarObjectUrl();
     const url = URL.createObjectURL(f);
     avatarObjectUrlRef.current = url;
     setAvatarPreviewUrl(url);
     setAvatarSelectedFile(f);
-    logMediaPicker('PREVIEW CREATED:', url);
+    logMediaPicker('PREVIEW CREATED', url);
   };
 
   const saveAvatar = async () => {
@@ -138,15 +144,16 @@ export default function SettingsPage() {
       } catch {
         logMediaPicker('CROP FALLBACK — uploading original file');
       }
+      logMediaPicker('UPLOAD START');
       const { publicUrl } = await uploadAvatarImage(session.user.id, uploadFile);
-      logMediaPicker('UPLOAD SUCCESS:', publicUrl);
+      logMediaPicker('UPLOAD SUCCESS', publicUrl);
       const err = await updateProfile({ avatar_url: publicUrl });
       if (err) {
         showToast(t(err.messageKey, err.vars), 'error');
         return;
       }
       await refreshProfile();
-      logMediaPicker('PROFILE UPDATED:', publicUrl);
+      logMediaPicker('PROFILE UPDATED', publicUrl);
       revokeAvatarObjectUrl();
       setAvatarSelectedFile(null);
       showToast(t('app_pages.settings_avatar_saved'), 'success');

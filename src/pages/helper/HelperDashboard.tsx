@@ -6,6 +6,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useAuth } from '@/context/AuthContext';
 import { uploadAvatarImage, removeStorageObjects, STORAGE_BUCKETS } from '@/lib/storageUpload';
+import { logMediaPicker } from '@/utils/mediaPickerDebug';
 import {
   fetchHelperPortfolioItems,
   deleteHelperPortfolioItemRow,
@@ -229,6 +230,7 @@ export default function HelperDashboard() {
       }
       try {
         const { publicUrl } = await uploadAvatarImage(session.user.id, file);
+        logMediaPicker('UPLOAD SUCCESS', publicUrl);
         const err = await updateProfile({ avatar_url: publicUrl });
         if (err) {
           pushToast(t(err.messageKey, err.vars));
@@ -236,7 +238,7 @@ export default function HelperDashboard() {
         }
         await refreshProfile();
         setProfileSettings((p) => ({ ...p, avatarDataUrl: publicUrl }));
-        if (import.meta.env.DEV) console.log('PROFILE UPDATED:', publicUrl);
+        logMediaPicker('PROFILE UPDATED', publicUrl);
         pushToast(t('profile_setup.avatar_uploaded_ok'));
       } catch (e) {
         const isAuthErr = Boolean(e && typeof e === 'object' && 'messageKey' in e);
@@ -898,14 +900,15 @@ export default function HelperDashboard() {
         onCompleted={completePortfolioGuide}
       />
 
-      <AvatarProfileModal
-        open={profileSetupModal === 'avatar'}
-        onClose={() => setProfileSetupModal(null)}
-        initialPreview={profileSettings.avatarDataUrl ?? profile?.avatar_url ?? null}
-        onSave={handleAvatarSave}
-        t={t}
-        onToast={pushToast}
-      />
+      {profileSetupModal === 'avatar' ? (
+        <AvatarProfileModal
+          onClose={() => setProfileSetupModal(null)}
+          initialPreview={profileSettings.avatarDataUrl ?? profile?.avatar_url ?? null}
+          onSave={handleAvatarSave}
+          t={t}
+          onToast={pushToast}
+        />
+      ) : null}
       <SkillsProfileModal
         open={profileSetupModal === 'skills'}
         onClose={() => setProfileSetupModal(null)}
@@ -914,30 +917,32 @@ export default function HelperDashboard() {
         onSaveAsync={handleSkillsSave}
         t={t}
       />
-      <PortfolioUploadModal
-        open={profileSetupModal === 'portfolioPhoto'}
-        onClose={() => setProfileSetupModal(null)}
-        kind="photo"
-        tier={helperTier}
-        portfolio={portfolioPersist}
-        onAdd={handlePortfolioItemAdded}
-        helperUserId={storageUserId}
-        uploadToSupabase={Boolean(isConfigured && storageUserId)}
-        t={t}
-        onToast={pushToast}
-      />
-      <PortfolioUploadModal
-        open={profileSetupModal === 'portfolioVideo'}
-        onClose={() => setProfileSetupModal(null)}
-        kind="video"
-        tier={helperTier}
-        portfolio={portfolioPersist}
-        onAdd={handlePortfolioItemAdded}
-        helperUserId={storageUserId}
-        uploadToSupabase={Boolean(isConfigured && storageUserId)}
-        t={t}
-        onToast={pushToast}
-      />
+      {profileSetupModal === 'portfolioPhoto' ? (
+        <PortfolioUploadModal
+          onClose={() => setProfileSetupModal(null)}
+          kind="photo"
+          tier={helperTier}
+          portfolio={portfolioPersist}
+          onAdd={handlePortfolioItemAdded}
+          helperUserId={storageUserId}
+          uploadToSupabase={Boolean(isConfigured && storageUserId)}
+          t={t}
+          onToast={pushToast}
+        />
+      ) : null}
+      {profileSetupModal === 'portfolioVideo' ? (
+        <PortfolioUploadModal
+          onClose={() => setProfileSetupModal(null)}
+          kind="video"
+          tier={helperTier}
+          portfolio={portfolioPersist}
+          onAdd={handlePortfolioItemAdded}
+          helperUserId={storageUserId}
+          uploadToSupabase={Boolean(isConfigured && storageUserId)}
+          t={t}
+          onToast={pushToast}
+        />
+      ) : null}
       <ReviewsExplainerModal
         open={profileSetupModal === 'reviews'}
         onClose={() => setProfileSetupModal(null)}

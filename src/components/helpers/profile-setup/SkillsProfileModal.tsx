@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as Icons from 'lucide-react';
 import {
   getPrimaryCategories,
@@ -20,6 +20,7 @@ function ModalChrome({
   footer,
   betweenScrollAndFooter,
   onClose,
+  closeOnBackdrop = true,
 }: {
   title: string;
   subtitle?: string;
@@ -27,11 +28,12 @@ function ModalChrome({
   footer?: React.ReactNode;
   betweenScrollAndFooter?: React.ReactNode;
   onClose: () => void;
+  closeOnBackdrop?: boolean;
 }) {
   return (
     <div
       className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm animate-in fade-in duration-200"
-      onClick={onClose}
+      onClick={closeOnBackdrop ? onClose : undefined}
       role="presentation"
     >
       <div
@@ -84,14 +86,21 @@ export function SkillsProfileModal({
   const [activePrimary, setActivePrimary] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(() => new Set(skillIds.filter(isValidSkillKey)));
   const [saving, setSaving] = useState(false);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
-    setSelected(new Set(skillIds.filter(isValidSkillKey)));
-    setStep('primary');
-    setActivePrimary(null);
-    setQ('');
-    setSaving(false);
+    if (!open) {
+      wasOpenRef.current = false;
+      return;
+    }
+    if (!wasOpenRef.current) {
+      setSelected(new Set(skillIds.filter(isValidSkillKey)));
+      setStep('primary');
+      setActivePrimary(null);
+      setQ('');
+      setSaving(false);
+      wasOpenRef.current = true;
+    }
   }, [open, skillIds]);
 
   const groupedSelected = useMemo(
@@ -226,14 +235,15 @@ export function SkillsProfileModal({
       title={t('profile_setup.skills_title')}
       subtitle={t('profile_setup.skills_sub')}
       onClose={onClose}
+      closeOnBackdrop={false}
       betweenScrollAndFooter={selectedStrip}
       footer={
-        <div className="flex justify-end gap-2 flex-wrap">
+        <div className="flex flex-col sm:flex-row justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="px-4 py-2.5 text-slate-600 font-bold text-sm min-h-[44px] disabled:opacity-50"
+            className="px-4 py-2.5 text-slate-600 font-bold text-sm min-h-[44px] disabled:opacity-50 order-2 sm:order-1"
           >
             {t('common.cancel')}
           </button>
@@ -241,10 +251,10 @@ export function SkillsProfileModal({
             type="button"
             disabled={saving}
             onClick={() => void handleSave()}
-            className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black min-h-[44px] disabled:opacity-50 inline-flex items-center gap-2"
+            className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black min-h-[44px] disabled:opacity-50 inline-flex items-center justify-center gap-2 order-1 sm:order-2"
           >
             {saving ? <Icons.Loader2 className="w-4 h-4 animate-spin" /> : null}
-            {saving ? t('profile_setup.uploading') : t('profile_setup.save')}
+            {saving ? t('profile_setup.uploading') : t('profile_setup.skills_save_all')}
           </button>
         </div>
       }
@@ -256,7 +266,7 @@ export function SkillsProfileModal({
           className="mb-4 inline-flex items-center gap-1.5 text-sm font-bold text-sky-700 hover:text-sky-900 min-h-[44px]"
         >
           <Icons.ChevronLeft className="w-4 h-4" />
-          {t('profile_setup.skills_back_categories')}
+          {t('profile_setup.skills_back_to_categories')}
         </button>
       ) : null}
 
@@ -303,30 +313,43 @@ export function SkillsProfileModal({
           })}
         </div>
       ) : (
-        <div className="flex flex-wrap gap-2">
-          {filteredSubs.map((sub) => {
-            const key = skillKey(activePrimary!, sub);
-            const on = selected.has(key);
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => toggleSub(key)}
-                className={`px-3 py-2.5 rounded-xl text-xs font-bold border min-h-[44px] transition-all active:scale-[0.97] ${
-                  on
-                    ? 'border-sky-500 bg-sky-50 text-sky-900 shadow-sm ring-1 ring-sky-500/20'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50/80'
-                }`}
-              >
-                {on ? <Icons.Check className="inline w-3.5 h-3.5 mr-1 -mt-0.5" /> : null}
-                {t(skillSubLabelKey(activePrimary!, sub))}
-              </button>
-            );
-          })}
-        </div>
+        <>
+          <div className="flex flex-wrap gap-2">
+            {filteredSubs.map((sub) => {
+              const key = skillKey(activePrimary!, sub);
+              const on = selected.has(key);
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleSub(key)}
+                  className={`px-3 py-2.5 rounded-xl text-xs font-bold border min-h-[44px] transition-all active:scale-[0.97] ${
+                    on
+                      ? 'border-sky-500 bg-sky-50 text-sky-900 shadow-sm ring-1 ring-sky-500/20'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50/80'
+                  }`}
+                >
+                  {on ? <Icons.Check className="inline w-3.5 h-3.5 mr-1 -mt-0.5" /> : null}
+                  {t(skillSubLabelKey(activePrimary!, sub))}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={backToPrimaries}
+            className="mt-4 w-full min-h-[48px] rounded-xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-800 hover:border-sky-300 hover:bg-sky-50/50 transition-colors inline-flex items-center justify-center gap-2"
+          >
+            <Icons.ChevronLeft className="w-4 h-4 shrink-0" />
+            {t('profile_setup.skills_back_to_categories')}
+          </button>
+          <p className="text-[11px] text-slate-500 mt-3 leading-relaxed text-center">{t('profile_setup.skills_sub_continue_hint')}</p>
+        </>
       )}
 
-      <p className="text-[11px] text-slate-400 mt-4 leading-relaxed">{t('profile_setup.skills_footer')}</p>
+      {step === 'primary' ? (
+        <p className="text-[11px] text-slate-400 mt-4 leading-relaxed">{t('profile_setup.skills_footer')}</p>
+      ) : null}
     </ModalChrome>
   );
 }

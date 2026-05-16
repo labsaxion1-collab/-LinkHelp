@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, ArrowLeft, Globe, Briefcase, Search, CheckCircle2 } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
@@ -16,7 +16,8 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
   const { showToast } = useToast();
-  const { signUpWithEmail, signInWithGoogle, isConfigured } = useAuth();
+  const { signUpWithEmail, signInWithGoogle, isConfigured, session, profile, authBootstrapped, authLoading, refreshProfile } =
+    useAuth();
   const [userMode, setUserMode] = useState<'client' | 'helper' | null>(null);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -31,6 +32,17 @@ export default function RegisterPage() {
   const [helperModalOpen, setHelperModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isConfigured || !authBootstrapped || authLoading) return;
+    if (!session?.user) return;
+    if (!profile) {
+      void refreshProfile(session.user);
+      return;
+    }
+    const dest = profile.role === 'helper' ? ROUTES.helperHome : ROUTES.clientHome;
+    navigate(dest, { replace: true });
+  }, [isConfigured, authBootstrapped, authLoading, session, profile, navigate, refreshProfile]);
 
   const selectClientMode = () => {
     setUserMode('client');

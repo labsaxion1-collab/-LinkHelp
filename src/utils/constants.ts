@@ -5,6 +5,11 @@ export const ROUTES = {
   signup: '/auth/register',
   /** OAuth redirect target — must be allowed in Supabase Auth → URL Configuration */
   authCallback: '/auth/callback',
+  /** Shortcuts into the app (redirect to nested dashboard routes in AppRoutes) */
+  clientHome: '/client',
+  helperHome: '/helper',
+  /** Post-OAuth / fallback entry: redirects by role (session-only; works before profile is hydrated elsewhere) */
+  dashboard: '/dashboard',
   clientDashboard: '/client/dashboard',
   clientJobs: '/client/jobs',
   helperDashboard: '/helper/dashboard',

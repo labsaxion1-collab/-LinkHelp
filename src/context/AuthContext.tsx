@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { getSupabase, isSupabaseConfigured, resetSupabaseBrowserClient } from '@/lib/supabase';
-import { authDevLog } from '@/lib/authDebug';
+import { authDevLog, authFlowLog } from '@/lib/authDebug';
 import type { Database } from '@/types/supabase.database';
 import type { ProfileRow, UserType } from '@/types/database';
 import type { AuthFlowError } from '@/types/authFlowError';
@@ -66,7 +66,13 @@ async function fetchProfile(userId: string): Promise<AuthProfile | null> {
 function buildProfileInsert(user: User): ProfileInsert {
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
   const str = (k: string) => (typeof meta[k] === 'string' ? (meta[k] as string).trim() : '');
-  const nameRaw = str('full_name') || str('name') || user.email?.split('@')[0] || '';
+  const nameFromParts = [str('given_name'), str('family_name')].filter(Boolean).join(' ').trim();
+  const nameRaw =
+    str('full_name') ||
+    str('name') ||
+    nameFromParts ||
+    user.email?.split('@')[0] ||
+    '';
   const name = nameRaw ? nameRaw : null;
   const rawRole = str('user_type');
   const role: 'client' | 'helper' = rawRole === 'helper' ? 'helper' : 'client';
@@ -216,30 +222,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }, 0);
     };
 
-    void sb.auth
-      .getSession()
-      .then(({ data, error }) => {
-        authDevLog('getSession:initial', {
-          errorMessage: error?.message,
-          errorName: error?.name,
-          hasSession: !!data.session,
-          userId: data.session?.user?.id,
-          email: data.session?.user?.email,
-          provider: data.session?.user?.app_metadata?.provider,
-          providers: data.session?.user?.app_metadata?.providers,
-        });
-        if (import.meta.env.DEV && data.session?.user) {
-          console.log('[LinkHelp Auth] User authenticated (initial getSession)', data.session.user.id, data.session.user.email);
-        }
-        syncSession(data.session ?? null);
-      })
-      .finally(() => {
-        if (!cancelled) setAuthBootstrapped(true);
-      });
-
     const {
       data: { subscription },
     } = sb.auth.onAuthStateChange((event, next) => {
+      if (event === 'SIGNED_IN') {
+        authFlowLog('User authenticated (SIGNED_IN)', {
+          userId: next?.user?.id,
+          email: next?.user?.email ?? undefined,
+        });
+      }
       if (import.meta.env.DEV) {
         console.log('[LinkHelp Auth] state changed', event, {
           userId: next?.user?.id,
@@ -255,6 +246,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       syncSession(next);
     });
+
+    void (async () => {
+      try {
+        await sb.auth.initialize();
+      } catch (e) {
+        authFlowLog('auth.initialize warning', {
+          message: e instanceof Error ? e.message : String(e),
+        });
+      }
+      if (cancelled) return;
+
+      const { data, error } = await sb.auth.getSession();
+      authFlowLog('getSession:initial', {
+        hasSession: !!data.session,
+        userId: data.session?.user?.id,
+        email: data.session?.user?.email ?? undefined,
+        error: error?.message,
+      });
+      authDevLog('getSession:initial', {
+        errorMessage: error?.message,
+        errorName: error?.name,
+        hasSession: !!data.session,
+        userId: data.session?.user?.id,
+        email: data.session?.user?.email,
+        provider: data.session?.user?.app_metadata?.provider,
+        providers: data.session?.user?.app_metadata?.providers,
+      });
+      if (import.meta.env.DEV && data.session?.user) {
+        console.log('[LinkHelp Auth] User authenticated (initial getSession)', data.session.user.id, data.session.user.email);
+      }
+      syncSession(data.session ?? null);
+      if (!cancelled) setAuthBootstrapped(true);
+    })();
 
     return () => {
       cancelled = true;
@@ -359,6 +383,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { code: 'unavailable', messageKey: 'auth.errors.env_not_ready' };
     }
     const redirectTo = getOAuthRedirectToUrl();
+    authFlowLog('OAuth redirectTo', {
+      redirectTo,
+      origin: typeof window !== 'undefined' ? window.location.origin : '',
+    });
     if (import.meta.env.DEV) {
       console.log('OAuth redirectTo', redirectTo);
       console.log('Current origin', window.location.origin);

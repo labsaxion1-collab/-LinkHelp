@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, ArrowLeft } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
@@ -13,7 +13,8 @@ export default function LoginPage() {
   const location = useLocation();
   const { t } = useLanguage();
   const { showToast } = useToast();
-  const { signInWithEmail, signInWithGoogle, isConfigured } = useAuth();
+  const { signInWithEmail, signInWithGoogle, isConfigured, session, profile, authBootstrapped, authLoading, refreshProfile } =
+    useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -26,8 +27,23 @@ export default function LoginPage() {
       navigate(from, { replace: true });
       return;
     }
-    navigate(ROUTES.clientDashboard, { replace: true });
+    navigate(ROUTES.clientHome, { replace: true });
   };
+
+  useEffect(() => {
+    if (!isConfigured || !authBootstrapped || authLoading) return;
+    if (!session?.user) return;
+    if (!profile) {
+      void refreshProfile(session.user);
+      return;
+    }
+    if (from && from !== ROUTES.login && from.startsWith('/') && !from.startsWith('//')) {
+      navigate(from, { replace: true });
+      return;
+    }
+    const dest = profile.role === 'helper' ? ROUTES.helperHome : ROUTES.clientHome;
+    navigate(dest, { replace: true });
+  }, [isConfigured, authBootstrapped, authLoading, session, profile, from, navigate, refreshProfile]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

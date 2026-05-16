@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { PageLoader } from '@/components/common/PageLoader';
 import { useAuth } from '@/context/AuthContext';
@@ -7,6 +8,18 @@ import { ROUTES } from '@/utils/constants';
 export function ProtectedRoute() {
   const { session, profile, authLoading, authBootstrapped, isConfigured, refreshProfile } = useAuth();
   const location = useLocation();
+  const profileKick = useRef(0);
+
+  useEffect(() => {
+    if (!session?.user) profileKick.current = 0;
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    if (!authBootstrapped || authLoading || !session?.user || profile) return;
+    if (profileKick.current >= 4) return;
+    profileKick.current += 1;
+    void refreshProfile(session.user);
+  }, [authBootstrapped, authLoading, session, profile, refreshProfile]);
 
   if (!isConfigured) {
     return <Navigate to={ROUTES.home} replace state={{ needSupabase: true }} />;

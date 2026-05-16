@@ -8,6 +8,7 @@ const LandingPage = lazy(() => import('@/pages/LandingPage'));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'));
 const AuthCallbackPage = lazy(() => import('@/pages/auth/AuthCallbackPage'));
+const DashboardEntryPage = lazy(() => import('@/pages/app/DashboardEntryPage'));
 const ClientDashboard = lazy(() => import('@/pages/client/ClientDashboard'));
 const HelperDashboard = lazy(() => import('@/pages/helper/HelperDashboard'));
 const HelperUpcomingJobsPage = lazy(() => import('@/pages/helper/HelperUpcomingJobsPage'));
@@ -30,6 +31,7 @@ export function AppRoutes() {
         <Route path={ROUTES.login} element={<LoginPage />} />
         <Route path={ROUTES.signup} element={<RegisterPage />} />
         <Route path={ROUTES.authCallback} element={<AuthCallbackPage />} />
+        <Route path={ROUTES.dashboard} element={<DashboardEntryPage />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path="/client" element={<Navigate to={ROUTES.clientDashboard} replace />} />

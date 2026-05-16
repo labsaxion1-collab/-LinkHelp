@@ -5,6 +5,18 @@ import { authDevLog } from '@/lib/authDebug';
 let browserClient: SupabaseClient<Database> | null = null;
 let envLogged = false;
 
+/**
+ * Single stable auth namespace for localStorage (session + PKCE `code_verifier`).
+ * Must match every call to `getSupabase()` — do not create other Supabase clients in the browser.
+ */
+export const LINKHELP_AUTH_STORAGE_KEY = 'linkhelp-auth';
+
+function getAuthFlowType(): 'pkce' | 'implicit' {
+  const v = trimStr(import.meta.env.VITE_SUPABASE_AUTH_FLOW).toLowerCase();
+  if (v === 'implicit') return 'implicit';
+  return 'pkce';
+}
+
 function trimStr(v: unknown): string {
   return typeof v === 'string' ? v.trim() : '';
 }
@@ -96,12 +108,14 @@ export function getSupabase(): SupabaseClient<Database> | null {
 
   browserClient = createClient<Database>(env.url, env.anonKey, {
     auth: {
-      /** PKCE + persisted browser session — required for Google OAuth on Vercel */
+      /** One namespace for session + PKCE verifier (`${storageKey}-code-verifier`) site-wide */
+      storageKey: LINKHELP_AUTH_STORAGE_KEY,
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-      flowType: 'pkce',
+      /** PKCE (default). Set `VITE_SUPABASE_AUTH_FLOW=implicit` if PKCE storage cannot be stabilized (tokens in URL hash). */
+      flowType: getAuthFlowType(),
     },
   });
   return browserClient;

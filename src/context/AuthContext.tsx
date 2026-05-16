@@ -1,11 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { getSupabase, isSupabaseConfigured, resetSupabaseBrowserClient } from '@/lib/supabase';
+import { getSupabase, isSupabaseConfigured, resetSupabaseBrowserClient, LINKHELP_AUTH_STORAGE_KEY } from '@/lib/supabase';
 import { authDevLog, authFlowLog } from '@/lib/authDebug';
 import type { Database } from '@/types/supabase.database';
 import type { ProfileRow, UserType } from '@/types/database';
 import type { AuthFlowError } from '@/types/authFlowError';
-import { getOAuthRedirectToUrl } from '@/utils/oauthRedirect';
 import { mapProfileWriteError, mapSupabaseAuthError } from '@/services/authErrorMap';
 
 export type AuthProfile = ProfileRow;
@@ -382,10 +381,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authDevLog('signInWithOAuth:aborted', { reason: 'supabase_client_null' });
       return { code: 'unavailable', messageKey: 'auth.errors.env_not_ready' };
     }
-    const redirectTo = getOAuthRedirectToUrl();
+    const redirectTo = `${window.location.origin}/auth/callback`;
     authFlowLog('OAuth redirectTo', {
       redirectTo,
       origin: typeof window !== 'undefined' ? window.location.origin : '',
+      storageKey: LINKHELP_AUTH_STORAGE_KEY,
     });
     if (import.meta.env.DEV) {
       console.log('OAuth redirectTo', redirectTo);
@@ -427,7 +427,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthLoading(false);
     if (typeof window !== 'undefined') {
       for (const k of Object.keys(localStorage)) {
-        if (k.startsWith('sb-') && k.includes('-auth-token')) {
+        if (k.startsWith(LINKHELP_AUTH_STORAGE_KEY) || (k.startsWith('sb-') && k.includes('-auth-token'))) {
           try {
             localStorage.removeItem(k);
           } catch {

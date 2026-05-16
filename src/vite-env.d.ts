@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_REQUIRE_AUTH?: string;
   /** Production site origin (no trailing slash). Used for OAuth `redirectTo` when not in dev. */
   readonly VITE_SITE_URL?: string;
+  /** Set to `implicit` to use hash-based OAuth tokens instead of PKCE (if code_verifier issues persist). */
+  readonly VITE_SUPABASE_AUTH_FLOW?: string;
 }
 
 interface ImportMeta {

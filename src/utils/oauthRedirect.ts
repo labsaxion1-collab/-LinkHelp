@@ -1,12 +1,12 @@
 import { ROUTES } from '@/utils/constants';
 
 /**
- * OAuth redirect must match the current tab origin so PKCE `code_verifier` in localStorage
- * lines up with the callback URL (e.g. https://link-help.vercel.app/auth/callback).
+ * Must match the browser tab origin exactly so PKCE `code_verifier` in localStorage
+ * (under `linkhelp-auth-code-verifier` via `storageKey` in `supabase.ts`) matches this redirect.
  */
 export function getOAuthRedirectToUrl(): string {
   if (typeof window === 'undefined') {
     return ROUTES.authCallback;
   }
-  return `${window.location.origin.replace(/\/$/, '')}${ROUTES.authCallback}`;
+  return `${window.location.origin}/auth/callback`;
 }

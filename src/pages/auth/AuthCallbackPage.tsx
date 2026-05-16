@@ -8,9 +8,6 @@ import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { authFlowLog } from '@/lib/authDebug';
 import { resolvePostOAuthPath } from '@/utils/postOAuthRedirect';
 
-/**
- * Waits for `getSession()` or `onAuthStateChange` to report a session (or `maxMs`).
- */
 function waitForAuthSessionSignal(sb: SupabaseClient, maxMs: number): Promise<void> {
   return new Promise((resolve) => {
     let finished = false;
@@ -49,11 +46,8 @@ async function safeNavigateAwayFromLogin(
 }
 
 /**
- * OAuth return: run PKCE exchange from the callback URL, then read session — never send the user
- * to /auth/login until exchange + getSession have completed.
- *
- * `exchangeCodeForSession` expects the authorization `code` query param (GoTrue parses the URL
- * internally the same way as `new URL(href).searchParams.get('code')`).
+ * OAuth return: keep the user on this loader until session is resolved — no `/auth/login` redirect
+ * during PKCE/implicit URL processing.
  */
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
@@ -65,29 +59,44 @@ export default function AuthCallbackPage() {
     let cancelled = false;
 
     (async () => {
+      const goToLogin = (state: Record<string, unknown>) => {
+        if (cancelled) return;
+        navigate(ROUTES.login, { replace: true, state });
+      };
+
       if (!isSupabaseConfigured()) {
-        navigate(ROUTES.login, { replace: true, state: { from: ROUTES.home } });
+        goToLogin({ from: ROUTES.home });
         return;
       }
 
-      const sb = getSupabase();
+      let sb = getSupabase();
       if (!sb) {
-        navigate(ROUTES.login, { replace: true, state: { oauthError: true } });
+        await new Promise((r) => window.setTimeout(r, 150));
+        sb = getSupabase();
+      }
+      if (!sb) {
+        goToLogin({ oauthError: true });
         return;
       }
 
       try {
         const callbackUrl = typeof window !== 'undefined' ? window.location.href : '';
         const code = callbackUrl ? new URL(callbackUrl).searchParams.get('code') : null;
+        const implicitHash =
+          typeof window !== 'undefined' &&
+          window.location.hash &&
+          /access_token|refresh_token|error/.test(window.location.hash);
+
         if (code) {
           authFlowLog('Auth callback received code', { hasCode: true, origin: window.location.origin });
+        }
+        if (implicitHash) {
+          authFlowLog('Auth callback hash fragment present', { implicit: true });
         }
 
         await sb.auth.initialize();
 
-        // `initialize()` may have already completed PKCE exchange; only exchange if no session yet.
-        let { data: sessionWrap } = await sb.auth.getSession();
-        let session = sessionWrap.session;
+        let session = (await sb.auth.getSession()).data.session;
 
         if (!session && code) {
           authFlowLog('Session exchange (PKCE)', { fromCallbackUrl: callbackUrl.split('?')[0] });
@@ -97,21 +106,20 @@ export default function AuthCallbackPage() {
           } else if (exchangeData?.session) {
             authFlowLog('Session created', { userId: exchangeData.session.user.id });
           }
-          const afterEx = await sb.auth.getSession();
-          session = afterEx.data.session;
+          session = (await sb.auth.getSession()).data.session;
         }
 
-        if (!session) {
-          for (let attempt = 0; attempt < 5 && !session; attempt++) {
-            await new Promise((r) => window.setTimeout(r, 120));
-            session = (await sb.auth.getSession()).data.session;
-          }
+        const pollUntil = Date.now() + (implicitHash ? 12000 : 8000);
+        while (!session && Date.now() < pollUntil) {
+          await new Promise((r) => window.setTimeout(r, 280));
+          session = (await sb.auth.getSession()).data.session;
+          if (session) break;
         }
 
         if (session) {
-          await waitForAuthSessionSignal(sb, 800);
+          await waitForAuthSessionSignal(sb, 1000);
           session = (await sb.auth.getSession()).data.session;
-        } else if (code) {
+        } else if (code || implicitHash) {
           await waitForAuthSessionSignal(sb, 4000);
           session = (await sb.auth.getSession()).data.session;
         }
@@ -121,11 +129,11 @@ export default function AuthCallbackPage() {
         if (!session?.user) {
           if (typeof window !== 'undefined' && window.location.search.includes('code=')) {
             console.error(
-              '[LinkHelp AuthCallback] ?code= present but no session. PKCE code_verifier must exist on the same origin that started OAuth — use redirectTo `${window.location.origin}/auth/callback` and add that URL in Supabase Auth settings.',
+              '[LinkHelp AuthCallback] ?code= present but no session. Use the same origin for OAuth start + callback; redirectTo must be `${window.location.origin}/auth/callback`.',
             );
           }
           if (!(await safeNavigateAwayFromLogin(sb, navigate))) {
-            navigate(ROUTES.login, { replace: true, state: { oauthError: true } });
+            goToLogin({ oauthError: true });
           }
           return;
         }
@@ -161,7 +169,7 @@ export default function AuthCallbackPage() {
         if (!cancelled) {
           const sb2 = getSupabase();
           if (!(await safeNavigateAwayFromLogin(sb2, navigate))) {
-            navigate(ROUTES.login, { replace: true, state: { oauthError: true } });
+            goToLogin({ oauthError: true });
           }
         }
       }
@@ -174,3 +182,4 @@ export default function AuthCallbackPage() {
 
   return <PageLoader />;
 }
+

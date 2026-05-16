@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { FilePickerLabel, NativeFileInput } from '@/components/common/HiddenFileInput';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { GraduationCap, Settings, Bell, Shield, User, Loader2, Camera } from 'lucide-react';
@@ -9,6 +9,7 @@ import { useAppMode } from '@/context/AppModeContext';
 import { useToast } from '@/context/ToastContext';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
+import { logMediaPicker } from '@/utils/mediaPickerDebug';
 import { cropSquareAvatarFromFile } from '@/utils/portfolioMediaProcessing';
 import { CityRegionAutocomplete } from '@/components/common/CityRegionAutocomplete';
 import type { QuebecPlace } from '@/data/quebecRegions';
@@ -21,10 +22,10 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const avatarInputId = useId();
-  const [avatarLocalPreview, setAvatarLocalPreview] = useState<string | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [avatarSelectedFile, setAvatarSelectedFile] = useState<File | null>(null);
-  const [avatarPicking, setAvatarPicking] = useState(false);
   const [avatarSaving, setAvatarSaving] = useState(false);
+  const avatarObjectUrlRef = useRef<string | null>(null);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -59,7 +60,17 @@ export default function SettingsPage() {
     }
   }, [location.hash, location.pathname]);
 
-  const avatarDisplay = avatarLocalPreview ?? profile?.avatar_url?.trim() ?? null;
+  const avatarDisplay = avatarPreviewUrl ?? profile?.avatar_url?.trim() ?? null;
+
+  const revokeAvatarObjectUrl = () => {
+    if (avatarObjectUrlRef.current) {
+      URL.revokeObjectURL(avatarObjectUrlRef.current);
+      avatarObjectUrlRef.current = null;
+    }
+    setAvatarPreviewUrl(null);
+  };
+
+  useEffect(() => () => revokeAvatarObjectUrl(), []);
   const saveAccount = async () => {
     if (!isConfigured || !profile) {
       showToast(t('app_pages.settings_saved'), 'info');
@@ -103,34 +114,40 @@ export default function SettingsPage() {
     navigate(ROUTES.home, { replace: true });
   };
 
-  const onAvatarFile = async (files: FileList | null) => {
+  const onAvatarFile = (files: FileList | null) => {
     const f = files?.[0];
     if (!f) return;
+    logMediaPicker('FILE SELECTED:', f);
+    revokeAvatarObjectUrl();
+    const url = URL.createObjectURL(f);
+    avatarObjectUrlRef.current = url;
+    setAvatarPreviewUrl(url);
     setAvatarSelectedFile(f);
-    setAvatarPicking(true);
-    try {
-      setAvatarLocalPreview(await cropSquareAvatarFromFile(f));
-    } catch {
-      setAvatarSelectedFile(null);
-      showToast(t('profile_setup.avatar_error'), 'error');
-    } finally {
-      setAvatarPicking(false);
-    }
+    logMediaPicker('PREVIEW CREATED:', url);
   };
 
   const saveAvatar = async () => {
-    if (!avatarLocalPreview || !isConfigured || !session?.user?.id) return;
+    if (!avatarSelectedFile || !isConfigured || !session?.user?.id) return;
+    logMediaPicker('SAVE CLICKED');
     setAvatarSaving(true);
     try {
-      const file = await fileFromDataUrl(avatarLocalPreview, 'avatar.jpg', 'image/jpeg');
-      const { publicUrl } = await uploadAvatarImage(session.user.id, file);
+      let uploadFile: File = avatarSelectedFile;
+      try {
+        const cropped = await cropSquareAvatarFromFile(avatarSelectedFile);
+        uploadFile = await fileFromDataUrl(cropped, 'avatar.jpg', 'image/jpeg');
+      } catch {
+        logMediaPicker('CROP FALLBACK — uploading original file');
+      }
+      const { publicUrl } = await uploadAvatarImage(session.user.id, uploadFile);
+      logMediaPicker('UPLOAD SUCCESS:', publicUrl);
       const err = await updateProfile({ avatar_url: publicUrl });
       if (err) {
         showToast(t(err.messageKey, err.vars), 'error');
         return;
       }
       await refreshProfile();
-      setAvatarLocalPreview(null);
+      logMediaPicker('PROFILE UPDATED:', publicUrl);
+      revokeAvatarObjectUrl();
       setAvatarSelectedFile(null);
       showToast(t('app_pages.settings_avatar_saved'), 'success');
     } catch (e) {
@@ -217,12 +234,12 @@ export default function SettingsPage() {
               <NativeFileInput
                 inputId={avatarInputId}
                 accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-                disabled={!isConfigured || avatarPicking || avatarSaving}
-                onFiles={(files) => void onAvatarFile(files)}
+                disabled={!isConfigured || avatarSaving}
+                onFiles={onAvatarFile}
               />
               <FilePickerLabel
                 inputId={avatarInputId}
-                disabled={!isConfigured || avatarPicking || avatarSaving}
+                disabled={!isConfigured || avatarSaving}
                 className="relative block h-28 w-28 rounded-full overflow-hidden border-4 border-gray-100 bg-gray-100 shadow-inner"
               >
                 {avatarDisplay ? (
@@ -232,7 +249,7 @@ export default function SettingsPage() {
                     <User className="w-12 h-12" />
                   </div>
                 )}
-                {avatarPicking ? (
+                {avatarSaving ? (
                   <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
                     <Loader2 className="h-8 w-8 text-white animate-spin" />
                   </div>
@@ -247,14 +264,14 @@ export default function SettingsPage() {
               ) : null}
               <FilePickerLabel
                 inputId={avatarInputId}
-                disabled={!isConfigured || avatarPicking || avatarSaving}
+                disabled={!isConfigured || avatarSaving}
                 className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-50 min-h-[44px]"
               >
                 {t('app_pages.settings_avatar_choose')}
               </FilePickerLabel>
               <button
                 type="button"
-                disabled={!avatarSelectedFile || !avatarLocalPreview || avatarSaving || !isConfigured}
+                disabled={!avatarSelectedFile || avatarSaving || !isConfigured}
                 onClick={() => void saveAvatar()}
                 className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white hover:bg-blue-700 disabled:opacity-50 min-h-[44px]"
               >

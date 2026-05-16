@@ -1,10 +1,5 @@
 import React, { useId } from 'react';
-
-function logFileSelected(file: File | undefined) {
-  if (import.meta.env.DEV) {
-    console.log('FILE SELECTED:', file);
-  }
-}
+import { logMediaPicker } from '@/utils/mediaPickerDebug';
 
 type NativeFileInputProps = {
   inputId: string;
@@ -25,7 +20,7 @@ export function NativeFileInput({ inputId, accept, disabled, onFiles }: NativeFi
       tabIndex={-1}
       onChange={(e) => {
         const files = e.target.files;
-        logFileSelected(files?.[0]);
+        logMediaPicker('FILE SELECTED:', files?.[0]);
         onFiles(files);
         const input = e.target;
         window.setTimeout(() => {

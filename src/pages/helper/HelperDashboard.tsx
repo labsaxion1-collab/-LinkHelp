@@ -222,13 +222,12 @@ export default function HelperDashboard() {
   );
 
   const handleAvatarSave = React.useCallback(
-    async (dataUrl: string) => {
-      setProfileSettings((p) => ({ ...p, avatarDataUrl: dataUrl }));
-      if (!isConfigured || !session?.user?.id) return;
+    async (file: File) => {
+      if (!isConfigured || !session?.user?.id) {
+        setProfileSettings((p) => ({ ...p, avatarDataUrl: URL.createObjectURL(file) }));
+        return;
+      }
       try {
-        const res = await fetch(dataUrl);
-        const blob = await res.blob();
-        const file = new File([blob], 'avatar.jpg', { type: blob.type || 'image/jpeg' });
         const { publicUrl } = await uploadAvatarImage(session.user.id, file);
         const err = await updateProfile({ avatar_url: publicUrl });
         if (err) {
@@ -237,6 +236,7 @@ export default function HelperDashboard() {
         }
         await refreshProfile();
         setProfileSettings((p) => ({ ...p, avatarDataUrl: publicUrl }));
+        if (import.meta.env.DEV) console.log('PROFILE UPDATED:', publicUrl);
         pushToast(t('profile_setup.avatar_uploaded_ok'));
       } catch (e) {
         const isAuthErr = Boolean(e && typeof e === 'object' && 'messageKey' in e);

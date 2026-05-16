@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import * as Icons from 'lucide-react';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 export { SkillsProfileModal } from './SkillsProfileModal';
@@ -25,7 +25,9 @@ import {
   MAX_VIDEO_SEC,
 } from '@/utils/portfolioMediaProcessing';
 import { contactGuardToastKey, detectContactInText } from '@/utils/portfolioContactGuard';
+import { logMediaPicker } from '@/utils/mediaPickerDebug';
 import { cropSquareAvatarFromFile } from '@/utils/portfolioMediaProcessing';
+import { fileFromDataUrl } from '@/lib/storageUpload';
 import {
   portfolioMaxFeatured,
   portfolioMaxPhotos,
@@ -107,51 +109,80 @@ export function AvatarProfileModal({
   open: boolean;
   onClose: () => void;
   initialPreview: string | null;
-  onSave: (dataUrl: string) => void | Promise<void>;
+  onSave: (file: File) => void | Promise<void>;
   t: TFn;
   onToast: (msg: string) => void;
 }) {
   const avatarInputId = useId();
-  const [preview, setPreview] = useState<string | null>(initialPreview);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const objectUrlRef = useRef<string | null>(null);
+  const wasOpenRef = useRef(false);
+
+  const revokeObjectUrl = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+    setPreviewUrl(null);
+  };
 
   useEffect(() => {
-    if (open) {
-      setPreview(initialPreview);
+    if (!open) {
+      wasOpenRef.current = false;
+      revokeObjectUrl();
       setSelectedFile(null);
+      setBusy(false);
+      return;
     }
-  }, [open, initialPreview]);
+    if (!wasOpenRef.current) {
+      setSelectedFile(null);
+      revokeObjectUrl();
+      wasOpenRef.current = true;
+    }
+  }, [open]);
+
+  useEffect(() => () => revokeObjectUrl(), []);
 
   if (!open) return null;
 
-  const onPick = async (files: FileList | null) => {
+  const displayPreview = previewUrl ?? initialPreview;
+
+  const onPick = (files: FileList | null) => {
     const file = files?.[0];
     if (!file) return;
+    logMediaPicker('FILE SELECTED:', file);
     const nameHit = detectContactInText(file.name);
     if (nameHit) {
       onToast(t(contactGuardToastKey(nameHit)));
       return;
     }
+    revokeObjectUrl();
+    const url = URL.createObjectURL(file);
+    objectUrlRef.current = url;
+    setPreviewUrl(url);
     setSelectedFile(file);
-    setBusy(true);
-    try {
-      const dataUrl = await cropSquareAvatarFromFile(file);
-      setPreview(dataUrl);
-    } catch {
-      setSelectedFile(null);
-      onToast(t('profile_setup.avatar_error'));
-    } finally {
-      setBusy(false);
-    }
+    logMediaPicker('PREVIEW CREATED:', url);
   };
 
   const save = async () => {
-    if (!preview) return;
+    if (!selectedFile) return;
+    logMediaPicker('SAVE CLICKED');
     setBusy(true);
     try {
-      await onSave(preview);
+      let uploadFile: File = selectedFile;
+      try {
+        const cropped = await cropSquareAvatarFromFile(selectedFile);
+        uploadFile = await fileFromDataUrl(cropped, 'avatar.jpg', 'image/jpeg');
+      } catch {
+        logMediaPicker('CROP FALLBACK — uploading original file');
+      }
+      await onSave(uploadFile);
+      logMediaPicker('UPLOAD SUCCESS');
       onClose();
+    } catch {
+      onToast(t('profile_setup.avatar_save_error'));
     } finally {
       setBusy(false);
     }
@@ -169,7 +200,7 @@ export function AvatarProfileModal({
           </button>
           <button
             type="button"
-            disabled={!selectedFile || !preview || busy}
+            disabled={!selectedFile || busy}
             onClick={() => void save()}
             className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black disabled:opacity-40 min-h-[44px]"
           >
@@ -190,8 +221,8 @@ export function AvatarProfileModal({
           disabled={busy}
           className="relative block w-32 h-32 rounded-full ring-4 ring-slate-100 overflow-hidden bg-slate-100 shadow-inner"
         >
-          {preview ? (
-            <img src={preview} alt="" className="w-full h-full object-cover" />
+          {displayPreview ? (
+            <img src={displayPreview} alt="" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-400">
               <Icons.User className="w-12 h-12" />
@@ -253,12 +284,36 @@ export function PortfolioUploadModal({
   const [skillId, setSkillId] = useState<string>('');
   const [featured, setFeatured] = useState(false);
   const [busy, setBusy] = useState(false);
+  const previewObjectUrlRef = useRef<string | null>(null);
+
+  const revokePreviewObjectUrl = () => {
+    if (previewObjectUrlRef.current) {
+      URL.revokeObjectURL(previewObjectUrlRef.current);
+      previewObjectUrlRef.current = null;
+    }
+    setPhotoPreviewUrl(null);
+    setVideoPreviewUrl(null);
+  };
+
+  const applyPickedFile = (f: File) => {
+    revokePreviewObjectUrl();
+    const url = URL.createObjectURL(f);
+    previewObjectUrlRef.current = url;
+    setFile(f);
+    if (kind === 'photo') {
+      setPhotoPreviewUrl(url);
+      setVideoPreviewUrl(null);
+    } else {
+      setVideoPreviewUrl(url);
+      setPhotoPreviewUrl(null);
+    }
+    logMediaPicker('PREVIEW CREATED:', { kind, url, name: f.name });
+  };
 
   useEffect(() => {
     if (!open) {
       setFile(null);
-      setPhotoPreviewUrl(null);
-      setVideoPreviewUrl(null);
+      revokePreviewObjectUrl();
       setCaption('');
       setSkillId('');
       setFeatured(false);
@@ -266,25 +321,7 @@ export function PortfolioUploadModal({
     }
   }, [open]);
 
-  useEffect(() => {
-    if (!file || kind !== 'photo') {
-      setPhotoPreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPhotoPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file, kind]);
-
-  useEffect(() => {
-    if (!file || kind !== 'video') {
-      setVideoPreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setVideoPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file, kind]);
+  useEffect(() => () => revokePreviewObjectUrl(), []);
 
   if (!open) return null;
 
@@ -301,29 +338,33 @@ export function PortfolioUploadModal({
   const accept = kind === 'photo' ? acceptPhoto : acceptVideo;
   const pickDisabled = atPhotoCap || atVideoCap || busy;
 
-  const onFile = async (files: FileList | null) => {
+  const onFile = (files: FileList | null) => {
     const f = files?.[0];
     if (!f) return;
+    logMediaPicker('FILE SELECTED:', f);
     const rn = detectContactInText(f.name);
     if (rn) {
       onToast(t(contactGuardToastKey(rn)));
       return;
     }
     if (kind === 'video') {
-      try {
-        await assertVideoDuration(f, MAX_VIDEO_SEC);
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : '';
-        if (msg === 'VIDEO_TOO_LONG') onToast(t('profile_setup.video_too_long'));
-        else onToast(t('profile_setup.video_invalid'));
-        return;
-      }
+      setBusy(true);
+      void assertVideoDuration(f, MAX_VIDEO_SEC)
+        .then(() => applyPickedFile(f))
+        .catch((e: unknown) => {
+          const msg = e instanceof Error ? e.message : '';
+          if (msg === 'VIDEO_TOO_LONG') onToast(t('profile_setup.video_too_long'));
+          else onToast(t('profile_setup.video_invalid'));
+        })
+        .finally(() => setBusy(false));
+      return;
     }
-    setFile(f);
+    applyPickedFile(f);
   };
 
   const submit = async () => {
     if (!file || atPhotoCap || atVideoCap) return;
+    logMediaPicker('SAVE CLICKED', { kind, name: file.name });
     const capHit = detectContactInText(caption);
     if (capHit) {
       onToast(t(contactGuardToastKey(capHit)));
@@ -401,6 +442,7 @@ export function PortfolioUploadModal({
           };
           onAdd(item);
         }
+        logMediaPicker('UPLOAD SUCCESS');
         onToast(t('profile_setup.upload_success'));
         onClose();
       } else {
@@ -459,7 +501,7 @@ export function PortfolioUploadModal({
       >
         <div className={dropClass}>
           {kind === 'photo' && photoPreviewUrl ? (
-            <img src={photoPreviewUrl} alt="" className="max-h-40 rounded-lg object-contain" />
+            <img src={photoPreviewUrl} alt="" className="max-h-40 max-w-full rounded-lg object-contain pointer-events-none" />
           ) : kind === 'video' && videoPreviewUrl ? (
             <span className="text-sm font-semibold text-slate-600">{t('profile_setup.tap_to_change_file')}</span>
           ) : (

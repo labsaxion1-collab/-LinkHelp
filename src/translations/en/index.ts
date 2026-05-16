@@ -1,4 +1,5 @@
 import { trainingEn } from '../training/en';
+import { helperSkillsEn } from '../helperSkillsBlocks';
 
 export const en = {
   common: {
@@ -815,7 +816,14 @@ export const en = {
     skills_selected_count: '{{count}} selected',
     skills_selected_empty: 'No skills selected yet.',
     skills_remove_aria: 'Remove {{name}}',
-    skills_footer: 'Suggestions improve matching—more categories coming from your jobs data later.',
+    skills_footer: 'Pick a category, then the services you offer. Clients match on specific skills.',
+    skills_step_primary: 'Choose a category',
+    skills_step_sub: 'Choose services',
+    skills_back_categories: 'All categories',
+    skills_primary_hint: 'Tap a category to see its services.',
+    skills_sub_hint: 'Select everything you can do well — you can pick multiple.',
+    skills_saved_ok: 'Skills saved',
+    skills_save_error: 'Could not save skills. Try again.',
     portfolio_photo_title: 'Add portfolio photo',
     portfolio_photo_sub: 'Show real results—before/after and finished jobs work best.',
     portfolio_video_title: 'Add portfolio video',
@@ -860,6 +868,7 @@ export const en = {
     verify_point_3: 'Unlocks the final portion of your profile strength score.',
     verify_done: 'You are verified (demo).',
   },
+  helper_skills: helperSkillsEn,
   training: trainingEn,
   link_credits: {
     choose_package: 'Choose your package',

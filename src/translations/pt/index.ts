@@ -1,4 +1,5 @@
 import { trainingPt } from '../training/pt';
+import { helperSkillsPt } from '../helperSkillsBlocks';
 
 export const pt = {
   common: {
@@ -817,7 +818,14 @@ export const pt = {
     skills_selected_count: '{{count}} selecionadas',
     skills_selected_empty: 'Nenhuma skill selecionada ainda.',
     skills_remove_aria: 'Remover {{name}}',
-    skills_footer: 'Sugestões melhoram o match—mais categorias virão dos seus jobs.',
+    skills_footer: 'Escolha a categoria e depois os serviços que você oferece.',
+    skills_step_primary: 'Escolha a categoria',
+    skills_step_sub: 'Escolha os serviços',
+    skills_back_categories: 'Todas as categorias',
+    skills_primary_hint: 'Toque em uma categoria para ver os serviços.',
+    skills_sub_hint: 'Marque tudo que você faz bem — pode selecionar vários.',
+    skills_saved_ok: 'Habilidades salvas',
+    skills_save_error: 'Não foi possível salvar. Tente de novo.',
     portfolio_photo_title: 'Adicionar foto ao portfólio',
     portfolio_photo_sub: 'Mostre resultado real—antes/depois e trabalho concluído.',
     portfolio_video_title: 'Adicionar vídeo ao portfólio',
@@ -862,6 +870,7 @@ export const pt = {
     verify_point_3: 'Libera a última parte da pontuação do perfil.',
     verify_done: 'Você está verificado (demo).',
   },
+  helper_skills: helperSkillsPt,
   training: trainingPt,
   link_credits: {
     choose_package: 'Escolha o seu pacote',

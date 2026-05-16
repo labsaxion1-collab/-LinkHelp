@@ -1,4 +1,5 @@
 import { trainingFr } from '../training/fr';
+import { helperSkillsFr } from '../helperSkillsBlocks';
 
 export const fr = {
   common: {
@@ -818,7 +819,14 @@ export const fr = {
     skills_selected_count: '{{count}} sélectionnées',
     skills_selected_empty: 'Aucune compétence sélectionnée pour le moment.',
     skills_remove_aria: 'Retirer {{name}}',
-    skills_footer: 'Les suggestions améliorent le matching.',
+    skills_footer: 'Choisissez une catégorie, puis les services que vous offrez.',
+    skills_step_primary: 'Choisir une catégorie',
+    skills_step_sub: 'Choisir les services',
+    skills_back_categories: 'Toutes les catégories',
+    skills_primary_hint: 'Touchez une catégorie pour voir ses services.',
+    skills_sub_hint: 'Sélectionnez tout ce que vous maîtrisez — choix multiples.',
+    skills_saved_ok: 'Compétences enregistrées',
+    skills_save_error: 'Impossible d’enregistrer. Réessayez.',
     portfolio_photo_title: 'Ajouter une photo',
     portfolio_photo_sub: 'Montrez un vrai résultat.',
     portfolio_video_title: 'Ajouter une vidéo',
@@ -863,6 +871,7 @@ export const fr = {
     verify_point_3: 'Complète le score de profil.',
     verify_done: 'Compte vérifié (démo).',
   },
+  helper_skills: helperSkillsFr,
   training: trainingFr,
   link_credits: {
     choose_package: 'Choisissez votre forfait',

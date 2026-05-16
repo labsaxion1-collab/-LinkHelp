@@ -10,6 +10,8 @@ import {
   fetchHelperPortfolioItems,
   deleteHelperPortfolioItemRow,
 } from '@/services/supabase/portfolioRemote';
+import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
+import { filterValidSkillKeys } from '@/data/helperSkillsCatalog';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { useAppData, type UpcomingJob } from '@/context/AppDataContext';
@@ -158,6 +160,21 @@ export default function HelperDashboard() {
     };
   }, [isConfigured, storageUserId]);
 
+  useEffect(() => {
+    if (!isConfigured || !storageUserId) return;
+    let cancelled = false;
+    void (async () => {
+      const remote = await fetchHelperSkills(storageUserId);
+      if (cancelled) return;
+      if (remote.length > 0) {
+        setProfileSettings((prev) => ({ ...prev, skillIds: remote }));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isConfigured, storageUserId]);
+
   const portfolioEmpty = portfolioTotalItems(portfolioPersist) === 0;
   const completionBreakdown = React.useMemo(
     () => computeHelperProfileCompletion(portfolioPersist, profileSettings),
@@ -186,6 +203,22 @@ export default function HelperDashboard() {
     setToastNotification({ message, show: true });
     setTimeout(() => setToastNotification({ message: '', show: false }), 4500);
   }, []);
+
+  const handleSkillsSave = React.useCallback(
+    async (ids: string[]) => {
+      const valid = filterValidSkillKeys(ids);
+      setProfileSettings((p) => ({ ...p, skillIds: valid }));
+      if (!isConfigured || !storageUserId) return;
+      try {
+        await syncHelperSkills(storageUserId, valid);
+        pushToast(t('profile_setup.skills_saved_ok'));
+      } catch {
+        pushToast(t('profile_setup.skills_save_error'));
+        throw new Error('SKILLS_SYNC');
+      }
+    },
+    [isConfigured, storageUserId, pushToast, t],
+  );
 
   const handleAvatarSave = React.useCallback(
     async (dataUrl: string) => {
@@ -876,7 +909,8 @@ export default function HelperDashboard() {
         open={profileSetupModal === 'skills'}
         onClose={() => setProfileSetupModal(null)}
         skillIds={profileSettings.skillIds}
-        onSave={(ids) => setProfileSettings((p) => ({ ...p, skillIds: ids }))}
+        onSave={(ids) => setProfileSettings((p) => ({ ...p, skillIds: filterValidSkillKeys(ids) }))}
+        onSaveAsync={handleSkillsSave}
         t={t}
       />
       <PortfolioUploadModal

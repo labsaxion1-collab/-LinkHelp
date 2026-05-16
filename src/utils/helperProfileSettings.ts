@@ -1,5 +1,7 @@
 /** Persisted helper profile data for completion scoring & onboarding (demo — swap for API). */
 
+import { filterValidSkillKeys } from '@/data/helperSkillsCatalog';
+
 export const HELPER_PROFILE_STORAGE_KEY = 'linkhelp_helper_profile_v1';
 
 export type VerificationStatus = 'none' | 'pending' | 'verified';
@@ -7,7 +9,7 @@ export type VerificationStatus = 'none' | 'pending' | 'verified';
 export interface HelperProfileSettings {
   /** Custom avatar — profile strength counts only when set. */
   avatarDataUrl: string | null;
-  /** Selected category ids from SERVICE_CATEGORIES */
+  /** Selected subcategory keys (`primary:sub`) from helper skills catalog */
   skillIds: string[];
   /** Demo stand-in for “reviews received” until jobs API exists */
   reviewCount: number;
@@ -28,7 +30,9 @@ export function loadHelperProfileSettings(): HelperProfileSettings {
     const p = JSON.parse(raw) as Partial<HelperProfileSettings>;
     return {
       avatarDataUrl: typeof p.avatarDataUrl === 'string' ? p.avatarDataUrl : null,
-      skillIds: Array.isArray(p.skillIds) ? p.skillIds.filter((x): x is string => typeof x === 'string') : [],
+      skillIds: filterValidSkillKeys(
+        Array.isArray(p.skillIds) ? p.skillIds.filter((x): x is string => typeof x === 'string') : [],
+      ),
       reviewCount: typeof p.reviewCount === 'number' && p.reviewCount >= 0 ? p.reviewCount : 0,
       verificationStatus:
         p.verificationStatus === 'pending' || p.verificationStatus === 'verified' || p.verificationStatus === 'none'

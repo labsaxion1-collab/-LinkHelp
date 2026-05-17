@@ -1,12 +1,15 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import * as Icons from 'lucide-react';
-import { FilePickerLabel } from '@/components/common/HiddenFileInput';
-import { detectContactInText, contactGuardToastKey } from '@/utils/portfolioContactGuard';
 import { logMediaPicker } from '@/utils/mediaPickerDebug';
 
 const AVATAR_ACCEPT = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
 
 type TFn = (key: string, options?: Record<string, string | number>) => string;
+
+export type AvatarUploadDraft = {
+  file: File;
+  previewUrl: string;
+};
 
 function ModalShell({
   title,
@@ -51,70 +54,72 @@ function ModalShell({
   );
 }
 
-/** Minimal avatar picker — state resets only on cancel, success, or unmount. */
+let avatarModalInstanceSeq = 0;
+
+/**
+ * Avatar picker — draft lives in parent so re-mounts cannot wipe selection.
+ * No portfolio filename contact guard (WhatsApp/Screenshot dates false-positive as phone).
+ */
 export function SimpleAvatarUploadModal({
+  draft,
+  onDraftChange,
   initialPreview,
   onClose,
   onSave,
   t,
   onToast,
 }: {
+  draft: AvatarUploadDraft | null;
+  onDraftChange: (draft: AvatarUploadDraft | null) => void;
   initialPreview: string | null;
   onClose: () => void;
   onSave: (file: File) => void | Promise<void>;
   t: TFn;
   onToast: (msg: string) => void;
 }) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const instanceId = useRef(`avatar-${++avatarModalInstanceSeq}`);
   const [busy, setBusy] = useState(false);
-  const objectUrlRef = useRef<string | null>(null);
+  const fileInputId = useId();
 
-  const resetState = useCallback((reason: string) => {
-    console.warn('[media-picker] RESET AVATAR STATE', reason);
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-      objectUrlRef.current = null;
+  const selectedFile = draft?.file ?? null;
+  const previewUrl = draft?.previewUrl ?? null;
+
+  console.log('[avatar-state]', { selectedFile, previewUrl });
+
+  useEffect(() => {
+    console.log('[avatar-state] MOUNT', instanceId.current);
+    return () => console.log('[avatar-state] UNMOUNT', instanceId.current);
+  }, []);
+
+  const revokeDraftPreview = (url: string | null | undefined) => {
+    if (url && url.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
     }
-    setPreviewUrl(null);
-    setSelectedFile(null);
+  };
+
+  const resetState = (reason: string) => {
+    console.warn('[media-picker] RESET AVATAR STATE', reason, { instance: instanceId.current });
+    if (draft?.previewUrl) revokeDraftPreview(draft.previewUrl);
+    onDraftChange(null);
     setBusy(false);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = null;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    console.log('[media-picker] RENDER', {
-      selectedFile: selectedFile?.name ?? null,
-      previewUrl: previewUrl ? 'blob' : null,
-    });
-  });
+  };
 
   const handleFileChange = (files: FileList | null) => {
     const file = files?.[0];
+    console.log('[avatar-state] handleFileChange', file?.name ?? null);
     if (!file) return;
-    console.log('[media-picker] FILE:', file);
-    const nameHit = detectContactInText(file.name);
-    if (nameHit) {
-      onToast(t(contactGuardToastKey(nameHit)));
-      return;
-    }
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-    }
+
+    if (draft?.previewUrl) revokeDraftPreview(draft.previewUrl);
     const url = URL.createObjectURL(file);
-    objectUrlRef.current = url;
-    setSelectedFile(file);
-    setPreviewUrl(url);
-    console.log('[media-picker] SET_SELECTED_FILE', file.name);
+    const next: AvatarUploadDraft = { file, previewUrl: url };
+    onDraftChange(next);
+    console.log('[avatar-state] onDraftChange applied', file.name);
     logMediaPicker('PREVIEW CREATED', url);
+  };
+
+  const openFilePicker = () => {
+    if (busy) return;
+    document.getElementById(fileInputId)?.click();
   };
 
   const handleCancel = () => {
@@ -163,11 +168,22 @@ export function SimpleAvatarUploadModal({
       }
     >
       <div className="flex flex-col items-center gap-4">
-        <FilePickerLabel
+        <input
+          id={fileInputId}
+          type="file"
           accept={AVATAR_ACCEPT}
           disabled={busy}
-          onFiles={handleFileChange}
-          className="w-32 h-32 rounded-full ring-4 ring-slate-100 overflow-hidden bg-slate-100 shadow-inner"
+          className="sr-only"
+          onChange={(e) => {
+            handleFileChange(e.target.files);
+            e.target.value = '';
+          }}
+        />
+        <label
+          htmlFor={fileInputId}
+          className={`relative block w-32 h-32 rounded-full ring-4 ring-slate-100 overflow-hidden bg-slate-100 shadow-inner${
+            busy ? ' pointer-events-none opacity-50' : ' cursor-pointer'
+          }`}
         >
           {displayPreview ? (
             <img src={displayPreview} alt="" className="w-full h-full object-cover pointer-events-none" />
@@ -181,21 +197,21 @@ export function SimpleAvatarUploadModal({
               <Icons.Loader2 className="w-8 h-8 text-white animate-spin" />
             </div>
           ) : null}
-        </FilePickerLabel>
+        </label>
         {selectedFile ? (
           <p className="text-xs font-semibold text-slate-600 truncate max-w-full px-2" title={selectedFile.name}>
             {selectedFile.name}
           </p>
         ) : null}
         <p className="text-xs text-center text-slate-500 leading-relaxed max-w-sm">{t('profile_setup.avatar_hint')}</p>
-        <FilePickerLabel
-          accept={AVATAR_ACCEPT}
+        <button
+          type="button"
           disabled={busy}
-          onFiles={handleFileChange}
-          className="text-sm font-bold text-sky-700 hover:text-sky-900 min-h-[44px] inline-flex items-center justify-center px-4"
+          onClick={openFilePicker}
+          className="text-sm font-bold text-sky-700 hover:text-sky-900 min-h-[44px] inline-flex items-center justify-center px-4 disabled:opacity-50"
         >
           {t('profile_setup.avatar_choose')}
-        </FilePickerLabel>
+        </button>
       </div>
     </ModalShell>
   );

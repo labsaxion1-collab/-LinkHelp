@@ -26,7 +26,9 @@ import {
 } from '@/utils/portfolioMediaProcessing';
 import { contactGuardToastKey, detectContactInText } from '@/utils/portfolioContactGuard';
 import { logMediaPicker } from '@/utils/mediaPickerDebug';
-import { SimpleAvatarUploadModal } from './SimpleAvatarUploadModal';
+import { SimpleAvatarUploadModal, type AvatarUploadDraft } from './SimpleAvatarUploadModal';
+
+export { SimpleAvatarUploadModal, type AvatarUploadDraft } from './SimpleAvatarUploadModal';
 import {
   portfolioMaxFeatured,
   portfolioMaxPhotos,
@@ -99,10 +101,11 @@ function ModalChrome({
   );
 }
 
-const AVATAR_ACCEPT = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
-
+/** @deprecated Use SimpleAvatarUploadModal with parent-held draft state. */
 export function AvatarProfileModal({
   open,
+  draft,
+  onDraftChange,
   onClose,
   initialPreview,
   onSave,
@@ -110,112 +113,25 @@ export function AvatarProfileModal({
   onToast,
 }: {
   open: boolean;
+  draft: AvatarUploadDraft | null;
+  onDraftChange: (draft: AvatarUploadDraft | null) => void;
   onClose: () => void;
   initialPreview: string | null;
   onSave: (file: File) => void | Promise<void>;
   t: TFn;
   onToast: (msg: string) => void;
 }) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [busy, setBusy] = useState(false);
-  const objectUrlRef = useRef<string | null>(null);
-
-  const displayPreview = previewUrl ?? initialPreview ?? null;
-
-  const handlePick = (files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) return;
-    console.log('[media-picker] SET_SELECTED_FILE', file.name);
-    const nameHit = detectContactInText(file.name);
-    if (nameHit) {
-      onToast(t(contactGuardToastKey(nameHit)));
-      return;
-    }
-    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-    const preview = URL.createObjectURL(file);
-    objectUrlRef.current = preview;
-    setSelectedFile(file);
-    setPreviewUrl(preview);
-    logMediaPicker('PREVIEW CREATED', preview);
-  };
-
-  const save = async () => {
-    if (!selectedFile) return;
-    logMediaPicker('SAVE CLICKED');
-    setBusy(true);
-    try {
-      logMediaPicker('UPLOAD START');
-      await onSave(selectedFile);
-      logMediaPicker('UPLOAD SUCCESS');
-      onClose();
-    } catch {
-      onToast(t('profile_setup.avatar_save_error'));
-    } finally {
-      setBusy(false);
-    }
-  };
-
   if (!open) return null;
-
   return (
-    <ModalChrome
-      title={t('profile_setup.avatar_title')}
-      subtitle={t('profile_setup.avatar_sub')}
+    <SimpleAvatarUploadModal
+      draft={draft}
+      onDraftChange={onDraftChange}
       onClose={onClose}
-      closeOnBackdrop={false}
-      footer={
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="px-4 py-2.5 text-slate-600 font-bold text-sm hover:text-slate-900">
-            {t('common.cancel')}
-          </button>
-          <button
-            type="button"
-            disabled={!selectedFile || busy}
-            onClick={() => void save()}
-            className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black disabled:opacity-40 min-h-[44px]"
-          >
-            {busy ? t('profile_setup.uploading') : t('profile_setup.save')}
-          </button>
-        </div>
-      }
-    >
-      <div className="flex flex-col items-center gap-4">
-        <FilePickerLabel
-          accept={AVATAR_ACCEPT}
-          disabled={busy}
-          onFiles={handlePick}
-          className="w-32 h-32 rounded-full ring-4 ring-slate-100 overflow-hidden bg-slate-100 shadow-inner"
-        >
-          {displayPreview ? (
-            <img src={displayPreview} alt="" className="w-full h-full object-cover pointer-events-none" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-400 pointer-events-none">
-              <Icons.User className="w-12 h-12" />
-            </div>
-          )}
-          {busy ? (
-            <div className="absolute inset-0 z-[70] bg-black/30 flex items-center justify-center pointer-events-none">
-              <Icons.Loader2 className="w-8 h-8 text-white animate-spin" />
-            </div>
-          ) : null}
-        </FilePickerLabel>
-        {selectedFile ? (
-          <p className="text-xs font-semibold text-slate-600 truncate max-w-full px-2" title={selectedFile.name}>
-            {selectedFile.name}
-          </p>
-        ) : null}
-        <p className="text-xs text-center text-slate-500 leading-relaxed max-w-sm">{t('profile_setup.avatar_hint')}</p>
-        <FilePickerLabel
-          accept={AVATAR_ACCEPT}
-          disabled={busy}
-          onFiles={handlePick}
-          className="text-sm font-bold text-sky-700 hover:text-sky-900 min-h-[44px] inline-flex items-center justify-center px-4"
-        >
-          {t('profile_setup.avatar_choose')}
-        </FilePickerLabel>
-      </div>
-    </ModalChrome>
+      initialPreview={initialPreview}
+      onSave={onSave}
+      t={t}
+      onToast={onToast}
+    />
   );
 }
 

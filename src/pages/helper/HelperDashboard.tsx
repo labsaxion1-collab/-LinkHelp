@@ -30,7 +30,10 @@ import { HelperSidebarDisclosure } from '@/components/helpers/HelperSidebarDiscl
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
 import { SkillsProfileModal } from '@/components/helpers/profile-setup/ProfileSetupModals';
-import { SimpleAvatarUploadModal } from '@/components/helpers/profile-setup/SimpleAvatarUploadModal';
+import {
+  SimpleAvatarUploadModal,
+  type AvatarUploadDraft,
+} from '@/components/helpers/profile-setup/SimpleAvatarUploadModal';
 import {
   loadHelperProfileSettings,
   saveHelperProfileSettings,
@@ -84,6 +87,7 @@ export default function HelperDashboard() {
   const [profileSettings, setProfileSettings] = useState<HelperProfileSettings>(() => loadHelperProfileSettings());
   type ProfileSetupModal = null | 'avatar' | 'skills';
   const [profileSetupModal, setProfileSetupModal] = useState<ProfileSetupModal>(null);
+  const [avatarDraft, setAvatarDraft] = useState<AvatarUploadDraft | null>(null);
 
   const { t, language } = useLanguage();
   const me = useSessionViewer();
@@ -196,7 +200,10 @@ export default function HelperDashboard() {
   );
 
   const onCompletionRowClick = React.useCallback((key: CompletionRowKey) => {
-    if (key === 'profilePhoto') setProfileSetupModal('avatar');
+    if (key === 'profilePhoto') {
+      console.log('[avatar-state] open avatar modal (SimpleAvatarUploadModal)');
+      setProfileSetupModal('avatar');
+    }
     else if (key === 'skillsSelected') setProfileSetupModal('skills');
   }, []);
 
@@ -746,7 +753,26 @@ export default function HelperDashboard() {
 
       {profileSetupModal === 'avatar' && (
         <SimpleAvatarUploadModal
-          onClose={() => setProfileSetupModal(null)}
+          draft={avatarDraft}
+          onDraftChange={(next) => {
+            setAvatarDraft((prev) => {
+              if (prev?.previewUrl && prev.previewUrl !== next?.previewUrl) {
+                URL.revokeObjectURL(prev.previewUrl);
+              }
+              console.log('[avatar-state] parent onDraftChange', {
+                from: prev?.file?.name ?? null,
+                to: next?.file?.name ?? null,
+              });
+              return next;
+            });
+          }}
+          onClose={() => {
+            setAvatarDraft((d) => {
+              if (d?.previewUrl) URL.revokeObjectURL(d.previewUrl);
+              return null;
+            });
+            setProfileSetupModal(null);
+          }}
           initialPreview={helperAvatarUrl}
           onSave={handleAvatarSave}
           t={t}
@@ -842,6 +868,7 @@ export default function HelperDashboard() {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  console.log('[avatar-state] open avatar modal (SimpleAvatarUploadModal)');
                   setProfileSetupModal('avatar');
                 }}
                 className="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300"

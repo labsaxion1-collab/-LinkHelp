@@ -4,14 +4,15 @@ function handleInputChange(
   e: React.ChangeEvent<HTMLInputElement>,
   onFiles: (files: FileList | null) => void,
 ) {
+  const files = e.target.files;
+  if (!files?.length) {
+    console.log('[media-picker] INPUT CHANGE (empty — ignored)');
+    return;
+  }
   console.log('[media-picker] INPUT CHANGE');
-  const file = e.target.files?.[0] ?? null;
-  console.log('[media-picker] FILE:', file);
-  onFiles(e.target.files);
-  const input = e.target;
-  window.setTimeout(() => {
-    input.value = '';
-  }, 0);
+  console.log('[media-picker] FILE:', files[0]);
+  onFiles(files);
+  e.target.value = '';
 }
 
 type FilePickerLabelProps = {

@@ -1,6 +1,5 @@
-/** Dev-only logs for file picker / upload flows */
+/** Temporary debug logs for file picker / upload (always on until flow is stable). */
 export function logMediaPicker(step: string, detail?: unknown) {
-  if (!import.meta.env.DEV) return;
   if (detail !== undefined) console.log(`[media-picker] ${step}`, detail);
   else console.log(`[media-picker] ${step}`);
 }

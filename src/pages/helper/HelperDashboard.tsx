@@ -110,6 +110,10 @@ export default function HelperDashboard() {
   type ProfileSetupModal = null | 'avatar' | 'skills' | 'portfolioPhoto' | 'portfolioVideo' | 'reviews' | 'verification';
   const [profileSetupModal, setProfileSetupModal] = useState<ProfileSetupModal>(null);
 
+  useEffect(() => {
+    console.log('[media-picker] HelperDashboard active modal:', profileSetupModal);
+  }, [profileSetupModal]);
+
   const { t, language } = useLanguage();
   const me = useSessionViewer();
   const { session, profile, isConfigured, updateProfile, refreshProfile } = useAuth();
@@ -900,15 +904,14 @@ export default function HelperDashboard() {
         onCompleted={completePortfolioGuide}
       />
 
-      {profileSetupModal === 'avatar' ? (
-        <AvatarProfileModal
-          onClose={() => setProfileSetupModal(null)}
-          initialPreview={profileSettings.avatarDataUrl ?? profile?.avatar_url ?? null}
-          onSave={handleAvatarSave}
-          t={t}
-          onToast={pushToast}
-        />
-      ) : null}
+      <AvatarProfileModal
+        open={profileSetupModal === 'avatar'}
+        onClose={() => setProfileSetupModal(null)}
+        initialPreview={profileSettings.avatarDataUrl ?? profile?.avatar_url ?? null}
+        onSave={handleAvatarSave}
+        t={t}
+        onToast={pushToast}
+      />
       <SkillsProfileModal
         open={profileSetupModal === 'skills'}
         onClose={() => setProfileSetupModal(null)}
@@ -917,32 +920,30 @@ export default function HelperDashboard() {
         onSaveAsync={handleSkillsSave}
         t={t}
       />
-      {profileSetupModal === 'portfolioPhoto' ? (
-        <PortfolioUploadModal
-          onClose={() => setProfileSetupModal(null)}
-          kind="photo"
-          tier={helperTier}
-          portfolio={portfolioPersist}
-          onAdd={handlePortfolioItemAdded}
-          helperUserId={storageUserId}
-          uploadToSupabase={Boolean(isConfigured && storageUserId)}
-          t={t}
-          onToast={pushToast}
-        />
-      ) : null}
-      {profileSetupModal === 'portfolioVideo' ? (
-        <PortfolioUploadModal
-          onClose={() => setProfileSetupModal(null)}
-          kind="video"
-          tier={helperTier}
-          portfolio={portfolioPersist}
-          onAdd={handlePortfolioItemAdded}
-          helperUserId={storageUserId}
-          uploadToSupabase={Boolean(isConfigured && storageUserId)}
-          t={t}
-          onToast={pushToast}
-        />
-      ) : null}
+      <PortfolioUploadModal
+        open={profileSetupModal === 'portfolioPhoto'}
+        onClose={() => setProfileSetupModal(null)}
+        kind="photo"
+        tier={helperTier}
+        portfolio={portfolioPersist}
+        onAdd={handlePortfolioItemAdded}
+        helperUserId={storageUserId}
+        uploadToSupabase={Boolean(isConfigured && storageUserId)}
+        t={t}
+        onToast={pushToast}
+      />
+      <PortfolioUploadModal
+        open={profileSetupModal === 'portfolioVideo'}
+        onClose={() => setProfileSetupModal(null)}
+        kind="video"
+        tier={helperTier}
+        portfolio={portfolioPersist}
+        onAdd={handlePortfolioItemAdded}
+        helperUserId={storageUserId}
+        uploadToSupabase={Boolean(isConfigured && storageUserId)}
+        t={t}
+        onToast={pushToast}
+      />
       <ReviewsExplainerModal
         open={profileSetupModal === 'reviews'}
         onClose={() => setProfileSetupModal(null)}

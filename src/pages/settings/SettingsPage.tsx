@@ -1,5 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react';
-import { FilePickerLabel, NativeFileInput } from '@/components/common/HiddenFileInput';
+import { useEffect, useRef, useState } from 'react';
+import { FilePickerLabel } from '@/components/common/HiddenFileInput';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { GraduationCap, Settings, Bell, Shield, User, Loader2, Camera } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -21,7 +21,6 @@ export default function SettingsPage() {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const avatarInputId = useId();
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [avatarSelectedFile, setAvatarSelectedFile] = useState<File | null>(null);
   const [avatarSaving, setAvatarSaving] = useState(false);
@@ -123,13 +122,13 @@ export default function SettingsPage() {
   const onAvatarFile = (files: FileList | null) => {
     const f = files?.[0];
     if (!f) return;
-    logMediaPicker('FILE SELECTED', { name: f.name, type: f.type, size: f.size });
+    console.log('[media-picker] SET_SELECTED_FILE', f.name);
     revokeAvatarObjectUrl();
-    const url = URL.createObjectURL(f);
-    avatarObjectUrlRef.current = url;
-    setAvatarPreviewUrl(url);
+    const preview = URL.createObjectURL(f);
+    avatarObjectUrlRef.current = preview;
     setAvatarSelectedFile(f);
-    logMediaPicker('PREVIEW CREATED', url);
+    setAvatarPreviewUrl(preview);
+    logMediaPicker('PREVIEW CREATED', preview);
   };
 
   const saveAvatar = async () => {
@@ -238,21 +237,16 @@ export default function SettingsPage() {
           <p className="text-sm text-gray-600 mb-4">{t('app_pages.settings_avatar_hint')}</p>
           <div className="flex flex-col sm:flex-row gap-6 items-start">
             <div className="relative shrink-0">
-              <NativeFileInput
-                inputId={avatarInputId}
+              <FilePickerLabel
                 accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
                 disabled={!isConfigured || avatarSaving}
                 onFiles={onAvatarFile}
-              />
-              <FilePickerLabel
-                inputId={avatarInputId}
-                disabled={!isConfigured || avatarSaving}
-                className="relative block h-28 w-28 rounded-full overflow-hidden border-4 border-gray-100 bg-gray-100 shadow-inner"
+                className="h-28 w-28 rounded-full overflow-hidden border-4 border-gray-100 bg-gray-100 shadow-inner"
               >
                 {avatarDisplay ? (
-                  <img src={avatarDisplay} alt="" className="h-full w-full object-cover" />
+                  <img src={avatarDisplay} alt="" className="h-full w-full object-cover pointer-events-none" />
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center text-gray-400">
+                  <div className="h-full w-full flex items-center justify-center text-gray-400 pointer-events-none">
                     <User className="w-12 h-12" />
                   </div>
                 )}
@@ -270,8 +264,9 @@ export default function SettingsPage() {
                 </p>
               ) : null}
               <FilePickerLabel
-                inputId={avatarInputId}
+                accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
                 disabled={!isConfigured || avatarSaving}
+                onFiles={onAvatarFile}
                 className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-50 min-h-[44px]"
               >
                 {t('app_pages.settings_avatar_choose')}

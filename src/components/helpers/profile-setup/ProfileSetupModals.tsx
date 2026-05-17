@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Icons from 'lucide-react';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 export { SkillsProfileModal } from './SkillsProfileModal';
-import { FilePickerLabel, FilePickerZone, NativeFileInput } from '@/components/common/HiddenFileInput';
+import { FilePickerLabel, FilePickerZone } from '@/components/common/HiddenFileInput';
 import type { HelperPortfolioPersist, PortfolioMediaItem } from '@/utils/helperPortfolioState';
 import {
   buildPhotoItemFromFile,
@@ -26,8 +26,6 @@ import {
 } from '@/utils/portfolioMediaProcessing';
 import { contactGuardToastKey, detectContactInText } from '@/utils/portfolioContactGuard';
 import { logMediaPicker } from '@/utils/mediaPickerDebug';
-import { cropSquareAvatarFromFile } from '@/utils/portfolioMediaProcessing';
-import { fileFromDataUrl } from '@/lib/storageUpload';
 import {
   portfolioMaxFeatured,
   portfolioMaxPhotos,
@@ -53,6 +51,7 @@ function ModalChrome({
   footer,
   betweenScrollAndFooter,
   onClose,
+  closeOnBackdrop = true,
 }: {
   title: string;
   subtitle?: string;
@@ -61,11 +60,12 @@ function ModalChrome({
   /** Pinned between scroll body and footer (e.g. selected skills strip). */
   betweenScrollAndFooter?: React.ReactNode;
   onClose: () => void;
+  closeOnBackdrop?: boolean;
 }) {
   return (
     <div
       className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm animate-in fade-in duration-200"
-      onClick={onClose}
+      onClick={closeOnBackdrop ? onClose : undefined}
       role="presentation"
     >
       <div
@@ -98,84 +98,75 @@ function ModalChrome({
   );
 }
 
+const AVATAR_ACCEPT = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
+
 export function AvatarProfileModal({
+  open,
   onClose,
   initialPreview,
   onSave,
   t,
   onToast,
 }: {
+  open: boolean;
   onClose: () => void;
   initialPreview: string | null;
   onSave: (file: File) => void | Promise<void>;
   t: TFn;
   onToast: (msg: string) => void;
 }) {
-  const avatarInputId = useId();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const objectUrlRef = useRef<string | null>(null);
-  const selectedFileRef = useRef<File | null>(null);
-
-  const revokeObjectUrl = useCallback(() => {
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-      objectUrlRef.current = null;
-    }
-    setPreviewUrl(null);
-  }, []);
-
-  useEffect(() => () => revokeObjectUrl(), [revokeObjectUrl]);
 
   useEffect(() => {
-    if (!selectedFile) return;
-    logMediaPicker('SELECTED FILE STATE UPDATED', { name: selectedFile.name, size: selectedFile.size });
-    if (previewUrl) logMediaPicker('SAVE ENABLED');
-  }, [selectedFile, previewUrl]);
-
-  const displayPreview = previewUrl ?? initialPreview ?? null;
-  const canSave = selectedFile !== null && !busy;
-
-  const onPick = useCallback(
-    (files: FileList | null) => {
-      const file = files?.[0];
-      if (!file) return;
-      logMediaPicker('FILE SELECTED', { name: file.name, type: file.type, size: file.size });
-      const nameHit = detectContactInText(file.name);
-      if (nameHit) {
-        onToast(t(contactGuardToastKey(nameHit)));
-        return;
-      }
+    console.log('[media-picker] AvatarProfileModal', open ? 'OPEN' : 'CLOSED');
+    if (!open) {
       if (objectUrlRef.current) {
         URL.revokeObjectURL(objectUrlRef.current);
         objectUrlRef.current = null;
       }
-      const url = URL.createObjectURL(file);
-      objectUrlRef.current = url;
-      selectedFileRef.current = file;
-      setPreviewUrl(url);
-      setSelectedFile(file);
-      logMediaPicker('PREVIEW CREATED', url);
-    },
-    [onToast, t],
-  );
+      setPreviewUrl(null);
+      setSelectedFile(null);
+      setBusy(false);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    console.log('[media-picker] RENDER', {
+      open,
+      selectedFile: selectedFile?.name ?? null,
+      previewUrl: previewUrl ? 'blob' : null,
+    });
+  });
+
+  const displayPreview = previewUrl ?? initialPreview ?? null;
+
+  const handlePick = (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    console.log('[media-picker] SET_SELECTED_FILE', file.name);
+    const nameHit = detectContactInText(file.name);
+    if (nameHit) {
+      onToast(t(contactGuardToastKey(nameHit)));
+      return;
+    }
+    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    const preview = URL.createObjectURL(file);
+    objectUrlRef.current = preview;
+    setSelectedFile(file);
+    setPreviewUrl(preview);
+    logMediaPicker('PREVIEW CREATED', preview);
+  };
 
   const save = async () => {
-    const file = selectedFileRef.current ?? selectedFile;
-    if (!file) return;
+    if (!selectedFile) return;
     logMediaPicker('SAVE CLICKED');
     setBusy(true);
     try {
-      let uploadFile: File = file;
-      try {
-        const cropped = await cropSquareAvatarFromFile(file);
-        uploadFile = await fileFromDataUrl(cropped, 'avatar.jpg', 'image/jpeg');
-      } catch {
-        logMediaPicker('CROP FALLBACK — uploading original file');
-      }
       logMediaPicker('UPLOAD START');
-      await onSave(uploadFile);
+      await onSave(selectedFile);
       logMediaPicker('UPLOAD SUCCESS');
       onClose();
     } catch {
@@ -185,11 +176,14 @@ export function AvatarProfileModal({
     }
   };
 
+  if (!open) return null;
+
   return (
     <ModalChrome
       title={t('profile_setup.avatar_title')}
       subtitle={t('profile_setup.avatar_sub')}
       onClose={onClose}
+      closeOnBackdrop={false}
       footer={
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onClose} className="px-4 py-2.5 text-slate-600 font-bold text-sm hover:text-slate-900">
@@ -197,7 +191,7 @@ export function AvatarProfileModal({
           </button>
           <button
             type="button"
-            disabled={!canSave}
+            disabled={!selectedFile || busy}
             onClick={() => void save()}
             className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black disabled:opacity-40 min-h-[44px]"
           >
@@ -206,27 +200,22 @@ export function AvatarProfileModal({
         </div>
       }
     >
-      <NativeFileInput
-        inputId={avatarInputId}
-        accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-        disabled={busy}
-        onFiles={(files) => void onPick(files)}
-      />
       <div className="flex flex-col items-center gap-4">
         <FilePickerLabel
-          inputId={avatarInputId}
+          accept={AVATAR_ACCEPT}
           disabled={busy}
-          className="relative block w-32 h-32 rounded-full ring-4 ring-slate-100 overflow-hidden bg-slate-100 shadow-inner"
+          onFiles={handlePick}
+          className="w-32 h-32 rounded-full ring-4 ring-slate-100 overflow-hidden bg-slate-100 shadow-inner"
         >
           {displayPreview ? (
-            <img src={displayPreview} alt="" className="w-full h-full object-cover" />
+            <img src={displayPreview} alt="" className="w-full h-full object-cover pointer-events-none" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-400">
+            <div className="w-full h-full flex items-center justify-center text-slate-400 pointer-events-none">
               <Icons.User className="w-12 h-12" />
             </div>
           )}
           {busy ? (
-            <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 z-[70] bg-black/30 flex items-center justify-center pointer-events-none">
               <Icons.Loader2 className="w-8 h-8 text-white animate-spin" />
             </div>
           ) : null}
@@ -238,9 +227,10 @@ export function AvatarProfileModal({
         ) : null}
         <p className="text-xs text-center text-slate-500 leading-relaxed max-w-sm">{t('profile_setup.avatar_hint')}</p>
         <FilePickerLabel
-          inputId={avatarInputId}
+          accept={AVATAR_ACCEPT}
           disabled={busy}
-          className="text-sm font-bold text-sky-700 hover:text-sky-900 min-h-[44px] inline-flex items-center"
+          onFiles={handlePick}
+          className="text-sm font-bold text-sky-700 hover:text-sky-900 min-h-[44px] inline-flex items-center justify-center px-4"
         >
           {t('profile_setup.avatar_choose')}
         </FilePickerLabel>
@@ -251,6 +241,7 @@ export function AvatarProfileModal({
 
 
 export function PortfolioUploadModal({
+  open,
   onClose,
   kind,
   tier,
@@ -261,6 +252,7 @@ export function PortfolioUploadModal({
   helperUserId,
   uploadToSupabase = false,
 }: {
+  open: boolean;
   onClose: () => void;
   kind: 'photo' | 'video';
   tier: HelperSubscriptionTier;
@@ -292,8 +284,35 @@ export function PortfolioUploadModal({
     setVideoPreviewUrl(null);
   }, []);
 
+  useEffect(() => {
+    console.log('[media-picker] PortfolioUploadModal', kind, open ? 'OPEN' : 'CLOSED');
+    if (!open) {
+      revokePreviewObjectUrl();
+      setFile(null);
+      fileRef.current = null;
+      setCaption('');
+      setSkillId('');
+      setFeatured(false);
+      setBusy(false);
+      setVideoValid(kind !== 'video');
+    }
+  }, [open, kind, revokePreviewObjectUrl]);
+
+  useEffect(() => {
+    console.log('[media-picker] RENDER', {
+      kind,
+      open,
+      file: file?.name ?? null,
+      photoPreviewUrl: photoPreviewUrl ? 'blob' : null,
+      videoPreviewUrl: videoPreviewUrl ? 'blob' : null,
+    });
+  });
+
+  useEffect(() => () => revokePreviewObjectUrl(), [revokePreviewObjectUrl]);
+
   const applyPickedFile = useCallback(
     (f: File) => {
+      console.log('[media-picker] SET_SELECTED_FILE', f.name);
       if (previewObjectUrlRef.current) {
         URL.revokeObjectURL(previewObjectUrlRef.current);
         previewObjectUrlRef.current = null;
@@ -314,14 +333,6 @@ export function PortfolioUploadModal({
     },
     [kind],
   );
-
-  useEffect(() => () => revokePreviewObjectUrl(), [revokePreviewObjectUrl]);
-
-  useEffect(() => {
-    if (!file) return;
-    logMediaPicker('SELECTED FILE STATE UPDATED', { kind, name: file.name, size: file.size });
-    if (kind === 'photo' || videoValid) logMediaPicker('SAVE ENABLED');
-  }, [file, kind, videoValid]);
 
   const maxP = portfolioMaxPhotos(tier);
   const maxV = portfolioMaxVideos(tier);
@@ -369,7 +380,10 @@ export function PortfolioUploadModal({
     applyPickedFile(f);
   };
 
-  const canAdd = file !== null && (kind === 'photo' || videoValid) && !busy && !atPhotoCap && !atVideoCap;
+  const canAdd =
+    file !== null && !busy && !atPhotoCap && !atVideoCap && (kind === 'photo' || videoValid);
+
+  if (!open) return null;
 
   const submit = async () => {
     const uploadFile = fileRef.current ?? file;
@@ -486,6 +500,7 @@ export function PortfolioUploadModal({
       title={kind === 'photo' ? t('profile_setup.portfolio_photo_title') : t('profile_setup.portfolio_video_title')}
       subtitle={kind === 'photo' ? t('profile_setup.portfolio_photo_sub') : t('profile_setup.portfolio_video_sub')}
       onClose={onClose}
+      closeOnBackdrop={false}
       footer={
         <div className="flex flex-col sm:flex-row justify-end gap-2">
           <button type="button" onClick={onClose} className="px-4 py-2.5 text-slate-600 font-bold text-sm order-2 sm:order-1">

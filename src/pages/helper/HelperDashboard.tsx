@@ -29,7 +29,8 @@ import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/Helpe
 import { HelperSidebarDisclosure } from '@/components/helpers/HelperSidebarDisclosure';
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
-import { AvatarProfileModal, SkillsProfileModal } from '@/components/helpers/profile-setup/ProfileSetupModals';
+import { SkillsProfileModal } from '@/components/helpers/profile-setup/ProfileSetupModals';
+import { SimpleAvatarUploadModal } from '@/components/helpers/profile-setup/SimpleAvatarUploadModal';
 import {
   loadHelperProfileSettings,
   saveHelperProfileSettings,
@@ -743,14 +744,15 @@ export default function HelperDashboard() {
         </div>
       )}
 
-      <AvatarProfileModal
-        open={profileSetupModal === 'avatar'}
-        onClose={() => setProfileSetupModal(null)}
-        initialPreview={helperAvatarUrl}
-        onSave={handleAvatarSave}
-        t={t}
-        onToast={pushToast}
-      />
+      {profileSetupModal === 'avatar' && (
+        <SimpleAvatarUploadModal
+          onClose={() => setProfileSetupModal(null)}
+          initialPreview={helperAvatarUrl}
+          onSave={handleAvatarSave}
+          t={t}
+          onToast={pushToast}
+        />
+      )}
       <SkillsProfileModal
         open={profileSetupModal === 'skills'}
         onClose={() => setProfileSetupModal(null)}

@@ -26,6 +26,7 @@ import {
 } from '@/utils/portfolioMediaProcessing';
 import { contactGuardToastKey, detectContactInText } from '@/utils/portfolioContactGuard';
 import { logMediaPicker } from '@/utils/mediaPickerDebug';
+import { SimpleAvatarUploadModal } from './SimpleAvatarUploadModal';
 import {
   portfolioMaxFeatured,
   portfolioMaxPhotos,
@@ -119,27 +120,6 @@ export function AvatarProfileModal({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const objectUrlRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    console.log('[media-picker] AvatarProfileModal', open ? 'OPEN' : 'CLOSED');
-    if (!open) {
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = null;
-      }
-      setPreviewUrl(null);
-      setSelectedFile(null);
-      setBusy(false);
-    }
-  }, [open]);
-
-  useEffect(() => {
-    console.log('[media-picker] RENDER', {
-      open,
-      selectedFile: selectedFile?.name ?? null,
-      previewUrl: previewUrl ? 'blob' : null,
-    });
-  });
 
   const displayPreview = previewUrl ?? initialPreview ?? null;
 

@@ -47,6 +47,7 @@ export function markLessonComplete(
     portfolio?: HelperPortfolioPersist;
     profile?: HelperProfileSettings;
     profileBreakdownPercent?: number;
+    avatarUrl?: string | null;
   },
 ): HelperTrainingPersist {
   const completedLessonIds = prev.completedLessonIds.includes(lessonId)
@@ -77,9 +78,7 @@ export function markLessonComplete(
 
   const pct =
     opts?.profileBreakdownPercent ??
-    (portfolio
-      ? computeHelperProfileCompletion(portfolio, opts?.profile ?? loadHelperProfileSettings()).percent
-      : 0);
+    computeHelperProfileCompletion(opts?.profile ?? loadHelperProfileSettings(), opts?.avatarUrl).percent;
   if (pct >= 80 && !achievementIds.includes('trusted_profile')) {
     achievementIds.push('trusted_profile');
   }

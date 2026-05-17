@@ -38,8 +38,7 @@ export default function HelperTrainingPage() {
     saveTrainingProgress(training);
   }, [training]);
 
-  const portfolio = loadHelperPortfolio();
-  const profileBreakdown = computeHelperProfileCompletion(portfolio, loadHelperProfileSettings());
+  const profileBreakdown = computeHelperProfileCompletion(loadHelperProfileSettings());
 
   const trainingPct = trainingCompletionRatio(tier, training.completedLessonIds);
   const combinedPct = combinedProfileStrengthPercent(profileBreakdown.percent, tier, training.completedLessonIds);
@@ -47,10 +46,9 @@ export default function HelperTrainingPage() {
 
   const suggestions = useMemo(() => {
     const out: string[] = [];
-    if (!profileBreakdown.portfolioPhoto) out.push(t('helper_profile_completion.hint_portfolio'));
-    if (!profileBreakdown.portfolioVideo) out.push(t('training.suggest_video'));
+    if (!profileBreakdown.profilePhoto) out.push(t('helper_profile_completion.suggest_avatar'));
+    if (!profileBreakdown.skillsSelected) out.push(t('helper_profile_completion.suggest_skills'));
     if (trainingPct < 100) out.push(t('training.suggest_keep_learning'));
-    if (!profileBreakdown.verified) out.push(t('helper_profile_completion.footer_hint'));
     return out.slice(0, 4);
   }, [profileBreakdown, trainingPct, t]);
 

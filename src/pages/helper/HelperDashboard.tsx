@@ -5,13 +5,10 @@ import * as Icons from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useAuth } from '@/context/AuthContext';
-import { uploadAvatarImage, removeStorageObjects, STORAGE_BUCKETS } from '@/lib/storageUpload';
+import { uploadAvatarImage } from '@/lib/storageUpload';
 import { logMediaPicker } from '@/utils/mediaPickerDebug';
-import {
-  fetchHelperPortfolioItems,
-  deleteHelperPortfolioItemRow,
-} from '@/services/supabase/portfolioRemote';
 import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
+import { initialsForName } from '@/utils/avatarUrl';
 import { filterValidSkillKeys } from '@/data/helperSkillsCatalog';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppMode } from '@/context/AppModeContext';
@@ -28,30 +25,11 @@ import { UI_VISIBILITY } from '@/config/uiVisibility';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import type { Application } from '@/types/application';
 import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
-import { TrainingCertBadge } from '@/components/training/TrainingCertBadge';
-import { computeTrainingCertLevel, loadTrainingProgress } from '@/utils/helperTrainingProgress';
-import { PortfolioSetupGuideModal } from '@/components/helpers/portfolio/PortfolioSetupGuideModal';
 import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/HelperProfileCompletionBar';
-import { HelperPortfolioPanel } from '@/components/helpers/portfolio/HelperPortfolioPanel';
 import { HelperSidebarDisclosure } from '@/components/helpers/HelperSidebarDisclosure';
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
-import {
-  AvatarProfileModal,
-  PortfolioUploadModal,
-  ReviewsExplainerModal,
-  SkillsProfileModal,
-  VerificationExplainerModal,
-} from '@/components/helpers/profile-setup/ProfileSetupModals';
-import {
-  loadHelperPortfolio,
-  saveHelperPortfolio,
-  portfolioPhotos,
-  portfolioTotalItems,
-  portfolioVideos,
-  type HelperPortfolioPersist,
-  type PortfolioMediaItem,
-} from '@/utils/helperPortfolioState';
+import { AvatarProfileModal, SkillsProfileModal } from '@/components/helpers/profile-setup/ProfileSetupModals';
 import {
   loadHelperProfileSettings,
   saveHelperProfileSettings,
@@ -102,17 +80,9 @@ export default function HelperDashboard() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [selectedPlanUpgrade, setSelectedPlanUpgrade] = useState<'ELITE' | 'PRO_HELP' | null>(null);
   const successModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const portfolioHashHandledRef = useRef(false);
-
-  const [portfolioPersist, setPortfolioPersist] = useState<HelperPortfolioPersist>(() => loadHelperPortfolio());
-  const [showPortfolioGuide, setShowPortfolioGuide] = useState(false);
   const [profileSettings, setProfileSettings] = useState<HelperProfileSettings>(() => loadHelperProfileSettings());
-  type ProfileSetupModal = null | 'avatar' | 'skills' | 'portfolioPhoto' | 'portfolioVideo' | 'reviews' | 'verification';
+  type ProfileSetupModal = null | 'avatar' | 'skills';
   const [profileSetupModal, setProfileSetupModal] = useState<ProfileSetupModal>(null);
-
-  useEffect(() => {
-    console.log('[media-picker] HelperDashboard active modal:', profileSetupModal);
-  }, [profileSetupModal]);
 
   const { t, language } = useLanguage();
   const me = useSessionViewer();
@@ -144,27 +114,12 @@ export default function HelperDashboard() {
   }, [location.pathname, activeTab]);
 
   useEffect(() => {
-    saveHelperPortfolio(portfolioPersist);
-  }, [portfolioPersist]);
-
-  useEffect(() => {
     saveHelperProfileSettings(profileSettings);
   }, [profileSettings]);
 
   const storageUserId = session?.user?.id ?? profile?.id ?? null;
-
-  useEffect(() => {
-    if (!isConfigured || !storageUserId) return;
-    let cancelled = false;
-    void (async () => {
-      const remote = await fetchHelperPortfolioItems(storageUserId);
-      if (cancelled || remote.length === 0) return;
-      setPortfolioPersist((prev) => ({ ...prev, items: remote }));
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isConfigured, storageUserId]);
+  const helperAvatarUrl = profile?.avatar_url?.trim() || profileSettings.avatarDataUrl?.trim() || null;
+  const helperInitials = initialsForName(me.name);
 
   useEffect(() => {
     if (!isConfigured || !storageUserId) return;
@@ -181,29 +136,15 @@ export default function HelperDashboard() {
     };
   }, [isConfigured, storageUserId]);
 
-  const portfolioEmpty = portfolioTotalItems(portfolioPersist) === 0;
   const completionBreakdown = React.useMemo(
-    () => computeHelperProfileCompletion(portfolioPersist, profileSettings),
-    [portfolioPersist, profileSettings],
+    () => computeHelperProfileCompletion(profileSettings, helperAvatarUrl),
+    [profileSettings, helperAvatarUrl],
   );
 
   const completionSuggestions = React.useMemo(() => {
     const keys = helperProfileSuggestionKeys(completionBreakdown);
     return keys.map((k) => t(k));
   }, [completionBreakdown, t]);
-
-  const portfolioPreview = React.useMemo(() => {
-    const photos = portfolioPhotos(portfolioPersist);
-    const videos = portfolioVideos(portfolioPersist);
-    const latestPhoto = [...photos].sort((a, b) => b.addedAt - a.addedAt)[0];
-    const latestVideo = [...videos].sort((a, b) => b.addedAt - a.addedAt)[0];
-    return {
-      latestPhotoThumb: latestPhoto?.thumbDataUrl ?? latestPhoto?.fullImageDataUrl ?? latestPhoto?.publicUrl ?? null,
-      latestVideoThumb: latestVideo?.thumbDataUrl ?? latestVideo?.publicUrl ?? null,
-      photoCount: photos.length,
-      videoCount: videos.length,
-    };
-  }, [portfolioPersist]);
 
   const pushToast = React.useCallback((message: string) => {
     setToastNotification({ message, show: true });
@@ -253,70 +194,10 @@ export default function HelperDashboard() {
     [isConfigured, session?.user?.id, updateProfile, refreshProfile, pushToast, t],
   );
 
-  const handleRemovePortfolioItem = React.useCallback(
-    async (item: PortfolioMediaItem) => {
-      if (isConfigured && item.storagePath) {
-        try {
-          const bucket =
-            item.kind === 'photo' ? STORAGE_BUCKETS.portfolioImages : STORAGE_BUCKETS.portfolioVideos;
-          await removeStorageObjects(bucket, [item.storagePath]);
-        } catch {
-          pushToast(t('profile_setup.delete_media_error'));
-          throw new Error('STORAGE');
-        }
-      }
-      const isUuid =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(item.id);
-      if (isConfigured && isUuid) {
-        const ok = await deleteHelperPortfolioItemRow(item.id);
-        if (!ok) {
-          pushToast(t('profile_setup.delete_media_error'));
-          throw new Error('ROW');
-        }
-      }
-    },
-    [isConfigured, pushToast, t],
-  );
-
   const onCompletionRowClick = React.useCallback((key: CompletionRowKey) => {
-    switch (key) {
-      case 'profilePhoto':
-        setProfileSetupModal('avatar');
-        break;
-      case 'skillsSelected':
-        setProfileSetupModal('skills');
-        break;
-      case 'portfolioPhoto':
-        setProfileSetupModal('portfolioPhoto');
-        break;
-      case 'portfolioVideo':
-        setProfileSetupModal('portfolioVideo');
-        break;
-      case 'hasReviews':
-        setProfileSetupModal('reviews');
-        break;
-      case 'verified':
-        setProfileSetupModal('verification');
-        break;
-      default:
-        break;
-    }
+    if (key === 'profilePhoto') setProfileSetupModal('avatar');
+    else if (key === 'skillsSelected') setProfileSetupModal('skills');
   }, []);
-
-  const handlePortfolioItemAdded = React.useCallback(
-    (item: PortfolioMediaItem) => {
-      setPortfolioPersist((prev) => {
-        const totalBefore = portfolioTotalItems(prev);
-        const openGuide = totalBefore === 0 && !prev.guideDismissed;
-        if (openGuide) setTimeout(() => setShowPortfolioGuide(true), 0);
-        return { ...prev, items: [...prev.items, item] };
-      });
-      pushToast(
-        t(item.kind === 'photo' ? 'portfolio_onboarding.toast_added_photo' : 'portfolio_onboarding.toast_added_video'),
-      );
-    },
-    [pushToast, t],
-  );
 
   const dismissSuccessModal = () => {
     if (successModalTimerRef.current) {
@@ -342,7 +223,6 @@ export default function HelperDashboard() {
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
 
   const helperTier: HelperSubscriptionTier = me.subscriptionTier ?? 'BASIC';
-  const trainingCertLevel = computeTrainingCertLevel(helperTier, loadTrainingProgress().completedLessonIds);
   const subscriptionBenefitLines = React.useMemo(
     () => sidebarBenefitsForTier(helperTier, t),
     [helperTier, t],
@@ -374,16 +254,8 @@ export default function HelperDashboard() {
         colors: { bgOuter: 'from-yellow-50 to-white', border: 'border-yellow-100/50', bgInner: 'bg-yellow-200/40', text: 'text-yellow-900' },
       },
     ];
-    if (portfolioEmpty) {
-      base.push({
-        title: t('helper_dashboard.insight_portfolio_title'),
-        desc: t('helper_dashboard.insight_portfolio_desc'),
-        icon: <Icons.Camera className="w-3.5 h-3.5 text-teal-600" />,
-        colors: { bgOuter: 'from-teal-50 to-white', border: 'border-teal-100/50', bgInner: 'bg-teal-200/40', text: 'text-teal-900' },
-      });
-    }
     return base;
-  }, [t, portfolioEmpty]);
+  }, [t]);
 
   useEffect(() => {
     setCurrentInsightIndex((i) => i % Math.max(insights.length, 1));
@@ -517,33 +389,6 @@ export default function HelperDashboard() {
     } finally {
       setCancelBusy(false);
     }
-  };
-
-  const scrollToPortfolioSection = () => {
-    const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
-    const id = wide ? 'helper-portfolio-desktop' : 'helper-portfolio-mobile';
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  useEffect(() => {
-    if (location.hash !== '#portfolio') {
-      portfolioHashHandledRef.current = false;
-      return;
-    }
-    if (portfolioHashHandledRef.current) return;
-    portfolioHashHandledRef.current = true;
-    const timer = window.setTimeout(() => {
-      scrollToPortfolioSection();
-      navigate({ pathname: location.pathname, search: location.search, hash: '' }, { replace: true });
-    }, 120);
-    return () => {
-      clearTimeout(timer);
-      portfolioHashHandledRef.current = false;
-    };
-  }, [location.hash, location.pathname, location.search, navigate]);
-
-  const completePortfolioGuide = () => {
-    setPortfolioPersist((prev) => ({ ...prev, guideDismissed: true }));
   };
 
   // Filter jobs based on activeTab
@@ -898,16 +743,10 @@ export default function HelperDashboard() {
         </div>
       )}
 
-      <PortfolioSetupGuideModal
-        open={showPortfolioGuide}
-        onClose={() => setShowPortfolioGuide(false)}
-        onCompleted={completePortfolioGuide}
-      />
-
       <AvatarProfileModal
         open={profileSetupModal === 'avatar'}
         onClose={() => setProfileSetupModal(null)}
-        initialPreview={profileSettings.avatarDataUrl ?? profile?.avatar_url ?? null}
+        initialPreview={helperAvatarUrl}
         onSave={handleAvatarSave}
         t={t}
         onToast={pushToast}
@@ -920,45 +759,6 @@ export default function HelperDashboard() {
         onSaveAsync={handleSkillsSave}
         t={t}
       />
-      <PortfolioUploadModal
-        open={profileSetupModal === 'portfolioPhoto'}
-        onClose={() => setProfileSetupModal(null)}
-        kind="photo"
-        tier={helperTier}
-        portfolio={portfolioPersist}
-        onAdd={handlePortfolioItemAdded}
-        helperUserId={storageUserId}
-        uploadToSupabase={Boolean(isConfigured && storageUserId)}
-        t={t}
-        onToast={pushToast}
-      />
-      <PortfolioUploadModal
-        open={profileSetupModal === 'portfolioVideo'}
-        onClose={() => setProfileSetupModal(null)}
-        kind="video"
-        tier={helperTier}
-        portfolio={portfolioPersist}
-        onAdd={handlePortfolioItemAdded}
-        helperUserId={storageUserId}
-        uploadToSupabase={Boolean(isConfigured && storageUserId)}
-        t={t}
-        onToast={pushToast}
-      />
-      <ReviewsExplainerModal
-        open={profileSetupModal === 'reviews'}
-        onClose={() => setProfileSetupModal(null)}
-        reviewCount={profileSettings.reviewCount}
-        t={t}
-      />
-      <VerificationExplainerModal
-        open={profileSetupModal === 'verification'}
-        onClose={() => setProfileSetupModal(null)}
-        status={profileSettings.verificationStatus}
-        onStart={() => setProfileSettings((p) => ({ ...p, verificationStatus: 'pending' }))}
-        onDemoVerified={() => setProfileSettings((p) => ({ ...p, verificationStatus: 'verified' }))}
-        t={t}
-      />
-
       {/* Idea Modal */}
       {UI_VISIBILITY.ideas && showIdeaModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => setShowIdeaModal(false)}>
@@ -1035,18 +835,34 @@ export default function HelperDashboard() {
               to={ROUTES.settings}
               className="flex items-center gap-2.5 p-2.5 hover:bg-slate-50/90 transition-colors group w-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-200/80"
             >
-              <img
-                src={profileSettings.avatarDataUrl ?? me.avatar}
-                alt="Profile"
-                className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-slate-200/40 shrink-0"
-              />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setProfileSetupModal('avatar');
+                }}
+                className="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300"
+                aria-label={t('profile_setup.avatar_title')}
+              >
+                {helperAvatarUrl ? (
+                  <img
+                    src={helperAvatarUrl}
+                    alt=""
+                    className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-slate-200/40"
+                  />
+                ) : (
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-slate-200 to-slate-300 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-slate-200/40">
+                    {helperInitials}
+                  </span>
+                )}
+              </button>
               <div className="flex-1 min-w-0 pr-0.5">
                 <span className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors block truncate text-[15px] leading-tight">
                   {me.name}
                 </span>
                 <div className="flex flex-wrap items-center gap-1.5 mt-1">
                   <HelperPlanBadge tier={helperTier} size="sm" />
-                  <TrainingCertBadge level={trainingCertLevel} size="sm" />
                   <span className="text-[10px] text-sky-700 font-bold truncate uppercase tracking-wide">
                     {t('helper_dashboard.mode_helper')}
                   </span>
@@ -1120,27 +936,6 @@ export default function HelperDashboard() {
 
           <div className="space-y-2 shrink-0 min-h-0 pb-1">
             <HelperSidebarDisclosure
-              storageKey="portfolio"
-              title={t('helper_dashboard.sidebar_acc_portfolio')}
-              badge={String(portfolioPhotos(portfolioPersist).length + portfolioVideos(portfolioPersist).length)}
-            >
-              <div id="helper-portfolio-desktop" className="rounded-lg border border-sky-100/80 bg-gradient-to-br from-white to-sky-50/35 p-2.5 shadow-sm">
-                <HelperPortfolioPanel
-                  variant="desktop"
-                  portfolio={portfolioPersist}
-                  setPortfolio={setPortfolioPersist}
-                  tier={helperTier}
-                  onOpenGuide={() => setShowPortfolioGuide(true)}
-                  onAddPhoto={() => setProfileSetupModal('portfolioPhoto')}
-                  onAddVideo={() => setProfileSetupModal('portfolioVideo')}
-                  t={t}
-                  onToast={pushToast}
-                  onRemoveItem={handleRemovePortfolioItem}
-                />
-              </div>
-            </HelperSidebarDisclosure>
-
-            <HelperSidebarDisclosure
               storageKey="profile"
               title={t('helper_dashboard.sidebar_acc_profile')}
               badge={`${completionBreakdown.percent}%`}
@@ -1151,9 +946,6 @@ export default function HelperDashboard() {
                   breakdown={completionBreakdown}
                   onRowClick={onCompletionRowClick}
                   suggestions={completionSuggestions}
-                  preview={portfolioPreview}
-                  showPortfolioHint={!completionBreakdown.portfolioPhoto || !completionBreakdown.portfolioVideo}
-                  onOpenPortfolio={scrollToPortfolioSection}
                 />
                 <div>
                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
@@ -1310,30 +1102,6 @@ export default function HelperDashboard() {
               </div>
             </HelperSidebarDisclosure>
 
-            <HelperSidebarDisclosure storageKey="training" title={t('helper_dashboard.sidebar_acc_training')}>
-              <div className="space-y-3">
-                <Link
-                  to={ROUTES.helperTraining}
-                  className={`flex items-center justify-between rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors min-h-[44px] ${
-                    location.pathname === ROUTES.helperTraining
-                      ? 'border-indigo-300 bg-indigo-600 text-white shadow-sm'
-                      : 'border-slate-200 bg-white text-slate-800 hover:border-indigo-200 hover:bg-indigo-50/40'
-                  }`}
-                >
-                  <span className="flex items-center gap-2 min-w-0">
-                    <Icons.GraduationCap className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{t('training.nav_short')}</span>
-                  </span>
-                  <Icons.ChevronRight className="w-4 h-4 shrink-0 opacity-70" />
-                </Link>
-                <p className="text-[11px] text-slate-600 leading-snug">
-                  <Link to={ROUTES.helperTraining} className="font-semibold text-indigo-700 hover:text-indigo-900">
-                    {t('training.membership_link')}
-                  </Link>
-                </p>
-              </div>
-            </HelperSidebarDisclosure>
-
             <HelperSidebarDisclosure storageKey="skills" title={t('helper_dashboard.sidebar_acc_skills')}>
               <div className="space-y-1.5">
                 <div className="bg-white border border-slate-200 p-2 rounded-lg shadow-sm hover:border-sky-200 cursor-pointer transition-colors max-w-full overflow-hidden">
@@ -1425,47 +1193,12 @@ export default function HelperDashboard() {
 
         {/* Main Feed */}
         <div className="w-full max-w-[680px] mx-auto">
-          <div id="helper-portfolio-mobile" className="md:hidden space-y-2 mb-4">
-            <HelperSidebarDisclosure
-              storageKey="mobile_helper_extras"
-              title={t('helper_dashboard.sidebar_acc_mobile_extras')}
-              defaultOpen={false}
-            >
-              <div className="space-y-3">
-                <Link
-                  to={ROUTES.helperTraining}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 shadow-sm hover:border-indigo-200 hover:bg-indigo-50/40 min-h-[44px]"
-                >
-                  <span className="flex items-center gap-2 min-w-0">
-                    <Icons.GraduationCap className="w-4 h-4 shrink-0 text-indigo-600" />
-                    <span className="truncate">{t('training.nav_short')}</span>
-                  </span>
-                  <Icons.ChevronRight className="w-4 h-4 shrink-0 text-slate-400" />
-                </Link>
-                <HelperProfileCompletionBar
-                  breakdown={completionBreakdown}
-                  onRowClick={onCompletionRowClick}
-                  suggestions={completionSuggestions}
-                  preview={portfolioPreview}
-                  showPortfolioHint={!completionBreakdown.portfolioPhoto || !completionBreakdown.portfolioVideo}
-                  onOpenPortfolio={scrollToPortfolioSection}
-                />
-                <div className="rounded-xl border border-sky-100/80 bg-gradient-to-br from-white to-sky-50/40 p-3 shadow-sm ring-1 ring-sky-100/60">
-                  <HelperPortfolioPanel
-                    variant="mobile"
-                    portfolio={portfolioPersist}
-                    setPortfolio={setPortfolioPersist}
-                    tier={helperTier}
-                    onOpenGuide={() => setShowPortfolioGuide(true)}
-                    onAddPhoto={() => setProfileSetupModal('portfolioPhoto')}
-                    onAddVideo={() => setProfileSetupModal('portfolioVideo')}
-                    t={t}
-                    onToast={pushToast}
-                    onRemoveItem={handleRemovePortfolioItem}
-                  />
-                </div>
-              </div>
-            </HelperSidebarDisclosure>
+          <div className="md:hidden mb-4">
+            <HelperProfileCompletionBar
+              breakdown={completionBreakdown}
+              onRowClick={onCompletionRowClick}
+              suggestions={completionSuggestions}
+            />
           </div>
 
           <HelperStatsStrip dataLoading={dataLoading} stats={helperMvpStats} t={t} />

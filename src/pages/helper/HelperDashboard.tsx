@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { Star, Briefcase, Clock, MapPin, Check, X, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
 import * as Icons from 'lucide-react';
@@ -25,6 +25,10 @@ import { UI_VISIBILITY } from '@/config/uiVisibility';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import type { Application } from '@/types/application';
 import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
+import {
+  HelperSubscriptionPlanModal,
+  type HelperPlanModalView,
+} from '@/components/helpers/HelperSubscriptionPlanModal';
 import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/HelperProfileCompletionBar';
 import { HelperSidebarDisclosure } from '@/components/helpers/HelperSidebarDisclosure';
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
@@ -79,11 +83,7 @@ export default function HelperDashboard() {
   const [cancelBusy, setCancelBusy] = useState(false);
 
   // Modals state
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [selectedPlanUpgrade, setSelectedPlanUpgrade] = useState<'ELITE' | 'PRO_HELP' | null>(null);
-  const successModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [planModal, setPlanModal] = useState<HelperPlanModalView | null>(null);
   const [profileSettings, setProfileSettings] = useState<HelperProfileSettings>(() => loadHelperProfileSettings());
   type ProfileSetupModal = null | 'avatar' | 'skills';
   const [profileSetupModal, setProfileSetupModal] = useState<ProfileSetupModal>(null);
@@ -95,13 +95,9 @@ export default function HelperDashboard() {
   const { switchToClient } = useAppMode();
 
   useEffect(() => {
-    if (showUpgradeModal) setSelectedPlanUpgrade('ELITE');
-  }, [showUpgradeModal]);
-
-  useEffect(() => {
     const st = location.state as { openUpgrade?: boolean } | null;
     if (st?.openUpgrade) {
-      setShowUpgradeModal(true);
+      setPlanModal('choose');
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, location.pathname, navigate]);
@@ -207,25 +203,6 @@ export default function HelperDashboard() {
     else if (key === 'skillsSelected') setProfileSetupModal('skills');
   }, []);
 
-  const dismissSuccessModal = () => {
-    if (successModalTimerRef.current) {
-      clearTimeout(successModalTimerRef.current);
-      successModalTimerRef.current = null;
-    }
-    setShowSuccessModal(false);
-  };
-
-  const processUpgradePayment = () => {
-    setIsProcessingPayment(true);
-    setTimeout(() => {
-      setIsProcessingPayment(false);
-      setShowUpgradeModal(false);
-      setShowSuccessModal(true);
-      if (successModalTimerRef.current) clearTimeout(successModalTimerRef.current);
-      successModalTimerRef.current = setTimeout(() => dismissSuccessModal(), 3000);
-    }, 1500);
-  };
-
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [showIdeaModal, setShowIdeaModal] = useState(false);
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
@@ -235,6 +212,10 @@ export default function HelperDashboard() {
     () => sidebarBenefitsForTier(helperTier, t),
     [helperTier, t],
   );
+  const planNextBillingLabel =
+    helperTier === 'BASIC'
+      ? null
+      : formatSubscriptionBillingDate(me.nextBillingDate, language);
 
   const insights = React.useMemo(() => {
     const base: {
@@ -572,184 +553,15 @@ export default function HelperDashboard() {
         </div>
       )}
 
-      {/* Upgrade Modal */}
-      {showUpgradeModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => !isProcessingPayment && setShowUpgradeModal(false)}>
-           <div className="bg-white rounded-[2rem] w-full max-w-5xl shadow-[0_0_60px_rgba(0,0,0,0.2)] overflow-hidden flex flex-col max-h-[90vh] md:max-h-[85vh] relative" onClick={e => e.stopPropagation()}>
-              <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-blue-100/60 to-purple-100/60 rounded-full blur-[80px] pointer-events-none"></div>
-              
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center relative z-10 bg-white/50 backdrop-blur-xl">
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                    <Icons.TrendingUp className="w-8 h-8 text-blue-600" /> {t('helper_dashboard.upgrade_modal_title')}
-                  </h2>
-                  <p className="text-sm text-gray-500 font-medium mt-1">{t('helper_dashboard.upgrade_modal_subtitle')}</p>
-                </div>
-                <button onClick={() => !isProcessingPayment && setShowUpgradeModal(false)} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500 hover:text-gray-900 transition-colors" disabled={isProcessingPayment}>
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-10 sm:py-9 relative z-10 hide-scrollbar">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-7 lg:gap-10 max-w-5xl mx-auto">
-                  {/* BASIC — reference only, not a paid upgrade target */}
-                  <div className="relative flex flex-col h-full rounded-3xl border-2 border-sky-100/90 bg-gradient-to-b from-white to-sky-50/40 p-7 lg:p-9 shadow-sm cursor-default">
-                    <div className="w-14 h-14 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center mb-6 border border-sky-200/80 shadow-inner">
-                      <Icons.Sparkles className="w-7 h-7" />
-                    </div>
-                    <h3 className="text-xl font-black text-slate-900 mb-1 tracking-tight">{t('helper_dashboard.upgrade_plan_basic')}</h3>
-                    <p className="text-sm text-slate-600 font-medium leading-snug mb-3">{t('helper_dashboard.upgrade_basic_tagline')}</p>
-                    <p className="text-xs font-semibold text-sky-700 uppercase tracking-wider mb-3">{t('helper_dashboard.upgrade_price_line_basic')}</p>
-                    <div className="text-3xl font-black text-sky-800 mb-8 tracking-tight">{t('helper_dashboard.upgrade_price_basic')}</div>
-                    <ul className="space-y-3 mb-8 flex-1">
-                      {[1, 2, 3, 4, 5, 6].map((n) => (
-                        <li key={n} className="flex gap-3 text-sm font-medium text-slate-600 leading-snug">
-                          <Icons.CheckCircle2 className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
-                          {t(`helper_dashboard.subscription_basic_${n}`)}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* ELITE */}
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => !isProcessingPayment && setSelectedPlanUpgrade('ELITE')}
-                    onKeyDown={(e) => {
-                      if (isProcessingPayment) return;
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setSelectedPlanUpgrade('ELITE');
-                      }
-                    }}
-                    className={`relative overflow-hidden rounded-3xl border-2 p-7 lg:p-9 cursor-pointer transition-all duration-300 flex flex-col h-full shadow-lg bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 ${
-                      selectedPlanUpgrade === 'ELITE'
-                        ? 'border-amber-400 shadow-[0_16px_48px_rgba(251,191,36,0.28)] md:-translate-y-2 z-10 ring-2 ring-amber-400/30'
-                        : 'border-slate-700/80 text-white hover:shadow-2xl md:hover:-translate-y-1'
-                    }`}
-                  >
-                    <div className="absolute top-0 right-1/2 translate-x-1/2 bg-gradient-to-r from-amber-400 to-yellow-300 text-amber-950 text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-b-xl shadow-md z-20">
-                      {t('helper_dashboard.upgrade_elite_popular_badge')}
-                    </div>
-                    {selectedPlanUpgrade === 'ELITE' && (
-                      <div className="absolute -top-3 -right-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-amber-400 text-amber-950 shadow-lg animate-in zoom-in">
-                        <Check className="w-5 h-5" />
-                      </div>
-                    )}
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-amber-400/12 to-transparent" />
-                    <div className="relative z-10 mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-600/50 bg-gradient-to-br from-slate-800 to-slate-700 text-amber-400 shadow-inner ring-1 ring-slate-600/80">
-                      <Icons.Flame className="w-7 h-7" />
-                    </div>
-                    <h3 className="relative z-10 mb-1 text-xl font-black tracking-tight text-white">{t('helper_dashboard.upgrade_plan_elite')}</h3>
-                    <p className="relative z-10 mb-3 text-sm font-medium leading-snug text-slate-300">{t('helper_dashboard.upgrade_elite_tagline')}</p>
-                    <p className="relative z-10 mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">{t('helper_dashboard.upgrade_price_line_elite')}</p>
-                    <div className="relative z-10 mb-8 text-3xl font-black tracking-tight text-amber-400">{t('helper_dashboard.upgrade_price_elite')}</div>
-                    <ul className="relative z-10 mb-8 flex-1 space-y-3">
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                        <li key={n} className="flex gap-3 text-sm font-medium leading-snug text-slate-200">
-                          <Icons.CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
-                          {t(`helper_dashboard.subscription_elite_${n}`)}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* PRO HELP */}
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => !isProcessingPayment && setSelectedPlanUpgrade('PRO_HELP')}
-                    onKeyDown={(e) => {
-                      if (isProcessingPayment) return;
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setSelectedPlanUpgrade('PRO_HELP');
-                      }
-                    }}
-                    className={`relative flex h-full cursor-pointer flex-col rounded-3xl border-2 bg-gradient-to-b from-white via-violet-50/50 to-purple-50/40 p-7 lg:p-9 shadow-md transition-all duration-300 ${
-                      selectedPlanUpgrade === 'PRO_HELP'
-                        ? 'border-violet-500 shadow-[0_12px_40px_rgba(139,92,246,0.22)] ring-1 ring-violet-200 md:-translate-y-2'
-                        : 'border-violet-100/90 hover:border-violet-300 hover:shadow-lg md:hover:-translate-y-1'
-                    }`}
-                  >
-                    <div className="absolute top-0 right-1/2 z-20 translate-x-1/2 rounded-b-xl bg-gradient-to-r from-violet-600 to-purple-600 px-4 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-md">
-                      {t('helper_dashboard.upgrade_pro_help_professional_badge')}
-                    </div>
-                    {selectedPlanUpgrade === 'PRO_HELP' && (
-                      <div className="absolute -top-3 -right-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg animate-in zoom-in">
-                        <Check className="w-5 h-5" />
-                      </div>
-                    )}
-                    <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-100 via-white to-purple-100 text-violet-700 shadow-inner ring-1 ring-violet-100/60">
-                      <Icons.Crown className="w-7 h-7" />
-                    </div>
-                    <h3 className="mb-1 text-xl font-black tracking-tight text-slate-900">{t('helper_dashboard.upgrade_plan_pro_help')}</h3>
-                    <p className="mb-3 text-sm font-medium leading-snug text-slate-600">{t('helper_dashboard.upgrade_pro_help_tagline')}</p>
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-violet-700/80">{t('helper_dashboard.upgrade_price_line_pro_help')}</p>
-                    <div className="mb-8 text-3xl font-black tracking-tight text-violet-700">{t('helper_dashboard.upgrade_price_pro_help')}</div>
-                    <ul className="mb-8 flex-1 space-y-3">
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-                        <li key={n} className="flex gap-3 text-sm font-medium leading-snug text-slate-600">
-                          <Icons.CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-violet-600" />
-                          {t(`helper_dashboard.subscription_pro_help_${n}`)}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="mt-10 flex justify-center sticky bottom-0 pt-4 bg-gradient-to-t from-white via-white to-transparent pb-2">
-                  <button 
-                    onClick={() => processUpgradePayment()}
-                    disabled={!selectedPlanUpgrade || isProcessingPayment}
-                    className={`w-full max-w-sm py-4 rounded-xl font-black tracking-wide transition-all shadow-xl flex items-center justify-center gap-3 ${!selectedPlanUpgrade ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none' : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-2xl hover:scale-105'}`}
-                  >
-                    {isProcessingPayment ? (
-                      <><Icons.Loader2 className="w-5 h-5 animate-spin" /> {t('helper_dashboard.upgrade_processing')}</>
-                    ) : (
-                      <><Icons.Rocket className="w-5 h-5" /> {t('helper_dashboard.upgrade_cta')}</>
-                    )}
-                  </button>
-                </div>
-              </div>
-           </div>
-        </div>
-      )}
-
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div
-          role="presentation"
-          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-gray-900/80 backdrop-blur-md animate-in fade-in duration-300"
-          onClick={dismissSuccessModal}
-        >
-           <div
-             role="dialog"
-             aria-modal="true"
-             className="bg-gray-900 border border-gray-800 rounded-[2rem] w-full max-w-sm p-10 text-center relative overflow-hidden shadow-[0_0_100px_rgba(59,130,246,0.2)] animate-in zoom-in-95 duration-500"
-             onClick={(e) => e.stopPropagation()}
-           >
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-500/20 rounded-full blur-[60px] pointer-events-none"></div>
-              
-              <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full mx-auto flex items-center justify-center shadow-lg shadow-green-500/30 mb-8 relative z-10">
-                 <Icons.Check className="w-12 h-12 text-white" strokeWidth={3} />
-              </div>
-              
-              <h2 className="text-3xl font-black text-white mb-3 relative z-10 tracking-tight">{t('helper_dashboard.success_modal_title')}</h2>
-              <p className="text-gray-400 font-medium relative z-10 leading-relaxed text-sm mb-8">
-                 {t('helper_dashboard.success_modal_body')}
-              </p>
-              <button
-                type="button"
-                onClick={dismissSuccessModal}
-                className="relative z-10 w-full py-3.5 rounded-xl font-bold bg-white text-gray-900 hover:bg-gray-100 transition-colors"
-              >
-                {t('helper_dashboard.success_modal_close')}
-              </button>
-           </div>
-        </div>
-      )}
+      {planModal ? (
+        <HelperSubscriptionPlanModal
+          view={planModal}
+          currentTier={helperTier}
+          nextBillingLabel={planNextBillingLabel}
+          onClose={() => setPlanModal(null)}
+          onComparePlans={() => setPlanModal('choose')}
+        />
+      ) : null}
 
       {profileSetupModal === 'avatar' && (
         <SimpleAvatarUploadModal
@@ -1060,15 +872,16 @@ export default function HelperDashboard() {
                     </ul>
                   </div>
                   <div className="flex flex-col gap-1.5 pt-0.5">
-                    <Link
-                      to={ROUTES.settings}
+                    <button
+                      type="button"
+                      onClick={() => setPlanModal('current')}
                       className="w-full py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-[11px] font-bold text-center hover:bg-slate-50 transition-colors"
                     >
                       {t('helper_dashboard.subscription_manage')}
-                    </Link>
+                    </button>
                     <button
                       type="button"
-                      onClick={() => setShowUpgradeModal(true)}
+                      onClick={() => setPlanModal('choose')}
                       className="w-full py-2 rounded-lg bg-slate-900 text-white text-[11px] font-bold hover:bg-black transition-colors"
                     >
                       {t('helper_dashboard.subscription_upgrade')}
@@ -1100,7 +913,7 @@ export default function HelperDashboard() {
 
                 <button
                   type="button"
-                  onClick={() => setShowUpgradeModal(true)}
+                  onClick={() => setPlanModal('choose')}
                   className="w-full p-3 rounded-lg border border-indigo-200/80 bg-gradient-to-br from-indigo-50/90 via-white to-violet-50/50 hover:border-indigo-300 transition-colors cursor-pointer text-left relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-indigo-200 shadow-sm"
                 >
                   <div className="flex items-start gap-2.5 mb-2 relative z-10 w-full min-w-0">

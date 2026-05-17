@@ -12,11 +12,11 @@ export function resolvePostOAuthPath(profile: AuthProfile | null, user: User): s
   const raw = typeof meta.user_type === 'string' ? meta.user_type.trim() : '';
   const explicitRole = raw === 'helper' || raw === 'client' ? raw : null;
 
-  if (profile?.role === 'helper') return ROUTES.helperHome;
-  if (profile?.role === 'client') return ROUTES.clientHome;
+  if (profile?.role === 'helper') return ROUTES.helperDashboard;
+  if (profile?.role === 'client') return ROUTES.clientDashboard;
 
-  if (explicitRole === 'helper') return ROUTES.helperHome;
-  if (explicitRole === 'client') return ROUTES.clientHome;
+  if (explicitRole === 'helper') return ROUTES.helperDashboard;
+  if (explicitRole === 'client') return ROUTES.clientDashboard;
 
   if (!profile) return ROUTES.dashboard;
 

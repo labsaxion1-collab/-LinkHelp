@@ -79,6 +79,10 @@ export const en = {
     register_need_terms_client: 'Please accept the terms to create your account.',
     register_need_terms_helper: 'Please open the helper confirmation dialog and accept all items.',
     profile_update_error: 'Could not save. Please try again.',
+    google_connecting: 'Connecting with Google...',
+    google_connecting_hint: 'Please wait while we verify your account.',
+    oauth_choose_role_title: 'How will you use LinkHelp?',
+    oauth_choose_role_sub: 'Choose whether you want to hire help or offer services as a helper.',
     errors: {
       env_not_ready:
         'Supabase is not configured. Create a `.env` file in the project root (not `.env.example`) with your real project URL and anon key from Supabase → Settings → API, then restart `npm run dev`. Add redirect URLs for http://localhost:3000 and http://localhost:3000/auth/callback.',
@@ -90,6 +94,9 @@ export const en = {
       oauth_provider_disabled: 'Google sign-in is not enabled for this project (Supabase → Authentication → Providers).',
       oauth_google: 'Google sign-in failed: {{detail}}',
       oauth_google_short: 'Google sign-in failed. Check provider settings and redirect URLs in Supabase.',
+      oauth_access_denied: 'Google sign-in was cancelled or denied.',
+      oauth_popup_closed: 'The sign-in window was closed before completing.',
+      oauth_invalid_session: 'Could not validate your Google session. Please try again.',
       signup_disabled: 'New sign-ups are disabled for this project.',
       session_expired: 'Your session expired. Please sign in again.',
       profile_create: 'Your account was created but the profile could not be saved.',

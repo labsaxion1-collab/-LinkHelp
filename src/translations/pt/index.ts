@@ -79,6 +79,10 @@ export const pt = {
     register_need_terms_client: 'Aceite os termos para criar sua conta.',
     register_need_terms_helper: 'Abra o diálogo de confirmação de helper e aceite todos os itens.',
     profile_update_error: 'Não foi possível salvar. Tente novamente.',
+    google_connecting: 'Conectando com Google...',
+    google_connecting_hint: 'Aguarde enquanto validamos sua conta.',
+    oauth_choose_role_title: 'Como você vai usar o LinkHelp?',
+    oauth_choose_role_sub: 'Escolha se você quer contratar ajuda ou oferecer serviços como helper.',
     errors: {
       env_not_ready:
         'O Supabase não está configurado. Crie um ficheiro `.env` na raiz (não use só o `.env.example`) com o URL do projeto e a chave anon reais em Supabase → Definições → API e reinicie o `npm run dev`. Em Authentication → URL Configuration, inclua http://localhost:3000 e http://localhost:3000/auth/callback.',
@@ -90,6 +94,9 @@ export const pt = {
       oauth_provider_disabled: 'Login com Google não está ativo neste projeto (Supabase → Authentication → Providers).',
       oauth_google: 'Falha no login com Google: {{detail}}',
       oauth_google_short: 'Falha no login com Google. Verifique o provedor e as URLs de redirecionamento no Supabase.',
+      oauth_access_denied: 'Login com Google cancelado ou negado.',
+      oauth_popup_closed: 'A janela de login foi fechada antes de concluir.',
+      oauth_invalid_session: 'Não foi possível validar a sessão do Google. Tente novamente.',
       signup_disabled: 'Novos cadastros estão desativados neste projeto.',
       session_expired: 'Sua sessão expirou. Entre novamente.',
       profile_create: 'A conta foi criada, mas não foi possível salvar o perfil.',

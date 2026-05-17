@@ -6,6 +6,7 @@ import type { Database } from '@/types/supabase.database';
 import type { ProfileRow, UserType } from '@/types/database';
 import type { AuthFlowError } from '@/types/authFlowError';
 import { mapProfileWriteError, mapSupabaseAuthError } from '@/services/authErrorMap';
+import { getOAuthRedirectToUrl } from '@/utils/oauthRedirect';
 
 export type AuthProfile = ProfileRow;
 export type AuthError = AuthFlowError;
@@ -475,7 +476,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authDevLog('signInWithOAuth:aborted', { reason: 'supabase_client_null' });
       return { code: 'unavailable', messageKey: 'auth.errors.env_not_ready' };
     }
-    const redirectTo = `${window.location.origin}/auth/callback`;
+    const redirectTo = getOAuthRedirectToUrl();
     authFlowLog('OAuth redirectTo', {
       redirectTo,
       origin: typeof window !== 'undefined' ? window.location.origin : '',

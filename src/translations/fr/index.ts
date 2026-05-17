@@ -79,6 +79,10 @@ export const fr = {
     register_need_terms_client: 'Veuillez accepter les conditions pour créer votre compte.',
     register_need_terms_helper: 'Ouvrez la confirmation assistant et acceptez tous les éléments.',
     profile_update_error: 'Enregistrement impossible. Réessayez.',
+    google_connecting: 'Connexion avec Google...',
+    google_connecting_hint: 'Veuillez patienter pendant la vérification de votre compte.',
+    oauth_choose_role_title: 'Comment utiliserez-vous LinkHelp ?',
+    oauth_choose_role_sub: "Choisissez si vous cherchez de l'aide ou si vous offrez des services comme helper.",
     errors: {
       env_not_ready:
         'Supabase n’est pas configuré. Créez un fichier `.env` à la racine (pas seulement `.env.example`) avec l’URL du projet et la clé anon réelles (Supabase → Settings → API), puis redémarrez `npm run dev`. Dans Authentication → URL Configuration, ajoutez http://localhost:3000 et http://localhost:3000/auth/callback.',
@@ -90,6 +94,9 @@ export const fr = {
       oauth_provider_disabled: "La connexion Google n'est pas activée pour ce projet (Supabase → Authentication → Providers).",
       oauth_google: 'Échec de la connexion Google : {{detail}}',
       oauth_google_short: 'Échec de la connexion Google. Vérifiez le fournisseur et les URLs de redirection dans Supabase.',
+      oauth_access_denied: 'Connexion Google annulée ou refusée.',
+      oauth_popup_closed: 'La fenêtre de connexion a été fermée avant la fin.',
+      oauth_invalid_session: 'Impossible de valider la session Google. Réessayez.',
       signup_disabled: 'Les inscriptions sont désactivées pour ce projet.',
       session_expired: 'Votre session a expiré. Reconnectez-vous.',
       profile_create: 'Le compte a été créé, mais le profil n’a pas pu être enregistré.',

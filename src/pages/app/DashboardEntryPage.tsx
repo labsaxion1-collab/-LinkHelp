@@ -1,49 +1,91 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { PageLoader } from '@/components/common/PageLoader';
+import { OAuthRolePicker } from '@/components/auth/OAuthRolePicker';
 import { useAuth } from '@/context/AuthContext';
 import { ROUTES } from '@/utils/constants';
 import { authFlowLog } from '@/lib/authDebug';
+import { getSupabase } from '@/lib/supabase';
+import { userNeedsOAuthRoleSelection } from '@/utils/parseOAuthCallbackError';
 
 /**
- * Session-only gate: sends users to /client or /helper after OAuth (or when landing without a deep link).
- * Lives outside `ProtectedRoute` so we can wait for `profiles` while already signed in.
+ * Post-OAuth gate: create/load profile, ask Client vs Helper when needed, then redirect.
  */
 export default function DashboardEntryPage() {
   const navigate = useNavigate();
-  const { session, profile, authBootstrapped, authLoading, refreshProfile, isConfigured } = useAuth();
+  const { session, profile, authBootstrapped, authLoading, refreshProfile, updateProfile, isConfigured } = useAuth();
   const attempts = useRef(0);
   const redirected = useRef(false);
+  const [roleBusy, setRoleBusy] = useState(false);
+
+  const needsRole = Boolean(session?.user && userNeedsOAuthRoleSelection(session.user));
 
   useEffect(() => {
     if (!isConfigured) return;
     if (!authBootstrapped) return;
     if (!session?.user) return;
+    if (needsRole) return;
 
     if (!profile && !authLoading && attempts.current < 5) {
       attempts.current += 1;
       void refreshProfile(session.user);
     }
-  }, [isConfigured, authBootstrapped, session, profile, authLoading, refreshProfile]);
+  }, [isConfigured, authBootstrapped, session, profile, authLoading, refreshProfile, needsRole]);
 
   useEffect(() => {
-    if (!isConfigured || !authBootstrapped || !session?.user || !profile || redirected.current) return;
+    if (!isConfigured || !authBootstrapped || !session?.user || !profile || redirected.current || needsRole) return;
     redirected.current = true;
-    const dest = profile.role === 'helper' ? ROUTES.helperHome : ROUTES.clientHome;
+    const dest = profile.role === 'helper' ? ROUTES.helperDashboard : ROUTES.clientDashboard;
     authFlowLog('Redirecting to dashboard', { path: dest, role: profile.role });
     navigate(dest, { replace: true });
-  }, [isConfigured, authBootstrapped, session, profile, navigate]);
+  }, [isConfigured, authBootstrapped, session, profile, navigate, needsRole]);
+
+  const handleRoleConfirm = async (role: 'client' | 'helper') => {
+    if (!session?.user) return;
+    setRoleBusy(true);
+    const now = new Date().toISOString();
+    try {
+      const sb = getSupabase();
+      if (sb) {
+        await sb.auth.updateUser({
+          data: {
+            user_type: role,
+            accepted_terms: true,
+            accepted_terms_at: now,
+            helper_terms_accepted: role === 'helper',
+            helper_terms_accepted_at: role === 'helper' ? now : '',
+          },
+        });
+      }
+      await updateProfile({
+        role,
+        accepted_terms: true,
+        accepted_terms_at: now,
+        helper_terms_accepted: role === 'helper',
+        helper_terms_accepted_at: role === 'helper' ? now : null,
+      });
+      await refreshProfile(session.user);
+      redirected.current = true;
+      navigate(role === 'helper' ? ROUTES.helperDashboard : ROUTES.clientDashboard, { replace: true });
+    } finally {
+      setRoleBusy(false);
+    }
+  };
 
   if (!isConfigured) {
     return <Navigate to={ROUTES.home} replace state={{ needSupabase: true }} />;
   }
 
-  if (!authBootstrapped || (session?.user && !profile && authLoading)) {
+  if (!authBootstrapped) {
     return <PageLoader />;
   }
 
   if (!session?.user) {
     return <Navigate to={ROUTES.login} replace />;
+  }
+
+  if (needsRole) {
+    return <OAuthRolePicker busy={roleBusy} onConfirm={handleRoleConfirm} />;
   }
 
   if (!profile) {

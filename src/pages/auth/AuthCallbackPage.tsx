@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { PageLoader } from '@/components/common/PageLoader';
+import { OAuthConnectingLoader } from '@/components/auth/OAuthConnectingLoader';
 import { useAuth, type AuthProfile } from '@/context/AuthContext';
 import { ROUTES } from '@/utils/constants';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { authFlowLog } from '@/lib/authDebug';
 import { resolvePostOAuthPath } from '@/utils/postOAuthRedirect';
+import { parseOAuthCallbackError, userNeedsOAuthRoleSelection } from '@/utils/parseOAuthCallbackError';
 
 function waitForAuthSessionSignal(sb: SupabaseClient, maxMs: number): Promise<void> {
   return new Promise((resolve) => {
@@ -31,6 +32,17 @@ function waitForAuthSessionSignal(sb: SupabaseClient, maxMs: number): Promise<vo
   });
 }
 
+async function waitForAuthBootstrapped(
+  getBootstrapped: () => boolean,
+  maxMs = 8000,
+): Promise<void> {
+  const until = Date.now() + maxMs;
+  while (Date.now() < until) {
+    if (getBootstrapped()) return;
+    await new Promise((r) => window.setTimeout(r, 80));
+  }
+}
+
 async function safeNavigateAwayFromLogin(
   sb: SupabaseClient | null,
   navigate: ReturnType<typeof useNavigate>,
@@ -46,26 +58,38 @@ async function safeNavigateAwayFromLogin(
 }
 
 /**
- * OAuth return: keep the user on this loader until session is resolved — no `/auth/login` redirect
- * during PKCE/implicit URL processing.
+ * OAuth return: recover session, wait for auth bootstrap, redirect by role or role picker.
  */
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, authBootstrapped } = useAuth();
   const next = params.get('next');
+  const bootstrappedRef = { current: authBootstrapped };
+  bootstrappedRef.current = authBootstrapped;
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      const goToLogin = (state: Record<string, unknown>) => {
+      const goToLogin = (oauthCode?: string) => {
         if (cancelled) return;
-        navigate(ROUTES.login, { replace: true, state });
+        navigate(ROUTES.login, {
+          replace: true,
+          state: oauthCode ? { oauthError: oauthCode } : { oauthError: 'invalid_session' },
+        });
       };
 
       if (!isSupabaseConfigured()) {
-        goToLogin({ from: ROUTES.home });
+        goToLogin('invalid_session');
+        return;
+      }
+
+      const parsedErr =
+        typeof window !== 'undefined' ? parseOAuthCallbackError(window.location.href) : null;
+      if (parsedErr) {
+        authFlowLog('OAuth callback URL error', parsedErr);
+        goToLogin(parsedErr.code);
         return;
       }
 
@@ -75,7 +99,7 @@ export default function AuthCallbackPage() {
         sb = getSupabase();
       }
       if (!sb) {
-        goToLogin({ oauthError: true });
+        goToLogin('invalid_session');
         return;
       }
 
@@ -87,23 +111,18 @@ export default function AuthCallbackPage() {
           window.location.hash &&
           /access_token|refresh_token|error/.test(window.location.hash);
 
-        if (code) {
-          authFlowLog('Auth callback received code', { hasCode: true, origin: window.location.origin });
-        }
-        if (implicitHash) {
-          authFlowLog('Auth callback hash fragment present', { implicit: true });
-        }
-
         await sb.auth.initialize();
 
         let session = (await sb.auth.getSession()).data.session;
 
         if (!session && code) {
-          authFlowLog('Session exchange (PKCE)', { fromCallbackUrl: callbackUrl.split('?')[0] });
           const { data: exchangeData, error: exchangeErr } = await sb.auth.exchangeCodeForSession(code);
           if (exchangeErr) {
             authFlowLog('exchangeCodeForSession', { message: exchangeErr.message });
-          } else if (exchangeData?.session) {
+            goToLogin('invalid_session');
+            return;
+          }
+          if (exchangeData?.session) {
             authFlowLog('Session created', { userId: exchangeData.session.user.id });
           }
           session = (await sb.auth.getSession()).data.session;
@@ -127,18 +146,13 @@ export default function AuthCallbackPage() {
         if (cancelled) return;
 
         if (!session?.user) {
-          if (typeof window !== 'undefined' && window.location.search.includes('code=')) {
-            console.error(
-              '[LinkHelp AuthCallback] ?code= present but no session. Use the same origin for OAuth start + callback; redirectTo must be `${window.location.origin}/auth/callback`.',
-            );
-          }
           if (!(await safeNavigateAwayFromLogin(sb, navigate))) {
-            goToLogin({ oauthError: true });
+            goToLogin('invalid_session');
           }
           return;
         }
 
-        authFlowLog('User authenticated', { userId: session.user.id, email: session.user.email });
+        await waitForAuthBootstrapped(() => bootstrappedRef.current);
 
         let profileRow: AuthProfile | null = null;
         for (let attempt = 0; attempt < 5 && !profileRow; attempt++) {
@@ -146,30 +160,30 @@ export default function AuthCallbackPage() {
             await new Promise((r) => window.setTimeout(r, 180 * attempt));
           }
           profileRow = await refreshProfile(session.user);
-          if (profileRow) {
-            authFlowLog('Profile loaded/created', { userId: profileRow.id, role: profileRow.role });
-            break;
-          }
         }
 
         if (cancelled) return;
 
+        if (userNeedsOAuthRoleSelection(session.user)) {
+          authFlowLog('OAuth user needs role selection', { userId: session.user.id });
+          navigate(ROUTES.dashboard, { replace: true });
+          return;
+        }
+
         const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : null;
         if (safeNext) {
-          authFlowLog('Redirecting to dashboard', { path: safeNext, source: 'next param' });
           navigate(safeNext, { replace: true });
           return;
         }
 
         const dest = resolvePostOAuthPath(profileRow, session.user);
-        authFlowLog('Redirecting to dashboard', { path: dest });
         navigate(dest, { replace: true });
       } catch (e) {
         console.error('[LinkHelp AuthCallback] error', e);
         if (!cancelled) {
           const sb2 = getSupabase();
           if (!(await safeNavigateAwayFromLogin(sb2, navigate))) {
-            goToLogin({ oauthError: true });
+            goToLogin('invalid_session');
           }
         }
       }
@@ -178,8 +192,7 @@ export default function AuthCallbackPage() {
     return () => {
       cancelled = true;
     };
-  }, [navigate, next, refreshProfile]);
+  }, [navigate, next, refreshProfile, authBootstrapped]);
 
-  return <PageLoader />;
+  return <OAuthConnectingLoader />;
 }
-

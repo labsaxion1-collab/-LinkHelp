@@ -32,7 +32,7 @@ async function fetchHelperProfiles(sb: ReturnType<typeof getSupabase>, excludeUs
     if (excludeUserId) query = query.neq('id', excludeUserId);
 
     const { data, error } = await query;
-    if (!error) return (data ?? []) as HelperProfileRow[];
+    if (!error && Array.isArray(data)) return data as unknown as HelperProfileRow[];
     if (isMissingColumnError(error.message)) continue;
     console.warn('[LinkHelp] fetchNearbyHelpers profiles', error.message);
     return [];

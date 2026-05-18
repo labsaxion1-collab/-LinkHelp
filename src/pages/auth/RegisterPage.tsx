@@ -87,7 +87,7 @@ export default function RegisterPage() {
       fullName,
       userType: ut,
       city: cityCanon.trim() || city.trim(),
-      province: province.trim(),
+      region: province.trim(),
       country: country.trim(),
       acceptedTerms: userMode === 'client' ? acceptedClientTerms : true,
       acceptedTermsAt: now,
@@ -282,7 +282,7 @@ export default function RegisterPage() {
                   onPickPlace={(p: QuebecPlace) => {
                     setCity(p.label);
                     setCityCanon(p.city);
-                    setProvince(p.province);
+                    setProvince(p.region);
                     setCountry(p.country);
                   }}
                   disabled={submitting}

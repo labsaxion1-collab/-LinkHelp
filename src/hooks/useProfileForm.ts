@@ -58,7 +58,7 @@ export function useProfileForm() {
   const pickCity = (place: QuebecPlace) => {
     setCityDisplay(place.label);
     setCityCanon(place.city);
-    setProvince(place.province);
+    setProvince(place.region);
     setCountry(place.country);
   };
 

@@ -16,7 +16,6 @@ type HelperProfileRow = {
   city: string | null;
   country?: string | null;
   region?: string | null;
-  province?: string | null;
 };
 
 type HelperSkillRow = {

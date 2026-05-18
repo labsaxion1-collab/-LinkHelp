@@ -47,7 +47,6 @@ export function useNearbyHelpers(options: Options = {}) {
     coords.lng,
     profile?.city,
     profile?.region,
-    profile?.province,
     profile?.country,
     relatedKey,
     options.relatedCategoryIds,

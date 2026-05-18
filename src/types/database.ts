@@ -16,10 +16,8 @@ export type ProfileRow = {
   bio: string | null;
   city: string | null;
   phone: string | null;
-  /** State / province (e.g. QC). Stored as `region` in Supabase when migrated. */
+  /** State / province (e.g. QC). */
   region: string | null;
-  /** @deprecated Legacy column — not present on all databases; use `region`. */
-  province?: string | null;
   country: string | null;
   accepted_terms: boolean;
   accepted_terms_at: string | null;

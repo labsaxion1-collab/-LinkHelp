@@ -26,22 +26,17 @@ export function lookupCoordinatesFromText(locationText: string): Coordinates | n
 export function coordinatesFromProfile(profile: {
   city?: string | null;
   region?: string | null;
-  province?: string | null;
 } | null | undefined): Coordinates | null {
   if (!profile?.city?.trim()) return null;
-  const regionLabel = [profile.city, profile.region?.trim() || profile.province?.trim()]
-    .filter(Boolean)
-    .join(', ');
+  const regionLabel = [profile.city, profile.region?.trim()].filter(Boolean).join(', ');
   return lookupCoordinatesFromText(regionLabel);
 }
 
 export function profileRegionLabel(profile: {
   city?: string | null;
   region?: string | null;
-  province?: string | null;
 } | null | undefined): string {
-  const region = profile?.region?.trim() || profile?.province?.trim();
-  return [profile?.city?.trim(), region].filter(Boolean).join(', ');
+  return [profile?.city?.trim(), profile?.region?.trim()].filter(Boolean).join(', ');
 }
 
 export function jobCoordinates(job: {

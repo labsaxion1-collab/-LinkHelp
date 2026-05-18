@@ -28,7 +28,7 @@ interface AuthContextValue {
       fullName: string;
       userType: UserType;
       city?: string;
-      province?: string;
+      region?: string;
       country?: string;
       phone?: string;
       acceptedTerms?: boolean;
@@ -415,7 +415,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         fullName: string;
         userType: UserType;
         city?: string;
-        province?: string;
+        region?: string;
         country?: string;
         phone?: string;
         acceptedTerms?: boolean;
@@ -438,7 +438,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             full_name: meta.fullName,
             user_type: meta.userType,
             city: meta.city ?? '',
-            province: meta.province ?? '',
+            region: meta.region ?? '',
             country: meta.country ?? '',
             phone: meta.phone ?? '',
             accepted_terms: meta.acceptedTerms ?? false,

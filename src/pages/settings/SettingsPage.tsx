@@ -48,7 +48,7 @@ export default function SettingsPage() {
     const c = profile.city ?? '';
     setCityDisplay(c);
     setCityCanon(c);
-    setProvince(profile.region ?? profile.province ?? '');
+    setProvince(profile.region ?? '');
     setCountry(profile.country ?? '');
     setBio(profile.bio ?? '');
   }, [profile, session]);
@@ -233,7 +233,7 @@ export default function SettingsPage() {
                 onPickPlace={(p: QuebecPlace) => {
                   setCityDisplay(p.label);
                   setCityCanon(p.city);
-                  setProvince(p.province);
+                  setProvince(p.region);
                   setCountry(p.country);
                 }}
                 disabled={!isConfigured}

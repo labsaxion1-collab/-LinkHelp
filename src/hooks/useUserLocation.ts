@@ -45,7 +45,7 @@ export function useUserLocation() {
     return () => {
       cancelled = true;
     };
-  }, [profile?.city, profile?.region, profile?.province]);
+  }, [profile?.city, profile?.region]);
 
   return { coords, source, ready };
 }

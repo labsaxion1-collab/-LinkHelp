@@ -1,0 +1,5 @@
+# LinkHelp Supabase project (remote migrations)
+project_id = "mttjbaiiaeiqqmnwnzwr"
+
+[db]
+major_version = 15

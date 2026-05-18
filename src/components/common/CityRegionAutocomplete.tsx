@@ -124,7 +124,7 @@ export function CityRegionAutocomplete({
                 onClick={() => pick(p)}
               >
                 <span className="font-semibold">{p.city}</span>
-                <span className="text-gray-500">{p.province}, {p.country}</span>
+                <span className="text-gray-500">{p.region}, {p.country}</span>
               </button>
             </li>
           ))}

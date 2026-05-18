@@ -1,13 +1,13 @@
-/** Region / province label from a profile row (supports legacy `province` in app types only). */
+/** Region / state label from a profile row (e.g. QC). */
 export function profileRegionFromRow(
-  row: { region?: string | null; province?: string | null } | null | undefined,
+  row: { region?: string | null } | null | undefined,
 ): string | null {
-  const value = row?.region?.trim() || row?.province?.trim();
+  const value = row?.region?.trim();
   return value || null;
 }
 
 export function profileLocationLabel(
-  row: { city?: string | null; region?: string | null; province?: string | null } | null | undefined,
+  row: { city?: string | null; region?: string | null } | null | undefined,
 ): string {
   const region = profileRegionFromRow(row);
   return [row?.city?.trim(), region].filter(Boolean).join(', ');

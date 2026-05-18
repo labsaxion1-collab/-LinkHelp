@@ -60,8 +60,14 @@ export type RequestRow = {
   urgency: string;
   budget: string | null;
   location: string;
+  address: string | null;
+  city: string | null;
+  region: string | null;
   latitude: number | null;
   longitude: number | null;
+  preferred_date: string | null;
+  preferred_time_window: string | null;
+  preferred_time: string | null;
   status: RequestStatus;
   created_at: string;
   updated_at: string;

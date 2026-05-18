@@ -12,6 +12,12 @@ export interface Job {
   /** Free-text schedule label shown in UI */
   date: string;
   location: string;
+  address?: string | null;
+  city?: string | null;
+  region?: string | null;
+  preferredDate?: string | null;
+  preferredTimeWindow?: string | null;
+  preferredTime?: string | null;
   /** Optional coordinates for future proximity / map */
   latitude?: number | null;
   longitude?: number | null;

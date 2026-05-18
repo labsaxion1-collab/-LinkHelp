@@ -6,7 +6,7 @@ export const SERVICE_CATEGORIES = [
   {
     id: 'cleaning',
     icon: 'Sparkles',
-    subKeys: ['apartment', 'house', 'commercial', 'post_construction', 'moving_clean', 'windows', 'deep'],
+    subKeys: ['apartment', 'house', 'commercial', 'post_construction', 'moving_clean', 'windows'],
   },
   {
     id: 'moving',

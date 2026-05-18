@@ -21,19 +21,27 @@ import { LhCard } from '@/components/design-system/LhCard';
 import { UserPresenceBadge } from '@/components/ui/UserPresenceBadge';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useAuth } from '@/context/AuthContext';
+import { ChoiceChipGroup } from '@/components/client/create-request/ChoiceChipGroup';
 import {
-  lookupCoordinatesFromText,
-  profileRegionLabel,
-  requestBrowserCoordinates,
-  type Coordinates,
-} from '@/utils/geocodeLocation';
+  RequestAddressInput,
+  emptyRequestAddress,
+  type RequestAddressValue,
+} from '@/components/client/create-request/RequestAddressInput';
+import {
+  buildJobDateLabel,
+  isScheduleStepComplete,
+  jobUrgencyFromPriority,
+  resolvePreferredDateIso,
+  type PreferredDateMode,
+  type RequestPriority,
+  type TimeWindow,
+} from '@/utils/requestSchedule';
 
 type ModalStep =
   | 'category'
   | 'subcategory'
   | 'moving_access'
   | 'text'
-  | 'media'
   | 'location'
   | 'priority'
   | 'review';
@@ -54,7 +62,9 @@ const RECOMMENDED_HELPERS: RecommendedHelperCard[] = [];
 
 export default function ClientDashboard() {
   const [postText, setPostText] = useState('');
-  const [requestTags, setRequestTags] = useState<string[]>([]);
+  const [cleaningHouseFloors, setCleaningHouseFloors] = useState('');
+  const [cleaningAptFloor, setCleaningAptFloor] = useState('');
+  const [cleaningHasElevator, setCleaningHasElevator] = useState('');
   const [moveOriginFloor, setMoveOriginFloor] = useState('');
   const [moveOriginElevator, setMoveOriginElevator] = useState('');
   const [moveOriginStairs, setMoveOriginStairs] = useState('');
@@ -71,10 +81,13 @@ export default function ClientDashboard() {
   const [moveDistanceNotes, setMoveDistanceNotes] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
-  const [jobLocation, setJobLocation] = useState('');
-  const [jobCoords, setJobCoords] = useState<Coordinates | null>(null);
-  const [locatingJob, setLocatingJob] = useState(false);
-  const [priority, setPriority] = useState('flexible');
+  const [requestAddress, setRequestAddress] = useState<RequestAddressValue>(() => emptyRequestAddress());
+  const [priority, setPriority] = useState<RequestPriority>('flexible');
+  const [preferredDateMode, setPreferredDateMode] = useState<PreferredDateMode>('today');
+  const [preferredDateIso, setPreferredDateIso] = useState('');
+  const [preferredTimeWindow, setPreferredTimeWindow] = useState<TimeWindow>('');
+  const [preferredTimeSpecific, setPreferredTimeSpecific] = useState('');
+  const [showSpecificTime, setShowSpecificTime] = useState(false);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -143,9 +156,29 @@ export default function ClientDashboard() {
     if (selectedCategory === 'moving' && movingNeedsBuildingDetails(selectedSubcategory)) {
       steps.push('moving_access');
     }
-    steps.push('text', 'media', 'location', 'priority', 'review');
+    steps.push('text', 'location', 'priority', 'review');
     return steps;
   }, [selectedCategory, selectedSubcategory]);
+
+  const cleaningDetailsComplete = useMemo(() => {
+    if (selectedCategory !== 'cleaning') return true;
+    if (selectedSubcategory === 'house') return Boolean(cleaningHouseFloors);
+    if (selectedSubcategory === 'apartment') {
+      return Boolean(cleaningAptFloor && cleaningHasElevator);
+    }
+    return true;
+  }, [selectedCategory, selectedSubcategory, cleaningHouseFloors, cleaningAptFloor, cleaningHasElevator]);
+
+  const scheduleInput = useMemo(
+    () => ({
+      priority,
+      preferredDateMode,
+      preferredDateIso,
+      preferredTimeWindow,
+      preferredTimeSpecific,
+    }),
+    [priority, preferredDateMode, preferredDateIso, preferredTimeWindow, preferredTimeSpecific],
+  );
 
   const buildingAccessComplete = useMemo(() => {
     if (selectedCategory !== 'moving' || !movingNeedsBuildingDetails(selectedSubcategory)) {
@@ -236,13 +269,18 @@ export default function ClientDashboard() {
 
   const resetCreateModalFields = () => {
     setPostText('');
-    setJobLocation('');
-    setJobCoords(null);
-    setLocatingJob(false);
+    setCleaningHouseFloors('');
+    setCleaningAptFloor('');
+    setCleaningHasElevator('');
+    setRequestAddress(emptyRequestAddress());
+    setPriority('flexible');
+    setPreferredDateMode('today');
+    setPreferredDateIso('');
+    setPreferredTimeWindow('');
+    setPreferredTimeSpecific('');
+    setShowSpecificTime(false);
     setSelectedCategory('');
     setSelectedSubcategory('');
-    setRequestTags([]);
-    setPriority('flexible');
     setMoveOriginFloor('');
     setMoveOriginElevator('');
     setMoveOriginStairs('');
@@ -332,28 +370,38 @@ export default function ClientDashboard() {
       }
     }
 
-    const fullDescription = `${postText.trim()}${movingAppend}`;
+    let cleaningAppend = '';
+    if (selectedCategory === 'cleaning') {
+      const lines: string[] = [];
+      if (selectedSubcategory === 'house' && cleaningHouseFloors) {
+        lines.push(`${t('create_modal.cleaning_house_floors')}: ${cleaningHouseFloors}`);
+      }
+      if (selectedSubcategory === 'apartment') {
+        if (cleaningAptFloor) {
+          lines.push(`${t('create_modal.cleaning_apt_floor')}: ${cleaningAptFloor}`);
+        }
+        if (cleaningHasElevator) {
+          lines.push(
+            `${t('create_modal.cleaning_elevator')}: ${
+              cleaningHasElevator === 'yes' ? t('create_modal.moving_yes') : t('create_modal.moving_no')
+            }`,
+          );
+        }
+      }
+      if (lines.length) {
+        cleaningAppend = `\n\n—\n${lines.join('\n')}`;
+      }
+    }
 
-    const schedule =
-      priority === 'emergency'
-        ? '__now'
-        : priority === 'urgent'
-          ? '__today'
-          : priority === 'today'
-            ? '__soon'
-            : '__flexible';
-    const regionFallback = profileRegionLabel(profile);
-    const locationLabel = jobLocation.trim() || regionFallback || t('jobs.remote');
-    const latitude =
-      jobCoords?.lat ??
-      lookupCoordinatesFromText(jobLocation)?.lat ??
-      lookupCoordinatesFromText(regionFallback)?.lat ??
-      null;
-    const longitude =
-      jobCoords?.lng ??
-      lookupCoordinatesFromText(jobLocation)?.lng ??
-      lookupCoordinatesFromText(regionFallback)?.lng ??
-      null;
+    const fullDescription = `${postText.trim()}${movingAppend}${cleaningAppend}`;
+    const schedule = buildJobDateLabel(scheduleInput);
+    const preferredDate = resolvePreferredDateIso(scheduleInput);
+    const locationParts = [
+      requestAddress.display.trim(),
+      requestAddress.city,
+      requestAddress.region,
+    ].filter(Boolean);
+    const locationLabel = locationParts.join(', ') || t('jobs.remote');
 
     createJob({
       clientId: me.id,
@@ -362,13 +410,19 @@ export default function ClientDashboard() {
       title: fullDescription.slice(0, 30) + (fullDescription.length > 30 ? '...' : ''),
       description: fullDescription,
       category: selectedCategory,
-      tags: requestTags.length > 0 ? [...requestTags] : undefined,
+      subcategory: selectedSubcategory || null,
       location: locationLabel,
-      latitude,
-      longitude,
+      address: requestAddress.address || requestAddress.display.trim() || null,
+      city: requestAddress.city || null,
+      region: requestAddress.region || null,
+      latitude: requestAddress.latitude,
+      longitude: requestAddress.longitude,
+      preferredDate,
+      preferredTimeWindow: preferredTimeWindow || null,
+      preferredTime: preferredTimeSpecific.trim() || null,
       date: schedule,
       value: t('jobs.value_negotiable'),
-      urgency: priority === 'emergency' || priority === 'urgent' ? 'high' : 'normal',
+      urgency: jobUrgencyFromPriority(priority),
     });
 
     closeCreateModal();
@@ -490,7 +544,7 @@ export default function ClientDashboard() {
       {/* Upgrade Modal */}
       {showUpgradeModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => !isProcessingPayment && setShowUpgradeModal(false)}>
-           <div className="bg-white rounded-[2rem] w-full max-w-4xl shadow-[0_0_60px_rgba(0,0,0,0.2)] overflow-hidden flex flex-col max-h-[90vh] md:max-h-[85vh] relative" onClick={e => e.stopPropagation()}>
+           <div className="bg-white rounded-[2rem] w-full max-w-4xl shadow-[0_0_60px_rgba(0,0,0,0.2)] overflow-hidden flex flex-col max-h-[min(92dvh,900px)] md:max-h-[85vh] relative" onClick={e => e.stopPropagation()}>
               <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-blue-100/60 to-purple-100/60 rounded-full blur-[80px] pointer-events-none"></div>
               
               <div className="p-6 border-b border-gray-100 flex justify-between items-center relative z-10 bg-white/50 backdrop-blur-xl">
@@ -669,7 +723,7 @@ export default function ClientDashboard() {
       {/* Create Order Modal Overlay */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={closeCreateModal}>
-          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[90vh]" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[min(92dvh,900px)]" onClick={e => e.stopPropagation()}>
             
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
@@ -699,7 +753,6 @@ export default function ClientDashboard() {
                     'subcategory': Icons.List, 
                     'moving_access': Icons.Building2,
                     'text': Icons.Type, 
-                    'media': Icons.Image, 
                     'location': Icons.MapPin, 
                     'priority': Icons.Clock, 
                     'review': Icons.CheckCircle2 
@@ -722,7 +775,7 @@ export default function ClientDashboard() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 overflow-y-auto hide-scrollbar flex-1 relative min-h-[400px]">
+            <div className="p-6 overflow-y-auto overscroll-contain flex-1 relative min-h-0 pb-4">
               
               {/* Step 1: Category */}
               {createModalStep === 'category' && (
@@ -904,7 +957,7 @@ export default function ClientDashboard() {
                 <div className="animate-in fade-in slide-in-from-right-4 duration-300 relative h-full flex flex-col">
                   <div className="mb-4 flex-1 flex flex-col">
                     <label className="block text-2xl font-bold text-gray-900 mb-2">{t('create_modal.describe')}</label>
-                    <p className="text-gray-500 text-sm mb-4">{t('create_modal.describe_desc')}</p>
+                    <p className="text-gray-500 text-sm mb-4">{t('create_modal.describe_desc_short')}</p>
                     <textarea
                       autoFocus
                       value={postText}
@@ -1026,59 +1079,49 @@ export default function ClientDashboard() {
                         </div>
                       </details>
                     )}
-                    {descriptionCopy && (
-                      <>
-                        <div className="mt-4">
-                          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{t('create_modal.suggestions')}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {descriptionCopy.suggestions.map((line, i) => (
-                              <button
-                                key={i}
-                                type="button"
-                                onClick={() => setPostText(line)}
-                                className="text-left text-xs sm:text-sm font-semibold bg-white hover:bg-blue-50 text-gray-800 hover:text-blue-950 py-2 px-3 rounded-xl transition-colors border border-gray-200 hover:border-blue-200 max-w-full leading-snug"
-                              >
-                                {line}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        {descriptionCopy.exampleHint && (
-                          <div className="mt-3">
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">{t('create_modal.example_sentence')}</p>
-                            <button
-                              type="button"
-                              onClick={() => setPostText(descriptionCopy.exampleHint!)}
-                              className="text-left w-full text-sm text-gray-600 hover:text-blue-900 font-medium bg-white border border-dashed border-gray-200 hover:border-blue-200 rounded-xl px-3 py-2.5 transition-colors"
-                            >
-                              {descriptionCopy.exampleHint}
-                            </button>
-                          </div>
-                        )}
-                        <div className="mt-5">
-                          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">{t('create_modal.recommended_tags')}</p>
-                          <p className="text-[11px] text-gray-500 mb-2.5">{t('create_modal.tags_hint')}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {requestTags.map((tag) => (
-                              <span
-                                key={tag}
-                                className="inline-flex items-center gap-0.5 rounded-full bg-slate-50 text-slate-800 border border-slate-200 pl-2.5 pr-1 py-0.5 text-xs font-semibold"
-                              >
-                                <span className="text-blue-700">#</span>
-                                {tag}
-                                <button
-                                  type="button"
-                                  onClick={() => setRequestTags((prev) => prev.filter((x) => x !== tag))}
-                                  className="p-1.5 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-200/80 transition-colors"
-                                  aria-label="Remove tag"
-                                >
-                                  <Icons.X className="w-3.5 h-3.5" />
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </>
+
+                    {selectedCategory === 'cleaning' && selectedSubcategory === 'house' && (
+                      <ChoiceChipGroup
+                        label={t('create_modal.cleaning_house_floors')}
+                        required
+                        value={cleaningHouseFloors}
+                        onChange={setCleaningHouseFloors}
+                        options={[
+                          { value: '1', label: '1' },
+                          { value: '2', label: '2' },
+                          { value: '3', label: '3' },
+                          { value: '4+', label: '4+' },
+                        ]}
+                      />
+                    )}
+                    {selectedCategory === 'cleaning' && selectedSubcategory === 'apartment' && (
+                      <div className="mt-4 space-y-4">
+                        <ChoiceChipGroup
+                          label={t('create_modal.cleaning_apt_floor')}
+                          required
+                          value={cleaningAptFloor}
+                          onChange={setCleaningAptFloor}
+                          options={[
+                            { value: 'ground', label: t('create_modal.cleaning_floor_ground') },
+                            { value: '1', label: '1' },
+                            { value: '2', label: '2' },
+                            { value: '3', label: '3' },
+                            { value: '4', label: '4' },
+                            { value: '5', label: '5' },
+                            { value: '6+', label: '6+' },
+                          ]}
+                        />
+                        <ChoiceChipGroup
+                          label={t('create_modal.cleaning_elevator')}
+                          required
+                          value={cleaningHasElevator}
+                          onChange={setCleaningHasElevator}
+                          options={[
+                            { value: 'yes', label: t('create_modal.moving_yes') },
+                            { value: 'no', label: t('create_modal.moving_no') },
+                          ]}
+                        />
+                      </div>
                     )}
                     <div className="flex justify-end mt-2">
                       <span className={`text-sm font-bold ${postText.length > 450 ? 'text-orange-500' : 'text-gray-400'}`}>{postText.length}/500</span>
@@ -1087,114 +1130,135 @@ export default function ClientDashboard() {
                 </div>
               )}
 
-              {/* Step 3: Media */}
-              {createModalStep === 'media' && (
-                <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                  <label className="block text-2xl font-bold text-gray-900 mb-2">{t('create_modal.media')}</label>
-                  <p className="text-gray-500 text-sm mb-6">{t('create_modal.media_desc')}</p>
-                  <div className="border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50/50 rounded-3xl p-12 flex flex-col items-center justify-center text-center cursor-pointer transition-colors group bg-gray-50">
-                    <div className="w-16 h-16 bg-white shadow-sm text-blue-500 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 group-hover:text-blue-600 transition-all border border-gray-100">
-                      <Icons.UploadCloud className="w-8 h-8" />
-                    </div>
-                    <span className="text-lg font-bold text-gray-900 mb-2">{t('create_modal.drag_drop')}</span>
-                    <span className="text-sm text-gray-500 font-medium mb-6">{t('create_modal.browse')}</span>
-                    
-                    <div className="flex gap-2">
-                       <span className="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-1 rounded">JPG</span>
-                       <span className="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-1 rounded">PNG</span>
-                       <span className="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-1 rounded">MP4</span>
-                    </div>
-                  </div>
-                </div>
-              )}
 
-              {/* Step 4: Location */}
+              {/* Location */}
               {createModalStep === 'location' && (
-                <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
+                <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-4">
                   <div>
                     <label className="block text-2xl font-bold text-gray-900 mb-2">{t('create_modal.where')}</label>
-                    <p className="text-gray-500 text-sm mb-6">{t('create_modal.where_desc')}</p>
-                    <div className="relative">
-                      <Icons.MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
-                      <input 
-                        autoFocus
-                        type="text" 
-                        value={jobLocation}
-                        onChange={(e) => {
-                          setJobLocation(e.target.value);
-                          setJobCoords(null);
-                        }}
-                        placeholder={t('create_modal.location_placeholder')} 
-                        className="w-full pl-14 bg-gray-50 border-2 border-gray-200 text-gray-900 rounded-2xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 focus:bg-white block p-4 text-lg transition-all outline-none font-medium shadow-sm" 
-                      />
-                      <button
-                        type="button"
-                        disabled={locatingJob}
-                        onClick={() => {
-                          setLocatingJob(true);
-                          void requestBrowserCoordinates().then((coords) => {
-                            setLocatingJob(false);
-                            if (coords) {
-                              setJobCoords(coords);
-                              setJobLocation(
-                                profileRegionLabel(profile) || t('create_modal.current_location'),
-                              );
-                              return;
-                            }
-                            const fallback = profileRegionLabel(profile);
-                            if (fallback) setJobLocation(fallback);
-                          });
-                        }}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-4 py-2 rounded-xl flex items-center gap-2 transition-colors disabled:opacity-60"
-                      >
-                        <Icons.Navigation className="w-4 h-4" />{' '}
-                        <span className="hidden sm:inline">{t('create_modal.current_location')}</span>
-                        <span className="sm:hidden">{t('create_modal.current_location_short')}</span>
-                      </button>
-                    </div>
-                    
-                    {/* Simulated Map */}
-                    {jobLocation.length > 5 && (
-                      <div className="mt-6 h-56 bg-gray-200 rounded-3xl overflow-hidden relative animate-in fade-in zoom-in-95 shadow-inner">
-                         <div className="absolute inset-0 bg-[url('https://maps.gstatic.com/mapfiles/api-3/images/mapcnt6.png')] bg-cover bg-center opacity-60 mix-blend-multiply"></div>
-                         <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="text-blue-600 flex flex-col items-center">
-                              <Icons.MapPin className="w-12 h-12 -mt-6 drop-shadow-lg" />
-                              <div className="w-5 h-2 bg-black/20 rounded-full blur-[2px]"></div>
-                            </div>
-                         </div>
-                      </div>
-                    )}
+                    <p className="text-gray-500 text-sm mb-4">{t('create_modal.where_desc')}</p>
+                    <RequestAddressInput
+                      value={requestAddress}
+                      onChange={setRequestAddress}
+                      placeholder={t('create_modal.location_placeholder')}
+                      currentLocationLabel={t('create_modal.current_location')}
+                      currentLocationShortLabel={t('create_modal.current_location_short')}
+                      locatingLabel={t('create_modal.locating')}
+                    />
                   </div>
                 </div>
               )}
 
-              {/* Step 5: Urgency */}
+              {/* Urgency & schedule */}
               {createModalStep === 'priority' && (
-                <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                  <label className="block text-2xl font-bold text-gray-900 mb-2">{t('create_modal.when')}</label>
-                  <p className="text-gray-500 text-sm mb-6">{t('create_modal.when_desc')}</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button type="button" onClick={() => setPriority('emergency')} className={`p-5 rounded-2xl border-2 text-left transition-all group ${priority === 'emergency' ? 'border-red-500 bg-red-50 ring-4 ring-red-50' : 'border-gray-200 hover:border-red-300 hover:bg-red-50/30'}`}>
-                       <Icons.AlertOctagon className={`w-6 h-6 mb-3 ${priority === 'emergency' ? 'text-red-500' : 'text-gray-400 group-hover:text-red-400'}`} />
-                       <h5 className="font-bold text-gray-900 text-lg">{t('urgency.emergency')}</h5>
-                       <p className="text-gray-500 text-sm mt-1">{t('urgency.emergency_desc')}</p>
+                <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
+                  <div>
+                    <label className="block text-2xl font-bold text-gray-900 mb-2">{t('create_modal.when')}</label>
+                    <p className="text-gray-500 text-sm mb-4">{t('create_modal.when_desc')}</p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+                      {(['emergency', 'urgent', 'today', 'flexible'] as const).map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setPriority(p)}
+                          className={`min-h-[72px] p-3 sm:p-4 rounded-2xl border-2 text-left transition-all ${
+                            priority === p
+                              ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-100'
+                              : 'border-gray-200 hover:border-gray-300 bg-white'
+                          }`}
+                        >
+                          <span className="font-bold text-gray-900 text-sm sm:text-base block">
+                            {p === 'emergency'
+                              ? t('urgency.emergency')
+                              : p === 'urgent'
+                                ? t('urgency.urgent')
+                                : p === 'today'
+                                  ? t('urgency.today_tomorrow')
+                                  : t('urgency.flexible')}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {priority !== 'emergency' && (
+                    <div className="space-y-3">
+                      <p className="text-sm font-bold text-gray-800">{t('create_modal.preferred_date')}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {(['today', 'tomorrow', 'pick'] as const).map((mode) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => setPreferredDateMode(mode)}
+                            className={`min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
+                              preferredDateMode === mode
+                                ? 'border-blue-600 bg-blue-50 text-blue-950'
+                                : 'border-gray-200 bg-white text-gray-800 hover:bg-gray-50'
+                            }`}
+                          >
+                            {mode === 'today'
+                              ? t('create_modal.date_today')
+                              : mode === 'tomorrow'
+                                ? t('create_modal.date_tomorrow')
+                                : t('create_modal.date_pick')}
+                          </button>
+                        ))}
+                      </div>
+                      {preferredDateMode === 'pick' && (
+                        <input
+                          type="date"
+                          value={preferredDateIso}
+                          min={new Date().toISOString().slice(0, 10)}
+                          onChange={(e) => setPreferredDateIso(e.target.value)}
+                          className="w-full min-h-[48px] bg-white border-2 border-gray-200 rounded-xl px-4 text-base font-medium text-gray-900 focus:border-blue-500 outline-none"
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <p className="text-sm font-bold text-gray-800">{t('create_modal.preferred_time')}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(['morning', 'afternoon', 'evening'] as const).map((w) => (
+                        <button
+                          key={w}
+                          type="button"
+                          onClick={() => {
+                            setPreferredTimeWindow(w);
+                            setShowSpecificTime(false);
+                          }}
+                          className={`min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
+                            preferredTimeWindow === w && !showSpecificTime
+                              ? 'border-blue-600 bg-blue-50 text-blue-950'
+                              : 'border-gray-200 bg-white text-gray-800 hover:bg-gray-50'
+                          }`}
+                        >
+                          {w === 'morning'
+                            ? t('create_modal.time_morning')
+                            : w === 'afternoon'
+                              ? t('create_modal.time_afternoon')
+                              : t('create_modal.time_evening')}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowSpecificTime((v) => !v)}
+                      className="text-sm font-bold text-blue-600 hover:text-blue-800 min-h-[44px]"
+                    >
+                      {t('create_modal.time_specific_toggle')}
                     </button>
-                    <button type="button" onClick={() => setPriority('urgent')} className={`p-5 rounded-2xl border-2 text-left transition-all group ${priority === 'urgent' ? 'border-orange-500 bg-orange-50 ring-4 ring-orange-50' : 'border-gray-200 hover:border-orange-300 hover:bg-orange-50/30'}`}>
-                       <Icons.Zap className={`w-6 h-6 mb-3 ${priority === 'urgent' ? 'text-orange-500' : 'text-gray-400 group-hover:text-orange-400'}`} />
-                       <h5 className="font-bold text-gray-900 text-lg">{t('urgency.urgent')}</h5>
-                       <p className="text-gray-500 text-sm mt-1">{t('urgency.urgent_desc')}</p>
-                    </button>
-                    <button type="button" onClick={() => setPriority('today')} className={`p-5 rounded-2xl border-2 text-left transition-all group ${priority === 'today' ? 'border-blue-500 bg-blue-50 ring-4 ring-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/30'}`}>
-                       <Icons.Clock className={`w-6 h-6 mb-3 ${priority === 'today' ? 'text-blue-500' : 'text-gray-400 group-hover:text-blue-400'}`} />
-                       <h5 className="font-bold text-gray-900 text-lg">{t('urgency.today_tomorrow')}</h5>
-                       <p className="text-gray-500 text-sm mt-1">{t('urgency.today_tomorrow_desc')}</p>
-                    </button>
-                    <button type="button" onClick={() => setPriority('flexible')} className={`p-5 rounded-2xl border-2 text-left transition-all group ${priority === 'flexible' ? 'border-green-500 bg-green-50 ring-4 ring-green-50' : 'border-gray-200 hover:border-green-300 hover:bg-green-50/30'}`}>
-                       <Icons.Calendar className={`w-6 h-6 mb-3 ${priority === 'flexible' ? 'text-green-500' : 'text-gray-400 group-hover:text-green-400'}`} />
-                       <h5 className="font-bold text-gray-900 text-lg">{t('urgency.flexible')}</h5>
-                       <p className="text-gray-500 text-sm mt-1">{t('urgency.flexible_desc')}</p>
-                    </button>
+                    {showSpecificTime && (
+                      <input
+                        type="time"
+                        value={preferredTimeSpecific}
+                        onChange={(e) => {
+                          setPreferredTimeSpecific(e.target.value);
+                          setPreferredTimeWindow('');
+                        }}
+                        className="w-full min-h-[48px] bg-white border-2 border-gray-200 rounded-xl px-4 text-base font-medium text-gray-900 focus:border-blue-500 outline-none"
+                      />
+                    )}
                   </div>
                 </div>
               )}
@@ -1362,25 +1426,12 @@ export default function ClientDashboard() {
                         )}
                     </div>
 
-                    {requestTags.length > 0 && (
-                      <div>
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">{t('create_modal.recommended_tags')}</span>
-                        <div className="flex flex-wrap gap-2">
-                          {requestTags.map((tag) => (
-                            <span key={tag} className="text-xs font-semibold bg-blue-50 text-blue-900 border border-blue-100 px-2.5 py-1 rounded-lg">
-                              #{tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">{t('create_modal.location')}</span>
                         <div className="flex items-center gap-1.5 font-bold text-gray-900">
                           <Icons.MapPin className="w-4 h-4 text-gray-400" />
-                          {jobLocation}
+                          {requestAddress.display}
                         </div>
                       </div>
                       <div>
@@ -1424,8 +1475,9 @@ export default function ClientDashboard() {
                     createModalStep === 'category' ||
                     (createModalStep === 'subcategory' && !selectedSubcategory) ||
                     (createModalStep === 'moving_access' && !buildingAccessComplete) ||
-                    (createModalStep === 'text' && !postText.trim()) ||
-                    (createModalStep === 'location' && !jobLocation)
+                    (createModalStep === 'text' && (!postText.trim() || !cleaningDetailsComplete)) ||
+                    (createModalStep === 'location' && !requestAddress.display.trim()) ||
+                    (createModalStep === 'priority' && !isScheduleStepComplete(scheduleInput))
                   }
                   onClick={() => {
                      const currentIdx = createModalSteps.indexOf(createModalStep);

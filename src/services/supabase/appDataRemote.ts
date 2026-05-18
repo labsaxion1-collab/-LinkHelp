@@ -94,8 +94,14 @@ export async function remoteCreateRequest(input: {
   description: string;
   urgency: string;
   location: string;
+  address?: string | null;
+  city?: string | null;
+  region?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  preferredDate?: string | null;
+  preferredTimeWindow?: string | null;
+  preferredTime?: string | null;
   dateLabel: string;
   budgetHint: string;
 }): Promise<void> {
@@ -109,8 +115,14 @@ export async function remoteCreateRequest(input: {
     description: input.description,
     urgency: input.urgency,
     location: input.location,
+    address: input.address ?? null,
+    city: input.city ?? null,
+    region: input.region ?? null,
     latitude: input.latitude ?? null,
     longitude: input.longitude ?? null,
+    preferred_date: input.preferredDate ?? null,
+    preferred_time_window: input.preferredTimeWindow ?? null,
+    preferred_time: input.preferredTime?.trim() ? input.preferredTime : null,
     budget: input.budgetHint?.trim() ? input.budgetHint : null,
     status: 'open',
   });

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import { mockUsers } from '@/data/mockUsers';
+import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { HELPER_TRAINING_LESSONS, lessonsAccessibleForTier, type TrainingLessonDef } from '@/data/helperTrainingCatalog';
 import { ROUTES } from '@/utils/constants';
 import { loadHelperPortfolio } from '@/utils/helperPortfolioState';
@@ -29,7 +29,8 @@ function accessLocked(tier: HelperSubscriptionTier, lesson: TrainingLessonDef): 
 
 export default function HelperTrainingPage() {
   const { t } = useLanguage();
-  const tier: HelperSubscriptionTier = mockUsers.helper.subscriptionTier ?? 'BASIC';
+  const me = useSessionViewer();
+  const tier: HelperSubscriptionTier = me.subscriptionTier ?? 'BASIC';
 
   const [training, setTraining] = useState<HelperTrainingPersist>(() => loadTrainingProgress());
   const [activeLesson, setActiveLesson] = useState<string | null>(null);

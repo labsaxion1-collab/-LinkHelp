@@ -183,6 +183,7 @@ export const fr = {
     inline_new_message_body: 'Nouveau message de {{name}}',
   },
   messages_page: {
+    sign_in_required: 'Connectez-vous pour voir et envoyer des messages.',
     title: 'Messages',
     search_placeholder: 'Rechercher des messages…',
     yesterday: 'Hier',
@@ -270,6 +271,7 @@ export const fr = {
     cta_hire: 'Engager officiellement',
     seed_helper_line:
       'Bonjour ! J’ai vu votre demande — je peux ajuster les détails ici avant qu’on confirme ensemble.',
+    bio_empty: 'Cet assistant n’a pas encore ajouté de bio.',
   },
   hire_modal: {
     title: 'Engager {{name}}',
@@ -712,6 +714,7 @@ export const fr = {
     ideas_approved_today: '{{count}} idées approuvées aujourd’hui',
     skill_demo_translation: 'Traduction EN/PT',
     add_skill_cta: 'Ajouter une compétence',
+    skills_empty: 'Ajoutez vos compétences pour apparaître dans les recherches.',
     jobs_count_short: '({{count}} missions)',
     job_card_urgent: 'Demande urgente',
     insight_portfolio_title: 'Astuce portfolio',
@@ -982,6 +985,7 @@ export const fr = {
     radar_recent_empty: 'Rien de nouveau — publiez une demande ou consultez les notifications.',
     radar_helper_replied: 'Mise à jour',
     radar_online_title: 'Helpers en ligne à proximité',
+    radar_online_empty: 'Aucun helper en ligne à proximité pour le moment.',
     radar_km: '{{km}} km',
     radar_suggestions_title: 'Tendances & populaires',
     radar_browse_helpers: 'Parcourir les helpers',
@@ -1034,6 +1038,8 @@ export const fr = {
   },
   client_helpers: {
     recommended_title: 'Assistants recommandés',
+    recommended_empty: 'Aucun helper trouvé pour l’instant. Publiez une demande pour recevoir des candidatures.',
+    favorites_empty: 'Vous n’avez pas encore d’helpers favoris.',
     last_service: 'Dernier service : {{skill}} ({{when}})',
     days_ago: 'Il y a {{count}} jours',
     hire_again: 'Réengager',

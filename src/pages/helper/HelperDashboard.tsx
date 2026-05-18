@@ -9,7 +9,7 @@ import { uploadAvatarImage } from '@/lib/storageUpload';
 import { logMediaPicker } from '@/utils/mediaPickerDebug';
 import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import { initialsForName } from '@/utils/avatarUrl';
-import { filterValidSkillKeys } from '@/data/helperSkillsCatalog';
+import { filterValidSkillKeys, parseSkillKey, skillSubLabelKey } from '@/data/helperSkillsCatalog';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { useAppData, type UpcomingJob } from '@/context/AppDataContext';
@@ -216,6 +216,18 @@ export default function HelperDashboard() {
     helperTier === 'BASIC'
       ? null
       : formatSubscriptionBillingDate(me.nextBillingDate, language);
+
+  const sidebarSkillLines = React.useMemo(
+    () =>
+      profileSettings.skillIds
+        .map((key) => {
+          const parsed = parseSkillKey(key);
+          if (!parsed) return null;
+          return { key, label: t(skillSubLabelKey(parsed.primary, parsed.sub)) };
+        })
+        .filter((row): row is { key: string; label: string } => row !== null),
+    [profileSettings.skillIds, t],
+  );
 
   const insights = React.useMemo(() => {
     const base: {
@@ -479,7 +491,7 @@ export default function HelperDashboard() {
                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-full text-white text-xs font-bold uppercase tracking-wider mb-2 border border-white/20">
                           <ShieldCheck className="w-3.5 h-3.5" /> {t('helper_dashboard.trusted_level_score')}
                        </div>
-                       <h2 className="text-2xl font-bold mb-1">{t('helper_dashboard.score_encourage_title', { name: 'Alex' })}</h2>
+                       <h2 className="text-2xl font-bold mb-1">{t('helper_dashboard.score_encourage_title', { name: me.name.split(' ')[0] || me.name })}</h2>
                        <p className="text-blue-100 text-sm font-medium leading-relaxed">
                           {t('helper_dashboard.score_encourage_line1')}{' '}
                           <strong className="text-white">{t('helper_badges.pro_helper')}</strong>
@@ -939,44 +951,20 @@ export default function HelperDashboard() {
 
             <HelperSidebarDisclosure storageKey="skills" title={t('helper_dashboard.sidebar_acc_skills')}>
               <div className="space-y-1.5">
-                <div className="bg-white border border-slate-200 p-2 rounded-lg shadow-sm hover:border-sky-200 cursor-pointer transition-colors max-w-full overflow-hidden">
-                  <div className="flex justify-between items-start mb-1 gap-1.5">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <div className="bg-sky-50 p-1.5 rounded-lg text-sky-600 shrink-0">
-                        <Icons.Hammer className="w-4 h-4" />
-                      </div>
-                      <span className="font-semibold text-slate-900 text-xs truncate">{t('categories.furniture')}</span>
+                {sidebarSkillLines.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 font-medium px-1 py-2 leading-snug">
+                    {t('helper_dashboard.skills_empty')}
+                  </p>
+                ) : (
+                  sidebarSkillLines.map((skill) => (
+                    <div
+                      key={skill.key}
+                      className="bg-white border border-slate-200 p-2 rounded-lg shadow-sm max-w-full overflow-hidden"
+                    >
+                      <span className="font-semibold text-slate-900 text-xs truncate block">{skill.label}</span>
                     </div>
-                    <span className="text-[8px] font-bold uppercase text-violet-700 bg-violet-50 border border-violet-200 px-1 py-0.5 rounded shrink-0">
-                      Pro
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-end pl-8 pr-0.5">
-                    <div className="flex items-center gap-0.5">
-                      <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400 shrink-0" />
-                      <span className="text-[11px] font-semibold text-slate-700">5.0</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white border border-slate-200 p-2 rounded-lg shadow-sm hover:border-sky-200 cursor-pointer transition-colors max-w-full overflow-hidden">
-                  <div className="flex justify-between items-start mb-1 gap-1.5">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <div className="bg-emerald-50 p-1.5 rounded-lg text-emerald-600 shrink-0">
-                        <Icons.Languages className="w-4 h-4" />
-                      </div>
-                      <span className="font-semibold text-slate-900 text-xs truncate">{t('helper_dashboard.skill_demo_translation')}</span>
-                    </div>
-                    <span className="text-[8px] font-bold uppercase text-sky-700 bg-sky-50 border border-sky-200 px-1 py-0.5 rounded shrink-0">
-                      Exp
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-end pl-8 pr-0.5">
-                    <div className="flex items-center gap-0.5">
-                      <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400 shrink-0" />
-                      <span className="text-[11px] font-semibold text-slate-700">4.9</span>
-                    </div>
-                  </div>
-                </div>
+                  ))
+                )}
                 <button
                   type="button"
                   onClick={() => setProfileSetupModal('skills')}

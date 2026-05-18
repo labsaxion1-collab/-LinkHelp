@@ -1,5 +1,4 @@
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
-import { mockUsers } from '@/data/mockUsers';
 import type { Application } from '@/types/application';
 
 export function helperPlanFromRoleKey(roleKey: string): HelperSubscriptionTier {
@@ -10,7 +9,6 @@ export function helperPlanFromRoleKey(roleKey: string): HelperSubscriptionTier {
 }
 
 export function helperTierFromApplication(app: Application): HelperSubscriptionTier {
-  if (app.helperId === mockUsers.helper.id) return mockUsers.helper.subscriptionTier ?? 'BASIC';
   if (app.helperPlan) return app.helperPlan;
   return 'BASIC';
 }

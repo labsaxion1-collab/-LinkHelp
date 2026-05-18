@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import * as Icons from 'lucide-react';
 import { Search, Send, MoreVertical, Phone, Video, ChevronLeft, ShieldCheck, Lock } from 'lucide-react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { mockUsers } from '@/data/mockUsers';
 import { useAppData } from '@/context/AppDataContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { useAuth } from '@/context/AuthContext';
@@ -14,7 +13,6 @@ import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import { clsx } from 'clsx';
 import { sanitizePreMatchMessage } from '@/utils/preMatchChatFilter';
-import { incrementDemoPreMatchSent, loadDemoChatThread, type DemoChatThreadState } from '@/utils/chatThreadDemo';
 import { isUnlimitedPreMatch, preMatchOutgoingLimit } from '@/utils/preMatchLimits';
 
 type ChatRow =
@@ -47,16 +45,9 @@ export default function MessagesPage() {
 
   const effectiveClientMode = useRemoteChat ? me.userType === 'client' : isClientMode;
 
-  const clientTier: HelperSubscriptionTier = mockUsers.client.subscriptionTier ?? 'BASIC';
-  const helperTier: HelperSubscriptionTier = mockUsers.helper.subscriptionTier ?? 'BASIC';
-  const demoMyTier = isClientMode ? clientTier : helperTier;
-  const myTier = useRemoteChat ? me.subscriptionTier : demoMyTier;
+  const myTier = me.subscriptionTier ?? 'BASIC';
 
-  const [demoThread, setDemoThread] = useState<DemoChatThreadState>(() => loadDemoChatThread());
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<ChatRow[]>([]);
-  const [seeded, setSeeded] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [filterBanner, setFilterBanner] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,12 +57,7 @@ export default function MessagesPage() {
   const [mobilePanel, setMobilePanel] = useState<'list' | 'thread'>('list');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const serviceConfirmed = useRemoteChat ? remote.contactUnlocked : demoThread.serviceConfirmed;
-
-  useEffect(() => {
-    if (useRemoteChat) return;
-    setDemoThread(loadDemoChatThread());
-  }, [location.key, useRemoteChat]);
+  const serviceConfirmed = useRemoteChat ? remote.contactUnlocked : false;
 
   useEffect(() => {
     const st = location.state as { composeDraft?: string; conversationId?: string } | null;
@@ -92,40 +78,15 @@ export default function MessagesPage() {
     if (isMd) setMobilePanel('thread');
   }, [isMd]);
 
-  useEffect(() => {
-    if (useRemoteChat || seeded) return;
-    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setMessages([
-      { id: 1, kind: 'system', text: t('messages_page.system_intro_pre'), time: now, variant: 'info' },
-      {
-        id: 2,
-        kind: 'user',
-        sender: 'other',
-        text: t('helper_profile.seed_helper_line'),
-        time: now,
-      },
-    ]);
-    setSeeded(true);
-  }, [seeded, t, useRemoteChat]);
+  const peerNameShort = remote.peerName.split(' ')[0] || remote.peerName;
+  const peerAvatar = remote.peerAvatar;
+  const peerTier = remote.peerPlan;
 
-  const demoPeerName = isClientMode ? mockUsers.helper.name.split(' ')[0] : mockUsers.client.name.split(' ')[0];
-  const demoPeerAvatar = isClientMode ? mockUsers.helper.avatar : mockUsers.client.avatar;
-  const demoPeerTier = isClientMode ? helperTier : clientTier;
-
-  const peerNameShort = useRemoteChat
-    ? remote.peerName.split(' ')[0] || remote.peerName
-    : demoPeerName;
-  const peerAvatar = useRemoteChat ? remote.peerAvatar : demoPeerAvatar;
-  const peerTier = useRemoteChat ? remote.peerPlan : demoPeerTier;
-
-  const usedPreMatch = useRemoteChat ? remote.preMatchOutgoingCount : isClientMode ? demoThread.clientPreMatchSent : demoThread.helperPreMatchSent;
+  const usedPreMatch = remote.preMatchOutgoingCount;
   const limit = preMatchOutgoingLimit(myTier);
   const unlimited = isUnlimitedPreMatch(myTier);
 
-  const threadMessages = useMemo((): ChatRow[] => {
-    if (useRemoteChat) return remote.rows as ChatRow[];
-    return messages;
-  }, [useRemoteChat, remote.rows, messages]);
+  const threadMessages = useMemo((): ChatRow[] => remote.rows as ChatRow[], [remote.rows]);
 
   const filteredSummaries = useMemo(() => {
     if (!useRemoteChat) return [];
@@ -174,54 +135,13 @@ export default function MessagesPage() {
       }
     }
 
-    if (useRemoteChat) {
-      if (!remote.selectedId) return;
-      try {
-        await remote.sendRemoteMessage(filtered);
-        setMessage('');
-      } catch {
-        /* remote hook sets sendError */
-      }
-      return;
+    if (!remote.selectedId) return;
+    try {
+      await remote.sendRemoteMessage(filtered);
+      setMessage('');
+    } catch {
+      /* remote hook sets sendError */
     }
-
-    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const newMsg: ChatRow = {
-      id: Date.now(),
-      kind: 'user',
-      sender: 'me',
-      text: filtered,
-      time,
-    };
-
-    if (!serviceConfirmed) {
-      const role = isClientMode ? 'client' : 'helper';
-      setDemoThread(incrementDemoPreMatchSent(role, myTier));
-    }
-
-    setMessages((prev) => [...prev, newMsg]);
-    setMessage('');
-
-    addNotification({
-      userId: isClientMode ? mockUsers.helper.id : mockUsers.client.id,
-      type: 'message',
-      title: t('notifications.inline_new_message_title'),
-      message: t('notifications.inline_new_message_body', { name: peerNameShort }),
-      actionUrl: ROUTES.messages,
-    });
-
-    setTimeout(() => setIsTyping(true), 500);
-    setTimeout(() => {
-      const reply: ChatRow = {
-        id: Date.now() + 1,
-        kind: 'user',
-        sender: 'other',
-        text: serviceConfirmed ? t('messages_page.reply_other_post') : t('messages_page.reply_other_ack'),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setIsTyping(false);
-      setMessages((prev) => [...prev, reply]);
-    }, 2200);
   };
 
   const showList = isMd || mobilePanel === 'list';
@@ -434,16 +354,6 @@ export default function MessagesPage() {
           {!serviceConfirmed && <Lock className="w-3.5 h-3.5 text-slate-300 shrink-0" aria-hidden />}
         </div>
       )}
-      {!useRemoteChat && isTyping && (
-        <div className="px-2 flex items-center gap-2 opacity-80">
-          <span className="text-xs text-gray-500 font-medium">{t('messages_page.typing_status', { name: peerNameShort })}</span>
-          <div className="flex space-x-1">
-            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
-          </div>
-        </div>
-      )}
       <form
         onSubmit={(ev) => {
           void handleSendMessage(ev);
@@ -511,6 +421,15 @@ export default function MessagesPage() {
   const remoteNeedsPick = useRemoteChat && !remote.selectedId && remote.summaries.length > 0;
   const remoteNoThread = useRemoteChat && !remote.selectedId && remote.summaries.length === 0 && !remote.listLoading;
   const remoteListBoot = useRemoteChat && !remote.selectedId && remote.listLoading;
+
+  if (!useRemoteChat) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center min-h-[50vh] p-8 text-center max-w-md mx-auto">
+        <Icons.MessageCircle className="w-12 h-12 text-slate-300 mb-3" aria-hidden />
+        <p className="text-sm font-semibold text-slate-700">{t('messages_page.sign_in_required')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-1 flex-col min-h-0 w-full max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 sm:py-4">
@@ -627,32 +546,6 @@ export default function MessagesPage() {
                   </div>
                 </button>
               ))}
-            {!useRemoteChat && (
-              <button
-                type="button"
-                onClick={() => setMobilePanel('thread')}
-                className="w-full text-left p-4 border-b border-gray-100 bg-white border-l-4 border-l-blue-600 relative overflow-hidden transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="relative shrink-0">
-                    <img
-                      src={peerAvatar}
-                      alt=""
-                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
-                      loading="lazy"
-                    />
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline gap-2 mb-1">
-                      <h3 className="text-sm font-bold text-gray-900 truncate">{peerNameShort}</h3>
-                      <span className="text-[10px] font-bold text-blue-600 shrink-0">{t('notifications.time_now')}</span>
-                    </div>
-                    <p className="text-sm text-gray-600 truncate font-medium">{t('helper_profile.seed_helper_line')}</p>
-                  </div>
-                </div>
-              </button>
-            )}
           </div>
         </div>
 

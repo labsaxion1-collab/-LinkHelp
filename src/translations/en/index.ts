@@ -182,6 +182,7 @@ export const en = {
     inline_new_message_body: 'New message from {{name}}',
   },
   messages_page: {
+    sign_in_required: 'Sign in to view and send messages.',
     title: 'Messages',
     search_placeholder: 'Search messages…',
     yesterday: 'Yesterday',
@@ -268,6 +269,7 @@ export const en = {
     cta_hire: 'Hire officially',
     seed_helper_line:
       'Hi! I saw your request—happy to align on timing and details here before we confirm everything.',
+    bio_empty: 'This helper has not added a bio yet.',
   },
   hire_modal: {
     title: 'Hire {{name}}',
@@ -711,6 +713,7 @@ export const en = {
     ideas_approved_today: '{{count}} ideas approved today',
     skill_demo_translation: 'EN/PT translation',
     add_skill_cta: 'Add skill',
+    skills_empty: 'Add your skills to show up in search results.',
     jobs_count_short: '({{count}} jobs)',
     job_card_urgent: 'Urgent request',
     insight_portfolio_title: 'Portfolio tip',
@@ -962,6 +965,7 @@ export const en = {
     map_widget_title: 'Helpers nearby',
     map_widget_live: 'Live',
     map_widget_neutral: 'Map',
+    map_no_helpers_nearby: 'No helpers nearby right now.',
     home_feed_title: 'Your requests',
     home_feed_sub: 'Manage applications and follow-ups — focused on getting help.',
     helpers_interest_neutral: 'Interest from helpers',
@@ -979,6 +983,7 @@ export const en = {
     radar_recent_empty: 'Nothing new yet — publish a request or check notifications.',
     radar_helper_replied: 'Update',
     radar_online_title: 'Helpers online nearby',
+    radar_online_empty: 'No helpers online nearby right now.',
     radar_km: '{{km}} km',
     radar_suggestions_title: 'Trending & popular',
     radar_browse_helpers: 'Browse helpers',
@@ -1031,6 +1036,8 @@ export const en = {
   },
   client_helpers: {
     recommended_title: 'Recommended helpers',
+    recommended_empty: 'No helpers found yet. Post a request to receive applications.',
+    favorites_empty: 'You do not have favorite helpers yet.',
     last_service: 'Last service: {{skill}} ({{when}})',
     days_ago: '{{count}} days ago',
     hire_again: 'Hire again',

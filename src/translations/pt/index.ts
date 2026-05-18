@@ -182,6 +182,7 @@ export const pt = {
     inline_new_message_body: 'Nova mensagem recebida de {{name}}',
   },
   messages_page: {
+    sign_in_required: 'Entre na sua conta para ver e enviar mensagens.',
     title: 'Mensagens',
     search_placeholder: 'Buscar mensagens…',
     yesterday: 'Ontem',
@@ -269,6 +270,7 @@ export const pt = {
     cta_hire: 'Contratar oficialmente',
     seed_helper_line:
       'Oi! Vi seu pedido — posso alinhar horário e detalhes aqui antes de confirmarmos tudo.',
+    bio_empty: 'Este helper ainda não adicionou uma bio.',
   },
   hire_modal: {
     title: 'Contratar {{name}}',
@@ -712,6 +714,7 @@ export const pt = {
     ideas_approved_today: '{{count}} ideias aprovadas hoje',
     skill_demo_translation: 'Tradução EN/PT',
     add_skill_cta: 'Adicionar skill',
+    skills_empty: 'Adicione suas habilidades para aparecer nas buscas.',
     jobs_count_short: '({{count}} serviços)',
     job_card_urgent: 'Pedido urgente',
     insight_portfolio_title: 'Dica de portfólio',
@@ -964,6 +967,7 @@ export const pt = {
     map_widget_title: 'Helpers perto',
     map_widget_live: 'Ao vivo',
     map_widget_neutral: 'Mapa',
+    map_no_helpers_nearby: 'Nenhum helper por perto no momento.',
     home_feed_title: 'Seus pedidos',
     home_feed_sub: 'Gerencie candidaturas e acompanhamentos — foco em resolver o que você precisa.',
     helpers_interest_neutral: 'Interesse de helpers',
@@ -981,6 +985,7 @@ export const pt = {
     radar_recent_empty: 'Nada novo ainda — publique um pedido ou veja notificações.',
     radar_helper_replied: 'Atualização',
     radar_online_title: 'Helpers online por perto',
+    radar_online_empty: 'Nenhum helper online por perto no momento.',
     radar_km: '{{km}} km',
     radar_suggestions_title: 'Em alta & populares',
     radar_browse_helpers: 'Ver helpers',
@@ -1033,6 +1038,8 @@ export const pt = {
   },
   client_helpers: {
     recommended_title: 'Ajudantes recomendados',
+    recommended_empty: 'Nenhum helper encontrado ainda. Publique um pedido para receber candidaturas.',
+    favorites_empty: 'Você ainda não tem helpers favoritos.',
     last_service: 'Último serviço: {{skill}} ({{when}})',
     days_ago: 'Há {{count}} dias',
     hire_again: 'Contratar novamente',

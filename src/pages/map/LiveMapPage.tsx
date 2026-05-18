@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { mockUsers } from '@/data/mockUsers';
+import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useAppData } from '@/context/AppDataContext';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -76,6 +76,7 @@ export default function LiveMapPage() {
   const isHelper = location.pathname.includes('/helper');
   const { jobs, addNotification } = useAppData();
   const { t } = useLanguage();
+  const me = useSessionViewer();
   
   const hasValidKey = Boolean(API_KEY) && API_KEY !== 'YOUR_API_KEY';
   const [center, setCenter] = useState<google.maps.LatLngLiteral>(DEFAULT_CENTER);
@@ -123,27 +124,7 @@ export default function LiveMapPage() {
         });
         setMockPoints(mappedJobs);
      } else {
-        // Generate Helpers
-        const helpers = [
-            { id: 1, name: 'Alex M.', skills: 'assembly', rating: 4.9, avatar: avatarUrlForName('Alex M.', 'ede9fe', '5b21b6') },
-            { id: 2, name: 'Sarah K.', skills: 'beauty', rating: 5.0, avatar: avatarUrlForName('Sarah K.', 'ffedd5', '9a3412') },
-            { id: 3, name: 'John D.', skills: 'cleaning', rating: 4.8, avatar: avatarUrlForName('John D.', 'e0f2fe', '0c4a6e') },
-            { id: 4, name: 'Emily R.', skills: 'moving', rating: 4.7, avatar: avatarUrlForName('Emily R.', 'fce7f3', '831843') },
-            { id: 5, name: 'Carlos T.', skills: 'renovation', rating: 5.0, avatar: avatarUrlForName('Carlos T.', 'ecfdf5', '065f46') },
-        ];
-        const mappedHelpers = helpers.map(h => {
-           const latOffset = (Math.random() - 0.5) * 0.04;
-           const lngOffset = (Math.random() - 0.5) * 0.04;
-           const dist = Math.sqrt(Math.pow(latOffset, 2) + Math.pow(lngOffset, 2)) * 111; // Approx km
-           return {
-              id: `helper_${h.id}`,
-              type: 'helper',
-              data: h,
-              position: { lat: center.lat + latOffset, lng: center.lng + lngOffset },
-              dist: Number(dist.toFixed(1))
-           }
-        });
-        setMockPoints(mappedHelpers);
+        setMockPoints([]);
      }
   }, [isHelper, center, jobs]);
 
@@ -247,7 +228,7 @@ export default function LiveMapPage() {
                         <button onClick={(e) => {
                            e.stopPropagation();
                            addNotification({
-                             userId: mockUsers.helper.id,
+                             userId: me.id,
                              type: 'application',
                              title: t('live_map.notif_sent_title'),
                              message: t('live_map.notif_sent_body', { title: point.data.title }),
@@ -276,7 +257,7 @@ export default function LiveMapPage() {
                                <button onClick={(e) => {
                                   e.stopPropagation();
                                   addNotification({
-                                     userId: mockUsers.client.id,
+                                     userId: me.id,
                                      type: 'system',
                                      title: t('live_map.notif_invite_title'),
                                      message: t('live_map.notif_invite_body', { name: point.data.name }),

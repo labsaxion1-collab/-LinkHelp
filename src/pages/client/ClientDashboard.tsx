@@ -19,7 +19,6 @@ import { helperPlanFromRoleKey, helperTierFromApplication } from '@/utils/helper
 import { ClientRadarInsights } from '@/components/client/ClientRadarInsights';
 import { LhCard } from '@/components/design-system/LhCard';
 import { UserPresenceBadge } from '@/components/ui/UserPresenceBadge';
-import { markDemoServiceConfirmed } from '@/utils/chatThreadDemo';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 
 type ModalStep =
@@ -32,7 +31,7 @@ type ModalStep =
   | 'priority'
   | 'review';
 
-const RECOMMENDED_HELPERS: {
+type RecommendedHelperCard = {
   id: number;
   name: string;
   roleKey: 'pro_helper' | 'elite' | 'trusted';
@@ -42,41 +41,9 @@ const RECOMMENDED_HELPERS: {
   skills: readonly string[];
   isOnline: boolean;
   trainingCert: TrainingCertLevel;
-}[] = [
-  {
-    id: 1,
-    name: 'Alex M.',
-    roleKey: 'pro_helper',
-    roleColor: 'purple',
-    rating: 4.9,
-    avatar: avatarUrlForName('Alex M.', 'ede9fe', '5b21b6'),
-    skills: ['assembly', 'cleaning', 'moving'] as const,
-    isOnline: true,
-    trainingCert: 'pro',
-  },
-  {
-    id: 2,
-    name: 'Sarah K.',
-    roleKey: 'elite',
-    roleColor: 'orange',
-    rating: 5.0,
-    avatar: avatarUrlForName('Sarah K.', 'ffedd5', '9a3412'),
-    skills: ['translation', 'support', 'hair'] as const,
-    isOnline: true,
-    trainingCert: 'elite',
-  },
-  {
-    id: 3,
-    name: 'David T.',
-    roleKey: 'trusted',
-    roleColor: 'blue',
-    rating: 4.8,
-    avatar: avatarUrlForName('David T.', 'dbeafe', '1e3a8a'),
-    skills: ['renovation', 'assembly', 'outdoor'] as const,
-    isOnline: true,
-    trainingCert: 'basic',
-  },
-];
+};
+
+const RECOMMENDED_HELPERS: RecommendedHelperCard[] = [];
 
 export default function ClientDashboard() {
   const [postText, setPostText] = useState('');
@@ -1657,6 +1624,11 @@ export default function ClientDashboard() {
               </div>
 
               <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
+                {RECOMMENDED_HELPERS.length === 0 ? (
+                  <p className="text-sm text-slate-500 font-medium py-6 px-2 w-full text-center">
+                    {t('client_helpers.recommended_empty')}
+                  </p>
+                ) : null}
                 {RECOMMENDED_HELPERS.map((helper) => (
                   <div key={helper.id} className="min-w-[190px] w-[190px] bg-white border border-gray-200 rounded-xl flex flex-col justify-between shrink-0 shadow-sm hover:shadow-md transition-shadow relative">
                     <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 items-start max-w-[calc(100%-3rem)]">
@@ -1714,6 +1686,11 @@ export default function ClientDashboard() {
               <p className="text-gray-500 mb-6">{t('client_helpers.favorites_sub')}</p>
               
               <div className="space-y-4">
+                {RECOMMENDED_HELPERS.length === 0 ? (
+                  <p className="text-sm text-slate-500 font-medium py-8 text-center border border-dashed border-slate-200 rounded-2xl">
+                    {t('client_helpers.favorites_empty')}
+                  </p>
+                ) : null}
                 {RECOMMENDED_HELPERS.slice(0, 3).map((helper, i) => (
                   <div key={i} className="flex items-center gap-4 p-4 border border-gray-100 rounded-2xl hover:border-gray-200 hover:shadow-sm transition-all group">
                     <div className="relative">
@@ -1899,28 +1876,9 @@ export default function ClientDashboard() {
                   <div className="absolute inset-0 rounded-full border-2 border-blue-400/80 animate-ping opacity-60 [animation-duration:2.8s] motion-reduce:animate-none"></div>
                   <div className="absolute -inset-4 rounded-full border border-blue-300/60 animate-ping opacity-40 [animation-duration:3.4s] motion-reduce:animate-none"></div>
                 </div>
-
-                {/* Simulated Pins */}
-                <div className="absolute top-1/4 left-1/4 z-10 motion-reduce:animate-none animate-pulse [animation-duration:2.8s]">
-                   <div className="relative group cursor-pointer">
-                     <div className="w-7 h-7 bg-white rounded-full border-2 border-blue-500 shadow-md p-0.5"><img src={avatarUrlForName('Sarah K.', 'ffedd5', '9a3412')} className="w-full h-full rounded-full object-cover" alt="" /></div>
-                     <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[10px] font-bold px-2 py-1 rounded-md -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap shadow-lg">{t('client_dashboard.map_pin_km', { km: '0.3' })}</div>
-                   </div>
-                </div>
-
-                <div className="absolute bottom-1/4 right-1/4 z-10 motion-reduce:animate-none animate-pulse [animation-duration:3.1s]">
-                   <div className="relative group cursor-pointer">
-                     <div className="w-7 h-7 bg-white rounded-full border-2 border-green-500 shadow-md p-0.5"><img src={avatarUrlForName('Alex M.', 'ede9fe', '5b21b6')} className="w-full h-full rounded-full object-cover" alt="" /></div>
-                     <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[10px] font-bold px-2 py-1 rounded-md -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap shadow-lg">{t('client_dashboard.map_pin_km', { km: '0.8' })}</div>
-                   </div>
-                </div>
-
-                <div className="absolute top-1/3 right-1/3 shadow-sm z-10 motion-reduce:animate-none animate-pulse [animation-duration:2.5s]">
-                   <div className="relative group cursor-pointer">
-                     <div className="w-7 h-7 bg-white rounded-full border-2 border-orange-400 shadow-md p-0.5"><img src={avatarUrlForName('Jordan P.', 'ffedd5', '9a3412')} className="w-full h-full rounded-full object-cover" alt="" /></div>
-                     <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[10px] font-bold px-2 py-1 rounded-md -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap shadow-lg">{t('client_dashboard.map_pin_km_busy', { km: '1.2' })}</div>
-                   </div>
-                </div>
+                <p className="relative z-10 text-xs font-medium text-slate-500 px-4 text-center">
+                  {t('client_dashboard.map_no_helpers_nearby')}
+                </p>
              </div>
              <Link to={ROUTES.map} className="p-2 border-t border-gray-50 bg-gray-50 text-center hover:bg-gray-100 transition-colors cursor-pointer block">
                 <span className="text-xs font-semibold text-blue-600">{t('client_dashboard.view_map_expanded')}</span>
@@ -2033,7 +1991,7 @@ export default function ClientDashboard() {
                   <h3 className="font-bold mb-2 text-xs uppercase tracking-wide text-gray-500">
                     {t('helper_profile.about')}
                   </h3>
-                  <p className="text-gray-600 leading-relaxed text-sm">{t('helper_profile.demo_bio')}</p>
+                  <p className="text-gray-600 leading-relaxed text-sm">{t('helper_profile.bio_empty')}</p>
                 </div>
                 <div>
                   <h3 className="font-bold mb-2 text-xs uppercase tracking-wide text-gray-500">
@@ -2138,9 +2096,6 @@ export default function ClientDashboard() {
                   type="button"
                   onClick={() => {
                     setShowHireModal(false);
-                    if (hireModalKind === 'hire') {
-                      markDemoServiceConfirmed();
-                    }
                     setToastNotification({
                       message: hireModalKind === 'hire' ? t('hire_modal.success_toast') : t('hire_modal.success_toast_proposal'),
                       show: true,

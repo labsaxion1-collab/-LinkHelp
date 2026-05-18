@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { ROUTES } from '@/utils/constants';
-import { avatarUrlForName } from '@/utils/avatarUrl';
 import type { Job } from '@/types/job';
 import type { Application } from '@/types/application';
 import type { AppNotification } from '@/types/notification';
@@ -79,22 +78,9 @@ export function ClientRadarInsights({ t, clientId, jobs, applications, notificat
           <Icons.Users className="h-3.5 w-3.5 text-emerald-500" />
           {t('client_dashboard.radar_online_title')}
         </h4>
-        <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
-          {['Sarah K.', 'Alex M.', 'Jordan P.'].map((name, i) => (
-            <div
-              key={name}
-              className="flex min-w-[104px] shrink-0 flex-col rounded-xl border border-white bg-white p-2 shadow-sm ring-1 ring-slate-100 transition hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none"
-            >
-              <div className="relative mx-auto mb-1 h-9 w-9">
-                <img src={avatarUrlForName(name, 'e0e7ff', '4338ca')} alt="" className="h-full w-full rounded-full object-cover ring-2 ring-white" />
-                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" title="online" />
-              </div>
-              <p className="truncate text-center text-[10px] font-bold text-slate-800">{name.split(' ')[0]}</p>
-              <p className="truncate text-center text-[9px] font-medium text-slate-500">{t(`categories.${hotCats[i % hotCats.length].id}`)}</p>
-              <p className="mt-0.5 text-center text-[9px] font-semibold text-blue-600">{t('client_dashboard.radar_km', { km: (0.4 + i * 0.35).toFixed(1) })}</p>
-            </div>
-          ))}
-        </div>
+        <p className="rounded-lg border border-dashed border-slate-200 bg-white/80 px-2 py-3 text-[11px] font-medium text-slate-500">
+          {t('client_dashboard.radar_online_empty')}
+        </p>
       </div>
 
       <div>

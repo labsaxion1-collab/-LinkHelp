@@ -7,7 +7,7 @@ import {
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
-import { mockUsers } from '@/data/mockUsers';
+import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { ROUTES } from '@/utils/constants';
 
 const CATEGORIES = [
@@ -24,56 +24,18 @@ const CATEGORIES = [
   { id: 'mobile', name: 'Mobile Experience', icon: Smartphone }
 ];
 
-const MOCK_IDEAS = [
-  {
-    id: 1,
-    title: 'Add a "Tip" feature for helpers after completion',
-    description: 'I would love to be able to leave a tip for my last helper directly from the app instead of using physical cash. It would be super convenient and appreciative!',
-    category: 'payments',
-    votes: 428,
-    comments: 32,
-    creatorType: 'Client',
-    status: 'planned',
-    timestamp: '2 days ago',
-    voted: true
-  },
-  {
-    id: 2,
-    title: 'Background Check Badges for Helpers',
-    description: 'To increase trust, helpers who pass a background check should get a special badge on their profile.',
-    category: 'safety',
-    votes: 315,
-    comments: 45,
-    creatorType: 'Both',
-    status: 'in_progress',
-    timestamp: '1 week ago',
-    voted: false
-  },
-  {
-    id: 3,
-    title: 'Real-time location tracking for emergency requests',
-    description: 'If I request someone for an emergency, it would be great to see them on a map like Uber.',
-    category: 'features',
-    votes: 890,
-    comments: 112,
-    creatorType: 'Client',
-    status: 'implemented',
-    timestamp: '1 month ago',
-    voted: true
-  },
-  {
-    id: 4,
-    title: 'Helper tools: Earnings Dashboard',
-    description: 'A dedicated screen where helpers can track daily, weekly, and monthly earnings with a chart.',
-    category: 'helper_tools',
-    votes: 210,
-    comments: 18,
-    creatorType: 'Helper',
-    status: 'under_review',
-    timestamp: '4 hours ago',
-    voted: false
-  }
-];
+type IdeaRow = {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  votes: number;
+  comments: number;
+  creatorType: string;
+  status: string;
+  timestamp: string;
+  voted: boolean;
+};
 
 const STATUS_CONFIG = {
   'planned': { label: 'Planned', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
@@ -85,7 +47,8 @@ const STATUS_CONFIG = {
 export default function IdeasPage() {
   const { t } = useLanguage();
   const { addNotification } = useAppData();
-  const [ideas, setIdeas] = useState(MOCK_IDEAS);
+  const me = useSessionViewer();
+  const [ideas, setIdeas] = useState<IdeaRow[]>([]);
   const [activeTab, setActiveTab] = useState<'feed' | 'roadmap'>('feed');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filter, setFilter] = useState('trending');
@@ -219,7 +182,7 @@ export default function IdeasPage() {
                            setIdeas(prev => prev.map(i => i.id === idea.id ? { ...i, voted: !i.voted, votes: i.voted ? i.votes - 1 : i.votes + 1 } : i));
                            if (!idea.voted) {
                              addNotification({
-                               userId: mockUsers.client.id, // For demo, whoever
+                               userId: me.id,
                                type: 'system',
                                title: 'Você curtiu uma ideia',
                                message: `Sua curtida em "${idea.title}" gerou votos para o autor!`,
@@ -489,7 +452,7 @@ export default function IdeasPage() {
                   setShowCreateModal(false);
                   
                   addNotification({
-                    userId: mockUsers.client.id, // Mocked to client for demo
+                    userId: me.id,
                     type: 'system',
                     title: 'Ideia enviada com sucesso! 🚀',
                     message: `Sua ideia "${newTitle}" entrou em fase de revisão. Você ganhará LinkCredits se aprovada!`,

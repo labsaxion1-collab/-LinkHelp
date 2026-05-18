@@ -1,20 +1,33 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# LinkHelp
 
-# Run and deploy your AI Studio app
+Marketplace local de servicos para conectar clientes e helpers por categoria, regiao, disponibilidade e confianca.
 
-This contains everything you need to run your app locally.
+## Stack
 
-View your app in AI Studio: https://ai.studio/apps/237deb23-66b6-48b0-9fb1-fe3f24121c32
+- React 19 + Vite
+- TypeScript
+- Tailwind CSS 4
+- Supabase Auth, Database, Realtime e Storage
+- Google Maps
+- PWA
 
-## Run Locally
+## Rodar Localmente
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
+1. Instale as dependencias:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
+2. Copie `.env.example` para `.env` e preencha as chaves reais do Supabase.
+3. Rode o app:
    `npm run dev`
+
+O servidor usa `http://localhost:3000`.
+
+## Scripts
+
+- `npm run dev`: ambiente local
+- `npm run build`: build de producao
+- `npm run lint`: checagem TypeScript
+- `npm run preview`: preview do build
+
+## Direcao do Produto
+
+O fluxo principal segue o modelo de marketplace de leads: cliente publica uma necessidade guiada, helpers recebem oportunidades qualificadas por categoria/regiao e se candidatam aos pedidos mais relevantes. Pagamentos do servico ainda sao combinados diretamente entre cliente e helper nesta etapa.

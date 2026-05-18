@@ -121,7 +121,7 @@ export function CreateRequestScheduleStep(props: Props) {
       <div>
         <p className="text-sm font-bold text-gray-800 mb-3">{t('create_modal.when')}</p>
         <div className="grid grid-cols-2 gap-2">
-          {(['emergency', 'urgent', 'today', 'flexible'] as const).map((p) => (
+          {(['urgent', 'flexible'] as const).map((p) => (
             <button
               key={p}
               type="button"
@@ -130,19 +130,13 @@ export function CreateRequestScheduleStep(props: Props) {
                 priority === p ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white hover:border-gray-300'
               }`}
             >
-              {p === 'emergency'
-                ? t('urgency.emergency')
-                : p === 'urgent'
-                  ? t('urgency.urgent')
-                  : p === 'today'
-                    ? t('urgency.today_tomorrow')
-                    : t('urgency.flexible')}
+              {p === 'urgent' ? t('urgency.urgent_asap') : t('urgency.flexible')}
             </button>
           ))}
         </div>
       </div>
 
-      {priority !== 'emergency' && (
+      {priority === 'flexible' && (
         <div className="space-y-3">
           <p className="text-sm font-bold text-gray-800">{t('create_modal.preferred_date')}</p>
           <div className="flex flex-wrap gap-2">
@@ -340,4 +334,3 @@ export function CreateRequestScheduleStep(props: Props) {
     </section>
   );
 }
-

@@ -2,6 +2,7 @@ import { MapPin } from 'lucide-react';
 import { CityRegionAutocomplete } from '@/components/common/CityRegionAutocomplete';
 import { ProfilePhoneField } from '@/components/profile/ProfilePhoneField';
 import type { useProfileForm } from '@/hooks/useProfileForm';
+import type { ReactNode } from 'react';
 
 type ProfileForm = ReturnType<typeof useProfileForm>;
 
@@ -36,7 +37,7 @@ export function ProfileFormFields({
   return (
     <div className="flex flex-col sm:flex-row gap-8">
       <div className="w-full sm:w-1/3 space-y-4">
-        <motionProfileSidebar>
+        <MotionProfileSidebar>
           <button
             type="button"
             onClick={onChangePhoto}
@@ -62,7 +63,7 @@ export function ProfileFormFields({
               <MapPin className="w-4 h-4 shrink-0" /> {locationLabel}
             </p>
           ) : null}
-        </motionProfileSidebar>
+        </MotionProfileSidebar>
       </div>
 
       <div className="w-full sm:w-2/3 space-y-5">
@@ -97,7 +98,7 @@ export function ProfileFormFields({
           t={t}
         />
 
-        <motionEmailField>
+        <MotionEmailField>
           <label className="text-sm font-bold text-gray-700 block mb-2">{t('client_dashboard.email_label')}</label>
           <input
             type="email"
@@ -108,7 +109,7 @@ export function ProfileFormFields({
             placeholder={authEmail ? undefined : t('profile_form.email_empty')}
           />
           <p className="mt-1.5 text-xs text-gray-500">{t('profile_form.email_readonly_hint')}</p>
-        </motionEmailField>
+        </MotionEmailField>
 
         <CityRegionAutocomplete
           label={t('app_pages.settings_city')}
@@ -134,10 +135,10 @@ export function ProfileFormFields({
   );
 }
 
-function motionProfileSidebar({ children }: { children: React.ReactNode }) {
+function MotionProfileSidebar({ children }: { children: ReactNode }) {
   return <div className="flex flex-col items-center text-center">{children}</div>;
 }
 
-function motionEmailField({ children }: { children: React.ReactNode }) {
+function MotionEmailField({ children }: { children: ReactNode }) {
   return <div>{children}</div>;
 }

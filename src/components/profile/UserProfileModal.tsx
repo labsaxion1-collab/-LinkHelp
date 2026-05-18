@@ -29,9 +29,10 @@ export function UserProfileModal({
 
   if (!open) return null;
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<boolean> => {
     const ok = await form.save();
     if (ok) onClose();
+    return ok;
   };
 
   return (

@@ -8,6 +8,9 @@ type Props = {
   selectedCategory: string;
   selectedSubcategory: string;
   postText: string;
+  budgetHint: string;
+  translationFromLanguage: string;
+  translationToLanguage: string;
   requestAddress: RequestAddressValue;
   movePickupAddress: RequestAddressValue;
   moveDeliveryAddress: RequestAddressValue;
@@ -24,6 +27,9 @@ export function CreateRequestReviewStep({
   selectedCategory,
   selectedSubcategory,
   postText,
+  budgetHint,
+  translationFromLanguage,
+  translationToLanguage,
   requestAddress,
   movePickupAddress,
   moveDeliveryAddress,
@@ -38,7 +44,7 @@ export function CreateRequestReviewStep({
     priority === 'emergency'
       ? t('urgency.emergency')
       : priority === 'urgent'
-        ? t('urgency.urgent')
+        ? t('urgency.urgent_asap')
         : priority === 'today'
           ? t('urgency.today_tomorrow')
           : t('urgency.flexible');
@@ -112,6 +118,22 @@ export function CreateRequestReviewStep({
           <div>
             <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.moving_property_type')}</dt>
             <dd className="font-bold">{t(`create_modal.moving_property_${movePropertyType}`)}</dd>
+          </div>
+        ) : null}
+        <div>
+          <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.budget_hint_label')}</dt>
+          <dd className="font-bold text-gray-900">{budgetHint.trim() || t('jobs.value_negotiable')}</dd>
+        </div>
+        {selectedCategory === 'translation' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.translation_from_language')}</dt>
+              <dd className="font-bold text-gray-900">{translationFromLanguage || '---'}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.translation_to_language')}</dt>
+              <dd className="font-bold text-gray-900">{translationToLanguage || '---'}</dd>
+            </div>
           </div>
         ) : null}
         <div>

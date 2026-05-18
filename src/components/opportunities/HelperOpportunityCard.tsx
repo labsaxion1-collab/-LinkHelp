@@ -31,6 +31,23 @@ function jobMatchTier(job: Job, activeTab: HelperOpportunityCardTab): 'urgent' |
   return 'normal';
 }
 
+function estimateLeadCost(job: Job, distanceKm?: number | null): number {
+  let cost = job.urgency === 'high' ? 4 : 2;
+  if (job.description.length > 180) cost += 1;
+  if (distanceKm != null && distanceKm <= 8) cost += 1;
+  return Math.min(cost, 6);
+}
+
+function estimateLeadQuality(job: Job, distanceKm?: number | null): number {
+  let score = 58;
+  if (job.description.length > 120) score += 14;
+  if (job.location.trim()) score += 10;
+  if (job.value && !/negotiable|combinar|agree/i.test(job.value)) score += 8;
+  if (job.urgency === 'high') score += 6;
+  if (distanceKm != null && distanceKm <= 10) score += 4;
+  return Math.min(score, 98);
+}
+
 export function HelperOpportunityCard({
   job,
   activeTab,
@@ -43,6 +60,9 @@ export function HelperOpportunityCard({
   distanceKm,
 }: HelperOpportunityCardProps) {
   const tier = jobMatchTier(job, activeTab);
+  const leadCost = estimateLeadCost(job, distanceKm);
+  const qualityScore = estimateLeadQuality(job, distanceKm);
+  const helperLimit = tier === 'urgent' ? 5 : 3;
 
   const header =
     tier === 'urgent' ? (
@@ -109,6 +129,15 @@ export function HelperOpportunityCard({
         <h4 className="text-base sm:text-lg font-bold text-slate-900 mb-2 leading-snug">{job.title}</h4>
         <p className="text-sm text-slate-600 mb-4 leading-relaxed">{job.description}</p>
         <div className="flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800">
+            <Icons.BadgeCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> {t('helper_dashboard.lead_quality', { pct: qualityScore })}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-800">
+            <Icons.Coins className="w-3.5 h-3.5 text-blue-600 shrink-0" /> {t('helper_dashboard.lead_cost', { count: leadCost })}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-900">
+            <Icons.Users className="w-3.5 h-3.5 text-amber-600 shrink-0" /> {t('helper_dashboard.lead_competition', { count: helperLimit })}
+          </span>
           <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-slate-50/80 px-2.5 py-1.5 text-xs font-medium text-slate-700">
             <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {formatJobSchedule(job.date, t)}
           </span>
@@ -122,6 +151,11 @@ export function HelperOpportunityCard({
             <Icons.Handshake className="w-3.5 h-3.5 text-slate-500 shrink-0" /> {t('helper_dashboard.compensation_neutral')}
           </span>
         </div>
+      </div>
+      <div className="mx-5 mb-4 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+        <p className="text-xs font-semibold leading-relaxed text-slate-600">
+          {t('helper_dashboard.lead_unlock_note')}
+        </p>
       </div>
       <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/60 flex gap-3">
         {hasApplied ? (

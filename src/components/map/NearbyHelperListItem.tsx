@@ -7,6 +7,7 @@ import { avatarUrlForName } from '@/utils/avatarUrl';
 import { ROUTES } from '@/utils/constants';
 
 type Props = {
+  key?: string;
   helper: NearbyHelperMapPoint;
   t: (key: string, vars?: Record<string, string | number>) => string;
   skillLabel: (skillId: string) => string;

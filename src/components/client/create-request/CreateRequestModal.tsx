@@ -20,6 +20,7 @@ import {
 
 type ModalStep = 'category' | 'schedule' | 'description' | 'review';
 const STEPS: ModalStep[] = ['category', 'schedule', 'description', 'review'];
+const TRANSLATION_LANGUAGE_OPTIONS = ['Português', 'Inglês', 'Francês', 'Espanhol', 'Italiano', 'Árabe'] as const;
 
 function needsBuilding(type: MovePropertyType) {
   return type === 'apartment' || type === 'office' || type === 'business';
@@ -29,9 +30,11 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onPublished?: () => void;
+  initialCategory?: string;
+  initialSubcategory?: string;
 };
 
-export function CreateRequestModal({ open, onClose, onPublished }: Props) {
+export function CreateRequestModal({ open, onClose, onPublished, initialCategory = '', initialSubcategory = '' }: Props) {
   const { t } = useLanguage();
   const { createJob } = useAppData();
   const me = useSessionViewer();
@@ -40,6 +43,11 @@ export function CreateRequestModal({ open, onClose, onPublished }: Props) {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [postText, setPostText] = useState('');
+  const [budgetHint, setBudgetHint] = useState('');
+  const [budgetMin, setBudgetMin] = useState(80);
+  const [budgetMax, setBudgetMax] = useState(120);
+  const [translationFromLanguage, setTranslationFromLanguage] = useState('');
+  const [translationToLanguage, setTranslationToLanguage] = useState('');
   const [requestAddress, setRequestAddress] = useState<RequestAddressValue>(() => emptyRequestAddress());
   const [priority, setPriority] = useState<RequestPriority>('flexible');
   const [preferredDateMode, setPreferredDateMode] = useState<PreferredDateMode>('today');
@@ -84,13 +92,21 @@ export function CreateRequestModal({ open, onClose, onPublished }: Props) {
 
   const scheduleComplete = isScheduleStepComplete(scheduleInput) && scheduleExtrasComplete;
   const descriptionBlocked = descriptionContainsContactInfo(postText);
-  const descriptionComplete = Boolean(postText.trim()) && !descriptionBlocked;
+  const translationLanguagesComplete =
+    selectedCategory !== 'translation' || Boolean(translationFromLanguage && translationToLanguage);
+  const descriptionComplete = Boolean(postText.trim()) && !descriptionBlocked && translationLanguagesComplete;
+  const formatBudgetRange = (min: number, max: number) => `CAD $${min}-${max}`;
 
   const reset = () => {
-    setStep('category');
-    setSelectedCategory('');
-    setSelectedSubcategory('');
+    setStep(initialCategory && initialSubcategory ? 'schedule' : 'category');
+    setSelectedCategory(initialCategory);
+    setSelectedSubcategory(initialSubcategory);
     setPostText('');
+    setBudgetHint('');
+    setBudgetMin(80);
+    setBudgetMax(120);
+    setTranslationFromLanguage('');
+    setTranslationToLanguage('');
     setRequestAddress(emptyRequestAddress());
     setPriority('flexible');
     setPreferredDateMode('today');
@@ -118,7 +134,7 @@ export function CreateRequestModal({ open, onClose, onPublished }: Props) {
   useEffect(() => {
     if (!open) return;
     reset();
-  }, [open]);
+  }, [open, initialCategory, initialSubcategory]);
 
   const handlePublish = () => {
     const yn = (v: string) => (v === 'yes' ? t('create_modal.moving_yes') : v === 'no' ? t('create_modal.moving_no') : '—');
@@ -146,16 +162,27 @@ export function CreateRequestModal({ open, onClose, onPublished }: Props) {
         if (cleaningHasElevator) lines.push(t('create_modal.cleaning_elevator') + ': ' + yn(cleaningHasElevator));
       }
       if (lines.length) extra = '\n\n—\n' + lines.join('\n');
+    } else if (selectedCategory === 'translation') {
+      const lines = [
+        t('create_modal.translation_from_language') + ': ' + translationFromLanguage,
+        t('create_modal.translation_to_language') + ': ' + translationToLanguage,
+      ];
+      extra = '\n\n---\n' + lines.join('\n');
     }
     const fullDescription = postText.trim() + extra;
+    const finalBudgetHint = budgetHint.trim() || formatBudgetRange(budgetMin, budgetMax);
     const addr = selectedCategory === 'moving' ? movePickupAddress : requestAddress;
     const locationParts = [addr.display.trim(), addr.city, addr.region].filter(Boolean);
     const locationLabel = locationParts.join(', ') || t('jobs.remote');
+    const categoryLabel = selectedCategory ? t(`categories.${selectedCategory}`) : t('client_dashboard.create_order_title');
+    const subKey = selectedSubcategory ? `service_subs.${selectedCategory}.${selectedSubcategory}` : '';
+    const subLabel = subKey ? t(subKey) : '';
+    const titleLabel = subLabel && subLabel !== subKey ? subLabel : categoryLabel;
     createJob({
       clientId: me.id,
       clientName: me.name,
       clientAvatar: me.avatar,
-      title: fullDescription.slice(0, 30) + (fullDescription.length > 30 ? '...' : ''),
+      title: `${categoryLabel}: ${titleLabel}`,
       description: fullDescription,
       category: selectedCategory,
       subcategory: selectedSubcategory || null,
@@ -169,7 +196,7 @@ export function CreateRequestModal({ open, onClose, onPublished }: Props) {
       preferredTimeWindow: preferredTimeWindow || null,
       preferredTime: preferredTimeSpecific.trim() || null,
       date: buildJobDateLabel(scheduleInput),
-      value: t('jobs.value_negotiable'),
+      value: finalBudgetHint || t('jobs.value_negotiable'),
       urgency: jobUrgencyFromPriority(priority),
     });
     handleClose();
@@ -205,6 +232,20 @@ export function CreateRequestModal({ open, onClose, onPublished }: Props) {
   const continueDisabled =
     (step === 'schedule' && !scheduleComplete) ||
     (step === 'description' && !descriptionComplete);
+  const budgetTrackLeft = (budgetMin / 1000) * 100;
+  const budgetTrackRight = 100 - (budgetMax / 1000) * 100;
+
+  const updateBudgetMin = (value: number) => {
+    const nextMin = Math.min(value, budgetMax - 10);
+    setBudgetMin(nextMin);
+    setBudgetHint(formatBudgetRange(nextMin, budgetMax));
+  };
+
+  const updateBudgetMax = (value: number) => {
+    const nextMax = Math.max(value, budgetMin + 10);
+    setBudgetMax(nextMax);
+    setBudgetHint(formatBudgetRange(budgetMin, nextMax));
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={handleClose}>
@@ -243,6 +284,15 @@ export function CreateRequestModal({ open, onClose, onPublished }: Props) {
             <div className="animate-in fade-in duration-300">
               <h4 className="text-2xl font-bold text-gray-900 mb-2">{t('create_modal.select_category')}</h4>
               <p className="text-gray-500 text-sm mb-6">{t('create_modal.select_category_desc')}</p>
+              <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
+                <p className="text-sm font-bold text-blue-950 flex items-center gap-2">
+                  <Icons.Sparkles className="w-4 h-4 text-blue-600" />
+                  {t('create_modal.marketplace_tip_title')}
+                </p>
+                <p className="mt-1 text-xs font-medium leading-relaxed text-blue-900">
+                  {t('create_modal.marketplace_tip_body')}
+                </p>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {SERVICE_CATEGORIES.map((cat) => {
                   const IconComponent = (Icons as Record<string, React.ComponentType<{ className?: string }>>)[cat.icon];
@@ -329,19 +379,99 @@ export function CreateRequestModal({ open, onClose, onPublished }: Props) {
           {step === 'description' && (
             <div className="space-y-4 animate-in fade-in duration-300">
               <h4 className="text-2xl font-bold text-gray-900">{t('create_modal.describe_simple')}</h4>
-              <textarea
-                autoFocus
-                value={postText}
-                onChange={(e) => setPostText(e.target.value)}
-                placeholder={t('create_modal.placeholder')}
-                maxLength={500}
-                className="w-full min-h-[200px] bg-gray-50 border-2 border-gray-200 rounded-2xl px-5 py-4 focus:border-blue-500 focus:outline-none resize-none text-lg"
-              />
-              {descriptionBlocked ? (
-                <p className="text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-4 py-3">
-                  {t('create_modal.description_contact_warning')}
-                </p>
+              <div>
+                <label className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.budget_hint_label')}</label>
+                <div className="rounded-2xl border-2 border-gray-200 bg-white p-4 focus-within:border-blue-500">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <span className="block text-xs font-bold uppercase tracking-wide text-gray-400">{t('create_modal.budget_min_label')}</span>
+                      <span className="text-lg font-black text-slate-950">CAD ${budgetMin}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-xs font-bold uppercase tracking-wide text-gray-400">{t('create_modal.budget_max_label')}</span>
+                      <span className="text-lg font-black text-slate-950">CAD ${budgetMax}</span>
+                    </div>
+                  </div>
+                  <div className="relative h-8">
+                    <div className="absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-slate-100" />
+                    <div
+                      className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-blue-600"
+                      style={{ left: `${budgetTrackLeft}%`, right: `${budgetTrackRight}%` }}
+                    />
+                    <input
+                      aria-label={t('create_modal.budget_min_label')}
+                      type="range"
+                      min="0"
+                      max="1000"
+                      step="10"
+                      value={budgetMin}
+                      onChange={(e) => updateBudgetMin(Number(e.target.value))}
+                      className="pointer-events-none absolute inset-x-0 top-1/2 h-2 w-full -translate-y-1/2 appearance-none bg-transparent [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:shadow-md [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:shadow-md"
+                    />
+                    <input
+                      aria-label={t('create_modal.budget_max_label')}
+                      type="range"
+                      min="0"
+                      max="1000"
+                      step="10"
+                      value={budgetMax}
+                      onChange={(e) => updateBudgetMax(Number(e.target.value))}
+                      className="pointer-events-none absolute inset-x-0 top-1/2 h-2 w-full -translate-y-1/2 appearance-none bg-transparent [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:shadow-md [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:shadow-md"
+                    />
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-xs font-bold text-gray-400">
+                    <span>CAD $0</span>
+                    <span>CAD $1000+</span>
+                  </div>
+                </div>
+                <p className="mt-1.5 text-xs font-medium text-gray-500">{t('create_modal.budget_hint_help')}</p>
+              </div>
+              {selectedCategory === 'translation' ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.translation_from_language')}</span>
+                    <select
+                      value={translationFromLanguage}
+                      onChange={(e) => setTranslationFromLanguage(e.target.value)}
+                      className="w-full min-h-[48px] rounded-xl border-2 border-gray-200 bg-white px-4 text-base font-bold text-slate-800 focus:border-blue-500 focus:outline-none"
+                    >
+                      <option value="">{t('create_modal.translation_language_placeholder')}</option>
+                      {TRANSLATION_LANGUAGE_OPTIONS.map((language) => (
+                        <option key={language} value={language}>{language}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.translation_to_language')}</span>
+                    <select
+                      value={translationToLanguage}
+                      onChange={(e) => setTranslationToLanguage(e.target.value)}
+                      className="w-full min-h-[48px] rounded-xl border-2 border-gray-200 bg-white px-4 text-base font-bold text-slate-800 focus:border-blue-500 focus:outline-none"
+                    >
+                      <option value="">{t('create_modal.translation_language_placeholder')}</option>
+                      {TRANSLATION_LANGUAGE_OPTIONS.map((language) => (
+                        <option key={language} value={language}>{language}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
               ) : null}
+              <div>
+                <label className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.activity_description_label')}</label>
+                <textarea
+                  autoFocus
+                  value={postText}
+                  onChange={(e) => setPostText(e.target.value)}
+                  placeholder={t('create_modal.placeholder')}
+                  maxLength={500}
+                  className="w-full min-h-[180px] bg-gray-50 border-2 border-gray-200 rounded-2xl px-5 py-4 focus:border-blue-500 focus:outline-none resize-none text-lg"
+                />
+                {descriptionBlocked ? (
+                  <p className="mt-2 text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-4 py-3">
+                    {t('create_modal.description_contact_warning')}
+                  </p>
+                ) : null}
+              </div>
               <p className="text-sm text-gray-400 text-right">{postText.length}/500</p>
             </div>
           )}
@@ -351,6 +481,9 @@ export function CreateRequestModal({ open, onClose, onPublished }: Props) {
               selectedCategory={selectedCategory}
               selectedSubcategory={selectedSubcategory}
               postText={postText}
+              budgetHint={budgetHint.trim() || formatBudgetRange(budgetMin, budgetMax)}
+              translationFromLanguage={translationFromLanguage}
+              translationToLanguage={translationToLanguage}
               requestAddress={requestAddress}
               movePickupAddress={movePickupAddress}
               moveDeliveryAddress={moveDeliveryAddress}

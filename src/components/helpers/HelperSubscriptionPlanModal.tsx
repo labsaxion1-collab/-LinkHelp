@@ -29,6 +29,7 @@ function PlanCard({
   currentTier,
   onChoose,
 }: {
+  key?: HelperSubscriptionTier;
   plan: HelperPlanOption;
   currentTier: HelperSubscriptionTier;
   onChoose: () => void;

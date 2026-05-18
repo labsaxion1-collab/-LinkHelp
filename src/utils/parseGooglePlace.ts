@@ -43,8 +43,8 @@ export function parseAddressComponents(
 export function parsePlaceResult(place: google.maps.places.PlaceResult): ParsedPlace | null {
   const loc = place.geometry?.location;
   if (!loc) return null;
-  const lat = typeof loc.lat === 'function' ? loc.lat() : loc.lat;
-  const lng = typeof loc.lng === 'function' ? loc.lng() : loc.lng;
+  const lat = typeof loc.lat === 'function' ? loc.lat() : Number(loc.lat);
+  const lng = typeof loc.lng === 'function' ? loc.lng() : Number(loc.lng);
   if (lat == null || lng == null) return null;
   return parseAddressComponents(place.address_components, place.formatted_address ?? '', lat, lng);
 }

@@ -5,7 +5,7 @@ import { ClientRadarInsights } from '@/components/client/ClientRadarInsights';
 import { ROUTES } from '@/utils/constants';
 import type { Application } from '@/types/application';
 import type { Job } from '@/types/job';
-import type { Notification } from '@/types/notification';
+import type { AppNotification } from '@/types/notification';
 import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
 
 type Props = {
@@ -13,7 +13,7 @@ type Props = {
   clientId: string;
   jobs: Job[];
   applications: Application[];
-  notifications: Notification[];
+  notifications: AppNotification[];
 };
 
 export function ClientMapWidget({ t, clientId, jobs, applications, notifications }: Props) {

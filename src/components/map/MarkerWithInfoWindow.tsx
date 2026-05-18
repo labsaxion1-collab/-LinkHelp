@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps';
 
 type Props = {
+  key?: string;
   position: google.maps.LatLngLiteral;
   title: string;
   children?: React.ReactNode;

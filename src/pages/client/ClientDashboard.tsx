@@ -35,13 +35,20 @@ type RecommendedHelperCard = {
 
 const RECOMMENDED_HELPERS: RecommendedHelperCard[] = [];
 
+function estimateClientLeadQuality(description: string, location: string, budget: string, applicationsCount: number): number {
+  let score = 52;
+  if (description.trim().length > 120) score += 16;
+  if (location.trim()) score += 12;
+  if (budget.trim() && !/negotiable|combinar|agree/i.test(budget)) score += 12;
+  if (applicationsCount > 0) score += 8;
+  return Math.min(score, 98);
+}
+
 export default function ClientDashboard() {
   const [showCreditModal, setShowCreditModal] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [selectedCreditPackage, setSelectedCreditPackage] = useState<number | null>(null);
-  const [selectedPlanUpgrade, setSelectedPlanUpgrade] = useState<string | null>(null);
   const successModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dismissSuccessModal = () => {
@@ -52,15 +59,11 @@ export default function ClientDashboard() {
     setShowSuccessModal(false);
   };
 
-  const processPayment = (type: 'credits' | 'upgrade') => {
+  const processPayment = () => {
     setIsProcessingPayment(true);
     setTimeout(() => {
       setIsProcessingPayment(false);
-      if (type === 'credits') {
-        setShowCreditModal(false);
-      } else {
-        setShowUpgradeModal(false);
-      }
+      setShowCreditModal(false);
       setShowSuccessModal(true);
       if (successModalTimerRef.current) clearTimeout(successModalTimerRef.current);
       successModalTimerRef.current = setTimeout(() => dismissSuccessModal(), 3000);
@@ -68,6 +71,8 @@ export default function ClientDashboard() {
   };
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createInitialCategory, setCreateInitialCategory] = useState('');
+  const [createInitialSubcategory, setCreateInitialSubcategory] = useState('');
   const [activeSidebarTab, setActiveSidebarTab] = useState<'dashboard' | 'my-helpers' | 'active-services' | 'saved'>('dashboard');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
@@ -100,14 +105,6 @@ export default function ClientDashboard() {
     }
   }, [routerLocation.pathname]);
 
-  useEffect(() => {
-    const st = routerLocation.state as { openUpgrade?: boolean } | null;
-    if (st?.openUpgrade) {
-      setShowUpgradeModal(true);
-      navigate(routerLocation.pathname, { replace: true, state: {} });
-    }
-  }, [routerLocation.state, routerLocation.pathname, navigate]);
-
   useEffect(
     () => () => {
       if (successModalTimerRef.current) clearTimeout(successModalTimerRef.current);
@@ -130,7 +127,11 @@ export default function ClientDashboard() {
     setPreviousAppCount(myApps.length);
   }, [applications, jobs, previousAppCount, t]);
 
-  const openCreateModal = () => setShowCreateModal(true);
+  const openCreateModal = (categoryId = '', subcategoryId = '') => {
+    setCreateInitialCategory(categoryId);
+    setCreateInitialSubcategory(subcategoryId);
+    setShowCreateModal(true);
+  };
 
   return (
     <div className="bg-[#f0f2f5] min-h-[calc(100vh-64px)] py-4 sm:py-6 -mt-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
@@ -229,7 +230,7 @@ export default function ClientDashboard() {
                </div>
                <div className="mt-8">
                  <button 
-                   onClick={() => processPayment('credits')}
+                   onClick={() => processPayment()}
                    disabled={!selectedCreditPackage || isProcessingPayment}
                    className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-3 min-h-[52px] ${!selectedCreditPackage ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-900 hover:bg-black text-white shadow-lg'}`}
                  >
@@ -242,83 +243,6 @@ export default function ClientDashboard() {
                </div>
              </div>
           </div>
-        </div>
-      )}
-
-      {/* Upgrade Modal */}
-      {showUpgradeModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => !isProcessingPayment && setShowUpgradeModal(false)}>
-           <div className="bg-white rounded-[2rem] w-full max-w-4xl shadow-[0_0_60px_rgba(0,0,0,0.2)] overflow-hidden flex flex-col max-h-[min(92dvh,900px)] md:max-h-[85vh] relative" onClick={e => e.stopPropagation()}>
-              <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-blue-100/60 to-purple-100/60 rounded-full blur-[80px] pointer-events-none"></div>
-              
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center relative z-10 bg-white/50 backdrop-blur-xl">
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                    <Icons.TrendingUp className="w-8 h-8 text-blue-600" /> {t('client_dashboard.upgrade_title')}
-                  </h2>
-                  <p className="text-sm text-gray-500 font-medium mt-1">{t('client_dashboard.upgrade_subtitle')}</p>
-                </div>
-                <button onClick={() => !isProcessingPayment && setShowUpgradeModal(false)} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500 hover:text-gray-900 transition-colors" disabled={isProcessingPayment}>
-                  <Icons.X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6 sm:p-8 relative z-10 hide-scrollbar">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-3xl mx-auto">
-                  {/* FREE */}
-                  <div className={`relative bg-white border-2 rounded-[2rem] p-6 lg:p-8 transition-all flex flex-col h-full border-gray-100 opacity-60`}>
-                    <div className="w-14 h-14 bg-gray-100 text-gray-500 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-                      <Icons.User className="w-7 h-7" />
-                    </div>
-                    <h3 className="text-xl font-black text-gray-900 mb-1">{t('client_dashboard.plan_free_title')}</h3>
-                    <div className="text-3xl font-black text-gray-600 mb-8">$0<span className="text-sm text-gray-400 font-medium tracking-normal">{t('link_credits.per_month')}</span></div>
-                    
-                    <ul className="space-y-4 mb-8 flex-1">
-                      <li className="flex gap-3 text-sm font-medium text-gray-500 leading-tight"><Icons.CheckCircle2 className="w-5 h-5 text-gray-400 shrink-0" /> {t('client_dashboard.plan_free_f1')}</li>
-                      <li className="flex gap-3 text-sm font-medium text-gray-500 leading-tight"><Icons.CheckCircle2 className="w-5 h-5 text-gray-400 shrink-0" /> {t('client_dashboard.plan_free_f2')}</li>
-                      <li className="flex gap-3 text-sm font-medium text-gray-500 leading-tight"><Icons.CheckCircle2 className="w-5 h-5 text-gray-400 shrink-0" /> {t('client_dashboard.plan_free_f3')}</li>
-                    </ul>
-                    <div className="py-2 px-4 bg-gray-100 rounded-xl text-center text-sm font-bold text-gray-500">
-                      {t('client_dashboard.plan_current_badge')}
-                    </div>
-                  </div>
-
-                  {/* PLUS */}
-                  <div onClick={() => !isProcessingPayment && setSelectedPlanUpgrade('PLUS')} className={`relative overflow-hidden bg-gray-900 border-2 rounded-[2rem] p-6 lg:p-8 cursor-pointer transition-all flex flex-col h-full ${selectedPlanUpgrade === 'PLUS' ? 'border-yellow-500 shadow-[0_10px_40px_rgba(234,179,8,0.25)] md:-translate-y-4 z-10 scale-[1.02]' : 'border-transparent text-white hover:shadow-2xl md:hover:-translate-y-2'}`}>
-                    <div className="absolute top-0 right-1/2 translate-x-1/2 bg-yellow-500 text-yellow-950 text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-b-xl shadow-md z-20">{t('client_dashboard.plan_plus_tag')}</div>
-                    {selectedPlanUpgrade === 'PLUS' && <div className="absolute -top-3 -right-3 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-yellow-950 shadow-lg animate-in zoom-in z-20"><Icons.Check className="w-5 h-5" /></div>}
-                    
-                    <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-yellow-500/10 to-transparent pointer-events-none"></div>
-                    <div className="w-14 h-14 bg-gradient-to-br from-gray-800 to-gray-700 text-yellow-400 rounded-2xl flex items-center justify-center mb-6 ring-1 ring-gray-600 shadow-inner relative z-10">
-                      <Icons.Star className="w-7 h-7" />
-                    </div>
-                    <h3 className="text-xl font-black text-white mb-1 relative z-10">Plus</h3>
-                    <div className="text-3xl font-black text-yellow-400 mb-8 relative z-10">{t('client_dashboard.plan_plus_price_line')}<span className="text-sm text-gray-400 font-medium tracking-normal">{t('link_credits.per_month')}</span></div>
-                    
-                    <ul className="space-y-4 mb-8 flex-1 relative z-10">
-                      <li className="flex gap-3 text-sm font-medium text-gray-300 leading-tight"><Icons.CheckCircle2 className="w-5 h-5 text-yellow-500 shrink-0" /> {t('client_dashboard.plan_plus_f1')}</li>
-                      <li className="flex gap-3 text-sm font-medium text-gray-300 leading-tight"><Icons.CheckCircle2 className="w-5 h-5 text-yellow-500 shrink-0" /> {t('client_dashboard.plan_plus_f2')}</li>
-                      <li className="flex gap-3 text-sm font-medium text-gray-300 leading-tight"><Icons.CheckCircle2 className="w-5 h-5 text-yellow-500 shrink-0" /> {t('client_dashboard.plan_plus_f3')}</li>
-                      <li className="flex gap-3 text-sm font-medium text-gray-300 leading-tight"><Icons.CheckCircle2 className="w-5 h-5 text-yellow-500 shrink-0" /> {t('client_dashboard.plan_plus_f4')}</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="mt-10 flex justify-center sticky bottom-0 pt-4 bg-gradient-to-t from-white via-white to-transparent pb-2">
-                  <button 
-                    onClick={() => processPayment('upgrade')}
-                    disabled={!selectedPlanUpgrade || isProcessingPayment}
-                    className={`w-full max-w-sm py-4 rounded-xl font-black tracking-wide transition-all shadow-xl flex items-center justify-center gap-3 ${!selectedPlanUpgrade ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none' : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-2xl hover:scale-105'}`}
-                  >
-                    {isProcessingPayment ? (
-                      <><Icons.Loader2 className="w-5 h-5 animate-spin" /> {t('helper_dashboard.upgrade_processing')}</>
-                    ) : (
-                      <><Icons.Rocket className="w-5 h-5" /> {t('client_dashboard.upgrade_cta')}</>
-                    )}
-                  </button>
-                </div>
-              </div>
-           </div>
         </div>
       )}
 
@@ -364,17 +288,23 @@ export default function ClientDashboard() {
 
       <CreateRequestModal
         open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        initialCategory={createInitialCategory}
+        initialSubcategory={createInitialSubcategory}
+        onClose={() => {
+          setShowCreateModal(false);
+          setCreateInitialCategory('');
+          setCreateInitialSubcategory('');
+        }}
         onPublished={() => {
           setToastNotification({ message: t('client_toast.request_created'), show: true });
           setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
         }}
       />
 
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-[280px_1fr] lg:grid-cols-[280px_1fr_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
         
         {/* Left Sidebar */}
-        <div className="hidden md:flex flex-col sticky top-24 h-[calc(100vh-120px)] overflow-y-auto hide-scrollbar space-y-4 pr-2">
+        <div className="hidden">
           
           {/* User Profile & Switch Mode */}
           <div className="space-y-2">
@@ -397,39 +327,6 @@ export default function ClientDashboard() {
                 <Icons.RefreshCw className="w-4 h-4 shrink-0" /> <span className="truncate">{t('sidebar.switch_helper')}</span>
               </button>
           </div>
-          
-          {/* Account Status / Monetization */}
-          <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3 shrink-0">
-            {/* Plan Status */}
-            <div className={`flex items-center justify-between ${UI_VISIBILITY.clientCredits ? 'pb-3 border-b border-gray-100' : ''}`}>
-               <div>
-                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{t('client_shell.current_plan')}</div>
-                  <div className="flex items-center gap-1.5 font-black text-sm text-gray-900">
-                    {t('client_shell.plan_basic_badge')} <Icons.User className="w-4 h-4 text-gray-400" />
-                  </div>
-               </div>
-               <button onClick={() => setShowUpgradeModal(true)} className="px-3 py-1.5 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm hover:shadow-md">
-                 <Icons.Star className="w-3.5 h-3.5 text-yellow-400" /> {t('client_shell.evolve')}
-               </button>
-            </div>
-            {UI_VISIBILITY.clientCredits ? (
-            <div className="flex items-center justify-between pt-1">
-               <div className="flex items-center gap-2">
-                 <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                   <Icons.Coins className="w-4 h-4 text-blue-600" />
-                 </div>
-                 <div>
-                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{t('client_shell.balance')}</div>
-                    <div className="font-black text-sm text-gray-900">12 <span className="text-gray-500 text-xs font-semibold">{t('client_shell.credits_label')}</span></div>
-                 </div>
-               </div>
-               <button onClick={() => setShowCreditModal(true)} className="w-8 h-8 flex items-center justify-center bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors" title={t('client_shell.add_credits')}>
-                 <Icons.Plus className="w-4 h-4" />
-               </button>
-            </div>
-            ) : null}
-          </div>
-
           {/* Main Navigation */}
           <nav className="space-y-1 mb-6">
             <button onClick={() => { navigate(ROUTES.clientDashboard); setActiveSidebarTab('dashboard'); }} className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all cursor-pointer font-bold focus:outline-none min-w-0 ${activeSidebarTab === 'dashboard' ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-200 text-gray-700 hover:text-gray-900 group'}`}>
@@ -527,26 +424,102 @@ export default function ClientDashboard() {
           </div>
         </div>
 
+        <main className="w-full min-w-0">
+          <div className="mb-5 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-sm">
+            <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+              {[
+                { id: 'dashboard' as const, label: t('sidebar.dashboard'), icon: Icons.Grid, to: ROUTES.clientDashboard },
+                { id: 'my-helpers' as const, label: t('sidebar.my_helpers'), icon: Icons.Users, to: ROUTES.clientDashboard },
+                { id: 'active-services' as const, label: t('sidebar.active_services'), icon: Icons.Briefcase, to: ROUTES.clientJobs },
+                { id: 'saved' as const, label: t('sidebar.saved'), icon: Icons.Bookmark, to: ROUTES.clientDashboard },
+              ].map((item) => {
+                const Icon = item.icon;
+                const active = activeSidebarTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      navigate(item.to);
+                      setActiveSidebarTab(item.id);
+                    }}
+                    className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-bold transition-colors ${
+                      active ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => switchToHelper()}
+                className="ml-auto inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-600 hover:bg-slate-100"
+              >
+                <Icons.RefreshCw className="h-4 w-4" />
+                {t('sidebar.switch_helper')}
+              </button>
+            </div>
+          </div>
+
         {/* Main Feed */}
         {activeSidebarTab === 'dashboard' && (
-          <div className="w-full max-w-[680px] mx-auto animate-in fade-in duration-300">
+          <div className="w-full max-w-5xl mx-auto animate-in fade-in duration-300">
           
-          {/* Create Post / Request (Trigger Block) */}
-          <div className="bg-white rounded-3xl shadow-sm mb-6 border border-gray-100 overflow-hidden group hover:border-gray-300 transition-colors cursor-pointer" onClick={() => openCreateModal()}>
-            <div className="p-4 sm:p-5">
-              <div className="flex gap-4 items-center">
-                <div className="relative shrink-0">
-                  <img src={me.avatar} alt="Profile" className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" />
-                </div>
-                <div className="flex-1">
-                  <div className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-3.5 text-gray-500 font-medium group-hover:bg-white group-hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all flex items-center justify-between">
-                    <span>{t('dashboard.greeting', { name: me.name.split(' ')[0] })}</span>
-                    <button className="flex items-center justify-center w-8 h-8 rounded-full bg-black text-white group-hover:scale-110 transition-transform">
-                      <Icons.Plus className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
+          <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-2xl font-black tracking-tight text-slate-950">{t('client_dashboard.category_hub_title')}</h2>
+                <p className="mt-1 text-sm font-medium text-slate-500">{t('client_dashboard.category_hub_sub')}</p>
               </div>
+              <button
+                type="button"
+                onClick={() => openCreateModal()}
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white hover:bg-black"
+              >
+                <Icons.Plus className="h-4 w-4" />
+                {t('client_dashboard.create_order_now')}
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              {SERVICE_CATEGORIES.map((cat) => {
+                const IconComponent = (Icons as any)[cat.icon] || Icons.HelpCircle;
+                return (
+                  <section key={cat.id} className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => openCreateModal(cat.id)}
+                        className="group inline-flex min-w-0 items-center gap-3 text-left"
+                      >
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 group-hover:text-blue-700">
+                          <IconComponent className="h-5 w-5" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-base font-black text-slate-950">{t(`categories.${cat.id}`)}</span>
+                          <span className="block text-xs font-bold text-blue-600">{t('client_dashboard.category_hub_cta')}</span>
+                        </span>
+                      </button>
+                      <Icons.ChevronRight className="h-5 w-5 shrink-0 text-slate-300" />
+                    </div>
+
+                    <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      {cat.subKeys.map((subKey) => (
+                        <button
+                          key={subKey}
+                          type="button"
+                          onClick={() => openCreateModal(cat.id, subKey)}
+                          className="min-h-[52px] min-w-[180px] snap-start rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-bold text-slate-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                        >
+                          {t(`service_subs.${cat.id}.${subKey}`)}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
             </div>
           </div>
 
@@ -715,11 +688,33 @@ export default function ClientDashboard() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">{t('sidebar.active_services')}</h2>
                 <p className="text-gray-500 text-sm">{t('client_dashboard.active_services_intro')}</p>
               </div>
+              <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50/80 p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                  <div>
+                    <p className="text-sm font-black text-blue-950 flex items-center gap-2">
+                      <Icons.Sparkles className="w-4 h-4 text-blue-600" />
+                      {t('client_dashboard.qualified_requests_title')}
+                    </p>
+                    <p className="mt-1 text-xs font-medium leading-relaxed text-blue-900">
+                      {t('client_dashboard.qualified_requests_body')}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openCreateModal()}
+                    className="inline-flex min-h-[40px] shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white hover:bg-blue-700"
+                  >
+                    <Icons.Plus className="h-4 w-4" />
+                    {t('client_dashboard.create_order_now')}
+                  </button>
+                </div>
+              </div>
               
               <div className="space-y-6">
                 {jobs.filter((j) => j.clientId === me.id).length > 0 ? (
                   jobs.filter((j) => j.clientId === me.id).map((job) => {
                     const jobApps = applications.filter((a) => a.jobId === job.id && a.status !== 'cancelled');
+                    const qualityScore = estimateClientLeadQuality(job.description, job.location, job.value, jobApps.length);
                     
                     return (
                       <div key={job.id} className="border border-blue-200 bg-blue-50/20 rounded-2xl p-5 relative overflow-hidden">
@@ -735,6 +730,20 @@ export default function ClientDashboard() {
                           <div className="text-right">
                             <p className="font-bold text-gray-900">{job.value}</p>
                           </div>
+                        </div>
+                        <div className="mb-4 flex flex-wrap gap-2">
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800">
+                            <Icons.BadgeCheck className="h-3.5 w-3.5 text-emerald-600" />
+                            {t('client_dashboard.request_quality', { pct: qualityScore })}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-bold text-blue-800">
+                            <Icons.Users className="h-3.5 w-3.5 text-blue-600" />
+                            {t('client_dashboard.request_helper_limit', { count: job.urgency === 'high' ? 5 : 3 })}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700">
+                            <Icons.MapPin className="h-3.5 w-3.5 text-slate-500" />
+                            {job.location}
+                          </span>
                         </div>
 
                         {jobApps.length > 0 && (
@@ -802,7 +811,7 @@ export default function ClientDashboard() {
                 ) : (
                   <div className="text-center py-10 bg-gray-50 rounded-2xl border border-gray-200 border-dashed border-2">
                     <p className="text-gray-500 font-medium">{t('client_dashboard.empty_no_published_requests')}</p>
-                    <button onClick={openCreateModal} className="mt-4 px-5 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">
+                    <button onClick={() => openCreateModal()} className="mt-4 px-5 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">
                       {t('client_dashboard.create_order_now')}
                     </button>
                   </div>
@@ -824,9 +833,53 @@ export default function ClientDashboard() {
             </div>
           </div>
         )}
+        </main>
 
         {/* Right Sidebar */}
         <div className="hidden lg:flex flex-col sticky top-24 h-[calc(100vh-120px)] space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h3 className="text-sm font-black text-slate-950">{t('client_dashboard.my_requests_sidebar_title')}</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  navigate(ROUTES.clientJobs);
+                  setActiveSidebarTab('active-services');
+                }}
+                className="text-xs font-bold text-blue-600 hover:text-blue-800"
+              >
+                {t('notifications.view_all')}
+              </button>
+            </div>
+            <div className="space-y-2">
+              {jobs.filter((j) => j.clientId === me.id).slice(0, 4).length > 0 ? (
+                jobs.filter((j) => j.clientId === me.id).slice(0, 4).map((job) => {
+                  const jobApps = applications.filter((a) => a.jobId === job.id && a.status !== 'cancelled');
+                  return (
+                    <button
+                      key={job.id}
+                      type="button"
+                      onClick={() => {
+                        navigate(ROUTES.clientJobs);
+                        setActiveSidebarTab('active-services');
+                      }}
+                      className="w-full rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-left transition-colors hover:border-blue-200 hover:bg-blue-50"
+                    >
+                      <span className="line-clamp-2 text-xs font-black text-slate-900">{job.title}</span>
+                      <span className="mt-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-500">
+                        <span>{formatJobSchedule(job.date, t)}</span>
+                        <span className="text-blue-700">{t('client_dashboard.helpers_applied_count', { count: jobApps.length })}</span>
+                      </span>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center">
+                  <p className="text-xs font-semibold text-slate-500">{t('client_dashboard.empty_no_published_requests')}</p>
+                </div>
+              )}
+            </div>
+          </div>
           
           <ClientMapWidget
             t={t}

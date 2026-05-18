@@ -47,6 +47,7 @@ import type { CompletionRowKey } from '@/utils/helperProfileCompletion';
 import { computeHelperProfileCompletion } from '@/utils/helperProfileCompletion';
 import { helperProfileSuggestionKeys } from '@/utils/helperProfileSuggestions';
 import { useUserLocation } from '@/hooks/useUserLocation';
+import { UserProfileModal } from '@/components/profile/UserProfileModal';
 import { distanceToJobKm, sortOpportunitiesForHelper } from '@/utils/locationMatching';
 
 function formatSubscriptionBillingDate(iso: string | undefined, language: string): string {
@@ -89,6 +90,7 @@ export default function HelperDashboard() {
   const [profileSettings, setProfileSettings] = useState<HelperProfileSettings>(() => loadHelperProfileSettings());
   type ProfileSetupModal = null | 'avatar' | 'skills';
   const [profileSetupModal, setProfileSetupModal] = useState<ProfileSetupModal>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [avatarDraft, setAvatarDraft] = useState<AvatarUploadDraft | null>(null);
 
   const { t, language } = useLanguage();
@@ -577,6 +579,13 @@ export default function HelperDashboard() {
         />
       ) : null}
 
+      <UserProfileModal
+        open={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        avatarUrl={helperAvatarUrl ?? ''}
+        titleKey="client_dashboard.profile_modal_title"
+      />
+
       {profileSetupModal === 'avatar' && (
         <SimpleAvatarUploadModal
           draft={avatarDraft}
@@ -685,18 +694,10 @@ export default function HelperDashboard() {
           
           {/* User profile & mode — fixed */}
           <div className="shrink-0 rounded-xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-100/60 overflow-hidden">
-            <Link
-              to={ROUTES.settings}
-              className="flex items-center gap-2.5 p-2.5 hover:bg-slate-50/90 transition-colors group w-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-200/80"
-            >
+            <div className="flex items-center gap-2.5 p-2.5 hover:bg-slate-50/90 transition-colors group w-full focus-within:ring-2 focus-within:ring-blue-200/80 rounded-t-xl">
               <button
                 type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('[avatar-state] open avatar modal (SimpleAvatarUploadModal)');
-                  setProfileSetupModal('avatar');
-                }}
+                onClick={() => setProfileSetupModal('avatar')}
                 className="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300"
                 aria-label={t('profile_setup.avatar_title')}
               >
@@ -712,19 +713,25 @@ export default function HelperDashboard() {
                   </span>
                 )}
               </button>
-              <div className="flex-1 min-w-0 pr-0.5">
-                <span className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors block truncate text-[15px] leading-tight">
-                  {me.name}
-                </span>
-                <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                  <HelperPlanBadge tier={helperTier} size="sm" />
-                  <span className="text-[10px] text-sky-700 font-bold truncate uppercase tracking-wide">
-                    {t('helper_dashboard.mode_helper')}
+              <button
+                type="button"
+                onClick={() => setShowProfileModal(true)}
+                className="flex flex-1 min-w-0 items-center gap-2 text-left focus:outline-none"
+              >
+                <span className="flex-1 min-w-0 pr-0.5">
+                  <span className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors block truncate text-[15px] leading-tight">
+                    {me.name}
                   </span>
-                </div>
-              </div>
-              <Icons.ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
-            </Link>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    <HelperPlanBadge tier={helperTier} size="sm" />
+                    <span className="text-[10px] text-sky-700 font-bold truncate uppercase tracking-wide">
+                      {t('helper_dashboard.mode_helper')}
+                    </span>
+                  </div>
+                </span>
+                <Icons.ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => switchToClient()}

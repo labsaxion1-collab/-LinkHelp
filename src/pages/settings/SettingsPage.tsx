@@ -12,7 +12,9 @@ import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/st
 import { logMediaPicker } from '@/utils/mediaPickerDebug';
 import { cropSquareAvatarFromFile } from '@/utils/portfolioMediaProcessing';
 import { CityRegionAutocomplete } from '@/components/common/CityRegionAutocomplete';
+import { ProfilePhoneField } from '@/components/profile/ProfilePhoneField';
 import type { QuebecPlace } from '@/data/quebecRegions';
+import { parseStoredPhone, validatePhoneNumber } from '@/utils/phoneFormat';
 
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
@@ -27,8 +29,7 @@ export default function SettingsPage() {
   const avatarObjectUrlRef = useRef<string | null>(null);
 
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState<string | null>(null);
   const [cityDisplay, setCityDisplay] = useState('');
   const [cityCanon, setCityCanon] = useState('');
   const [province, setProvince] = useState('');
@@ -40,16 +41,17 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!profile) return;
-    setName(profile.name ?? '');
-    setEmail(profile.email ?? session?.user?.email ?? '');
-    setPhone(profile.phone ?? '');
+    const meta = (session?.user?.user_metadata ?? {}) as Record<string, unknown>;
+    const metaName = typeof meta.full_name === 'string' ? meta.full_name : typeof meta.name === 'string' ? meta.name : '';
+    setName(profile.name?.trim() || metaName || '');
+    setPhone(profile.phone ?? null);
     const c = profile.city ?? '';
     setCityDisplay(c);
     setCityCanon(c);
     setProvince(profile.province ?? '');
     setCountry(profile.country ?? '');
     setBio(profile.bio ?? '');
-  }, [profile, session?.user?.email]);
+  }, [profile, session]);
 
   useEffect(() => {
     if (location.hash === '#avatar') {
@@ -70,7 +72,16 @@ export default function SettingsPage() {
   };
 
   useEffect(() => () => revokeAvatarObjectUrl(), []);
+  const authEmail = session?.user?.email?.trim() ?? '';
+
   const saveAccount = async () => {
+    const { countryId, nationalNumber } = parseStoredPhone(phone);
+    const phoneValidation = validatePhoneNumber(countryId, nationalNumber);
+    if (phone?.trim() && !phoneValidation.valid) {
+      showToast(t('profile_form.phone_invalid'), 'error');
+      return;
+    }
+
     if (!isConfigured || !profile) {
       showToast(t('app_pages.settings_saved'), 'info');
       return;
@@ -78,8 +89,7 @@ export default function SettingsPage() {
     setSaving(true);
     const err = await updateProfile({
       name: name.trim() || null,
-      email: email.trim() || null,
-      phone: phone.trim() || null,
+      phone: phone?.trim() ? phone.trim() : null,
       city: (cityCanon.trim() || cityDisplay.trim()) || null,
       province: province.trim() || null,
       country: country.trim() || null,
@@ -91,7 +101,7 @@ export default function SettingsPage() {
   };
 
   const sendPasswordReset = async () => {
-    const em = email.trim() || session?.user?.email;
+    const em = authEmail;
     if (!em || !isSupabaseConfigured()) return;
     setPwBusy(true);
     const sb = getSupabase();
@@ -189,23 +199,27 @@ export default function SettingsPage() {
                 className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
               />
             </label>
-            <label className="block text-sm font-semibold text-gray-700">
-              {t('app_pages.settings_email')}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">{t('app_pages.settings_email')}</label>
               <input
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
+                readOnly
+                disabled
+                value={authEmail}
+                className="mt-1 block w-full rounded-xl border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-600 cursor-not-allowed"
+                placeholder={authEmail ? undefined : t('profile_form.email_empty')}
               />
-            </label>
-            <label className="block text-sm font-semibold text-gray-700">
-              {t('app_pages.settings_phone')}
-              <input
+              <p className="mt-1 text-xs text-gray-500">{t('profile_form.email_readonly_hint')}</p>
+            </div>
+            <div className="sm:col-span-2">
+              <ProfilePhoneField
+                label={t('app_pages.settings_phone')}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
+                onChange={setPhone}
+                disabled={!isConfigured || saving}
+                t={t}
               />
-            </label>
+            </div>
             <div className="sm:col-span-2">
               <CityRegionAutocomplete
                 label={t('app_pages.settings_city')}
@@ -223,7 +237,7 @@ export default function SettingsPage() {
                   setCountry(p.country);
                 }}
                 disabled={!isConfigured}
-                placeholder="Montréal, QC…"
+                placeholder={t('profile_form.city_placeholder')}
               />
             </div>
           </div>

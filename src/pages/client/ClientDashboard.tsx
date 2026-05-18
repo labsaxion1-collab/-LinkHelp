@@ -21,6 +21,7 @@ import { LhCard } from '@/components/design-system/LhCard';
 import { UserPresenceBadge } from '@/components/ui/UserPresenceBadge';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useAuth } from '@/context/AuthContext';
+import { UserProfileModal } from '@/components/profile/UserProfileModal';
 import { ChoiceChipGroup } from '@/components/client/create-request/ChoiceChipGroup';
 import {
   RequestAddressInput,
@@ -652,73 +653,11 @@ export default function ClientDashboard() {
         </div>
       )}
 
-      {/* User Profile Modal Overlay */}
-      {showProfileModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => setShowProfileModal(false)}>
-          <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[90vh]" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center shrink-0">
-               <h3 className="text-xl font-bold text-gray-900">{t('client_dashboard.profile_modal_title')}</h3>
-               <button onClick={() => setShowProfileModal(false)} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500">
-                 <Icons.X className="w-5 h-5" />
-               </button>
-            </div>
-            <div className="p-6 overflow-y-auto hide-scrollbar flex-1">
-               <div className="flex flex-col sm:flex-row gap-8">
-                  <div className="w-full sm:w-1/3 space-y-6">
-                    <div className="flex flex-col items-center text-center">
-                       <div className="relative group cursor-pointer mb-4">
-                         <img src={me.avatar} alt="Avatar" className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg" />
-                         <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                           <Icons.Camera className="w-8 h-8 text-white" />
-                         </div>
-                       </div>
-                       <h2 className="text-2xl font-bold text-gray-900">{me.name}</h2>
-                       <p className="text-gray-500 flex items-center gap-1 mt-1 justify-center"><Icons.MapPin className="w-4 h-4" /> Montreal, QC</p>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-bold text-gray-700 block mb-1">{t('client_dashboard.status_label')}</label>
-                        <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-lg font-medium border border-green-200">
-                           <div className="w-2 h-2 rounded-full bg-green-500"></div> {t('client_dashboard.status_online')}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-bold text-gray-700 block mb-1">{t('client_dashboard.languages_label')}</label>
-                        <div className="flex flex-wrap gap-2">
-                          <span className="px-3 py-1 bg-gray-100 rounded-full text-sm font-medium text-gray-700">{t('client_dashboard.lang_portuguese')}</span>
-                          <span className="px-3 py-1 bg-gray-100 rounded-full text-sm font-medium text-gray-700">{t('client_dashboard.lang_english')}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="w-full sm:w-2/3 space-y-6">
-                     <div>
-                       <label className="text-sm font-bold text-gray-700 block mb-2">{t('client_dashboard.about_me')}</label>
-                       <textarea className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all resize-none" rows={4} placeholder={t('client_dashboard.bio_placeholder')} defaultValue="Brasileiro recém-chegado no Canadá. Gosto de coisas práticas e ágeis."></textarea>
-                     </div>
-                     
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-bold text-gray-700 block mb-2">Telefone</label>
-                          <input type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none" defaultValue="+1 (514) 000-0000" />
-                        </div>
-                        <div>
-                           <label className="text-sm font-bold text-gray-700 block mb-2">{t('client_dashboard.email_label')}</label>
-                           <input type="email" disabled className="w-full bg-gray-100 border border-gray-200 rounded-xl p-3 text-gray-500 cursor-not-allowed" defaultValue="joao.silva@example.com" />
-                        </div>
-                     </div>
-
-                     <div className="pt-4 border-t border-gray-100">
-                        <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-sm w-full">{t('client_dashboard.save_changes')}</button>
-                     </div>
-                  </div>
-               </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <UserProfileModal
+        open={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        avatarUrl={me.avatar}
+      />
 
       {/* Create Order Modal Overlay */}
       {showCreateModal && (

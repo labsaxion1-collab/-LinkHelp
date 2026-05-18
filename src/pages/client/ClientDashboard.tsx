@@ -16,7 +16,7 @@ import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
 import { TrainingCertBadge } from '@/components/training/TrainingCertBadge';
 import type { TrainingCertLevel } from '@/utils/helperTrainingProgress';
 import { helperPlanFromRoleKey, helperTierFromApplication } from '@/utils/helperPlanFromRoleKey';
-import { ClientRadarInsights } from '@/components/client/ClientRadarInsights';
+import { ClientMapWidget } from '@/components/client/ClientMapWidget';
 import { LhCard } from '@/components/design-system/LhCard';
 import { UserPresenceBadge } from '@/components/ui/UserPresenceBadge';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
@@ -1896,37 +1896,13 @@ export default function ClientDashboard() {
         {/* Right Sidebar */}
         <div className="hidden lg:flex flex-col sticky top-24 h-[calc(100vh-120px)] space-y-4">
           
-          {/* Map Widget (Helpers Nearby) */}
-          <LhCard
-            padding="none"
-            className="overflow-hidden transition-shadow duration-300 hover:shadow-[var(--lh-shadow-md)] motion-reduce:transform-none"
-          >
-             <div className="p-4 border-b border-gray-50 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                   <Icons.MapPin className="w-4 h-4 text-blue-600" />
-                   <h3 className="font-bold text-gray-900 text-sm">{t('client_dashboard.map_widget_title')}</h3>
-                </div>
-                <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">{t('client_dashboard.map_widget_neutral')}</span>
-             </div>
-             <div className="relative h-40 bg-blue-50/50 flex items-center justify-center overflow-hidden">
-                {/* Minimalist Map Background Pattern */}
-                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at center, #3b82f6 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-blue-50/50 to-transparent"></div>
-                
-                {/* Central Radar Pulse */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-blue-500 rounded-full z-0">
-                  <div className="absolute inset-0 rounded-full border-2 border-blue-400/80 animate-ping opacity-60 [animation-duration:2.8s] motion-reduce:animate-none"></div>
-                  <div className="absolute -inset-4 rounded-full border border-blue-300/60 animate-ping opacity-40 [animation-duration:3.4s] motion-reduce:animate-none"></div>
-                </div>
-                <p className="relative z-10 text-xs font-medium text-slate-500 px-4 text-center">
-                  {t('client_dashboard.map_no_helpers_nearby')}
-                </p>
-             </div>
-             <Link to={ROUTES.map} className="p-2 border-t border-gray-50 bg-gray-50 text-center hover:bg-gray-100 transition-colors cursor-pointer block">
-                <span className="text-xs font-semibold text-blue-600">{t('client_dashboard.view_map_expanded')}</span>
-             </Link>
-             <ClientRadarInsights t={t} clientId={me.id} jobs={jobs} applications={applications} notifications={notifications} />
-          </LhCard>
+          <ClientMapWidget
+            t={t}
+            clientId={me.id}
+            jobs={jobs}
+            applications={applications}
+            notifications={notifications}
+          />
         </div>
 
       </div>

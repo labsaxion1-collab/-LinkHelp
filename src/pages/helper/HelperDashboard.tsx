@@ -264,13 +264,6 @@ export default function HelperDashboard() {
     }
   }, [location.pathname]);
 
-  useEffect(
-    () => () => {
-      if (successModalTimerRef.current) clearTimeout(successModalTimerRef.current);
-    },
-    [],
-  );
-
   const { jobs, applyForJob, getHelperApplications, upcomingJobs, updateUpcomingWorkflow, updateApplicationStatus, dataLoading } = useAppData();
   const { showToast } = useToast();
 

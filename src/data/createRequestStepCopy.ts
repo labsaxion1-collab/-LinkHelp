@@ -149,10 +149,20 @@ const DATA: Record<Lang, Tree> = {
       exampleHint: 'I need IKEA PAX wardrobe assembly this weekend.',
     }),
     beauty: uniform(catKeys('beauty'), {
-      suggestions: ['Manicure', 'Pedicure', 'Hair cut / style', 'Barber at home', 'Makeup for event', 'Lashes', 'Brows'],
-      placeholder: 'e.g. Manicure at home Saturday morning.',
+      suggestions: [
+        'Nails',
+        'Nail extensions',
+        'Barber',
+        'Hairdresser',
+        'Body massage',
+        'Facial cleansing',
+        'Brows',
+        'Waxing',
+        'Lash designer',
+      ],
+      placeholder: 'e.g. Nail appointment at home Saturday morning.',
       tags: ['beauty', 'home-service', 'self-care'],
-      exampleHint: 'Manicure and pedicure at my place.',
+      exampleHint: 'Nail extensions and brow shaping at my place.',
     }),
     renovation: uniform(catKeys('renovation'), {
       suggestions: [
@@ -337,10 +347,20 @@ const DATA: Record<Lang, Tree> = {
       exampleHint: 'Montagem de guarda-roupa IKEA.',
     }),
     beauty: uniform(catKeys('beauty'), {
-      suggestions: ['Manicure', 'Pedicure', 'Cabelo', 'Barbeiro', 'Maquiagem', 'Cílios', 'Sobrancelha'],
-      placeholder: 'Ex.: Manicure em casa sábado de manhã.',
+      suggestions: [
+        'Unhas',
+        'Alongamento de unhas',
+        'Barbeiro',
+        'Cabeleireira',
+        'Massagem corporal',
+        'Limpeza de pele',
+        'Sobrancelha',
+        'Depilação',
+        'Lash designer',
+      ],
+      placeholder: 'Ex.: Unhas em casa sábado de manhã.',
       tags: ['beleza', 'estética', 'em-casa'],
-      exampleHint: 'Manicure e pedicure em casa.',
+      exampleHint: 'Alongamento de unhas e design de sobrancelha em casa.',
     }),
     renovation: uniform(catKeys('renovation'), {
       suggestions: [

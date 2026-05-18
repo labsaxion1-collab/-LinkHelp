@@ -44,7 +44,17 @@ export const SERVICE_CATEGORIES = [
   {
     id: 'beauty',
     icon: 'Smile',
-    subKeys: ['manicure', 'pedicure', 'hair', 'barber', 'makeup', 'lashes', 'brows'],
+    subKeys: [
+      'nails',
+      'nail_extensions',
+      'barber',
+      'hairdresser',
+      'body_massage',
+      'facial_cleansing',
+      'brows',
+      'waxing',
+      'lashes',
+    ],
   },
   {
     id: 'renovation',

@@ -102,16 +102,14 @@ export const HELPER_SKILLS_CATALOG: readonly HelperSkillCatalogEntry[] = [
   {
     id: 'beauty',
     subs: [
-      'manicure',
-      'pedicure',
-      'hair',
-      'brows',
-      'makeup',
-      'blowout',
-      'beard',
-      'mens_cut',
-      'womens_cut',
+      'nails',
       'nail_extensions',
+      'barber',
+      'hairdresser',
+      'body_massage',
+      'facial_cleansing',
+      'brows',
+      'waxing',
       'lashes',
     ],
   },
@@ -152,6 +150,18 @@ export const HELPER_SKILLS_CATALOG: readonly HelperSkillCatalogEntry[] = [
   },
 ] as const;
 
+/** Legacy beauty subcategories kept for existing DB rows (hidden from new selections). */
+export const BEAUTY_LEGACY_SUBS = [
+  'manicure',
+  'pedicure',
+  'hair',
+  'makeup',
+  'blowout',
+  'beard',
+  'mens_cut',
+  'womens_cut',
+] as const;
+
 const PRIMARY_SET = new Set(HELPER_SKILLS_CATALOG.map((c) => c.id));
 const VALID_KEYS = new Set<string>();
 
@@ -159,6 +169,9 @@ for (const cat of HELPER_SKILLS_CATALOG) {
   for (const sub of cat.subs) {
     VALID_KEYS.add(skillKey(cat.id, sub));
   }
+}
+for (const sub of BEAUTY_LEGACY_SUBS) {
+  VALID_KEYS.add(skillKey('beauty', sub));
 }
 
 export function skillKey(primary: string, sub: string): string {
@@ -172,8 +185,11 @@ export function parseSkillKey(key: string): { primary: string; sub: string } | n
   const sub = key.slice(i + 1);
   if (!PRIMARY_SET.has(primary as HelperSkillPrimaryId)) return null;
   const cat = HELPER_SKILLS_CATALOG.find((c) => c.id === primary);
-  if (!cat || !(cat.subs as readonly string[]).includes(sub)) return null;
-  return { primary, sub };
+  if (cat && (cat.subs as readonly string[]).includes(sub)) return { primary, sub };
+  if (primary === 'beauty' && (BEAUTY_LEGACY_SUBS as readonly string[]).includes(sub)) {
+    return { primary, sub };
+  }
+  return null;
 }
 
 export function isValidSkillKey(key: string): boolean {

@@ -18,6 +18,7 @@ export type HelperOpportunityCardProps = {
   t: TFn;
   translateCategory: TranslateFn;
   formatJobSchedule: (date: Job['date'], t: TFn) => string;
+  distanceKm?: number | null;
 };
 
 function jobMatchTier(job: Job, activeTab: HelperOpportunityCardTab): 'urgent' | 'best' | 'normal' {
@@ -39,6 +40,7 @@ export function HelperOpportunityCard({
   t,
   translateCategory,
   formatJobSchedule,
+  distanceKm,
 }: HelperOpportunityCardProps) {
   const tier = jobMatchTier(job, activeTab);
 
@@ -111,7 +113,10 @@ export function HelperOpportunityCard({
             <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {formatJobSchedule(job.date, t)}
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800">
-            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {job.location}
+            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />{' '}
+            {distanceKm != null
+              ? t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) })
+              : job.location}
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-slate-50/90 px-2.5 py-1.5 text-xs font-semibold text-slate-700">
             <Icons.Handshake className="w-3.5 h-3.5 text-slate-500 shrink-0" /> {t('helper_dashboard.compensation_neutral')}

@@ -46,6 +46,8 @@ import {
 import type { CompletionRowKey } from '@/utils/helperProfileCompletion';
 import { computeHelperProfileCompletion } from '@/utils/helperProfileCompletion';
 import { helperProfileSuggestionKeys } from '@/utils/helperProfileSuggestions';
+import { useUserLocation } from '@/hooks/useUserLocation';
+import { distanceToJobKm, sortOpportunitiesForHelper } from '@/utils/locationMatching';
 
 function formatSubscriptionBillingDate(iso: string | undefined, language: string): string {
   if (!iso) return '';
@@ -91,6 +93,7 @@ export default function HelperDashboard() {
 
   const { t, language } = useLanguage();
   const me = useSessionViewer();
+  const { coords: helperCoords } = useUserLocation();
   const { session, profile, isConfigured, updateProfile, refreshProfile } = useAuth();
   const { switchToClient } = useAppMode();
 
@@ -398,6 +401,12 @@ export default function HelperDashboard() {
     displayedJobs = displayedJobs.filter(j => j.urgency === 'high');
   } else if (activeTab === 'recentes') {
     displayedJobs = [...displayedJobs].sort((a, b) => b.createdAt - a.createdAt);
+  } else if (activeTab === 'match') {
+    displayedJobs = sortOpportunitiesForHelper(displayedJobs, {
+      origin: helperCoords,
+      helperSkillIds: profileSettings.skillIds,
+      helperPlanTier: me.subscriptionTier,
+    });
   } else if (activeTab === 'candidaturas') {
     displayedJobs = []; // handled separately
   }
@@ -1146,6 +1155,7 @@ export default function HelperDashboard() {
               displayedJobs.map((job) => {
                 const hasApplied = appliedJobIds.has(job.id);
                 const isApplying = applyingJobId === job.id;
+                const distKm = distanceToJobKm(helperCoords, job);
                 return (
                   <React.Fragment key={job.id}>
                     <HelperOpportunityCard
@@ -1153,6 +1163,7 @@ export default function HelperDashboard() {
                       activeTab={activeTab === 'match' || activeTab === 'recentes' || activeTab === 'emergencia' ? activeTab : 'match'}
                       hasApplied={hasApplied}
                       isApplying={isApplying}
+                      distanceKm={distKm}
                       onApply={handleApply}
                       t={t}
                       translateCategory={translateCategory}

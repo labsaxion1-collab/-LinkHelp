@@ -20,6 +20,13 @@ import { ClientRadarInsights } from '@/components/client/ClientRadarInsights';
 import { LhCard } from '@/components/design-system/LhCard';
 import { UserPresenceBadge } from '@/components/ui/UserPresenceBadge';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
+import { useAuth } from '@/context/AuthContext';
+import {
+  lookupCoordinatesFromText,
+  profileRegionLabel,
+  requestBrowserCoordinates,
+  type Coordinates,
+} from '@/utils/geocodeLocation';
 
 type ModalStep =
   | 'category'
@@ -65,6 +72,8 @@ export default function ClientDashboard() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [jobLocation, setJobLocation] = useState('');
+  const [jobCoords, setJobCoords] = useState<Coordinates | null>(null);
+  const [locatingJob, setLocatingJob] = useState(false);
   const [priority, setPriority] = useState('flexible');
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -118,6 +127,7 @@ export default function ClientDashboard() {
   const skillChip = (skill: string) =>
     skill === 'support' ? t('skills.support') : t(`categories.${skill}`);
   const { jobs, applications, notifications, createJob, updateApplicationStatus } = useAppData();
+  const { profile } = useAuth();
   const me = useSessionViewer();
 
   const descriptionCopy = useMemo(
@@ -227,6 +237,8 @@ export default function ClientDashboard() {
   const resetCreateModalFields = () => {
     setPostText('');
     setJobLocation('');
+    setJobCoords(null);
+    setLocatingJob(false);
     setSelectedCategory('');
     setSelectedSubcategory('');
     setRequestTags([]);
@@ -330,6 +342,19 @@ export default function ClientDashboard() {
           : priority === 'today'
             ? '__soon'
             : '__flexible';
+    const regionFallback = profileRegionLabel(profile);
+    const locationLabel = jobLocation.trim() || regionFallback || t('jobs.remote');
+    const latitude =
+      jobCoords?.lat ??
+      lookupCoordinatesFromText(jobLocation)?.lat ??
+      lookupCoordinatesFromText(regionFallback)?.lat ??
+      null;
+    const longitude =
+      jobCoords?.lng ??
+      lookupCoordinatesFromText(jobLocation)?.lng ??
+      lookupCoordinatesFromText(regionFallback)?.lng ??
+      null;
+
     createJob({
       clientId: me.id,
       clientName: me.name,
@@ -338,7 +363,9 @@ export default function ClientDashboard() {
       description: fullDescription,
       category: selectedCategory,
       tags: requestTags.length > 0 ? [...requestTags] : undefined,
-      location: jobLocation.trim() || t('jobs.remote'),
+      location: locationLabel,
+      latitude,
+      longitude,
       date: schedule,
       value: t('jobs.value_negotiable'),
       urgency: priority === 'emergency' || priority === 'urgent' ? 'high' : 'normal',
@@ -1093,12 +1120,36 @@ export default function ClientDashboard() {
                         autoFocus
                         type="text" 
                         value={jobLocation}
-                        onChange={(e) => setJobLocation(e.target.value)}
+                        onChange={(e) => {
+                          setJobLocation(e.target.value);
+                          setJobCoords(null);
+                        }}
                         placeholder={t('create_modal.location_placeholder')} 
                         className="w-full pl-14 bg-gray-50 border-2 border-gray-200 text-gray-900 rounded-2xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 focus:bg-white block p-4 text-lg transition-all outline-none font-medium shadow-sm" 
                       />
-                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-4 py-2 rounded-xl flex items-center gap-2 transition-colors">
-                        <Icons.Navigation className="w-4 h-4" /> <span className="hidden sm:inline">{t('create_modal.current_location')}</span><span className="sm:hidden">{t('create_modal.current_location_short')}</span>
+                      <button
+                        type="button"
+                        disabled={locatingJob}
+                        onClick={() => {
+                          setLocatingJob(true);
+                          void requestBrowserCoordinates().then((coords) => {
+                            setLocatingJob(false);
+                            if (coords) {
+                              setJobCoords(coords);
+                              setJobLocation(
+                                profileRegionLabel(profile) || t('create_modal.current_location'),
+                              );
+                              return;
+                            }
+                            const fallback = profileRegionLabel(profile);
+                            if (fallback) setJobLocation(fallback);
+                          });
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-4 py-2 rounded-xl flex items-center gap-2 transition-colors disabled:opacity-60"
+                      >
+                        <Icons.Navigation className="w-4 h-4" />{' '}
+                        <span className="hidden sm:inline">{t('create_modal.current_location')}</span>
+                        <span className="sm:hidden">{t('create_modal.current_location_short')}</span>
                       </button>
                     </div>
                     

@@ -9,6 +9,8 @@ interface ImportMetaEnv {
   readonly VITE_SITE_URL?: string;
   /** Set to `implicit` to use hash-based OAuth tokens instead of PKCE (if code_verifier issues persist). */
   readonly VITE_SUPABASE_AUTH_FLOW?: string;
+  /** Google Maps JavaScript API key (public; restrict by HTTP referrer in Google Cloud). */
+  readonly VITE_GOOGLE_MAPS_PLATFORM_KEY?: string;
 }
 
 interface ImportMeta {

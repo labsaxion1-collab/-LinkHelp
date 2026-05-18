@@ -10,7 +10,7 @@ import {
 export type NearbyHelperSortContext = {
   origin: Coordinates | null;
   clientCity?: string | null;
-  clientProvince?: string | null;
+  clientRegion?: string | null;
   clientCountry?: string | null;
   relatedCategoryIds?: string[];
 };
@@ -25,9 +25,9 @@ function cityRegionScore(helper: NearbyHelper, ctx: NearbyHelperSortContext): nu
   if (!hCity || !cCity) return 0;
   if (hCity === cCity) return 4;
   if (hCity.includes(cCity) || cCity.includes(hCity)) return 3;
-  const hProv = normalizeCity(helper.province);
-  const cProv = normalizeCity(ctx.clientProvince);
-  if (hProv && cProv && hProv === cProv) return 2;
+  const hReg = normalizeCity(helper.region);
+  const cReg = normalizeCity(ctx.clientRegion);
+  if (hReg && cReg && hReg === cReg) return 2;
   const hCountry = normalizeCity(helper.country);
   const cCountry = normalizeCity(ctx.clientCountry);
   if (hCountry && cCountry && hCountry === cCountry) return 1;

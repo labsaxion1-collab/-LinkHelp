@@ -81,7 +81,7 @@ function buildProfileInsert(user: User): ProfileInsert {
   const avatarRaw = str('avatar_url') || str('picture');
   const avatar_url = avatarRaw || null;
   const city = str('city') || null;
-  const province = str('province') || null;
+  const region = str('region') || str('province') || null;
   const country = str('country') || null;
   const phone = str('phone') || null;
 
@@ -104,7 +104,7 @@ function buildProfileInsert(user: User): ProfileInsert {
     role,
     credits: 0,
     city,
-    province,
+    region,
     country,
     phone,
     accepted_terms,
@@ -551,7 +551,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         'email',
         'bio',
         'city',
-        'province',
+        'region',
         'country',
         'phone',
         'role',

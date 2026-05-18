@@ -4,6 +4,7 @@ import { useUserLocation } from '@/hooks/useUserLocation';
 import { fetchNearbyHelpers } from '@/services/supabase/nearbyHelpersRemote';
 import type { NearbyHelperMapPoint } from '@/types/nearbyHelper';
 import { enrichNearbyHelpersForMap, sortNearbyHelpers } from '@/utils/nearbyHelpersMatching';
+import { profileRegionFromRow } from '@/utils/profileLocation';
 
 type Options = {
   relatedCategoryIds?: string[];
@@ -28,7 +29,7 @@ export function useNearbyHelpers(options: Options = {}) {
       const sorted = sortNearbyHelpers(rows, {
         origin: coords,
         clientCity: profile?.city,
-        clientProvince: profile?.province,
+        clientRegion: profileRegionFromRow(profile),
         clientCountry: profile?.country,
         relatedCategoryIds: options.relatedCategoryIds,
       });
@@ -45,6 +46,7 @@ export function useNearbyHelpers(options: Options = {}) {
     coords.lat,
     coords.lng,
     profile?.city,
+    profile?.region,
     profile?.province,
     profile?.country,
     relatedKey,

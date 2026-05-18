@@ -7,7 +7,7 @@ export type NearbyHelper = {
   rating: number | null;
   bio: string | null;
   city: string | null;
-  province: string | null;
+  region: string | null;
   country: string | null;
   skillIds: string[];
   latitude: number | null;

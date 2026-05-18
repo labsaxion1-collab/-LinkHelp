@@ -1,6 +1,11 @@
 import { filterValidSkillKeys, skillKey } from '@/data/helperSkillsCatalog';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { NearbyHelper } from '@/types/nearbyHelper';
+import {
+  isMissingColumnError,
+  PROFILE_HELPER_SELECT_COLUMNS,
+  profileRegionFromRow,
+} from '@/utils/profileLocation';
 
 type HelperProfileRow = {
   id: string;
@@ -9,8 +14,9 @@ type HelperProfileRow = {
   rating: number | null;
   bio: string | null;
   city: string | null;
-  province: string | null;
-  country: string | null;
+  country?: string | null;
+  region?: string | null;
+  province?: string | null;
 };
 
 type HelperSkillRow = {
@@ -19,26 +25,32 @@ type HelperSkillRow = {
   subcategory: string | null;
 };
 
+async function fetchHelperProfiles(sb: ReturnType<typeof getSupabase>, excludeUserId?: string) {
+  if (!sb) return [] as HelperProfileRow[];
+
+  for (const columns of PROFILE_HELPER_SELECT_COLUMNS) {
+    let query = sb.from('profiles').select(columns).eq('role', 'helper');
+    if (excludeUserId) query = query.neq('id', excludeUserId);
+
+    const { data, error } = await query;
+    if (!error) return (data ?? []) as HelperProfileRow[];
+    if (isMissingColumnError(error.message)) continue;
+    console.warn('[LinkHelp] fetchNearbyHelpers profiles', error.message);
+    return [];
+  }
+
+  return [];
+}
+
 export async function fetchNearbyHelpers(excludeUserId?: string): Promise<NearbyHelper[]> {
   if (!isSupabaseConfigured()) return [];
   const sb = getSupabase();
   if (!sb) return [];
 
-  let query = sb
-    .from('profiles')
-    .select('id, name, avatar_url, rating, bio, city, province, country')
-    .eq('role', 'helper');
+  const profiles = await fetchHelperProfiles(sb, excludeUserId);
+  if (!profiles.length) return [];
 
-  if (excludeUserId) query = query.neq('id', excludeUserId);
-
-  const { data: profiles, error } = await query;
-  if (error) {
-    console.warn('[LinkHelp] fetchNearbyHelpers profiles', error.message);
-    return [];
-  }
-  if (!profiles?.length) return [];
-
-  const ids = (profiles as HelperProfileRow[]).map((p) => p.id);
+  const ids = profiles.map((p) => p.id);
   const { data: skillRows, error: skillsErr } = await sb
     .from('helper_skills')
     .select('helper_id, category, subcategory')
@@ -55,14 +67,14 @@ export async function fetchNearbyHelpers(excludeUserId?: string): Promise<Nearby
     skillsByHelper.set(row.helper_id, list);
   }
 
-  return (profiles as HelperProfileRow[]).map((p) => ({
+  return profiles.map((p) => ({
     id: p.id,
     name: p.name?.trim() || 'Helper',
     avatarUrl: p.avatar_url?.trim() || null,
     rating: p.rating ?? null,
     bio: p.bio?.trim() || null,
     city: p.city?.trim() || null,
-    province: p.province?.trim() || null,
+    region: profileRegionFromRow(p),
     country: p.country?.trim() || null,
     skillIds: filterValidSkillKeys(skillsByHelper.get(p.id) ?? []),
     latitude: null,

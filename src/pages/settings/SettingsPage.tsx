@@ -48,7 +48,7 @@ export default function SettingsPage() {
     const c = profile.city ?? '';
     setCityDisplay(c);
     setCityCanon(c);
-    setProvince(profile.province ?? '');
+    setProvince(profile.region ?? profile.province ?? '');
     setCountry(profile.country ?? '');
     setBio(profile.bio ?? '');
   }, [profile, session]);
@@ -91,7 +91,7 @@ export default function SettingsPage() {
       name: name.trim() || null,
       phone: phone?.trim() ? phone.trim() : null,
       city: (cityCanon.trim() || cityDisplay.trim()) || null,
-      province: province.trim() || null,
+      region: province.trim() || null,
       country: country.trim() || null,
       bio: bio.trim() || null,
     });

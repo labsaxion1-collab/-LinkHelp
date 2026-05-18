@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { profileRegionFromRow } from '@/utils/profileLocation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import type { QuebecPlace } from '@/data/quebecRegions';
@@ -31,7 +32,7 @@ export function useProfileForm() {
     const city = profile?.city?.trim() ?? '';
     setCityDisplay(city);
     setCityCanon(city);
-    setProvince(profile?.province?.trim() ?? '');
+    setProvince(profileRegionFromRow(profile) ?? '');
     setCountry(profile?.country?.trim() ?? '');
     setBio(profile?.bio?.trim() ?? '');
     setPhoneTouched(false);
@@ -78,7 +79,7 @@ export function useProfileForm() {
       name: name.trim() || null,
       phone: phone?.trim() ? phone.trim() : null,
       city: (cityCanon.trim() || cityDisplay.trim()) || null,
-      province: province.trim() || null,
+      region: province.trim() || null,
       country: country.trim() || null,
       bio: bio.trim() || null,
     });

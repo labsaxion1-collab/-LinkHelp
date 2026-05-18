@@ -601,6 +601,8 @@ export const en = {
     radar_footer_urgent_title: 'Urgent work',
     radar_footer_urgent_sub: 'Time-sensitive requests',
     workspace_menu_aria: 'Open helper workspace menu',
+    profile_modal_title: 'Edit profile',
+    profile_edit_skills: 'Edit skills',
     messages_recent: 'Recent messages',
     messages_sub: 'Coordinate details with clients you are connected to.',
     messages_cta: 'Open messages',

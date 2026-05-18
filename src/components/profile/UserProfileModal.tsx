@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -11,9 +12,18 @@ type Props = {
   onClose: () => void;
   avatarUrl: string;
   titleKey?: string;
+  onChangePhoto?: () => void;
+  footer?: ReactNode;
 };
 
-export function UserProfileModal({ open, onClose, avatarUrl, titleKey = 'client_dashboard.profile_modal_title' }: Props) {
+export function UserProfileModal({
+  open,
+  onClose,
+  avatarUrl,
+  titleKey = 'client_dashboard.profile_modal_title',
+  onChangePhoto,
+  footer,
+}: Props) {
   const { t } = useLanguage();
   const form = useProfileForm();
 
@@ -51,13 +61,16 @@ export function UserProfileModal({ open, onClose, avatarUrl, titleKey = 'client_
             avatarUrl={avatarUrl}
             avatarInitials={initialsForName(form.name || '?')}
             save={handleSave}
-            onChangePhoto={undefined}
+            onChangePhoto={onChangePhoto}
           />
-          <p className="mt-4 text-center text-xs text-gray-500">
-            <Link to={`${ROUTES.settings}#avatar`} onClick={onClose} className="font-semibold text-blue-600 hover:underline">
-              {t('profile_form.change_photo_in_settings')}
-            </Link>
-          </p>
+          {footer}
+          {!onChangePhoto ? (
+            <p className="mt-4 text-center text-xs text-gray-500">
+              <Link to={`${ROUTES.settings}#avatar`} onClick={onClose} className="font-semibold text-blue-600 hover:underline">
+                {t('profile_form.change_photo_in_settings')}
+              </Link>
+            </p>
+          ) : null}
         </div>
       </div>
     </div>

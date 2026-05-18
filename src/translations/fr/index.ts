@@ -602,6 +602,8 @@ export const fr = {
     radar_footer_urgent_title: 'Travaux urgents',
     radar_footer_urgent_sub: 'Demandes urgentes',
     workspace_menu_aria: 'Ouvrir le menu espace assistant',
+    profile_modal_title: 'Modifier le profil',
+    profile_edit_skills: 'Modifier les compétences',
     messages_recent: 'Messages récents',
     messages_sub: 'Coordonnez les détails avec les clients avec qui vous échangez.',
     messages_cta: 'Ouvrir les messages',

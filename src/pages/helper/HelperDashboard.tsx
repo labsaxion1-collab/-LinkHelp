@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { clsx } from 'clsx';
 import { Star, Briefcase, Clock, MapPin, Check, X, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -48,6 +47,7 @@ import { computeHelperProfileCompletion } from '@/utils/helperProfileCompletion'
 import { helperProfileSuggestionKeys } from '@/utils/helperProfileSuggestions';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
+import { HelperProfileSkillsSection } from '@/components/helpers/profile/HelperProfileSkillsSection';
 import { distanceToJobKm, sortOpportunitiesForHelper } from '@/utils/locationMatching';
 
 function formatSubscriptionBillingDate(iso: string | undefined, language: string): string {
@@ -81,7 +81,6 @@ export default function HelperDashboard() {
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
-  const [mobileWorkspaceOpen, setMobileWorkspaceOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<Application | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
 
@@ -114,10 +113,6 @@ export default function HelperDashboard() {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, location.pathname, navigate]);
-
-  useEffect(() => {
-    setMobileWorkspaceOpen(false);
-  }, [location.pathname, activeTab]);
 
   useEffect(() => {
     saveHelperProfileSettings(profileSettings);
@@ -414,7 +409,7 @@ export default function HelperDashboard() {
   }
 
   return (
-    <div className="bg-[#f0f2f5] min-h-[calc(100vh-64px)] py-4 sm:py-6 -mt-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+    <div className="bg-[#f0f2f5] min-h-[calc(100vh-64px)] py-4 sm:py-6 -mt-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 overflow-x-hidden">
       {/* Toast Notification */}
       {toastNotification.show && (
         <div className="fixed top-20 right-4 z-[100] animate-in slide-in-from-right-8 fade-in duration-300">
@@ -583,7 +578,21 @@ export default function HelperDashboard() {
         open={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         avatarUrl={helperAvatarUrl ?? ''}
-        titleKey="client_dashboard.profile_modal_title"
+        titleKey="helper_dashboard.profile_modal_title"
+        onChangePhoto={() => {
+          setShowProfileModal(false);
+          setProfileSetupModal('avatar');
+        }}
+        footer={
+          <HelperProfileSkillsSection
+            t={t}
+            skills={sidebarSkillLines}
+            onEdit={() => {
+              setShowProfileModal(false);
+              setProfileSetupModal('skills');
+            }}
+          />
+        }
       />
 
       {profileSetupModal === 'avatar' && (
@@ -670,36 +679,18 @@ export default function HelperDashboard() {
         </div>
       )}
 
-      <button
-        type="button"
-        aria-label={t('common.close')}
-        className={clsx(
-          'fixed inset-0 z-[37] bg-slate-900/20 backdrop-blur-[1px] transition-opacity duration-300 md:hidden',
-          mobileWorkspaceOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
-        )}
-        onClick={() => setMobileWorkspaceOpen(false)}
-      />
-
       <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-[280px_1fr] lg:grid-cols-[280px_1fr_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
-        {/* Left Sidebar */}
-        <aside
-          className={clsx(
-            'flex flex-col space-y-3 pr-0 md:pr-2 pb-2 min-h-0 overflow-y-auto hide-scrollbar w-full max-w-[280px]',
-            'max-md:fixed max-md:left-0 max-md:top-[4.75rem] max-md:z-[38] max-md:h-[calc(100dvh-4.75rem)] max-md:bg-white/[0.98] max-md:backdrop-blur-md max-md:border-r max-md:border-slate-200/90 max-md:shadow-2xl max-md:pl-3 max-md:pt-3 max-md:transition-transform max-md:duration-300 max-md:ease-out',
-            mobileWorkspaceOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full max-md:pointer-events-none',
-            'md:pointer-events-auto md:static md:z-auto md:h-[calc(100vh-120px)] md:translate-x-0 md:max-w-none md:shadow-none md:border-0 md:bg-transparent md:pl-0 md:pt-0',
-            'md:sticky md:top-24',
-          )}
-        >
+        {/* Left Sidebar — desktop only */}
+        <aside className="hidden md:flex flex-col space-y-3 pr-0 md:pr-2 pb-2 min-h-0 overflow-y-auto hide-scrollbar w-full md:max-w-[280px] md:sticky md:top-24 md:h-[calc(100vh-120px)]">
           
           {/* User profile & mode — fixed */}
           <div className="shrink-0 rounded-xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-100/60 overflow-hidden">
             <div className="flex items-center gap-2.5 p-2.5 hover:bg-slate-50/90 transition-colors group w-full focus-within:ring-2 focus-within:ring-blue-200/80 rounded-t-xl">
               <button
                 type="button"
-                onClick={() => setProfileSetupModal('avatar')}
+                onClick={() => setShowProfileModal(true)}
                 className="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300"
-                aria-label={t('profile_setup.avatar_title')}
+                aria-label={t('helper_dashboard.profile_modal_title')}
               >
                 {helperAvatarUrl ? (
                   <img
@@ -797,11 +788,12 @@ export default function HelperDashboard() {
           </nav>
 
           <div className="space-y-2 shrink-0 min-h-0 pb-1">
+            {completionBreakdown.percent < 100 ? (
             <HelperSidebarDisclosure
               storageKey="profile"
               title={t('helper_dashboard.sidebar_acc_profile')}
               badge={`${completionBreakdown.percent}%`}
-              defaultOpen={completionBreakdown.percent < 100}
+              defaultOpen
             >
               <div className="space-y-3">
                 <HelperProfileCompletionBar
@@ -854,6 +846,7 @@ export default function HelperDashboard() {
                 </div>
               </div>
             </HelperSidebarDisclosure>
+            ) : null}
 
             <HelperSidebarDisclosure storageKey="plan" title={t('helper_dashboard.sidebar_acc_plan')}>
               <div className="space-y-3">
@@ -1021,24 +1014,36 @@ export default function HelperDashboard() {
           </div>
         </aside>
 
-        <button
-          type="button"
-          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom)+0.75rem)] left-4 z-[39] flex h-12 w-12 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-800 shadow-[var(--lh-shadow-md)] transition-transform active:scale-95 md:hidden"
-          onClick={() => setMobileWorkspaceOpen(true)}
-          aria-label={t('helper_dashboard.workspace_menu_aria')}
-        >
-          <Icons.PanelLeft className="w-5 h-5" />
-        </button>
-
         {/* Main Feed */}
-        <div className="w-full max-w-[680px] mx-auto">
-          <div className="md:hidden mb-4">
-            <HelperProfileCompletionBar
-              breakdown={completionBreakdown}
-              onRowClick={onCompletionRowClick}
-              suggestions={completionSuggestions}
-            />
-          </div>
+        <div className="w-full max-w-[680px] mx-auto min-w-0 pb-2">
+          <button
+            type="button"
+            onClick={() => setShowProfileModal(true)}
+            className="md:hidden mb-4 flex w-full items-center gap-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm text-left hover:bg-slate-50/90 transition-colors"
+          >
+            {helperAvatarUrl ? (
+              <img src={helperAvatarUrl} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-slate-200/40" />
+            ) : (
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-slate-200 to-slate-300 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-slate-200/40">
+                {helperInitials}
+              </span>
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-bold text-slate-900 text-[15px]">{me.name}</span>
+              <span className="mt-0.5 block text-xs font-medium text-slate-500">{t('helper_dashboard.profile_modal_title')}</span>
+            </span>
+            <Icons.ChevronRight className="h-5 w-5 shrink-0 text-slate-300" />
+          </button>
+
+          {completionBreakdown.percent < 100 ? (
+            <div className="md:hidden mb-4">
+              <HelperProfileCompletionBar
+                breakdown={completionBreakdown}
+                onRowClick={onCompletionRowClick}
+                suggestions={completionSuggestions}
+              />
+            </div>
+          ) : null}
 
           <HelperStatsStrip dataLoading={dataLoading} stats={helperMvpStats} t={t} />
 
@@ -1078,6 +1083,7 @@ export default function HelperDashboard() {
               <button onClick={() => setActiveTab('match')} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'match' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.tab_match')}</button>
               <button onClick={() => setActiveTab('recentes')} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'recentes' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.tab_recent')}</button>
               <button onClick={() => setActiveTab('emergencia')} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'emergencia' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.tab_emergency')}</button>
+              <button onClick={() => setActiveTab('candidaturas')} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'candidaturas' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.nav_applications')}</button>
             </div>
           </div>
 

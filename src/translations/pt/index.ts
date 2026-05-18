@@ -602,6 +602,8 @@ export const pt = {
     radar_footer_urgent_title: 'Trabalhos urgentes',
     radar_footer_urgent_sub: 'Pedidos sensíveis ao tempo',
     workspace_menu_aria: 'Abrir menu do workspace do helper',
+    profile_modal_title: 'Editar perfil',
+    profile_edit_skills: 'Editar skills',
     messages_recent: 'Mensagens recentes',
     messages_sub: 'Combine detalhes com clientes com quem você está em contato.',
     messages_cta: 'Abrir mensagens',

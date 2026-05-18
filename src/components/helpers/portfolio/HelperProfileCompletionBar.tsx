@@ -27,6 +27,8 @@ export function HelperProfileCompletionBar({ breakdown, onRowClick, suggestions 
 
   const pct = breakdown.percent;
 
+  if (pct >= 100) return null;
+
   return (
     <div className="rounded-[var(--lh-radius-lg)] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/40 to-indigo-50/25 p-4 shadow-[var(--lh-shadow-card)] ring-1 ring-white/60">
       <div className="flex items-start justify-between gap-4 mb-3">

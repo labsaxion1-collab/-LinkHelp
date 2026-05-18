@@ -1,7 +1,8 @@
 ﻿-- LinkHelp: apply in Supabase Dashboard → SQL Editor (migrations 0010 + 0011).
 -- State/province label for profiles (e.g. QC). Use `region`, not `province`.
 
-alter table public.profiles add column if not exists region text;
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS region text;
 
 create index if not exists profiles_region_idx on public.profiles (region);
 

@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview --port=3000 --host=0.0.0.0",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "db:apply-region": "node scripts/apply-supabase-region.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

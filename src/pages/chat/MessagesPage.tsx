@@ -55,6 +55,7 @@ export default function MessagesPage() {
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)').matches : true,
   );
   const [mobilePanel, setMobilePanel] = useState<'list' | 'thread'>('list');
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const serviceConfirmed = useRemoteChat ? remote.contactUnlocked : false;

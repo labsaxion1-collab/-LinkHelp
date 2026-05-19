@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, Globe, ChevronDown, User, Settings, Briefcase, LogOut, Search, Camera } from 'lucide-react';
+import { Menu, Globe, ChevronDown, User, Settings, Briefcase, LogOut, Camera, Coins } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Logo } from '@/components/ui/Logo';
 import { useLanguage } from '@/context/LanguageContext';
@@ -184,6 +184,18 @@ export default function Navbar() {
                       </button>
                       {profileOpen && (
                         <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-gray-100 bg-white py-2 shadow-xl shadow-slate-900/10 z-[60] animate-in fade-in zoom-in-95 duration-150">
+                          {isHelperNav ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setProfileOpen(false);
+                                navigate(ROUTES.helperDashboard, { state: { openProfile: true } });
+                              }}
+                              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                            >
+                              <User className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_profile')}
+                            </button>
+                          ) : (
                           <Link
                             to={ROUTES.settings}
                             onClick={() => setProfileOpen(false)}
@@ -191,6 +203,16 @@ export default function Navbar() {
                           >
                             <User className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_profile')}
                           </Link>
+                          )}
+                          {isHelperNav && UI_VISIBILITY.helperCredits ? (
+                            <Link
+                              to={ROUTES.helperCredits}
+                              onClick={() => setProfileOpen(false)}
+                              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                            >
+                              <Coins className="w-4 h-4 text-gray-400" /> {t('helper_dashboard.credits_wallet_title')}
+                            </Link>
+                          ) : null}
                           <Link
                             to={ROUTES.settings}
                             onClick={() => setProfileOpen(false)}
@@ -198,28 +220,28 @@ export default function Navbar() {
                           >
                             <Settings className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_settings')}
                           </Link>
-                          <Link
-                            to={`${ROUTES.settings}#avatar`}
-                            onClick={() => setProfileOpen(false)}
-                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                          >
-                            <Camera className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_change_photo')}
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setProfileOpen(false);
-                              toggleClientHelper();
-                            }}
-                            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                          >
-                            {isHelperNav ? (
-                              <Search className="w-4 h-4 text-gray-400" />
-                            ) : (
-                              <Briefcase className="w-4 h-4 text-gray-400" />
-                            )}
-                            {isHelperNav ? t('nav.switch_to_client') : t('nav.switch_to_helper')}
-                          </button>
+                          {!isHelperNav ? (
+                            <>
+                              <Link
+                                to={`${ROUTES.settings}#avatar`}
+                                onClick={() => setProfileOpen(false)}
+                                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                              >
+                                <Camera className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_change_photo')}
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setProfileOpen(false);
+                                  toggleClientHelper();
+                                }}
+                                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                              >
+                                <Briefcase className="w-4 h-4 text-gray-400" />
+                                {t('nav.switch_to_helper')}
+                              </button>
+                            </>
+                          ) : null}
                           <div className="my-1 border-t border-gray-100" />
                           <button
                             type="button"
@@ -268,33 +290,57 @@ export default function Navbar() {
                 </button>
                 {profileOpen && (
                   <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-gray-100 bg-white py-2 shadow-xl z-[60]">
-                    <Link to={ROUTES.settings} onClick={() => setProfileOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50">
-                      <User className="w-4 h-4 text-gray-400" />
-                      {t('nav.profile_menu_profile')}
-                    </Link>
+                    {isHelperNav ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileOpen(false);
+                          navigate(ROUTES.helperDashboard, { state: { openProfile: true } });
+                        }}
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                      >
+                        <User className="w-4 h-4 text-gray-400" />
+                        {t('nav.profile_menu_profile')}
+                      </button>
+                    ) : (
+                      <Link to={ROUTES.settings} onClick={() => setProfileOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+                        <User className="w-4 h-4 text-gray-400" />
+                        {t('nav.profile_menu_profile')}
+                      </Link>
+                    )}
+                    {isHelperNav && UI_VISIBILITY.helperCredits ? (
+                      <Link to={ROUTES.helperCredits} onClick={() => setProfileOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+                        <Coins className="w-4 h-4 text-gray-400" />
+                        {t('helper_dashboard.credits_wallet_title')}
+                      </Link>
+                    ) : null}
                     <Link to={ROUTES.settings} onClick={() => setProfileOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50">
                       <Settings className="w-4 h-4 text-gray-400" />
                       {t('nav.profile_menu_settings')}
                     </Link>
-                    <Link
-                      to={`${ROUTES.settings}#avatar`}
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                    >
-                      <Camera className="w-4 h-4 text-gray-400" />
-                      {t('nav.profile_menu_change_photo')}
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProfileOpen(false);
-                        toggleClientHelper();
-                      }}
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                    >
-                      {isHelperNav ? <Search className="w-4 h-4 text-gray-400" /> : <Briefcase className="w-4 h-4 text-gray-400" />}
-                      {isHelperNav ? t('nav.switch_to_client') : t('nav.switch_to_helper')}
-                    </button>
+                    {!isHelperNav ? (
+                      <>
+                        <Link
+                          to={`${ROUTES.settings}#avatar`}
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                        >
+                          <Camera className="w-4 h-4 text-gray-400" />
+                          {t('nav.profile_menu_change_photo')}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileOpen(false);
+                            toggleClientHelper();
+                          }}
+                          className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                        >
+                          <Briefcase className="w-4 h-4 text-gray-400" />
+                          {t('nav.switch_to_helper')}
+                        </button>
+                      </>
+                    ) : null}
                     <div className="my-1 border-t border-gray-100" />
                     <button type="button" onClick={() => void doLogout()} className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-bold text-red-600 hover:bg-red-50">
                       <LogOut className="w-4 h-4" />

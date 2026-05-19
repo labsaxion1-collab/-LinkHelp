@@ -7,7 +7,6 @@ import { useAuth } from '@/context/AuthContext';
 import { uploadAvatarImage } from '@/lib/storageUpload';
 import { logMediaPicker } from '@/utils/mediaPickerDebug';
 import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
-import { initialsForName } from '@/utils/avatarUrl';
 import { filterValidSkillKeys, parseSkillKey, skillSubLabelKey } from '@/data/helperSkillsCatalog';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppMode } from '@/context/AppModeContext';
@@ -24,13 +23,12 @@ import { ROUTES } from '@/utils/constants';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import type { Application } from '@/types/application';
-import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
 import {
   HelperSubscriptionPlanModal,
   type HelperPlanModalView,
 } from '@/components/helpers/HelperSubscriptionPlanModal';
 import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/HelperProfileCompletionBar';
-import { HelperSidebarDisclosure } from '@/components/helpers/HelperSidebarDisclosure';
+import { HelperDashboardNav } from '@/components/helpers/HelperDashboardNav';
 import { HelperCreditsWalletCard } from '@/components/helpers/HelperCreditsWalletCard';
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
@@ -101,12 +99,19 @@ export default function HelperDashboard() {
   }, [location.state, location.pathname, navigate]);
 
   useEffect(() => {
+    const st = location.state as { openProfile?: boolean } | null;
+    if (st?.openProfile) {
+      setShowProfileModal(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
+
+  useEffect(() => {
     saveHelperProfileSettings(profileSettings);
   }, [profileSettings]);
 
   const storageUserId = session?.user?.id ?? profile?.id ?? null;
   const helperAvatarUrl = profile?.avatar_url?.trim() || profileSettings.avatarDataUrl?.trim() || null;
-  const helperInitials = initialsForName(me.name);
 
   useEffect(() => {
     if (!isConfigured || !storageUserId) return;
@@ -190,7 +195,6 @@ export default function HelperDashboard() {
   }, []);
 
   const [showIdeaModal, setShowIdeaModal] = useState(false);
-  const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
 
   const helperTier: HelperSubscriptionTier = me.subscriptionTier ?? 'BASIC';
   const planNextBillingLabel =
@@ -209,46 +213,6 @@ export default function HelperDashboard() {
         .filter((row): row is { key: string; label: string } => row !== null),
     [profileSettings.skillIds, t],
   );
-
-  const insights = React.useMemo(() => {
-    const base: {
-      title: string;
-      desc: string;
-      icon: React.ReactNode;
-      colors: { bgOuter: string; border: string; bgInner: string; text: string };
-    }[] = [
-      {
-        title: t('helper_dashboard.insight_0_title'),
-        desc: t('helper_dashboard.insight_0_desc'),
-        icon: <Icons.Flame className="w-3.5 h-3.5 text-orange-500" />,
-        colors: { bgOuter: 'from-orange-50 to-white', border: 'border-orange-100/50', bgInner: 'bg-orange-200/40', text: 'text-orange-900' },
-      },
-      {
-        title: t('helper_dashboard.insight_1_title'),
-        desc: t('helper_dashboard.insight_1_desc'),
-        icon: <Icons.TrendingUp className="w-3.5 h-3.5 text-blue-500" />,
-        colors: { bgOuter: 'from-blue-50 to-white', border: 'border-blue-100/50', bgInner: 'bg-blue-200/40', text: 'text-blue-900' },
-      },
-      {
-        title: t('helper_dashboard.insight_2_title'),
-        desc: t('helper_dashboard.insight_2_desc'),
-        icon: <Icons.Star className="w-3.5 h-3.5 text-yellow-500" />,
-        colors: { bgOuter: 'from-yellow-50 to-white', border: 'border-yellow-100/50', bgInner: 'bg-yellow-200/40', text: 'text-yellow-900' },
-      },
-    ];
-    return base;
-  }, [t]);
-
-  useEffect(() => {
-    setCurrentInsightIndex((i) => i % Math.max(insights.length, 1));
-  }, [insights.length]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentInsightIndex((prev) => (prev + 1) % insights.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [insights.length]);
 
   useEffect(() => {
     if (location.pathname === ROUTES.helperOpportunities) {
@@ -576,265 +540,14 @@ export default function HelperDashboard() {
         </div>
       )}
 
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-[280px_1fr] lg:grid-cols-[280px_1fr_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
-        {/* Left Sidebar — desktop only */}
-        <aside className="hidden md:flex flex-col space-y-3 pr-0 md:pr-2 pb-2 min-h-0 overflow-y-auto hide-scrollbar w-full md:max-w-[280px] md:sticky md:top-24 md:h-[calc(100vh-120px)]">
-          
-          {/* User profile & mode — fixed */}
-          <div className="shrink-0 rounded-xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-100/60 overflow-hidden">
-            <div className="flex items-center gap-2.5 p-2.5 hover:bg-slate-50/90 transition-colors group w-full focus-within:ring-2 focus-within:ring-blue-200/80 rounded-t-xl">
-              <button
-                type="button"
-                onClick={() => setShowProfileModal(true)}
-                className="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300"
-                aria-label={t('helper_dashboard.profile_modal_title')}
-              >
-                {helperAvatarUrl ? (
-                  <img
-                    src={helperAvatarUrl}
-                    alt=""
-                    className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-slate-200/40"
-                  />
-                ) : (
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-slate-200 to-slate-300 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-slate-200/40">
-                    {helperInitials}
-                  </span>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowProfileModal(true)}
-                className="flex flex-1 min-w-0 items-center gap-2 text-left focus:outline-none"
-              >
-                <span className="flex-1 min-w-0 pr-0.5">
-                  <span className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors block truncate text-[15px] leading-tight">
-                    {me.name}
-                  </span>
-                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                    <HelperPlanBadge tier={helperTier} size="sm" />
-                    <span className="text-[10px] text-sky-700 font-bold truncate uppercase tracking-wide">
-                      {t('helper_dashboard.mode_helper')}
-                    </span>
-                  </div>
-                </span>
-                <Icons.ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={() => switchToClient()}
-              className="flex items-center justify-center gap-2 w-full p-2 bg-slate-50/90 border-t border-slate-100/90 text-slate-800 hover:bg-slate-100 text-[13px] font-semibold transition-colors focus:ring-2 focus:ring-slate-200 focus:outline-none min-w-0"
-            >
-              <Icons.RefreshCw className="w-4 h-4 shrink-0 text-slate-500" />
-              <span className="truncate">{t('sidebar.switch_client')}</span>
-            </button>
-          </div>
-
-          {/* Main navigation — fixed */}
-          <nav className="space-y-0.5 shrink-0 rounded-xl border border-slate-200/70 bg-slate-50/50 p-1">
-            <button
-              type="button"
-              onClick={() => setActiveTab('match')}
-              className={`flex justify-between items-center w-full px-3 py-2.5 rounded-lg transition-colors cursor-pointer text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-slate-300 min-w-0 ${
-                activeTab === 'match' || activeTab === 'recentes' || activeTab === 'emergencia'
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'hover:bg-white text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Icons.Target
-                  className={`w-4 h-4 shrink-0 ${
-                    activeTab === 'match' || activeTab === 'recentes' || activeTab === 'emergencia' ? 'text-sky-400' : 'text-slate-400'
-                  }`}
-                />
-                <span className="truncate">{t('helper_dashboard.nav_opportunities')}</span>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('candidaturas')}
-              className={`flex justify-between items-center w-full px-3 py-2.5 rounded-lg transition-colors cursor-pointer text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-slate-300 min-w-0 ${
-                activeTab === 'candidaturas' ? 'bg-slate-900 text-white shadow-sm' : 'hover:bg-white text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Icons.ClipboardList
-                  className={`w-4 h-4 shrink-0 ${activeTab === 'candidaturas' ? 'text-sky-400' : 'text-slate-400'}`}
-                />
-                <span className="truncate">{t('helper_dashboard.nav_applications')}</span>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate(ROUTES.helperJobs)}
-              className="flex justify-between items-center w-full px-3 py-2.5 rounded-lg transition-colors cursor-pointer text-sm font-semibold hover:bg-white text-slate-600 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-300 min-w-0"
-            >
-              <div className="flex items-center gap-2.5 min-w-0 pr-1">
-                <Briefcase className="w-4 h-4 text-slate-400 shrink-0" />
-                <span className="truncate">{t('helper_dashboard.nav_active_services')}</span>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate(ROUTES.settings)}
-              className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg transition-colors cursor-pointer text-sm font-semibold hover:bg-white text-slate-600 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-300 min-w-0"
-            >
-              <Icons.Clock className="w-4 h-4 text-slate-400 shrink-0" />
-              <span className="truncate">{t('helper_dashboard.nav_availability')}</span>
-            </button>
-          </nav>
-
-          <div className="space-y-2 shrink-0 min-h-0 pb-1">
-            {completionBreakdown.percent < 100 ? (
-            <HelperSidebarDisclosure
-              storageKey="profile"
-              title={t('helper_dashboard.sidebar_acc_profile')}
-              badge={`${completionBreakdown.percent}%`}
-              defaultOpen
-            >
-              <div className="space-y-3">
-                <HelperProfileCompletionBar
-                  breakdown={completionBreakdown}
-                  onRowClick={onCompletionRowClick}
-                  suggestions={completionSuggestions}
-                />
-                <div>
-                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                    {t('helper_dashboard.achievements_title')}
-                  </h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    <div
-                      className="flex items-center gap-1 bg-amber-50 text-amber-900 px-2 py-1 rounded-lg text-[11px] font-semibold border border-amber-100/80 cursor-default"
-                      title={t('helper_dashboard.tooltip_streak')}
-                    >
-                      <Icons.Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />
-                      <span className="truncate max-w-[5.5rem]">{t('helper_dashboard.streak_badge')}</span>
-                    </div>
-                    <div
-                      className="flex items-center gap-1 bg-violet-50 text-violet-900 px-2 py-1 rounded-lg text-[11px] font-semibold border border-violet-100/80 cursor-default"
-                      title={t('helper_dashboard.tooltip_expert')}
-                    >
-                      <Icons.Trophy className="w-3 h-3 text-violet-600 shrink-0" />
-                      <span className="truncate max-w-[5.5rem]">{t('helper_dashboard.expert_badge')}</span>
-                    </div>
-                    <div
-                      className="flex items-center gap-1 bg-sky-50 text-sky-900 px-2 py-1 rounded-lg text-[11px] font-semibold border border-sky-100/80 cursor-default"
-                      title={t('helper_dashboard.tooltip_active')}
-                    >
-                      <Icons.Zap className="w-3 h-3 text-sky-600 shrink-0" />
-                      <span className="truncate max-w-[5.5rem]">{t('helper_dashboard.active_badge')}</span>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  className={`rounded-lg border bg-gradient-to-r ${insights[currentInsightIndex].colors.bgOuter} ${insights[currentInsightIndex].colors.border} p-2.5 flex items-start gap-2 shadow-sm relative overflow-hidden min-h-[56px]`}
-                >
-                  <div className="p-1 bg-white/90 rounded-full shadow-sm shrink-0 mt-0.5">
-                    <div key={currentInsightIndex} className="flex items-center justify-center">
-                      {insights[currentInsightIndex].icon}
-                    </div>
-                  </div>
-                  <p
-                    key={currentInsightIndex}
-                    className={`text-[11px] leading-snug ${insights[currentInsightIndex].colors.text} font-medium line-clamp-3`}
-                  >
-                    <strong className="font-semibold">{insights[currentInsightIndex].title}</strong> {insights[currentInsightIndex].desc}
-                  </p>
-                </div>
-              </div>
-            </HelperSidebarDisclosure>
-            ) : null}
-
-            {UI_VISIBILITY.helperCredits ? (
-              <div className="hidden md:block shrink-0 min-w-0">
-                <HelperCreditsWalletCard
-                  balance={creditBalance}
-                  usedThisMonth={creditsUsedThisMonth}
-                  unlocksCount={unlocks.length}
-                  loading={creditsLoading}
-                  compact
-                  t={t}
-                  onBuyCredits={goToCredits}
-                />
-              </div>
-            ) : null}
-
-            <HelperSidebarDisclosure storageKey="skills" title={t('helper_dashboard.sidebar_acc_skills')}>
-              <div className="space-y-1.5">
-                {sidebarSkillLines.length === 0 ? (
-                  <p className="text-[11px] text-slate-500 font-medium px-1 py-2 leading-snug">
-                    {t('helper_dashboard.skills_empty')}
-                  </p>
-                ) : (
-                  sidebarSkillLines.map((skill) => (
-                    <div
-                      key={skill.key}
-                      className="bg-white border border-slate-200 p-2 rounded-lg shadow-sm max-w-full overflow-hidden"
-                    >
-                      <span className="font-semibold text-slate-900 text-xs truncate block">{skill.label}</span>
-                    </div>
-                  ))
-                )}
-                <button
-                  type="button"
-                  onClick={() => setProfileSetupModal('skills')}
-                  className="bg-white border border-slate-200 border-dashed p-2.5 rounded-lg hover:border-sky-300 hover:bg-sky-50/50 cursor-pointer transition-colors flex items-center justify-center gap-1.5 w-full min-h-[44px] min-w-0"
-                >
-                  <Icons.PlusCircle className="w-4 h-4 text-sky-600 shrink-0" />
-                  <span className="font-bold text-[10px] text-sky-700 uppercase tracking-wide truncate">{t('helper_dashboard.add_skill_cta')}</span>
-                </button>
-              </div>
-            </HelperSidebarDisclosure>
-
-            {UI_VISIBILITY.ideas ? (
-            <HelperSidebarDisclosure storageKey="ideas" title={t('helper_dashboard.sidebar_acc_ideas')}>
-              <div className="rounded-xl bg-slate-900 p-3 border border-slate-800 shadow-sm">
-                <div className="flex gap-2 mb-2">
-                  <div className="flex items-center justify-center shrink-0 w-9 h-9 bg-white/10 rounded-lg border border-white/10">
-                    <Icons.Lightbulb className="w-5 h-5 text-amber-300" />
-                  </div>
-                  <div className="min-w-0 pt-0.5">
-                    <h4 className="font-semibold text-white text-xs leading-tight">{t('sidebar.ideas')}</h4>
-                    <span className="text-[10px] text-slate-400 font-medium">{t('sidebar.ideas_subtitle')}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-300 bg-white/5 p-2 rounded-md border border-white/5 mb-2">
-                  <Icons.CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>{t('helper_dashboard.ideas_sidebar_status_neutral')}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowIdeaModal(true)}
-                  className="w-full py-2.5 min-h-[44px] bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold rounded-lg text-xs transition-colors text-center"
-                >
-                  {t('ideas.suggest')}
-                </button>
-              </div>
-            </HelperSidebarDisclosure>
-            ) : null}
-          </div>
-        </aside>
-
-        {/* Main Feed */}
-        <div className="w-full max-w-[680px] mx-auto min-w-0 pb-2">
-          <button
-            type="button"
-            onClick={() => setShowProfileModal(true)}
-            className="md:hidden mb-4 flex w-full items-center gap-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm text-left hover:bg-slate-50/90 transition-colors"
-          >
-            {helperAvatarUrl ? (
-              <img src={helperAvatarUrl} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-slate-200/40" />
-            ) : (
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-slate-200 to-slate-300 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-slate-200/40">
-                {helperInitials}
-              </span>
-            )}
-            <span className="min-w-0 flex-1">
-              <span className="block truncate font-bold text-slate-900 text-[15px]">{me.name}</span>
-              <span className="mt-0.5 block text-xs font-medium text-slate-500">{t('helper_dashboard.profile_modal_title')}</span>
-            </span>
-            <Icons.ChevronRight className="h-5 w-5 shrink-0 text-slate-300" />
-          </button>
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
+        <main className="w-full min-w-0 pb-2">
+          <HelperDashboardNav
+            activeTab={activeTab}
+            onSelectFeedTab={setActiveTab}
+            t={t}
+            onSwitchClient={() => switchToClient()}
+          />
 
           {completionBreakdown.percent < 100 ? (
             <div className="md:hidden mb-4">
@@ -849,12 +562,13 @@ export default function HelperDashboard() {
           <HelperStatsStrip dataLoading={dataLoading} stats={helperMvpStats} t={t} />
 
           {UI_VISIBILITY.helperCredits ? (
-            <div className="md:hidden mb-4 min-w-0">
+            <div className="mb-4 min-w-0">
               <HelperCreditsWalletCard
                 balance={creditBalance}
                 usedThisMonth={creditsUsedThisMonth}
                 unlocksCount={unlocks.length}
                 loading={creditsLoading}
+                compact
                 t={t}
                 onBuyCredits={goToCredits}
               />
@@ -1006,7 +720,7 @@ export default function HelperDashboard() {
               </div>
             )}
           </div>
-        </div>
+        </main>
 
         {/* Right Sidebar */}
         <div className="hidden lg:flex flex-col sticky top-24 h-[calc(100vh-120px)] space-y-4">

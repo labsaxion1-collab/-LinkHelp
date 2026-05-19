@@ -1,14 +1,16 @@
 import * as Icons from 'lucide-react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
+import { useAppMode } from '@/context/AppModeContext';
 import { useCredits } from '@/context/CreditContext';
+import { HelperDashboardNav } from '@/components/helpers/HelperDashboardNav';
 import { ROUTES } from '@/utils/constants';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 
 export default function HelperCreditsPage() {
   const { t } = useLanguage();
-  const navigate = useNavigate();
+  const { switchToClient } = useAppMode();
   const { profile } = useAuth();
   const { wallet, transactions, packages, unlocks, loading } = useCredits();
 
@@ -19,17 +21,16 @@ export default function HelperCreditsPage() {
   const creditsUsed = wallet?.totalSpent ?? 0;
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[#f0f2f5] px-4 py-8 sm:px-6">
-      <div className="mx-auto max-w-5xl">
-        <button
-          type="button"
-          onClick={() => navigate(ROUTES.helperDashboard)}
-          className="mb-4 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm hover:text-slate-950"
-        >
-          <Icons.ArrowLeft className="h-4 w-4" />
-          {t('app_pages.back_home')}
-        </button>
+    <div className="bg-[#f0f2f5] min-h-[calc(100vh-64px)] py-4 sm:py-6 -mt-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 overflow-x-hidden">
+      <div className="mx-auto max-w-[1600px] min-w-0">
+        <HelperDashboardNav
+          activeTab="match"
+          onSelectFeedTab={() => {}}
+          t={t}
+          onSwitchClient={() => switchToClient()}
+        />
 
+        <div className="mx-auto max-w-5xl">
         <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -109,6 +110,7 @@ export default function HelperCreditsPage() {
               </p>
             )}
           </div>
+        </div>
         </div>
       </div>
     </div>

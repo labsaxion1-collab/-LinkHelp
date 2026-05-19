@@ -147,7 +147,7 @@ export async function remoteApply(input: {
   });
 
   if (error) {
-    if (error.code === '23505') throw new Error('ALREADY_APPLIED');
+    if (error.code === '23505') return;
     throw error;
   }
 

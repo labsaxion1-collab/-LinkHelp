@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Briefcase, Clock, MapPin, Check, X, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
+import { Briefcase, Clock, MapPin, X, CheckCircle2, Loader2 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
@@ -31,6 +31,7 @@ import {
 } from '@/components/helpers/HelperSubscriptionPlanModal';
 import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/HelperProfileCompletionBar';
 import { HelperSidebarDisclosure } from '@/components/helpers/HelperSidebarDisclosure';
+import { HelperCreditsWalletCard } from '@/components/helpers/HelperCreditsWalletCard';
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
 import { SkillsProfileModal } from '@/components/helpers/profile-setup/ProfileSetupModals';
@@ -56,22 +57,6 @@ function formatSubscriptionBillingDate(iso: string | undefined, language: string
   const d = new Date(`${iso}T12:00:00`);
   const loc = language === 'fr' ? 'fr-CA' : language === 'pt' ? 'pt-BR' : 'en-CA';
   return d.toLocaleDateString(loc, { month: 'long', day: 'numeric', year: 'numeric' });
-}
-
-function sidebarBenefitsForTier(
-  tier: HelperSubscriptionTier,
-  t: (key: string, options?: Record<string, string | number>) => string,
-): string[] {
-  switch (tier) {
-    case 'BASIC':
-      return [1, 2, 3, 4, 5, 6].map((n) => t(`helper_dashboard.subscription_basic_${n}`));
-    case 'ELITE':
-      return [1, 2, 3, 4, 5, 6, 7, 8].map((n) => t(`helper_dashboard.subscription_elite_${n}`));
-    case 'PRO_HELP':
-      return [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => t(`helper_dashboard.subscription_pro_help_${n}`));
-    default:
-      return [];
-  }
 }
 
 export default function HelperDashboard() {
@@ -204,15 +189,10 @@ export default function HelperDashboard() {
     else if (key === 'skillsSelected') setProfileSetupModal('skills');
   }, []);
 
-  const [showScoreModal, setShowScoreModal] = useState(false);
   const [showIdeaModal, setShowIdeaModal] = useState(false);
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
 
   const helperTier: HelperSubscriptionTier = me.subscriptionTier ?? 'BASIC';
-  const subscriptionBenefitLines = React.useMemo(
-    () => sidebarBenefitsForTier(helperTier, t),
-    [helperTier, t],
-  );
   const planNextBillingLabel =
     helperTier === 'BASIC'
       ? null
@@ -279,7 +259,7 @@ export default function HelperDashboard() {
 
   const { jobs, applyForJob, getHelperApplications, upcomingJobs, updateUpcomingWorkflow, updateApplicationStatus, dataLoading } = useAppData();
   const { showToast } = useToast();
-  const { wallet, transactions: creditTransactions, unlocks } = useCredits();
+  const { wallet, transactions: creditTransactions, unlocks, loading: creditsLoading } = useCredits();
 
   const [upcomingModalJob, setUpcomingModalJob] = useState<UpcomingJob | null>(null);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
@@ -308,6 +288,7 @@ export default function HelperDashboard() {
     helperApplications.filter((a) => a.status !== 'cancelled').map((a) => a.jobId),
   );
   const creditBalance = wallet?.balance ?? 0;
+  const goToCredits = React.useCallback(() => navigate(ROUTES.helperCredits), [navigate]);
   const creditsUsedThisMonth = React.useMemo(() => {
     const now = new Date();
     return creditTransactions
@@ -479,102 +460,6 @@ export default function HelperDashboard() {
         </div>
       )}
 
-      {/* Score Modal */}
-      {showScoreModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowScoreModal(false)}>
-           <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                 <div>
-                   <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Star className="w-6 h-6 text-yellow-500 fill-yellow-500" /> {t('helper_dashboard.score_modal_title')}</h3>
-                   <p className="text-sm text-gray-500 font-medium">{t('helper_dashboard.score_modal_subtitle')}</p>
-                 </div>
-                 <button onClick={() => setShowScoreModal(false)} className="p-2 bg-gray-100 hover:bg-gray-200 hover:text-gray-900 rounded-full text-gray-500 transition-colors">
-                   <X className="w-5 h-5" />
-                 </button>
-              </div>
-              <div className="p-6 overflow-y-auto hide-scrollbar">
-                 <div className="flex flex-col md:flex-row items-center gap-6 mb-8 p-6 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-3xl shadow-lg relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-[100px] pointer-events-none"></div>
-                    <div className="w-32 h-32 relative flex items-center justify-center shrink-0">
-                       <svg className="w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 36 36">
-                          <path className="text-white/20" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3"/>
-                          <path className="text-yellow-400" strokeDasharray="75, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-                       </svg>
-                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-3xl font-black">75</span>
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-blue-200">{t('helper_dashboard.score_points_label')}</span>
-                       </div>
-                    </div>
-                    <div className="flex-1 text-center md:text-left z-10">
-                       <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-full text-white text-xs font-bold uppercase tracking-wider mb-2 border border-white/20">
-                          <ShieldCheck className="w-3.5 h-3.5" /> {t('helper_dashboard.trusted_level_score')}
-                       </div>
-                       <h2 className="text-2xl font-bold mb-1">{t('helper_dashboard.score_encourage_title', { name: me.name.split(' ')[0] || me.name })}</h2>
-                       <p className="text-blue-100 text-sm font-medium leading-relaxed">
-                          {t('helper_dashboard.score_encourage_line1')}{' '}
-                          <strong className="text-white">{t('helper_badges.pro_helper')}</strong>
-                          {t('helper_dashboard.score_encourage_line2')}
-                       </p>
-                    </div>
-                 </div>
-
-                 <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Icons.Activity className="w-4 h-4 text-gray-400" /> {t('helper_dashboard.score_section_performance')}</h4>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                    <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl">
-                       <div className="flex justify-between items-center mb-2">
-                         <span className="text-sm font-bold text-gray-700">{t('helper_dashboard.score_metric_reviews')}</span>
-                         <span className="text-sm font-black text-gray-900">98%</span>
-                       </div>
-                       <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div className="bg-green-500 h-1.5 rounded-full" style={{ width: '98%' }}></div>
-                       </div>
-                    </div>
-                    <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl">
-                       <div className="flex justify-between items-center mb-2">
-                         <span className="text-sm font-bold text-gray-700">{t('helper_dashboard.score_metric_response_rate')}</span>
-                         <span className="text-sm font-black text-gray-900">100%</span>
-                       </div>
-                       <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: '100%' }}></div>
-                       </div>
-                    </div>
-                    <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl">
-                       <div className="flex justify-between items-center mb-2">
-                         <span className="text-sm font-bold text-gray-700">{t('helper_dashboard.score_metric_reliability')}</span>
-                         <span className="text-sm font-black text-gray-900">95%</span>
-                       </div>
-                       <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div className="bg-yellow-500 h-1.5 rounded-full" style={{ width: '95%' }}></div>
-                       </div>
-                    </div>
-                    <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl">
-                       <div className="flex justify-between items-center mb-2">
-                         <span className="text-sm font-bold text-gray-700">{t('helper_dashboard.score_metric_response_time')}</span>
-                         <span className="text-sm font-black text-gray-900">&lt; 5 min</span>
-                       </div>
-                       <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: '90%' }}></div>
-                       </div>
-                    </div>
-                 </div>
-
-                 <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Icons.Award className="w-4 h-4 text-gray-400" /> {t('helper_dashboard.score_badges_title')}</h4>
-                 <div className="flex flex-wrap gap-3">
-                    <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-100 text-yellow-800 px-3 py-2 rounded-xl text-sm font-bold shadow-sm">
-                       <Icons.Zap className="w-4 h-4 text-yellow-500" /> {t('helper_dashboard.badge_quick_reply')}
-                    </div>
-                    <div className="flex items-center gap-2 bg-purple-50 border border-purple-100 text-purple-800 px-3 py-2 rounded-xl text-sm font-bold shadow-sm">
-                       <Icons.TrendingUp className="w-4 h-4 text-purple-500" /> {t('helper_dashboard.badge_trending')}
-                    </div>
-                    <div className="flex items-center gap-2 bg-green-50 border border-green-100 text-green-800 px-3 py-2 rounded-xl text-sm font-bold shadow-sm">
-                       <Icons.CheckCircle2 className="w-4 h-4 text-green-500" /> {t('helper_dashboard.badge_super_reliable')}
-                    </div>
-                 </div>
-
-              </div>
-           </div>
-        </div>
-      )}
 
       {planModal ? (
         <HelperSubscriptionPlanModal
@@ -860,115 +745,19 @@ export default function HelperDashboard() {
             </HelperSidebarDisclosure>
             ) : null}
 
-            <HelperSidebarDisclosure storageKey="plan" title={t('helper_dashboard.sidebar_acc_plan')}>
-              <div className="space-y-3">
-                <div className="rounded-lg border border-slate-200/90 bg-white p-3 shadow-sm space-y-2.5">
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
-                      {t('helper_dashboard.plan_current')}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-sm text-slate-900 leading-tight">
-                        {t(`helper_dashboard.subscription_plan_name_${helperTier}`)}
-                      </span>
-                      <HelperPlanBadge tier={helperTier} size="sm" />
-                    </div>
-                  </div>
-                  <div className="text-[11px] text-slate-600 leading-snug">
-                    <span className="font-semibold text-slate-500">{t('helper_dashboard.subscription_next_billing')}</span>{' '}
-                    {helperTier === 'BASIC' ? (
-                      <span className="font-medium text-slate-800">{t('helper_dashboard.subscription_no_billing')}</span>
-                    ) : (
-                      <span className="font-medium text-slate-800">
-                        {formatSubscriptionBillingDate(me.nextBillingDate, language)}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                      {t('helper_dashboard.subscription_benefits_heading')}
-                    </div>
-                    <ul className="space-y-1 text-[11px] text-slate-700 font-medium leading-snug max-h-[6.5rem] overflow-y-auto hide-scrollbar">
-                      {subscriptionBenefitLines.map((line, i) => (
-                        <li key={i} className="flex gap-2">
-                          <Check className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" strokeWidth={2.5} />
-                          <span>{line}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="flex flex-col gap-1.5 pt-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setPlanModal('current')}
-                      className="w-full py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-[11px] font-bold text-center hover:bg-slate-50 transition-colors"
-                    >
-                      {t('helper_dashboard.subscription_manage')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPlanModal('choose')}
-                      className="w-full py-2 rounded-lg bg-slate-900 text-white text-[11px] font-bold hover:bg-black transition-colors"
-                    >
-                      {t('helper_dashboard.subscription_upgrade')}
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowScoreModal(true)}
-                  className="relative w-full overflow-hidden bg-white p-3 border border-slate-100 rounded-lg shadow-sm hover:border-sky-200 hover:shadow transition-colors cursor-pointer text-left"
-                >
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <div className="p-1 bg-sky-50 rounded-md text-sky-600">
-                      <Star className="w-3.5 h-3.5 fill-sky-500 text-sky-500" />
-                    </div>
-                    <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wide truncate">
-                      {t('helper_dashboard.stat_score_label')}
-                    </span>
-                  </div>
-                  <HelperPlanBadge tier={helperTier} size="sm" />
-                  <div className="w-full bg-slate-100 rounded-full h-1 mt-1 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 h-full bg-sky-500 rounded-full w-3/4" />
-                  </div>
-                  <span className="text-[9px] text-slate-500 font-medium block mt-1 line-clamp-2">
-                    {t('helper_dashboard.mvp_score_cta')}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPlanModal('choose')}
-                  className="w-full p-3 rounded-lg border border-indigo-200/80 bg-gradient-to-br from-indigo-50/90 via-white to-violet-50/50 hover:border-indigo-300 transition-colors cursor-pointer text-left relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-indigo-200 shadow-sm"
-                >
-                  <div className="flex items-start gap-2.5 mb-2 relative z-10 w-full min-w-0">
-                    <div className="bg-gradient-to-br from-indigo-600 to-violet-600 p-2 rounded-lg shrink-0 text-white shadow-sm">
-                      <Icons.Crown className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="font-bold text-indigo-950 text-xs tracking-tight block leading-tight">
-                        {t('helper_dashboard.membership_promo_title')}
-                      </span>
-                      <span className="text-[10px] font-bold text-indigo-700 mt-0.5 block">
-                        {t('helper_dashboard.membership_promo_price')}
-                      </span>
-                    </div>
-                  </div>
-                  <ul className="relative z-10 space-y-1 text-[10px] text-indigo-900/90 font-medium leading-snug mb-2">
-                    {[1, 2, 3].map((n) => (
-                      <li key={n} className="flex gap-1.5 items-start">
-                        <Icons.Check className="w-3 h-3 text-emerald-600 shrink-0 mt-0.5" strokeWidth={3} />
-                        <span>{t(`helper_dashboard.membership_promo_f${n}`)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <span className="relative z-10 inline-flex w-full items-center justify-center rounded-lg bg-indigo-600 text-white text-[11px] font-bold py-2 hover:bg-indigo-700 transition-colors">
-                    {t('helper_dashboard.membership_promo_cta')}
-                  </span>
-                </button>
+            {UI_VISIBILITY.helperCredits ? (
+              <div className="hidden md:block shrink-0 min-w-0">
+                <HelperCreditsWalletCard
+                  balance={creditBalance}
+                  usedThisMonth={creditsUsedThisMonth}
+                  unlocksCount={unlocks.length}
+                  loading={creditsLoading}
+                  compact
+                  t={t}
+                  onBuyCredits={goToCredits}
+                />
               </div>
-            </HelperSidebarDisclosure>
+            ) : null}
 
             <HelperSidebarDisclosure storageKey="skills" title={t('helper_dashboard.sidebar_acc_skills')}>
               <div className="space-y-1.5">
@@ -1060,42 +849,16 @@ export default function HelperDashboard() {
           <HelperStatsStrip dataLoading={dataLoading} stats={helperMvpStats} t={t} />
 
           {UI_VISIBILITY.helperCredits ? (
-          <div className="mb-4 rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                  <Icons.Coins className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-xs font-black uppercase tracking-wide text-slate-400">{t('helper_dashboard.credits_label')}</p>
-                  <p className="text-2xl font-black text-slate-950">{creditBalance}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-center sm:min-w-[220px]">
-                <div className="rounded-xl bg-slate-50 px-3 py-2">
-                  <p className="text-lg font-black text-slate-900">{creditsUsedThisMonth}</p>
-                  <p className="text-[11px] font-bold text-slate-500">{t('helper_dashboard.credits_used_month')}</p>
-                </div>
-                <div className="rounded-xl bg-slate-50 px-3 py-2">
-                  <p className="text-lg font-black text-slate-900">{unlocks.length}</p>
-                  <p className="text-[11px] font-bold text-slate-500">{t('helper_dashboard.unlocked_count')}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate(ROUTES.helperCredits)}
-                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white hover:bg-black"
-              >
-                <Icons.CreditCard className="h-4 w-4" />
-                {t('helper_dashboard.buy_credits')}
-              </button>
+            <div className="md:hidden mb-4 min-w-0">
+              <HelperCreditsWalletCard
+                balance={creditBalance}
+                usedThisMonth={creditsUsedThisMonth}
+                unlocksCount={unlocks.length}
+                loading={creditsLoading}
+                t={t}
+                onBuyCredits={goToCredits}
+              />
             </div>
-            {creditBalance <= 5 ? (
-              <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900">
-                {t('helper_dashboard.low_credit_alert')}
-              </p>
-            ) : null}
-          </div>
           ) : null}
 
           {/* Job Categories Filter & Tabs */}

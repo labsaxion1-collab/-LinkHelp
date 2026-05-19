@@ -59,7 +59,7 @@ export async function fetchChatConversationSummaries(userId: string): Promise<Ch
     return [];
   }
 
-  const rows = (data ?? []) as ConvSelectRow[];
+  const rows = (data ?? []) as unknown as ConvSelectRow[];
   if (rows.length === 0) return [];
 
   const peerIds = rows.map((r) => (r.client_id === userId ? r.helper_id : r.client_id));

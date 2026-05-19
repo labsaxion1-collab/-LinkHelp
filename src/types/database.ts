@@ -148,3 +148,48 @@ export type UpcomingJobRow = {
   workflow_status: string;
   created_at: string;
 };
+
+export type CreditWalletRow = {
+  id: string;
+  helper_id: string;
+  balance: number;
+  total_purchased: number;
+  total_bonus: number;
+  total_spent: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreditTransactionRow = {
+  id: string;
+  helper_id: string;
+  type: string;
+  amount: number;
+  balance_after: number;
+  related_opportunity_id: string | null;
+  related_payment_id: string | null;
+  description: string | null;
+  created_at: string;
+};
+
+export type OpportunityUnlockRow = {
+  id: string;
+  opportunity_id: string;
+  helper_id: string;
+  credits_spent: number;
+  status: string;
+  unlocked_at: string;
+  refund_eligible: boolean;
+  refunded_at: string | null;
+  created_at: string;
+};
+
+export type CreditPackageRow = {
+  id: string;
+  name: string;
+  credits: number;
+  price_cad: number;
+  active: boolean;
+  highlight_label: string | null;
+  created_at: string;
+};

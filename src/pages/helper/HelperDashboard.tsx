@@ -13,6 +13,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { useAppData, type UpcomingJob } from '@/context/AppDataContext';
 import { useToast } from '@/context/ToastContext';
+import { useCredits } from '@/context/CreditContext';
+import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { UpcomingJobsSidebar } from '@/components/helpers/UpcomingJobsSidebar';
 import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailModal';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
@@ -20,7 +22,6 @@ import { resolveCategoryId, translateCategory } from '@/utils/translateCategory'
 import { formatJobSchedule } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { UI_VISIBILITY } from '@/config/uiVisibility';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import type { Application } from '@/types/application';
 import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
@@ -278,6 +279,7 @@ export default function HelperDashboard() {
 
   const { jobs, applyForJob, getHelperApplications, upcomingJobs, updateUpcomingWorkflow, updateApplicationStatus, dataLoading } = useAppData();
   const { showToast } = useToast();
+  const { wallet, transactions: creditTransactions, unlocks } = useCredits();
 
   const [upcomingModalJob, setUpcomingModalJob] = useState<UpcomingJob | null>(null);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
@@ -305,6 +307,16 @@ export default function HelperDashboard() {
   const appliedJobIds = new Set(
     helperApplications.filter((a) => a.status !== 'cancelled').map((a) => a.jobId),
   );
+  const creditBalance = wallet?.balance ?? 0;
+  const creditsUsedThisMonth = React.useMemo(() => {
+    const now = new Date();
+    return creditTransactions
+      .filter((tx) => {
+        const d = new Date(tx.createdAt);
+        return tx.type === 'OPPORTUNITY_UNLOCK' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      })
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  }, [creditTransactions]);
 
   const helperMvpStats = React.useMemo((): HelperStatsStripModel => {
     const apps = helperApplications.filter((a) => a.status !== 'cancelled');
@@ -1046,6 +1058,45 @@ export default function HelperDashboard() {
           ) : null}
 
           <HelperStatsStrip dataLoading={dataLoading} stats={helperMvpStats} t={t} />
+
+          {UI_VISIBILITY.helperCredits ? (
+          <div className="mb-4 rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                  <Icons.Coins className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wide text-slate-400">{t('helper_dashboard.credits_label')}</p>
+                  <p className="text-2xl font-black text-slate-950">{creditBalance}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-center sm:min-w-[220px]">
+                <div className="rounded-xl bg-slate-50 px-3 py-2">
+                  <p className="text-lg font-black text-slate-900">{creditsUsedThisMonth}</p>
+                  <p className="text-[11px] font-bold text-slate-500">{t('helper_dashboard.credits_used_month')}</p>
+                </div>
+                <div className="rounded-xl bg-slate-50 px-3 py-2">
+                  <p className="text-lg font-black text-slate-900">{unlocks.length}</p>
+                  <p className="text-[11px] font-bold text-slate-500">{t('helper_dashboard.unlocked_count')}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.helperCredits)}
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white hover:bg-black"
+              >
+                <Icons.CreditCard className="h-4 w-4" />
+                {t('helper_dashboard.buy_credits')}
+              </button>
+            </div>
+            {creditBalance <= 5 ? (
+              <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900">
+                {t('helper_dashboard.low_credit_alert')}
+              </p>
+            ) : null}
+          </div>
+          ) : null}
 
           {/* Job Categories Filter & Tabs */}
           <div className="bg-white rounded-xl shadow-sm p-4 mb-4 border border-gray-200">

@@ -25,5 +25,6 @@ export const ROUTES = {
   notifications: '/notifications',
   map: '/map',
   payments: '/payments',
+  helperCredits: '/helper/credits',
   settings: '/settings',
 } as const;

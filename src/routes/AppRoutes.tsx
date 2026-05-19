@@ -19,6 +19,7 @@ const IdeasPage = lazy(() => import('@/pages/ideas/IdeasPage'));
 const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'));
 const LiveMapPage = lazy(() => import('@/pages/map/LiveMapPage'));
 const PaymentsPage = lazy(() => import('@/pages/payments/PaymentsPage'));
+const HelperCreditsPage = lazy(() => import('@/pages/helper/HelperCreditsPage'));
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 
 export function AppRoutes() {
@@ -45,6 +46,10 @@ export function AppRoutes() {
           <Route path={ROUTES.helperJobs} element={<HelperUpcomingJobsPage />} />
           <Route path="/helper/jobs/upcoming" element={<Navigate to={ROUTES.helperJobs} replace />} />
           <Route path={ROUTES.helperTraining} element={<HelperTrainingPage />} />
+          <Route
+            path={ROUTES.helperCredits}
+            element={UI_VISIBILITY.helperCredits ? <HelperCreditsPage /> : <Navigate to={ROUTES.helperDashboard} replace />}
+          />
 
           <Route path={ROUTES.messages} element={<MessagesPage />} />
           <Route

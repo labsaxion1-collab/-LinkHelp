@@ -1,0 +1,43 @@
+import type { Job } from '@/types/job';
+import type { CreditPackage } from '@/types/credits';
+
+export const HELPER_SIGNUP_BONUS_CREDITS = 10;
+
+export const CREDIT_PACKAGES: CreditPackage[] = [
+  { id: 'starter', name: 'Starter', credits: 20, priceCad: 15, active: true, highlightLabel: null, createdAt: 0 },
+  { id: 'plus', name: 'Plus', credits: 50, priceCad: 35, active: true, highlightLabel: 'Popular', createdAt: 0 },
+  { id: 'pro', name: 'Pro', credits: 120, priceCad: 70, active: true, highlightLabel: 'Melhor valor', createdAt: 0 },
+  { id: 'business', name: 'Business', credits: 250, priceCad: 130, active: true, highlightLabel: 'Business', createdAt: 0 },
+];
+
+const CATEGORY_BASE_PRICE: Record<string, number> = {
+  cleaning: 3,
+  moving: 5,
+  assembly: 5,
+  renovation: 5,
+  outdoor: 5,
+  automotive: 5,
+};
+
+export function estimateBudgetCad(value: string | null | undefined): number {
+  if (!value) return 0;
+  const nums = String(value)
+    .match(/\d+(?:[.,]\d+)?/g)
+    ?.map((n) => Number.parseFloat(n.replace(',', '.')))
+    .filter(Number.isFinite);
+  if (!nums?.length) return 0;
+  return Math.max(...nums);
+}
+
+export function calculateOpportunityCreditPrice(job: Pick<Job, 'category' | 'urgency' | 'value'>): number {
+  const budget = estimateBudgetCad(job.value);
+  if (budget >= 700) return 12;
+  if (job.urgency === 'high' || budget >= 300) return 8;
+  return CATEGORY_BASE_PRICE[job.category] ?? 5;
+}
+
+export function previewDescription(text: string, max = 92): string {
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  if (cleaned.length <= max) return cleaned;
+  return `${cleaned.slice(0, max).trim()}...`;
+}

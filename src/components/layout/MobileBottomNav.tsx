@@ -13,7 +13,7 @@ type Item =
 
 function navClass(active: boolean) {
   return clsx(
-    'flex flex-col items-center justify-center gap-0.5 py-2 px-1 rounded-xl min-h-[52px] touch-manipulation transition-colors',
+    'flex flex-col items-center justify-center py-2 px-1 rounded-xl min-h-[52px] touch-manipulation transition-colors',
     active ? 'text-primary-600 bg-primary-50/90' : 'text-gray-500 hover:text-gray-800 active:bg-gray-100',
   );
 }
@@ -65,9 +65,11 @@ export function MobileBottomNav() {
                 <NavLink
                   to={{ pathname: portfolioPath, hash: 'portfolio' }}
                   className={navClass(portfolioActive)}
+                  title={t(item.labelKey)}
+                  aria-label={t(item.labelKey)}
                 >
-                  <Icon className="w-[22px] h-[22px] shrink-0" strokeWidth={2.25} aria-hidden />
-                  <span className="text-[10px] font-bold leading-tight text-center truncate w-full">{t(item.labelKey)}</span>
+                  <Icon className="w-7 h-7 shrink-0" strokeWidth={2.2} aria-hidden />
+                  <span className="sr-only">{t(item.labelKey)}</span>
                 </NavLink>
               </li>
             );
@@ -75,9 +77,15 @@ export function MobileBottomNav() {
           const Icon = item.icon;
           return (
             <li key={item.to} className="flex-1 min-w-0">
-              <NavLink to={item.to} end={item.end} className={({ isActive }) => navClass(isActive)}>
-                <Icon className="w-[22px] h-[22px] shrink-0" strokeWidth={2.25} aria-hidden />
-                <span className="text-[10px] font-bold leading-tight text-center truncate w-full">{t(item.labelKey)}</span>
+              <NavLink
+                to={item.to}
+                end={item.end}
+                title={t(item.labelKey)}
+                aria-label={t(item.labelKey)}
+                className={({ isActive }) => navClass(isActive)}
+              >
+                <Icon className="w-7 h-7 shrink-0" strokeWidth={2.2} aria-hidden />
+                <span className="sr-only">{t(item.labelKey)}</span>
               </NavLink>
             </li>
           );

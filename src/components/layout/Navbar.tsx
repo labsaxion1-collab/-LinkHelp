@@ -35,9 +35,14 @@ export default function Navbar() {
 
   const isHelperNav =
     isHelperArea(location.pathname) || (pathImpliesAppMode(location.pathname) === null && mode === 'helper');
+  const helperTermsStorageKey = userId ? `linkhelp:helper-terms:${userId}` : '';
 
   const goHelperOrPrompt = () => {
-    if (profile && profile.helper_terms_accepted !== true) {
+    const acceptedLocally =
+      helperTermsStorageKey && typeof window !== 'undefined'
+        ? window.localStorage.getItem(helperTermsStorageKey) === 'true'
+        : false;
+    if (profile && profile.helper_terms_accepted !== true && !acceptedLocally) {
       setHelperTermsOpen(true);
       return;
     }
@@ -55,6 +60,9 @@ export default function Navbar() {
       showToast(t(err.messageKey, err.vars), 'error');
       if (import.meta.env.DEV && err.devRaw) console.info('[LinkHelp] updateProfile raw:', err.devRaw);
       return;
+    }
+    if (helperTermsStorageKey && typeof window !== 'undefined') {
+      window.localStorage.setItem(helperTermsStorageKey, 'true');
     }
     setHelperTermsOpen(false);
     setProfileOpen(false);

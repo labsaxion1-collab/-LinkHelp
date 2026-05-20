@@ -114,6 +114,26 @@ function buildProfileInsert(user: User): ProfileInsert {
   };
 }
 
+function missingProfileColumnName(error: { message?: string } | null | undefined): string | null {
+  const message = error?.message ?? '';
+  const match = message.match(/'([^']+)' column of 'profiles'/i);
+  return match?.[1] ?? null;
+}
+
+function withoutColumn<T extends Record<string, unknown>>(payload: T, column: string): T {
+  const next = { ...payload };
+  delete next[column];
+  if (column === 'helper_terms_accepted' || column === 'helper_terms_accepted_at') {
+    delete next.helper_terms_accepted;
+    delete next.helper_terms_accepted_at;
+  }
+  if (column === 'accepted_terms' || column === 'accepted_terms_at') {
+    delete next.accepted_terms;
+    delete next.accepted_terms_at;
+  }
+  return next;
+}
+
 /** Ensures a `profiles` row exists (RLS: insert own row). */
 async function ensureProfileFromUser(user: User): Promise<AuthProfile | null> {
   const sb = getSupabase();
@@ -127,7 +147,15 @@ async function ensureProfileFromUser(user: User): Promise<AuthProfile | null> {
     provider: user.app_metadata?.provider,
   });
 
-  const { data, error } = await sb.from('profiles').upsert(row, { onConflict: 'id' }).select('*').maybeSingle();
+  let { data, error } = await sb.from('profiles').upsert(row, { onConflict: 'id' }).select('*').maybeSingle();
+
+  const missingColumn = missingProfileColumnName(error);
+  if (missingColumn) {
+    const retryRow = withoutColumn(row as Record<string, unknown>, missingColumn) as ProfileInsert;
+    const retry = await sb.from('profiles').upsert(retryRow, { onConflict: 'id' }).select('*').maybeSingle();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (!error && data) {
     authDevLog('ensureProfileFromUser:upsert:ok', { userId: user.id });
@@ -582,11 +610,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...profilePatch,
       };
 
-      const { data, error } = await sb
+      let { data, error } = await sb
         .from('profiles')
         .upsert(upsertPayload, { onConflict: 'id' })
         .select('*')
         .maybeSingle();
+
+      const missingColumn = missingProfileColumnName(error);
+      if (missingColumn) {
+        const retryPayload = withoutColumn(upsertPayload as Record<string, unknown>, missingColumn) as Database['public']['Tables']['profiles']['Insert'];
+        const retry = await sb
+          .from('profiles')
+          .upsert(retryPayload, { onConflict: 'id' })
+          .select('*')
+          .maybeSingle();
+        data = retry.data;
+        error = retry.error;
+      }
+
       if (error) {
         authDevLog('updateProfile:error', {
           message: error.message,

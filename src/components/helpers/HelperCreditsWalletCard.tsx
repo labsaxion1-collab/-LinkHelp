@@ -2,6 +2,8 @@ import * as Icons from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { ROUTES } from '@/utils/constants';
+import { useLanguage } from '@/context/LanguageContext';
+import { formatLinkCredits } from '@/utils/formatLinkCredits';
 
 type Props = {
   balance: number;
@@ -22,7 +24,9 @@ export function HelperCreditsWalletCard({
   t,
   onBuyCredits,
 }: Props) {
-  const lowBalance = balance <= 5;
+  const { language } = useLanguage();
+  const balanceLabel = formatLinkCredits(balance, language);
+  const lowBalance = balance <= 500;
 
   if (compact) {
     return (
@@ -33,7 +37,7 @@ export function HelperCreditsWalletCard({
       >
         <Icons.Coins className="h-4 w-4 text-blue-600" />
         <span className="text-slate-500">{t('helper_dashboard.credits_label')}</span>
-        <span className="text-lg font-black tabular-nums text-slate-950">{loading ? '...' : balance}</span>
+        <span className="text-sm font-black tabular-nums text-slate-950">{loading ? '...' : balanceLabel}</span>
         {lowBalance ? <span className="h-2 w-2 rounded-full bg-amber-400" /> : null}
       </button>
     );
@@ -65,7 +69,7 @@ export function HelperCreditsWalletCard({
               'text-4xl',
             )}
           >
-            {loading ? '…' : balance}
+            {loading ? '…' : balanceLabel}
           </p>
           <p className="mt-1.5 text-[11px] font-medium leading-snug text-slate-600">
             {t('helper_dashboard.credits_wallet_sub')}

@@ -1,7 +1,10 @@
 import type { Job } from '@/types/job';
 import type { CreditPackage } from '@/types/credits';
 
-export const HELPER_SIGNUP_BONUS_CREDITS = 10;
+import { SIGNUP_BONUS_LC } from '@/config/onboardingRewards';
+
+export const HELPER_SIGNUP_BONUS_CREDITS = SIGNUP_BONUS_LC.helper;
+export const CLIENT_SIGNUP_BONUS_LC = SIGNUP_BONUS_LC.client;
 
 export const CREDIT_PACKAGES: CreditPackage[] = [
   { id: 'starter', name: 'Starter', credits: 20, priceCad: 15, active: true, highlightLabel: null, createdAt: 0 },

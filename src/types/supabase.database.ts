@@ -9,6 +9,7 @@ import type {
   MessageRow,
   NotificationRow,
   OpportunityUnlockRow,
+  UserBonusRewardRow,
   ProfileRow,
   RequestRow,
   ReviewRow,
@@ -103,6 +104,12 @@ export type Database = {
         Update: Partial<CreditPackageRow>;
         Relationships: [];
       };
+      user_bonus_rewards: {
+        Row: UserBonusRewardRow;
+        Insert: Record<string, unknown>;
+        Update: Partial<UserBonusRewardRow>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -118,6 +125,16 @@ export type Database = {
         Args: { p_helper_id: string; p_package_id: string; p_payment_id: string };
         Returns: unknown;
       };
+      grant_user_reward: {
+        Args: {
+          p_user_id: string;
+          p_reward_type: string;
+          p_amount: number | null;
+          p_description: string | null;
+        };
+        Returns: unknown;
+      };
+      ensure_client_signup_credits: { Args: { p_client_id: string }; Returns: number };
     };
     Enums: Record<string, never>;
   };

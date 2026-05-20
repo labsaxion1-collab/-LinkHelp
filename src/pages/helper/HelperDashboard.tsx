@@ -44,6 +44,7 @@ import {
 } from '@/utils/helperProfileSettings';
 import type { CompletionRowKey } from '@/utils/helperProfileCompletion';
 import { computeHelperProfileCompletion } from '@/utils/helperProfileCompletion';
+import { useOnboardingRewards } from '@/hooks/useOnboardingRewards';
 import { helperProfileSuggestionKeys } from '@/utils/helperProfileSuggestions';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
@@ -81,6 +82,7 @@ export default function HelperDashboard() {
   const { coords: helperCoords } = useUserLocation();
   const { session, profile, isConfigured, updateProfile, refreshProfile } = useAuth();
   const { toClient, modeSwitchBusy } = useModeSwitch();
+  const { evaluateProfileRewards } = useOnboardingRewards();
 
   useEffect(() => {
     const st = location.state as { openUpgrade?: boolean } | null;
@@ -156,7 +158,7 @@ export default function HelperDashboard() {
         throw new Error('SKILLS_SYNC');
       }
     },
-    [isConfigured, storageUserId, pushToast, t],
+    [isConfigured, storageUserId, pushToast, t, evaluateProfileRewards],
   );
 
   const handleAvatarSave = React.useCallback(
@@ -177,13 +179,14 @@ export default function HelperDashboard() {
         setProfileSettings((p) => ({ ...p, avatarDataUrl: publicUrl }));
         logMediaPicker('PROFILE UPDATED', publicUrl);
         pushToast(t('profile_setup.avatar_uploaded_ok'));
+        void evaluateProfileRewards({ avatarUrl: publicUrl, skillCount: profileSettings.skillIds.length });
       } catch (e) {
         const isAuthErr = Boolean(e && typeof e === 'object' && 'messageKey' in e);
         if (!isAuthErr) pushToast(t('profile_setup.avatar_save_error'));
         throw e;
       }
     },
-    [isConfigured, session?.user?.id, updateProfile, refreshProfile, pushToast, t],
+    [isConfigured, session?.user?.id, updateProfile, refreshProfile, pushToast, t, evaluateProfileRewards, profileSettings.skillIds.length],
   );
 
   const onCompletionRowClick = React.useCallback((key: CompletionRowKey) => {

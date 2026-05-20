@@ -16,6 +16,11 @@ import { CityRegionAutocomplete } from '@/components/common/CityRegionAutocomple
 import { ProfilePhoneField } from '@/components/profile/ProfilePhoneField';
 import type { QuebecPlace } from '@/data/quebecRegions';
 import { parseStoredPhone, validatePhoneNumber } from '@/utils/phoneFormat';
+import { ProfileRewardsProgress } from '@/components/rewards/ProfileRewardsProgress';
+import { useOnboardingRewards } from '@/hooks/useOnboardingRewards';
+import { fetchHelperSkills } from '@/services/supabase/helperSkillsRemote';
+import { formatLinkCredits } from '@/utils/formatLinkCredits';
+import { SIGNUP_BONUS_LC } from '@/config/onboardingRewards';
 
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
@@ -23,6 +28,8 @@ export default function SettingsPage() {
   const { mode } = useAppMode();
   const { toClient, toHelper, modeSwitchBusy } = useModeSwitch();
   const { showToast } = useToast();
+  const { evaluateProfileRewards } = useOnboardingRewards();
+  const [helperSkillCount, setHelperSkillCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
@@ -74,7 +81,18 @@ export default function SettingsPage() {
   };
 
   useEffect(() => () => revokeAvatarObjectUrl(), []);
+
+  useEffect(() => {
+    if (!session?.user?.id || profile?.role !== 'helper' || !isConfigured) {
+      setHelperSkillCount(0);
+      return;
+    }
+    void fetchHelperSkills(session.user.id).then((keys) => setHelperSkillCount(keys.length));
+  }, [session?.user?.id, profile?.role, isConfigured]);
+
   const authEmail = session?.user?.email?.trim() ?? '';
+  const signupBonusLc =
+    profile?.role === 'helper' ? SIGNUP_BONUS_LC.helper : SIGNUP_BONUS_LC.client;
 
   const saveAccount = async () => {
     const { countryId, nationalNumber } = parseStoredPhone(phone);
@@ -99,7 +117,15 @@ export default function SettingsPage() {
     });
     setSaving(false);
     if (err) showToast(t(err.messageKey, err.vars), 'error');
-    else showToast(t('app_pages.settings_saved'), 'success');
+    else {
+      showToast(t('app_pages.settings_saved'), 'success');
+      void evaluateProfileRewards({
+        avatarUrl: profile?.avatar_url,
+        bio: bio.trim() || null,
+        phone: phone?.trim() ? phone.trim() : null,
+        skillCount: helperSkillCount,
+      });
+    }
   };
 
   const sendPasswordReset = async () => {
@@ -168,6 +194,12 @@ export default function SettingsPage() {
       revokeAvatarObjectUrl();
       setAvatarSelectedFile(null);
       showToast(t('app_pages.settings_avatar_saved'), 'success');
+      void evaluateProfileRewards({
+        avatarUrl: publicUrl,
+        bio: bio.trim() || null,
+        phone: phone?.trim() ? phone.trim() : null,
+        skillCount: helperSkillCount,
+      });
     } catch (e) {
       const raw = formatStorageError(e);
       showToast(raw && raw !== 'NO_SUPABASE' ? raw : t('profile_setup.avatar_save_error'), 'error');
@@ -185,7 +217,18 @@ export default function SettingsPage() {
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">{t('app_pages.settings_title')}</h1>
           <p className="text-gray-500 font-medium mt-2 text-sm max-w-xl">{t('app_pages.settings_sub')}</p>
+          {isConfigured && profile ? (
+            <p className="mt-3 text-sm font-semibold text-blue-700">
+              {t('rewards.signup_balance', {
+                amount: formatLinkCredits(profile.credits ?? signupBonusLc, language),
+              })}
+            </p>
+          ) : null}
         </div>
+
+        {isConfigured && profile ? (
+          <ProfileRewardsProgress skillCount={helperSkillCount} />
+        ) : null}
 
         <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">

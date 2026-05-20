@@ -187,6 +187,14 @@ export type OpportunityUnlockRow = {
   created_at: string;
 };
 
+export type UserBonusRewardRow = {
+  id: string;
+  user_id: string;
+  reward_type: string;
+  amount: number;
+  created_at: string;
+};
+
 export type CreditPackageRow = {
   id: string;
   name: string;

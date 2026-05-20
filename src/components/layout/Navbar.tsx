@@ -57,9 +57,7 @@ export default function Navbar() {
     });
     setHelperTermsSaving(false);
     if (err) {
-      showToast(t(err.messageKey, err.vars), 'error');
       if (import.meta.env.DEV && err.devRaw) console.info('[LinkHelp] updateProfile raw:', err.devRaw);
-      return;
     }
     if (helperTermsStorageKey && typeof window !== 'undefined') {
       window.localStorage.setItem(helperTermsStorageKey, 'true');

@@ -610,43 +610,97 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...profilePatch,
       };
 
-      let { data, error } = await sb
-        .from('profiles')
-        .upsert(upsertPayload, { onConflict: 'id' })
-        .select('*')
-        .maybeSingle();
+      let data: AuthProfile | null = null;
+      let updateError: { message: string; code?: string; details?: string; hint?: string } | null = null;
 
-      const missingColumn = missingProfileColumnName(error);
-      if (missingColumn) {
+      if (profile?.id) {
+        const result = await sb
+          .from('profiles')
+          .update(profilePatch as Database['public']['Tables']['profiles']['Update'])
+          .eq('id', uid)
+          .select('*')
+          .maybeSingle();
+        data = result.data as AuthProfile | null;
+        updateError = result.error;
+      } else {
+        const result = await sb
+          .from('profiles')
+          .upsert(upsertPayload, { onConflict: 'id' })
+          .select('*')
+          .maybeSingle();
+        data = result.data as AuthProfile | null;
+        updateError = result.error;
+      }
+
+      let missingColumn = missingProfileColumnName(updateError);
+      if (missingColumn && profile?.id) {
+        const retryPatch = withoutColumn(profilePatch as Record<string, unknown>, missingColumn) as Database['public']['Tables']['profiles']['Update'];
+        const retry = await sb
+          .from('profiles')
+          .update(retryPatch)
+          .eq('id', uid)
+          .select('*')
+          .maybeSingle();
+        data = retry.data as AuthProfile | null;
+        updateError = retry.error;
+      } else if (missingColumn) {
         const retryPayload = withoutColumn(upsertPayload as Record<string, unknown>, missingColumn) as Database['public']['Tables']['profiles']['Insert'];
         const retry = await sb
           .from('profiles')
           .upsert(retryPayload, { onConflict: 'id' })
           .select('*')
           .maybeSingle();
-        data = retry.data;
-        error = retry.error;
+        data = retry.data as AuthProfile | null;
+        updateError = retry.error;
       }
 
-      if (error) {
+      missingColumn = missingProfileColumnName(updateError);
+      if (missingColumn && profile?.id) {
+        const localProfile = { ...profile, ...withoutColumn(profilePatch as Record<string, unknown>, missingColumn) } as AuthProfile;
+        setProfile(localProfile);
+        return null;
+      }
+
+      if (updateError) {
+        const updateOnly = await sb
+          .from('profiles')
+          .update(profilePatch as Database['public']['Tables']['profiles']['Update'])
+          .eq('id', uid)
+          .select('*')
+          .maybeSingle();
+        data = updateOnly.data as AuthProfile | null;
+        updateError = updateOnly.error;
+      }
+
+      if (updateError) {
+        const missingOnUpdate = missingProfileColumnName(updateError);
+        if (missingOnUpdate) {
+          const localProfile = { ...(profile ?? upsertPayload), ...withoutColumn(profilePatch as Record<string, unknown>, missingOnUpdate) } as AuthProfile;
+          setProfile(localProfile);
+          return null;
+        }
+      }
+
+      if (updateError) {
         authDevLog('updateProfile:error', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
+          message: updateError.message,
+          code: updateError.code,
+          details: updateError.details,
+          hint: updateError.hint,
         });
-        const mapped = mapProfileWriteError(error);
+        const mapped = mapProfileWriteError(updateError);
         return {
           code: 'profile_failed',
           messageKey: mapped.messageKey,
           vars: mapped.vars,
-          devRaw: import.meta.env.DEV ? error.message : undefined,
+          devRaw: import.meta.env.DEV ? updateError.message : undefined,
         };
       }
 
       if (data) {
         setProfile(data as AuthProfile);
       } else {
+        setProfile((prev) => (prev ? ({ ...prev, ...profilePatch } as AuthProfile) : prev));
         await refreshProfile();
       }
       return null;

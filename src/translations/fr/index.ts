@@ -512,6 +512,7 @@ export const fr = {
     insight_2_desc: 'Un profil complet rassure les clients au moment du choix.',
     nav_home: 'Accueil',
     nav_opportunities: 'Opportunités',
+    nav_performance: 'Performance',
     nav_credits: 'Crédits',
     nav_applications: 'Mes candidatures',
     nav_active_services: 'Services actifs',
@@ -1320,6 +1321,7 @@ export const fr = {
     description_contact_warning:
       'Pour votre sécurité, ne partagez pas de téléphone, e-mail ou liens dans la description. La communication se fait via LinkHelp.',
     publish_help: 'Ouvrir une demande d’aide',
+    publish_error: 'Impossible d’ouvrir cette demande pour le moment. Vérifiez les détails et réessayez.',
     moving_property_type: 'Type de logement',
     moving_property_house: 'Maison',
     moving_property_apartment: 'Appartement',
@@ -1484,3 +1486,4 @@ export const fr = {
     back_home: "Retour à l'accueil",
   },
 };
+

@@ -151,6 +151,23 @@ begin
 end;
 $$;
 
+create or replace function public.get_wallet_balance(p_helper_id uuid)
+returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  w public.credit_wallets;
+begin
+  w := public.ensure_helper_credit_wallet(p_helper_id);
+  if auth.uid() <> p_helper_id and coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') <> 'admin' then
+    raise exception 'NOT_ALLOWED';
+  end if;
+  return w.balance;
+end;
+$$;
+
 create or replace function public.unlock_opportunity_with_credits(p_opportunity_id uuid)
 returns jsonb
 language plpgsql

@@ -511,6 +511,7 @@ export const pt = {
     insight_2_desc: 'Um perfil completo ajuda o cliente a escolher você com confiança.',
     nav_home: 'Início',
     nav_opportunities: 'Oportunidades',
+    nav_performance: 'Performance',
     nav_credits: 'Créditos',
     nav_applications: 'Minhas candidaturas',
     nav_active_services: 'Serviços ativos',
@@ -1319,6 +1320,7 @@ export const pt = {
     description_contact_warning:
       'Por segurança, não compartilhe telefone, email ou links na descrição. A comunicação acontece pelo LinkHelp.',
     publish_help: 'Abrir chamado de ajuda',
+    publish_error: 'Não foi possível abrir o chamado agora. Confira os dados e tente novamente.',
     moving_property_type: 'Tipo de imóvel',
     moving_property_house: 'Casa',
     moving_property_apartment: 'Apartamento',
@@ -1483,3 +1485,4 @@ export const pt = {
     back_home: 'Voltar ao início',
   },
 };
+

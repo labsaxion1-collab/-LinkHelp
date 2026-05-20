@@ -65,6 +65,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const [cleaningHouseFloors, setCleaningHouseFloors] = useState('');
   const [cleaningAptFloor, setCleaningAptFloor] = useState('');
   const [cleaningHasElevator, setCleaningHasElevator] = useState('');
+  const [publishing, setPublishing] = useState(false);
 
   const scheduleInput = useMemo(
     () => ({ priority, preferredDateMode, preferredDateIso, preferredTimeWindow, preferredTimeSpecific }),
@@ -124,6 +125,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setCleaningHouseFloors('');
     setCleaningAptFloor('');
     setCleaningHasElevator('');
+    setPublishing(false);
   };
 
   const handleClose = () => {
@@ -136,7 +138,9 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     reset();
   }, [open, initialCategory, initialSubcategory]);
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
+    if (publishing) return;
+    setPublishing(true);
     const yn = (v: string) => (v === 'yes' ? t('create_modal.moving_yes') : v === 'no' ? t('create_modal.moving_no') : '—');
     let extra = '';
     if (selectedCategory === 'moving') {
@@ -178,29 +182,35 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     const subKey = selectedSubcategory ? `service_subs.${selectedCategory}.${selectedSubcategory}` : '';
     const subLabel = subKey ? t(subKey) : '';
     const titleLabel = subLabel && subLabel !== subKey ? subLabel : categoryLabel;
-    createJob({
-      clientId: me.id,
-      clientName: me.name,
-      clientAvatar: me.avatar,
-      title: `${categoryLabel}: ${titleLabel}`,
-      description: fullDescription,
-      category: selectedCategory,
-      subcategory: selectedSubcategory || null,
-      location: locationLabel,
-      address: addr.address || addr.display.trim() || null,
-      city: addr.city || null,
-      region: addr.region || null,
-      latitude: addr.latitude,
-      longitude: addr.longitude,
-      preferredDate: resolvePreferredDateIso(scheduleInput),
-      preferredTimeWindow: preferredTimeWindow || null,
-      preferredTime: preferredTimeSpecific.trim() || null,
-      date: buildJobDateLabel(scheduleInput),
-      value: finalBudgetHint || t('jobs.value_negotiable'),
-      urgency: jobUrgencyFromPriority(priority),
-    });
-    handleClose();
-    onPublished?.();
+    try {
+      await createJob({
+        clientId: me.id,
+        clientName: me.name,
+        clientAvatar: me.avatar,
+        title: `${categoryLabel}: ${titleLabel}`,
+        description: fullDescription,
+        category: selectedCategory,
+        subcategory: selectedSubcategory || null,
+        location: locationLabel,
+        address: addr.address || addr.display.trim() || null,
+        city: addr.city || null,
+        region: addr.region || null,
+        latitude: addr.latitude,
+        longitude: addr.longitude,
+        preferredDate: resolvePreferredDateIso(scheduleInput),
+        preferredTimeWindow: preferredTimeWindow || null,
+        preferredTime: preferredTimeSpecific.trim() || null,
+        date: buildJobDateLabel(scheduleInput),
+        value: finalBudgetHint || t('jobs.value_negotiable'),
+        urgency: jobUrgencyFromPriority(priority),
+      });
+      handleClose();
+      onPublished?.();
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : t('create_modal.publish_error'));
+      setPublishing(false);
+    }
   };
 
   if (!open) return null;
@@ -505,8 +515,14 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
             </button>
           )}
           {step === 'review' ? (
-            <button type="button" onClick={handlePublish} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-8 rounded-xl ml-auto flex items-center gap-2">
-              {t('create_modal.publish_help')} <Icons.Rocket className="w-5 h-5" />
+            <button
+              type="button"
+              disabled={publishing}
+              onClick={() => void handlePublish()}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-3.5 px-8 rounded-xl ml-auto flex items-center gap-2"
+            >
+              {publishing ? <Icons.Loader2 className="w-5 h-5 animate-spin" /> : <Icons.Rocket className="w-5 h-5" />}
+              {t('create_modal.publish_help')}
             </button>
           ) : step === 'category' ? (
             <span />

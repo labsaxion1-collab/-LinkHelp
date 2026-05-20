@@ -426,7 +426,7 @@ export default function ClientDashboard() {
 
         <main className="w-full min-w-0">
           <div className="mb-5 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-sm">
-            <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+            <div className="flex gap-2 overflow-x-auto md:overflow-visible hide-scrollbar">
               {[
                 { id: 'dashboard' as const, label: t('sidebar.dashboard'), icon: Icons.Grid, to: ROUTES.clientDashboard },
                 { id: 'my-helpers' as const, label: t('sidebar.my_helpers'), icon: Icons.Users, to: ROUTES.clientDashboard },
@@ -439,26 +439,36 @@ export default function ClientDashboard() {
                   <button
                     key={item.id}
                     type="button"
+                    title={item.label}
+                    aria-label={item.label}
                     onClick={() => {
                       navigate(item.to);
                       setActiveSidebarTab(item.id);
                     }}
-                    className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-bold transition-colors ${
+                    className={`group relative inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 md:h-12 md:w-12 md:gap-0 md:rounded-2xl md:px-0 ${
                       active ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
-                    {item.label}
+                    <Icon className="h-4 w-4 md:h-5 md:w-5" />
+                    <span className="md:sr-only">{item.label}</span>
+                    <span className="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-20 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-bold text-white opacity-0 shadow-lg transition-opacity md:block md:group-hover:opacity-100 md:group-focus-visible:opacity-100">
+                      {item.label}
+                    </span>
                   </button>
                 );
               })}
               <button
                 type="button"
+                title={t('sidebar.switch_helper')}
+                aria-label={t('sidebar.switch_helper')}
                 onClick={() => switchToHelper()}
-                className="ml-auto inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-600 hover:bg-slate-100"
+                className="group relative ml-auto inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 md:h-12 md:w-12 md:gap-0 md:rounded-2xl md:px-0"
               >
-                <Icons.RefreshCw className="h-4 w-4" />
-                {t('sidebar.switch_helper')}
+                <Icons.RefreshCw className="h-4 w-4 md:h-5 md:w-5" />
+                <span className="md:sr-only">{t('sidebar.switch_helper')}</span>
+                <span className="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-20 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-bold text-white opacity-0 shadow-lg transition-opacity md:block md:group-hover:opacity-100 md:group-focus-visible:opacity-100">
+                  {t('sidebar.switch_helper')}
+                </span>
               </button>
             </div>
           </div>
@@ -483,39 +493,57 @@ export default function ClientDashboard() {
               </button>
             </div>
 
-            <div className="space-y-5">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {SERVICE_CATEGORIES.map((cat) => {
                 const IconComponent = (Icons as any)[cat.icon] || Icons.HelpCircle;
+                const quickSubs = cat.subKeys.slice(0, 3);
+                const remaining = Math.max(0, cat.subKeys.length - quickSubs.length);
                 return (
-                  <section key={cat.id} className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                    <div className="mb-3 flex items-center justify-between gap-3">
+                  <section key={cat.id} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 transition-all hover:border-blue-200 hover:bg-blue-50/50 hover:shadow-sm">
+                    <div className="mb-3 flex items-center gap-3">
                       <button
                         type="button"
                         onClick={() => openCreateModal(cat.id)}
-                        className="group inline-flex min-w-0 items-center gap-3 text-left"
+                        className="group inline-flex min-w-0 flex-1 items-center gap-3 text-left"
                       >
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 group-hover:text-blue-700">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 group-hover:text-blue-700">
                           <IconComponent className="h-5 w-5" />
                         </span>
                         <span className="min-w-0">
-                          <span className="block truncate text-base font-black text-slate-950">{t(`categories.${cat.id}`)}</span>
+                          <span className="block truncate text-sm font-black text-slate-950">{t(`categories.${cat.id}`)}</span>
                           <span className="block text-xs font-bold text-blue-600">{t('client_dashboard.category_hub_cta')}</span>
                         </span>
                       </button>
-                      <Icons.ChevronRight className="h-5 w-5 shrink-0 text-slate-300" />
+                      <button
+                        type="button"
+                        onClick={() => openCreateModal(cat.id)}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-400 ring-1 ring-slate-200 hover:text-blue-700"
+                        aria-label={t(`categories.${cat.id}`)}
+                      >
+                        <Icons.ChevronRight className="h-5 w-5" />
+                      </button>
                     </div>
 
-                    <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                      {cat.subKeys.map((subKey) => (
+                    <div className="flex flex-wrap gap-2">
+                      {quickSubs.map((subKey) => (
                         <button
                           key={subKey}
                           type="button"
                           onClick={() => openCreateModal(cat.id, subKey)}
-                          className="min-h-[52px] min-w-[180px] snap-start rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-bold text-slate-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                          className="min-h-[38px] rounded-full border border-slate-200 bg-white px-3 py-2 text-left text-xs font-bold text-slate-700 shadow-sm transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                         >
                           {t(`service_subs.${cat.id}.${subKey}`)}
                         </button>
                       ))}
+                      {remaining > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => openCreateModal(cat.id)}
+                          className="min-h-[38px] rounded-full border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 hover:bg-blue-100"
+                        >
+                          +{remaining}
+                        </button>
+                      ) : null}
                     </div>
                   </section>
                 );

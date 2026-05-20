@@ -12,13 +12,13 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icons/pwa-192.png', 'icons/pwa-512.png'],
+        includeAssets: ['icons/pwa-192.png', 'icons/pwa-512.png', 'icons/linkhelp-mark.svg'],
         manifest: {
           name: 'LinkHelp',
           short_name: 'LinkHelp',
           description: 'Local services marketplace for helpers and clients.',
-          theme_color: '#2563eb',
-          background_color: '#ffffff',
+          theme_color: '#1565ff',
+          background_color: '#07111f',
           display: 'standalone',
           orientation: 'portrait-primary',
           scope: '/',

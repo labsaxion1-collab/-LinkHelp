@@ -109,6 +109,7 @@ export type Database = {
       unlock_opportunity_with_credits: { Args: { p_opportunity_id: string }; Returns: unknown };
       refund_opportunity_unlock: { Args: { p_unlock_id: string }; Returns: unknown };
       ensure_helper_credit_wallet: { Args: { p_helper_id: string }; Returns: unknown };
+      get_wallet_balance: { Args: { p_helper_id: string }; Returns: number };
       admin_adjust_helper_credits: {
         Args: { p_helper_id: string; p_amount: number; p_description: string };
         Returns: unknown;

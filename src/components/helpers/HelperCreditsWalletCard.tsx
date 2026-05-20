@@ -24,21 +24,36 @@ export function HelperCreditsWalletCard({
 }: Props) {
   const lowBalance = balance <= 5;
 
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={onBuyCredits}
+        className="mb-3 inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-blue-100 bg-white px-3 text-left text-sm font-bold text-slate-700 shadow-sm hover:border-blue-200 hover:bg-blue-50"
+      >
+        <Icons.Coins className="h-4 w-4 text-blue-600" />
+        <span className="text-slate-500">{t('helper_dashboard.credits_label')}</span>
+        <span className="text-lg font-black tabular-nums text-slate-950">{loading ? '...' : balance}</span>
+        {lowBalance ? <span className="h-2 w-2 rounded-full bg-amber-400" /> : null}
+      </button>
+    );
+  }
+
   return (
     <div
       className={clsx(
         'rounded-xl border border-blue-100/90 bg-gradient-to-br from-white via-blue-50/25 to-indigo-50/20 shadow-sm ring-1 ring-slate-100/70',
-        compact ? 'p-3' : 'p-4',
+        'p-4',
       )}
     >
       <div className="flex items-start gap-2.5">
         <span
           className={clsx(
             'flex shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm',
-            compact ? 'h-9 w-9' : 'h-10 w-10',
+            'h-10 w-10',
           )}
         >
-          <Icons.Coins className={compact ? 'h-4 w-4' : 'h-5 w-5'} />
+          <Icons.Coins className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-600/90">
@@ -47,7 +62,7 @@ export function HelperCreditsWalletCard({
           <p
             className={clsx(
               'font-black tabular-nums text-slate-950 leading-none mt-1',
-              compact ? 'text-3xl' : 'text-4xl',
+              'text-4xl',
             )}
           >
             {loading ? '…' : balance}
@@ -75,7 +90,7 @@ export function HelperCreditsWalletCard({
         </p>
       ) : null}
 
-      <div className={clsx('mt-3 flex flex-col gap-2', compact ? '' : 'sm:flex-row sm:items-center')}>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
         <button
           type="button"
           onClick={onBuyCredits}

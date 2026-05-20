@@ -511,6 +511,7 @@ export const en = {
     insight_2_desc: 'A complete profile helps clients choose you with confidence.',
     nav_home: 'Home',
     nav_opportunities: 'Opportunities',
+    nav_performance: 'Performance',
     nav_credits: 'Credits',
     nav_applications: 'My applications',
     nav_active_services: 'Active services',
@@ -1317,6 +1318,7 @@ export const en = {
     description_contact_warning:
       'For your safety, do not share phone numbers, email, or links in the description. Communication stays on LinkHelp.',
     publish_help: 'Open help request',
+    publish_error: 'We could not open this request right now. Check the details and try again.',
     moving_property_type: 'Property type',
     moving_property_house: 'House',
     moving_property_apartment: 'Apartment',
@@ -1480,3 +1482,4 @@ export const en = {
     back_home: 'Back to home',
   },
 };
+

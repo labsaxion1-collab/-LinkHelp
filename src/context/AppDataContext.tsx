@@ -30,7 +30,7 @@ interface AppDataContextData {
   upcomingJobs: UpcomingJob[];
   notifications: AppNotification[];
   dataLoading: boolean;
-  createJob: (job: Omit<Job, 'id' | 'createdAt' | 'status'>) => void;
+  createJob: (job: Omit<Job, 'id' | 'createdAt' | 'status'>) => Promise<void>;
   applyForJob: (jobId: string, helperId: string) => Promise<void>;
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => Promise<void>;
   getHelperApplications: (helperId: string) => Application[];
@@ -127,35 +127,28 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
-  const createJob = (jobDetails: Omit<Job, 'id' | 'createdAt' | 'status'>) => {
+  const createJob = async (jobDetails: Omit<Job, 'id' | 'createdAt' | 'status'>) => {
     if (useRemote) {
-      void (async () => {
-        try {
-          await remoteCreateRequest({
-            clientId: jobDetails.clientId,
-            category: jobDetails.category,
-            subcategory: jobDetails.subcategory ?? null,
-            title: jobDetails.title,
-            description: jobDetails.description,
-            urgency: jobDetails.urgency,
-            location: jobDetails.location,
-            address: jobDetails.address ?? null,
-            city: jobDetails.city ?? null,
-            region: jobDetails.region ?? null,
-            latitude: jobDetails.latitude ?? null,
-            longitude: jobDetails.longitude ?? null,
-            preferredDate: jobDetails.preferredDate ?? null,
-            preferredTimeWindow: jobDetails.preferredTimeWindow ?? null,
-            preferredTime: jobDetails.preferredTime ?? null,
-            dateLabel: jobDetails.date,
-            budgetHint: jobDetails.value,
-          });
-          await refreshRemote();
-        } catch (e) {
-          console.error(e);
-          alert(e instanceof Error ? e.message : 'Failed to create request');
-        }
-      })();
+      await remoteCreateRequest({
+        clientId: jobDetails.clientId,
+        category: jobDetails.category,
+        subcategory: jobDetails.subcategory ?? null,
+        title: jobDetails.title,
+        description: jobDetails.description,
+        urgency: jobDetails.urgency,
+        location: jobDetails.location,
+        address: jobDetails.address ?? null,
+        city: jobDetails.city ?? null,
+        region: jobDetails.region ?? null,
+        latitude: jobDetails.latitude ?? null,
+        longitude: jobDetails.longitude ?? null,
+        preferredDate: jobDetails.preferredDate ?? null,
+        preferredTimeWindow: jobDetails.preferredTimeWindow ?? null,
+        preferredTime: jobDetails.preferredTime ?? null,
+        dateLabel: jobDetails.date,
+        budgetHint: jobDetails.value,
+      });
+      await refreshRemote();
       return;
     }
 

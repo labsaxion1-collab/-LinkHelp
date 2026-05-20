@@ -69,7 +69,7 @@ export function useProfileForm() {
       return false;
     }
 
-    if (!isConfigured || !profile) {
+    if (!isConfigured || !session?.user) {
       showToast(t('app_pages.settings_saved'), 'info');
       return true;
     }
@@ -113,6 +113,6 @@ export function useProfileForm() {
     phoneTouched,
     setPhoneTouched,
     phoneValidation,
-    isConfigured: Boolean(isConfigured && profile),
+    isConfigured: Boolean(isConfigured && session?.user),
   };
 }

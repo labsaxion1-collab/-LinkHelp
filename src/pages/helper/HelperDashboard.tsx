@@ -365,6 +365,13 @@ export default function HelperDashboard() {
     displayedJobs = []; // handled separately
   }
 
+  const radarJobs = jobs
+    .filter((j) => j.status === 'open')
+    .map((job) => ({ job, distanceKm: distanceToJobKm(helperCoords, job) }))
+    .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
+    .slice(0, 3);
+  const isPerformancePage = location.pathname === ROUTES.helperPerformance;
+
   return (
     <div className="bg-[#f0f2f5] min-h-[calc(100vh-64px)] py-4 sm:py-6 -mt-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 overflow-x-hidden">
       {/* Toast Notification */}
@@ -559,10 +566,30 @@ export default function HelperDashboard() {
             </div>
           ) : null}
 
-          <HelperStatsStrip dataLoading={dataLoading} stats={helperMvpStats} t={t} />
+          {isPerformancePage ? (
+            <div className="space-y-4">
+              <HelperStatsStrip dataLoading={dataLoading} stats={helperMvpStats} t={t} />
+              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h2 className="text-xl font-black text-slate-950">{t('helper_dashboard.stats_strip_title')}</h2>
+                <p className="mt-1 text-sm font-medium text-slate-500">{t('helper_dashboard.score_section_performance')}</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                    <p className="text-xs font-black uppercase tracking-wide text-slate-400">{t('helper_dashboard.nav_applications')}</p>
+                    <p className="mt-1 text-2xl font-black text-slate-950">{helperMvpStats.sent}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                    <p className="text-xs font-black uppercase tracking-wide text-slate-400">{t('helper_dashboard.score_metric_response_rate')}</p>
+                    <p className="mt-1 text-2xl font-black text-slate-950">
+                      {helperMvpStats.responseRatePct == null ? '—' : `${helperMvpStats.responseRatePct}%`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
-          {UI_VISIBILITY.helperCredits ? (
-            <div className="mb-4 min-w-0">
+          {!isPerformancePage && UI_VISIBILITY.helperCredits ? (
+            <div className="min-w-0">
               <HelperCreditsWalletCard
                 balance={creditBalance}
                 usedThisMonth={creditsUsedThisMonth}
@@ -575,9 +602,11 @@ export default function HelperDashboard() {
             </div>
           ) : null}
 
+          {!isPerformancePage ? (
+          <>
           {/* Job Categories Filter & Tabs */}
-          <div className="bg-white rounded-xl shadow-sm p-4 mb-4 border border-gray-200">
-            <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+          <div className="bg-white rounded-xl shadow-sm p-3 mb-3 border border-gray-200">
+            <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
               {activeTab === 'candidaturas' ? (
                 <><Icons.ClipboardList className="w-5 h-5 text-blue-600" /> {t('helper_dashboard.filter_apps_title')}</>
               ) : (
@@ -585,10 +614,10 @@ export default function HelperDashboard() {
               )}
             </h3>
             
-            <div className="flex gap-2 overflow-x-auto pb-3 mb-3 border-b border-gray-100 hide-scrollbar">
+            <div className="flex gap-2 overflow-x-auto pb-2 mb-2 border-b border-gray-100 hide-scrollbar">
               <button 
                 onClick={() => setSelectedCategoryFilter('')} 
-                className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors flex items-center gap-2 ${!selectedCategoryFilter ? 'bg-blue-50 text-blue-700 border-2 border-blue-200' : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100'}`}
+                className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-colors flex items-center gap-2 ${!selectedCategoryFilter ? 'bg-blue-50 text-blue-700 border-2 border-blue-200' : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100'}`}
               >
                 <Icons.Layers className="w-4 h-4" /> {t('helper_dashboard.all_categories')}
               </button>
@@ -599,7 +628,7 @@ export default function HelperDashboard() {
                   <button 
                     key={cat.id}
                     onClick={() => setSelectedCategoryFilter(cat.id)}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 ${isSelected ? 'bg-blue-50 text-blue-700 border-2 border-blue-200 shadow-sm' : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100'}`}
+                    className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 ${isSelected ? 'bg-blue-50 text-blue-700 border-2 border-blue-200 shadow-sm' : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100'}`}
                   >
                     <IconComponent className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-gray-400'}`} /> {t(`categories.${cat.id}`)}
                   </button>
@@ -607,15 +636,15 @@ export default function HelperDashboard() {
               })}
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
-              <button onClick={() => setActiveTab('match')} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'match' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.tab_match')}</button>
-              <button onClick={() => setActiveTab('recentes')} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'recentes' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.tab_recent')}</button>
-              <button onClick={() => setActiveTab('emergencia')} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'emergencia' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.tab_emergency')}</button>
-              <button onClick={() => setActiveTab('candidaturas')} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'candidaturas' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.nav_applications')}</button>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:overflow-x-auto sm:pb-1 hide-scrollbar">
+              <button onClick={() => setActiveTab('match')} className={`px-3 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'match' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.tab_match')}</button>
+              <button onClick={() => setActiveTab('recentes')} className={`px-3 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'recentes' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.tab_recent')}</button>
+              <button onClick={() => setActiveTab('emergencia')} className={`px-3 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'emergencia' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.tab_emergency')}</button>
+              <button onClick={() => setActiveTab('candidaturas')} className={`px-3 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'candidaturas' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.nav_applications')}</button>
             </div>
           </div>
 
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900">{activeTab === 'candidaturas' ? t('helper_dashboard.feed_title_apps') : t('helper_dashboard.feed_title_jobs')}</h2>
           </div>
 
@@ -720,12 +749,14 @@ export default function HelperDashboard() {
               </div>
             )}
           </div>
+          </>
+          ) : null}
         </main>
 
         {/* Right Sidebar */}
         <div className="hidden lg:flex flex-col sticky top-24 h-[calc(100vh-120px)] space-y-4">
           
-          {/* Live Opportunity Radar Map Widget */}
+          {/* Live Opportunity Radar */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden hover:shadow-md transition-shadow duration-200">
              <div className="p-4 border-b border-gray-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -734,56 +765,36 @@ export default function HelperDashboard() {
                 </div>
                 <span className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-md">{t('helper_dashboard.radar_badge_neutral')}</span>
              </div>
-             <div className="relative h-40 bg-gray-900 flex items-center justify-center overflow-hidden">
-                {/* Dark Radar Background Pattern */}
-                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at center, #3b82f6 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-                
-                {/* Radar Sweep Effect */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 border border-blue-500/20 rounded-full z-0 motion-reduce:animate-none"></div>
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 border border-blue-500/35 rounded-full z-0"></div>
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 origin-center animate-[spin_6s_linear_infinite] z-0 motion-reduce:animate-none opacity-90">
-                  <div className="w-20 h-20 bg-gradient-to-tr from-blue-500/25 to-transparent rounded-tl-full"></div>
-                </div>
-
-                {/* Simulated Opportunity Pins */}
-                <div className="absolute top-1/4 left-1/3 z-10 motion-reduce:animate-none animate-pulse [animation-duration:2.6s]">
-                   <div className="relative group cursor-pointer flex justify-center items-center">
-                     <div className="w-2.5 h-2.5 bg-green-400 rounded-full shadow-[0_0_10px_rgba(74,222,128,0.8)]"></div>
-                     <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-white text-gray-900 text-[10px] font-bold px-2 py-1 rounded-md -top-7 whitespace-nowrap shadow-lg">{t('helper_dashboard.radar_pin_translation')}</div>
-                   </div>
-                </div>
-
-                <div className="absolute bottom-1/3 right-1/4 z-10 motion-reduce:animate-none animate-pulse [animation-duration:2.9s]">
-                   <div className="relative group cursor-pointer flex justify-center items-center">
-                     <div className="w-2.5 h-2.5 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
-                     <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-white text-gray-900 text-[10px] font-bold px-2 py-1 rounded-md -top-7 whitespace-nowrap shadow-lg">{t('helper_dashboard.radar_pin_move')}</div>
-                   </div>
-                </div>
-
-                <div className="absolute top-1/2 right-1/3 z-10 motion-reduce:animate-none animate-pulse [animation-duration:3.2s]">
-                   <div className="relative group cursor-pointer flex justify-center items-center">
-                     <div className="w-2.5 h-2.5 bg-blue-400 rounded-full shadow-[0_0_10px_rgba(96,165,250,0.8)]"></div>
-                     <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-white text-gray-900 text-[10px] font-bold px-2 py-1 rounded-md -top-7 whitespace-nowrap shadow-lg">{t('helper_dashboard.radar_pin_assembly')}</div>
-                   </div>
-                </div>
-             </div>
-             <div className="grid grid-cols-2 gap-0 border-t border-gray-100 bg-white">
-                <button
-                  type="button"
-                  onClick={() => navigate(ROUTES.map)}
-                  className="p-3 border-r border-gray-100 text-left hover:bg-gray-50 transition-colors cursor-pointer group focus:outline-none focus:bg-gray-100"
-                >
-                   <p className="text-xs font-bold text-gray-900 group-hover:text-blue-600 transition-colors leading-snug">{t('helper_dashboard.radar_footer_nearby_title')}</p>
-                   <p className="text-[10px] text-gray-500 font-medium mt-0.5 leading-snug">{t('helper_dashboard.radar_footer_nearby_sub')}</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate(ROUTES.helperOpportunities)}
-                  className="p-3 text-left hover:bg-gray-50 transition-colors cursor-pointer group focus:outline-none focus:bg-gray-100"
-                >
-                   <p className="text-xs font-bold text-red-700 group-hover:text-red-800 transition-colors leading-snug">{t('helper_dashboard.radar_footer_urgent_title')}</p>
-                   <p className="text-[10px] text-gray-500 font-medium mt-0.5 leading-snug">{t('helper_dashboard.radar_footer_urgent_sub')}</p>
-                </button>
+             <div className="space-y-2 p-3">
+               {radarJobs.length ? radarJobs.map(({ job, distanceKm }) => (
+                 <button
+                   key={job.id}
+                   type="button"
+                   onClick={() => {
+                     setSelectedCategoryFilter(resolveCategoryId(job.category) || job.category);
+                     setActiveTab(job.urgency === 'high' ? 'emergencia' : 'match');
+                     navigate(ROUTES.helperOpportunities);
+                   }}
+                   className="flex w-full items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-left transition-colors hover:border-blue-200 hover:bg-blue-50"
+                 >
+                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 ring-1 ring-slate-200">
+                     <Icons.MapPin className="h-4 w-4" />
+                   </span>
+                   <span className="min-w-0 flex-1">
+                     <span className="block truncate text-sm font-black text-slate-900">{job.title}</span>
+                     <span className="block truncate text-xs font-bold text-slate-500">
+                       {distanceKm != null ? t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) }) : job.city || job.location}
+                     </span>
+                   </span>
+                   <span className={`rounded-full px-2 py-1 text-[10px] font-black ${job.urgency === 'high' ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'}`}>
+                     {job.value}
+                   </span>
+                 </button>
+               )) : (
+                 <p className="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs font-bold text-slate-500">
+                   {t('helper_dashboard.empty_feed')}
+                 </p>
+               )}
              </div>
              <Link to={ROUTES.map} className="p-2 border-t border-gray-50 bg-gray-50 text-center hover:bg-gray-100 transition-colors cursor-pointer block">
                  <span className="text-xs font-semibold text-blue-600">{t('helper_dashboard.radar_expand_map')}</span>

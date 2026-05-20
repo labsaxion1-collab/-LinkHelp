@@ -571,10 +571,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (Object.keys(profilePatch).length === 0) return null;
 
-      const { error } = await sb
+      const user = sessionRef.current?.user;
+      const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
+      const metaRole = typeof meta.user_type === 'string' ? meta.user_type : '';
+      const role: UserType = profile?.role ?? (metaRole === 'helper' ? 'helper' : 'client');
+      const upsertPayload: Database['public']['Tables']['profiles']['Insert'] = {
+        id: uid,
+        role,
+        email: user?.email ?? profile?.email ?? null,
+        ...profilePatch,
+      };
+
+      const { data, error } = await sb
         .from('profiles')
-        .update(profilePatch as Database['public']['Tables']['profiles']['Update'])
-        .eq('id', uid);
+        .upsert(upsertPayload, { onConflict: 'id' })
+        .select('*')
+        .maybeSingle();
       if (error) {
         authDevLog('updateProfile:error', {
           message: error.message,
@@ -591,10 +603,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      await refreshProfile();
+      if (data) {
+        setProfile(data as AuthProfile);
+      } else {
+        await refreshProfile();
+      }
       return null;
     },
-    [refreshProfile],
+    [profile, refreshProfile],
   );
 
   const value = useMemo<AuthContextValue>(

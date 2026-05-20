@@ -43,6 +43,7 @@ export function AppRoutes() {
           <Route path="/helper" element={<Navigate to={ROUTES.helperDashboard} replace />} />
           <Route path={ROUTES.helperDashboard} element={<HelperDashboard />} />
           <Route path={ROUTES.helperOpportunities} element={<HelperDashboard />} />
+          <Route path={ROUTES.helperPerformance} element={<HelperDashboard />} />
           <Route path={ROUTES.helperJobs} element={<HelperUpcomingJobsPage />} />
           <Route path="/helper/jobs/upcoming" element={<Navigate to={ROUTES.helperJobs} replace />} />
           <Route path={ROUTES.helperTraining} element={<HelperTrainingPage />} />

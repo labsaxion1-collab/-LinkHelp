@@ -14,6 +14,7 @@ export const ROUTES = {
   clientJobs: '/client/jobs',
   helperDashboard: '/helper/dashboard',
   helperOpportunities: '/helper/opportunities',
+  helperPerformance: '/helper/performance',
   /** Upcoming / scheduled work for helpers */
   helperJobs: '/helper/jobs',
   /** Micro-learning & training center (PRO/Elite benefits) */

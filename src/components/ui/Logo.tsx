@@ -52,7 +52,7 @@ export function Logo({
     <div className={`relative -my-2 -ml-3 inline-flex h-[56px] items-center overflow-hidden pl-3 pr-10 ${className}`}>
       <div className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-[#07111F] via-[#0B1828] via-60% to-white" />
       <div className="absolute inset-y-0 left-0 w-3/4 bg-[radial-gradient(circle_at_38%_50%,rgba(21,101,255,0.2),transparent_58%)]" />
-      <div className="relative z-10 inline-flex items-center gap-1.5 rounded-xl bg-[#07111F]/35 px-1.5 py-1">
+      <div className="relative z-10 inline-flex items-center gap-1.5">
       <LogoIcon className={iconClassName} />
       <span className={`tracking-tight font-display ${textClassName}`}>
         <span className="text-white font-black">Link</span>

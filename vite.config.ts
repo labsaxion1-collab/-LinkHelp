@@ -12,7 +12,12 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icons/pwa-192.png', 'icons/pwa-512.png', 'icons/linkhelp-mark.svg'],
+        includeAssets: [
+          'icons/linkhelp-app-180.png',
+          'icons/linkhelp-app-192.png',
+          'icons/linkhelp-app-512.png',
+          'icons/linkhelp-mark.svg',
+        ],
         manifest: {
           name: 'LinkHelp',
           short_name: 'LinkHelp',
@@ -26,13 +31,13 @@ export default defineConfig(({ mode }) => {
           categories: ['business', 'lifestyle'],
           icons: [
             {
-              src: 'icons/pwa-192.png',
+              src: 'icons/linkhelp-app-192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: 'icons/pwa-512.png',
+              src: 'icons/linkhelp-app-512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable',

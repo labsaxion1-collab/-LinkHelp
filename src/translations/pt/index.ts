@@ -156,6 +156,9 @@ export const pt = {
     requests: 'Pedidos',
     nearby: 'Perto',
     credits: 'Créditos',
+    switch_mode: 'Trocar modo para {{target}}',
+    switch_to_helper: 'Helper',
+    switch_to_client: 'Cliente',
   },
   pwa_install: {
     title: 'Instalar LinkHelp',

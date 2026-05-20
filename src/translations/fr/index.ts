@@ -156,6 +156,9 @@ export const fr = {
     requests: 'Demandes',
     nearby: 'À proximité',
     credits: 'Crédits',
+    switch_mode: 'Changer de mode vers {{target}}',
+    switch_to_helper: 'Assistant',
+    switch_to_client: 'Client',
   },
   pwa_install: {
     title: 'Installer LinkHelp',

@@ -140,6 +140,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         address: jobDetails.address ?? null,
         city: jobDetails.city ?? null,
         region: jobDetails.region ?? null,
+        postalCode: jobDetails.postalCode ?? null,
         latitude: jobDetails.latitude ?? null,
         longitude: jobDetails.longitude ?? null,
         preferredDate: jobDetails.preferredDate ?? null,
@@ -147,6 +148,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         preferredTime: jobDetails.preferredTime ?? null,
         dateLabel: jobDetails.date,
         budgetHint: jobDetails.value,
+        budgetMin: jobDetails.budgetMin ?? null,
+        budgetMax: jobDetails.budgetMax ?? null,
       });
       await refreshRemote();
       return;

@@ -2,6 +2,7 @@ export type ParsedPlace = {
   address: string;
   city: string;
   region: string;
+  postalCode: string;
   latitude: number;
   longitude: number;
   formatted: string;
@@ -15,6 +16,7 @@ export function parseAddressComponents(
 ): ParsedPlace {
   let city = '';
   let region = '';
+  let postalCode = '';
   let streetNumber = '';
   let route = '';
 
@@ -23,6 +25,7 @@ export function parseAddressComponents(
     if (types.includes('locality')) city = c.long_name;
     else if (!city && types.includes('sublocality')) city = c.long_name;
     else if (types.includes('administrative_area_level_1')) region = c.short_name || c.long_name;
+    else if (types.includes('postal_code')) postalCode = c.long_name;
     else if (types.includes('street_number')) streetNumber = c.long_name;
     else if (types.includes('route')) route = c.long_name;
   }
@@ -34,6 +37,7 @@ export function parseAddressComponents(
     address,
     city,
     region,
+    postalCode,
     latitude: lat,
     longitude: lng,
     formatted,

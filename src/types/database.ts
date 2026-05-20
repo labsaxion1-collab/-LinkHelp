@@ -64,11 +64,14 @@ export type RequestRow = {
   address: string | null;
   city: string | null;
   region: string | null;
+  postal_code: string | null;
   latitude: number | null;
   longitude: number | null;
   preferred_date: string | null;
   preferred_time_window: string | null;
   preferred_time: string | null;
+  budget_min: number | null;
+  budget_max: number | null;
   status: RequestStatus;
   created_at: string;
   updated_at: string;

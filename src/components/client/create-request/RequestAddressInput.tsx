@@ -9,6 +9,7 @@ export type RequestAddressValue = {
   address: string;
   city: string;
   region: string;
+  postalCode: string;
   latitude: number | null;
   longitude: number | null;
   /** Full line shown in the input */
@@ -25,7 +26,7 @@ type Props = {
 };
 
 function emptyValue(display = ''): RequestAddressValue {
-  return { address: '', city: '', region: '', latitude: null, longitude: null, display };
+  return { address: '', city: '', region: '', postalCode: '', latitude: null, longitude: null, display };
 }
 
 function fromParsed(parsed: ParsedPlace): RequestAddressValue {
@@ -33,6 +34,7 @@ function fromParsed(parsed: ParsedPlace): RequestAddressValue {
     address: parsed.address,
     city: parsed.city,
     region: parsed.region,
+    postalCode: parsed.postalCode,
     latitude: parsed.latitude,
     longitude: parsed.longitude,
     display: parsed.formatted,

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
+import { useToast } from '@/context/ToastContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 import { CreateRequestScheduleStep, type MovePropertyType } from '@/components/client/create-request/CreateRequestScheduleStep';
@@ -37,6 +38,7 @@ type Props = {
 export function CreateRequestModal({ open, onClose, onPublished, initialCategory = '', initialSubcategory = '' }: Props) {
   const { t } = useLanguage();
   const { createJob } = useAppData();
+  const { showToast } = useToast();
   const me = useSessionViewer();
 
   const [step, setStep] = useState<ModalStep>('category');
@@ -195,6 +197,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
         address: addr.address || addr.display.trim() || null,
         city: addr.city || null,
         region: addr.region || null,
+        postalCode: addr.postalCode?.trim() || null,
         latitude: addr.latitude,
         longitude: addr.longitude,
         preferredDate: resolvePreferredDateIso(scheduleInput),
@@ -202,13 +205,24 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
         preferredTime: preferredTimeSpecific.trim() || null,
         date: buildJobDateLabel(scheduleInput),
         value: finalBudgetHint || t('jobs.value_negotiable'),
+        budgetMin,
+        budgetMax,
         urgency: jobUrgencyFromPriority(priority),
       });
       handleClose();
       onPublished?.();
     } catch (error) {
-      console.error(error);
-      alert(error instanceof Error ? error.message : t('create_modal.publish_error'));
+      const technical =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message?: string }).message)
+          : error instanceof Error
+            ? error.message
+            : String(error);
+      console.error('[LinkHelp] create request failed', error);
+      if (import.meta.env.DEV) {
+        console.info('[LinkHelp] create request technical:', technical);
+      }
+      showToast(t('create_modal.publish_error'), 'error');
       setPublishing(false);
     }
   };

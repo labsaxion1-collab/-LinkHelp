@@ -86,7 +86,7 @@ export function subscribeRemoteData(onChange: () => void): () => void {
   };
 }
 
-export async function remoteCreateRequest(input: {
+export type RemoteCreateRequestInput = {
   clientId: string;
   category: string;
   subcategory?: string | null;
@@ -97,6 +97,7 @@ export async function remoteCreateRequest(input: {
   address?: string | null;
   city?: string | null;
   region?: string | null;
+  postalCode?: string | null;
   latitude?: number | null;
   longitude?: number | null;
   preferredDate?: string | null;
@@ -104,10 +105,34 @@ export async function remoteCreateRequest(input: {
   preferredTime?: string | null;
   dateLabel: string;
   budgetHint: string;
-}): Promise<void> {
-  const sb = getSupabase();
-  if (!sb) throw new Error('NO_SUPABASE');
-  const { error } = await sb.from('requests').insert({
+  budgetMin?: number | null;
+  budgetMax?: number | null;
+};
+
+const EXTENDED_REQUEST_COLUMNS = [
+  'address',
+  'city',
+  'region',
+  'postal_code',
+  'preferred_date',
+  'preferred_time_window',
+  'preferred_time',
+  'budget_min',
+  'budget_max',
+] as const;
+
+function isMissingColumnError(error: { code?: string; message?: string } | null, column: string): boolean {
+  if (!error) return false;
+  const code = error.code ?? '';
+  const msg = (error.message ?? '').toLowerCase();
+  return (
+    (code === 'PGRST204' || code === '42703') &&
+    (msg.includes(`'${column}'`) || msg.includes(`"${column}"`) || msg.includes(column))
+  );
+}
+
+function buildRequestInsertPayload(input: RemoteCreateRequestInput, extended: boolean): Record<string, unknown> {
+  const base: Record<string, unknown> = {
     client_id: input.clientId,
     category: input.category,
     subcategory: input.subcategory ?? null,
@@ -115,18 +140,49 @@ export async function remoteCreateRequest(input: {
     description: input.description,
     urgency: input.urgency,
     location: input.location,
+    latitude: input.latitude ?? null,
+    longitude: input.longitude ?? null,
+    budget: input.budgetHint?.trim() ? input.budgetHint : null,
+    status: 'open',
+  };
+
+  if (!extended) return base;
+
+  return {
+    ...base,
     address: input.address ?? null,
     city: input.city ?? null,
     region: input.region ?? null,
-    latitude: input.latitude ?? null,
-    longitude: input.longitude ?? null,
+    postal_code: input.postalCode ?? null,
     preferred_date: input.preferredDate ?? null,
     preferred_time_window: input.preferredTimeWindow ?? null,
     preferred_time: input.preferredTime?.trim() ? input.preferredTime : null,
-    budget: input.budgetHint?.trim() ? input.budgetHint : null,
-    status: 'open',
-  });
-  if (error) throw error;
+    budget_min: input.budgetMin ?? null,
+    budget_max: input.budgetMax ?? null,
+  };
+}
+
+export async function remoteCreateRequest(input: RemoteCreateRequestInput): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+
+  let payload = buildRequestInsertPayload(input, true);
+  let { error } = await sb.from('requests').insert(payload);
+
+  if (error && EXTENDED_REQUEST_COLUMNS.some((col) => isMissingColumnError(error, col))) {
+    if (import.meta.env.DEV) {
+      console.warn('[LinkHelp] requests insert: retrying without extended location columns', error);
+    }
+    payload = buildRequestInsertPayload(input, false);
+    ({ error } = await sb.from('requests').insert(payload));
+  }
+
+  if (error) {
+    if (import.meta.env.DEV) {
+      console.error('[LinkHelp] remoteCreateRequest failed', { code: error.code, message: error.message, details: error.details });
+    }
+    throw error;
+  }
 }
 
 export async function remoteApply(input: {

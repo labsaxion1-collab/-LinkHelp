@@ -15,6 +15,7 @@ export interface Job {
   address?: string | null;
   city?: string | null;
   region?: string | null;
+  postalCode?: string | null;
   preferredDate?: string | null;
   preferredTimeWindow?: string | null;
   preferredTime?: string | null;
@@ -23,6 +24,8 @@ export interface Job {
   longitude?: number | null;
   subcategory?: string | null;
   value: string;
+  budgetMin?: number | null;
+  budgetMax?: number | null;
   urgency: JobUrgency;
   status: JobStatus;
   createdAt: number;

@@ -9,7 +9,7 @@ import { logMediaPicker } from '@/utils/mediaPickerDebug';
 import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import { filterValidSkillKeys, parseSkillKey, skillSubLabelKey } from '@/data/helperSkillsCatalog';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAppMode } from '@/context/AppModeContext';
+import { useModeSwitch } from '@/hooks/useModeSwitch';
 import { useAppData, type UpcomingJob } from '@/context/AppDataContext';
 import { useToast } from '@/context/ToastContext';
 import { useCredits } from '@/context/CreditContext';
@@ -80,7 +80,7 @@ export default function HelperDashboard() {
   const me = useSessionViewer();
   const { coords: helperCoords } = useUserLocation();
   const { session, profile, isConfigured, updateProfile, refreshProfile } = useAuth();
-  const { switchToClient } = useAppMode();
+  const { toClient, modeSwitchBusy } = useModeSwitch();
 
   useEffect(() => {
     const st = location.state as { openUpgrade?: boolean } | null;
@@ -553,7 +553,8 @@ export default function HelperDashboard() {
             activeTab={activeTab}
             onSelectFeedTab={setActiveTab}
             t={t}
-            onSwitchClient={() => switchToClient()}
+            onSwitchClient={() => void toClient()}
+            modeSwitchBusy={modeSwitchBusy}
           />
 
           {completionBreakdown.percent < 100 ? (

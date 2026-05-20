@@ -143,6 +143,7 @@ export const fr = {
     profile_menu_training: 'Centre de formation',
     profile_menu_logout: 'Se déconnecter',
     toast_logout: 'Vous êtes déconnecté.',
+    mode_switch_failed: 'Impossible de changer de mode pour le moment. Réessayez.',
   },
   mobile_nav: {
     aria: 'Navigation mobile principale',

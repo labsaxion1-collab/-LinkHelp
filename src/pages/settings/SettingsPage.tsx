@@ -6,6 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { ROUTES } from '@/utils/constants';
 import { useAuth } from '@/context/AuthContext';
 import { useAppMode } from '@/context/AppModeContext';
+import { useModeSwitch } from '@/hooks/useModeSwitch';
 import { useToast } from '@/context/ToastContext';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
@@ -19,7 +20,8 @@ import { parseStoredPhone, validatePhoneNumber } from '@/utils/phoneFormat';
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
   const { profile, updateProfile, signOut, session, isConfigured, refreshProfile } = useAuth();
-  const { mode, switchToClient, switchToHelper } = useAppMode();
+  const { mode } = useAppMode();
+  const { toClient, toHelper, modeSwitchBusy } = useModeSwitch();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -325,14 +327,16 @@ export default function SettingsPage() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => switchToClient()}
+                  onClick={() => void toClient()}
+                  disabled={modeSwitchBusy}
                   className={`flex-1 rounded-xl border px-3 py-2 text-sm font-bold ${mode === 'client' ? 'border-blue-600 bg-blue-50 text-blue-900' : 'border-gray-200 bg-gray-50 text-gray-700'}`}
                 >
                   {t('app_pages.settings_mode_client')}
                 </button>
                 <button
                   type="button"
-                  onClick={() => switchToHelper()}
+                  onClick={() => void toHelper()}
+                  disabled={modeSwitchBusy}
                   className={`flex-1 rounded-xl border px-3 py-2 text-sm font-bold ${mode === 'helper' ? 'border-blue-600 bg-blue-50 text-blue-900' : 'border-gray-200 bg-gray-50 text-gray-700'}`}
                 >
                   {t('app_pages.settings_mode_helper')}

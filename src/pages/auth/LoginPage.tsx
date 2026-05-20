@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, ArrowLeft } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { ROUTES } from '@/utils/constants';
+import { readStoredAppMode } from '@/utils/appModeStorage';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -55,7 +56,15 @@ export default function LoginPage() {
       navigate(from, { replace: true });
       return;
     }
-    const dest = profile.role === 'helper' ? ROUTES.helperHome : ROUTES.clientHome;
+    const stored = readStoredAppMode();
+    const dest =
+      stored === 'helper'
+        ? ROUTES.helperHome
+        : stored === 'client'
+          ? ROUTES.clientHome
+          : profile.role === 'helper'
+            ? ROUTES.helperHome
+            : ROUTES.clientHome;
     navigate(dest, { replace: true });
   }, [isConfigured, authBootstrapped, authLoading, session, profile, from, navigate, refreshProfile]);
 

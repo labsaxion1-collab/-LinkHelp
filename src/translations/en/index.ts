@@ -143,6 +143,7 @@ export const en = {
     profile_menu_training: 'Training center',
     profile_menu_logout: 'Sign out',
     toast_logout: 'You have been signed out.',
+    mode_switch_failed: 'Could not switch mode right now. Please try again.',
   },
   mobile_nav: {
     aria: 'Main mobile navigation',

@@ -37,13 +37,13 @@ export default function App() {
           <ToastProvider>
             <DevSupabasePing />
             <AppDataProvider>
-              <CreditProvider>
-                <BrowserRouter>
-                  <AppModeProvider>
+              <BrowserRouter>
+                <AppModeProvider>
+                  <CreditProvider>
                     <AppRoutes />
-                  </AppModeProvider>
-                </BrowserRouter>
-              </CreditProvider>
+                  </CreditProvider>
+                </AppModeProvider>
+              </BrowserRouter>
             </AppDataProvider>
           </ToastProvider>
         </AuthProvider>

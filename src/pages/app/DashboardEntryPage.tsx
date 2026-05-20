@@ -3,7 +3,9 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { PageLoader } from '@/components/common/PageLoader';
 import { OAuthRolePicker } from '@/components/auth/OAuthRolePicker';
 import { useAuth } from '@/context/AuthContext';
+import { resolveEntryDashboardPath } from '@/context/AppModeContext';
 import { ROUTES } from '@/utils/constants';
+import { modeSwitchLog, readStoredAppMode } from '@/utils/appModeStorage';
 import { authFlowLog } from '@/lib/authDebug';
 import { getSupabase } from '@/lib/supabase';
 import { userNeedsOAuthRoleSelection } from '@/utils/parseOAuthCallbackError';
@@ -35,8 +37,14 @@ export default function DashboardEntryPage() {
   useEffect(() => {
     if (!isConfigured || !authBootstrapped || !session?.user || !profile || redirected.current || needsRole) return;
     redirected.current = true;
-    const dest = profile.role === 'helper' ? ROUTES.helperDashboard : ROUTES.clientDashboard;
-    authFlowLog('Redirecting to dashboard', { path: dest, role: profile.role });
+    const storedMode = readStoredAppMode();
+    const dest = resolveEntryDashboardPath(profile.role);
+    modeSwitchLog('protectedRouteDecision', {
+      storedMode,
+      profileRole: profile.role,
+      navigatingTo: dest,
+    });
+    authFlowLog('Redirecting to dashboard', { path: dest, role: profile.role, storedMode });
     navigate(dest, { replace: true });
   }, [isConfigured, authBootstrapped, session, profile, navigate, needsRole]);
 

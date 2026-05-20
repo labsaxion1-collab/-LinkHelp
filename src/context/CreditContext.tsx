@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useAppMode } from '@/context/AppModeContext';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { fetchRemoteCreditState } from '@/services/supabase/creditsRemote';
 import type { CreditPackage, CreditTransaction, CreditWallet, OpportunityUnlock } from '@/types/credits';
@@ -48,8 +49,9 @@ function bonusTx(helperId: string): CreditTransaction {
 
 export function CreditProvider({ children }: { children: React.ReactNode }) {
   const { session, profile } = useAuth();
+  const { mode } = useAppMode();
   const helperId = session?.user?.id ?? profile?.id ?? '';
-  const isHelper = profile?.role === 'helper';
+  const isHelper = mode === 'helper' || profile?.role === 'helper';
   const remote = isSupabaseConfigured() && Boolean(session);
   const [wallet, setWallet] = useState<CreditWallet | null>(null);
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);

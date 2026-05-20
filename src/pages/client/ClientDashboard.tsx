@@ -5,7 +5,7 @@ import { useSessionViewer } from '@/hooks/useSessionViewer';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
-import { useAppMode } from '@/context/AppModeContext';
+import { useModeSwitch } from '@/hooks/useModeSwitch';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 import { formatJobSchedule } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
@@ -86,7 +86,7 @@ export default function ClientDashboard() {
   
   const navigate = useNavigate();
   const routerLocation = useLocation();
-  const { switchToHelper } = useAppMode();
+  const { toHelper, modeSwitchBusy } = useModeSwitch();
 
   const { t } = useLanguage();
   const skillChip = (skill: string) =>
@@ -321,7 +321,7 @@ export default function ClientDashboard() {
             
               <button
                 type="button"
-                onClick={() => switchToHelper()}
+                onClick={() => void toHelper()}
                 className="flex items-center justify-center gap-2 w-full p-2.5 border border-gray-300 hover:border-gray-400 hover:bg-gray-200 rounded-xl text-gray-700 font-medium text-sm transition-all focus:ring-2 focus:ring-gray-200 focus:outline-none min-w-0"
               >
                 <Icons.RefreshCw className="w-4 h-4 shrink-0" /> <span className="truncate">{t('sidebar.switch_helper')}</span>
@@ -461,8 +461,9 @@ export default function ClientDashboard() {
                 type="button"
                 title={t('sidebar.switch_helper')}
                 aria-label={t('sidebar.switch_helper')}
-                onClick={() => switchToHelper()}
-                className="group relative ml-auto inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 md:h-12 md:w-12 md:gap-0 md:rounded-2xl md:px-0"
+                onClick={() => void toHelper()}
+                disabled={modeSwitchBusy}
+                className="group relative ml-auto inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-60 md:h-12 md:w-12 md:gap-0 md:rounded-2xl md:px-0"
               >
                 <Icons.RefreshCw className="h-4 w-4 md:h-5 md:w-5" />
                 <span className="sr-only">{t('sidebar.switch_helper')}</span>

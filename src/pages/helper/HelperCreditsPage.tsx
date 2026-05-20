@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useAppMode } from '@/context/AppModeContext';
+import { useModeSwitch } from '@/hooks/useModeSwitch';
 import { useCredits } from '@/context/CreditContext';
 import { HelperDashboardNav } from '@/components/helpers/HelperDashboardNav';
 import { ROUTES } from '@/utils/constants';
@@ -10,11 +11,13 @@ import { UI_VISIBILITY } from '@/config/uiVisibility';
 
 export default function HelperCreditsPage() {
   const { t } = useLanguage();
-  const { switchToClient } = useAppMode();
+  const { mode } = useAppMode();
+  const { toClient, modeSwitchBusy } = useModeSwitch();
   const { profile } = useAuth();
   const { wallet, transactions, packages, unlocks, loading } = useCredits();
 
-  if (profile?.role !== 'helper') {
+  const helperWorkspace = mode === 'helper' || profile?.role === 'helper';
+  if (!helperWorkspace) {
     return <Navigate to={ROUTES.clientDashboard} replace />;
   }
 
@@ -27,7 +30,8 @@ export default function HelperCreditsPage() {
           activeTab="match"
           onSelectFeedTab={() => {}}
           t={t}
-          onSwitchClient={() => switchToClient()}
+          onSwitchClient={() => void toClient()}
+          modeSwitchBusy={modeSwitchBusy}
         />
 
         <div className="mx-auto max-w-5xl">

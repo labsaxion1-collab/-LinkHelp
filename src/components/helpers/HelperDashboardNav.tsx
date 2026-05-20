@@ -17,6 +17,7 @@ type Props = {
   onSelectFeedTab: (tab: 'match' | 'recentes' | 'emergencia' | 'candidaturas') => void;
   t: (key: string) => string;
   onSwitchClient: () => void;
+  modeSwitchBusy?: boolean;
 };
 
 export function resolveHelperNavSection(
@@ -33,7 +34,7 @@ export function resolveHelperNavSection(
   return 'home';
 }
 
-export function HelperDashboardNav({ activeTab, onSelectFeedTab, t, onSwitchClient }: Props) {
+export function HelperDashboardNav({ activeTab, onSelectFeedTab, t, onSwitchClient, modeSwitchBusy = false }: Props) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const section = resolveHelperNavSection(pathname, activeTab);
@@ -134,7 +135,8 @@ export function HelperDashboardNav({ activeTab, onSelectFeedTab, t, onSwitchClie
           title={t('sidebar.switch_client')}
           aria-label={t('sidebar.switch_client')}
           onClick={onSwitchClient}
-          className="group relative ml-auto inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          disabled={modeSwitchBusy}
+          className="group relative ml-auto inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-60"
         >
           <Icons.RefreshCw className="h-5 w-5 shrink-0" />
           <span className={tooltipClass}>{t('sidebar.switch_client')}</span>

@@ -143,6 +143,7 @@ export const pt = {
     profile_menu_training: 'Centro de treinamento',
     profile_menu_logout: 'Sair da conta',
     toast_logout: 'Você saiu da sua conta.',
+    mode_switch_failed: 'Não foi possível trocar de modo agora. Tente novamente.',
   },
   mobile_nav: {
     aria: 'Navegação principal (mobile)',

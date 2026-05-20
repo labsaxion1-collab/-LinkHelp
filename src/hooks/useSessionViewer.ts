@@ -30,9 +30,7 @@ export function useSessionViewer(): SessionViewer {
     const name = profile?.name?.trim() || fallbackName;
     const pic = profile?.avatar_url?.trim() || metaStr('avatar_url') || metaStr('picture');
     const avatar = pic || guestAvatar(name);
-    const metaRole = metaStr('user_type');
-    const userType: 'client' | 'helper' =
-      profile?.role ?? (metaRole === 'helper' ? 'helper' : 'client');
+    const userType: 'client' | 'helper' = mode;
     return {
       id: profile?.id ?? session.user.id,
       name,

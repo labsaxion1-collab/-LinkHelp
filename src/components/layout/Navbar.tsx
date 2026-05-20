@@ -27,7 +27,7 @@ export default function Navbar() {
   const mobileProfileRef = useRef<HTMLDivElement>(null);
 
   const isConnected = isAppShellPath(location.pathname);
-  const { mode, switchToClient, switchToHelper } = useAppMode();
+  const { mode, modeSwitchBusy, switchToClient, switchToHelper } = useAppMode();
   const me = useSessionViewer();
   const userAvatar = me.avatar;
   const userId = me.id;
@@ -37,7 +37,19 @@ export default function Navbar() {
     isHelperArea(location.pathname) || (pathImpliesAppMode(location.pathname) === null && mode === 'helper');
   const helperTermsStorageKey = userId ? `linkhelp:helper-terms:${userId}` : '';
 
+  const runModeSwitch = async (target: 'client' | 'helper', skipHelperPrep = false) => {
+    if (modeSwitchBusy) return;
+    const ok =
+      target === 'helper'
+        ? await switchToHelper(skipHelperPrep ? { skipHelperPrep: true } : undefined)
+        : await switchToClient();
+    if (!ok) {
+      showToast(t('nav.mode_switch_failed'), 'error');
+    }
+  };
+
   const goHelperOrPrompt = () => {
+    if (modeSwitchBusy) return;
     const acceptedLocally =
       helperTermsStorageKey && typeof window !== 'undefined'
         ? window.localStorage.getItem(helperTermsStorageKey) === 'true'
@@ -46,7 +58,7 @@ export default function Navbar() {
       setHelperTermsOpen(true);
       return;
     }
-    switchToHelper();
+    void runModeSwitch('helper');
   };
 
   const confirmNavbarHelperTerms = async () => {
@@ -65,12 +77,13 @@ export default function Navbar() {
     setHelperTermsOpen(false);
     setProfileOpen(false);
     setIsMobileMenuOpen(false);
-    switchToHelper();
+    await runModeSwitch('helper', true);
   };
 
   const toggleClientHelper = () => {
+    if (modeSwitchBusy) return;
     if (isHelperNav) {
-      switchToClient();
+      void runModeSwitch('client');
     } else {
       goHelperOrPrompt();
     }
@@ -116,9 +129,14 @@ export default function Navbar() {
             <button
               type="button"
               onClick={toggleClientHelper}
-              className="text-gray-500 hover:text-gray-900 font-medium text-sm transition-colors"
+              disabled={modeSwitchBusy}
+              className="text-gray-500 hover:text-gray-900 font-medium text-sm transition-colors disabled:opacity-60"
             >
-              {isHelperNav ? t('nav.switch_to_client') : t('nav.switch_to_helper')}
+              {modeSwitchBusy
+                ? t('common.loading')
+                : isHelperNav
+                  ? t('nav.switch_to_client')
+                  : t('nav.switch_to_helper')}
             </button>
 
             <div className="relative">
@@ -383,23 +401,26 @@ export default function Navbar() {
             <div className="flex-1 overflow-y-auto overscroll-contain pt-2 pb-3 space-y-1 ios-scroll">
               <button
                 type="button"
+                disabled={modeSwitchBusy}
                 onClick={() => {
-                  switchToClient();
                   setIsMobileMenuOpen(false);
+                  if (isHelperNav) void runModeSwitch('client');
+                  else void runModeSwitch('client');
                 }}
-                className="block w-full text-left px-4 py-3.5 min-h-[48px] text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                className="block w-full text-left px-4 py-3.5 min-h-[48px] text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 disabled:opacity-60"
               >
-                {t('nav.find_help_mobile')}
+                {modeSwitchBusy ? t('common.loading') : t('nav.find_help_mobile')}
               </button>
               <button
                 type="button"
+                disabled={modeSwitchBusy}
                 onClick={() => {
-                  goHelperOrPrompt();
                   setIsMobileMenuOpen(false);
+                  goHelperOrPrompt();
                 }}
-                className="block w-full text-left px-4 py-3.5 min-h-[48px] text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                className="block w-full text-left px-4 py-3.5 min-h-[48px] text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 disabled:opacity-60"
               >
-                {t('nav.become_helper')}
+                {modeSwitchBusy ? t('common.loading') : t('nav.become_helper')}
               </button>
 
               <div className="px-4 py-3 border-t border-gray-100 mt-2">

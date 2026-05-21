@@ -3,7 +3,7 @@ import type { Job } from '@/types/job';
 import type { Application, ApplicationStatus } from '@/types/application';
 import type { UpcomingJob } from '@/types/upcoming';
 import type { AppNotification } from '@/types/notification';
-import type { ApplicationRow, NotificationRow, RequestRow, UpcomingJobRow } from '@/types/database';
+import type { ApplicationRow, NotificationRow, RequestRow, RequestStatus, UpcomingJobRow } from '@/types/database';
 import {
   applicationRowToApp,
   notificationRowToApp,
@@ -204,7 +204,7 @@ export async function remoteApply(input: {
 
   if (error) {
     if (error.code === '23505') return;
-    throw error;
+    throw new Error(error.message || 'APPLICATION_INSERT_FAILED');
   }
 
   const { data: req } = await sb.from('requests').select('title').eq('id', input.requestId).maybeSingle();
@@ -221,6 +221,13 @@ export async function remoteApply(input: {
     action_url: '/client/dashboard',
     read: false,
   });
+}
+
+export async function remoteUpdateRequestStatus(requestId: string, status: RequestStatus): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+  const { error } = await sb.from('requests').update({ status }).eq('id', requestId);
+  if (error) throw new Error(error.message || 'REQUEST_UPDATE_FAILED');
 }
 
 export async function remoteUpdateApplicationStatus(

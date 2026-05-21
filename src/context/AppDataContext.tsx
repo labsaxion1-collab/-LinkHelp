@@ -16,6 +16,7 @@ import {
   remoteInsertNotification,
   remoteMarkAllNotificationsRead,
   remoteMarkNotificationRead,
+  remoteUpdateRequestStatus,
   remoteUpdateApplicationStatus,
   remoteUpdateUpcomingWorkflow,
   subscribeRemoteData,
@@ -32,6 +33,7 @@ interface AppDataContextData {
   dataLoading: boolean;
   createJob: (job: Omit<Job, 'id' | 'createdAt' | 'status'>) => Promise<void>;
   applyForJob: (jobId: string, helperId: string) => Promise<void>;
+  updateJobStatus: (jobId: string, status: JobStatus) => Promise<void>;
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => Promise<void>;
   getHelperApplications: (helperId: string) => Application[];
   getJobApplications: (jobId: string) => Application[];
@@ -215,6 +217,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateJobStatus = async (jobId: string, status: JobStatus) => {
+    if (useRemote) {
+      await remoteUpdateRequestStatus(jobId, status);
+      await refreshRemote();
+      return;
+    }
+    setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status } : job)));
+  };
+
   const updateApplicationStatus = async (applicationId: string, status: ApplicationStatus) => {
     const targetApp = applicationsRef.current.find((a) => a.id === applicationId);
     const jobSnapshot = targetApp ? jobsRef.current.find((j) => j.id === targetApp.jobId) : undefined;
@@ -314,6 +325,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         dataLoading,
         createJob,
         applyForJob,
+        updateJobStatus,
         updateApplicationStatus,
         getHelperApplications,
         getJobApplications,

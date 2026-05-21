@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, Globe, ChevronDown, User, Settings, Briefcase, LogOut, Camera, Coins } from 'lucide-react';
+import { Globe, ChevronDown, User, Settings, Briefcase, LogOut, Camera, Coins } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Logo } from '@/components/ui/Logo';
 import { useLanguage } from '@/context/LanguageContext';
@@ -24,7 +24,6 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const desktopProfileRef = useRef<HTMLDivElement>(null);
-  const mobileProfileRef = useRef<HTMLDivElement>(null);
 
   const isConnected = isAppShellPath(location.pathname);
   const { mode, modeSwitchBusy, switchToClient, switchToHelper } = useAppMode();
@@ -93,8 +92,7 @@ export default function Navbar() {
     const onDoc = (e: MouseEvent) => {
       const t = e.target as Node;
       const inDesktop = desktopProfileRef.current?.contains(t);
-      const inMobile = mobileProfileRef.current?.contains(t);
-      if (!inDesktop && !inMobile) setProfileOpen(false);
+      if (!inDesktop) setProfileOpen(false);
     };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
@@ -303,87 +301,19 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center md:hidden space-x-4">
-            {isConnected && isConfigured && session ? (
-              <div className="relative" ref={mobileProfileRef}>
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((o) => !o)}
-                  className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                >
-                  <img src={userAvatar} alt="" className="w-8 h-8 rounded-full border-2 border-gray-100 object-cover" />
-                </button>
-                {profileOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-gray-100 bg-white py-2 shadow-xl z-[60]">
-                    {isHelperNav ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfileOpen(false);
-                          navigate(ROUTES.helperDashboard, { state: { openProfile: true } });
-                        }}
-                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                      >
-                        <User className="w-4 h-4 text-gray-400" />
-                        {t('nav.profile_menu_profile')}
-                      </button>
-                    ) : (
-                      <Link to={ROUTES.settings} onClick={() => setProfileOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50">
-                        <User className="w-4 h-4 text-gray-400" />
-                        {t('nav.profile_menu_profile')}
-                      </Link>
-                    )}
-                    {isHelperNav && UI_VISIBILITY.helperCredits ? (
-                      <Link to={ROUTES.helperCredits} onClick={() => setProfileOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50">
-                        <Coins className="w-4 h-4 text-gray-400" />
-                        {t('helper_dashboard.credits_wallet_title')}
-                      </Link>
-                    ) : null}
-                    <Link to={ROUTES.settings} onClick={() => setProfileOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50">
-                      <Settings className="w-4 h-4 text-gray-400" />
-                      {t('nav.profile_menu_settings')}
-                    </Link>
-                    {!isHelperNav ? (
-                      <>
-                        <Link
-                          to={`${ROUTES.settings}#avatar`}
-                          onClick={() => setProfileOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                        >
-                          <Camera className="w-4 h-4 text-gray-400" />
-                          {t('nav.profile_menu_change_photo')}
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setProfileOpen(false);
-                            toggleClientHelper();
-                          }}
-                          className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                        >
-                          <Briefcase className="w-4 h-4 text-gray-400" />
-                          {t('nav.switch_to_helper')}
-                        </button>
-                      </>
-                    ) : null}
-                    <div className="my-1 border-t border-gray-100" />
-                    <button type="button" onClick={() => void doLogout()} className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-bold text-red-600 hover:bg-red-50">
-                      <LogOut className="w-4 h-4" />
-                      {t('nav.profile_menu_logout')}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : isConnected ? (
-              <Link to={ROUTES.settings} className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
-                <img src={userAvatar} alt="" className="w-8 h-8 rounded-full border-2 border-gray-100 object-cover" />
-              </Link>
-            ) : null}
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-3 rounded-xl text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              aria-label={isConnected ? t('nav.profile_menu_settings') : 'Menu'}
             >
-              <Menu className="h-6 w-6" />
+              {isConnected ? (
+                <img src={userAvatar} alt="" className="h-10 w-10 rounded-full border-2 border-white object-cover shadow-sm" />
+              ) : (
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                  <User className="h-5 w-5" />
+                </span>
+              )}
             </button>
           </div>
         </div>

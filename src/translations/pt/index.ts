@@ -595,6 +595,7 @@ export const pt = {
     lead_quality: '{{pct}}% qualidade do lead',
     lead_cost: '{{count}} creditos para liberar',
     lead_competition: 'Ate {{count}} helpers',
+    applications_count: '{{count}} interessados',
     lead_unlock_note:
       'Candidate-se gratis agora. O modelo de creditos esta sendo preparado para liberar contato verificado com limite justo por lead.',
     payment_est: 'Est. {{amount}}',
@@ -1509,4 +1510,3 @@ export const pt = {
     back_home: 'Voltar ao início',
   },
 };
-

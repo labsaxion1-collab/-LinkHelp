@@ -15,6 +15,7 @@ export type HelperOpportunityCardProps = {
   hasApplied: boolean;
   isApplying: boolean;
   onApply: (jobId: string) => void;
+  applicationsCount?: number;
   t: TFn;
   translateCategory: TranslateFn;
   formatJobSchedule: (date: Job['date'], t: TFn) => string;
@@ -58,6 +59,7 @@ export function HelperOpportunityCard({
   translateCategory,
   formatJobSchedule,
   distanceKm,
+  applicationsCount = 0,
 }: HelperOpportunityCardProps) {
   const tier = jobMatchTier(job, activeTab);
   const leadCost = estimateLeadCost(job, distanceKm);
@@ -137,6 +139,9 @@ export function HelperOpportunityCard({
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-900">
             <Icons.Users className="w-3.5 h-3.5 text-amber-600 shrink-0" /> {t('helper_dashboard.lead_competition', { count: helperLimit })}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-bold text-blue-800">
+            <Icons.UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" /> {t('helper_dashboard.applications_count', { count: applicationsCount })}
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-slate-50/80 px-2.5 py-1.5 text-xs font-medium text-slate-700">
             <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {formatJobSchedule(job.date, t)}

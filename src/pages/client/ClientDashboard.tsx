@@ -73,6 +73,7 @@ export default function ClientDashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createInitialCategory, setCreateInitialCategory] = useState('');
   const [createInitialSubcategory, setCreateInitialSubcategory] = useState('');
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [activeSidebarTab, setActiveSidebarTab] = useState<'dashboard' | 'my-helpers' | 'active-services' | 'saved'>('dashboard');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
@@ -91,7 +92,7 @@ export default function ClientDashboard() {
   const { t } = useLanguage();
   const skillChip = (skill: string) =>
     skill === 'support' ? t('skills.support') : t(`categories.${skill}`);
-  const { jobs, applications, notifications, updateApplicationStatus } = useAppData();
+  const { jobs, applications, notifications, updateApplicationStatus, updateJobStatus } = useAppData();
   const { profile } = useAuth();
   const me = useSessionViewer();
 
@@ -497,36 +498,37 @@ export default function ClientDashboard() {
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {SERVICE_CATEGORIES.map((cat) => {
                 const IconComponent = (Icons as any)[cat.icon] || Icons.HelpCircle;
-                const quickSubs = cat.subKeys.slice(0, 3);
-                const remaining = Math.max(0, cat.subKeys.length - quickSubs.length);
+                const expanded = expandedCategory === cat.id;
                 return (
                   <section key={cat.id} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 transition-all hover:border-blue-200 hover:bg-blue-50/50 hover:shadow-sm">
                     <div className="mb-3 flex items-center gap-3">
                       <button
                         type="button"
-                        onClick={() => openCreateModal(cat.id)}
+                        onClick={() => setExpandedCategory(expanded ? null : cat.id)}
                         className="group inline-flex min-w-0 flex-1 items-center gap-3 text-left"
                       >
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 group-hover:text-blue-700">
-                          <IconComponent className="h-5 w-5" />
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#17A8FF] to-[#1565FF] text-white shadow-md shadow-blue-500/20 ring-1 ring-blue-200">
+                          <IconComponent className="h-6 w-6" />
                         </span>
                         <span className="min-w-0">
-                          <span className="block truncate text-sm font-black text-slate-950">{t(`categories.${cat.id}`)}</span>
-                          <span className="block text-xs font-bold text-blue-600">{t('client_dashboard.category_hub_cta')}</span>
+                          <span className="inline-flex max-w-full items-center gap-2 rounded-xl bg-slate-900 px-3 py-1.5 text-sm font-black text-slate-100">
+                            <span className="truncate">{t(`categories.${cat.id}`)}</span>
+                          </span>
                         </span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => openCreateModal(cat.id)}
+                        onClick={() => setExpandedCategory(expanded ? null : cat.id)}
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-400 ring-1 ring-slate-200 hover:text-blue-700"
                         aria-label={t(`categories.${cat.id}`)}
                       >
-                        <Icons.ChevronRight className="h-5 w-5" />
+                        <Icons.ChevronRight className={`h-5 w-5 transition-transform ${expanded ? 'rotate-90' : ''}`} />
                       </button>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      {quickSubs.map((subKey) => (
+                    {expanded ? (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {cat.subKeys.map((subKey) => (
                         <button
                           key={subKey}
                           type="button"
@@ -536,16 +538,8 @@ export default function ClientDashboard() {
                           {t(`service_subs.${cat.id}.${subKey}`)}
                         </button>
                       ))}
-                      {remaining > 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => openCreateModal(cat.id)}
-                          className="min-h-[38px] rounded-full border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 hover:bg-blue-100"
-                        >
-                          +{remaining}
-                        </button>
-                      ) : null}
                     </div>
+                    ) : null}
                   </section>
                 );
               })}
@@ -743,6 +737,7 @@ export default function ClientDashboard() {
                 {jobs.filter((j) => j.clientId === me.id).length > 0 ? (
                   jobs.filter((j) => j.clientId === me.id).map((job) => {
                     const jobApps = applications.filter((a) => a.jobId === job.id && a.status !== 'cancelled');
+                    const canCancelJob = job.status === 'open' || job.status === 'in_progress';
                     const qualityScore = estimateClientLeadQuality(job.description, job.location, job.value, jobApps.length);
                     
                     return (
@@ -751,13 +746,28 @@ export default function ClientDashboard() {
                         <div className="flex justify-between items-start mb-4">
                           <div>
                             <span className={`text-xs font-bold px-2.5 py-1 rounded-md mb-2 inline-block ${job.status === 'open' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                              {job.status === 'open' ? 'Aguardando Helpers' : 'Em Andamento'}
+                              {job.status === 'cancelled' ? t('upcoming_jobs.status_cancelled') : job.status === 'open' ? 'Aguardando Helpers' : 'Em Andamento'}
                             </span>
                             <h3 className="font-bold text-gray-900 text-lg">{job.title}</h3>
                             <p className="text-gray-500 text-sm flex items-center gap-1 mt-1"><Icons.Clock className="w-4 h-4" /> {formatJobSchedule(job.date, t)}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-gray-900">{job.value}</p>
+                            {canCancelJob ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm(t('common.cancel') + '?')) {
+                                    void updateJobStatus(job.id, 'cancelled').catch((error) => {
+                                      alert(error instanceof Error ? error.message : 'Erro ao cancelar pedido');
+                                    });
+                                  }
+                                }}
+                                className="mt-2 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50"
+                              >
+                                {t('common.cancel')}
+                              </button>
+                            ) : null}
                           </div>
                         </div>
                         <div className="mb-4 flex flex-wrap gap-2">

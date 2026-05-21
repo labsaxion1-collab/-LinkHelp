@@ -13,6 +13,8 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: [
+          'brand/linkhelp-logo.png',
+          'brand/linkhelp-app-source.png',
           'icons/linkhelp-app-180.png',
           'icons/linkhelp-app-192.png',
           'icons/linkhelp-app-512.png',

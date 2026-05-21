@@ -20,7 +20,6 @@ import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 import { resolveCategoryId, translateCategory } from '@/utils/translateCategory';
 import { formatJobSchedule } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
-import { isSupabaseConfigured } from '@/lib/supabase';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import type { Application } from '@/types/application';
 import {
@@ -224,7 +223,7 @@ export default function HelperDashboard() {
     }
   }, [location.pathname]);
 
-  const { jobs, applyForJob, getHelperApplications, upcomingJobs, updateUpcomingWorkflow, updateApplicationStatus, dataLoading } = useAppData();
+  const { jobs, applications, applyForJob, getHelperApplications, upcomingJobs, updateUpcomingWorkflow, updateApplicationStatus, dataLoading } = useAppData();
   const { showToast } = useToast();
   const { wallet, transactions: creditTransactions, unlocks, loading: creditsLoading } = useCredits();
 
@@ -306,19 +305,18 @@ export default function HelperDashboard() {
       await applyForJob(jobId, me.id);
       setToastNotification({ message: t('helper_dashboard.toast_apply_success'), show: true });
       setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
-      if (isSupabaseConfigured()) {
-        showToast(t('helper_dashboard.apply_chat_unlock_hint'), 'info');
-      }
-      navigate(ROUTES.messages, {
-        state: { composeDraft: t('helper_dashboard.apply_compose_seed') },
-      });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '';
+      const msg =
+        err instanceof Error
+          ? err.message
+          : err && typeof err === 'object' && 'message' in err
+            ? String((err as { message?: unknown }).message ?? '')
+            : '';
       if (msg === 'ALREADY_APPLIED') {
         setToastNotification({ message: t('helper_dashboard.apply_duplicate'), show: true });
         setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
       } else {
-        alert(msg || 'Error');
+        alert(msg || 'Erro');
       }
     } finally {
       setApplyingJobId(null);
@@ -738,6 +736,7 @@ export default function HelperDashboard() {
                       hasApplied={hasApplied}
                       isApplying={isApplying}
                       distanceKm={distKm}
+                      applicationsCount={applications.filter((a) => a.jobId === job.id && a.status !== 'cancelled').length}
                       onApply={handleApply}
                       t={t}
                       translateCategory={translateCategory}

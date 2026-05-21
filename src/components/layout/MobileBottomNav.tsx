@@ -8,10 +8,8 @@ import {
   UserRound,
   MapPin,
   ArrowLeftRight,
-  LayoutDashboard,
   Loader2,
 } from 'lucide-react';
-import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
 import { isAppShellPath, isHelperArea, pathImpliesAppMode } from '@/utils/navigation';
 import { useLanguage } from '@/context/LanguageContext';
@@ -29,8 +27,17 @@ type Item =
 
 function navClass(active: boolean) {
   return clsx(
-    'flex flex-col items-center justify-center py-2 px-1 rounded-xl min-h-[52px] touch-manipulation transition-colors',
+    'flex flex-col items-center justify-center py-2 px-1 rounded-2xl min-h-[52px] touch-manipulation transition-colors',
     active ? 'text-primary-600 bg-primary-50/90' : 'text-gray-500 hover:text-gray-800 active:bg-gray-100',
+  );
+}
+
+function homeNavClass(active: boolean) {
+  return clsx(
+    'relative -mt-4 flex flex-col items-center justify-center rounded-3xl min-h-[66px] min-w-[66px] touch-manipulation transition-all shadow-lg',
+    active
+      ? 'bg-gradient-to-br from-primary-500 to-blue-700 text-white shadow-blue-500/25'
+      : 'bg-white text-primary-600 ring-1 ring-blue-100',
   );
 }
 
@@ -99,22 +106,17 @@ export function MobileBottomNav() {
 
   const items: Item[] = useHelperNav
     ? [
-        { kind: 'link', to: ROUTES.helperOpportunities, end: true, labelKey: 'mobile_nav.home', icon: Home },
-        { kind: 'portfolio', labelKey: 'mobile_nav.portfolio', icon: Images },
-        { kind: 'link', to: ROUTES.helperJobs, labelKey: 'mobile_nav.jobs', icon: ClipboardList },
-        { kind: 'link', to: ROUTES.messages, labelKey: 'mobile_nav.messages', icon: MessageCircle },
         modeSwitchItem,
+        { kind: 'link', to: ROUTES.messages, labelKey: 'mobile_nav.messages', icon: MessageCircle },
+        { kind: 'link', to: ROUTES.helperOpportunities, end: true, labelKey: 'mobile_nav.home', icon: Home },
+        { kind: 'link', to: ROUTES.map, labelKey: 'mobile_nav.nearby', icon: MapPin },
         { kind: 'link', to: ROUTES.settings, labelKey: 'mobile_nav.profile', icon: UserRound },
       ]
     : [
+        modeSwitchItem,
+        { kind: 'link', to: ROUTES.messages, labelKey: 'mobile_nav.messages', icon: MessageCircle },
         { kind: 'link', to: ROUTES.clientDashboard, end: true, labelKey: 'mobile_nav.home', icon: Home },
         { kind: 'link', to: ROUTES.clientJobs, labelKey: 'mobile_nav.requests', icon: ClipboardList },
-        { kind: 'link', to: ROUTES.map, labelKey: 'mobile_nav.nearby', icon: MapPin },
-        { kind: 'link', to: ROUTES.messages, labelKey: 'mobile_nav.messages', icon: MessageCircle },
-        ...(UI_VISIBILITY.clientCredits
-          ? [{ kind: 'link' as const, to: ROUTES.payments, labelKey: 'mobile_nav.credits', icon: LayoutDashboard }]
-          : []),
-        modeSwitchItem,
         { kind: 'link', to: ROUTES.settings, labelKey: 'mobile_nav.profile', icon: UserRound },
       ];
 
@@ -138,7 +140,7 @@ export function MobileBottomNav() {
                     aria-label={t('mobile_nav.switch_mode', { target: label })}
                     className={clsx(
                       navClass(false),
-                      'w-full gap-0.5 transition-opacity duration-200',
+                      'w-full text-primary-600 transition-opacity duration-200',
                       modeSwitchBusy && 'opacity-60 pointer-events-none',
                     )}
                   >
@@ -147,9 +149,7 @@ export function MobileBottomNav() {
                     ) : (
                       <ArrowLeftRight className="w-7 h-7 shrink-0" strokeWidth={2.2} aria-hidden />
                     )}
-                    <span className="text-[10px] font-semibold leading-tight truncate max-w-full px-0.5">
-                      {label}
-                    </span>
+                    <span className="sr-only">{label}</span>
                   </button>
                 </li>
               );
@@ -173,6 +173,7 @@ export function MobileBottomNav() {
             }
 
             const Icon = item.icon;
+            const isHome = item.to === ROUTES.clientDashboard || item.to === ROUTES.helperOpportunities;
             return (
               <li key={item.to ?? `item-${index}`} className="flex-1 min-w-0">
                 <NavLink
@@ -180,9 +181,9 @@ export function MobileBottomNav() {
                   end={item.end}
                   title={t(item.labelKey)}
                   aria-label={t(item.labelKey)}
-                  className={({ isActive }) => navClass(isActive)}
+                  className={({ isActive }) => (isHome ? homeNavClass(isActive) : navClass(isActive))}
                 >
-                  <Icon className="w-7 h-7 shrink-0" strokeWidth={2.2} aria-hidden />
+                  <Icon className={isHome ? 'w-9 h-9 shrink-0' : 'w-7 h-7 shrink-0'} strokeWidth={2.2} aria-hidden />
                   <span className="sr-only">{t(item.labelKey)}</span>
                 </NavLink>
               </li>

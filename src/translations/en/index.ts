@@ -594,6 +594,7 @@ export const en = {
     lead_quality: '{{pct}}% lead quality',
     lead_cost: '{{count}} credits to unlock',
     lead_competition: 'Up to {{count}} helpers',
+    applications_count: '{{count}} interested',
     lead_unlock_note:
       'Apply free now. The credit unlock model is being prepared for verified contact access, with limits to keep each lead fair.',
     payment_est: 'Est. {{amount}}',
@@ -1506,4 +1507,3 @@ export const en = {
     back_home: 'Back to home',
   },
 };
-

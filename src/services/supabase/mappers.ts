@@ -12,6 +12,11 @@ export function tsFromIso(iso: string): number {
 
 export function requestRowToJob(row: RequestRow, client: MapperProfile): Job {
   const display = client.name || 'Client';
+  const budgetValue =
+    row.budget?.trim() ||
+    (row.budget_type === 'fixed' && row.budget_amount
+      ? `${row.currency || 'CAD'} $${Math.round(Number(row.budget_amount))}`
+      : '');
   return {
     id: row.id,
     clientId: row.client_id,
@@ -32,9 +37,12 @@ export function requestRowToJob(row: RequestRow, client: MapperProfile): Job {
     preferredTimeWindow: row.preferred_time_window,
     preferredTime: row.preferred_time,
     subcategory: row.subcategory,
+    budgetType: row.budget_type,
+    budgetAmount: row.budget_amount,
+    currency: row.currency,
     budgetMin: row.budget_min,
     budgetMax: row.budget_max,
-    value: row.budget?.trim() ? row.budget : '—',
+    value: budgetValue || '---',
     urgency: (row.urgency === 'high' ? 'high' : 'normal') as JobUrgency,
     status: row.status as JobStatus,
     createdAt: tsFromIso(row.created_at),

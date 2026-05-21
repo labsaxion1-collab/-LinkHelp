@@ -105,6 +105,9 @@ export type RemoteCreateRequestInput = {
   preferredTime?: string | null;
   dateLabel: string;
   budgetHint: string;
+  budgetType?: 'fixed' | 'negotiable';
+  budgetAmount?: number | null;
+  currency?: string | null;
   budgetMin?: number | null;
   budgetMax?: number | null;
 };
@@ -117,6 +120,9 @@ const EXTENDED_REQUEST_COLUMNS = [
   'preferred_date',
   'preferred_time_window',
   'preferred_time',
+  'budget_type',
+  'budget_amount',
+  'currency',
   'budget_min',
   'budget_max',
 ] as const;
@@ -157,6 +163,9 @@ function buildRequestInsertPayload(input: RemoteCreateRequestInput, extended: bo
     preferred_date: input.preferredDate ?? null,
     preferred_time_window: input.preferredTimeWindow ?? null,
     preferred_time: input.preferredTime?.trim() ? input.preferredTime : null,
+    budget_type: input.budgetType ?? 'negotiable',
+    budget_amount: input.budgetType === 'fixed' ? input.budgetAmount ?? null : null,
+    currency: input.currency ?? 'CAD',
     budget_min: input.budgetMin ?? null,
     budget_max: input.budgetMax ?? null,
   };

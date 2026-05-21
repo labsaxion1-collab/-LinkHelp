@@ -70,6 +70,9 @@ export type RequestRow = {
   preferred_date: string | null;
   preferred_time_window: string | null;
   preferred_time: string | null;
+  budget_type: 'fixed' | 'negotiable' | null;
+  budget_amount: number | null;
+  currency: string | null;
   budget_min: number | null;
   budget_max: number | null;
   status: RequestStatus;

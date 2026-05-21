@@ -592,7 +592,7 @@ export default function HelperDashboard() {
           ) : null}
 
           {!isPerformancePage && UI_VISIBILITY.helperCredits ? (
-            <div className="min-w-0">
+            <div className="mt-5 flex min-w-0 items-center gap-2 md:mt-0">
               <HelperCreditsWalletCard
                 balance={creditBalance}
                 usedThisMonth={creditsUsedThisMonth}
@@ -602,27 +602,37 @@ export default function HelperDashboard() {
                 t={t}
                 onBuyCredits={goToCredits}
               />
+              <Link
+                to={ROUTES.helperJobs}
+                className="mb-3 inline-flex min-h-[40px] shrink-0 items-center gap-2 rounded-xl border border-blue-100 bg-white px-3 text-sm font-bold text-slate-700 shadow-sm hover:border-blue-200 hover:bg-blue-50"
+              >
+                <Icons.CalendarDays className="h-4 w-4 text-blue-600" />
+                <span>{t('helper_dashboard.nav_active_services')}</span>
+              </Link>
             </div>
           ) : null}
 
           {!isPerformancePage ? (
           <>
           {/* Job Categories Filter & Tabs */}
-          <div className="bg-white rounded-xl shadow-sm p-3 mb-3 border border-gray-200">
-            <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+          <div className="mb-4 rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-white p-3 shadow-sm">
+            <h3 className="mb-3 flex items-center gap-2 text-base font-black text-slate-950">
               {activeTab === 'candidaturas' ? (
-                <><Icons.ClipboardList className="w-5 h-5 text-blue-600" /> {t('helper_dashboard.filter_apps_title')}</>
+                <><span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-600 text-white"><Icons.ClipboardList className="h-5 w-5" /></span> {t('helper_dashboard.filter_apps_title')}</>
               ) : (
-                <><Icons.Target className="w-5 h-5 text-blue-600" /> {t('helper_dashboard.filter_find_title')}</>
+                <><span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-600 text-white"><Icons.Target className="h-5 w-5" /></span> {t('helper_dashboard.filter_find_title')}</>
               )}
             </h3>
             
-            <div className="flex gap-2 overflow-x-auto pb-2 mb-2 border-b border-gray-100 hide-scrollbar">
+            <div className="mb-3 flex gap-2 overflow-x-auto border-b border-blue-100/70 pb-3 hide-scrollbar">
               <button 
                 onClick={() => setSelectedCategoryFilter('')} 
-                className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-colors flex items-center gap-2 ${!selectedCategoryFilter ? 'bg-blue-50 text-blue-700 border-2 border-blue-200' : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100'}`}
+                className={`flex min-h-[46px] items-center gap-2 whitespace-nowrap rounded-2xl border px-3 text-xs font-black transition-colors sm:text-sm ${!selectedCategoryFilter ? 'border-blue-300 bg-white text-blue-700 shadow-sm' : 'border-transparent bg-white/70 text-slate-600 hover:bg-white'}`}
               >
-                <Icons.Layers className="w-4 h-4" /> {t('helper_dashboard.all_categories')}
+                <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${!selectedCategoryFilter ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  <Icons.Layers className="h-4 w-4" />
+                </span>
+                {t('helper_dashboard.all_categories')}
               </button>
               {SERVICE_CATEGORIES.map((cat) => {
                 const IconComponent = (Icons as any)[cat.icon] || Icons.HelpCircle;
@@ -631,19 +641,22 @@ export default function HelperDashboard() {
                   <button 
                     key={cat.id}
                     onClick={() => setSelectedCategoryFilter(cat.id)}
-                    className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 ${isSelected ? 'bg-blue-50 text-blue-700 border-2 border-blue-200 shadow-sm' : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100'}`}
+                    className={`flex min-h-[46px] items-center gap-2 whitespace-nowrap rounded-2xl border px-3 text-xs font-black transition-all sm:text-sm ${isSelected ? 'border-blue-300 bg-white text-blue-700 shadow-sm' : 'border-transparent bg-white/70 text-slate-600 hover:bg-white'}`}
                   >
-                    <IconComponent className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-gray-400'}`} /> {t(`categories.${cat.id}`)}
+                    <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                      <IconComponent className="h-4 w-4" />
+                    </span>
+                    {t(`categories.${cat.id}`)}
                   </button>
                 );
               })}
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:flex sm:overflow-x-auto sm:pb-1 hide-scrollbar">
-              <button onClick={() => setActiveTab('match')} className={`px-3 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'match' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.tab_match')}</button>
-              <button onClick={() => setActiveTab('recentes')} className={`px-3 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'recentes' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.tab_recent')}</button>
-              <button onClick={() => setActiveTab('emergencia')} className={`px-3 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'emergencia' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.tab_emergency')}</button>
-              <button onClick={() => setActiveTab('candidaturas')} className={`px-3 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === 'candidaturas' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{t('helper_dashboard.nav_applications')}</button>
+              <button onClick={() => setActiveTab('match')} className={`min-h-[40px] rounded-2xl px-3 text-xs font-black whitespace-nowrap transition-colors sm:text-sm ${activeTab === 'match' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.tab_match')}</button>
+              <button onClick={() => setActiveTab('recentes')} className={`min-h-[40px] rounded-2xl px-3 text-xs font-black whitespace-nowrap transition-colors sm:text-sm ${activeTab === 'recentes' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.tab_recent')}</button>
+              <button onClick={() => setActiveTab('emergencia')} className={`min-h-[40px] rounded-2xl px-3 text-xs font-black whitespace-nowrap transition-colors sm:text-sm ${activeTab === 'emergencia' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.tab_emergency')}</button>
+              <button onClick={() => setActiveTab('candidaturas')} className={`min-h-[40px] rounded-2xl px-3 text-xs font-black whitespace-nowrap transition-colors sm:text-sm ${activeTab === 'candidaturas' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.nav_applications')}</button>
             </div>
           </div>
 

@@ -24,6 +24,9 @@ export interface Job {
   longitude?: number | null;
   subcategory?: string | null;
   value: string;
+  budgetType?: 'fixed' | 'negotiable' | null;
+  budgetAmount?: number | null;
+  currency?: string | null;
   budgetMin?: number | null;
   budgetMax?: number | null;
   urgency: JobUrgency;

@@ -150,6 +150,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         preferredTime: jobDetails.preferredTime ?? null,
         dateLabel: jobDetails.date,
         budgetHint: jobDetails.value,
+        budgetType: jobDetails.budgetType ?? undefined,
+        budgetAmount: jobDetails.budgetAmount ?? null,
+        currency: jobDetails.currency ?? 'CAD',
         budgetMin: jobDetails.budgetMin ?? null,
         budgetMax: jobDetails.budgetMax ?? null,
       });

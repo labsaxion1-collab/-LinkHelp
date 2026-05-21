@@ -21,6 +21,7 @@ import {
 
 type ModalStep = 'category' | 'schedule' | 'description' | 'review';
 const STEPS: ModalStep[] = ['category', 'schedule', 'description', 'review'];
+const QUICK_BUDGET_AMOUNTS = [50, 100, 150, 200] as const;
 const TRANSLATION_LANGUAGE_OPTIONS = ['Português', 'Inglês', 'Francês', 'Espanhol', 'Italiano', 'Árabe'] as const;
 
 function needsBuilding(type: MovePropertyType) {
@@ -45,9 +46,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [postText, setPostText] = useState('');
-  const [budgetHint, setBudgetHint] = useState('');
-  const [budgetMin, setBudgetMin] = useState(80);
-  const [budgetMax, setBudgetMax] = useState(120);
+  const [budgetType, setBudgetType] = useState<'fixed' | 'negotiable'>('negotiable');
+  const [budgetAmount, setBudgetAmount] = useState('');
   const [translationFromLanguage, setTranslationFromLanguage] = useState('');
   const [translationToLanguage, setTranslationToLanguage] = useState('');
   const [requestAddress, setRequestAddress] = useState<RequestAddressValue>(() => emptyRequestAddress());
@@ -98,16 +98,18 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const translationLanguagesComplete =
     selectedCategory !== 'translation' || Boolean(translationFromLanguage && translationToLanguage);
   const descriptionComplete = Boolean(postText.trim()) && !descriptionBlocked && translationLanguagesComplete;
-  const formatBudgetRange = (min: number, max: number) => `CAD $${min}-${max}`;
+  const parsedBudgetAmount = budgetType === 'fixed' ? Number.parseInt(budgetAmount || '0', 10) : null;
+  const fixedBudgetIsValid = budgetType === 'fixed' && Boolean(parsedBudgetAmount && parsedBudgetAmount > 0);
+  const budgetLabel = fixedBudgetIsValid ? `CAD $${parsedBudgetAmount}` : t('jobs.value_negotiable');
+  const budgetStorageType: 'fixed' | 'negotiable' = fixedBudgetIsValid ? 'fixed' : 'negotiable';
 
   const reset = () => {
     setStep(initialCategory && initialSubcategory ? 'schedule' : 'category');
     setSelectedCategory(initialCategory);
     setSelectedSubcategory(initialSubcategory);
     setPostText('');
-    setBudgetHint('');
-    setBudgetMin(80);
-    setBudgetMax(120);
+    setBudgetType('negotiable');
+    setBudgetAmount('');
     setTranslationFromLanguage('');
     setTranslationToLanguage('');
     setRequestAddress(emptyRequestAddress());
@@ -176,7 +178,6 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       extra = '\n\n---\n' + lines.join('\n');
     }
     const fullDescription = postText.trim() + extra;
-    const finalBudgetHint = budgetHint.trim() || formatBudgetRange(budgetMin, budgetMax);
     const addr = selectedCategory === 'moving' ? movePickupAddress : requestAddress;
     const locationParts = [addr.display.trim(), addr.city, addr.region].filter(Boolean);
     const locationLabel = locationParts.join(', ') || t('jobs.remote');
@@ -204,9 +205,10 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
         preferredTimeWindow: preferredTimeWindow || null,
         preferredTime: preferredTimeSpecific.trim() || null,
         date: buildJobDateLabel(scheduleInput),
-        value: finalBudgetHint || t('jobs.value_negotiable'),
-        budgetMin,
-        budgetMax,
+        value: budgetLabel,
+        budgetType: budgetStorageType,
+        budgetAmount: fixedBudgetIsValid ? parsedBudgetAmount : null,
+        currency: 'CAD',
         urgency: jobUrgencyFromPriority(priority),
       });
       handleClose();
@@ -256,20 +258,6 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const continueDisabled =
     (step === 'schedule' && !scheduleComplete) ||
     (step === 'description' && !descriptionComplete);
-  const budgetTrackLeft = (budgetMin / 1000) * 100;
-  const budgetTrackRight = 100 - (budgetMax / 1000) * 100;
-
-  const updateBudgetMin = (value: number) => {
-    const nextMin = Math.min(value, budgetMax - 10);
-    setBudgetMin(nextMin);
-    setBudgetHint(formatBudgetRange(nextMin, budgetMax));
-  };
-
-  const updateBudgetMax = (value: number) => {
-    const nextMax = Math.max(value, budgetMin + 10);
-    setBudgetMax(nextMax);
-    setBudgetHint(formatBudgetRange(budgetMin, nextMax));
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={handleClose}>
@@ -406,46 +394,71 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               <div>
                 <label className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.budget_hint_label')}</label>
                 <div className="rounded-2xl border-2 border-gray-200 bg-white p-4 focus-within:border-blue-500">
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <div>
-                      <span className="block text-xs font-bold uppercase tracking-wide text-gray-400">{t('create_modal.budget_min_label')}</span>
-                      <span className="text-lg font-black text-slate-950">CAD ${budgetMin}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="block text-xs font-bold uppercase tracking-wide text-gray-400">{t('create_modal.budget_max_label')}</span>
-                      <span className="text-lg font-black text-slate-950">CAD ${budgetMax}</span>
-                    </div>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                    {QUICK_BUDGET_AMOUNTS.map((amount) => (
+                      <button
+                        key={amount}
+                        type="button"
+                        onClick={() => {
+                          setBudgetType('fixed');
+                          setBudgetAmount(String(amount));
+                        }}
+                        className={`min-h-[42px] rounded-xl border px-3 text-sm font-black transition-colors ${
+                          budgetType === 'fixed' && budgetAmount === String(amount)
+                            ? 'border-blue-600 bg-blue-600 text-white'
+                            : 'border-slate-200 bg-slate-50 text-slate-800 hover:bg-blue-50'
+                        }`}
+                      >
+                        CAD ${amount}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBudgetType('fixed');
+                        setBudgetAmount('');
+                      }}
+                      className={`min-h-[42px] rounded-xl border px-3 text-sm font-black transition-colors ${
+                        budgetType === 'fixed' && !QUICK_BUDGET_AMOUNTS.some((amount) => String(amount) === budgetAmount)
+                          ? 'border-blue-600 bg-blue-600 text-white'
+                          : 'border-slate-200 bg-slate-50 text-slate-800 hover:bg-blue-50'
+                      }`}
+                    >
+                      {t('create_modal.budget_other')}
+                    </button>
                   </div>
-                  <div className="relative h-8">
-                    <div className="absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-slate-100" />
-                    <div
-                      className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-blue-600"
-                      style={{ left: `${budgetTrackLeft}%`, right: `${budgetTrackRight}%` }}
-                    />
+                  <label className="mt-3 flex min-h-[52px] items-center rounded-xl border border-slate-200 bg-slate-50 px-4 focus-within:border-blue-500 focus-within:bg-white">
+                    <span className="shrink-0 text-base font-black text-slate-900">CAD $</span>
                     <input
-                      aria-label={t('create_modal.budget_min_label')}
-                      type="range"
-                      min="0"
-                      max="1000"
-                      step="10"
-                      value={budgetMin}
-                      onChange={(e) => updateBudgetMin(Number(e.target.value))}
-                      className="pointer-events-none absolute inset-x-0 top-1/2 h-2 w-full -translate-y-1/2 appearance-none bg-transparent [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:shadow-md [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:shadow-md"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={budgetAmount}
+                      onChange={(e) => {
+                        setBudgetType('fixed');
+                        setBudgetAmount(e.target.value.replace(/\D/g, '').slice(0, 6));
+                      }}
+                      placeholder={t('create_modal.budget_amount_placeholder')}
+                      className="min-w-0 flex-1 bg-transparent px-2 text-lg font-black text-slate-950 outline-none placeholder:text-slate-400"
                     />
-                    <input
-                      aria-label={t('create_modal.budget_max_label')}
-                      type="range"
-                      min="0"
-                      max="1000"
-                      step="10"
-                      value={budgetMax}
-                      onChange={(e) => updateBudgetMax(Number(e.target.value))}
-                      className="pointer-events-none absolute inset-x-0 top-1/2 h-2 w-full -translate-y-1/2 appearance-none bg-transparent [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:shadow-md [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:shadow-md"
-                    />
-                  </div>
-                  <div className="mt-3 flex items-center justify-between text-xs font-bold text-gray-400">
-                    <span>CAD $0</span>
-                    <span>CAD $1000+</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBudgetType('negotiable');
+                      setBudgetAmount('');
+                    }}
+                    className={`mt-3 flex min-h-[44px] w-full items-center justify-center rounded-xl border px-4 text-sm font-black transition-colors ${
+                      budgetType === 'negotiable'
+                        ? 'border-slate-900 bg-slate-900 text-white'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {t('create_modal.budget_negotiate')}
+                  </button>
+                  <div className="mt-3 rounded-xl bg-blue-50 px-3 py-2 text-sm font-bold text-blue-950">
+                    {budgetStorageType === 'fixed'
+                      ? t('create_modal.budget_summary_fixed', { amount: parsedBudgetAmount || 0 })
+                      : t('create_modal.budget_summary_negotiable')}
                   </div>
                 </div>
                 <p className="mt-1.5 text-xs font-medium text-gray-500">{t('create_modal.budget_hint_help')}</p>
@@ -505,7 +518,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               selectedCategory={selectedCategory}
               selectedSubcategory={selectedSubcategory}
               postText={postText}
-              budgetHint={budgetHint.trim() || formatBudgetRange(budgetMin, budgetMax)}
+              budgetHint={budgetLabel}
               translationFromLanguage={translationFromLanguage}
               translationToLanguage={translationToLanguage}
               requestAddress={requestAddress}
@@ -536,7 +549,9 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-3.5 px-8 rounded-xl ml-auto flex items-center gap-2"
             >
               {publishing ? <Icons.Loader2 className="w-5 h-5 animate-spin" /> : <Icons.Rocket className="w-5 h-5" />}
-              {t('create_modal.publish_help')}
+              {budgetStorageType === 'fixed'
+                ? t('create_modal.publish_help_with_budget', { amount: parsedBudgetAmount || 0 })
+                : t('create_modal.publish_help_negotiate')}
             </button>
           ) : step === 'category' ? (
             <span />

@@ -229,13 +229,14 @@ export default function HelperDashboard() {
 
   const [upcomingModalJob, setUpcomingModalJob] = useState<UpcomingJob | null>(null);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
+  const helperUserId = session?.user?.id ?? me.id;
 
   const helperUpcomingList = React.useMemo(
     () =>
       upcomingJobs
-        .filter((u) => u.helperId === me.id)
+        .filter((u) => u.helperId === helperUserId)
         .sort((a, b) => a.scheduledAt - b.scheduledAt),
-    [upcomingJobs],
+    [upcomingJobs, helperUserId],
   );
 
   const upcomingModalJobFresh = React.useMemo(
@@ -249,7 +250,7 @@ export default function HelperDashboard() {
   );
 
   const upcomingLocale = language === 'fr' ? 'fr-CA' : language === 'pt' ? 'pt-BR' : 'en-CA';
-  const helperApplications = getHelperApplications(me.id);
+  const helperApplications = getHelperApplications(helperUserId);
   const appliedJobIds = new Set(
     helperApplications.filter((a) => a.status !== 'cancelled').map((a) => a.jobId),
   );
@@ -302,7 +303,7 @@ export default function HelperDashboard() {
     if (appliedJobIds.has(jobId)) return;
     setApplyingJobId(jobId);
     try {
-      await applyForJob(jobId, me.id);
+      await applyForJob(jobId, helperUserId);
       setToastNotification({ message: t('helper_dashboard.toast_apply_success'), show: true });
       setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
     } catch (err: unknown) {

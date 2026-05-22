@@ -36,6 +36,7 @@ interface AuthContextValue {
       acceptedTermsAt?: string;
       helperTermsAccepted?: boolean;
       helperTermsAcceptedAt?: string;
+      preferredLanguage?: string;
     },
   ) => Promise<AuthError>;
   signInWithGoogle: () => Promise<AuthError>;
@@ -85,6 +86,7 @@ function buildProfileInsert(user: User): ProfileInsert {
   const region = str('region') || str('province') || null;
   const country = str('country') || null;
   const phone = str('phone') || null;
+  const preferred_language = str('preferred_language') || null;
 
   const providers = user.app_metadata?.providers;
   const isGoogle =
@@ -108,6 +110,7 @@ function buildProfileInsert(user: User): ProfileInsert {
     region,
     country,
     phone,
+    preferred_language,
     accepted_terms,
     accepted_terms_at,
     helper_terms_accepted,
@@ -135,6 +138,34 @@ function withoutColumn<T extends Record<string, unknown>>(payload: T, column: st
   return next;
 }
 
+async function ensureProfileViaRpc(user: User, row: ProfileInsert): Promise<AuthProfile | null> {
+  const sb = getSupabase();
+  if (!sb) return null;
+
+  const { data, error } = await sb.rpc('ensure_profile_for_current_user', {
+    p_role: row.role,
+    p_name: row.name ?? null,
+    p_city: row.city ?? null,
+    p_region: row.region ?? null,
+    p_country: row.country ?? null,
+    p_phone: row.phone ?? null,
+    p_preferred_language: row.preferred_language ?? null,
+  });
+
+  if (error) {
+    authDevLog('ensureProfileViaRpc:error', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      userId: user.id,
+    });
+    return null;
+  }
+
+  return data ? (data as AuthProfile) : null;
+}
+
 /** Ensures a `profiles` row exists (RLS: insert own row). */
 async function ensureProfileFromUser(user: User): Promise<AuthProfile | null> {
   const sb = getSupabase();
@@ -147,6 +178,9 @@ async function ensureProfileFromUser(user: User): Promise<AuthProfile | null> {
     role: row.role,
     provider: user.app_metadata?.provider,
   });
+
+  const rpcProfile = await ensureProfileViaRpc(user, row);
+  if (rpcProfile) return rpcProfile;
 
   let { data, error } = await sb.from('profiles').upsert(row, { onConflict: 'id' }).select('*').maybeSingle();
 
@@ -451,6 +485,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         acceptedTermsAt?: string;
         helperTermsAccepted?: boolean;
         helperTermsAcceptedAt?: string;
+        preferredLanguage?: string;
       },
     ): Promise<AuthError> => {
       const sb = getSupabase();
@@ -470,6 +505,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             region: meta.region ?? '',
             country: meta.country ?? '',
             phone: meta.phone ?? '',
+            preferred_language: meta.preferredLanguage ?? '',
             accepted_terms: meta.acceptedTerms ?? false,
             accepted_terms_at: meta.acceptedTerms ? (meta.acceptedTermsAt ?? now) : '',
             helper_terms_accepted: meta.helperTermsAccepted ?? false,
@@ -594,6 +630,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         'region',
         'country',
         'phone',
+        'preferred_language',
         'role',
         'rating',
         'credits',

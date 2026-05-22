@@ -135,6 +135,18 @@ export type Database = {
         Returns: unknown;
       };
       ensure_client_signup_credits: { Args: { p_client_id: string }; Returns: number };
+      ensure_profile_for_current_user: {
+        Args: {
+          p_role?: string | null;
+          p_name?: string | null;
+          p_city?: string | null;
+          p_region?: string | null;
+          p_country?: string | null;
+          p_phone?: string | null;
+          p_preferred_language?: string | null;
+        };
+        Returns: ProfileRow;
+      };
     };
     Enums: Record<string, never>;
   };

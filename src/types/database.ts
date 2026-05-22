@@ -16,6 +16,7 @@ export type ProfileRow = {
   bio: string | null;
   city: string | null;
   phone: string | null;
+  preferred_language: string | null;
   /** State / province (e.g. QC). */
   region: string | null;
   country: string | null;

@@ -93,6 +93,7 @@ export default function RegisterPage() {
       acceptedTermsAt: now,
       helperTermsAccepted: ut === 'helper',
       helperTermsAcceptedAt: ut === 'helper' ? now : undefined,
+      preferredLanguage: language,
     });
     setSubmitting(false);
     if (err) {

@@ -15,7 +15,6 @@ import { emptyRequestAddress, type RequestAddressValue } from '@/components/clie
 import { descriptionContainsContactInfo } from '@/utils/descriptionContactGuard';
 import {
   buildJobDateLabel,
-  isScheduleStepComplete,
   jobUrgencyFromPriority,
   resolvePreferredDateIso,
   type PreferredDateMode,
@@ -23,8 +22,8 @@ import {
   type TimeWindow,
 } from '@/utils/requestSchedule';
 
-type ModalStep = 'category' | 'schedule' | 'description' | 'confirm' | 'review';
-const STEPS: ModalStep[] = ['category', 'schedule', 'description', 'confirm', 'review'];
+type ModalStep = 'category' | 'description' | 'confirm' | 'review';
+const STEPS: ModalStep[] = ['category', 'description', 'confirm', 'review'];
 const TRANSLATION_LANGUAGE_OPTIONS = ['Português', 'Inglês', 'Francês', 'Espanhol', 'Italiano', 'Árabe'] as const;
 
 function needsBuilding(type: MovePropertyType) {
@@ -53,6 +52,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const [budgetAmount, setBudgetAmount] = useState('');
   const [translationFromLanguage, setTranslationFromLanguage] = useState('');
   const [translationToLanguage, setTranslationToLanguage] = useState('');
+  const [translationServiceMode, setTranslationServiceMode] = useState<'online' | 'in_person' | ''>('');
   const [requestAddress, setRequestAddress] = useState<RequestAddressValue>(() => emptyRequestAddress());
   const [priority, setPriority] = useState<RequestPriority>('flexible');
   const [preferredDateMode, setPreferredDateMode] = useState<PreferredDateMode>('today');
@@ -77,7 +77,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     [priority, preferredDateMode, preferredDateIso, preferredTimeWindow, preferredTimeSpecific],
   );
 
-  const scheduleExtrasComplete = useMemo(() => {
+  const detailsComplete = useMemo(() => {
     if (selectedCategory === 'moving') {
       if (!movePropertyType || !movePickupAddress.display.trim() || !moveDeliveryAddress.display.trim()) return false;
       if (needsBuilding(movePropertyType)) {
@@ -89,25 +89,28 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     if (selectedCategory === 'cleaning' && selectedSubcategory === 'apartment') {
       return Boolean(cleaningAptFloor && cleaningHasElevator);
     }
+    if (selectedCategory === 'translation') {
+      if (!translationServiceMode) return false;
+      return translationServiceMode === 'online' || Boolean(requestAddress.display.trim());
+    }
     return Boolean(requestAddress.display.trim());
   }, [
     selectedCategory, selectedSubcategory, movePropertyType, movePickupAddress.display, moveDeliveryAddress.display,
     movePickupFloor, movePickupElevator, moveDeliveryFloor, moveDeliveryElevator,
-    cleaningHouseFloors, cleaningAptFloor, cleaningHasElevator, requestAddress.display,
+    cleaningHouseFloors, cleaningAptFloor, cleaningHasElevator, translationServiceMode, requestAddress.display,
   ]);
 
-  const scheduleComplete = isScheduleStepComplete(scheduleInput) && scheduleExtrasComplete;
   const descriptionBlocked = descriptionContainsContactInfo(postText);
   const translationLanguagesComplete =
     selectedCategory !== 'translation' || Boolean(translationFromLanguage && translationToLanguage);
-  const descriptionComplete = Boolean(postText.trim()) && !descriptionBlocked && translationLanguagesComplete;
-  const parsedBudgetAmount = budgetType === 'fixed' ? Number.parseInt(budgetAmount || '0', 10) : null;
+  const descriptionComplete = detailsComplete && Boolean(postText.trim()) && !descriptionBlocked && translationLanguagesComplete;
+  const parsedBudgetAmount = budgetType === 'fixed' && selectedCategory !== 'translation' ? Number.parseInt(budgetAmount || '0', 10) : null;
   const fixedBudgetIsValid = budgetType === 'fixed' && Boolean(parsedBudgetAmount && parsedBudgetAmount > 0);
   const budgetLabel = fixedBudgetIsValid ? `CAD $${parsedBudgetAmount}` : t('jobs.value_negotiable');
   const budgetStorageType: 'fixed' | 'negotiable' = fixedBudgetIsValid ? 'fixed' : 'negotiable';
 
   const reset = () => {
-    setStep(initialCategory && initialSubcategory ? 'schedule' : 'category');
+    setStep(initialCategory && initialSubcategory ? 'description' : 'category');
     setSelectedCategory(initialCategory);
     setSelectedSubcategory(initialSubcategory);
     setPostText('');
@@ -115,6 +118,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setBudgetAmount('');
     setTranslationFromLanguage('');
     setTranslationToLanguage('');
+    setTranslationServiceMode('');
     setRequestAddress(emptyRequestAddress());
     setPriority('flexible');
     setPreferredDateMode('today');
@@ -177,11 +181,17 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       const lines = [
         t('create_modal.translation_from_language') + ': ' + translationFromLanguage,
         t('create_modal.translation_to_language') + ': ' + translationToLanguage,
+        'Tipo de atendimento: ' + (translationServiceMode === 'online' ? 'Online' : 'Presencial'),
       ];
       extra = '\n\n---\n' + lines.join('\n');
     }
     const fullDescription = postText.trim() + extra;
-    const addr = selectedCategory === 'moving' ? movePickupAddress : requestAddress;
+    const addr =
+      selectedCategory === 'moving'
+        ? movePickupAddress
+        : selectedCategory === 'translation' && translationServiceMode === 'online'
+          ? emptyRequestAddress()
+          : requestAddress;
     const locationParts = [addr.display.trim(), addr.city, addr.region].filter(Boolean);
     const locationLabel = locationParts.join(', ') || t('jobs.remote');
     const categoryLabel = selectedCategory ? t(`categories.${selectedCategory}`) : t('client_dashboard.create_order_title');
@@ -237,7 +247,6 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const stepIndex = STEPS.indexOf(step);
   const stepIcons: Record<ModalStep, React.ComponentType<{ className?: string }>> = {
     category: Icons.Grid,
-    schedule: Icons.Calendar,
     description: Icons.Type,
     confirm: Icons.CalendarCheck,
     review: Icons.CheckCircle2,
@@ -259,13 +268,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     if (idx < STEPS.length - 1) setStep(STEPS[idx + 1]);
   };
 
-  const addrForLabel = selectedCategory === 'moving' ? movePickupAddress : requestAddress;
-  const locationParts = [addrForLabel.display.trim(), addrForLabel.city, addrForLabel.region].filter(Boolean);
-  const locationLabel = locationParts.join(', ') || t('jobs.remote');
-  const categoryLabel = selectedCategory ? t(`categories.${selectedCategory}`) : '';
-
   const continueDisabled =
-    (step === 'schedule' && !scheduleComplete) ||
     (step === 'description' && !descriptionComplete) ||
     (step === 'confirm' && !isConfirmStepComplete(preferredDateMode, preferredDateIso));
 
@@ -347,7 +350,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                   <button
                     key={subKey}
                     type="button"
-                    onClick={() => { setSelectedSubcategory(subKey); setStep('schedule'); }}
+                    onClick={() => { setSelectedSubcategory(subKey); setStep('description'); }}
                     className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 bg-white text-left"
                   >
                     <span className="font-bold text-gray-900">{t('service_subs.' + activeCat.id + '.' + subKey)}</span>
@@ -357,50 +360,50 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               </div>
             </div>
           )}
-          {step === 'schedule' && (
-            <CreateRequestScheduleStep
-              t={t}
-              selectedCategory={selectedCategory}
-              selectedSubcategory={selectedSubcategory}
-              priority={priority}
-              setPriority={setPriority}
-              preferredDateMode={preferredDateMode}
-              setPreferredDateMode={setPreferredDateMode}
-              preferredDateIso={preferredDateIso}
-              setPreferredDateIso={setPreferredDateIso}
-              preferredTimeWindow={preferredTimeWindow}
-              setPreferredTimeWindow={setPreferredTimeWindow}
-              preferredTimeSpecific={preferredTimeSpecific}
-              setPreferredTimeSpecific={setPreferredTimeSpecific}
-              showSpecificTime={showSpecificTime}
-              setShowSpecificTime={setShowSpecificTime}
-              requestAddress={requestAddress}
-              setRequestAddress={setRequestAddress}
-              movePropertyType={movePropertyType}
-              setMovePropertyType={setMovePropertyType}
-              movePickupAddress={movePickupAddress}
-              setMovePickupAddress={setMovePickupAddress}
-              moveDeliveryAddress={moveDeliveryAddress}
-              setMoveDeliveryAddress={setMoveDeliveryAddress}
-              movePickupFloor={movePickupFloor}
-              setMovePickupFloor={setMovePickupFloor}
-              movePickupElevator={movePickupElevator}
-              setMovePickupElevator={setMovePickupElevator}
-              moveDeliveryFloor={moveDeliveryFloor}
-              setMoveDeliveryFloor={setMoveDeliveryFloor}
-              moveDeliveryElevator={moveDeliveryElevator}
-              setMoveDeliveryElevator={setMoveDeliveryElevator}
-              cleaningHouseFloors={cleaningHouseFloors}
-              setCleaningHouseFloors={setCleaningHouseFloors}
-              cleaningAptFloor={cleaningAptFloor}
-              setCleaningAptFloor={setCleaningAptFloor}
-              cleaningHasElevator={cleaningHasElevator}
-              setCleaningHasElevator={setCleaningHasElevator}
-            />
-          )}
           {step === 'description' && (
             <div className="space-y-4 animate-in fade-in duration-300">
-              <h4 className="text-2xl font-bold text-gray-900">{t('create_modal.describe_simple')}</h4>
+              <CreateRequestScheduleStep
+                t={t}
+                selectedCategory={selectedCategory}
+                selectedSubcategory={selectedSubcategory}
+                priority={priority}
+                setPriority={setPriority}
+                preferredDateMode={preferredDateMode}
+                setPreferredDateMode={setPreferredDateMode}
+                preferredDateIso={preferredDateIso}
+                setPreferredDateIso={setPreferredDateIso}
+                preferredTimeWindow={preferredTimeWindow}
+                setPreferredTimeWindow={setPreferredTimeWindow}
+                preferredTimeSpecific={preferredTimeSpecific}
+                setPreferredTimeSpecific={setPreferredTimeSpecific}
+                showSpecificTime={showSpecificTime}
+                setShowSpecificTime={setShowSpecificTime}
+                requestAddress={requestAddress}
+                setRequestAddress={setRequestAddress}
+                movePropertyType={movePropertyType}
+                setMovePropertyType={setMovePropertyType}
+                movePickupAddress={movePickupAddress}
+                setMovePickupAddress={setMovePickupAddress}
+                moveDeliveryAddress={moveDeliveryAddress}
+                setMoveDeliveryAddress={setMoveDeliveryAddress}
+                movePickupFloor={movePickupFloor}
+                setMovePickupFloor={setMovePickupFloor}
+                movePickupElevator={movePickupElevator}
+                setMovePickupElevator={setMovePickupElevator}
+                moveDeliveryFloor={moveDeliveryFloor}
+                setMoveDeliveryFloor={setMoveDeliveryFloor}
+                moveDeliveryElevator={moveDeliveryElevator}
+                setMoveDeliveryElevator={setMoveDeliveryElevator}
+                cleaningHouseFloors={cleaningHouseFloors}
+                setCleaningHouseFloors={setCleaningHouseFloors}
+                cleaningAptFloor={cleaningAptFloor}
+                setCleaningAptFloor={setCleaningAptFloor}
+                cleaningHasElevator={cleaningHasElevator}
+                setCleaningHasElevator={setCleaningHasElevator}
+                translationServiceMode={translationServiceMode}
+                setTranslationServiceMode={setTranslationServiceMode}
+              />
+              {selectedCategory !== 'translation' ? (
               <div>
                 <label className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.budget_hint_label')}</label>
                 <div className="rounded-2xl border-2 border-gray-200 bg-white p-4 focus-within:border-blue-500">
@@ -440,6 +443,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                 </div>
                 <p className="mt-1.5 text-xs font-medium text-gray-500">{t('create_modal.budget_hint_help')}</p>
               </div>
+              ) : null}
               {selectedCategory === 'translation' ? (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="block">
@@ -496,8 +500,6 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               setPreferredDateMode={setPreferredDateMode}
               preferredDateIso={preferredDateIso}
               setPreferredDateIso={setPreferredDateIso}
-              categoryLabel={categoryLabel}
-              locationLabel={locationLabel}
             />
           )}
           {step === 'review' && (
@@ -537,9 +539,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-3.5 px-8 rounded-xl ml-auto flex items-center gap-2"
             >
               {publishing ? <Icons.Loader2 className="w-5 h-5 animate-spin" /> : <Icons.Rocket className="w-5 h-5" />}
-              {budgetStorageType === 'fixed'
-                ? t('create_modal.publish_help_with_budget', { amount: parsedBudgetAmount || 0 })
-                : t('create_modal.publish_help_negotiate')}
+              Publicar pedido
             </button>
           ) : step === 'category' ? (
             <span />

@@ -50,6 +50,8 @@ type Props = {
   setCleaningAptFloor: (v: string) => void;
   cleaningHasElevator: string;
   setCleaningHasElevator: (v: string) => void;
+  translationServiceMode: 'online' | 'in_person' | '';
+  setTranslationServiceMode: (v: 'online' | 'in_person' | '') => void;
 };
 
 function needsBuilding(type: MovePropertyType) {
@@ -61,18 +63,6 @@ export function CreateRequestScheduleStep(props: Props) {
     t,
     selectedCategory,
     selectedSubcategory,
-    priority,
-    setPriority,
-    preferredDateMode,
-    setPreferredDateMode,
-    preferredDateIso,
-    setPreferredDateIso,
-    preferredTimeWindow,
-    setPreferredTimeWindow,
-    preferredTimeSpecific,
-    setPreferredTimeSpecific,
-    showSpecificTime,
-    setShowSpecificTime,
     requestAddress,
     setRequestAddress,
     movePropertyType,
@@ -95,6 +85,8 @@ export function CreateRequestScheduleStep(props: Props) {
     setCleaningAptFloor,
     cleaningHasElevator,
     setCleaningHasElevator,
+    translationServiceMode,
+    setTranslationServiceMode,
   } = props;
 
   const addressFields = (label: string, value: RequestAddressValue, onChange: (v: RequestAddressValue) => void) => (
@@ -112,104 +104,10 @@ export function CreateRequestScheduleStep(props: Props) {
   );
 
   return (
-    <section className="space-y-6 animate-in fade-in duration-300">
+    <section className="space-y-5 animate-in fade-in duration-300">
       <div>
-        <h4 className="text-2xl font-bold text-gray-900 mb-2">{t('create_modal.schedule_step_title')}</h4>
-        <p className="text-gray-500 text-sm">{t('create_modal.schedule_step_desc')}</p>
-      </div>
-
-      <div>
-        <p className="text-sm font-bold text-gray-800 mb-3">{t('create_modal.when')}</p>
-        <div className="grid grid-cols-2 gap-2">
-          {(['urgent', 'flexible'] as const).map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setPriority(p)}
-              className={`min-h-[64px] p-3 rounded-2xl border-2 text-left text-sm font-bold transition-all ${
-                priority === p ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white hover:border-gray-300'
-              }`}
-            >
-              {p === 'urgent' ? t('urgency.urgent_asap') : t('urgency.flexible')}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {priority === 'flexible' && (
-        <div className="space-y-3">
-          <p className="text-sm font-bold text-gray-800">{t('create_modal.preferred_date')}</p>
-          <div className="flex flex-wrap gap-2">
-            {(['today', 'tomorrow', 'pick'] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setPreferredDateMode(mode)}
-                className={`min-h-[44px] px-4 py-2 rounded-xl text-sm font-bold border-2 ${
-                  preferredDateMode === mode ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white'
-                }`}
-              >
-                {mode === 'today'
-                  ? t('create_modal.date_today')
-                  : mode === 'tomorrow'
-                    ? t('create_modal.date_tomorrow')
-                    : t('create_modal.date_pick')}
-              </button>
-            ))}
-          </div>
-          {preferredDateMode === 'pick' && (
-            <input
-              type="date"
-              value={preferredDateIso}
-              min={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setPreferredDateIso(e.target.value)}
-              className="w-full min-h-[48px] border-2 border-gray-200 rounded-xl px-4 text-base"
-            />
-          )}
-        </div>
-      )}
-
-      <div className="space-y-3">
-        <p className="text-sm font-bold text-gray-800">{t('create_modal.preferred_time')}</p>
-        <div className="flex flex-wrap gap-2">
-          {(['morning', 'afternoon', 'evening'] as const).map((w) => (
-            <button
-              key={w}
-              type="button"
-              onClick={() => {
-                setPreferredTimeWindow(w);
-                setShowSpecificTime(false);
-              }}
-              className={`min-h-[44px] px-4 py-2 rounded-xl text-sm font-bold border-2 ${
-                preferredTimeWindow === w && !showSpecificTime ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white'
-              }`}
-            >
-              {w === 'morning'
-                ? t('create_modal.time_morning')
-                : w === 'afternoon'
-                  ? t('create_modal.time_afternoon')
-                  : t('create_modal.time_evening')}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowSpecificTime((v) => !v)}
-          className="text-sm font-bold text-blue-600"
-        >
-          {t('create_modal.time_specific_toggle')}
-        </button>
-        {showSpecificTime && (
-          <input
-            type="time"
-            value={preferredTimeSpecific}
-            onChange={(e) => {
-              setPreferredTimeSpecific(e.target.value);
-              setPreferredTimeWindow('');
-            }}
-            className="w-full min-h-[48px] border-2 border-gray-200 rounded-xl px-4"
-          />
-        )}
+        <h4 className="text-2xl font-bold text-gray-900 mb-2">{t('create_modal.describe_simple')}</h4>
+        <p className="text-gray-500 text-sm">{t('create_modal.describe_desc_short')}</p>
       </div>
 
       {selectedCategory === 'moving' ? (
@@ -282,6 +180,32 @@ export function CreateRequestScheduleStep(props: Props) {
               </select>
             </div>
           )}
+        </div>
+      ) : selectedCategory === 'translation' ? (
+        <div className="space-y-3 rounded-2xl border-2 border-slate-200 bg-slate-50/80 p-4">
+          <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <Icons.Languages className="w-4 h-4 text-blue-600" />
+            Tipo de atendimento
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {(['online', 'in_person'] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setTranslationServiceMode(mode)}
+                className={`min-h-[48px] rounded-xl border-2 px-3 text-sm font-black transition-colors ${
+                  translationServiceMode === mode
+                    ? 'border-blue-600 bg-blue-50 text-blue-900'
+                    : 'border-gray-200 bg-white text-gray-700'
+                }`}
+              >
+                {mode === 'online' ? 'Online' : 'Presencial'}
+              </button>
+            ))}
+          </div>
+          {translationServiceMode === 'in_person'
+            ? addressFields(t('create_modal.where'), requestAddress, setRequestAddress)
+            : null}
         </div>
       ) : (
         addressFields(t('create_modal.where'), requestAddress, setRequestAddress)

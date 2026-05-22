@@ -17,7 +17,6 @@ import type { TrainingCertLevel } from '@/utils/helperTrainingProgress';
 import { helperPlanFromRoleKey, helperTierFromApplication } from '@/utils/helperPlanFromRoleKey';
 import { ClientMapWidget } from '@/components/client/ClientMapWidget';
 import { LhCard } from '@/components/design-system/LhCard';
-import { UserPresenceBadge } from '@/components/ui/UserPresenceBadge';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useAuth } from '@/context/AuthContext';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
@@ -320,131 +319,47 @@ export default function ClientDashboard() {
         }}
       />
 
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
         
         {/* Left Sidebar */}
-        <div className="hidden">
-          
-          {/* User Profile & Switch Mode */}
-          <div className="space-y-2">
-            <button onClick={() => setShowProfileModal(true)} className="flex items-center gap-3 p-3 hover:bg-gray-200 rounded-xl transition-all group w-full text-left focus:outline-none focus:ring-2 focus:ring-blue-200">
-              <img src={me.avatar} alt="Profile" className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm shrink-0" />
-              <div className="flex-1 min-w-0 pr-1">
-                <span className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors block truncate">{me.name}</span>
-                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <UserPresenceBadge role="client" status="seeking" />
-                </div>
-                <span className="text-[11px] xl:text-xs text-gray-500 block truncate mt-1">{t('client_shell.view_profile')}</span>
+        <aside className="hidden lg:block">
+          <div className="sticky top-24 space-y-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+            <button onClick={() => setShowProfileModal(true)} className="flex w-full items-center gap-3 rounded-2xl p-2 text-left hover:bg-slate-50">
+              <img src={me.avatar} alt="" className="h-11 w-11 rounded-2xl object-cover ring-1 ring-slate-100" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-slate-950">{me.name}</p>
+                <p className="truncate text-xs font-bold text-blue-600">{t('client_shell.view_profile')}</p>
               </div>
             </button>
-            
-              <button
-                type="button"
-                onClick={() => void toHelper()}
-                className="flex items-center justify-center gap-2 w-full p-2.5 border border-gray-300 hover:border-gray-400 hover:bg-gray-200 rounded-xl text-gray-700 font-medium text-sm transition-all focus:ring-2 focus:ring-gray-200 focus:outline-none min-w-0"
-              >
-                <Icons.RefreshCw className="w-4 h-4 shrink-0" /> <span className="truncate">{t('sidebar.switch_helper')}</span>
-              </button>
-          </div>
-          {/* Main Navigation */}
-          <nav className="space-y-1 mb-6">
-            <button onClick={() => { navigate(ROUTES.clientDashboard); setActiveSidebarTab('dashboard'); }} className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all cursor-pointer font-bold focus:outline-none min-w-0 ${activeSidebarTab === 'dashboard' ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-200 text-gray-700 hover:text-gray-900 group'}`}>
-              <Icons.Grid className={`w-5 h-5 shrink-0 ${activeSidebarTab === 'dashboard' ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600 transition-colors'}`} />
-              <span className="truncate">{t('sidebar.dashboard')}</span>
-            </button>
-            <button onClick={() => { navigate(ROUTES.clientDashboard); setActiveSidebarTab('my-helpers'); }} className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all cursor-pointer font-bold focus:outline-none min-w-0 ${activeSidebarTab === 'my-helpers' ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-200 text-gray-700 hover:text-gray-900 group'}`}>
-              <Icons.Users className={`w-5 h-5 shrink-0 ${activeSidebarTab === 'my-helpers' ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600 transition-colors'}`} />
-              <span className="truncate">{t('sidebar.my_helpers')}</span>
-            </button>
-            <button onClick={() => { navigate(ROUTES.clientJobs); setActiveSidebarTab('active-services'); }} className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all cursor-pointer font-bold focus:outline-none min-w-0 ${activeSidebarTab === 'active-services' ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-200 text-gray-700 hover:text-gray-900 group'}`}>
-              <Icons.Briefcase className={`w-5 h-5 shrink-0 ${activeSidebarTab === 'active-services' ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600 transition-colors'}`} />
-              <span className="truncate flex-1 text-left">{t('sidebar.active_services')}</span>
-            </button>
-            <button onClick={() => { navigate(ROUTES.clientDashboard); setActiveSidebarTab('saved'); }} className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all cursor-pointer font-bold focus:outline-none min-w-0 ${activeSidebarTab === 'saved' ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-200 text-gray-700 hover:text-gray-900 group'}`}>
-              <Icons.Bookmark className={`w-5 h-5 shrink-0 ${activeSidebarTab === 'saved' ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600 transition-colors'}`} />
-              <span className="truncate">{t('sidebar.saved')}</span>
-            </button>
-          </nav>
-          
-          {UI_VISIBILITY.ideas ? (
-          <Link to={ROUTES.ideas} className="shrink-0 block relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 p-4 xl:p-5 group shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] transition-all hover:-translate-y-0.5 mb-6 border border-gray-700/50">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400/20 rounded-full blur-[50px] group-hover:bg-yellow-400/30 transition-colors pointer-events-none"></div>
-            
-            <div className="relative z-10 flex flex-col justify-between items-center w-full group">
-              <div className="w-full flex justify-between items-center mb-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex items-center justify-center shrink-0 w-8 h-8 bg-gradient-to-br from-yellow-400/20 to-yellow-500/10 rounded-xl border border-yellow-400/20 shadow-inner">
-                    <Icons.Lightbulb className="w-4 h-4 text-yellow-400 fill-yellow-400/20" />
-                  </div>
-                  <span className="font-bold text-white text-[15px] tracking-tight truncate">{t('sidebar.ideas')}</span>
-                </div>
-                
-                {/* Ping Indicator */}
-                <div className="flex h-2 w-2 shrink-0 relative mr-1">
-                  <span className="animate-ping absolute inset-0 rounded-full bg-yellow-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
-                </div>
-              </div>
-              
-              <p className="text-gray-400 text-xs font-medium leading-relaxed w-full text-left mb-4">
-                {t('sidebar.ideas_subtitle')}
-              </p>
-
-              <div className="w-full grid grid-cols-1 gap-2 border-t border-gray-700/50 pt-4">
-                <div className="flex items-center justify-center gap-2 text-xs text-gray-300 bg-white/5 hover:bg-white/10 p-2.5 rounded-xl border border-white/5 transition-colors min-w-0 w-full group-hover:text-blue-400">
-                  <Icons.TrendingUp className="w-4 h-4 text-blue-500 shrink-0" />
-                  <span className="font-medium truncate">{t('sidebar.trending_ideas')}</span>
-                </div>
-                <div className="flex items-center justify-center gap-2 text-[10px] text-gray-400 font-medium px-2 py-0.5 min-w-0 w-full">
-                  <Icons.Gift className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
-                  <span className="truncate">{t('sidebar.earn_credits')}</span>
-                </div>
-              </div>
-            </div>
-          </Link>
-          ) : null}
-          
-          {/* Quick Actions / Create Post (Sidebar) */}
-          <div className="pt-2">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-3">{t('dashboard.shortcuts')}</p>
-            <div className="space-y-3 px-1">
-              <button onClick={() => openCreateModal()} className="flex items-center gap-3 w-full p-3 bg-white border border-gray-100 shadow-sm hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-md hover:-translate-y-0.5 rounded-2xl transition-all text-left group focus:outline-none focus:ring-2 focus:ring-blue-200 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 transition-colors shadow-inner">
-                  <Icons.Plus className="w-5 h-5 text-blue-600 group-hover:text-white transition-colors" />
-                </div>
-                <div className="flex-1 min-w-0 pr-1">
-                  <span className="font-bold text-gray-900 block text-[14px] xl:text-[15px] truncate group-hover:text-blue-700 transition-colors">{t('dashboard.create_request')}</span>
-                  <span className="text-[11px] xl:text-xs text-gray-500 block font-medium truncate">{t('dashboard.create_request_desc')}</span>
-                </div>
-              </button>
-            </div>
-          </div>
-          
-          <div className="pt-4 border-t border-gray-200 pb-8">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 px-3">{t('client_shell.favorite_services')}</p>
-            <div className="space-y-3 px-1">
-              {SERVICE_CATEGORIES.slice(0, 4).map(cat => {
-                const IconComponent = (Icons as any)[cat.icon];
+            <nav className="space-y-1 border-t border-slate-100 pt-3">
+              {[
+                { id: 'dashboard' as const, label: t('sidebar.dashboard'), icon: Icons.Home, action: () => { navigate(ROUTES.clientDashboard); setActiveSidebarTab('dashboard'); } },
+                { id: 'messages' as const, label: t('messages_page.title'), icon: Icons.MessageCircle, action: () => navigate(ROUTES.messages) },
+                { id: 'active-services' as const, label: t('sidebar.active_services'), icon: Icons.Briefcase, action: () => { navigate(ROUTES.clientJobs); setActiveSidebarTab('active-services'); } },
+                { id: 'profile' as const, label: t('nav.profile_menu_profile'), icon: Icons.UserRound, action: () => navigate(ROUTES.settings) },
+              ].map((item) => {
+                const Icon = item.icon;
+                const active = activeSidebarTab === item.id || (item.id === 'messages' && routerLocation.pathname === ROUTES.messages);
                 return (
-                  <button key={cat.id} className="flex items-center p-3 rounded-2xl border-2 border-transparent bg-white hover:border-blue-200 hover:bg-blue-50 shadow-sm transition-all w-full text-left group">
-                    <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0 group-hover:bg-white group-hover:border-blue-100 transition-colors mr-3">
-                      {IconComponent && <IconComponent className="w-5 h-5 text-gray-500 group-hover:text-blue-600" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="font-bold text-gray-900 text-sm block mb-0.5 truncate group-hover:text-blue-900">{t(`categories.${cat.id}`)}</span>
-                      <span className="text-[10px] uppercase tracking-wider font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md inline-block">
-                        {t('client_shell.saved_badge')}
-                      </span>
-                    </div>
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={item.action}
+                    className={`flex min-h-[44px] w-full items-center gap-3 rounded-2xl px-3 text-sm font-black transition-colors ${
+                      active ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <span className="truncate">{item.label}</span>
                   </button>
                 );
               })}
-            </div>
+            </nav>
           </div>
-        </div>
+        </aside>
 
         <main className="w-full min-w-0">
-          <div className="mb-5 hidden md:block rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-sm">
+          <div className="hidden">
             <div className="flex gap-2 overflow-x-auto md:overflow-visible hide-scrollbar">
               {[
                 { id: 'dashboard' as const, label: t('sidebar.dashboard'), icon: Icons.Grid, to: ROUTES.clientDashboard },

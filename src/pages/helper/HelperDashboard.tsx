@@ -9,7 +9,6 @@ import { logMediaPicker } from '@/utils/mediaPickerDebug';
 import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import { filterValidSkillKeys, parseSkillKey, skillSubLabelKey } from '@/data/helperSkillsCatalog';
 import { useLanguage } from '@/context/LanguageContext';
-import { useModeSwitch } from '@/hooks/useModeSwitch';
 import { useAppData, type UpcomingJob } from '@/context/AppDataContext';
 import { useToast } from '@/context/ToastContext';
 import { useCredits } from '@/context/CreditContext';
@@ -28,7 +27,6 @@ import {
   type HelperPlanModalView,
 } from '@/components/helpers/HelperSubscriptionPlanModal';
 import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/HelperProfileCompletionBar';
-import { HelperDashboardNav } from '@/components/helpers/HelperDashboardNav';
 import { HelperCreditsWalletCard } from '@/components/helpers/HelperCreditsWalletCard';
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
@@ -83,7 +81,6 @@ export default function HelperDashboard() {
   const me = useSessionViewer();
   const { coords: helperCoords } = useUserLocation();
   const { session, profile, isConfigured, updateProfile, refreshProfile } = useAuth();
-  const { toClient, modeSwitchBusy } = useModeSwitch();
   const { evaluateProfileRewards } = useOnboardingRewards();
 
   useEffect(() => {
@@ -561,16 +558,69 @@ export default function HelperDashboard() {
         </div>
       )}
 
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
+        <aside className="hidden lg:block">
+          <div className="sticky top-24 space-y-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+            <button onClick={() => setShowProfileModal(true)} className="flex w-full items-center gap-3 rounded-2xl p-2 text-left hover:bg-slate-50">
+              <img src={helperAvatarUrl ?? me.avatar} alt="" className="h-11 w-11 rounded-2xl object-cover ring-1 ring-slate-100" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-slate-950">{me.name}</p>
+                <p className="truncate text-xs font-bold text-blue-600">{t('nav.profile_menu_profile')}</p>
+              </div>
+            </button>
+            <nav className="space-y-1 border-t border-slate-100 pt-3">
+              {[
+                { id: 'home', label: t('helper_dashboard.nav_home'), icon: Icons.Home, active: location.pathname === ROUTES.helperDashboard, action: () => { navigate(ROUTES.helperDashboard); setActiveTab('match'); } },
+                { id: 'performance', label: t('helper_dashboard.nav_performance'), icon: Icons.Activity, active: isPerformancePage, action: () => navigate(ROUTES.helperPerformance) },
+                { id: 'profile', label: t('nav.profile_menu_profile'), icon: Icons.UserRound, active: false, action: () => setShowProfileModal(true) },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={item.action}
+                    className={`flex min-h-[44px] w-full items-center gap-3 rounded-2xl px-3 text-sm font-black transition-colors ${
+                      item.active ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                );
+              })}
+              <div className="rounded-2xl bg-slate-50 p-2">
+                <p className="px-2 pb-1 text-[10px] font-black uppercase tracking-wide text-slate-400">
+                  {t('helper_dashboard.nav_active_services')}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate(ROUTES.helperDashboard);
+                    setActiveTab('candidaturas');
+                  }}
+                  className={`flex min-h-[38px] w-full items-center gap-2 rounded-xl px-2 text-xs font-black ${
+                    activeTab === 'candidaturas' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:bg-white'
+                  }`}
+                >
+                  <Icons.ClipboardList className="h-4 w-4" />
+                  {t('helper_dashboard.nav_applications')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(ROUTES.helperJobs)}
+                  className={`mt-1 flex min-h-[38px] w-full items-center gap-2 rounded-xl px-2 text-xs font-black ${
+                    location.pathname === ROUTES.helperJobs ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:bg-white'
+                  }`}
+                >
+                  <Icons.Briefcase className="h-4 w-4" />
+                  {t('helper_dashboard.nav_active_services')}
+                </button>
+              </div>
+            </nav>
+          </div>
+        </aside>
         <main className="w-full min-w-0 pb-2">
-          <HelperDashboardNav
-            activeTab={activeTab}
-            onSelectFeedTab={setActiveTab}
-            t={t}
-            onSwitchClient={() => void toClient()}
-            modeSwitchBusy={modeSwitchBusy}
-          />
-
           {completionBreakdown.percent < 100 ? (
             <div className="md:hidden mb-4">
               <HelperProfileCompletionBar
@@ -636,8 +686,6 @@ export default function HelperDashboard() {
               </div>
             </div>
           ) : null}
-
-          <HelperScorePanel className="mb-4" />
 
           {/* Job Categories Filter & Tabs */}
           <div className="mb-4 rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-white p-3 shadow-sm">

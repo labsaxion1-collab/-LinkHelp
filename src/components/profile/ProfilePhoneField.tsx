@@ -16,6 +16,14 @@ type Props = {
   t: (key: string) => string;
 };
 
+const COUNTRY_FLAGS: Record<PhoneCountryId, string> = {
+  CA: '🇨🇦',
+  US: '🇺🇸',
+  BR: '🇧🇷',
+  PT: '🇵🇹',
+  FR: '🇫🇷',
+};
+
 export function ProfilePhoneField({ label, value, onChange, disabled, t }: Props) {
   const selectId = useId();
   const inputId = `${selectId}-number`;
@@ -42,28 +50,31 @@ export function ProfilePhoneField({ label, value, onChange, disabled, t }: Props
       <label htmlFor={inputId} className="text-sm font-bold text-gray-700 block mb-2">
         {label}
       </label>
-      <div className="flex flex-wrap sm:flex-nowrap gap-2">
-        <select
-          id={selectId}
-          disabled={disabled}
-          value={countryId}
-          onChange={(e) => {
-            const next = e.target.value as PhoneCountryId;
-            setCountryId(next);
-            emitChange(next, nationalNumber);
-          }}
-          className="min-h-[48px] rounded-xl border-2 border-gray-200 bg-gray-50 px-2 py-2.5 text-sm font-bold text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-50 disabled:opacity-60"
-          aria-label={t('profile_form.country_code')}
-        >
-          {PHONE_COUNTRIES.map((c) => (
-            <option key={c.id} value={c.id}>
-              {phoneCountryLabel(c.id, t)} ({c.dialCode})
-            </option>
-          ))}
-        </select>
-        <span className="flex items-center min-h-[48px] px-3 rounded-xl border-2 border-gray-200 bg-gray-100 text-sm font-bold text-gray-700 shrink-0">
-          {phoneCountryById(countryId).dialCode}
-        </span>
+      <div className="flex gap-2">
+        <label className="relative min-h-[48px] w-[104px] shrink-0 overflow-hidden rounded-xl border-2 border-gray-200 bg-gray-50 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-50">
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1 text-base font-black text-gray-900">
+            <span>{COUNTRY_FLAGS[countryId]}</span>
+            <span>{phoneCountryById(countryId).dialCode}</span>
+          </span>
+          <select
+            id={selectId}
+            disabled={disabled}
+            value={countryId}
+            onChange={(e) => {
+              const next = e.target.value as PhoneCountryId;
+              setCountryId(next);
+              emitChange(next, nationalNumber);
+            }}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+            aria-label={t('profile_form.country_code')}
+          >
+            {PHONE_COUNTRIES.map((c) => (
+              <option key={c.id} value={c.id}>
+                {phoneCountryLabel(c.id, t)} ({c.dialCode})
+              </option>
+            ))}
+          </select>
+        </label>
         <input
           id={inputId}
           type="tel"
@@ -92,4 +103,3 @@ export function ProfilePhoneField({ label, value, onChange, disabled, t }: Props
     </div>
   );
 }
-

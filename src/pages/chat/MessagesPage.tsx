@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import * as Icons from 'lucide-react';
-import { Search, Send, MoreVertical, Phone, Video, ChevronLeft, ShieldCheck, Lock } from 'lucide-react';
+import { Search, Send, ChevronLeft, ShieldCheck, Lock } from 'lucide-react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppData } from '@/context/AppDataContext';
 import { useAppMode } from '@/context/AppModeContext';
@@ -56,6 +56,14 @@ export default function MessagesPage() {
   );
   const [mobilePanel, setMobilePanel] = useState<'list' | 'thread'>('list');
   const [isTyping, setIsTyping] = useState(false);
+  const [hiddenConversationIds, setHiddenConversationIds] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      return new Set(JSON.parse(localStorage.getItem(`lh:hidden-conversations:${me.id}`) || '[]') as string[]);
+    } catch {
+      return new Set();
+    }
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const serviceConfirmed = useRemoteChat ? remote.contactUnlocked : false;
@@ -92,11 +100,26 @@ export default function MessagesPage() {
   const filteredSummaries = useMemo(() => {
     if (!useRemoteChat) return [];
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return remote.summaries;
-    return remote.summaries.filter(
+    const visible = remote.summaries.filter((s) => !hiddenConversationIds.has(s.id));
+    if (!q) return visible;
+    return visible.filter(
       (s) => s.peerName.toLowerCase().includes(q) || s.requestTitle.toLowerCase().includes(q),
     );
-  }, [useRemoteChat, remote.summaries, searchQuery]);
+  }, [useRemoteChat, remote.summaries, searchQuery, hiddenConversationIds]);
+
+  const hideConversation = (conversationId: string) => {
+    if (!window.confirm('Remover esta conversa da sua lista?')) return;
+    setHiddenConversationIds((prev) => {
+      const next = new Set(prev);
+      next.add(conversationId);
+      localStorage.setItem(`lh:hidden-conversations:${me.id}`, JSON.stringify([...next]));
+      return next;
+    });
+    if (remote.selectedId === conversationId) {
+      remote.setSelectedId(null);
+      setMobilePanel('list');
+    }
+  };
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -191,37 +214,6 @@ export default function MessagesPage() {
             {t('messages_page.status_online')}
           </div>
         </div>
-      </div>
-
-      <div className="flex items-center gap-1 sm:gap-2 text-gray-400 shrink-0">
-        <button
-          type="button"
-          title={serviceConfirmed ? undefined : t('messages_page.call_disabled_pre')}
-          disabled={!serviceConfirmed}
-          className={clsx(
-            'p-3 rounded-xl min-w-[44px] min-h-[44px] flex items-center justify-center',
-            serviceConfirmed ? 'hover:bg-gray-50 hover:text-gray-900' : 'opacity-35 cursor-not-allowed',
-          )}
-        >
-          <Phone className="w-5 h-5" />
-        </button>
-        <button
-          type="button"
-          title={serviceConfirmed ? undefined : t('messages_page.call_disabled_pre')}
-          disabled={!serviceConfirmed}
-          className={clsx(
-            'p-3 rounded-xl min-w-[44px] min-h-[44px] flex items-center justify-center',
-            serviceConfirmed ? 'hover:bg-gray-50 hover:text-gray-900' : 'opacity-35 cursor-not-allowed',
-          )}
-        >
-          <Video className="w-5 h-5" />
-        </button>
-        <button
-          type="button"
-          className="p-3 rounded-xl hover:bg-gray-50 hover:text-gray-900 min-w-[44px] min-h-[44px] flex items-center justify-center"
-        >
-          <MoreVertical className="w-5 h-5" />
-        </button>
       </div>
     </div>
   );
@@ -361,28 +353,6 @@ export default function MessagesPage() {
         }}
         className="flex items-end gap-2"
       >
-        <button
-          type="button"
-          title={serviceConfirmed ? undefined : t('messages_page.attachment_disabled_pre')}
-          disabled={!serviceConfirmed}
-          className={clsx(
-            'p-3 rounded-xl flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center',
-            serviceConfirmed ? 'text-gray-400 hover:text-blue-600 hover:bg-blue-50' : 'text-gray-200 cursor-not-allowed',
-          )}
-        >
-          <Icons.Paperclip className="w-5 h-5" />
-        </button>
-        <button
-          type="button"
-          title={serviceConfirmed ? undefined : t('messages_page.attachment_disabled_pre')}
-          disabled={!serviceConfirmed}
-          className={clsx(
-            'p-3 rounded-xl flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center',
-            serviceConfirmed ? 'text-gray-400 hover:text-blue-600 hover:bg-blue-50' : 'text-gray-200 cursor-not-allowed',
-          )}
-        >
-          <Icons.Image className="w-5 h-5" />
-        </button>
         <div className="flex-1 relative min-w-0">
           <textarea
             rows={1}
@@ -395,14 +365,8 @@ export default function MessagesPage() {
               }
             }}
             placeholder={serviceConfirmed ? t('messages_page.input_placeholder') : t('messages_page.input_placeholder_limited')}
-            className="w-full bg-slate-100 border border-transparent rounded-2xl pl-4 pr-12 py-3 text-base sm:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/80 focus:outline-none transition-all shadow-inner resize-none max-h-32 min-h-[48px]"
+            className="w-full bg-slate-100 border border-transparent rounded-2xl px-4 py-3 text-base sm:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/80 focus:outline-none transition-all shadow-inner resize-none max-h-32 min-h-[48px]"
           />
-          <button
-            type="button"
-            className="absolute right-2 bottom-2 p-2 text-gray-400 hover:text-gray-600 rounded-lg min-w-[40px] min-h-[40px] flex items-center justify-center"
-          >
-            <Icons.Smile className="w-5 h-5" />
-          </button>
         </div>
         <button
           type="submit"
@@ -515,37 +479,49 @@ export default function MessagesPage() {
             )}
             {useRemoteChat &&
               filteredSummaries.map((s) => (
-                <button
+                <div
                   key={s.id}
-                  type="button"
-                  onClick={() => {
-                    remote.setSelectedId(s.id);
-                    setMobilePanel('thread');
-                  }}
                   className={clsx(
-                    'w-full text-left p-4 border-b border-gray-100 bg-white border-l-4 relative overflow-hidden transition-colors',
+                    'w-full border-b border-gray-100 bg-white border-l-4 relative overflow-hidden transition-colors',
                     remote.selectedId === s.id ? 'border-l-blue-600 bg-blue-50/40' : 'border-l-transparent hover:bg-slate-50/80',
                   )}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="relative shrink-0">
-                      <img
-                        src={s.peerAvatar}
-                        alt=""
-                        className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
-                        loading="lazy"
-                      />
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-baseline gap-2 mb-1">
-                        <h3 className="text-sm font-bold text-gray-900 truncate">{s.peerName.split(' ')[0] || s.peerName}</h3>
-                        <span className="text-[10px] font-bold text-blue-600 shrink-0">{t('notifications.time_now')}</span>
+                  <div className="flex items-center gap-2 p-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        remote.setSelectedId(s.id);
+                        setMobilePanel('thread');
+                      }}
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    >
+                      <div className="relative shrink-0">
+                        <img
+                          src={s.peerAvatar}
+                          alt=""
+                          className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
+                          loading="lazy"
+                        />
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
                       </div>
-                      <p className="text-sm text-gray-600 truncate font-medium">{s.requestTitle}</p>
-                    </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-baseline gap-2 mb-1">
+                          <h3 className="text-sm font-bold text-gray-900 truncate">{s.peerName.split(' ')[0] || s.peerName}</h3>
+                          <span className="text-[10px] font-bold text-blue-600 shrink-0">{t('notifications.time_now')}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 truncate font-medium">{s.requestTitle}</p>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => hideConversation(s.id)}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      aria-label="Remover conversa"
+                    >
+                      <Icons.Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
-                </button>
+                </div>
               ))}
           </div>
         </div>

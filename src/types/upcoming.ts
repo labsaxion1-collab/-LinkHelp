@@ -4,6 +4,7 @@ export type UpcomingWorkflowStatus =
   | 'scheduled'
   | 'in_progress'
   | 'arriving'
+  | 'awaiting_client_confirmation'
   | 'completed'
   | 'cancelled';
 

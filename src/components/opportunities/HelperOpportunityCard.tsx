@@ -15,6 +15,7 @@ export type HelperOpportunityCardProps = {
   hasApplied: boolean;
   isApplying: boolean;
   onApply: (jobId: string) => void;
+  onViewClientProfile?: (job: Job) => void;
   applicationsCount?: number;
   t: TFn;
   translateCategory: TranslateFn;
@@ -55,6 +56,7 @@ export function HelperOpportunityCard({
   hasApplied,
   isApplying,
   onApply,
+  onViewClientProfile,
   t,
   translateCategory,
   formatJobSchedule,
@@ -97,13 +99,13 @@ export function HelperOpportunityCard({
     );
 
   const ctaBase =
-    'flex-1 inline-flex min-h-[48px] px-4 rounded-[var(--lh-radius-md)] font-bold text-sm items-center justify-center gap-2 transition-all duration-200';
+    'flex-1 inline-flex min-h-[42px] px-3 rounded-[var(--lh-radius-md)] font-bold text-sm items-center justify-center gap-2 transition-all duration-200';
 
   return (
     <LhCard
       padding="none"
       className={clsx(
-        'group/card overflow-hidden border bg-white/95 transition-all duration-300',
+        'group/card h-full overflow-hidden border bg-white/95 transition-all duration-300',
         'hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/10 motion-reduce:transform-none',
         'hover:ring-2 hover:ring-blue-500/15',
         tier === 'urgent' &&
@@ -114,22 +116,26 @@ export function HelperOpportunityCard({
     >
       {header}
 
-      <div className="p-5">
+      <div className="p-4">
         <div className="flex items-center gap-3 mb-3">
           <img
             src={job.clientAvatar}
             alt=""
-            className="w-11 h-11 rounded-full object-cover border border-slate-100 shadow-sm"
+            className="w-10 h-10 rounded-full object-cover border border-slate-100 shadow-sm"
           />
           <div className="min-w-0">
-            <h3 className="font-bold text-slate-900 leading-tight hover:text-blue-700 transition-colors cursor-pointer truncate">
+            <button
+              type="button"
+              onClick={() => onViewClientProfile?.(job)}
+              className="block max-w-full truncate text-left font-bold leading-tight text-slate-900 transition-colors hover:text-blue-700"
+            >
               {job.clientName}
-            </h3>
+            </button>
             <p className="text-xs text-slate-500 flex items-center gap-1 font-medium truncate">{translateCategory(job.category, t)}</p>
           </div>
         </div>
-        <h4 className="text-base sm:text-lg font-bold text-slate-900 mb-2 leading-snug">{job.title}</h4>
-        <p className="text-sm text-slate-600 mb-4 leading-relaxed">{job.description}</p>
+        <h4 className="text-base font-bold text-slate-900 mb-2 leading-snug line-clamp-2">{job.title}</h4>
+        <p className="text-sm text-slate-600 mb-4 leading-relaxed line-clamp-2">{job.description}</p>
         <div className="flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800">
             <Icons.BadgeCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> {t('helper_dashboard.lead_quality', { pct: qualityScore })}
@@ -157,12 +163,20 @@ export function HelperOpportunityCard({
           </span>
         </div>
       </div>
-      <div className="mx-5 mb-4 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-        <p className="text-xs font-semibold leading-relaxed text-slate-600">
+      <div className="mx-4 mb-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
+        <p className="line-clamp-2 text-xs font-semibold leading-relaxed text-slate-600">
           {t('helper_dashboard.lead_unlock_note')}
         </p>
       </div>
-      <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/60 flex gap-3">
+      <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/60 flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={() => onViewClientProfile?.(job)}
+          className="inline-flex min-h-[38px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+        >
+          <Icons.Eye className="h-4 w-4" />
+          {t('helper_public.view_profile')}
+        </button>
         {hasApplied ? (
           <button type="button" disabled className={`${ctaBase} cursor-not-allowed bg-emerald-100 text-emerald-800 border border-emerald-200/80`}>
             <CheckCircle2 className="w-4 h-4 shrink-0" /> {t('helper_dashboard.applied_sent')}

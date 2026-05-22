@@ -6,6 +6,7 @@ export const HELPER_SCORE_CATEGORIES = [
   { id: 'cleanliness', labelKey: 'helper_score.cat_cleanliness' },
   { id: 'communication', labelKey: 'helper_score.cat_communication' },
   { id: 'trust', labelKey: 'helper_score.cat_trust' },
+  { id: 'completion', labelKey: 'helper_score.cat_completion' },
 ] as const;
 
 export type HelperScoreCategoryId = (typeof HELPER_SCORE_CATEGORIES)[number]['id'];
@@ -20,8 +21,10 @@ export const MOCK_HELPER_SCORE = {
     cleanliness: 4.8,
     communication: 4.5,
     trust: 4.7,
+    completion: 4.6,
   } as Record<HelperScoreCategoryId, number>,
   feedback: [
+    { id: '0', tone: 'positive' as const, messageKey: 'helper_score.feedback_completed' },
     { id: '1', tone: 'positive' as const, messageKey: 'helper_score.feedback_punctual' },
     { id: '2', tone: 'negative' as const, messageKey: 'helper_score.feedback_response' },
   ],

@@ -23,6 +23,8 @@ function statusBadgeClass(s: UpcomingWorkflowStatus): string {
       return 'bg-amber-100 text-amber-900 border-amber-200';
     case 'arriving':
       return 'bg-violet-100 text-violet-800 border-violet-200';
+    case 'awaiting_client_confirmation':
+      return 'bg-blue-100 text-blue-800 border-blue-200';
     case 'completed':
       return 'bg-emerald-100 text-emerald-800 border-emerald-200';
     case 'cancelled':
@@ -37,6 +39,7 @@ function statusLabel(s: UpcomingWorkflowStatus, t: (key: string) => string): str
     scheduled: 'upcoming_jobs.status_scheduled',
     in_progress: 'upcoming_jobs.status_in_progress',
     arriving: 'upcoming_jobs.status_arriving',
+    awaiting_client_confirmation: 'upcoming_jobs.status_awaiting_client_confirmation',
     completed: 'upcoming_jobs.status_completed',
     cancelled: 'upcoming_jobs.status_cancelled',
   };
@@ -61,7 +64,10 @@ export function UpcomingJobDetailModal({
   const clock = formatScheduledClock(job.scheduledAt, locale);
   const urgencyLabel =
     job.urgency === 'high' ? t('upcoming_jobs.urgency_high') : t('upcoming_jobs.urgency_normal');
-  const isTerminal = job.workflowStatus === 'completed' || job.workflowStatus === 'cancelled';
+  const isTerminal =
+    job.workflowStatus === 'completed' ||
+    job.workflowStatus === 'cancelled' ||
+    job.workflowStatus === 'awaiting_client_confirmation';
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center p-0 sm:p-4">
@@ -187,7 +193,7 @@ export function UpcomingJobDetailModal({
               {(job.workflowStatus === 'in_progress' || job.workflowStatus === 'arriving') && (
                 <button
                   type="button"
-                  onClick={() => onUpdateWorkflow(job.id, 'completed')}
+                  onClick={() => onUpdateWorkflow(job.id, 'awaiting_client_confirmation')}
                   className="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-colors shadow-sm flex items-center justify-center gap-2"
                 >
                   <Icons.CheckCircle2 className="w-4 h-4" />

@@ -81,7 +81,6 @@ export default function ClientDashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createInitialCategory, setCreateInitialCategory] = useState('');
   const [createInitialSubcategory, setCreateInitialSubcategory] = useState('');
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [activeSidebarTab, setActiveSidebarTab] = useState<'dashboard' | 'my-helpers' | 'active-services' | 'saved'>('dashboard');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
@@ -517,13 +516,12 @@ export default function ClientDashboard() {
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {SERVICE_CATEGORIES.map((cat) => {
                 const IconComponent = (Icons as any)[cat.icon] || Icons.HelpCircle;
-                const expanded = expandedCategory === cat.id;
                 return (
                   <section key={cat.id} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 transition-all hover:border-blue-200 hover:bg-blue-50/50 hover:shadow-sm">
-                    <div className="mb-3 flex items-center gap-3">
+                    <div className="flex items-center gap-3">
                       <button
                         type="button"
-                        onClick={() => setExpandedCategory(expanded ? null : cat.id)}
+                        onClick={() => openCreateModal(cat.id)}
                         className="group inline-flex min-w-0 flex-1 items-center gap-3 text-left"
                       >
                         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#17A8FF] to-[#1565FF] text-white shadow-md shadow-blue-500/20 ring-1 ring-blue-200">
@@ -537,28 +535,13 @@ export default function ClientDashboard() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setExpandedCategory(expanded ? null : cat.id)}
+                        onClick={() => openCreateModal(cat.id)}
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-400 ring-1 ring-slate-200 hover:text-blue-700"
                         aria-label={t(`categories.${cat.id}`)}
                       >
-                        <Icons.ChevronRight className={`h-5 w-5 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+                        <Icons.ChevronRight className="h-5 w-5" />
                       </button>
                     </div>
-
-                    {expanded ? (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {cat.subKeys.map((subKey) => (
-                        <button
-                          key={subKey}
-                          type="button"
-                          onClick={() => openCreateModal(cat.id, subKey)}
-                          className="min-h-[38px] rounded-full border border-slate-200 bg-white px-3 py-2 text-left text-xs font-bold text-slate-700 shadow-sm transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                        >
-                          {t(`service_subs.${cat.id}.${subKey}`)}
-                        </button>
-                      ))}
-                    </div>
-                    ) : null}
                   </section>
                 );
               })}

@@ -22,8 +22,8 @@ import {
   type TimeWindow,
 } from '@/utils/requestSchedule';
 
-type ModalStep = 'category' | 'description' | 'confirm' | 'review';
-const STEPS: ModalStep[] = ['category', 'description', 'confirm', 'review'];
+type ModalStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
+const STEPS: ModalStep[] = ['category', 'subcategory', 'description', 'confirm', 'review'];
 const TRANSLATION_LANGUAGE_OPTIONS = ['Português', 'Inglês', 'Francês', 'Espanhol', 'Italiano', 'Árabe'] as const;
 
 function needsBuilding(type: MovePropertyType) {
@@ -110,7 +110,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const budgetStorageType: 'fixed' | 'negotiable' = fixedBudgetIsValid ? 'fixed' : 'negotiable';
 
   const reset = () => {
-    setStep(initialCategory && initialSubcategory ? 'description' : 'category');
+    setStep(initialCategory && initialSubcategory ? 'description' : initialCategory ? 'subcategory' : 'category');
     setSelectedCategory(initialCategory);
     setSelectedSubcategory(initialSubcategory);
     setPostText('');
@@ -247,6 +247,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const stepIndex = STEPS.indexOf(step);
   const stepIcons: Record<ModalStep, React.ComponentType<{ className?: string }>> = {
     category: Icons.Grid,
+    subcategory: Icons.ListChecks,
     description: Icons.Type,
     confirm: Icons.CalendarCheck,
     review: Icons.CheckCircle2,
@@ -254,11 +255,6 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const activeCat = SERVICE_CATEGORIES.find((c) => c.id === selectedCategory);
 
   const goBack = () => {
-    if (step === 'category' && selectedCategory) {
-      setSelectedCategory('');
-      setSelectedSubcategory('');
-      return;
-    }
     const idx = stepIndex;
     if (idx > 0) setStep(STEPS[idx - 1]);
   };
@@ -305,7 +301,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
           </div>
         </div>
         <div className="p-6 overflow-y-auto overscroll-contain flex-1 min-h-0">
-          {step === 'category' && !selectedCategory && (
+          {step === 'category' && (
             <div className="animate-in fade-in duration-300">
               <h4 className="text-2xl font-bold text-gray-900 mb-2">{t('create_modal.select_category')}</h4>
               <p className="text-gray-500 text-sm mb-6">{t('create_modal.select_category_desc')}</p>
@@ -325,7 +321,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                     <button
                       key={cat.id}
                       type="button"
-                      onClick={() => { setSelectedCategory(cat.id); setSelectedSubcategory(''); }}
+                      onClick={() => { setSelectedCategory(cat.id); setSelectedSubcategory(''); setStep('subcategory'); }}
                       className="flex flex-col items-center p-4 rounded-2xl border-2 border-gray-200 hover:border-blue-300 bg-white hover:shadow-md transition-all"
                     >
                       <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
@@ -338,9 +334,9 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               </div>
             </div>
           )}
-          {step === 'category' && selectedCategory && (
+          {step === 'subcategory' && (
             <div className="animate-in fade-in duration-300">
-              <button type="button" onClick={() => setSelectedCategory('')} className="text-sm font-bold text-blue-600 mb-4">
+              <button type="button" onClick={() => setStep('category')} className="text-sm font-bold text-blue-600 mb-4">
                 {t('create_modal.change_category')}
               </button>
               <h4 className="text-2xl font-bold text-gray-900 mb-2">{t('create_modal.select_sub')}</h4>
@@ -524,7 +520,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
           )}
         </div>
         <div className="px-6 py-4 bg-white border-t border-gray-100 flex justify-between items-center shrink-0">
-          {step === 'category' && !selectedCategory ? (
+          {step === 'category' ? (
             <span />
           ) : (
             <button type="button" onClick={goBack} className="px-5 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-xl">
@@ -541,7 +537,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               {publishing ? <Icons.Loader2 className="w-5 h-5 animate-spin" /> : <Icons.Rocket className="w-5 h-5" />}
               Publicar pedido
             </button>
-          ) : step === 'category' ? (
+          ) : step === 'category' || step === 'subcategory' ? (
             <span />
           ) : (
             <button

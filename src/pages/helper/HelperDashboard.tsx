@@ -22,6 +22,7 @@ import { formatJobSchedule } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import type { Application } from '@/types/application';
+import type { Job } from '@/types/job';
 import {
   HelperSubscriptionPlanModal,
   type HelperPlanModalView,
@@ -231,6 +232,7 @@ export default function HelperDashboard() {
 
   const [upcomingModalJob, setUpcomingModalJob] = useState<UpcomingJob | null>(null);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
+  const [clientProfileJob, setClientProfileJob] = useState<Job | null>(null);
   const helperUserId = session?.user?.id ?? me.id;
 
   const helperUpcomingList = React.useMemo(
@@ -300,6 +302,14 @@ export default function HelperDashboard() {
       matchScore,
     };
   }, [helperApplications, jobs, me.id, me.rating]);
+
+  const needsStatusUpdate = helperUpcomingList.some(
+    (job) =>
+      job.scheduledAt < Date.now() &&
+      job.workflowStatus !== 'completed' &&
+      job.workflowStatus !== 'cancelled' &&
+      job.workflowStatus !== 'awaiting_client_confirmation',
+  );
 
   const handleApply = async (jobId: string) => {
     if (appliedJobIds.has(jobId)) return;
@@ -618,6 +628,17 @@ export default function HelperDashboard() {
 
           {!isPerformancePage ? (
           <>
+          {needsStatusUpdate ? (
+            <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900 shadow-sm">
+              <div className="flex items-start gap-2">
+                <Icons.Activity className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                <span>Atualize o status deste trabalho para manter seu score saudável.</span>
+              </div>
+            </div>
+          ) : null}
+
+          <HelperScorePanel className="mb-4" />
+
           {/* Job Categories Filter & Tabs */}
           <div className="mb-4 rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-white p-3 shadow-sm">
             <h3 className="mb-3 flex items-center gap-2 text-base font-black text-slate-950">
@@ -742,7 +763,8 @@ export default function HelperDashboard() {
                 </div>
               )
             ) : displayedJobs.length > 0 ? (
-              displayedJobs.map((job) => {
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+              {displayedJobs.map((job) => {
                 const hasApplied = appliedJobIds.has(job.id);
                 const isApplying = applyingJobId === job.id;
                 const distKm = distanceToJobKm(helperCoords, job);
@@ -756,13 +778,15 @@ export default function HelperDashboard() {
                       distanceKm={distKm}
                       applicationsCount={applications.filter((a) => a.jobId === job.id && a.status !== 'cancelled').length}
                       onApply={handleApply}
+                      onViewClientProfile={setClientProfileJob}
                       t={t}
                       translateCategory={translateCategory}
                       formatJobSchedule={formatJobSchedule}
                     />
                   </React.Fragment>
                 );
-              })
+              })}
+              </div>
             ) : (
               <div className="text-center py-12 bg-white rounded-2xl border border-gray-200 border-dashed">
                 <Icons.SearchX className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -864,6 +888,71 @@ export default function HelperDashboard() {
         locale={upcomingLocale}
         onUpdateWorkflow={updateUpcomingWorkflow}
       />
+
+      {clientProfileJob ? (
+        <div className="fixed inset-0 z-[85] flex items-end justify-center p-0 sm:items-center sm:p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
+            aria-label={t('common.close')}
+            onClick={() => setClientProfileJob(null)}
+          />
+          <section className="relative w-full max-w-md rounded-t-3xl border border-slate-100 bg-white p-5 shadow-2xl sm:rounded-3xl">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <img
+                  src={clientProfileJob.clientAvatar}
+                  alt=""
+                  className="h-16 w-16 rounded-2xl border-2 border-white object-cover shadow-md ring-1 ring-slate-100"
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-xl font-black text-slate-950">{clientProfileJob.clientName}</p>
+                  <p className="truncate text-sm font-bold text-slate-500">
+                    {[clientProfileJob.city, clientProfileJob.region].filter(Boolean).join(', ') ||
+                      clientProfileJob.location ||
+                      'Quebec'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setClientProfileJob(null)}
+                className="rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200"
+              >
+                <Icons.X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+              <p className="text-xs font-black uppercase tracking-wide text-emerald-700">Perfil público do cliente</p>
+              <p className="mt-1 text-sm font-semibold leading-relaxed text-emerald-950">
+                Cliente responsivo. Dados sensíveis ficam protegidos até haver conversa dentro do app.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                ['Score', '92%'],
+                ['Pedidos anteriores', jobs.filter((job) => job.clientId === clientProfileJob.clientId).length],
+                ['Taxa de resposta', 'Alta'],
+                ['Avaliações', 'Positivas'],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>
+                  <p className="mt-1 text-lg font-black text-slate-950">{value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-slate-100 bg-white p-4">
+              <p className="text-sm font-black text-slate-950">Avaliações recebidas de helpers</p>
+              <p className="mt-1 text-sm font-semibold leading-relaxed text-slate-600">
+                Bom alinhamento antes do serviço e respostas claras no chat interno.
+              </p>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
     </div>
   );

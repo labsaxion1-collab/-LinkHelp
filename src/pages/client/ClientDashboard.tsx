@@ -724,7 +724,7 @@ export default function ClientDashboard() {
 
         {/* Active Services Tab */}
         {activeSidebarTab === 'active-services' && (
-          <div className="w-full max-w-[680px] mx-auto animate-in fade-in duration-300">
+          <div className="w-full animate-in fade-in duration-300">
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6 p-6">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">{t('sidebar.active_services')}</h2>
@@ -769,7 +769,7 @@ export default function ClientDashboard() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
                 {jobs
                   .filter((j) => j.clientId === me.id)
                   .filter((j) => {
@@ -807,20 +807,21 @@ export default function ClientDashboard() {
                     const jobApps = applications.filter((a) => a.jobId === job.id && a.status !== 'cancelled');
                     const canCancelJob = job.status === 'open' || job.status === 'in_progress';
                     const qualityScore = estimateClientLeadQuality(job.description, job.location, job.value, jobApps.length);
+                    const helperSlots = [...jobApps.slice(0, 3), ...Array(Math.max(0, 3 - jobApps.length)).fill(null)];
                     
                     return (
-                      <div key={job.id} className="border border-blue-200 bg-blue-50/20 rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col">
+                      <div key={job.id} className="min-w-0 border border-blue-100 bg-white rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col shadow-sm">
                         <div className={`absolute top-0 left-0 w-1 h-full ${job.status === 'open' ? 'bg-yellow-400' : 'bg-green-500'}`}></div>
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start mb-4">
+                          <div className="min-w-0">
                             <span className={`text-xs font-bold px-2.5 py-1 rounded-md mb-2 inline-block ${job.status === 'open' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
                               {job.status === 'cancelled' ? t('upcoming_jobs.status_cancelled') : job.status === 'open' ? 'Aguardando Helpers' : 'Em Andamento'}
                             </span>
-                            <h3 className="font-bold text-gray-900 text-lg">{job.title}</h3>
-                            <p className="text-gray-500 text-xs md:text-sm flex items-center gap-1 mt-1 truncate"><Icons.Clock className="w-4 h-4 shrink-0" /> {formatJobSchedule(job.date, t)}</p>
+                            <h3 className="font-bold text-gray-900 text-lg leading-snug line-clamp-2">{job.title}</h3>
+                            <p className="text-gray-500 text-xs md:text-sm flex items-center gap-1 mt-1 min-w-0"><Icons.Clock className="w-4 h-4 shrink-0" /> <span className="truncate">{formatJobSchedule(job.date, t)}</span></p>
                           </div>
-                          <div className="text-right shrink-0">
-                            <p className="font-bold text-gray-900 text-sm">{job.value}</p>
+                          <div className="shrink-0 sm:text-right">
+                            <p className="inline-flex rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-sm font-black text-blue-800">{job.value || t('jobs.value_negotiable')}</p>
                           </div>
                         </div>
                         <JobTaskActionsBar
@@ -855,90 +856,92 @@ export default function ClientDashboard() {
                           </span>
                         </div>
 
-                        {jobApps.length > 0 && (
-                          <div className="border-t border-gray-200 pt-4 mt-4">
-                            <h4 className="font-bold text-gray-700 text-sm mb-3">Helpers Interessados ({jobApps.length}):</h4>
-                            <div className="space-y-3">
-                              {jobApps.map(app => (
-                                <div key={app.id} className="flex items-center gap-4 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                  <img src={app.helperAvatar} alt="Helper" className="w-10 h-10 rounded-full border border-gray-200" />
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-gray-900 text-sm flex flex-wrap items-center gap-2">
-                                      {app.helperName}
-                                      <HelperPlanBadge tier={helperTierFromApplication(app)} size="sm" />
-                                    </p>
-                                    <div className="flex items-center gap-1 text-[10px] font-bold text-yellow-600">
-                                      <Icons.Star className="w-3 h-3 fill-yellow-500" /> {app.helperRating} ({app.helperJobs} jobs)
+                        <div className="border-t border-gray-200 pt-4 mt-auto">
+                          <div className="mb-3 flex items-center justify-between gap-2">
+                            <h4 className="font-black text-gray-900 text-sm">Helpers interessados</h4>
+                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-600">{jobApps.length}/3</span>
+                          </div>
+                          <div className="grid grid-cols-1 gap-2">
+                            {helperSlots.map((app, index) => (
+                              app ? (
+                                <button
+                                  key={app.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedHelper({
+                                      id: app.helperId,
+                                      name: app.helperName,
+                                      avatar: app.helperAvatar,
+                                      rating: app.helperRating,
+                                      roleKey: 'pro_helper',
+                                      roleColor: '',
+                                      skills: [],
+                                      isOnline: true,
+                                      trainingCert: 'none',
+                                    });
+                                    setShowHelperProfileModal(true);
+                                  }}
+                                  className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-left transition-all hover:border-blue-200 hover:bg-blue-50"
+                                >
+                                  <div className="flex min-w-0 items-center gap-3">
+                                    <img src={app.helperAvatar} alt="" className="h-10 w-10 shrink-0 rounded-full border border-white object-cover shadow-sm" />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="flex min-w-0 items-center gap-1.5 text-sm font-black text-slate-950">
+                                        <span className="truncate">{app.helperName}</span>
+                                        <HelperPlanBadge tier={helperTierFromApplication(app)} size="sm" />
+                                      </p>
+                                      <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
+                                        <Icons.Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                                        <span>{app.helperRating}</span>
+                                        <span>{app.helperJobs} jobs</span>
+                                      </p>
                                     </div>
+                                    <span className="shrink-0 rounded-lg bg-white px-2.5 py-1 text-[11px] font-black text-blue-700 ring-1 ring-blue-100">
+                                      {t('helper_public.view_profile')}
+                                    </span>
                                   </div>
-                                  <div className="flex gap-2">
-                                    {app.status === 'pending' || app.status === 'viewed' ? (
-                                      <>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setSelectedHelper({
-                                              id: app.helperId,
-                                              name: app.helperName,
-                                              avatar: app.helperAvatar,
-                                              rating: app.helperRating,
-                                              roleKey: 'pro_helper',
-                                              roleColor: '',
-                                              skills: [],
-                                              isOnline: true,
-                                              trainingCert: 'none',
-                                            });
-                                            setShowHelperProfileModal(true);
-                                          }}
-                                          className="px-3 py-1.5 bg-slate-100 text-slate-800 text-xs font-bold rounded-lg"
-                                        >
-                                          {t('helper_public.view_profile')}
-                                        </button>
-                                    <button 
-                                          onClick={() => {
-                                            void updateApplicationStatus(app.id, 'accepted').catch(console.error);
-                                            setToastNotification({
-                                              message: `Chat automático criado com ${app.helperName}! "Parabéns! Sua candidatura foi aceita 🎉"`,
-                                              show: true
-                                            });
-                                            setTimeout(() => setToastNotification({ message: '', show: false }), 5000);
-                                          }}
-                                          className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 transition"
-                                        >
-                                          Aceitar
-                                        </button>
-                                        <button 
-                                          onClick={() => void updateApplicationStatus(app.id, 'rejected').catch(console.error)}
-                                          className="px-3 py-1.5 bg-red-100 text-red-600 text-xs font-bold rounded-lg hover:bg-red-200 transition"
-                                        >
-                                          Recusar
-                                        </button>
-                                      </>
-                                    ) : app.status === 'accepted' ? (
-                                      <span className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1.5 border border-green-200 rounded-lg flex items-center gap-1">
-                                        <Icons.CheckCircle2 className="w-3.5 h-3.5" /> {t('helper_dashboard.app_accepted')}
-                                      </span>
-                                    ) : app.status === 'rejected' ? (
-                                      <span className="text-xs font-bold text-red-600 bg-red-50 px-3 py-1.5 border border-red-200 rounded-lg">
-                                        {t('helper_dashboard.app_rejected')}
-                                      </span>
-                                    ) : null}
-                                  </div>
+                                </button>
+                              ) : (
+                                <div key={`empty-${job.id}-${index}`} className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-3 text-sm font-bold text-slate-400">
+                                  Aguardando helper
                                 </div>
+                              )
+                            ))}
+                          </div>
+                          {jobApps.some((app) => app.status === 'pending' || app.status === 'viewed') ? (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {jobApps.slice(0, 3).map((app) => (
+                                app.status === 'pending' || app.status === 'viewed' ? (
+                                  <React.Fragment key={`actions-${app.id}`}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        void updateApplicationStatus(app.id, 'accepted').catch(console.error);
+                                        setToastNotification({ message: `Candidatura de ${app.helperName} aceita.`, show: true });
+                                        setTimeout(() => setToastNotification({ message: '', show: false }), 5000);
+                                      }}
+                                      className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700"
+                                    >
+                                      Aceitar {app.helperName.split(' ')[0]}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => void updateApplicationStatus(app.id, 'rejected').catch(console.error)}
+                                      className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100"
+                                    >
+                                      Recusar
+                                    </button>
+                                  </React.Fragment>
+                                ) : null
                               ))}
                             </div>
-                          </div>
-                        )}
-                        {jobApps.length === 0 && (
-                          <div className="border-t border-gray-200 pt-4 mt-4 text-center">
-                            <p className="text-sm font-medium text-gray-500 text-left">{t('client_dashboard.applications_empty_client')}</p>
-                          </div>
-                        )}
+                          ) : null}
+                        </div>
                       </div>
                     );
                   })
                 ) : (
-                  <div className="text-center py-10 bg-gray-50 rounded-2xl border border-gray-200 border-dashed border-2">
+                  <div className="text-center py-10 bg-gray-50 rounded-2xl border border-gray-200 border-dashed border-2 md:col-span-2 2xl:col-span-3">
                     <p className="text-gray-500 font-medium">{t('client_dashboard.empty_no_published_requests')}</p>
                     <button onClick={() => openCreateModal()} className="mt-4 px-5 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">
                       {t('client_dashboard.create_order_now')}

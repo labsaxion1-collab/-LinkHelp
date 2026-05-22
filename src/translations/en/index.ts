@@ -967,7 +967,7 @@ export const en = {
     helper_use_radar: 'Temporary radar bump',
     credits_never_for_title: 'Never charged with credits',
     credits_never_for_body: 'Messages, basic applications, chat, reviews, portfolio, and essentials stay free.',
-    welcome_bonus_helper: 'New helpers: {{amount}} free LinkCredits',
+    welcome_bonus_helper: 'New helpers: 12 free LC',
     welcome_bonus_client: 'New clients: {{amount}} free LinkCredits',
     client_benefit_top_helpers: 'Optional extras only',
     package_10_price: 'CAD $3.99',
@@ -1535,6 +1535,7 @@ export const en = {
     feedback_response: 'Response time dropped — reply faster',
   },
   helper_public: {
+    view_profile: 'View profile',
     jobs_done: '{{count}} jobs',
     categories: 'Service categories',
     punctuality: 'Punctuality',

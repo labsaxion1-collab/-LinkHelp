@@ -125,6 +125,7 @@ export const fr = {
     },
   },
   nav: {
+    back: 'Retour',
     find_help: 'Trouvez de l’aide pour votre tâche',
     switch_to_client: 'Passer à Client',
     switch_to_helper: 'Passer à Assistant',
@@ -253,8 +254,8 @@ export const fr = {
     setup_step_3: 'Sur Vercel, ajoutez VITE_GOOGLE_MAPS_PLATFORM_KEY avec votre clé (restreindre par domaine).',
     setup_back: 'Retour',
     back_nav: 'Retour',
-    title_helper_radar: 'Radar des travaux',
-    title_client_nearby: 'Assistants à proximité',
+    title_helper_radar: 'Demandes à proximité',
+    title_client_nearby: 'Aides à proximité',
     subtitle_searching: 'Opportunités triées par distance et urgence dans votre rayon.',
     map_unavailable:
       'Carte indisponible pour le moment, mais les opportunités proches restent visibles en liste.',
@@ -1570,8 +1571,15 @@ export const fr = {
   job_actions: {
     cancel: 'Annuler',
     remove: 'Retirer',
+    remove_confirm: 'Retirer cette demande de votre liste ?',
     republish: 'Republier',
     finalize: 'Terminer la tâche',
+  },
+  client_how_it_works: {
+    title: 'Comment ça marche',
+    step1: 'Publiez votre demande',
+    step2: 'Recevez jusqu’à 3 aides intéressées',
+    step3: 'Choisissez la meilleure et coordonnez par chat',
   },
   notification_types: {
     section_title: 'Types d’alerte',

@@ -7,6 +7,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
 import { useModeSwitch } from '@/hooks/useModeSwitch';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
+import { getCategoryLucideIcon } from '@/utils/categoryIcons';
+import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { formatJobSchedule } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
 import { avatarUrlForName } from '@/utils/avatarUrl';
@@ -95,6 +97,7 @@ export default function ClientDashboard() {
   
   const navigate = useNavigate();
   const routerLocation = useLocation();
+  const isClientJobsPage = routerLocation.pathname === ROUTES.clientJobs;
   const { toHelper, modeSwitchBusy } = useModeSwitch();
 
   const { t } = useLanguage();
@@ -432,7 +435,7 @@ export default function ClientDashboard() {
 
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {SERVICE_CATEGORIES.map((cat) => {
-                const IconComponent = (Icons as any)[cat.icon] || Icons.HelpCircle;
+                const IconComponent = getCategoryLucideIcon(cat.icon);
                 return (
                   <section key={cat.id} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 transition-all hover:border-blue-200 hover:bg-blue-50/50 hover:shadow-sm">
                     <div className="flex items-center gap-3">
@@ -474,7 +477,10 @@ export default function ClientDashboard() {
           <div className="space-y-6">
             
             {/* Active Requests Summary */}
-            {jobs.filter((j) => j.clientId === me.id).slice(0, 2).map((job) => {
+            {jobs
+              .filter((j) => j.clientId === me.id && !hiddenJobIds.has(j.id))
+              .slice(0, 2)
+              .map((job) => {
                const jobApps = applications.filter((a) => a.jobId === job.id && a.status !== 'cancelled');
                return (
                  <div key={job.id} className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden hover:-translate-y-1 transition-transform duration-300 p-5 relative">
@@ -492,7 +498,7 @@ export default function ClientDashboard() {
                         : t('client_dashboard.helpers_applied_count', { count: jobApps.length })}
                     </span>
                    </div>
-                   <div className="flex gap-2 mt-3">
+                   <div className="flex flex-wrap items-center gap-2 mt-3">
                      <button
                        type="button"
                        onClick={() => { navigate(ROUTES.clientJobs); setActiveSidebarTab('active-services'); }}
@@ -500,67 +506,40 @@ export default function ClientDashboard() {
                      >
                        {t('notifications.view_details')} <Icons.ChevronRight className="w-4 h-4" />
                      </button>
+                     {!hiddenJobIds.has(job.id) ? (
+                       <button
+                         type="button"
+                         onClick={() => {
+                           if (window.confirm(t('job_actions.remove_confirm'))) {
+                             hideJobForUser(me.id, job.id);
+                             setHiddenJobIds(readHiddenJobIds(me.id));
+                           }
+                         }}
+                         className="text-sm font-bold text-slate-500 hover:text-rose-700"
+                       >
+                         {t('job_actions.remove')}
+                       </button>
+                     ) : null}
                    </div>
                  </div>
                );
             })}
             
-            {/* Recommended Helpers Block */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-900 leading-tight">{t('client_helpers.recommended_title')}</h3>
-                <button className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><Icons.MoreHorizontal className="w-5 h-5" /></button>
-              </div>
-
-              <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
-                {RECOMMENDED_HELPERS.length === 0 ? (
-                  <p className="text-sm text-slate-500 font-medium py-6 px-2 w-full text-center">
-                    {t('client_helpers.recommended_empty')}
-                  </p>
-                ) : null}
-                {RECOMMENDED_HELPERS.map((helper) => (
-                  <div key={helper.id} className="min-w-[190px] w-[190px] bg-white border border-gray-200 rounded-xl flex flex-col justify-between shrink-0 shadow-sm hover:shadow-md transition-shadow relative">
-                    <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 items-start max-w-[calc(100%-3rem)]">
-                      <HelperPlanBadge tier={helperPlanFromRoleKey(helper.roleKey)} />
-                      <TrainingCertBadge level={helper.trainingCert} />
-                    </div>
-                    <button onClick={() => { setSelectedHelper(helper); setShowHelperProfileModal(true); }} className="absolute top-3 right-3 text-gray-400 hover:text-blue-600 transition-colors z-10" title={t('common.view_profile')}>
-                      <Icons.ExternalLink className="w-4 h-4" />
-                    </button>
-                    <div className="p-4 pt-6 flex flex-col items-center border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white rounded-t-xl">
-                      <div className="relative mb-2">
-                        <img src={helper.avatar} alt="Helper" className="w-16 h-16 rounded-full object-cover border-2 border-gray-50 shadow-sm" />
-                      </div>
-                      <h4 className="font-bold text-gray-900 flex items-center gap-1 text-center leading-tight">{helper.name} <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-50" /></h4>
-                      <span className="text-blue-600 font-bold text-sm mt-1 flex items-center gap-1"><Icons.Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> {helper.rating.toFixed(1)}</span>
-                    </div>
-                    <div className="p-3 bg-white flex-grow flex flex-col items-center justify-center gap-2">
-                       <div className="flex flex-wrap gap-1 justify-center mt-1">
-                         {helper.skills.map((skill, i) => (
-                           <span key={i} className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-[10px] font-semibold border border-gray-200">{skillChip(skill)}</span>
-                         ))}
-                       </div>
-                    </div>
-                    <div className="border-t border-gray-200 flex justify-between divide-x divide-gray-200 bg-gray-50 rounded-b-xl overflow-hidden">
-                      <button onClick={(e) => { e.stopPropagation(); navigate(ROUTES.messages); }} className="flex-1 py-2 flex items-center justify-center text-gray-500 hover:bg-gray-200 hover:text-green-600 transition-colors" title={t('common.message')}>
-                        <Icons.MessageSquare className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedHelper(helper);
-                          setHireModalKind('hire');
-                          setShowHireModal(true);
-                        }}
-                        className="flex-1 py-2 flex items-center justify-center text-gray-500 hover:bg-gray-200 hover:text-blue-600 transition-colors"
-                        title={t('common.hire')}
-                      >
-                        <Icons.Briefcase className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
+            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-blue-50/30 to-white p-4 shadow-sm">
+              <h3 className="text-base font-black text-slate-950">{t('client_how_it_works.title')}</h3>
+              <ol className="mt-3 grid gap-2 sm:grid-cols-3">
+                {([1, 2, 3] as const).map((step) => (
+                  <li
+                    key={step}
+                    className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white/90 px-3 py-2.5"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white">
+                      {step}
+                    </span>
+                    <p className="text-sm font-semibold leading-snug text-slate-700">{t(`client_how_it_works.step${step}`)}</p>
+                  </li>
                 ))}
-              </div>
+              </ol>
             </div>
 
           </div>
@@ -625,6 +604,7 @@ export default function ClientDashboard() {
         {/* Active Services Tab */}
         {activeSidebarTab === 'active-services' && (
           <div className="w-full animate-in fade-in duration-300">
+            {isClientJobsPage ? <DesktopBackButton className="mb-4" /> : null}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6 p-6">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">{t('sidebar.active_services')}</h2>
@@ -735,8 +715,10 @@ export default function ClientDashboard() {
                             }
                           }}
                           onRemove={() => {
-                            hideJobForUser(me.id, job.id);
-                            setHiddenJobIds(readHiddenJobIds(me.id));
+                            if (window.confirm(t('job_actions.remove_confirm'))) {
+                              hideJobForUser(me.id, job.id);
+                              setHiddenJobIds(readHiddenJobIds(me.id));
+                            }
                           }}
                           onRepublish={() => openCreateModal(job.category, job.subcategory ?? '')}
                           onFinalize={() => void updateJobStatus(job.id, 'completed').catch(console.error)}

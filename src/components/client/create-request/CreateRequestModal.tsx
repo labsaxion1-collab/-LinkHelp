@@ -5,6 +5,7 @@ import { useAppData } from '@/context/AppDataContext';
 import { useToast } from '@/context/ToastContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
+import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import { CreateRequestScheduleStep, type MovePropertyType } from '@/components/client/create-request/CreateRequestScheduleStep';
 import { CreateRequestReviewStep } from '@/components/client/create-request/CreateRequestReviewStep';
 import {
@@ -316,7 +317,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {SERVICE_CATEGORIES.map((cat) => {
-                  const IconComponent = (Icons as Record<string, React.ComponentType<{ className?: string }>>)[cat.icon];
+                  const IconComponent = getCategoryLucideIcon(cat.icon);
                   return (
                     <button
                       key={cat.id}
@@ -325,7 +326,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                       className="flex flex-col items-center p-4 rounded-2xl border-2 border-gray-200 hover:border-blue-300 bg-white hover:shadow-md transition-all"
                     >
                       <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
-                        {IconComponent ? <IconComponent className="w-6 h-6" /> : null}
+                        <IconComponent className="w-6 h-6" />
                       </div>
                       <span className="text-sm font-bold text-center">{t('categories.' + cat.id)}</span>
                     </button>

@@ -22,6 +22,7 @@ import { useOnboardingRewards } from '@/hooks/useOnboardingRewards';
 import { fetchHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { SIGNUP_BONUS_LC } from '@/config/onboardingRewards';
+import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 
 const SPOKEN_LANGUAGE_OPTIONS = [
   { id: 'pt', label: 'Português' },
@@ -230,6 +231,7 @@ export default function SettingsPage() {
   return (
     <div className="bg-[#f0f2f5] min-h-[calc(100vh-64px)] py-8 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto space-y-6">
+        <DesktopBackButton />
         <div className="text-center sm:text-left">
           <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-sm border border-gray-100 mb-4">
             <Settings className="w-7 h-7" />

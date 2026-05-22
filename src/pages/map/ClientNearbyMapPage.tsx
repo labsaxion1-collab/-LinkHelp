@@ -11,6 +11,7 @@ import { MAP_STYLES } from '@/components/map/mapStyles';
 import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
 import { parseSkillKey, skillSubLabelKey } from '@/data/helperSkillsCatalog';
 import { getGoogleMapsApiKey, isGoogleMapsConfigured } from '@/utils/googleMapsConfig';
+import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 
 export default function ClientNearbyMapPage() {
   const navigate = useNavigate();
@@ -42,12 +43,13 @@ export default function ClientNearbyMapPage() {
     <div className="h-[calc(100vh-80px)] w-full relative flex flex-col sm:flex-row bg-gray-50 overflow-hidden">
       <aside className="w-full sm:w-[400px] h-[40vh] sm:h-full bg-white shadow-2xl z-10 flex flex-col overflow-hidden relative order-2 sm:order-1">
         <header className="p-6 border-b border-gray-100 shrink-0">
+          <DesktopBackButton className="mb-4" />
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="mb-4 text-gray-500 hover:text-gray-900 flex items-center gap-2 font-bold text-sm transition-colors"
+            className="lg:hidden mb-4 text-gray-500 hover:text-gray-900 flex items-center gap-2 font-bold text-sm transition-colors"
           >
-            <Icons.ArrowLeft className="w-4 h-4" /> {t('live_map.back_nav')}
+            <Icons.ArrowLeft className="w-4 h-4" /> {t('nav.back')}
           </button>
           <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
             <Icons.MapPin className="w-6 h-6 text-blue-600" /> {t('live_map.title_client_nearby')}

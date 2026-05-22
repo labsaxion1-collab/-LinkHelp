@@ -30,6 +30,7 @@ import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/Helpe
 import { HelperCreditsWalletCard } from '@/components/helpers/HelperCreditsWalletCard';
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
+import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
 import { SkillsProfileModal } from '@/components/helpers/profile-setup/ProfileSetupModals';
 import {
   SimpleAvatarUploadModal,
@@ -48,6 +49,8 @@ import { useUserLocation } from '@/hooks/useUserLocation';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
 import { HelperProfileSkillsSection } from '@/components/helpers/profile/HelperProfileSkillsSection';
 import { distanceToJobKm, sortOpportunitiesForHelper } from '@/utils/locationMatching';
+import { getCategoryLucideIcon } from '@/utils/categoryIcons';
+import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboard';
 
@@ -233,6 +236,7 @@ export default function HelperDashboard() {
   const [upcomingModalJob, setUpcomingModalJob] = useState<UpcomingJob | null>(null);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
   const [clientProfileJob, setClientProfileJob] = useState<Job | null>(null);
+  const [detailOpportunity, setDetailOpportunity] = useState<Job | null>(null);
   const helperUserId = session?.user?.id ?? me.id;
 
   const helperUpcomingList = React.useMemo(
@@ -385,6 +389,9 @@ export default function HelperDashboard() {
     .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
     .slice(0, 3);
   const isPerformancePage = location.pathname === ROUTES.helperPerformance;
+  const showDesktopBack =
+    location.pathname === ROUTES.helperPerformance ||
+    location.pathname === ROUTES.helperOpportunities;
 
   return (
     <div className="bg-[#f0f2f5] min-h-[calc(100vh-64px)] py-4 sm:py-6 -mt-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 overflow-x-hidden">
@@ -638,6 +645,7 @@ export default function HelperDashboard() {
           </div>
         </aside>
         <main className="w-full min-w-0 pb-2">
+          {showDesktopBack ? <DesktopBackButton className="mb-4" /> : null}
           {completionBreakdown.percent < 100 ? (
             <div className="md:hidden mb-4">
               <HelperProfileCompletionBar
@@ -725,7 +733,7 @@ export default function HelperDashboard() {
                 {t('helper_dashboard.all_categories')}
               </button>
               {SERVICE_CATEGORIES.map((cat) => {
-                const IconComponent = (Icons as any)[cat.icon] || Icons.HelpCircle;
+                const IconComponent = getCategoryLucideIcon(cat.icon);
                 const isSelected = selectedCategoryFilter === cat.id;
                 return (
                   <button 
@@ -844,6 +852,7 @@ export default function HelperDashboard() {
                       applicationsCount={applications.filter((a) => a.jobId === job.id && a.status !== 'cancelled').length}
                       onApply={handleApply}
                       onViewClientProfile={setClientProfileJob}
+                      onViewDetails={setDetailOpportunity}
                       t={t}
                       translateCategory={translateCategory}
                       formatJobSchedule={formatJobSchedule}
@@ -952,6 +961,16 @@ export default function HelperDashboard() {
         translateCategory={translateCategory}
         locale={upcomingLocale}
         onUpdateWorkflow={updateUpcomingWorkflow}
+      />
+
+      <HelperOpportunityDetailModal
+        job={detailOpportunity}
+        open={Boolean(detailOpportunity)}
+        onClose={() => setDetailOpportunity(null)}
+        t={t}
+        translateCategory={translateCategory}
+        formatJobSchedule={formatJobSchedule}
+        distanceKm={detailOpportunity ? distanceToJobKm(helperCoords, detailOpportunity) : null}
       />
 
       {clientProfileJob ? (

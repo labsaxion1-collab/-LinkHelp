@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, Shield, Star, Users, MapPin, Globe, Clock, Languages, HeartHandshake } from 'lucide-react';
 import { categories } from '@/data/landingCategories';
+import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
@@ -171,11 +172,11 @@ export default function LandingPage() {
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {categories.map((category) => {
-              const IconComponent = (Icons as any)[category.icon];
+              const IconComponent = getCategoryLucideIcon(category.icon);
               return (
                 <div key={category.id} className="group cursor-pointer p-6 rounded-2xl border border-gray-100 bg-white hover:border-blue-100 hover:bg-gradient-to-br hover:from-white hover:to-blue-50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all text-center flex flex-col items-center justify-center gap-3 relative overflow-hidden">
                   <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-                    {IconComponent && <IconComponent className="w-6 h-6" />}
+                    <IconComponent className="w-6 h-6" />
                   </div>
                   <span className="font-bold text-gray-900 text-sm group-hover:text-blue-700 transition-colors">{t(`categories.${category.id}`)}</span>
                 </div>

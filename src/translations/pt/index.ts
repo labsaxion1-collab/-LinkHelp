@@ -125,6 +125,7 @@ export const pt = {
     },
   },
   nav: {
+    back: 'Voltar',
     find_help: 'Encontre ajuda para sua tarefa',
     switch_to_client: 'Mudar para Cliente',
     switch_to_helper: 'Mudar para Helper',
@@ -256,8 +257,8 @@ export const pt = {
     setup_step_3: 'Na Vercel, adicione VITE_GOOGLE_MAPS_PLATFORM_KEY com sua chave (restrinja por domínio).',
     setup_back: 'Voltar',
     back_nav: 'Voltar',
-    title_helper_radar: 'Radar de trabalhos',
-    title_client_nearby: 'Helpers perto',
+    title_helper_radar: 'Chamados perto',
+    title_client_nearby: 'Ajudantes perto',
     subtitle_searching: 'Oportunidades ordenadas por distância e urgência no seu raio.',
     map_unavailable:
       'Mapa indisponível no momento, mas oportunidades próximas ainda aparecem em lista.',
@@ -1573,8 +1574,15 @@ export const pt = {
   job_actions: {
     cancel: 'Cancelar',
     remove: 'Remover',
+    remove_confirm: 'Remover este pedido da sua lista?',
     republish: 'Republicar',
     finalize: 'Finalizar tarefa',
+  },
+  client_how_it_works: {
+    title: 'Como funciona',
+    step1: 'Publique seu pedido',
+    step2: 'Receba até 3 ajudantes interessados',
+    step3: 'Escolha o melhor e combine pelo chat',
   },
   notification_types: {
     section_title: 'Tipos de alerta',

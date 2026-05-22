@@ -125,6 +125,7 @@ export const en = {
     },
   },
   nav: {
+    back: 'Back',
     find_help: 'Find help for your task',
     switch_to_client: 'Switch to Client',
     switch_to_helper: 'Switch to Helper',
@@ -251,7 +252,7 @@ export const en = {
     setup_step_3: 'On Vercel, add VITE_GOOGLE_MAPS_PLATFORM_KEY with your key (restrict by domain).',
     setup_back: 'Back',
     back_nav: 'Back',
-    title_helper_radar: 'Job radar',
+    title_helper_radar: 'Nearby requests',
     title_client_nearby: 'Nearby helpers',
     subtitle_searching: 'Opportunities sorted by distance and urgency in your radius.',
     map_unavailable:
@@ -1566,8 +1567,15 @@ export const en = {
   job_actions: {
     cancel: 'Cancel',
     remove: 'Remove',
+    remove_confirm: 'Remove this request from your list?',
     republish: 'Republish',
     finalize: 'Complete task',
+  },
+  client_how_it_works: {
+    title: 'How it works',
+    step1: 'Post your request',
+    step2: 'Get up to 3 interested helpers',
+    step3: 'Pick the best fit and chat to coordinate',
   },
   notification_types: {
     section_title: 'Alert types',

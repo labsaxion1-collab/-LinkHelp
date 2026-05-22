@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useSupabaseMessages } from '@/hooks/useSupabaseMessages';
 import { ROUTES } from '@/utils/constants';
+import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { useLanguage } from '@/context/LanguageContext';
 import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
@@ -398,6 +399,7 @@ export default function MessagesPage() {
 
   return (
     <div className="flex flex-1 flex-col min-h-0 w-full max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 sm:py-4">
+      <DesktopBackButton className="mb-3" />
       {showLimitModal && (
         <div
           className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/55 backdrop-blur-sm"

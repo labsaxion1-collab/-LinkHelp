@@ -16,6 +16,7 @@ export type HelperOpportunityCardProps = {
   isApplying: boolean;
   onApply: (jobId: string) => void;
   onViewClientProfile?: (job: Job) => void;
+  onViewDetails?: (job: Job) => void;
   applicationsCount?: number;
   t: TFn;
   translateCategory: TranslateFn;
@@ -57,6 +58,7 @@ export function HelperOpportunityCard({
   isApplying,
   onApply,
   onViewClientProfile,
+  onViewDetails,
   t,
   translateCategory,
   formatJobSchedule,
@@ -134,7 +136,13 @@ export function HelperOpportunityCard({
             <p className="text-xs text-slate-500 flex items-center gap-1 font-medium truncate">{translateCategory(job.category, t)}</p>
           </div>
         </div>
-        <h4 className="text-base font-bold text-slate-900 mb-2 leading-snug line-clamp-2">{job.title}</h4>
+        <button
+          type="button"
+          onClick={() => onViewDetails?.(job)}
+          className="text-base font-bold text-slate-900 mb-2 leading-snug line-clamp-2 text-left hover:text-blue-700"
+        >
+          {job.title}
+        </button>
         <p className="text-sm text-slate-600 mb-4 leading-relaxed line-clamp-2">{job.description}</p>
         <div className="flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800">
@@ -169,6 +177,16 @@ export function HelperOpportunityCard({
         </p>
       </div>
       <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/60 flex flex-col gap-2">
+        {onViewDetails ? (
+          <button
+            type="button"
+            onClick={() => onViewDetails(job)}
+            className="inline-flex min-h-[38px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+          >
+            <Icons.FileText className="h-4 w-4" />
+            {t('notifications.view_details')}
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => onViewClientProfile?.(job)}

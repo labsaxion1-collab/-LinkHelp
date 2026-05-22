@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { UpcomingJob, UpcomingWorkflowStatus } from '@/context/AppDataContext';
 import { formatScheduledClock, formatScheduledDay } from '@/utils/upcomingJobUtils';
 import { ROUTES } from '@/utils/constants';
+import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 
 interface UpcomingJobDetailModalProps {
   job: UpcomingJob | null;
@@ -98,6 +99,7 @@ export function UpcomingJobDetailModal({
         </div>
 
         <div className="overflow-y-auto flex-1 min-h-0 px-5 py-5 space-y-5">
+          <DesktopBackButton alwaysVisible to={ROUTES.helperDashboard} onAfterNavigate={onClose} />
           <div className="flex items-start gap-4">
             <img
               src={job.clientAvatar}

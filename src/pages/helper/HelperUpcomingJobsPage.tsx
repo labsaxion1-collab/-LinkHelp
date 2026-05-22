@@ -8,6 +8,7 @@ import { translateCategory } from '@/utils/translateCategory';
 import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailModal';
 import { formatScheduledClock, formatScheduledDay } from '@/utils/upcomingJobUtils';
 import { ROUTES } from '@/utils/constants';
+import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 
 function badgeClass(s: UpcomingWorkflowStatus): string {
   switch (s) {
@@ -72,11 +73,12 @@ export default function HelperUpcomingJobsPage() {
   return (
     <div className="bg-[#f0f2f5] min-h-[calc(100vh-64px)] py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
+        <DesktopBackButton className="mb-6" />
         <Link
           to={ROUTES.helperDashboard}
-          className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-800 mb-6 transition-colors"
+          className="lg:hidden inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-800 mb-6 transition-colors"
         >
-          <Icons.ChevronLeft className="w-4 h-4" /> {t('common.back')}
+          <Icons.ChevronLeft className="w-4 h-4" /> {t('nav.back')}
         </Link>
 
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">

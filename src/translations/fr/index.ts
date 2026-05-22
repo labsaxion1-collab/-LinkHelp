@@ -521,6 +521,7 @@ export const fr = {
     nav_applications: 'Mes candidatures',
     nav_active_services: 'Services actifs',
     nav_availability: 'Disponibilité',
+    languages_label: 'Langues parlées',
     sidebar_acc_portfolio: 'Portfolio',
     sidebar_acc_profile: 'Profil',
     sidebar_acc_plan: 'Forfait et abonnement',

@@ -108,7 +108,7 @@ export default function RegisterPage() {
         data: { session },
       } = await sb.auth.getSession();
       if (session) {
-        navigate(ut === 'helper' ? ROUTES.helperOpportunities : ROUTES.clientDashboard, { replace: true });
+        navigate(ut === 'helper' ? ROUTES.helperDashboard : ROUTES.clientDashboard, { replace: true });
         showToast(t('register_page.welcome'), 'success');
         return;
       }

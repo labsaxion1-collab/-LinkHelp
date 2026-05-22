@@ -23,6 +23,13 @@ import { fetchHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { SIGNUP_BONUS_LC } from '@/config/onboardingRewards';
 
+const SPOKEN_LANGUAGE_OPTIONS = [
+  { id: 'pt', label: 'Português' },
+  { id: 'en', label: 'English' },
+  { id: 'fr', label: 'Français' },
+  { id: 'es', label: 'Español' },
+] as const;
+
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
   const { profile, updateProfile, signOut, session, isConfigured, refreshProfile } = useAuth();
@@ -45,6 +52,7 @@ export default function SettingsPage() {
   const [province, setProvince] = useState('');
   const [country, setCountry] = useState('');
   const [bio, setBio] = useState('');
+  const [spokenLanguages, setSpokenLanguages] = useState<string[]>([]);
   const [notifOn, setNotifOn] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pwBusy, setPwBusy] = useState(false);
@@ -61,7 +69,14 @@ export default function SettingsPage() {
     setProvince(profile.region ?? '');
     setCountry(profile.country ?? '');
     setBio(profile.bio ?? '');
-  }, [profile, session]);
+    setSpokenLanguages(
+      Array.isArray(profile.spoken_languages) && profile.spoken_languages.length
+        ? profile.spoken_languages
+        : profile.preferred_language
+          ? [profile.preferred_language]
+          : [language],
+    );
+  }, [profile, session, language]);
 
   useEffect(() => {
     if (location.hash === '#avatar') {
@@ -115,10 +130,13 @@ export default function SettingsPage() {
       region: province.trim() || null,
       country: country.trim() || null,
       bio: bio.trim() || null,
+      preferred_language: language,
+      spoken_languages: spokenLanguages.length ? spokenLanguages : [language],
     });
     setSaving(false);
     if (err) showToast(t(err.messageKey, err.vars), 'error');
     else {
+      await refreshProfile();
       showToast(t('app_pages.settings_saved'), 'success');
       void evaluateProfileRewards({
         avatarUrl: profile?.avatar_url,
@@ -354,7 +372,11 @@ export default function SettingsPage() {
               {t('app_pages.settings_lang')}
               <select
                 value={language}
-                onChange={(e) => setLanguage(e.target.value as 'en' | 'pt' | 'fr')}
+                onChange={(e) => {
+                  const next = e.target.value as 'en' | 'pt' | 'fr';
+                  setLanguage(next);
+                  setSpokenLanguages((prev) => (prev.length ? prev : [next]));
+                }}
                 className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
               >
                 <option value="en">English</option>
@@ -362,6 +384,36 @@ export default function SettingsPage() {
                 <option value="fr">Français</option>
               </select>
             </label>
+            {profile?.role === 'helper' ? (
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-2">Idiomas falados</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {SPOKEN_LANGUAGE_OPTIONS.map((option) => {
+                    const active = spokenLanguages.includes(option.id);
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() =>
+                          setSpokenLanguages((prev) =>
+                            prev.includes(option.id)
+                              ? prev.filter((id) => id !== option.id)
+                              : [...prev, option.id],
+                          )
+                        }
+                        className={`rounded-xl border px-3 py-2 text-sm font-bold transition-colors ${
+                          active
+                            ? 'border-blue-600 bg-blue-50 text-blue-900'
+                            : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-white'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" checked={notifOn} onChange={(e) => setNotifOn(e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
               <span className="text-sm font-medium text-gray-800">{t('app_pages.settings_notif')}</span>

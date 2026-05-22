@@ -21,8 +21,12 @@ export function ProfileRewardsProgress({ skillCount = 0, className }: Props) {
     return c;
   });
 
+  const visibleChecks = checks.filter((c) => !grantedTypes.has(c.rewardType));
   const doneCount = checks.filter((c) => c.done || c.granted).length;
   const percent = checks.length ? Math.round((doneCount / checks.length) * 100) : 0;
+  const allClaimed = checks.length > 0 && checks.every((c) => grantedTypes.has(c.rewardType));
+
+  if (allClaimed) return null;
 
   return (
     <section
@@ -32,10 +36,10 @@ export function ProfileRewardsProgress({ skillCount = 0, className }: Props) {
       )}
       aria-labelledby="profile-rewards-progress-title"
     >
-      <motionHeader percent={percent} t={t} />
+      <MotionHeader percent={percent} t={t} />
 
       <ul className="mt-4 space-y-2">
-        {checks.map((check) => {
+        {visibleChecks.map((check) => {
           const amount = rewardAmountForType(check.rewardType);
           const complete = check.done || check.granted;
           const claimed = grantedTypes.has(check.rewardType);
@@ -81,7 +85,7 @@ export function ProfileRewardsProgress({ skillCount = 0, className }: Props) {
   );
 }
 
-function motionHeader({
+function MotionHeader({
   percent,
   t,
 }: {

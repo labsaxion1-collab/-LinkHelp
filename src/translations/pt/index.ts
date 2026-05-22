@@ -524,6 +524,7 @@ export const pt = {
     nav_applications: 'Minhas candidaturas',
     nav_active_services: 'Serviços ativos',
     nav_availability: 'Disponibilidade',
+    languages_label: 'Idiomas falados',
     sidebar_acc_portfolio: 'Portfólio',
     sidebar_acc_profile: 'Força do perfil',
     sidebar_acc_plan: 'Plano e assinatura',

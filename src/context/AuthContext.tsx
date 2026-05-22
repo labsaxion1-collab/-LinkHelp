@@ -87,6 +87,12 @@ function buildProfileInsert(user: User): ProfileInsert {
   const country = str('country') || null;
   const phone = str('phone') || null;
   const preferred_language = str('preferred_language') || null;
+  const rawSpoken = meta.spoken_languages;
+  const spoken_languages = Array.isArray(rawSpoken)
+    ? rawSpoken.filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+    : preferred_language
+      ? [preferred_language]
+      : null;
 
   const providers = user.app_metadata?.providers;
   const isGoogle =
@@ -111,6 +117,7 @@ function buildProfileInsert(user: User): ProfileInsert {
     country,
     phone,
     preferred_language,
+    spoken_languages,
     accepted_terms,
     accepted_terms_at,
     helper_terms_accepted,
@@ -150,6 +157,7 @@ async function ensureProfileViaRpc(user: User, row: ProfileInsert): Promise<Auth
     p_country: row.country ?? null,
     p_phone: row.phone ?? null,
     p_preferred_language: row.preferred_language ?? null,
+    p_spoken_languages: row.spoken_languages ?? null,
   });
 
   if (error) {
@@ -506,6 +514,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             country: meta.country ?? '',
             phone: meta.phone ?? '',
             preferred_language: meta.preferredLanguage ?? '',
+            spoken_languages: meta.preferredLanguage ? [meta.preferredLanguage] : [],
             accepted_terms: meta.acceptedTerms ?? false,
             accepted_terms_at: meta.acceptedTerms ? (meta.acceptedTermsAt ?? now) : '',
             helper_terms_accepted: meta.helperTermsAccepted ?? false,
@@ -631,6 +640,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         'country',
         'phone',
         'preferred_language',
+        'spoken_languages',
         'role',
         'rating',
         'credits',

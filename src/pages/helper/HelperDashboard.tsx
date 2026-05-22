@@ -220,6 +220,9 @@ export default function HelperDashboard() {
     if (location.pathname === ROUTES.helperOpportunities) {
       setActiveTab('match');
       setSelectedCategoryFilter('');
+    } else if (location.pathname === ROUTES.helperDashboard) {
+      setActiveTab('match');
+      setSelectedCategoryFilter('');
     }
   }, [location.pathname]);
 
@@ -463,14 +466,28 @@ export default function HelperDashboard() {
           setProfileSetupModal('avatar');
         }}
         footer={
-          <HelperProfileSkillsSection
-            t={t}
-            skills={sidebarSkillLines}
-            onEdit={() => {
-              setShowProfileModal(false);
-              setProfileSetupModal('skills');
-            }}
-          />
+          <div className="space-y-4">
+            {profile?.spoken_languages?.length ? (
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                <h4 className="text-sm font-bold text-gray-900">{t('helper_dashboard.languages_label')}</h4>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {profile.spoken_languages.map((id) => (
+                    <span key={id} className="rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-black text-blue-800">
+                      {id === 'pt' ? 'Português' : id === 'en' ? 'English' : id === 'fr' ? 'Français' : id === 'es' ? 'Español' : id}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            <HelperProfileSkillsSection
+              t={t}
+              skills={sidebarSkillLines}
+              onEdit={() => {
+                setShowProfileModal(false);
+                setProfileSetupModal('skills');
+              }}
+            />
+          </div>
         }
       />
 
@@ -558,8 +575,8 @@ export default function HelperDashboard() {
         </div>
       )}
 
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
-        <aside className="hidden lg:block">
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
+        <aside className="hidden">
           <div className="sticky top-24 space-y-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
             <button onClick={() => setShowProfileModal(true)} className="flex w-full items-center gap-3 rounded-2xl p-2 text-left hover:bg-slate-50">
               <img src={helperAvatarUrl ?? me.avatar} alt="" className="h-11 w-11 rounded-2xl object-cover ring-1 ring-slate-100" />

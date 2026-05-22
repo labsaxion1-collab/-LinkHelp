@@ -520,6 +520,7 @@ export const en = {
     nav_applications: 'My applications',
     nav_active_services: 'Active services',
     nav_availability: 'Availability',
+    languages_label: 'Spoken languages',
     sidebar_acc_portfolio: 'Portfolio',
     sidebar_acc_profile: 'Profile strength',
     sidebar_acc_plan: 'Plan & subscription',

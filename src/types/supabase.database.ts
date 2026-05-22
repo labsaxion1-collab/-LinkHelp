@@ -144,6 +144,7 @@ export type Database = {
           p_country?: string | null;
           p_phone?: string | null;
           p_preferred_language?: string | null;
+          p_spoken_languages?: string[] | null;
         };
         Returns: ProfileRow;
       };

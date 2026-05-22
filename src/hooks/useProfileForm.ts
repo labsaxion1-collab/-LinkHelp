@@ -7,8 +7,8 @@ import type { QuebecPlace } from '@/data/quebecRegions';
 import { parseStoredPhone, validatePhoneNumber } from '@/utils/phoneFormat';
 
 export function useProfileForm() {
-  const { profile, session, updateProfile, isConfigured } = useAuth();
-  const { t } = useLanguage();
+  const { profile, session, updateProfile, isConfigured, refreshProfile } = useAuth();
+  const { t, language } = useLanguage();
   const { showToast } = useToast();
 
   const authEmail = session?.user?.email?.trim() ?? '';
@@ -82,6 +82,7 @@ export function useProfileForm() {
       region: province.trim() || null,
       country: country.trim() || null,
       bio: bio.trim() || null,
+      preferred_language: language,
     });
     setSaving(false);
 
@@ -91,6 +92,7 @@ export function useProfileForm() {
     }
 
     showToast(t('app_pages.settings_saved'), 'success');
+    await refreshProfile();
     return true;
   };
 

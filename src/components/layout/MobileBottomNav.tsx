@@ -37,7 +37,7 @@ export function MobileBottomNav() {
     ? [
         { to: ROUTES.messages, labelKey: 'mobile_nav.messages', icon: MessageCircle },
         { to: ROUTES.helperJobs, labelKey: 'mobile_nav.activities', icon: ClipboardList },
-        { to: ROUTES.helperOpportunities, end: true, labelKey: 'mobile_nav.home', icon: Home },
+        { to: ROUTES.helperDashboard, end: true, labelKey: 'mobile_nav.home', icon: Home },
         { to: ROUTES.map, labelKey: 'mobile_nav.map', icon: MapPin },
         { to: ROUTES.settings, labelKey: 'mobile_nav.profile_menu', icon: UserRound },
       ]

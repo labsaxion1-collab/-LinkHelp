@@ -115,6 +115,8 @@ export default function ClientDashboard() {
   useEffect(() => {
     if (routerLocation.pathname === ROUTES.clientJobs) {
       setActiveSidebarTab('active-services');
+    } else if (routerLocation.pathname === ROUTES.clientDashboard) {
+      setActiveSidebarTab('dashboard');
     }
   }, [routerLocation.pathname]);
 
@@ -319,10 +321,10 @@ export default function ClientDashboard() {
         }}
       />
 
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
         
         {/* Left Sidebar */}
-        <aside className="hidden lg:block">
+        <aside className="hidden">
           <div className="sticky top-24 space-y-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
             <button onClick={() => setShowProfileModal(true)} className="flex w-full items-center gap-3 rounded-2xl p-2 text-left hover:bg-slate-50">
               <img src={me.avatar} alt="" className="h-11 w-11 rounded-2xl object-cover ring-1 ring-slate-100" />

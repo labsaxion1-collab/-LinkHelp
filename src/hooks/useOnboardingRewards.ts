@@ -55,8 +55,8 @@ export function useOnboardingRewards() {
   }, [reloadGranted]);
 
   useEffect(() => {
-    if (!userId || !remote || !profile?.role) return;
-    void remoteEnsureSignupCredits(userId, profile.role).then(() => {
+    if (!userId || !remote || profile?.role !== 'helper') return;
+    void remoteEnsureSignupCredits(userId, 'helper').then(() => {
       void reloadGranted();
       void refreshCredits();
       void refreshProfile();

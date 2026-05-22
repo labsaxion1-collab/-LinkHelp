@@ -49,6 +49,8 @@ import { useUserLocation } from '@/hooks/useUserLocation';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
 import { HelperProfileSkillsSection } from '@/components/helpers/profile/HelperProfileSkillsSection';
 import { distanceToJobKm, sortOpportunitiesForHelper } from '@/utils/locationMatching';
+import { HelperScorePanel } from '@/components/features/HelperScorePanel';
+import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboard';
 
 function formatSubscriptionBillingDate(iso: string | undefined, language: string): string {
   if (!iso) return '';
@@ -572,6 +574,8 @@ export default function HelperDashboard() {
           {isPerformancePage ? (
             <div className="space-y-4">
               <HelperStatsStrip dataLoading={dataLoading} stats={helperMvpStats} t={t} />
+              <HelperScorePanel />
+              {UI_VISIBILITY.helperCredits ? <CreditsUsageDashboard /> : null}
               <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h2 className="text-xl font-black text-slate-950">{t('helper_dashboard.stats_strip_title')}</h2>
                 <p className="mt-1 text-sm font-medium text-slate-500">{t('helper_dashboard.score_section_performance')}</p>

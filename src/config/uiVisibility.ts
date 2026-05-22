@@ -8,4 +8,6 @@ export const UI_VISIBILITY = {
   helperCreditPurchase: false,
   /** Spend credits to unlock opportunities — off until Phase 2. */
   helperCreditUnlock: false,
+  /** Training center — hidden until relaunch. */
+  training: false,
 } as const;

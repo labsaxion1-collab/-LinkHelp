@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { FilePickerLabel } from '@/components/common/HiddenFileInput';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { GraduationCap, Settings, Bell, Shield, User, Loader2, Camera } from 'lucide-react';
+import { GraduationCap, Settings, Bell, User, Loader2, Camera, LogOut } from 'lucide-react';
+import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useLanguage } from '@/context/LanguageContext';
 import { ROUTES } from '@/utils/constants';
 import { useAuth } from '@/context/AuthContext';
@@ -226,7 +227,7 @@ export default function SettingsPage() {
           ) : null}
         </div>
 
-        {isConfigured && profile ? (
+        {isConfigured && profile?.role === 'helper' ? (
           <ProfileRewardsProgress skillCount={helperSkillCount} />
         ) : null}
 
@@ -391,30 +392,6 @@ export default function SettingsPage() {
 
         <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <Shield className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-lg font-black text-gray-900">{t('app_pages.settings_security')}</h2>
-          </div>
-          <p className="text-sm text-gray-600 mb-3">{t('app_pages.settings_password_hint')}</p>
-          <button
-            type="button"
-            disabled={pwBusy || !isConfigured}
-            onClick={() => void sendPasswordReset()}
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-black disabled:opacity-50"
-          >
-            {pwBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {t('app_pages.settings_password_btn')}
-          </button>
-          <button
-            type="button"
-            onClick={() => void logout()}
-            className="mt-3 block w-full sm:w-auto rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-700 hover:bg-red-100"
-          >
-            {t('app_pages.settings_logout')}
-          </button>
-        </section>
-
-        <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
             <User className="w-5 h-5 text-violet-600" />
             <h2 className="text-lg font-black text-gray-900">{t('app_pages.settings_profile')}</h2>
           </div>
@@ -448,21 +425,32 @@ export default function SettingsPage() {
           </button>
         </div>
 
-        <Link
-          to={ROUTES.helperTraining}
-          className="block rounded-3xl border border-indigo-100 bg-white p-6 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all group"
+        {UI_VISIBILITY.training ? (
+          <Link
+            to={ROUTES.helperTraining}
+            className="block rounded-3xl border border-indigo-100 bg-white p-6 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all group"
+          >
+            <div className="flex items-start gap-4">
+              <div className="shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg">
+                <GraduationCap className="w-6 h-6" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-lg font-black text-gray-900 group-hover:text-indigo-700">{t('training.page_title')}</h2>
+                <p className="text-sm text-gray-500 font-medium mt-1">{t('training.settings_teaser')}</p>
+                <span className="inline-flex mt-3 text-sm font-black text-indigo-600">{t('training.membership_link')} →</span>
+              </div>
+            </div>
+          </Link>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={() => void logout()}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm font-bold text-red-700 hover:bg-red-100 min-h-[48px]"
         >
-          <div className="flex items-start gap-4">
-            <div className="shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg">
-              <GraduationCap className="w-6 h-6" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-lg font-black text-gray-900 group-hover:text-indigo-700">{t('training.page_title')}</h2>
-              <p className="text-sm text-gray-500 font-medium mt-1">{t('training.settings_teaser')}</p>
-              <span className="inline-flex mt-3 text-sm font-black text-indigo-600">{t('training.membership_link')} →</span>
-            </div>
-          </div>
-        </Link>
+          <LogOut className="h-4 w-4" />
+          {t('app_pages.settings_logout')}
+        </button>
       </div>
     </div>
   );

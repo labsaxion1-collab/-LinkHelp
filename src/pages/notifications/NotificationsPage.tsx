@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Bell, CheckCircle2, MessageSquare, Briefcase, DollarSign, Target, Star, Trash2, ChevronRight } from 'lucide-react';
+import * as Icons from 'lucide-react';
+import { NOTIFICATION_PREVIEW_TYPES } from '@/config/notificationPreviewTypes';
 import { useAppData } from '@/context/AppDataContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useLanguage } from '@/context/LanguageContext';
@@ -73,6 +75,27 @@ export default function NotificationsPage() {
             </button>
           )}
         </div>
+
+        <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-black uppercase tracking-wide text-slate-400">{t('notification_types.section_title')}</h2>
+          <p className="mt-1 text-sm font-medium text-slate-500">{t('notification_types.section_sub')}</p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {NOTIFICATION_PREVIEW_TYPES.map((item) => {
+              const Icon = (Icons as Record<string, React.ComponentType<{ className?: string }>>)[item.icon] ?? Icons.Bell;
+              return (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm">
+                    <Icon className="h-5 w-5 text-blue-600" />
+                  </span>
+                  <span className="text-sm font-bold text-slate-800">{t(item.labelKey)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
         {/* Filters */}
         <div className="flex gap-2 overflow-x-auto pb-4 mb-2 hide-scrollbar">

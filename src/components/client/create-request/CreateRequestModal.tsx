@@ -7,6 +7,10 @@ import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 import { CreateRequestScheduleStep, type MovePropertyType } from '@/components/client/create-request/CreateRequestScheduleStep';
 import { CreateRequestReviewStep } from '@/components/client/create-request/CreateRequestReviewStep';
+import {
+  CreateRequestConfirmStep,
+  isConfirmStepComplete,
+} from '@/components/client/create-request/CreateRequestConfirmStep';
 import { emptyRequestAddress, type RequestAddressValue } from '@/components/client/create-request/RequestAddressInput';
 import { descriptionContainsContactInfo } from '@/utils/descriptionContactGuard';
 import {
@@ -19,9 +23,8 @@ import {
   type TimeWindow,
 } from '@/utils/requestSchedule';
 
-type ModalStep = 'category' | 'schedule' | 'description' | 'review';
-const STEPS: ModalStep[] = ['category', 'schedule', 'description', 'review'];
-const QUICK_BUDGET_AMOUNTS = [50, 100, 150, 200] as const;
+type ModalStep = 'category' | 'schedule' | 'description' | 'confirm' | 'review';
+const STEPS: ModalStep[] = ['category', 'schedule', 'description', 'confirm', 'review'];
 const TRANSLATION_LANGUAGE_OPTIONS = ['Português', 'Inglês', 'Francês', 'Espanhol', 'Italiano', 'Árabe'] as const;
 
 function needsBuilding(type: MovePropertyType) {
@@ -236,6 +239,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     category: Icons.Grid,
     schedule: Icons.Calendar,
     description: Icons.Type,
+    confirm: Icons.CalendarCheck,
     review: Icons.CheckCircle2,
   };
   const activeCat = SERVICE_CATEGORIES.find((c) => c.id === selectedCategory);
@@ -255,9 +259,15 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     if (idx < STEPS.length - 1) setStep(STEPS[idx + 1]);
   };
 
+  const addrForLabel = selectedCategory === 'moving' ? movePickupAddress : requestAddress;
+  const locationParts = [addrForLabel.display.trim(), addrForLabel.city, addrForLabel.region].filter(Boolean);
+  const locationLabel = locationParts.join(', ') || t('jobs.remote');
+  const categoryLabel = selectedCategory ? t(`categories.${selectedCategory}`) : '';
+
   const continueDisabled =
     (step === 'schedule' && !scheduleComplete) ||
-    (step === 'description' && !descriptionComplete);
+    (step === 'description' && !descriptionComplete) ||
+    (step === 'confirm' && !isConfirmStepComplete(preferredDateMode, preferredDateIso));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={handleClose}>
@@ -394,40 +404,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               <div>
                 <label className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.budget_hint_label')}</label>
                 <div className="rounded-2xl border-2 border-gray-200 bg-white p-4 focus-within:border-blue-500">
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                    {QUICK_BUDGET_AMOUNTS.map((amount) => (
-                      <button
-                        key={amount}
-                        type="button"
-                        onClick={() => {
-                          setBudgetType('fixed');
-                          setBudgetAmount(String(amount));
-                        }}
-                        className={`min-h-[42px] rounded-xl border px-3 text-sm font-black transition-colors ${
-                          budgetType === 'fixed' && budgetAmount === String(amount)
-                            ? 'border-blue-600 bg-blue-600 text-white'
-                            : 'border-slate-200 bg-slate-50 text-slate-800 hover:bg-blue-50'
-                        }`}
-                      >
-                        CAD ${amount}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setBudgetType('fixed');
-                        setBudgetAmount('');
-                      }}
-                      className={`min-h-[42px] rounded-xl border px-3 text-sm font-black transition-colors ${
-                        budgetType === 'fixed' && !QUICK_BUDGET_AMOUNTS.some((amount) => String(amount) === budgetAmount)
-                          ? 'border-blue-600 bg-blue-600 text-white'
-                          : 'border-slate-200 bg-slate-50 text-slate-800 hover:bg-blue-50'
-                      }`}
-                    >
-                      {t('create_modal.budget_other')}
-                    </button>
-                  </div>
-                  <label className="mt-3 flex min-h-[52px] items-center rounded-xl border border-slate-200 bg-slate-50 px-4 focus-within:border-blue-500 focus-within:bg-white">
+                  <label className="flex min-h-[52px] items-center rounded-xl border border-slate-200 bg-slate-50 px-4 focus-within:border-blue-500 focus-within:bg-white">
                     <span className="shrink-0 text-base font-black text-slate-900">CAD $</span>
                     <input
                       inputMode="numeric"
@@ -511,6 +488,17 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               </div>
               <p className="text-sm text-gray-400 text-right">{postText.length}/500</p>
             </div>
+          )}
+          {step === 'confirm' && (
+            <CreateRequestConfirmStep
+              t={t}
+              preferredDateMode={preferredDateMode}
+              setPreferredDateMode={setPreferredDateMode}
+              preferredDateIso={preferredDateIso}
+              setPreferredDateIso={setPreferredDateIso}
+              categoryLabel={categoryLabel}
+              locationLabel={locationLabel}
+            />
           )}
           {step === 'review' && (
             <CreateRequestReviewStep

@@ -21,6 +21,14 @@ import { UserPresenceBadge } from '@/components/ui/UserPresenceBadge';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useAuth } from '@/context/AuthContext';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
+import { JobTaskActionsBar } from '@/components/features/JobTaskActionsBar';
+import { HelperPublicProfileView } from '@/components/features/HelperPublicProfileView';
+import {
+  hideJobForUser,
+  isJobExpired,
+  isJobVisibleToClient,
+  readHiddenJobIds,
+} from '@/utils/jobVisibility';
 type RecommendedHelperCard = {
   id: number;
   name: string;
@@ -84,6 +92,8 @@ export default function ClientDashboard() {
   const [showHireModal, setShowHireModal] = useState(false);
   const [hireModalKind, setHireModalKind] = useState<'hire' | 'proposal'>('hire');
   const [inviteMessage, setInviteMessage] = useState('');
+  const [jobsListTab, setJobsListTab] = useState<'active' | 'history'>('active');
+  const [hiddenJobIds, setHiddenJobIds] = useState<Set<string>>(() => new Set());
   
   const navigate = useNavigate();
   const routerLocation = useLocation();
@@ -97,6 +107,10 @@ export default function ClientDashboard() {
   const me = useSessionViewer();
 
   useEffect(() => {
+    setHiddenJobIds(readHiddenJobIds(me.id));
+  }, [me.id]);
+
+  useEffect(() => {
     if (showCreditModal) setSelectedCreditPackage(2);
   }, [showCreditModal]);
 
@@ -105,6 +119,11 @@ export default function ClientDashboard() {
       setActiveSidebarTab('active-services');
     }
   }, [routerLocation.pathname]);
+
+  useEffect(() => {
+    const tab = (routerLocation.state as { tab?: string } | null)?.tab;
+    if (tab === 'saved') setActiveSidebarTab('saved');
+  }, [routerLocation.state]);
 
   useEffect(
     () => () => {
@@ -426,7 +445,7 @@ export default function ClientDashboard() {
         </div>
 
         <main className="w-full min-w-0">
-          <div className="mb-5 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-sm">
+          <div className="mb-5 hidden md:block rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-sm">
             <div className="flex gap-2 overflow-x-auto md:overflow-visible hide-scrollbar">
               {[
                 { id: 'dashboard' as const, label: t('sidebar.dashboard'), icon: Icons.Grid, to: ROUTES.clientDashboard },
@@ -733,15 +752,64 @@ export default function ClientDashboard() {
                 </div>
               </div>
               
-              <div className="space-y-6">
-                {jobs.filter((j) => j.clientId === me.id).length > 0 ? (
-                  jobs.filter((j) => j.clientId === me.id).map((job) => {
+              <div className="mb-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setJobsListTab('active')}
+                  className={`rounded-xl px-4 py-2 text-sm font-bold ${jobsListTab === 'active' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}`}
+                >
+                  {t('client_jobs.tab_active')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setJobsListTab('history')}
+                  className={`rounded-xl px-4 py-2 text-sm font-bold ${jobsListTab === 'history' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}`}
+                >
+                  {t('client_jobs.tab_history')}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {jobs
+                  .filter((j) => j.clientId === me.id)
+                  .filter((j) => {
+                    const visible = isJobVisibleToClient(j, hiddenJobIds, {
+                      includeHistory: jobsListTab === 'history',
+                    });
+                    if (jobsListTab === 'history') {
+                      return (
+                        hiddenJobIds.has(j.id) ||
+                        j.status === 'cancelled' ||
+                        j.status === 'completed' ||
+                        isJobExpired(j)
+                      );
+                    }
+                    return visible && (j.status === 'open' || j.status === 'in_progress');
+                  })
+                  .length > 0 ? (
+                  jobs
+                    .filter((j) => j.clientId === me.id)
+                    .filter((j) => {
+                      if (jobsListTab === 'history') {
+                        return (
+                          hiddenJobIds.has(j.id) ||
+                          j.status === 'cancelled' ||
+                          j.status === 'completed' ||
+                          isJobExpired(j)
+                        );
+                      }
+                      return (
+                        isJobVisibleToClient(j, hiddenJobIds) &&
+                        (j.status === 'open' || j.status === 'in_progress')
+                      );
+                    })
+                    .map((job) => {
                     const jobApps = applications.filter((a) => a.jobId === job.id && a.status !== 'cancelled');
                     const canCancelJob = job.status === 'open' || job.status === 'in_progress';
                     const qualityScore = estimateClientLeadQuality(job.description, job.location, job.value, jobApps.length);
                     
                     return (
-                      <div key={job.id} className="border border-blue-200 bg-blue-50/20 rounded-2xl p-5 relative overflow-hidden">
+                      <div key={job.id} className="border border-blue-200 bg-blue-50/20 rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col">
                         <div className={`absolute top-0 left-0 w-1 h-full ${job.status === 'open' ? 'bg-yellow-400' : 'bg-green-500'}`}></div>
                         <div className="flex justify-between items-start mb-4">
                           <div>
@@ -749,27 +817,29 @@ export default function ClientDashboard() {
                               {job.status === 'cancelled' ? t('upcoming_jobs.status_cancelled') : job.status === 'open' ? 'Aguardando Helpers' : 'Em Andamento'}
                             </span>
                             <h3 className="font-bold text-gray-900 text-lg">{job.title}</h3>
-                            <p className="text-gray-500 text-sm flex items-center gap-1 mt-1"><Icons.Clock className="w-4 h-4" /> {formatJobSchedule(job.date, t)}</p>
+                            <p className="text-gray-500 text-xs md:text-sm flex items-center gap-1 mt-1 truncate"><Icons.Clock className="w-4 h-4 shrink-0" /> {formatJobSchedule(job.date, t)}</p>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold text-gray-900">{job.value}</p>
-                            {canCancelJob ? (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (window.confirm(t('common.cancel') + '?')) {
-                                    void updateJobStatus(job.id, 'cancelled').catch((error) => {
-                                      alert(error instanceof Error ? error.message : 'Erro ao cancelar pedido');
-                                    });
-                                  }
-                                }}
-                                className="mt-2 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50"
-                              >
-                                {t('common.cancel')}
-                              </button>
-                            ) : null}
+                          <div className="text-right shrink-0">
+                            <p className="font-bold text-gray-900 text-sm">{job.value}</p>
                           </div>
                         </div>
+                        <JobTaskActionsBar
+                          canCancel={canCancelJob}
+                          canRemove={!hiddenJobIds.has(job.id)}
+                          canRepublish={job.status === 'cancelled' || isJobExpired(job)}
+                          canFinalize={job.status === 'in_progress'}
+                          onCancel={() => {
+                            if (window.confirm(t('job_actions.cancel_confirm'))) {
+                              void updateJobStatus(job.id, 'cancelled').catch(console.error);
+                            }
+                          }}
+                          onRemove={() => {
+                            hideJobForUser(me.id, job.id);
+                            setHiddenJobIds(readHiddenJobIds(me.id));
+                          }}
+                          onRepublish={() => openCreateModal(job.category, job.subcategory ?? '')}
+                          onFinalize={() => void updateJobStatus(job.id, 'completed').catch(console.error)}
+                        />
                         <div className="mb-4 flex flex-wrap gap-2">
                           <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800">
                             <Icons.BadgeCheck className="h-3.5 w-3.5 text-emerald-600" />
@@ -779,9 +849,9 @@ export default function ClientDashboard() {
                             <Icons.Users className="h-3.5 w-3.5 text-blue-600" />
                             {t('client_dashboard.request_helper_limit', { count: job.urgency === 'high' ? 5 : 3 })}
                           </span>
-                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700">
-                            <Icons.MapPin className="h-3.5 w-3.5 text-slate-500" />
-                            {job.location}
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 max-w-full truncate">
+                            <Icons.MapPin className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                            <span className="truncate">{job.address || job.city || job.location}</span>
                           </span>
                         </div>
 
@@ -804,7 +874,27 @@ export default function ClientDashboard() {
                                   <div className="flex gap-2">
                                     {app.status === 'pending' || app.status === 'viewed' ? (
                                       <>
-                                        <button 
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setSelectedHelper({
+                                              id: app.helperId,
+                                              name: app.helperName,
+                                              avatar: app.helperAvatar,
+                                              rating: app.helperRating,
+                                              roleKey: 'pro_helper',
+                                              roleColor: '',
+                                              skills: [],
+                                              isOnline: true,
+                                              trainingCert: 'none',
+                                            });
+                                            setShowHelperProfileModal(true);
+                                          }}
+                                          className="px-3 py-1.5 bg-slate-100 text-slate-800 text-xs font-bold rounded-lg"
+                                        >
+                                          {t('helper_public.view_profile')}
+                                        </button>
+                                    <button 
                                           onClick={() => {
                                             void updateApplicationStatus(app.id, 'accepted').catch(console.error);
                                             setToastNotification({
@@ -961,108 +1051,42 @@ export default function ClientDashboard() {
               </div>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 pb-6 pt-3 sm:pt-4 space-y-5">
-              <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex flex-col items-center text-center gap-2 sm:items-start sm:text-left sm:flex-1 min-w-0">
-                  <h2 className="text-xl sm:text-2xl font-black text-gray-900 flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                    {selectedHelper.name}
-                    <Icons.CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0 fill-blue-50" />
-                  </h2>
-                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                    <HelperPlanBadge tier={helperPlanFromRoleKey(selectedHelper.roleKey)} size="md" />
-                    <TrainingCertBadge level={(selectedHelper as { trainingCert?: TrainingCertLevel }).trainingCert ?? 'none'} size="md" />
-                  </div>
-                  <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-1 w-full">
-                    <div className="inline-flex gap-1 items-center bg-yellow-50 text-yellow-800 px-2.5 py-1 rounded-lg text-xs sm:text-sm font-bold border border-yellow-100">
-                      <Icons.Star className="w-4 h-4 fill-yellow-400 text-yellow-400" /> {selectedHelper.rating.toFixed(1)}
-                    </div>
-                    <div className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-600 font-semibold bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100">
-                      <Icons.CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-                      {t('helper_profile.jobs_completed', { count: 120 })}
-                    </div>
-                    <div className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-600 font-semibold bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100">
-                      <Icons.MapPin className="w-4 h-4 text-blue-500 shrink-0" />
-                      {t('helper_profile.distance_km', { km: '1.2' })}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 w-full sm:w-auto sm:min-w-[280px]">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowHelperProfileModal(false);
-                      navigate(ROUTES.messages);
-                    }}
-                    className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-sm font-bold hover:border-blue-200 hover:bg-blue-50/50 transition-colors"
-                  >
-                    <Icons.MessageSquare className="w-5 h-5 shrink-0 text-blue-600" />
-                    <span className="flex flex-col items-start leading-tight">
-                      <span>{t('helper_profile.cta_chat')}</span>
-                      <span className="text-[11px] font-semibold text-slate-500">{t('helper_profile.cta_chat_sub')}</span>
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowHelperProfileModal(false);
-                      setHireModalKind('proposal');
-                      setShowHireModal(true);
-                    }}
-                    className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 text-sm font-bold hover:bg-slate-100 transition-colors"
-                  >
-                    <Icons.FileText className="w-5 h-5 shrink-0 text-slate-600" />
-                    {t('helper_profile.cta_proposal')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowHelperProfileModal(false);
-                      setHireModalKind('hire');
-                      setShowHireModal(true);
-                    }}
-                    className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-black shadow-lg shadow-blue-600/25 transition-colors"
-                  >
-                    <Icons.Briefcase className="w-5 h-5 shrink-0" />
-                    {t('helper_profile.cta_hire')}
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-5 pt-2 border-t border-gray-100">
-                <div>
-                  <h3 className="font-bold mb-2 text-xs uppercase tracking-wide text-gray-500">
-                    {t('helper_profile.about')}
-                  </h3>
-                  <p className="text-gray-600 leading-relaxed text-sm">{t('helper_profile.bio_empty')}</p>
-                </div>
-                <div>
-                  <h3 className="font-bold mb-2 text-xs uppercase tracking-wide text-gray-500">
-                    {t('helper_profile.specialties')}
-                  </h3>
-                  <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-                    {selectedHelper.skills.map((skill: string, i: number) => (
-                      <span
-                        key={i}
-                        className="px-3 py-1.5 bg-blue-50 border border-blue-100 text-blue-800 rounded-lg text-xs sm:text-sm font-semibold"
-                      >
-                        {skillChip(skill)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-                  <h3 className="font-bold text-gray-900 mb-3">{t('helper_profile.response_status')}</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium mb-1">{t('helper_profile.avg_time')}</p>
-                      <p className="font-bold text-gray-900">{t('helper_profile.avg_time_value')}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium mb-1">{t('helper_profile.response_rate')}</p>
-                      <p className="font-bold text-green-600">98%</p>
-                    </div>
-                  </div>
-                </div>
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 pb-6 pt-3 sm:pt-4 space-y-4">
+              <HelperPublicProfileView
+                helper={{
+                  id: String(selectedHelper.id),
+                  name: selectedHelper.name,
+                  avatar: selectedHelper.avatar,
+                  rating: selectedHelper.rating,
+                  jobsCompleted: 120,
+                  bio: t('helper_public.sample_bio'),
+                  city: t('helper_public.sample_city'),
+                  categories: selectedHelper.skills?.length ? [...selectedHelper.skills] : ['cleaning'],
+                }}
+              />
+              <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHelperProfileModal(false);
+                    navigate(ROUTES.messages);
+                  }}
+                  className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-sm font-bold"
+                >
+                  <Icons.MessageSquare className="w-5 h-5 text-blue-600" />
+                  {t('helper_profile.cta_chat')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHelperProfileModal(false);
+                    setHireModalKind('hire');
+                    setShowHireModal(true);
+                  }}
+                  className="w-full min-h-[48px] rounded-2xl bg-blue-600 text-white text-sm font-black"
+                >
+                  {t('helper_profile.cta_hire')}
+                </button>
               </div>
             </div>
           </div>

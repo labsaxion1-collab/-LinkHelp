@@ -82,8 +82,8 @@ export default function HelperLiveMapPage() {
 
   return (
     <div className="h-[calc(100vh-80px)] w-full relative flex flex-col sm:flex-row bg-gray-50 overflow-hidden">
-      <div className="w-full sm:w-[400px] h-[30vh] sm:h-full bg-white shadow-2xl z-10 flex flex-col overflow-hidden relative">
-        <div className="p-6 border-b border-gray-100">
+      <aside className="w-full sm:w-[400px] h-[40vh] sm:h-full bg-white shadow-2xl z-10 flex flex-col overflow-hidden relative order-2 sm:order-1">
+        <header className="p-6 border-b border-gray-100 shrink-0">
           <button
             type="button"
             onClick={() => navigate(-1)}
@@ -96,7 +96,7 @@ export default function HelperLiveMapPage() {
           </h1>
           <p className="text-sm text-gray-500 mt-2 font-medium">{t('live_map.subtitle_searching')}</p>
 
-          <div className="flex gap-2 overflow-x-auto mt-4 pb-2 hide-scrollbar">
+          <div className="flex gap-2 overflow-x-auto mt-4 pb-1 hide-scrollbar">
             {(['all', 'nearest', 'urgent', 'highest_value'] as const).map((filter) => {
               const isActive = activeFilter === filter;
               const label =
@@ -132,9 +132,9 @@ export default function HelperLiveMapPage() {
               );
             })}
           </div>
-        </div>
+        </header>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/50">
           {filteredPoints.length === 0 && (
             <div className="text-center p-8 text-gray-500 font-medium">{t('live_map.empty_no_results')}</div>
           )}
@@ -186,10 +186,9 @@ export default function HelperLiveMapPage() {
             </div>
           ))}
         </div>
-        <div className="absolute bottom-0 w-full h-12 bg-gradient-to-t from-white to-transparent pointer-events-none" />
-      </div>
+      </aside>
 
-      <div className="flex-1 relative h-[70vh] sm:h-full">
+      <section className="flex-1 relative h-[60vh] sm:h-full order-1 sm:order-2 min-h-[240px]">
         {mapsReady ? (
           <APIProvider apiKey={mapsApiKey} version="weekly">
             <Map
@@ -235,7 +234,7 @@ export default function HelperLiveMapPage() {
           </span>
           <span className="font-bold text-sm tracking-wide">{t('live_map.floating_helper')}</span>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

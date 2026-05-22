@@ -12,9 +12,10 @@ import { useToast } from '@/context/ToastContext';
 import { isAppShellPath, isHelperArea, pathImpliesAppMode } from '@/utils/navigation';
 import { NotificationsDropdown } from './NotificationsDropdown';
 import { HelperTermsGateModal } from '@/components/auth/HelperTermsGateModal';
+import { MobileProfileMenu } from '@/components/layout/MobileProfileMenu';
 
 export default function Navbar() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [helperTermsOpen, setHelperTermsOpen] = useState(false);
@@ -75,7 +76,7 @@ export default function Navbar() {
     }
     setHelperTermsOpen(false);
     setProfileOpen(false);
-    setIsMobileMenuOpen(false);
+    setMobileProfileOpen(false);
     await runModeSwitch('helper', true);
   };
 
@@ -103,7 +104,7 @@ export default function Navbar() {
     showToast(t('nav.toast_logout'), 'success');
     navigate(ROUTES.login, { replace: true });
     setProfileOpen(false);
-    setIsMobileMenuOpen(false);
+    setMobileProfileOpen(false);
   };
 
   return (
@@ -300,12 +301,19 @@ export default function Navbar() {
             </div>
           </div>
 
-          <div className="flex items-center md:hidden space-x-4">
+          <div className="flex items-center md:hidden">
             <button
               type="button"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => {
+                if (!isConnected) {
+                  navigate(ROUTES.login);
+                  return;
+                }
+                setMobileProfileOpen((o) => !o);
+              }}
               className="rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-              aria-label={isConnected ? t('nav.profile_menu_settings') : 'Menu'}
+              aria-label={isConnected ? t('mobile_nav.profile_menu') : t('nav.login')}
+              aria-expanded={mobileProfileOpen}
             >
               {isConnected ? (
                 <img src={userAvatar} alt="" className="h-10 w-10 rounded-full border-2 border-white object-cover shadow-sm" />
@@ -319,117 +327,14 @@ export default function Navbar() {
         </div>
       </div>
 
-      {isMobileMenuOpen && (
-        <>
-          <button
-            type="button"
-            className="md:hidden fixed inset-0 z-[55] bg-gray-900/40 backdrop-blur-sm"
-            aria-label={t('common.close')}
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-          <div className="md:hidden fixed inset-x-0 top-16 bottom-0 z-[56] border-t border-gray-100 bg-white shadow-2xl flex flex-col max-h-[calc(100dvh-4rem)]">
-            <div className="flex-1 overflow-y-auto overscroll-contain pt-2 pb-3 space-y-1 ios-scroll">
-              <button
-                type="button"
-                disabled={modeSwitchBusy}
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  if (isHelperNav) void runModeSwitch('client');
-                  else void runModeSwitch('client');
-                }}
-                className="block w-full text-left px-4 py-3.5 min-h-[48px] text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 disabled:opacity-60"
-              >
-                {modeSwitchBusy ? t('common.loading') : t('nav.find_help_mobile')}
-              </button>
-              <button
-                type="button"
-                disabled={modeSwitchBusy}
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  goHelperOrPrompt();
-                }}
-                className="block w-full text-left px-4 py-3.5 min-h-[48px] text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 disabled:opacity-60"
-              >
-                {modeSwitchBusy ? t('common.loading') : t('nav.become_helper')}
-              </button>
-
-              <div className="px-4 py-3 border-t border-gray-100 mt-2">
-                <span className="block text-sm text-gray-500 mb-2">{t('nav.language_label')}</span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setLanguage('en')}
-                    className={`px-3 py-1.5 rounded-lg text-sm border ${language === 'en' ? 'border-primary-500 text-primary-600 bg-primary-50' : 'border-gray-200'}`}
-                  >
-                    EN
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLanguage('pt')}
-                    className={`px-3 py-1.5 rounded-lg text-sm border ${language === 'pt' ? 'border-primary-500 text-primary-600 bg-primary-50' : 'border-gray-200'}`}
-                  >
-                    PT
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLanguage('fr')}
-                    className={`px-3 py-1.5 rounded-lg text-sm border ${language === 'fr' ? 'border-primary-500 text-primary-600 bg-primary-50' : 'border-gray-200'}`}
-                  >
-                    FR
-                  </button>
-                </div>
-              </div>
-
-              {isConnected ? (
-                <div className="border-t border-gray-100 my-2 pt-2 space-y-1 px-2">
-                  <Link
-                    to={ROUTES.settings}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block rounded-lg px-3 py-3 text-base font-medium text-gray-900 hover:bg-gray-50"
-                  >
-                    {t('nav.profile_menu_settings')}
-                  </Link>
-                  {UI_VISIBILITY.clientCredits ? (
-                    <Link
-                      to={ROUTES.payments}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="block rounded-lg px-3 py-3 text-base font-medium text-gray-900 hover:bg-gray-50"
-                    >
-                      {t('nav.profile_menu_credits')}
-                    </Link>
-                  ) : null}
-                  {isConfigured && session ? (
-                    <button
-                      type="button"
-                      onClick={() => void doLogout()}
-                      className="block w-full text-left rounded-lg px-3 py-3 text-base font-medium text-red-600 hover:bg-red-50"
-                    >
-                      {t('nav.profile_menu_logout')}
-                    </button>
-                  ) : (
-                    <Link
-                      to={ROUTES.login}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="block rounded-lg px-3 py-3 text-base font-medium text-gray-900 hover:bg-gray-50"
-                    >
-                      {t('nav.login')}
-                    </Link>
-                  )}
-                </div>
-              ) : (
-                <div className="border-t border-gray-100 my-2 pt-2">
-                  <Link to={ROUTES.login} onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-3.5 min-h-[48px] text-base font-medium text-gray-900">
-                    {t('nav.login')}
-                  </Link>
-                  <Link to={ROUTES.signup} onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-3.5 min-h-[48px] text-base font-medium text-primary-600">
-                    {t('nav.signup')}
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      )}
+      <MobileProfileMenu
+        open={mobileProfileOpen && isConnected}
+        onClose={() => setMobileProfileOpen(false)}
+        isConnected={isConnected}
+        isHelperNav={isHelperNav}
+        onSwitchMode={toggleClientHelper}
+        modeSwitchBusy={modeSwitchBusy}
+      />
     </nav>
     <HelperTermsGateModal
       open={helperTermsOpen}

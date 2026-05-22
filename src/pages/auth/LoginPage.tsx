@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { oauthErrorMessageKey, type OAuthCallbackErrorCode } from '@/utils/parseOAuthCallbackError';
+import { readKeepSignedIn, writeKeepSignedIn } from '@/utils/rememberSession';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [keepSignedIn, setKeepSignedIn] = useState(() => readKeepSignedIn());
 
   const from = (location.state as { from?: string } | null)?.from;
 
@@ -75,6 +77,7 @@ export default function LoginPage() {
       showToast(t('auth.errors.env_not_ready'), 'info');
       return;
     }
+    writeKeepSignedIn(keepSignedIn);
     setSubmitting(true);
     const err = await signInWithEmail(email, password);
     setSubmitting(false);
@@ -92,6 +95,7 @@ export default function LoginPage() {
       showToast(t('auth.errors.env_not_ready'), 'info');
       return;
     }
+    writeKeepSignedIn(keepSignedIn);
     setGoogleLoading(true);
     try {
       const err = await signInWithGoogle();
@@ -183,7 +187,14 @@ export default function LoginPage() {
 
               <div className="flex items-center justify-between gap-3 text-sm">
                 <label className="flex items-center gap-2 text-slate-700 font-medium cursor-pointer">
-                  <input id="remember-me" name="remember-me" type="checkbox" className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                  <input
+                    id="remember-me"
+                    name="remember-me"
+                    type="checkbox"
+                    checked={keepSignedIn}
+                    onChange={(e) => setKeepSignedIn(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
                   {t('login_page.remember')}
                 </label>
                 <a href="#" className="font-semibold text-blue-600 hover:text-blue-700 shrink-0">

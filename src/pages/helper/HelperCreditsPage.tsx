@@ -8,6 +8,8 @@ import { useCredits } from '@/context/CreditContext';
 import { HelperDashboardNav } from '@/components/helpers/HelperDashboardNav';
 import { ROUTES } from '@/utils/constants';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
+import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboard';
+import { CreditRefundStatusCard } from '@/components/features/CreditRefundStatusCard';
 
 export default function HelperCreditsPage() {
   const { t } = useLanguage();
@@ -64,6 +66,9 @@ export default function HelperCreditsPage() {
             {t('helper_credits.purchase_coming_soon')}
           </div>
         ) : null}
+
+        <CreditsUsageDashboard className="mb-5" />
+        <CreditRefundStatusCard className="mb-5" />
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {packages.map((pkg) => (

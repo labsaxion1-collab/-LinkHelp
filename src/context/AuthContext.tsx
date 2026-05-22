@@ -7,6 +7,7 @@ import type { ProfileRow, UserType } from '@/types/database';
 import type { AuthFlowError } from '@/types/authFlowError';
 import { mapProfileWriteError, mapSupabaseAuthError } from '@/services/authErrorMap';
 import { getOAuthRedirectToUrl } from '@/utils/oauthRedirect';
+import { readKeepSignedIn } from '@/utils/rememberSession';
 
 export type AuthProfile = ProfileRow;
 export type AuthError = AuthFlowError;
@@ -564,6 +565,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     resetSupabaseBrowserClient();
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onLeave = () => {
+      if (!readKeepSignedIn() && sessionRef.current) {
+        void signOut();
+      }
+    };
+    window.addEventListener('beforeunload', onLeave);
+    return () => window.removeEventListener('beforeunload', onLeave);
+  }, [signOut]);
 
   const updateProfile = useCallback(
     async (patch: Partial<AuthProfile>): Promise<AuthError> => {

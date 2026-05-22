@@ -46,7 +46,16 @@ export function AppRoutes() {
           <Route path={ROUTES.helperPerformance} element={<HelperDashboard />} />
           <Route path={ROUTES.helperJobs} element={<HelperUpcomingJobsPage />} />
           <Route path="/helper/jobs/upcoming" element={<Navigate to={ROUTES.helperJobs} replace />} />
-          <Route path={ROUTES.helperTraining} element={<HelperTrainingPage />} />
+          <Route
+            path={ROUTES.helperTraining}
+            element={
+              UI_VISIBILITY.training ? (
+                <HelperTrainingPage />
+              ) : (
+                <Navigate to={ROUTES.helperDashboard} replace />
+              )
+            }
+          />
           <Route
             path={ROUTES.helperCredits}
             element={UI_VISIBILITY.helperCredits ? <HelperCreditsPage /> : <Navigate to={ROUTES.helperDashboard} replace />}

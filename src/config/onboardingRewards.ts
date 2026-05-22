@@ -16,8 +16,9 @@ export type RewardType =
   | 'REFERRAL_COMPLETED';
 
 export const SIGNUP_BONUS_LC = {
-  client: 12_000,
-  helper: 25_000,
+  /** Clients do not receive signup LC (boosts only, future). */
+  client: 0,
+  helper: 12,
 } as const;
 
 /** One-time action rewards (LC). */

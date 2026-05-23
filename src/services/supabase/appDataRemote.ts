@@ -323,6 +323,7 @@ export async function remoteUpdateApplicationStatus(
 export async function remoteOfficiallyHireHelper(
   applicationId: string,
   jobSnapshot: Job,
+  initialMessage?: string,
 ): Promise<string | null> {
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
@@ -387,6 +388,17 @@ export async function remoteOfficiallyHireHelper(
   } else {
     conversationId = (existingConv as { id: string }).id;
     await sb.from('conversations').update({ contact_unlocked: true }).eq('id', conversationId);
+  }
+
+  const cleanInitialMessage = initialMessage?.trim();
+  if (cleanInitialMessage) {
+    const { error: msgErr } = await sb.from('messages').insert({
+      conversation_id: conversationId,
+      sender_id: app.client_id,
+      content: cleanInitialMessage,
+      read: false,
+    });
+    if (msgErr) console.warn('[LinkHelp] Could not save hire intro message', msgErr);
   }
 
   await sb.from('notifications').insert({

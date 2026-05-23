@@ -1,4 +1,5 @@
 import type { AppNotification } from '@/types/notification';
+import { ROUTES } from '@/utils/constants';
 
 type Translate = (key: string, variables?: Record<string, string | number>) => string;
 
@@ -81,4 +82,28 @@ export function getLocalizedNotificationText(notification: AppNotification, t: T
   }
 
   return { title, message };
+}
+
+export function getNotificationActionUrl(notification: AppNotification): string {
+  if (notification.actionUrl) return notification.actionUrl;
+
+  const title = notification.title.trim().toLowerCase();
+
+  if (title.includes('message') || title.includes('official hire') || title.includes('helper hired')) {
+    return ROUTES.messages;
+  }
+
+  if (title.includes('new application') || title.includes('application withdrawn')) {
+    return ROUTES.clientDashboard;
+  }
+
+  if (title.includes('application accepted')) {
+    return ROUTES.helperJobs;
+  }
+
+  if (title.includes('application update') || title.includes('declined')) {
+    return ROUTES.helperOpportunities;
+  }
+
+  return ROUTES.notifications;
 }

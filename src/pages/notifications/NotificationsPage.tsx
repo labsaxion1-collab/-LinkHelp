@@ -6,7 +6,7 @@ import { NOTIFICATION_PREVIEW_TYPES } from '@/config/notificationPreviewTypes';
 import { useAppData } from '@/context/AppDataContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useLanguage } from '@/context/LanguageContext';
-import { getLocalizedNotificationText } from '@/utils/notificationText';
+import { getLocalizedNotificationText, getNotificationActionUrl } from '@/utils/notificationText';
 
 export default function NotificationsPage() {
   const { t } = useLanguage();
@@ -131,6 +131,7 @@ export default function NotificationsPage() {
                 <div className="divide-y divide-gray-100">
                   {displayedNotifications.map((notification) => {
                     const localized = getLocalizedNotificationText(notification, t);
+                    const actionUrl = getNotificationActionUrl(notification);
                     return (
                       <div
                         key={notification.id}
@@ -158,9 +159,9 @@ export default function NotificationsPage() {
                             {localized.message}
                           </p>
 
-                          {notification.actionUrl && (
+                          {actionUrl && (
                             <Link
-                              to={notification.actionUrl}
+                              to={actionUrl}
                               className="inline-flex items-center text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
                               onClick={(e) => {
                                  e.stopPropagation();

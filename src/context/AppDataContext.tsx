@@ -36,7 +36,7 @@ interface AppDataContextData {
   applyForJob: (jobId: string, helperId: string) => Promise<void>;
   updateJobStatus: (jobId: string, status: JobStatus) => Promise<void>;
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => Promise<void>;
-  officiallyHireHelper: (applicationId: string) => Promise<string | null>;
+  officiallyHireHelper: (applicationId: string, initialMessage?: string) => Promise<string | null>;
   getHelperApplications: (helperId: string) => Application[];
   getJobApplications: (jobId: string) => Application[];
   getUpcomingJobsForHelper: (helperId: string) => UpcomingJob[];
@@ -304,13 +304,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const officiallyHireHelper = async (applicationId: string): Promise<string | null> => {
+  const officiallyHireHelper = async (applicationId: string, initialMessage?: string): Promise<string | null> => {
     const targetApp = applicationsRef.current.find((a) => a.id === applicationId);
     const jobSnapshot = targetApp ? jobsRef.current.find((j) => j.id === targetApp.jobId) : undefined;
     if (!targetApp || !jobSnapshot) return null;
 
     if (useRemote) {
-      const conversationId = await remoteOfficiallyHireHelper(applicationId, jobSnapshot);
+      const conversationId = await remoteOfficiallyHireHelper(applicationId, jobSnapshot, initialMessage);
       await refreshRemote();
       return conversationId;
     }

@@ -4,7 +4,7 @@ import { Bell, ChevronRight, MessageSquare, Briefcase, DollarSign, Target, Star 
 import { useAppData } from '@/context/AppDataContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { ROUTES } from '@/utils/constants';
-import { getLocalizedNotificationText } from '@/utils/notificationText';
+import { getLocalizedNotificationText, getNotificationActionUrl } from '@/utils/notificationText';
 
 interface NotificationsDropdownProps {
   userId: string;
@@ -110,6 +110,7 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
               <div className="divide-y divide-gray-50">
                 {userNotifications.slice(0, 10).map((notification) => {
                   const localized = getLocalizedNotificationText(notification, t);
+                  const actionUrl = getNotificationActionUrl(notification);
                   return (
                     <div
                       key={notification.id}
@@ -123,7 +124,7 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
                       {!notification.read && (
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full"></div>
                       )}
-                      <Link to={notification.actionUrl || '#'} className="flex gap-3 items-start">
+                      <Link to={actionUrl} onClick={() => setIsOpen(false)} className="flex gap-3 items-start">
                         <div
                           className={`p-2 rounded-xl shrink-0 ${!notification.read ? 'bg-blue-100' : 'bg-gray-100'} transition-colors`}
                         >

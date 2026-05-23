@@ -189,7 +189,7 @@ export default function ClientDashboard() {
       return;
     }
     try {
-      const conversationId = await officiallyHireHelper(profileApplicationId);
+      const conversationId = await officiallyHireHelper(profileApplicationId, inviteMessage);
       setShowHireModal(false);
       setInviteMessage('');
       setShowHelperProfileModal(false);

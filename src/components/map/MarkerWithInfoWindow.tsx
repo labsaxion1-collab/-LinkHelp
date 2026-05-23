@@ -5,27 +5,31 @@ type Props = {
   key?: string;
   position: google.maps.LatLngLiteral;
   title: string;
+  /** Pin content (avatar, icon, etc.) */
+  marker: React.ReactNode;
+  /** Info window body — omit for title-only */
   children?: React.ReactNode;
 };
 
-export function MarkerWithInfoWindow({ position, title, children }: Props) {
-  const [markerRef, marker] = useAdvancedMarkerRef();
+export function MarkerWithInfoWindow({ position, title, marker, children }: Props) {
+  const [markerRef, markerInstance] = useAdvancedMarkerRef();
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <AdvancedMarker ref={markerRef} position={position} onClick={() => setOpen(true)} title={title}>
-        <div className="relative group">
-          <div className="w-10 h-10 bg-white rounded-full border-2 border-blue-500 shadow-lg p-0.5 animate-bounce [animation-duration:2s] motion-reduce:animate-none flex items-center justify-center overflow-hidden">
-            {children}
-          </div>
+        <div className="relative flex items-center justify-center">
+          {marker}
         </div>
       </AdvancedMarker>
       {open && (
-        <InfoWindow anchor={marker} onCloseClick={() => setOpen(false)} maxWidth={280}>
+        <InfoWindow anchor={markerInstance} onCloseClick={() => setOpen(false)} maxWidth={300}>
           <div className="p-1">
-            <div className="font-bold text-gray-900 mb-1">{title}</div>
-            {children}
+            {children ? (
+              children
+            ) : (
+              <div className="font-bold text-gray-900 text-sm">{title}</div>
+            )}
           </div>
         </InfoWindow>
       )}

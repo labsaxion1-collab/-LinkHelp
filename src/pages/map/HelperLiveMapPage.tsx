@@ -7,7 +7,8 @@ import { useAppData } from '@/context/AppDataContext';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { translateCategory } from '@/utils/translateCategory';
-import { formatJobSchedule } from '@/utils/jobDisplay';
+import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
+import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { ROUTES } from '@/utils/constants';
 import { getGoogleMapsApiKey, isGoogleMapsConfigured } from '@/utils/googleMapsConfig';
 import { jobCoordinates } from '@/utils/geocodeLocation';
@@ -21,6 +22,8 @@ import type { Job } from '@/types/job';
 import { MAP_STYLES } from '@/components/map/mapStyles';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { MarkerWithInfoWindow } from '@/components/map/MarkerWithInfoWindow';
+import { ClientJobMapPin } from '@/components/map/ClientJobMapPin';
+import { JobMapOpportunityCard } from '@/components/map/JobMapOpportunityCard';
 
 type JobMapPoint = {
   id: string;
@@ -47,7 +50,7 @@ export default function HelperLiveMapPage() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'urgent' | 'nearest' | 'highest_value'>('all');
 
   const jobPoints = useMemo((): JobMapPoint[] => {
-    const openJobs = jobs.filter((j) => j.status === 'open');
+    const openJobs = jobs.filter((j) => j.status === 'open' && j.clientId !== me.id);
     const inRadius = filterJobsForHelperRadar(openJobs, userCoords);
     const sorted = sortOpportunitiesForHelper(inRadius, { origin: userCoords, helperSkillIds: [] });
 
@@ -65,7 +68,7 @@ export default function HelperLiveMapPage() {
         };
       })
       .filter((p): p is JobMapPoint => p != null);
-  }, [jobs, userCoords]);
+  }, [jobs, userCoords, me.id]);
 
   let filteredPoints = jobPoints.filter((p) => {
     if (activeFilter === 'urgent') return p.urgency;
@@ -158,14 +161,14 @@ export default function HelperLiveMapPage() {
                   </span>
                   <h4 className="font-bold text-gray-900 text-sm">{point.data.title}</h4>
                 </div>
-                <span className="font-black text-green-600 shrink-0">{point.data.value}</span>
+                <span className="font-black text-green-600 shrink-0">{formatJobBudgetDisplay(point.data, t)}</span>
               </div>
               <div className="flex items-center gap-3 text-xs text-gray-500 font-medium whitespace-nowrap overflow-hidden">
                 <span className="flex items-center gap-1 shrink-0">
                   <Icons.MapPin className="w-3.5 h-3.5" /> {t('live_map.distance_km', { km: point.dist })}
                 </span>
                 <span className="flex items-center gap-1 shrink-0">
-                  <Icons.Clock className="w-3.5 h-3.5" /> {formatJobSchedule(point.data.date, t)}
+                  <Icons.Clock className="w-3.5 h-3.5" /> {formatJobScheduleDisplay(point.data, t)}
                 </span>
               </div>
               <button
@@ -210,14 +213,24 @@ export default function HelperLiveMapPage() {
               </AdvancedMarker>
 
               {filteredPoints.map((point) => (
-                <MarkerWithInfoWindow key={point.id} position={point.position} title={point.data.title}>
-                  {point.urgency ? (
-                    <UrgentJobMarker />
-                  ) : (
-                    <div className="w-full h-full rounded-full bg-blue-50 flex items-center justify-center border border-white">
-                      <Icons.Briefcase className="w-5 h-5 text-blue-600" />
-                    </div>
-                  )}
+                <MarkerWithInfoWindow
+                  key={point.id}
+                  position={point.position}
+                  title={point.data.clientName}
+                  marker={
+                    <ClientJobMapPin
+                      clientName={point.data.clientName}
+                      clientAvatar={point.data.clientAvatar}
+                      urgent={point.urgency}
+                    />
+                  }
+                >
+                  <JobMapOpportunityCard
+                    job={point.data}
+                    distanceKm={point.dist}
+                    t={t}
+                    onViewOpportunity={() => navigate(ROUTES.helperOpportunities)}
+                  />
                 </MarkerWithInfoWindow>
               ))}
             </Map>
@@ -237,15 +250,6 @@ export default function HelperLiveMapPage() {
           <span className="font-bold text-sm tracking-wide">{t('live_map.floating_helper')}</span>
         </div>
       </section>
-    </div>
-  );
-}
-
-function UrgentJobMarker() {
-  return (
-    <div className="w-full h-full rounded-full bg-red-100 flex items-center justify-center relative border border-white">
-      <div className="absolute inset-0 bg-red-400 rounded-full animate-ping opacity-60" />
-      <Icons.Flame className="w-5 h-5 text-red-600 relative z-10" />
     </div>
   );
 }

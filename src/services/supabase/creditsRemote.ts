@@ -1,6 +1,7 @@
 import { getSupabase } from '@/lib/supabase';
 import type { CreditPackage, CreditTransaction, CreditWallet, OpportunityUnlock } from '@/types/credits';
 import { CREDIT_PACKAGES } from '@/utils/credits';
+import { normalizeLinkCreditsAmount } from '@/utils/formatLinkCredits';
 
 const toMs = (iso: string | null | undefined) => (iso ? new Date(iso).getTime() : Date.now());
 
@@ -8,10 +9,10 @@ function walletFromRow(row: Record<string, unknown>): CreditWallet {
   return {
     id: String(row.id),
     helperId: String(row.helper_id),
-    balance: Number(row.balance ?? 0),
-    totalPurchased: Number(row.total_purchased ?? 0),
-    totalBonus: Number(row.total_bonus ?? 0),
-    totalSpent: Number(row.total_spent ?? 0),
+    balance: normalizeLinkCreditsAmount(Number(row.balance ?? 0)),
+    totalPurchased: normalizeLinkCreditsAmount(Number(row.total_purchased ?? 0)),
+    totalBonus: normalizeLinkCreditsAmount(Number(row.total_bonus ?? 0)),
+    totalSpent: normalizeLinkCreditsAmount(Number(row.total_spent ?? 0)),
     createdAt: toMs(row.created_at as string),
     updatedAt: toMs(row.updated_at as string),
   };
@@ -22,8 +23,8 @@ function txFromRow(row: Record<string, unknown>): CreditTransaction {
     id: String(row.id),
     helperId: String(row.helper_id),
     type: row.type as CreditTransaction['type'],
-    amount: Number(row.amount ?? 0),
-    balanceAfter: Number(row.balance_after ?? 0),
+    amount: normalizeLinkCreditsAmount(Number(row.amount ?? 0)),
+    balanceAfter: normalizeLinkCreditsAmount(Number(row.balance_after ?? 0)),
     relatedOpportunityId: (row.related_opportunity_id as string | null) ?? null,
     relatedPaymentId: (row.related_payment_id as string | null) ?? null,
     description: String(row.description ?? ''),
@@ -52,7 +53,7 @@ export async function getWalletBalance(helperId: string): Promise<number> {
   await sb.rpc('ensure_helper_credit_wallet', { p_helper_id: helperId });
   const { data, error } = await sb.rpc('get_wallet_balance', { p_helper_id: helperId });
   if (error) throw error;
-  return typeof data === 'number' ? data : 0;
+  return typeof data === 'number' ? normalizeLinkCreditsAmount(data) : 0;
 }
 
 export async function fetchRemoteCreditState(helperId: string): Promise<{

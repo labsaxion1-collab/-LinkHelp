@@ -21,7 +21,6 @@ export function ProfileRewardsProgress({ skillCount = 0, className }: Props) {
     return c;
   });
 
-  const visibleChecks = checks.filter((c) => !grantedTypes.has(c.rewardType));
   const doneCount = checks.filter((c) => c.done || c.granted).length;
   const percent = checks.length ? Math.round((doneCount / checks.length) * 100) : 0;
   const allClaimed = checks.length > 0 && checks.every((c) => grantedTypes.has(c.rewardType));
@@ -39,10 +38,10 @@ export function ProfileRewardsProgress({ skillCount = 0, className }: Props) {
       <MotionHeader percent={percent} t={t} />
 
       <ul className="mt-4 space-y-2">
-        {visibleChecks.map((check) => {
+        {checks.map((check) => {
           const amount = rewardAmountForType(check.rewardType);
-          const complete = check.done || check.granted;
           const claimed = grantedTypes.has(check.rewardType);
+          const complete = claimed || check.done;
           return (
             <li
               key={check.id}
@@ -61,26 +60,30 @@ export function ProfileRewardsProgress({ skillCount = 0, className }: Props) {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-bold text-slate-900">{t(check.labelKey)}</p>
-                  <span
-                    className={clsx(
-                      'text-xs font-black tabular-nums',
-                      complete ? 'text-emerald-700' : 'text-blue-600',
-                    )}
-                  >
-                    +{formatLinkCredits(amount, language)}
-                  </span>
+                  {claimed ? (
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">
+                      {t('rewards.check_claimed')}
+                    </span>
+                  ) : (
+                    <span
+                      className={clsx(
+                        'text-xs font-black tabular-nums',
+                        complete ? 'text-emerald-700' : 'text-blue-600',
+                      )}
+                    >
+                      +{formatLinkCredits(amount, language)}
+                    </span>
+                  )}
                 </div>
                 <p className="mt-0.5 text-xs font-medium text-slate-500">{t(check.hintKey)}</p>
-                {claimed ? (
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-emerald-600">
-                    {t('rewards.check_claimed')}
-                  </p>
-                ) : null}
               </div>
             </li>
           );
         })}
       </ul>
+      {percent >= 100 && !allClaimed ? (
+        <p className="mt-3 text-xs font-semibold text-emerald-700">{t('rewards.progress_almost_claimed')}</p>
+      ) : null}
     </section>
   );
 }

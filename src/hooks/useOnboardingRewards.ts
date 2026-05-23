@@ -85,6 +85,10 @@ export function useOnboardingRewards() {
       if (grantedTypes.has(rewardType)) return { granted: false as const, reason: 'ALREADY_GRANTED' };
 
       const result = await grantUserReward(userId, rewardType, { description });
+      if (result.reason === 'ALREADY_GRANTED') {
+        setGrantedTypes((prev) => new Set([...prev, rewardType]));
+        return result;
+      }
       notifyGrant(result, toastKey);
       if (result.granted) {
         await Promise.all([refreshCredits(), refreshProfile()]);

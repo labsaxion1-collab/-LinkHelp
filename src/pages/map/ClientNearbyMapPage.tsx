@@ -94,15 +94,24 @@ export default function ClientNearbyMapPage() {
                     key={helper.id}
                     position={helper.mapPosition}
                     title={helper.name}
+                    marker={
+                      helper.avatarUrl ? (
+                        <div className="h-11 w-11 overflow-hidden rounded-full border-2 border-blue-600 bg-white shadow-md ring-2 ring-blue-200/80">
+                          <img src={helper.avatarUrl} alt="" className="h-full w-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-blue-600 bg-blue-50 shadow-md ring-2 ring-blue-200/80">
+                          <User className="w-5 h-5 text-blue-600" />
+                        </div>
+                      )
+                    }
                   >
-                    {helper.avatarUrl ? (
-                      <img src={helper.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" />
-                    ) : (
-                      <User className="w-5 h-5 text-blue-600" />
-                    )}
-                    {helper.regionLabel ? (
-                      <p className="text-xs text-gray-600 mt-1">{helper.regionLabel}</p>
-                    ) : null}
+                    <div>
+                      <p className="text-sm font-black text-gray-900">{helper.name}</p>
+                      {helper.regionLabel ? (
+                        <p className="text-xs text-gray-600 mt-1">{helper.regionLabel}</p>
+                      ) : null}
+                    </div>
                   </MarkerWithInfoWindow>
                 ) : null,
               )}

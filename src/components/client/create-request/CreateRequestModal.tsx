@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
@@ -79,6 +79,13 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const [cleaningAptFloor, setCleaningAptFloor] = useState('');
   const [cleaningHasElevator, setCleaningHasElevator] = useState('');
   const [publishing, setPublishing] = useState(false);
+  const scrollBodyRef = useRef<HTMLDivElement>(null);
+
+  const scrollModalToTop = useCallback((behavior: ScrollBehavior = 'instant') => {
+    const el = scrollBodyRef.current;
+    if (!el) return;
+    el.scrollTo({ top: 0, behavior });
+  }, []);
 
   const scheduleInput = useMemo(
     () => ({ priority, preferredDateMode, preferredDateIso, preferredTimeWindow, preferredTimeSpecific }),
@@ -161,6 +168,12 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     if (!open) return;
     reset();
   }, [open, initialCategory, initialSubcategory]);
+
+  useEffect(() => {
+    if (!open) return;
+    const frame = requestAnimationFrame(() => scrollModalToTop('instant'));
+    return () => cancelAnimationFrame(frame);
+  }, [step, open, scrollModalToTop]);
 
   const handlePublish = async () => {
     if (publishing) return;
@@ -317,7 +330,10 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
             })}
           </div>
         </div>
-        <div className="p-6 overflow-y-auto overscroll-contain flex-1 min-h-0">
+        <div
+          ref={scrollBodyRef}
+          className="p-6 overflow-y-auto overscroll-contain flex-1 min-h-0 ios-scroll"
+        >
           {step === 'category' && (
             <div className="animate-in fade-in duration-300">
               <h4 className="text-2xl font-bold text-gray-900 mb-2">{t('create_modal.select_category')}</h4>
@@ -512,7 +528,6 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                 <label className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.activity_description_label')}</label>
                 <p className="mb-2 text-xs font-medium text-slate-500">{t('create_modal.description_optional_hint')}</p>
                 <textarea
-                  autoFocus
                   value={postText}
                   onChange={(e) => setPostText(e.target.value)}
                   placeholder={t('create_modal.placeholder')}

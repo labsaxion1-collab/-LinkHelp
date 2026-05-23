@@ -366,6 +366,30 @@ export default function SettingsPage() {
 
         <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
+            <User className="w-5 h-5 text-violet-600" />
+            <h2 className="text-lg font-black text-gray-900">{t('app_pages.settings_profile')}</h2>
+          </div>
+          <label className="block text-sm font-semibold text-gray-700">
+            {t('app_pages.settings_bio')}
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              rows={4}
+              className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
+            />
+          </label>
+          {profile?.role === 'helper' ? (
+            <p className="mt-2 text-xs text-gray-500">
+              {t('app_pages.settings_skills_hint')}{' '}
+              <Link to={ROUTES.helperDashboard} className="font-bold text-blue-600 hover:underline">
+                {t('app_pages.settings_skills_link')}
+              </Link>
+            </p>
+          ) : null}
+        </section>
+
+        <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
             <Bell className="w-5 h-5 text-amber-500" />
             <h2 className="text-lg font-black text-gray-900">{t('app_pages.settings_preferences')}</h2>
           </div>
@@ -388,7 +412,7 @@ export default function SettingsPage() {
             </label>
             {profile?.role === 'helper' ? (
               <div>
-                <p className="text-sm font-semibold text-gray-700 mb-2">Idiomas falados</p>
+                <p className="text-sm font-semibold text-gray-700 mb-2">{t('app_pages.settings_spoken_languages')}</p>
                 <div className="grid grid-cols-2 gap-2">
                   {SPOKEN_LANGUAGE_OPTIONS.map((option) => {
                     const active = spokenLanguages.includes(option.id);
@@ -442,23 +466,6 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-        </section>
-
-        <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <User className="w-5 h-5 text-violet-600" />
-            <h2 className="text-lg font-black text-gray-900">{t('app_pages.settings_profile')}</h2>
-          </div>
-          <label className="block text-sm font-semibold text-gray-700">
-            {t('app_pages.settings_bio')}
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              rows={4}
-              className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
-            />
-          </label>
-          <p className="mt-2 text-xs text-gray-500">{t('app_pages.settings_skills_hint')}</p>
         </section>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between sm:items-center">

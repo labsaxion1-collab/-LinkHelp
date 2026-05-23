@@ -74,6 +74,32 @@ const DATA: Record<Lang, Tree> = {
         exampleHint: 'I need deep cleaning for kitchen and bathrooms.',
       },
     },
+    sanitization: {
+      sofa: {
+        suggestions: ['Sectional sofa', 'Pet stains', 'Odor removal', 'Fabric protection'],
+        placeholder: 'e.g. Deep clean fabric sofa in living room.',
+        tags: ['sanitization', 'sofa', 'upholstery'],
+        exampleHint: 'Need professional sofa cleaning with stain treatment.',
+      },
+      mattress: {
+        suggestions: ['Queen mattress', 'Allergen treatment', 'Move-out refresh', 'Kids room'],
+        placeholder: 'e.g. Sanitize double mattress after move-in.',
+        tags: ['sanitization', 'mattress'],
+        exampleHint: 'Mattress deep clean and odor removal.',
+      },
+      car: {
+        suggestions: ['Interior detail', 'Seats & carpet', 'Pet hair removal', 'Odor neutralizer'],
+        placeholder: 'e.g. Full interior car sanitization.',
+        tags: ['sanitization', 'car', 'auto'],
+        exampleHint: 'Car interior deep clean and sanitization.',
+      },
+      carpet: {
+        suggestions: ['Living room rug', 'Stairs carpet', 'High-traffic areas', 'Stain spots'],
+        placeholder: 'e.g. Carpet cleaning for 2 rooms.',
+        tags: ['sanitization', 'carpet', 'rug'],
+        exampleHint: 'Professional carpet cleaning with stain treatment.',
+      },
+    },
     moving: uniform(catKeys('moving'), {
       suggestions: [
         'Local move this month',
@@ -268,6 +294,32 @@ const DATA: Record<Lang, Tree> = {
         placeholder: 'Ex.: Limpeza profunda cozinha e dois banheiros.',
         tags: ['limpeza', 'profunda', 'sanitize'],
         exampleHint: 'Limpeza profunda na cozinha e banheiros.',
+      },
+    },
+    sanitization: {
+      sofa: {
+        suggestions: ['Sofá de canto', 'Manchas de pet', 'Remoção de odor', 'Proteção do tecido'],
+        placeholder: 'Ex.: Higienização de sofá na sala.',
+        tags: ['higienização', 'sofá'],
+        exampleHint: 'Limpeza profissional de sofá com tratamento de manchas.',
+      },
+      mattress: {
+        suggestions: ['Colchão casal', 'Tratamento alérgico', 'Pós-mudança', 'Quarto infantil'],
+        placeholder: 'Ex.: Higienizar colchão após mudança.',
+        tags: ['higienização', 'colchão'],
+        exampleHint: 'Limpeza profunda e remoção de odores no colchão.',
+      },
+      car: {
+        suggestions: ['Interior do carro', 'Bancos e carpete', 'Pelos de pet', 'Neutralizar odor'],
+        placeholder: 'Ex.: Higienização completa do interior do carro.',
+        tags: ['higienização', 'carro'],
+        exampleHint: 'Limpeza e higienização do interior do veículo.',
+      },
+      carpet: {
+        suggestions: ['Tapete da sala', 'Escadas carpetadas', 'Áreas de passagem', 'Manchas pontuais'],
+        placeholder: 'Ex.: Limpeza de carpete em 2 cômodos.',
+        tags: ['higienização', 'carpete'],
+        exampleHint: 'Limpeza profissional de carpete com tratamento de manchas.',
       },
     },
     moving: uniform(catKeys('moving'), {

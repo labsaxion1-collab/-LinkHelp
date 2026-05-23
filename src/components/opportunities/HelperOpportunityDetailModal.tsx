@@ -1,7 +1,7 @@
 import * as Icons from 'lucide-react';
 import type { Job } from '@/types/job';
+import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
-import { ROUTES } from '@/utils/constants';
 
 type Props = {
   job: Job | null;
@@ -34,7 +34,7 @@ export function HelperOpportunityDetailModal({
       />
       <section className="relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-slate-100 bg-white shadow-2xl sm:rounded-3xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <DesktopBackButton alwaysVisible to={ROUTES.helperDashboard} onAfterNavigate={onClose} />
+          <DesktopBackButton alwaysVisible onClose={onClose} />
           <button
             type="button"
             onClick={onClose}
@@ -58,7 +58,7 @@ export function HelperOpportunityDetailModal({
             </div>
             <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
               <p className="text-[10px] font-bold uppercase text-slate-400">{t('create_modal.budget_hint_label')}</p>
-              <p className="mt-1 text-sm font-bold text-slate-900">{job.value || t('jobs.value_negotiable')}</p>
+              <p className="mt-1 text-sm font-bold text-slate-900">{formatJobBudgetDisplay(job, t)}</p>
             </div>
           </div>
           <p className="flex items-center gap-2 text-sm font-semibold text-slate-600">

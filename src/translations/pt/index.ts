@@ -1152,6 +1152,7 @@ export const pt = {
   },
   categories: {
     cleaning: 'Limpeza',
+    sanitization: 'Higienização',
     automotive: 'Automotivo',
     assembly: 'Montagem e instalação',
     translation: 'Tradução',
@@ -1192,6 +1193,12 @@ export const pt = {
       moving_clean: 'Limpeza na mudança',
       windows: 'Vidros',
       deep: 'Profunda',
+    },
+    sanitization: {
+      sofa: 'Sofá',
+      mattress: 'Colchão',
+      car: 'Carro',
+      carpet: 'Carpete',
     },
     moving: {
       houses: 'Casas',
@@ -1378,6 +1385,8 @@ export const pt = {
     publish_help_negotiate: 'Abrir chamado e combinar valor',
     budget_min_label: 'Minimo',
     budget_max_label: 'Maximo',
+    budget_range_to: 'até',
+    description_optional_hint: 'Descreva detalhes extras se quiser.',
     activity_description_label: 'Descricao da atividade',
     translation_from_language: 'Lingua que eu falo',
     translation_to_language: 'Lingua que preciso traduzir',
@@ -1580,6 +1589,12 @@ export const pt = {
   },
   client_how_it_works: {
     title: 'Como funciona',
+    card1_title: 'Publique seu pedido',
+    card1_desc: 'Descreva rapidamente o que precisa.',
+    card2_title: 'Receba ajudantes',
+    card2_desc: 'Helpers próximos enviam interesse no serviço.',
+    card3_title: 'Escolha e converse',
+    card3_desc: 'Combine tudo pelo chat com segurança.',
     step1: 'Publique seu pedido',
     step2: 'Receba até 3 ajudantes interessados',
     step3: 'Escolha o melhor e combine pelo chat',

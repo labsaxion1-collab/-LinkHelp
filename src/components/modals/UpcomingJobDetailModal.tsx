@@ -99,7 +99,7 @@ export function UpcomingJobDetailModal({
         </div>
 
         <div className="overflow-y-auto flex-1 min-h-0 px-5 py-5 space-y-5">
-          <DesktopBackButton alwaysVisible to={ROUTES.helperDashboard} onAfterNavigate={onClose} />
+          <DesktopBackButton alwaysVisible onClose={onClose} />
           <div className="flex items-start gap-4">
             <img
               src={job.clientAvatar}

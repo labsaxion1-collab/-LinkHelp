@@ -1149,6 +1149,7 @@ export const fr = {
   },
   categories: {
     cleaning: 'Nettoyage',
+    sanitization: 'Hygiénisation',
     automotive: 'Automobile',
     assembly: 'Montage et installation',
     translation: 'Traduction',
@@ -1189,6 +1190,12 @@ export const fr = {
       moving_clean: 'Nettoyage lié au déménagement',
       windows: 'Vitres',
       deep: 'Grand nettoyage',
+    },
+    sanitization: {
+      sofa: 'Canapé',
+      mattress: 'Matelas',
+      car: 'Voiture',
+      carpet: 'Tapis',
     },
     moving: {
       houses: 'Maison',
@@ -1375,6 +1382,8 @@ export const fr = {
     publish_help_negotiate: 'Ouvrir la demande et convenir de la valeur',
     budget_min_label: 'Minimum',
     budget_max_label: 'Maximum',
+    budget_range_to: 'à',
+    description_optional_hint: 'Décrivez des détails supplémentaires si vous le souhaitez.',
     activity_description_label: "Description de l'activite",
     translation_from_language: 'Langue que je parle',
     translation_to_language: 'Langue a traduire',
@@ -1577,6 +1586,12 @@ export const fr = {
   },
   client_how_it_works: {
     title: 'Comment ça marche',
+    card1_title: 'Publiez votre demande',
+    card1_desc: 'Décrivez rapidement ce dont vous avez besoin.',
+    card2_title: 'Recevez des aides',
+    card2_desc: 'Des helpers proches manifestent leur intérêt.',
+    card3_title: 'Choisissez et discutez',
+    card3_desc: 'Coordonnez tout en toute sécurité par chat.',
     step1: 'Publiez votre demande',
     step2: 'Recevez jusqu’à 3 aides intéressées',
     step3: 'Choisissez la meilleure et coordonnez par chat',

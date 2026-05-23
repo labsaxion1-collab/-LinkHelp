@@ -24,6 +24,7 @@ import { useAuth } from '@/context/AuthContext';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
 import { JobTaskActionsBar } from '@/components/features/JobTaskActionsBar';
 import { HelperPublicProfileView } from '@/components/features/HelperPublicProfileView';
+import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import {
   hideJobForUser,
   isJobExpired,
@@ -525,22 +526,33 @@ export default function ClientDashboard() {
                );
             })}
             
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-blue-50/30 to-white p-4 shadow-sm">
-              <h3 className="text-base font-black text-slate-950">{t('client_how_it_works.title')}</h3>
-              <ol className="mt-3 grid gap-2 sm:grid-cols-3">
-                {([1, 2, 3] as const).map((step) => (
-                  <li
-                    key={step}
-                    className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white/90 px-3 py-2.5"
-                  >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white">
-                      {step}
-                    </span>
-                    <p className="text-sm font-semibold leading-snug text-slate-700">{t(`client_how_it_works.step${step}`)}</p>
-                  </li>
-                ))}
-              </ol>
-            </div>
+            <section className="rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-white p-5 sm:p-6 shadow-sm">
+              <h3 className="text-lg font-black text-slate-950">{t('client_how_it_works.title')}</h3>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                {(
+                  [
+                    { icon: Icons.ClipboardCheck, title: 'card1_title', desc: 'card1_desc', accent: 'from-blue-500 to-indigo-600' },
+                    { icon: Icons.MapPinned, title: 'card2_title', desc: 'card2_desc', accent: 'from-sky-500 to-blue-600' },
+                    { icon: Icons.ShieldCheck, title: 'card3_title', desc: 'card3_desc', accent: 'from-indigo-500 to-violet-600' },
+                  ] as const
+                ).map((card, idx) => {
+                  const Icon = card.icon;
+                  return (
+                    <article
+                      key={card.title}
+                      className="group relative overflow-hidden rounded-2xl border border-white/80 bg-white/90 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg"
+                    >
+                      <div className={`mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${card.accent} text-white shadow-lg shadow-blue-500/20`}>
+                        <Icon className="h-7 w-7" strokeWidth={2.2} />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-blue-600">0{idx + 1}</span>
+                      <h4 className="mt-1 text-base font-black text-slate-950">{t(`client_how_it_works.${card.title}`)}</h4>
+                      <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">{t(`client_how_it_works.${card.desc}`)}</p>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
 
           </div>
           </div>
@@ -701,7 +713,7 @@ export default function ClientDashboard() {
                             <p className="text-gray-500 text-xs md:text-sm flex items-center gap-1 mt-1 min-w-0"><Icons.Clock className="w-4 h-4 shrink-0" /> <span className="truncate">{formatJobSchedule(job.date, t)}</span></p>
                           </div>
                           <div className="shrink-0 sm:text-right">
-                            <p className="inline-flex rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-sm font-black text-blue-800">{job.value || t('jobs.value_negotiable')}</p>
+                            <p className="inline-flex rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-sm font-black text-blue-800">{formatJobBudgetDisplay(job, t)}</p>
                           </div>
                         </div>
                         <JobTaskActionsBar

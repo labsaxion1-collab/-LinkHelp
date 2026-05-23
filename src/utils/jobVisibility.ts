@@ -1,5 +1,13 @@
 import type { Job } from '@/types/job';
 
+/**
+ * Client-side soft hide for requests (remove from list UI only).
+ *
+ * TODO: Hoje o remover é local por usuário/navegador (localStorage).
+ * TODO: Futuro: criar tabela `request_visibility` ou `hidden_requests` com `user_id` + `request_id`
+ *       (+ `hidden_at`) e substituir read/hide abaixo por RPC Supabase — sem apagar o pedido no banco.
+ */
+
 const hiddenKey = (userId: string) => `linkhelp_hidden_jobs_${userId}`;
 
 export function readHiddenJobIds(userId: string): Set<string> {

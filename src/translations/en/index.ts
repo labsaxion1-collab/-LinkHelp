@@ -1146,6 +1146,7 @@ export const en = {
   },
   categories: {
     cleaning: 'Cleaning',
+    sanitization: 'Sanitization',
     automotive: 'Automotive',
     assembly: 'Assembly & installation',
     translation: 'Translation',
@@ -1186,6 +1187,12 @@ export const en = {
       moving_clean: 'Move-related cleaning',
       windows: 'Windows',
       deep: 'Deep cleaning',
+    },
+    sanitization: {
+      sofa: 'Sofa',
+      mattress: 'Mattress',
+      car: 'Car',
+      carpet: 'Carpet',
     },
     moving: {
       houses: 'House move',
@@ -1371,6 +1378,8 @@ export const en = {
     publish_help_negotiate: 'Open request and agree on value',
     budget_min_label: 'Minimum',
     budget_max_label: 'Maximum',
+    budget_range_to: 'to',
+    description_optional_hint: 'Add extra details if you want.',
     activity_description_label: 'Activity description',
     translation_from_language: 'Language I speak',
     translation_to_language: 'Language I need translated',
@@ -1573,6 +1582,12 @@ export const en = {
   },
   client_how_it_works: {
     title: 'How it works',
+    card1_title: 'Post your request',
+    card1_desc: 'Quickly describe what you need.',
+    card2_title: 'Get helpers',
+    card2_desc: 'Nearby helpers show interest in your job.',
+    card3_title: 'Choose and chat',
+    card3_desc: 'Coordinate safely through in-app chat.',
     step1: 'Post your request',
     step2: 'Get up to 3 interested helpers',
     step3: 'Pick the best fit and chat to coordinate',

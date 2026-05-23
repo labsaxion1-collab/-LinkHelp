@@ -6,16 +6,19 @@ import { ROUTES } from '@/utils/constants';
 
 type Props = {
   className?: string;
-  /** When set, navigates here instead of the role default dashboard. */
+  /** When set, navigates here instead of the role default dashboard. Ignored when `onClose` is set. */
   to?: string;
   /** Show inside modals (default: desktop breakpoint only). */
   alwaysVisible?: boolean;
-  /** Called after navigation (e.g. close a modal). */
-  onAfterNavigate?: () => void;
+  /**
+   * Modal mode: only dismisses the overlay — no route change.
+   * Omit on full pages so Voltar navigates to the workspace dashboard.
+   */
+  onClose?: () => void;
 };
 
-/** Desktop-only back control — returns to the workspace home for the active mode. */
-export function DesktopBackButton({ className = '', to, alwaysVisible = false, onAfterNavigate }: Props) {
+/** Desktop back: navigates to dashboard on pages; closes modal when `onClose` is passed. */
+export function DesktopBackButton({ className = '', to, alwaysVisible = false, onClose }: Props) {
   const navigate = useNavigate();
   const { isHelperMode } = useAppMode();
   const { t } = useLanguage();
@@ -25,8 +28,11 @@ export function DesktopBackButton({ className = '', to, alwaysVisible = false, o
     <button
       type="button"
       onClick={() => {
+        if (onClose) {
+          onClose();
+          return;
+        }
         navigate(target);
-        onAfterNavigate?.();
       }}
       className={`${alwaysVisible ? 'inline-flex' : 'hidden lg:inline-flex'} items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-800 ${className}`}
     >

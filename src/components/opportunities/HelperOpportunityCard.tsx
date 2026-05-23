@@ -1,6 +1,7 @@
 import * as Icons from 'lucide-react';
 import { Check, CheckCircle2, Clock, MapPin } from 'lucide-react';
 import type { Job } from '@/types/job';
+import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { LhCard } from '@/components/design-system/LhCard';
 import { clsx } from 'clsx';
 

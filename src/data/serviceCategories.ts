@@ -9,6 +9,11 @@ export const SERVICE_CATEGORIES = [
     subKeys: ['apartment', 'house', 'commercial', 'post_construction', 'moving_clean', 'windows'],
   },
   {
+    id: 'sanitization',
+    icon: 'SprayCan',
+    subKeys: ['sofa', 'mattress', 'car', 'carpet'],
+  },
+  {
     id: 'moving',
     icon: 'Truck',
     subKeys: [

@@ -1,10 +1,9 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Shield, Star, Users, MapPin, Globe, Clock, Languages, HeartHandshake } from 'lucide-react';
+import { CheckCircle2, Shield, Star, HeartHandshake } from 'lucide-react';
 import { categories } from '@/data/landingCategories';
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
 
 export default function LandingPage() {
@@ -68,62 +67,70 @@ export default function LandingPage() {
 
           {/* Visual Composition / Graphic */}
           <div className="relative h-[600px] hidden lg:block animate-in fade-in slide-in-from-right-8 duration-1000">
-             {/* Center Map abstract */}
-             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-white/50 backdrop-blur-3xl rounded-full border border-white/40 shadow-2xl overflow-hidden flex items-center justify-center">
-                <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#2563EB 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
-                
-                {/* Floating Map Pins */}
-                <div className="absolute top-20 left-20 animate-bounce [animation-duration:3s]">
-                   <div className="relative">
-                     <div className="w-10 h-10 bg-white rounded-full p-1 shadow-lg border border-gray-100"><img src="https://i.pravatar.cc/150?img=33" className="w-full h-full rounded-full object-cover" /></div>
-                     <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+             <div className="absolute inset-4 rounded-[2rem] border border-white bg-white/70 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl overflow-hidden">
+               <div className="absolute inset-0 opacity-50" style={{ backgroundImage: 'radial-gradient(#60A5FA 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
+               <div className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-100 bg-blue-50/80 shadow-inner">
+                 <div className="absolute inset-8 rounded-full border border-dashed border-blue-200 animate-spin [animation-duration:28s]"></div>
+                 <div className="absolute left-1/2 top-1/2 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-3xl bg-blue-600 text-white shadow-2xl shadow-blue-500/30">
+                   <Icons.MapPinned className="h-9 w-9" />
+                 </div>
+                 <span className="absolute left-8 top-10 h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_0_8px_rgba(16,185,129,0.12)]"></span>
+                 <span className="absolute bottom-12 right-10 h-3 w-3 rounded-full bg-blue-500 shadow-[0_0_0_8px_rgba(59,130,246,0.12)]"></span>
+                 <span className="absolute right-20 top-16 h-2.5 w-2.5 rounded-full bg-amber-400 shadow-[0_0_0_8px_rgba(251,191,36,0.12)]"></span>
+               </div>
+
+               <div className="absolute left-8 top-8 w-56 rounded-3xl border border-slate-100 bg-white p-4 shadow-xl animate-bounce [animation-duration:5s]">
+                 <div className="mb-3 flex items-center gap-3">
+                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-500/30">
+                     <Icons.Sparkles className="h-6 w-6" />
                    </div>
-                </div>
-                <div className="absolute bottom-24 right-20 animate-bounce [animation-duration:4s] [animation-delay:1s]">
-                   <div className="relative">
-                     <div className="w-12 h-12 bg-white rounded-full p-1 shadow-lg border border-gray-100"><img src="https://i.pravatar.cc/150?img=47" className="w-full h-full rounded-full object-cover" /></div>
-                     <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+                   <div>
+                     <p className="text-sm font-black text-slate-950">{t('landing.card_cleaning')}</p>
+                     <p className="text-xs font-bold text-slate-400">Trois-Rivieres</p>
                    </div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="bg-white px-4 py-2 rounded-2xl shadow-lg border border-gray-100 inline-flex flex-col items-center justify-center mb-2">
-                    <span className="text-3xl font-black text-gray-900">14</span>
-                    <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">{t('landing.helpers_online')}</p>
-                  </div>
-                </div>
-             </div>
-
-             {/* Floating Imagery Cards */}
-             <div className="absolute top-4 -left-8 w-44 bg-white p-2 rounded-2xl shadow-xl transform rotate-[-6deg] hover:rotate-0 transition-transform duration-300 border border-gray-100">
-               <img src="https://images.unsplash.com/photo-1584820927498-cafe8c1c969b?auto=format&fit=crop&q=80&w=400&h=300" className="w-full h-28 object-cover rounded-xl mb-2" alt="Cleaning" />
-               <div className="flex items-center justify-between px-1">
-                  <span className="text-xs font-bold text-gray-900">{t('landing.card_cleaning')}</span>
-                 <span className="text-[10px] font-bold text-blue-600 flex items-center gap-0.5"><Icons.Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> 4.9</span>
+                 </div>
+                 <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2">
+                   <span className="text-xs font-bold text-slate-500">CAD $120</span>
+                   <span className="text-xs font-black text-emerald-600">{t('landing.demo_urgent_label')}</span>
+                 </div>
                </div>
-             </div>
 
-             <div className="absolute top-16 -right-4 w-52 bg-white p-2 rounded-2xl shadow-xl transform rotate-[4deg] hover:rotate-0 transition-transform duration-300 border border-gray-100 z-20">
-               <img src="https://images.unsplash.com/photo-1604328698692-f76ea9498e76?auto=format&fit=crop&q=80&w=400&h=300" className="w-full h-32 object-cover rounded-xl mb-2" alt="Furniture Assembly" />
-               <div className="flex items-center justify-between px-1">
-                 <span className="text-xs font-bold text-gray-900">{t('landing.card_assembly')}</span>
-                 <span className="text-[10px] font-bold text-blue-600 flex items-center gap-0.5"><Icons.Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> 5.0</span>
+               <div className="absolute right-7 top-20 w-64 rounded-3xl border border-slate-100 bg-white p-4 shadow-xl animate-bounce [animation-duration:6s] [animation-delay:700ms]">
+                 <div className="mb-3 flex items-center justify-between">
+                   <div>
+                     <p className="text-sm font-black text-slate-950">{t('landing.card_assembly')}</p>
+                     <p className="text-xs font-bold text-slate-400">4.2 km</p>
+                   </div>
+                   <div className="flex -space-x-2">
+                     <img className="h-8 w-8 rounded-full border-2 border-white object-cover" src="https://i.pravatar.cc/150?img=33" alt="" />
+                     <img className="h-8 w-8 rounded-full border-2 border-white object-cover" src="https://i.pravatar.cc/150?img=47" alt="" />
+                     <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-blue-50 text-xs font-black text-blue-700">+3</span>
+                   </div>
+                 </div>
+                 <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                   <div className="h-full w-4/5 rounded-full bg-gradient-to-r from-blue-600 to-sky-400"></div>
+                 </div>
                </div>
-             </div>
 
-             <div className="absolute bottom-12 -left-4 w-48 bg-white p-2 rounded-2xl shadow-xl transform rotate-[8deg] hover:rotate-0 transition-transform duration-300 border border-gray-100 z-20">
-               <img src="https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&q=80&w=400&h=300" className="w-full h-32 object-cover rounded-xl mb-2" alt="Manicure" />
-               <div className="flex items-center justify-between px-1">
-                 <span className="text-xs font-bold text-gray-900">{t('landing.card_manicure')}</span>
-                 <span className="text-[10px] font-bold text-blue-600 flex items-center gap-0.5"><Icons.Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> 4.8</span>
+               <div className="absolute bottom-24 left-10 w-60 rounded-3xl border border-slate-100 bg-white p-4 shadow-xl animate-bounce [animation-duration:7s] [animation-delay:1200ms]">
+                 <div className="mb-3 flex items-center gap-3">
+                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white">
+                     <Icons.MessageCircle className="h-5 w-5" />
+                   </div>
+                   <div>
+                     <p className="text-sm font-black text-slate-950">{t('landing.demo_helpers_interested', { count: 3 })}</p>
+                     <p className="text-xs font-bold text-slate-400">{t('landing.demo_location_sample')}</p>
+                   </div>
+                 </div>
+                 <p className="rounded-2xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">{t('landing.credits_note_chat')}</p>
                </div>
-             </div>
 
-             <div className="absolute bottom-4 -right-12 w-56 bg-white p-2 rounded-2xl shadow-xl transform rotate-[-4deg] hover:rotate-0 transition-transform duration-300 border border-gray-100">
-               <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400&h=300" className="w-full h-36 object-cover rounded-xl mb-2" alt="Translation" />
-               <div className="flex items-center justify-between px-1">
-                 <span className="text-xs font-bold text-gray-900">{t('landing.card_translation')}</span>
-                 <span className="text-[10px] font-bold text-blue-600 flex items-center gap-0.5"><Icons.Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> 5.0</span>
+               <div className="absolute bottom-9 right-10 w-56 rounded-3xl border border-slate-100 bg-slate-950 p-4 text-white shadow-2xl animate-pulse">
+                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-300">{t('landing.helpers_online')}</p>
+                 <div className="mt-2 flex items-end justify-between">
+                   <span className="text-4xl font-black">14</span>
+                   <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-emerald-300">online</span>
+                 </div>
                </div>
              </div>
           </div>
@@ -296,84 +303,56 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing / Business Model Section */}
+      {/* LinkCredits Section */}
       <section className="py-24 bg-white border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-4">{t('landing.pricing_title')}</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto">{t('landing.pricing_sub')}</p>
+          <div className="text-center mb-12">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-black text-blue-700">
+              <Icons.Coins className="h-4 w-4" />
+              {t('landing.pricing_clients_badge')}
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight text-gray-900 mb-4">{t('landing.linkcredits_heading')}</h2>
+            <p className="text-lg text-gray-500 max-w-3xl mx-auto leading-relaxed font-medium">{t('landing.linkcredits_body')}</p>
           </div>
 
-          <div className={`grid gap-12 lg:gap-20 ${UI_VISIBILITY.clientCredits ? 'md:grid-cols-2' : 'max-w-xl mx-auto'}`}>
-            {UI_VISIBILITY.clientCredits ? (
-            <div className="bg-blue-50/50 p-8 md:p-12 rounded-3xl border border-blue-100">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 font-bold mb-6 text-sm">
-                {t('landing.pricing_clients_badge')}
+          <div className="mx-auto grid max-w-5xl gap-5 md:grid-cols-3">
+            {[
+              { pack: t('landing.linkcredits_pack_10'), price: t('landing.price_cad_399'), badge: '' },
+              { pack: t('landing.linkcredits_pack_50'), price: t('landing.price_cad_1490'), badge: t('landing.credits_popular') },
+              { pack: t('landing.linkcredits_pack_120'), price: t('landing.price_cad_2990'), badge: t('landing.credits_best_value') },
+            ].map((pkg, index) => (
+              <div
+                key={pkg.pack}
+                className={`relative overflow-hidden rounded-3xl border p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl ${
+                  index === 1
+                    ? 'border-blue-200 bg-gradient-to-br from-blue-50 via-white to-white'
+                    : 'border-slate-100 bg-white'
+                }`}
+              >
+                {pkg.badge ? (
+                  <div className="absolute right-4 top-4 rounded-full bg-slate-950 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+                    {pkg.badge}
+                  </div>
+                ) : null}
+                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-500/25">
+                  <Icons.Coins className="h-6 w-6" />
+                </div>
+                <p className="text-lg font-black text-slate-950">{pkg.pack}</p>
+                <p className="mt-3 text-3xl font-black text-blue-600">{pkg.price}</p>
+                <p className="mt-4 text-sm font-semibold leading-relaxed text-slate-500">
+                  {index === 0 ? t('landing.credits_note_client') : index === 1 ? t('landing.credits_note_helper') : t('landing.credits_note_control')}
+                </p>
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">{t('landing.linkcredits_heading')}</h3>
-              <p className="text-gray-600 mb-8 leading-relaxed">
-                {t('landing.linkcredits_body')}
-              </p>
-              
-              <div className="space-y-4">
-                <div className="bg-white p-4 rounded-xl border border-blue-100 flex justify-between items-center shadow-sm">
-                  <span className="font-semibold text-gray-900">{t('landing.linkcredits_pack_10')}</span>
-                  <span className="font-bold text-blue-600">{t('landing.price_cad_399')}</span>
-                </div>
-                <div className="bg-white p-4 rounded-xl border border-blue-100 flex justify-between items-center shadow-sm relative overflow-hidden">
-                  <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">{t('landing.credits_popular')}</div>
-                  <span className="font-semibold text-gray-900">{t('landing.linkcredits_pack_50')}</span>
-                  <span className="font-bold text-blue-600">{t('landing.price_cad_1490')}</span>
-                </div>
-                <div className="bg-white p-4 rounded-xl border border-blue-100 flex justify-between items-center shadow-sm relative overflow-hidden">
-                  <div className="absolute top-0 right-0 bg-violet-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">{t('landing.credits_best_value')}</div>
-                  <span className="font-semibold text-gray-900">{t('landing.linkcredits_pack_120')}</span>
-                  <span className="font-bold text-blue-600">{t('landing.price_cad_2990')}</span>
-                </div>
-              </div>
-            </div>
-            ) : null}
+            ))}
+          </div>
 
-            {/* Subscriptions for Helpers */}
-            <div>
-               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 text-green-700 font-bold mb-6 text-sm">
-                {t('landing.pricing_helpers_badge')}
+          <div className="mx-auto mt-10 grid max-w-5xl gap-3 md:grid-cols-3">
+            {[t('landing.credits_note_free_signup'), t('landing.credits_note_client_posts'), t('landing.credits_note_chat')].map((item) => (
+              <div key={item} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-600">
+                <CheckCircle2 className="mr-2 inline h-4 w-4 text-emerald-600" />
+                {item}
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">{t('landing.subs_heading')}</h3>
-              <p className="text-gray-600 mb-8 leading-relaxed">
-                {t('landing.subs_body')}
-              </p>
-
-              <div className="space-y-6">
-                <div className="flex gap-4 items-start">
-                  <div className="p-3 bg-gray-100 rounded-lg shrink-0">
-                    <Icons.User className="w-6 h-6 text-gray-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 text-lg">{t('landing.tier_basic_title')}</h4>
-                    <p className="text-gray-500 text-sm mt-1">{t('landing.tier_basic_desc')}</p>
-                  </div>
-                </div>
-                <div className="flex gap-4 items-start">
-                  <div className="p-3 bg-blue-100 rounded-lg shrink-0">
-                    <Icons.Star className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 text-lg">{t('landing.tier_elite_title')}</h4>
-                    <p className="text-gray-500 text-sm mt-1">{t('landing.tier_elite_desc')}</p>
-                  </div>
-                </div>
-                <div className="flex gap-4 items-start">
-                  <div className="p-3 bg-yellow-100 rounded-lg shrink-0">
-                    <Icons.Crown className="w-6 h-6 text-yellow-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 text-lg">{t('landing.tier_pro_help_title')}</h4>
-                    <p className="text-gray-500 text-sm mt-1">{t('landing.tier_pro_help_desc')}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>

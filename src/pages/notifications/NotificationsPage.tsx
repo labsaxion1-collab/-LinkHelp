@@ -6,6 +6,7 @@ import { NOTIFICATION_PREVIEW_TYPES } from '@/config/notificationPreviewTypes';
 import { useAppData } from '@/context/AppDataContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useLanguage } from '@/context/LanguageContext';
+import { getLocalizedNotificationText } from '@/utils/notificationText';
 
 export default function NotificationsPage() {
   const { t } = useLanguage();
@@ -30,11 +31,11 @@ export default function NotificationsPage() {
     const diff = Date.now() - timestamp;
     const minutes = Math.floor(diff / 60000);
     if (minutes < 1) return t('notifications.time_now');
-    if (minutes < 60) return `${minutes}m`;
+    if (minutes < 60) return t('notifications.time_min_ago', { count: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h`;
+    if (hours < 24) return t('notifications.time_hours_ago', { count: hours });
     const days = Math.floor(hours / 24);
-    return `${days}d`;
+    return t('notifications.time_days_ago', { count: days });
   };
 
   const getIcon = (type: string) => {
@@ -128,52 +129,55 @@ export default function NotificationsPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {displayedNotifications.map((notification) => (
-                    <div 
-                      key={notification.id}
-                      onClick={() => !notification.read && markNotificationAsRead(notification.id)}
-                      className={`p-5 sm:p-6 hover:bg-gray-50 transition-all cursor-pointer relative group flex items-start gap-4 sm:gap-6 ${!notification.read ? 'bg-blue-50/20' : ''}`}
-                    >
-                      {!notification.read && (
-                        <div className="absolute left-0 top-0 w-1 h-full bg-blue-500"></div>
-                      )}
-                      
-                      <div className={`p-3 rounded-2xl shrink-0 ${!notification.read ? 'bg-blue-100 backdrop-blur-sm' : 'bg-gray-100 group-hover:bg-white border border-transparent group-hover:border-gray-200'} transition-all`}>
-                        {getIcon(notification.type)}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-4 mb-1.5">
-                          <h3 className={`text-base font-bold truncate ${!notification.read ? 'text-gray-900' : 'text-gray-800'}`}>
-                            {notification.title}
-                          </h3>
-                          <span className="text-xs font-bold text-gray-400 whitespace-nowrap shrink-0">
-                            {formatTime(notification.createdAt)}
-                          </span>
-                        </div>
-                        <p className={`text-sm leading-relaxed mb-3 ${!notification.read ? 'text-gray-700 font-medium' : 'text-gray-600'}`}>
-                          {notification.message}
-                        </p>
-                        
-                        {notification.actionUrl && (
-                          <Link 
-                            to={notification.actionUrl}
-                            className="inline-flex items-center text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
-                            onClick={(e) => {
-                               e.stopPropagation();
-                               markNotificationAsRead(notification.id);
-                            }}
-                          >
-                            {t('notifications.view_details')} <ChevronRight className="w-4 h-4 ml-0.5" />
-                          </Link>
+                  {displayedNotifications.map((notification) => {
+                    const localized = getLocalizedNotificationText(notification, t);
+                    return (
+                      <div
+                        key={notification.id}
+                        onClick={() => !notification.read && markNotificationAsRead(notification.id)}
+                        className={`p-5 sm:p-6 hover:bg-gray-50 transition-all cursor-pointer relative group flex items-start gap-4 sm:gap-6 ${!notification.read ? 'bg-blue-50/20' : ''}`}
+                      >
+                        {!notification.read && (
+                          <div className="absolute left-0 top-0 w-1 h-full bg-blue-500"></div>
                         )}
+
+                        <div className={`p-3 rounded-2xl shrink-0 ${!notification.read ? 'bg-blue-100 backdrop-blur-sm' : 'bg-gray-100 group-hover:bg-white border border-transparent group-hover:border-gray-200'} transition-all`}>
+                          {getIcon(notification.type)}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-4 mb-1.5">
+                            <h3 className={`text-base font-bold truncate ${!notification.read ? 'text-gray-900' : 'text-gray-800'}`}>
+                              {localized.title}
+                            </h3>
+                            <span className="text-xs font-bold text-gray-400 whitespace-nowrap shrink-0">
+                              {formatTime(notification.createdAt)}
+                            </span>
+                          </div>
+                          <p className={`text-sm leading-relaxed mb-3 ${!notification.read ? 'text-gray-700 font-medium' : 'text-gray-600'}`}>
+                            {localized.message}
+                          </p>
+
+                          {notification.actionUrl && (
+                            <Link
+                              to={notification.actionUrl}
+                              className="inline-flex items-center text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                              onClick={(e) => {
+                                 e.stopPropagation();
+                                 markNotificationAsRead(notification.id);
+                              }}
+                            >
+                              {t('notifications.view_details')} <ChevronRight className="w-4 h-4 ml-0.5" />
+                            </Link>
+                          )}
+                        </div>
+
+                        <button className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0">
+                          <Trash2 className="w-5 h-5" />
+                        </button>
                       </div>
-                      
-                      <button className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0">
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

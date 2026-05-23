@@ -4,6 +4,7 @@ import { Bell, ChevronRight, MessageSquare, Briefcase, DollarSign, Target, Star 
 import { useAppData } from '@/context/AppDataContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { ROUTES } from '@/utils/constants';
+import { getLocalizedNotificationText } from '@/utils/notificationText';
 
 interface NotificationsDropdownProps {
   userId: string;
@@ -107,41 +108,44 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
-                {userNotifications.slice(0, 10).map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`p-4 hover:bg-gray-50 transition-colors relative group ${!notification.read ? 'bg-blue-50/30' : ''}`}
-                    onClick={() => {
-                      if (!notification.read) {
-                        markNotificationAsRead(notification.id);
-                      }
-                    }}
-                  >
-                    {!notification.read && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full"></div>
-                    )}
-                    <Link to={notification.actionUrl || '#'} className="flex gap-3 items-start">
-                      <div
-                        className={`p-2 rounded-xl shrink-0 ${!notification.read ? 'bg-blue-100' : 'bg-gray-100'} transition-colors`}
-                      >
-                        {getIcon(notification.type)}
-                      </div>
-                      <div className="flex-1 min-w-0 pt-0.5">
-                        <div className="flex justify-between items-start gap-2 mb-1">
-                          <h4
-                            className={`text-sm font-bold truncate ${!notification.read ? 'text-gray-900' : 'text-gray-700'}`}
-                          >
-                            {notification.title}
-                          </h4>
-                          <span className="text-[10px] font-medium text-gray-400 whitespace-nowrap pt-1">
-                            {formatTime(notification.createdAt)}
-                          </span>
+                {userNotifications.slice(0, 10).map((notification) => {
+                  const localized = getLocalizedNotificationText(notification, t);
+                  return (
+                    <div
+                      key={notification.id}
+                      className={`p-4 hover:bg-gray-50 transition-colors relative group ${!notification.read ? 'bg-blue-50/30' : ''}`}
+                      onClick={() => {
+                        if (!notification.read) {
+                          markNotificationAsRead(notification.id);
+                        }
+                      }}
+                    >
+                      {!notification.read && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full"></div>
+                      )}
+                      <Link to={notification.actionUrl || '#'} className="flex gap-3 items-start">
+                        <div
+                          className={`p-2 rounded-xl shrink-0 ${!notification.read ? 'bg-blue-100' : 'bg-gray-100'} transition-colors`}
+                        >
+                          {getIcon(notification.type)}
                         </div>
-                        <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{notification.message}</p>
-                      </div>
-                    </Link>
-                  </div>
-                ))}
+                        <div className="flex-1 min-w-0 pt-0.5">
+                          <div className="flex justify-between items-start gap-2 mb-1">
+                            <h4
+                              className={`text-sm font-bold truncate ${!notification.read ? 'text-gray-900' : 'text-gray-700'}`}
+                            >
+                              {localized.title}
+                            </h4>
+                            <span className="text-[10px] font-medium text-gray-400 whitespace-nowrap pt-1">
+                              {formatTime(notification.createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{localized.message}</p>
+                        </div>
+                      </Link>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

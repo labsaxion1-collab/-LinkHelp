@@ -17,7 +17,7 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
   const { showToast } = useToast();
-  const { signUpWithEmail, signInWithGoogle, isConfigured, session, profile, authBootstrapped, authLoading, refreshProfile } =
+  const { signUpWithEmail, signInWithGoogle, isConfigured, session, profile, authBootstrapped, authLoading, refreshProfile, signInWithEmail } =
     useAuth();
   const [userMode, setUserMode] = useState<'client' | 'helper' | null>(null);
   const [fullName, setFullName] = useState('');
@@ -97,6 +97,18 @@ export default function RegisterPage() {
     });
     setSubmitting(false);
     if (err) {
+      if (err.messageKey === 'auth.errors.profile_create') {
+        const loginErr = await signInWithEmail(email, password);
+        if (!loginErr) {
+          const recovered = await refreshProfile();
+          navigate(
+            recovered?.role === 'helper' || ut === 'helper' ? ROUTES.helperDashboard : ROUTES.clientDashboard,
+            { replace: true },
+          );
+          showToast(t('register_page.welcome'), 'success');
+          return;
+        }
+      }
       setError(t(err.messageKey, err.vars));
       if (import.meta.env.DEV && err.devRaw) console.info('[LinkHelp] signUp raw:', err.devRaw);
       return;

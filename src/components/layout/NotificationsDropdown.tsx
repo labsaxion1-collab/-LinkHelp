@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, ChevronRight, MessageSquare, Briefcase, DollarSign, Target, Star } from 'lucide-react';
 import { useAppData } from '@/context/AppDataContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -13,6 +13,8 @@ interface NotificationsDropdownProps {
 export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
   const { notifications, markNotificationAsRead, markAllAsRead } = useAppData();
   const { t } = useLanguage();
 
@@ -30,6 +32,10 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname, location.search]);
 
   const formatTime = (timestamp: number) => {
     const diff = Date.now() - timestamp;
@@ -112,19 +118,22 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
                   const localized = getLocalizedNotificationText(notification, t);
                   const actionUrl = getNotificationActionUrl(notification);
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={notification.id}
-                      className={`p-4 hover:bg-gray-50 transition-colors relative group ${!notification.read ? 'bg-blue-50/30' : ''}`}
+                      className={`block w-full p-4 text-left hover:bg-gray-50 transition-colors relative group ${!notification.read ? 'bg-blue-50/30' : ''}`}
                       onClick={() => {
                         if (!notification.read) {
                           markNotificationAsRead(notification.id);
                         }
+                        setIsOpen(false);
+                        navigate(actionUrl);
                       }}
                     >
                       {!notification.read && (
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full"></div>
                       )}
-                      <Link to={actionUrl} onClick={() => setIsOpen(false)} className="flex gap-3 items-start">
+                      <span className="flex gap-3 items-start">
                         <div
                           className={`p-2 rounded-xl shrink-0 ${!notification.read ? 'bg-blue-100' : 'bg-gray-100'} transition-colors`}
                         >
@@ -143,8 +152,8 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
                           </div>
                           <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{localized.message}</p>
                         </div>
-                      </Link>
-                    </div>
+                      </span>
+                    </button>
                   );
                 })}
               </div>

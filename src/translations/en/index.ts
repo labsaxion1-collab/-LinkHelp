@@ -238,7 +238,7 @@ export const en = {
     call_disabled_pre: 'Calls unlock after the service is confirmed.',
     reply_other_ack: 'Sounds good — thanks for the context.',
     reply_other_post: 'Perfect — I have everything I need on my side.',
-    no_conversations: 'No conversations yet. Apply to a request or wait for messages from clients.',
+    no_conversations: 'No conversations yet. Officially hire a helper to unlock chat.',
     pick_conversation: 'Select a conversation from the list.',
     send_failed: 'Could not send the message. Please try again.',
   },
@@ -296,6 +296,8 @@ export const en = {
     cta_chat_sub: 'Limited pre-hire chat',
     cta_proposal: 'Send proposal',
     cta_hire: 'Hire officially',
+    chat_locked_hint: 'You can chat after you officially hire this helper.',
+    hire_no_application: 'This helper must apply to one of your requests first.',
     seed_helper_line:
       'Hi! I saw your request—happy to align on timing and details here before we confirm everything.',
     bio_empty: 'This helper has not added a bio yet.',
@@ -317,6 +319,8 @@ export const en = {
     send_proposal: 'Send proposal',
     success_toast: 'Invitation sent! Await their response.',
     success_toast_proposal: 'Proposal sent! You can keep the conversation in LinkHelp.',
+    success_hired_toast: 'Helper hired! Chat is now open.',
+    error_toast: 'Could not complete the hire. Please try again.',
   },
   helper_badges: {
     pro_helper: 'Pro Helper',

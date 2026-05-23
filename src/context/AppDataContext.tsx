@@ -17,6 +17,7 @@ import {
   remoteMarkAllNotificationsRead,
   remoteMarkNotificationRead,
   remoteUpdateRequestStatus,
+  remoteOfficiallyHireHelper,
   remoteUpdateApplicationStatus,
   remoteUpdateUpcomingWorkflow,
   subscribeRemoteData,
@@ -35,6 +36,7 @@ interface AppDataContextData {
   applyForJob: (jobId: string, helperId: string) => Promise<void>;
   updateJobStatus: (jobId: string, status: JobStatus) => Promise<void>;
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => Promise<void>;
+  officiallyHireHelper: (applicationId: string) => Promise<string | null>;
   getHelperApplications: (helperId: string) => Application[];
   getJobApplications: (jobId: string) => Application[];
   getUpcomingJobsForHelper: (helperId: string) => UpcomingJob[];
@@ -239,7 +241,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setApplications((prev) => prev.map((app) => (app.id === applicationId ? { ...app, status } : app)));
+    setApplications((prev) =>
+      prev.map((app) =>
+        app.id === applicationId
+          ? { ...app, status, ...(status === 'accepted' ? { chatUnlocked: false } : {}) }
+          : app,
+      ),
+    );
 
     if (status === 'cancelled' && targetApp) {
       addNotification({
@@ -296,6 +304,65 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const officiallyHireHelper = async (applicationId: string): Promise<string | null> => {
+    const targetApp = applicationsRef.current.find((a) => a.id === applicationId);
+    const jobSnapshot = targetApp ? jobsRef.current.find((j) => j.id === targetApp.jobId) : undefined;
+    if (!targetApp || !jobSnapshot) return null;
+
+    if (useRemote) {
+      const conversationId = await remoteOfficiallyHireHelper(applicationId, jobSnapshot);
+      await refreshRemote();
+      return conversationId;
+    }
+
+    setApplications((prev) =>
+      prev.map((app) =>
+        app.id === applicationId ? { ...app, status: 'accepted' as ApplicationStatus, chatUnlocked: true } : app,
+      ),
+    );
+    setJobs((prev) =>
+      prev.map((job) => (job.id === targetApp.jobId ? { ...job, status: 'in_progress' as JobStatus } : job)),
+    );
+    setUpcomingJobs((prev) => {
+      if (prev.some((u) => u.jobId === targetApp.jobId && u.helperId === targetApp.helperId)) return prev;
+      const scheduledAt = estimateScheduledAtFromJob(jobSnapshot);
+      const row: UpcomingJob = {
+        id: `up_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        helperId: targetApp.helperId,
+        jobId: jobSnapshot.id,
+        clientName: jobSnapshot.clientName,
+        clientAvatar: jobSnapshot.clientAvatar,
+        title: jobSnapshot.title,
+        category: jobSnapshot.category,
+        description: jobSnapshot.description,
+        location: jobSnapshot.location,
+        value: jobSnapshot.value,
+        urgency: jobSnapshot.urgency,
+        scheduledAt,
+        workflowStatus: 'scheduled',
+        createdAt: Date.now(),
+      };
+      return [row, ...prev];
+    });
+
+    addNotification({
+      userId: targetApp.helperId,
+      type: 'application',
+      title: 'Contratação oficial',
+      message: `O cliente contratou você para "${jobSnapshot.title}". O chat está liberado.`,
+      actionUrl: ROUTES.messages,
+    });
+    addNotification({
+      userId: jobSnapshot.clientId,
+      type: 'application',
+      title: 'Helper contratado',
+      message: `Você pode conversar com ${targetApp.helperName} sobre "${jobSnapshot.title}".`,
+      actionUrl: ROUTES.messages,
+    });
+
+    return null;
+  };
+
   const getHelperApplications = (helperId: string) => {
     return applications.filter((a) => a.helperId === helperId).sort((a, b) => b.createdAt - a.createdAt);
   };
@@ -330,6 +397,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         applyForJob,
         updateJobStatus,
         updateApplicationStatus,
+        officiallyHireHelper,
         getHelperApplications,
         getJobApplications,
         getUpcomingJobsForHelper,

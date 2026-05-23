@@ -240,7 +240,7 @@ export const fr = {
     call_disabled_pre: 'Les appels s’activent après confirmation du service.',
     reply_other_ack: 'Parfait — merci pour le contexte.',
     reply_other_post: 'Super — de mon côté tout est bon.',
-    no_conversations: 'Pas encore de conversations. Postulez à une demande ou attendez des messages des clients.',
+    no_conversations: 'Pas encore de conversations. Engagez officiellement un helper pour ouvrir le chat.',
     pick_conversation: 'Choisissez une conversation dans la liste.',
     send_failed: 'Impossible d’envoyer le message. Réessayez.',
   },
@@ -298,6 +298,8 @@ export const fr = {
     cta_chat_sub: 'Chat limité avant embauche',
     cta_proposal: 'Envoyer une proposition',
     cta_hire: 'Engager officiellement',
+    chat_locked_hint: 'Vous pourrez discuter après avoir engagé officiellement ce helper.',
+    hire_no_application: 'Ce helper doit d’abord postuler à l’une de vos demandes.',
     seed_helper_line:
       'Bonjour ! J’ai vu votre demande — je peux ajuster les détails ici avant qu’on confirme ensemble.',
     bio_empty: 'Cet assistant n’a pas encore ajouté de bio.',
@@ -319,6 +321,8 @@ export const fr = {
     send_proposal: 'Envoyer la proposition',
     success_toast: 'Invitation envoyée ! En attente de réponse.',
     success_toast_proposal: 'Proposition envoyée ! Continuez la conversation sur LinkHelp.',
+    success_hired_toast: 'Helper engagé ! Le chat est ouvert.',
+    error_toast: 'Impossible de finaliser l’engagement. Réessayez.',
   },
   helper_badges: {
     pro_helper: 'Pro Helper',

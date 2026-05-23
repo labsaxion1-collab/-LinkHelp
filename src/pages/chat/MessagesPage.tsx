@@ -101,7 +101,9 @@ export default function MessagesPage() {
   const filteredSummaries = useMemo(() => {
     if (!useRemoteChat) return [];
     const q = searchQuery.trim().toLowerCase();
-    const visible = remote.summaries.filter((s) => !hiddenConversationIds.has(s.id));
+    const visible = remote.summaries.filter(
+      (s) => s.contactUnlocked && !hiddenConversationIds.has(s.id),
+    );
     if (!q) return visible;
     return visible.filter(
       (s) => s.peerName.toLowerCase().includes(q) || s.requestTitle.toLowerCase().includes(q),
@@ -384,8 +386,8 @@ export default function MessagesPage() {
   );
 
   const remoteEmptyList = useRemoteChat && !remote.listLoading && filteredSummaries.length === 0;
-  const remoteNeedsPick = useRemoteChat && !remote.selectedId && remote.summaries.length > 0;
-  const remoteNoThread = useRemoteChat && !remote.selectedId && remote.summaries.length === 0 && !remote.listLoading;
+  const remoteNeedsPick = useRemoteChat && !remote.selectedId && filteredSummaries.length > 0;
+  const remoteNoThread = useRemoteChat && !remote.selectedId && filteredSummaries.length === 0 && !remote.listLoading;
   const remoteListBoot = useRemoteChat && !remote.selectedId && remote.listLoading;
 
   if (!useRemoteChat) {

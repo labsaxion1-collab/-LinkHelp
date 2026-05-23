@@ -289,7 +289,8 @@ export default function Navbar() {
             </div>
           </div>
 
-          <div className="flex items-center md:hidden">
+          <div className="flex items-center gap-2 md:hidden">
+            {isConnected ? <NotificationsDropdown userId={userId} /> : null}
             <button
               type="button"
               onClick={() => {

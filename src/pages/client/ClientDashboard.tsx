@@ -20,11 +20,15 @@ import { helperPlanFromRoleKey, helperTierFromApplication } from '@/utils/helper
 import { ClientMapWidget } from '@/components/client/ClientMapWidget';
 import { LhCard } from '@/components/design-system/LhCard';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
-import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
 import { JobTaskActionsBar } from '@/components/features/JobTaskActionsBar';
 import { HelperPublicProfileView } from '@/components/features/HelperPublicProfileView';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
+import {
+  findClientHelperApplication,
+  isClientChatUnlockedForHelper,
+} from '@/utils/chatHireGate';
 import {
   hideJobForUser,
   isJobExpired,
@@ -89,6 +93,7 @@ export default function ClientDashboard() {
   const [previousAppCount, setPreviousAppCount] = useState(0);
   
   const [selectedHelper, setSelectedHelper] = useState<any>(null);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
   const [showHelperProfileModal, setShowHelperProfileModal] = useState(false);
   const [showHireModal, setShowHireModal] = useState(false);
   const [hireModalKind, setHireModalKind] = useState<'hire' | 'proposal'>('hire');
@@ -104,9 +109,21 @@ export default function ClientDashboard() {
   const { t } = useLanguage();
   const skillChip = (skill: string) =>
     skill === 'support' ? t('skills.support') : t(`categories.${skill}`);
-  const { jobs, applications, notifications, updateApplicationStatus, updateJobStatus } = useAppData();
-  const { profile } = useAuth();
+  const { jobs, applications, notifications, updateApplicationStatus, updateJobStatus, officiallyHireHelper } = useAppData();
   const me = useSessionViewer();
+
+  const myJobIds = useMemo(() => jobs.filter((j) => j.clientId === me.id).map((j) => j.id), [jobs, me.id]);
+
+  const profileChatUnlocked = useMemo(() => {
+    if (!selectedHelper) return false;
+    return isClientChatUnlockedForHelper(String(selectedHelper.id), myJobIds, applications);
+  }, [selectedHelper, myJobIds, applications]);
+
+  const profileApplicationId = useMemo(() => {
+    if (selectedApplicationId) return selectedApplicationId;
+    if (!selectedHelper) return null;
+    return findClientHelperApplication(String(selectedHelper.id), myJobIds, applications)?.id ?? null;
+  }, [selectedApplicationId, selectedHelper, myJobIds, applications]);
 
   useEffect(() => {
     setHiddenJobIds(readHiddenJobIds(me.id));
@@ -150,6 +167,43 @@ export default function ClientDashboard() {
     }
     setPreviousAppCount(myApps.length);
   }, [applications, jobs, previousAppCount, t]);
+
+  const openHelperProfile = (helper: RecommendedHelperCard, applicationId?: string) => {
+    setSelectedHelper(helper);
+    setSelectedApplicationId(applicationId ?? null);
+    setShowHelperProfileModal(true);
+  };
+
+  const handleProfileMessageClick = () => {
+    if (profileChatUnlocked) {
+      setShowHelperProfileModal(false);
+      navigate(ROUTES.messages);
+      return;
+    }
+    showToast(t('helper_profile.chat_locked_hint'), 'info');
+  };
+
+  const handleOfficialHire = async () => {
+    if (!profileApplicationId) {
+      showToast(t('helper_profile.hire_no_application'), 'error');
+      return;
+    }
+    try {
+      const conversationId = await officiallyHireHelper(profileApplicationId);
+      setShowHireModal(false);
+      setInviteMessage('');
+      setShowHelperProfileModal(false);
+      showToast(t('hire_modal.success_hired_toast'), 'success');
+      if (conversationId) {
+        navigate(`${ROUTES.messages}?c=${conversationId}`);
+      } else {
+        navigate(ROUTES.messages);
+      }
+    } catch (error) {
+      console.error(error);
+      showToast(t('hire_modal.error_toast'), 'error');
+    }
+  };
 
   const openCreateModal = (categoryId = '', subcategoryId = '') => {
     setCreateInitialCategory(categoryId);
@@ -602,7 +656,21 @@ export default function ClientDashboard() {
                        >
                          {t('client_helpers.hire_again')}
                        </button>
-                       <button onClick={() => navigate(ROUTES.messages)} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+                       <button
+                         type="button"
+                         onClick={() => {
+                           if (isClientChatUnlockedForHelper(String(helper.id), myJobIds, applications)) {
+                             navigate(ROUTES.messages);
+                             return;
+                           }
+                           showToast(t('helper_profile.chat_locked_hint'), 'info');
+                         }}
+                         className={`px-4 py-2 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
+                           isClientChatUnlockedForHelper(String(helper.id), myJobIds, applications)
+                             ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                             : 'cursor-not-allowed bg-gray-50 text-gray-400 opacity-70'
+                         }`}
+                       >
                          <Icons.MessageSquare className="w-4 h-4" /> {t('client_helpers.chat')}
                        </button>
                     </div>
@@ -772,18 +840,20 @@ export default function ClientDashboard() {
                                   key={app.id}
                                   type="button"
                                   onClick={() => {
-                                    setSelectedHelper({
-                                      id: app.helperId,
-                                      name: app.helperName,
-                                      avatar: app.helperAvatar,
-                                      rating: app.helperRating,
-                                      roleKey: 'pro_helper',
-                                      roleColor: '',
-                                      skills: [],
-                                      isOnline: true,
-                                      trainingCert: 'none',
-                                    });
-                                    setShowHelperProfileModal(true);
+                                    openHelperProfile(
+                                      {
+                                        id: app.helperId,
+                                        name: app.helperName,
+                                        avatar: app.helperAvatar,
+                                        rating: app.helperRating,
+                                        roleKey: 'pro_helper',
+                                        roleColor: '',
+                                        skills: [],
+                                        isOnline: true,
+                                        trainingCert: 'none',
+                                      },
+                                      app.id,
+                                    );
                                   }}
                                   className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-left transition-all hover:border-blue-200 hover:bg-blue-50"
                                 >
@@ -974,15 +1044,22 @@ export default function ClientDashboard() {
               <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowHelperProfileModal(false);
-                    navigate(ROUTES.messages);
-                  }}
-                  className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 text-sm font-bold"
+                  onClick={handleProfileMessageClick}
+                  disabled={!profileChatUnlocked}
+                  className={`w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-2xl border-2 text-sm font-bold transition-colors ${
+                    profileChatUnlocked
+                      ? 'border-slate-200 bg-white text-slate-800 hover:border-blue-200 hover:bg-blue-50'
+                      : 'cursor-not-allowed border-slate-100 bg-slate-50 text-slate-400 opacity-60'
+                  }`}
                 >
-                  <Icons.MessageSquare className="w-5 h-5 text-blue-600" />
+                  <Icons.MessageSquare className={`w-5 h-5 ${profileChatUnlocked ? 'text-blue-600' : 'text-slate-400'}`} />
                   {t('helper_profile.cta_chat')}
                 </button>
+                {!profileChatUnlocked ? (
+                  <p className="text-center text-xs font-semibold text-slate-500 px-2">
+                    {t('helper_profile.chat_locked_hint')}
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => {
@@ -1067,18 +1144,11 @@ export default function ClientDashboard() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowHireModal(false);
-                    setToastNotification({
-                      message: hireModalKind === 'hire' ? t('hire_modal.success_toast') : t('hire_modal.success_toast_proposal'),
-                      show: true,
-                    });
-                    setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
-                  }}
+                  onClick={() => void handleOfficialHire()}
                   className="flex-1 min-h-[44px] py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors flex items-center justify-center gap-2"
                 >
                   <Icons.Send className="w-5 h-5" />{' '}
-                  {hireModalKind === 'proposal' ? t('hire_modal.send_proposal') : t('hire_modal.send_invite')}
+                  {hireModalKind === 'proposal' ? t('hire_modal.send_proposal') : t('helper_profile.cta_hire')}
                 </button>
               </div>
             </div>

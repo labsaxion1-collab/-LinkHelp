@@ -16,5 +16,7 @@ export interface Application {
   /** Membership tier at time of application (for client-side badges). */
   helperPlan?: HelperSubscriptionTier;
   status: ApplicationStatus;
+  /** True only after client clicks “Contratar oficialmente”. */
+  chatUnlocked?: boolean;
   createdAt: number;
 }

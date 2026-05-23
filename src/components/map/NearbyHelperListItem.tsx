@@ -1,10 +1,8 @@
 import * as Icons from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { UserPresenceBadge } from '@/components/ui/UserPresenceBadge';
 import { parseSkillKey } from '@/data/helperSkillsCatalog';
 import type { NearbyHelperMapPoint } from '@/types/nearbyHelper';
 import { avatarUrlForName } from '@/utils/avatarUrl';
-import { ROUTES } from '@/utils/constants';
 
 type Props = {
   key?: string;
@@ -14,8 +12,6 @@ type Props = {
 };
 
 export function NearbyHelperListItem({ helper, t, skillLabel }: Props) {
-  const navigate = useNavigate();
-
   return (
     <article className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:border-blue-200 transition-all">
       <div className="flex gap-3">
@@ -63,7 +59,12 @@ export function NearbyHelperListItem({ helper, t, skillLabel }: Props) {
         </div>
       ) : null}
 
-      <button type="button" onClick={() => navigate(ROUTES.messages)} className="mt-3 w-full py-2 bg-gray-50 hover:bg-blue-600 hover:text-white text-gray-700 font-bold text-xs rounded-xl transition-colors">
+      <button
+        type="button"
+        disabled
+        title={t('helper_profile.chat_locked_hint')}
+        className="mt-3 w-full py-2 cursor-not-allowed bg-gray-50 text-gray-400 font-bold text-xs rounded-xl opacity-70"
+      >
         {t('live_map.chat')}
       </button>
     </article>

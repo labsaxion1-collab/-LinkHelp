@@ -243,7 +243,7 @@ export const pt = {
     call_disabled_pre: 'Chamadas liberam após a confirmação do serviço.',
     reply_other_ack: 'Perfeito — obrigado pelo contexto.',
     reply_other_post: 'Ótimo — aqui está tudo certo do meu lado.',
-    no_conversations: 'Ainda não há conversas. Candidate-se a um pedido ou aguarde mensagens de clientes.',
+    no_conversations: 'Nenhuma conversa ainda. Contrate um helper oficialmente para liberar o chat.',
     pick_conversation: 'Escolha uma conversa na lista.',
     send_failed: 'Não foi possível enviar a mensagem. Tente novamente.',
   },
@@ -301,6 +301,8 @@ export const pt = {
     cta_chat_sub: 'Chat limitado antes da contratação',
     cta_proposal: 'Enviar proposta',
     cta_hire: 'Contratar oficialmente',
+    chat_locked_hint: 'Você poderá conversar após contratar este helper.',
+    hire_no_application: 'Este helper precisa ter se candidatado a um dos seus pedidos.',
     seed_helper_line:
       'Oi! Vi seu pedido — posso alinhar horário e detalhes aqui antes de confirmarmos tudo.',
     bio_empty: 'Este helper ainda não adicionou uma bio.',
@@ -322,6 +324,8 @@ export const pt = {
     send_proposal: 'Enviar proposta',
     success_toast: 'Convite enviado com sucesso! Aguarde a resposta.',
     success_toast_proposal: 'Proposta enviada! Continue a conversa no LinkHelp.',
+    success_hired_toast: 'Helper contratado! O chat foi liberado.',
+    error_toast: 'Não foi possível concluir a contratação. Tente novamente.',
   },
   helper_badges: {
     pro_helper: 'Pro Helper',

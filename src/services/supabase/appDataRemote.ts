@@ -23,13 +23,19 @@ export async function fetchRemoteJobsAndApps(): Promise<{
     return { jobs: [], applications: [], upcomingJobs: [], notifications: [] };
   }
 
-  const [{ data: reqRows, error: reqErr }, { data: appRows, error: appErr }, { data: upRows }, { data: notifRows, error: nErr }] =
-    await Promise.all([
-      sb.from('requests').select('*').order('created_at', { ascending: false }),
-      sb.from('applications').select('*').order('created_at', { ascending: false }),
-      sb.from('upcoming_jobs').select('*').order('scheduled_at', { ascending: true }),
-      sb.from('notifications').select('*').order('created_at', { ascending: false }),
-    ]);
+  const [
+    { data: reqRows, error: reqErr },
+    { data: appRows, error: appErr },
+    { data: upRows },
+    { data: notifRows, error: nErr },
+    { data: convRows },
+  ] = await Promise.all([
+    sb.from('requests').select('*').order('created_at', { ascending: false }),
+    sb.from('applications').select('*').order('created_at', { ascending: false }),
+    sb.from('upcoming_jobs').select('*').order('scheduled_at', { ascending: true }),
+    sb.from('notifications').select('*').order('created_at', { ascending: false }),
+    sb.from('conversations').select('request_id, helper_id, contact_unlocked'),
+  ]);
 
   if (reqErr) console.error(reqErr);
   if (appErr) console.error(appErr);
@@ -53,12 +59,22 @@ export async function fetchRemoteJobsAndApps(): Promise<{
     return requestRowToJob(r, c ?? { name: null, avatar_url: null, rating: null, jobs_completed: null, plan_type: null });
   });
 
+  const chatUnlockedKeys = new Set(
+    ((convRows ?? []) as { request_id: string; helper_id: string; contact_unlocked: boolean }[])
+      .filter((c) => c.contact_unlocked)
+      .map((c) => `${c.request_id}:${c.helper_id}`),
+  );
+
   const applications: Application[] = applicationsRaw.map((a) => {
     const h = profilesMap.get(a.helper_id);
-    return applicationRowToApp(
+    const app = applicationRowToApp(
       a,
       h ?? { name: null, avatar_url: null, rating: null, jobs_completed: null, plan_type: null },
     );
+    return {
+      ...app,
+      chatUnlocked: chatUnlockedKeys.has(`${a.request_id}:${a.helper_id}`),
+    };
   });
 
   const upcomingJobs = upcomingRaw.map(upcomingRowToUpcoming);
@@ -258,28 +274,6 @@ export async function remoteUpdateApplicationStatus(
   if (status === 'accepted') {
     await sb.from('requests').update({ status: 'in_progress' }).eq('id', app.request_id);
 
-    const { data: existingConv } = await sb
-      .from('conversations')
-      .select('id')
-      .eq('request_id', app.request_id)
-      .eq('helper_id', app.helper_id)
-      .maybeSingle();
-
-    if (!existingConv) {
-      const { error: convInsErr } = await sb.from('conversations').insert({
-        request_id: app.request_id,
-        client_id: app.client_id,
-        helper_id: app.helper_id,
-        contact_unlocked: true,
-      });
-      if (convInsErr) throw convInsErr;
-    } else {
-      await sb
-        .from('conversations')
-        .update({ contact_unlocked: true })
-        .eq('id', (existingConv as { id: string }).id);
-    }
-
     const scheduledAt = new Date(Date.now() + 48 * 3600000).toISOString();
     await sb.from('upcoming_jobs').insert({
       request_id: app.request_id,
@@ -323,6 +317,97 @@ export async function remoteUpdateApplicationStatus(
       read: false,
     });
   }
+}
+
+/** Creates/unlocks chat — only after client clicks “Contratar oficialmente”. */
+export async function remoteOfficiallyHireHelper(
+  applicationId: string,
+  jobSnapshot: Job,
+): Promise<string | null> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+
+  const { data: appRow, error: fetchErr } = await sb.from('applications').select('*').eq('id', applicationId).single();
+  if (fetchErr || !appRow) throw fetchErr ?? new Error('NOT_FOUND');
+
+  const app = appRow as ApplicationRow;
+
+  if (app.status !== 'accepted') {
+    const { error: upErr } = await sb.from('applications').update({ status: 'accepted' }).eq('id', applicationId);
+    if (upErr) throw upErr;
+    await sb.from('requests').update({ status: 'in_progress' }).eq('id', app.request_id);
+
+    const { data: existingUpcoming } = await sb
+      .from('upcoming_jobs')
+      .select('id')
+      .eq('request_id', app.request_id)
+      .eq('helper_id', app.helper_id)
+      .maybeSingle();
+
+    if (!existingUpcoming) {
+      const scheduledAt = new Date(Date.now() + 48 * 3600000).toISOString();
+      await sb.from('upcoming_jobs').insert({
+        request_id: app.request_id,
+        helper_id: app.helper_id,
+        client_name: jobSnapshot.clientName,
+        client_avatar: jobSnapshot.clientAvatar,
+        title: jobSnapshot.title,
+        category: jobSnapshot.category,
+        description: jobSnapshot.description,
+        location: jobSnapshot.location,
+        value_hint: jobSnapshot.value,
+        urgency: jobSnapshot.urgency,
+        scheduled_at: scheduledAt,
+        workflow_status: 'scheduled',
+      });
+    }
+  }
+
+  const { data: existingConv } = await sb
+    .from('conversations')
+    .select('id')
+    .eq('request_id', app.request_id)
+    .eq('helper_id', app.helper_id)
+    .maybeSingle();
+
+  let conversationId: string;
+  if (!existingConv) {
+    const { data: inserted, error: convInsErr } = await sb
+      .from('conversations')
+      .insert({
+        request_id: app.request_id,
+        client_id: app.client_id,
+        helper_id: app.helper_id,
+        contact_unlocked: true,
+      })
+      .select('id')
+      .single();
+    if (convInsErr || !inserted) throw convInsErr ?? new Error('CONVERSATION_CREATE_FAILED');
+    conversationId = (inserted as { id: string }).id;
+  } else {
+    conversationId = (existingConv as { id: string }).id;
+    await sb.from('conversations').update({ contact_unlocked: true }).eq('id', conversationId);
+  }
+
+  await sb.from('notifications').insert({
+    user_id: app.helper_id,
+    type: 'application',
+    title: 'Official hire',
+    description: `The client officially hired you for "${jobSnapshot.title}". Chat is now open.`,
+    action_url: `/messages?c=${conversationId}`,
+    read: false,
+  });
+
+  await sb.from('notifications').insert({
+    user_id: app.client_id,
+    type: 'application',
+    title: 'Helper hired',
+    description: `You can now chat with your helper about "${jobSnapshot.title}".`,
+    action_url: `/messages?c=${conversationId}`,
+    read: false,
+  });
+
+  return conversationId;
 }
 
 export async function remoteInsertNotification(n: Omit<AppNotification, 'id' | 'createdAt' | 'read'>): Promise<void> {

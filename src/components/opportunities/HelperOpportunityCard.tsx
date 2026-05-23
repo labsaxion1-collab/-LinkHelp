@@ -2,6 +2,7 @@ import * as Icons from 'lucide-react';
 import { Check, CheckCircle2, Clock, MapPin } from 'lucide-react';
 import type { Job } from '@/types/job';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
+import { isBeautyScheduledJob } from '@/utils/jobDisplay';
 import { LhCard } from '@/components/design-system/LhCard';
 import { clsx } from 'clsx';
 
@@ -21,7 +22,7 @@ export type HelperOpportunityCardProps = {
   applicationsCount?: number;
   t: TFn;
   translateCategory: TranslateFn;
-  formatJobSchedule: (date: Job['date'], t: TFn) => string;
+  formatJobSchedule: (job: Job, t: TFn) => string;
   distanceKm?: number | null;
 };
 
@@ -159,8 +160,15 @@ export function HelperOpportunityCard({
             <Icons.UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" /> {t('helper_dashboard.applications_count', { count: applicationsCount })}
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-slate-50/80 px-2.5 py-1.5 text-xs font-medium text-slate-700">
-            <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {formatJobSchedule(job.date, t)}
+            <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {formatJobSchedule(job, t)}
           </span>
+          {isBeautyScheduledJob(job) ? (
+            <span className="inline-flex items-center gap-1 rounded-[var(--lh-radius-sm)] border border-violet-100 bg-violet-50 px-2.5 py-1.5 text-xs font-bold text-violet-800">
+              <span aria-hidden>🕒</span>
+              {job.preferredTime}
+              <span className="font-semibold text-violet-600/90">· {t('jobs.scheduled_time_badge')}</span>
+            </span>
+          ) : null}
           <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800">
             <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />{' '}
             {distanceKm != null

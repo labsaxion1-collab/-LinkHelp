@@ -281,7 +281,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
 
   const continueDisabled =
     (step === 'description' && !descriptionComplete) ||
-    (step === 'confirm' && !isConfirmStepComplete(preferredDateMode, preferredDateIso));
+    (step === 'confirm' &&
+      !isConfirmStepComplete(preferredDateMode, preferredDateIso, selectedCategory, preferredTimeSpecific));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={handleClose}>
@@ -530,10 +531,13 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
           {step === 'confirm' && (
             <CreateRequestConfirmStep
               t={t}
+              selectedCategory={selectedCategory}
               preferredDateMode={preferredDateMode}
               setPreferredDateMode={setPreferredDateMode}
               preferredDateIso={preferredDateIso}
               setPreferredDateIso={setPreferredDateIso}
+              preferredTimeSpecific={preferredTimeSpecific}
+              setPreferredTimeSpecific={setPreferredTimeSpecific}
             />
           )}
           {step === 'review' && (

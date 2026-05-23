@@ -2,6 +2,7 @@ import * as Icons from 'lucide-react';
 import type { RequestAddressValue } from '@/components/client/create-request/RequestAddressInput';
 import type { MovePropertyType } from '@/components/client/create-request/CreateRequestScheduleStep';
 import type { PreferredDateMode, RequestPriority, TimeWindow } from '@/utils/requestSchedule';
+import { formatPreferredDateTimeLabel } from '@/utils/requestSchedule';
 
 type Props = {
   t: (key: string, vars?: Record<string, string | number>) => string;
@@ -34,14 +35,12 @@ export function CreateRequestReviewStep({
   movePickupAddress,
   preferredDateMode,
   preferredDateIso,
+  preferredTimeSpecific,
 }: Props) {
-  const dateLabel =
-    preferredDateMode === 'today'
-      ? t('create_modal.date_today')
-      : preferredDateMode === 'tomorrow'
-        ? t('create_modal.date_tomorrow')
-        : preferredDateIso || '---';
-
+  const scheduleLabel = formatPreferredDateTimeLabel(
+    { preferredDateMode, preferredDateIso, preferredTimeSpecific },
+    t,
+  );
   const locationDisplay =
     selectedCategory === 'moving' ? movePickupAddress.display : requestAddress.display || t('jobs.remote');
 
@@ -73,7 +72,7 @@ export function CreateRequestReviewStep({
           </div>
           <div>
             <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.preferred_date')}</dt>
-            <dd className="font-bold">{dateLabel}</dd>
+            <dd className="font-bold">{scheduleLabel}</dd>
           </div>
         </div>
 

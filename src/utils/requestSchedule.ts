@@ -2,6 +2,9 @@ export type RequestPriority = 'emergency' | 'urgent' | 'today' | 'flexible';
 export type PreferredDateMode = 'today' | 'tomorrow' | 'pick';
 export type TimeWindow = 'morning' | 'afternoon' | 'evening' | '';
 
+/** Quick slots for beauty / aesthetics appointments */
+export const BEAUTY_PREFERRED_TIME_SLOTS = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'] as const;
+
 export type RequestScheduleInput = {
   priority: RequestPriority;
   preferredDateMode: PreferredDateMode;
@@ -51,6 +54,32 @@ export function isScheduleStepComplete(input: RequestScheduleInput): boolean {
     input.preferredDateMode === 'today' ||
     input.preferredDateMode === 'tomorrow' ||
     (input.preferredDateMode === 'pick' && Boolean(input.preferredDateIso));
-  const timeOk = Boolean(input.preferredTimeWindow) || Boolean(input.preferredTimeSpecific.trim());
-  return dateOk && timeOk;
+  return dateOk;
+}
+
+export function formatPreferredDateLabel(
+  input: Pick<RequestScheduleInput, 'preferredDateMode' | 'preferredDateIso'>,
+  t: (key: string) => string,
+): string {
+  if (input.preferredDateMode === 'today') return t('create_modal.date_today');
+  if (input.preferredDateMode === 'tomorrow') return t('create_modal.date_tomorrow');
+  if (input.preferredDateMode === 'pick' && input.preferredDateIso) {
+    try {
+      const d = new Date(`${input.preferredDateIso}T12:00:00`);
+      return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+    } catch {
+      return input.preferredDateIso;
+    }
+  }
+  return '—';
+}
+
+export function formatPreferredDateTimeLabel(
+  input: Pick<RequestScheduleInput, 'preferredDateMode' | 'preferredDateIso' | 'preferredTimeSpecific'>,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): string {
+  const datePart = formatPreferredDateLabel(input, t);
+  const time = input.preferredTimeSpecific.trim();
+  if (!time) return datePart;
+  return t('jobs.schedule_date_at_time', { date: datePart, time });
 }

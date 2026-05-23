@@ -9,7 +9,7 @@ import { useModeSwitch } from '@/hooks/useModeSwitch';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
-import { formatJobSchedule } from '@/utils/jobDisplay';
+import { formatJobScheduleDisplay, isBeautyScheduledJob } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
 import { avatarUrlForName } from '@/utils/avatarUrl';
 import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
@@ -710,7 +710,17 @@ export default function ClientDashboard() {
                               {job.status === 'cancelled' ? t('upcoming_jobs.status_cancelled') : job.status === 'open' ? 'Aguardando Helpers' : 'Em Andamento'}
                             </span>
                             <h3 className="font-bold text-gray-900 text-lg leading-snug line-clamp-2">{job.title}</h3>
-                            <p className="text-gray-500 text-xs md:text-sm flex items-center gap-1 mt-1 min-w-0"><Icons.Clock className="w-4 h-4 shrink-0" /> <span className="truncate">{formatJobSchedule(job.date, t)}</span></p>
+                            <p className="text-gray-500 text-xs md:text-sm flex items-center gap-1 mt-1 min-w-0">
+                              <Icons.Clock className="w-4 h-4 shrink-0" />
+                              <span className="truncate">{formatJobScheduleDisplay(job, t)}</span>
+                            </p>
+                            {isBeautyScheduledJob(job) ? (
+                              <span className="mt-1.5 inline-flex items-center gap-1 rounded-md border border-violet-100 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-800">
+                                <span aria-hidden>🕒</span>
+                                {job.preferredTime}
+                                <span className="text-violet-600/90">· {t('jobs.scheduled_time_badge')}</span>
+                              </span>
+                            ) : null}
                           </div>
                           <div className="shrink-0 sm:text-right">
                             <p className="inline-flex rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-sm font-black text-blue-800">{formatJobBudgetDisplay(job, t)}</p>
@@ -893,7 +903,7 @@ export default function ClientDashboard() {
                     >
                       <span className="line-clamp-2 text-xs font-black text-slate-900">{job.title}</span>
                       <span className="mt-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-500">
-                        <span>{formatJobSchedule(job.date, t)}</span>
+                        <span>{formatJobScheduleDisplay(job, t)}</span>
                         <span className="text-blue-700">{t('client_dashboard.helpers_applied_count', { count: jobApps.length })}</span>
                       </span>
                     </button>

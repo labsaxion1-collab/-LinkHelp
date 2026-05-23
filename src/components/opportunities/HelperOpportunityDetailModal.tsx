@@ -9,7 +9,7 @@ type Props = {
   onClose: () => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
   translateCategory: (raw: string, tf: (k: string) => string) => string;
-  formatJobSchedule: (date: Job['date'], tf: (k: string, vars?: Record<string, string | number>) => string) => string;
+  formatJobSchedule: (job: Job, tf: (k: string, vars?: Record<string, string | number>) => string) => string;
   distanceKm?: number | null;
 };
 
@@ -63,7 +63,7 @@ export function HelperOpportunityDetailModal({
           </div>
           <p className="flex items-center gap-2 text-sm font-semibold text-slate-600">
             <Icons.Clock className="h-4 w-4 text-slate-400" />
-            {formatJobSchedule(job.date, t)}
+            {formatJobSchedule(job, t)}
           </p>
         </div>
       </section>

@@ -17,7 +17,7 @@ import { UpcomingJobsSidebar } from '@/components/helpers/UpcomingJobsSidebar';
 import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailModal';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 import { resolveCategoryId, translateCategory } from '@/utils/translateCategory';
-import { formatJobSchedule } from '@/utils/jobDisplay';
+import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import type { Application } from '@/types/application';
@@ -807,7 +807,7 @@ export default function HelperDashboard() {
                         </div>
                         <h4 className="text-lg font-bold text-gray-900 mb-3 leading-tight">{job.title}</h4>
                         <div className="flex flex-wrap gap-2 text-sm text-gray-500 mb-2">
-                          <span className="bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-gray-600"><Clock className="w-3.5 h-3.5 text-gray-400" /> {formatJobSchedule(job.date, t)}</span>
+                          <span className="bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-gray-600"><Clock className="w-3.5 h-3.5 text-gray-400" /> {formatJobScheduleDisplay(job, t)}</span>
                           <span className="bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-gray-600"><MapPin className="w-3.5 h-3.5 text-gray-400" /> {job.location}</span>
                           <span className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-slate-700">
                             <Icons.Handshake className="w-3.5 h-3.5 text-slate-500 shrink-0" /> {t('helper_dashboard.compensation_neutral')}
@@ -855,7 +855,7 @@ export default function HelperDashboard() {
                       onViewDetails={setDetailOpportunity}
                       t={t}
                       translateCategory={translateCategory}
-                      formatJobSchedule={formatJobSchedule}
+                      formatJobSchedule={formatJobScheduleDisplay}
                     />
                   </React.Fragment>
                 );
@@ -969,7 +969,7 @@ export default function HelperDashboard() {
         onClose={() => setDetailOpportunity(null)}
         t={t}
         translateCategory={translateCategory}
-        formatJobSchedule={formatJobSchedule}
+        formatJobSchedule={formatJobScheduleDisplay}
         distanceKm={detailOpportunity ? distanceToJobKm(helperCoords, detailOpportunity) : null}
       />
 

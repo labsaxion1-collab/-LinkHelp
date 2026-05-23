@@ -35,6 +35,11 @@ export default function Navbar() {
   const isHelperNav =
     isHelperArea(location.pathname) || (pathImpliesAppMode(location.pathname) === null && mode === 'helper');
   const helperTermsStorageKey = userId ? `linkhelp:helper-terms:${userId}` : '';
+  const logoTarget = isConnected
+    ? isHelperNav
+      ? ROUTES.helperOpportunities
+      : ROUTES.clientDashboard
+    : ROUTES.home;
 
   const runModeSwitch = async (target: 'client' | 'helper', skipHelperPrep = false) => {
     if (modeSwitchBusy) return;
@@ -112,7 +117,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to={ROUTES.home} className="flex items-center">
+            <Link to={logoTarget} className="flex items-center">
               <Logo />
             </Link>
           </div>

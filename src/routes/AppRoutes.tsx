@@ -8,6 +8,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'));
+const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'));
 const AuthCallbackPage = lazy(() => import('@/pages/auth/AuthCallbackPage'));
 const DashboardEntryPage = lazy(() => import('@/pages/app/DashboardEntryPage'));
 const ClientDashboard = lazy(() => import('@/pages/client/ClientDashboard'));
@@ -32,6 +33,7 @@ export function AppRoutes() {
         <Route path="/signup" element={<Navigate to={ROUTES.signup} replace />} />
         <Route path={ROUTES.login} element={<LoginPage />} />
         <Route path={ROUTES.signup} element={<RegisterPage />} />
+        <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />
         <Route path={ROUTES.authCallback} element={<AuthCallbackPage />} />
         <Route path={ROUTES.dashboard} element={<DashboardEntryPage />} />
 

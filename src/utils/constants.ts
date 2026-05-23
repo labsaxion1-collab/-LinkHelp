@@ -3,6 +3,7 @@ export const ROUTES = {
   home: '/',
   login: '/auth/login',
   signup: '/auth/register',
+  resetPassword: '/auth/reset-password',
   /** OAuth redirect target — must be allowed in Supabase Auth → URL Configuration */
   authCallback: '/auth/callback',
   /** Shortcuts into the app (redirect to nested dashboard routes in AppRoutes) */

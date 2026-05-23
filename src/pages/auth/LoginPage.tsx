@@ -11,6 +11,7 @@ import { useToast } from '@/context/ToastContext';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { oauthErrorMessageKey, type OAuthCallbackErrorCode } from '@/utils/parseOAuthCallbackError';
 import { readKeepSignedIn, writeKeepSignedIn } from '@/utils/rememberSession';
+import { getSupabase } from '@/lib/supabase';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -25,6 +26,9 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [keepSignedIn, setKeepSignedIn] = useState(() => readKeepSignedIn());
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSubmitting, setResetSubmitting] = useState(false);
 
   const from = (location.state as { from?: string } | null)?.from;
 
@@ -109,6 +113,37 @@ export default function LoginPage() {
     } finally {
       setGoogleLoading(false);
     }
+  };
+
+  const handlePasswordReset = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!isConfigured) {
+      showToast(t('auth.errors.env_not_ready'), 'info');
+      return;
+    }
+    const targetEmail = (resetEmail || email).trim();
+    if (!targetEmail) {
+      showToast(t('auth.reset_email_required'), 'error');
+      return;
+    }
+    const sb = getSupabase();
+    if (!sb) {
+      showToast(t('auth.unavailable'), 'error');
+      return;
+    }
+    setResetSubmitting(true);
+    const { error: resetError } = await sb.auth.resetPasswordForEmail(targetEmail, {
+      redirectTo: `${window.location.origin}${ROUTES.resetPassword}`,
+    });
+    setResetSubmitting(false);
+    if (resetError) {
+      setError(resetError.message);
+      showToast(resetError.message, 'error');
+      return;
+    }
+    setResetOpen(false);
+    showToast(t('auth.reset_email_sent'), 'success');
   };
 
   return (
@@ -197,9 +232,16 @@ export default function LoginPage() {
                   />
                   {t('login_page.remember')}
                 </label>
-                <a href="#" className="font-semibold text-blue-600 hover:text-blue-700 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetEmail(email);
+                    setResetOpen(true);
+                  }}
+                  className="font-semibold text-blue-600 hover:text-blue-700 shrink-0"
+                >
                   {t('login_page.forgot')}
-                </a>
+                </button>
               </div>
 
               <button
@@ -231,6 +273,53 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {resetOpen && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/45 px-4 py-4 sm:items-center">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl shadow-slate-950/20">
+            <h2 className="text-xl font-black text-slate-900">{t('auth.reset_request_title')}</h2>
+            <p className="mt-2 text-sm font-medium leading-relaxed text-slate-500">{t('auth.reset_request_subtitle')}</p>
+
+            <form className="mt-5 space-y-4" onSubmit={handlePasswordReset}>
+              <div>
+                <label htmlFor="reset-email" className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">
+                  {t('login_page.email_label')}
+                </label>
+                <div className="relative">
+                  <input
+                    id="reset-email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={resetEmail}
+                    onChange={(event) => setResetEmail(event.target.value)}
+                    className="block w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 pl-11 text-sm text-slate-900 placeholder:text-slate-400 shadow-inner focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
+                    placeholder="you@example.com"
+                  />
+                  <Mail className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setResetOpen(false)}
+                  className="flex-1 rounded-2xl border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetSubmitting}
+                  className="flex-1 rounded-2xl bg-blue-600 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {resetSubmitting ? t('common.loading') : t('auth.reset_request_submit')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

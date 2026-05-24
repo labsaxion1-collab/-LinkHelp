@@ -119,12 +119,23 @@ export async function notifyPeerNewMessage(opts: {
   senderName: string;
   conversationId: string;
 }): Promise<void> {
+  const actionUrl = `${ROUTES.messages}?c=${encodeURIComponent(opts.conversationId)}`;
+  const title = 'New message';
+  const message = `${opts.senderName} sent you a message.`;
   await remoteInsertNotification({
     userId: opts.peerUserId,
     type: 'message',
-    title: 'New message',
-    message: `${opts.senderName} sent you a message.`,
-    actionUrl: `${ROUTES.messages}?c=${encodeURIComponent(opts.conversationId)}`,
+    title,
+    message,
+    actionUrl,
+  });
+  const { dispatchPushEvent } = await import('@/services/push/pushEventDispatcher');
+  dispatchPushEvent({
+    kind: 'new_message',
+    userId: opts.peerUserId,
+    title,
+    body: message,
+    url: actionUrl,
   });
 }
 

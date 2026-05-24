@@ -178,6 +178,11 @@ export const pt = {
     switch_to_helper: 'Helper',
     switch_to_client: 'Cliente',
   },
+  push_notifications: {
+    title: 'Ative as notificações',
+    body: 'Ative notificações para receber alertas de novos pedidos e mensagens.',
+    enable: 'Ativar notificações',
+  },
   pwa_install: {
     title: 'Instalar LinkHelp',
     body_chrome: 'Adicione à tela inicial para acesso rápido e experiência de app.',
@@ -315,6 +320,7 @@ export const pt = {
     notif_invite_title: 'Convite enviado',
     notif_invite_body: 'Você convidou {{name}} para um serviço.',
     view_opportunity: 'Ver oportunidade',
+    view_on_map: 'Ver no mapa',
     client_fallback: 'Cliente',
   },
   helper_profile: {

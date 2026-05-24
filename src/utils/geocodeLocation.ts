@@ -1,42 +1,24 @@
-import { QUEBEC_PLACES, type QuebecPlace } from '@/data/quebecRegions';
+import type { QuebecPlace } from '@/data/quebecRegions';
+import {
+  DEFAULT_MAP_CENTER,
+  coordinatesFromProfile,
+  lookupCoordinatesFromText,
+  profileRegionLabel,
+} from '@/utils/mapLocation';
 
-export type Coordinates = { lat: number; lng: number };
+export type { Coordinates } from '@/utils/mapLocation';
 
-export const MONTREAL_CENTER: Coordinates = { lat: 45.5017, lng: -73.5673 };
+export {
+  DEFAULT_MAP_CENTER,
+  TROIS_RIVIERES_CENTER,
+  MONTREAL_CENTER,
+  lookupCoordinatesFromText,
+  coordinatesFromProfile,
+  profileRegionLabel,
+} from '@/utils/mapLocation';
 
 export function coordinatesFromPlace(place: QuebecPlace): Coordinates {
   return { lat: place.lat, lng: place.lng };
-}
-
-export function lookupCoordinatesFromText(locationText: string): Coordinates | null {
-  const q = locationText.trim().toLowerCase();
-  if (!q) return null;
-
-  for (const place of QUEBEC_PLACES) {
-    const coords = coordinatesFromPlace(place);
-    const city = place.city.toLowerCase();
-    const label = place.label.toLowerCase();
-    if (q === label || q === city || q.includes(city) || label.includes(q)) {
-      return coords;
-    }
-  }
-  return null;
-}
-
-export function coordinatesFromProfile(profile: {
-  city?: string | null;
-  region?: string | null;
-} | null | undefined): Coordinates | null {
-  if (!profile?.city?.trim()) return null;
-  const regionLabel = [profile.city, profile.region?.trim()].filter(Boolean).join(', ');
-  return lookupCoordinatesFromText(regionLabel);
-}
-
-export function profileRegionLabel(profile: {
-  city?: string | null;
-  region?: string | null;
-} | null | undefined): string {
-  return [profile?.city?.trim(), profile?.region?.trim()].filter(Boolean).join(', ');
 }
 
 export function jobCoordinates(job: {
@@ -63,3 +45,6 @@ export function requestBrowserCoordinates(): Promise<Coordinates | null> {
     );
   });
 }
+
+/** Re-export for callers that need a safe default. */
+export const FALLBACK_MAP_CENTER = DEFAULT_MAP_CENTER;

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
   coordinatesFromProfile,
-  MONTREAL_CENTER,
+  DEFAULT_MAP_CENTER,
   requestBrowserCoordinates,
   type Coordinates,
 } from '@/utils/geocodeLocation';
@@ -11,7 +11,7 @@ export type UserLocationSource = 'gps' | 'profile' | 'default';
 
 export function useUserLocation() {
   const { profile } = useAuth();
-  const [coords, setCoords] = useState<Coordinates>(MONTREAL_CENTER);
+  const [coords, setCoords] = useState<Coordinates>(DEFAULT_MAP_CENTER);
   const [source, setSource] = useState<UserLocationSource>('default');
   const [ready, setReady] = useState(false);
 
@@ -37,7 +37,7 @@ export function useUserLocation() {
         return;
       }
 
-      setCoords(MONTREAL_CENTER);
+      setCoords(DEFAULT_MAP_CENTER);
       setSource('default');
       setReady(true);
     })();
@@ -45,7 +45,7 @@ export function useUserLocation() {
     return () => {
       cancelled = true;
     };
-  }, [profile?.city, profile?.region]);
+  }, [profile?.city, profile?.region, profile?.country]);
 
   return { coords, source, ready };
 }

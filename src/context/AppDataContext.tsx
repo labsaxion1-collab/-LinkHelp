@@ -22,6 +22,7 @@ import {
   remoteUpdateUpcomingWorkflow,
   subscribeRemoteData,
 } from '@/services/supabase/appDataRemote';
+import { dispatchPushEvent } from '@/services/push/pushEventDispatcher';
 
 export type { Job, JobStatus, JobUrgency, Application, ApplicationStatus, UpcomingJob, UpcomingWorkflowStatus };
 export type { AppNotification, NotificationType };
@@ -212,12 +213,21 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     setApplications((prev) => [newApp, ...prev]);
 
     if (job.clientId) {
+      const title = 'Nova Candidatura Recebida';
+      const message = `${helperName} se candidatou para "${job.title}".`;
       addNotification({
         userId: job.clientId,
         type: 'application',
-        title: 'Nova Candidatura Recebida',
-        message: `${helperName} se candidatou para "${job.title}".`,
+        title,
+        message,
         actionUrl: ROUTES.clientDashboard,
+      });
+      dispatchPushEvent({
+        kind: 'helper_applied',
+        userId: job.clientId,
+        title,
+        body: message,
+        url: ROUTES.clientDashboard,
       });
     }
   };
@@ -286,20 +296,38 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         return [row, ...prev];
       });
 
+      const acceptTitle = 'Application accepted! 🎉';
+      const acceptMessage = `The client accepted your application. Next job: "${jobSnapshot.title}".`;
       addNotification({
         userId: targetApp.helperId,
         type: 'application',
-        title: 'Application accepted! 🎉',
-        message: `The client accepted your application. Next job: "${jobSnapshot.title}".`,
+        title: acceptTitle,
+        message: acceptMessage,
         actionUrl: ROUTES.helperJobsUpcoming,
       });
+      dispatchPushEvent({
+        kind: 'helper_accepted',
+        userId: targetApp.helperId,
+        title: acceptTitle,
+        body: acceptMessage,
+        url: ROUTES.helperJobsUpcoming,
+      });
     } else if (status === 'rejected' && targetApp) {
+      const rejectTitle = 'Application declined';
+      const rejectMessage = 'The client chose another helper this time.';
       addNotification({
         userId: targetApp.helperId,
         type: 'application',
-        title: 'Application declined',
-        message: `The client chose another helper this time.`,
+        title: rejectTitle,
+        message: rejectMessage,
         actionUrl: ROUTES.helperOpportunities,
+      });
+      dispatchPushEvent({
+        kind: 'helper_rejected',
+        userId: targetApp.helperId,
+        title: rejectTitle,
+        body: rejectMessage,
+        url: ROUTES.helperOpportunities,
       });
     }
   };
@@ -345,19 +373,37 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       return [row, ...prev];
     });
 
+    const hireHelperTitle = 'Contratação oficial';
+    const hireHelperMessage = `O cliente contratou você para "${jobSnapshot.title}". O chat está liberado.`;
     addNotification({
       userId: targetApp.helperId,
       type: 'application',
-      title: 'Contratação oficial',
-      message: `O cliente contratou você para "${jobSnapshot.title}". O chat está liberado.`,
+      title: hireHelperTitle,
+      message: hireHelperMessage,
       actionUrl: ROUTES.messages,
     });
+    dispatchPushEvent({
+      kind: 'service_confirmed',
+      userId: targetApp.helperId,
+      title: hireHelperTitle,
+      body: hireHelperMessage,
+      url: ROUTES.messages,
+    });
+    const hireClientTitle = 'Helper contratado';
+    const hireClientMessage = `Você pode conversar com ${targetApp.helperName} sobre "${jobSnapshot.title}".`;
     addNotification({
       userId: jobSnapshot.clientId,
       type: 'application',
-      title: 'Helper contratado',
-      message: `Você pode conversar com ${targetApp.helperName} sobre "${jobSnapshot.title}".`,
+      title: hireClientTitle,
+      message: hireClientMessage,
       actionUrl: ROUTES.messages,
+    });
+    dispatchPushEvent({
+      kind: 'service_confirmed',
+      userId: jobSnapshot.clientId,
+      title: hireClientTitle,
+      body: hireClientMessage,
+      url: ROUTES.messages,
     });
 
     return null;

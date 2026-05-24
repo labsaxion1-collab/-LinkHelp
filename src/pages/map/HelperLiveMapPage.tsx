@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { useNavigate } from 'react-router-dom';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
@@ -21,6 +21,7 @@ import type { Job } from '@/types/job';
 
 import { MAP_STYLES } from '@/components/map/mapStyles';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
+import { MapCameraFocus } from '@/components/map/MapCameraFocus';
 import { MarkerWithInfoWindow } from '@/components/map/MarkerWithInfoWindow';
 import { ClientJobMapPin } from '@/components/map/ClientJobMapPin';
 import { JobMapOpportunityCard } from '@/components/map/JobMapOpportunityCard';
@@ -38,7 +39,13 @@ export default function HelperLiveMapPage() {
   const { jobs, addNotification } = useAppData();
   const { t } = useLanguage();
   const me = useSessionViewer();
-  const { coords: userCoords } = useUserLocation();
+  const { coords: userCoords, ready: locationReady } = useUserLocation();
+  const initialCameraDone = useRef(false);
+  const [focusedMarkerId, setFocusedMarkerId] = useState<string | null>(null);
+  const [cameraFocus, setCameraFocus] = useState<{ position: google.maps.LatLngLiteral; zoom: number } | null>(
+    null,
+  );
+  const FOCUS_ZOOM = 15;
   const mapsApiKey = getGoogleMapsApiKey();
   const mapsReady = isGoogleMapsConfigured();
 
@@ -46,6 +53,17 @@ export default function HelperLiveMapPage() {
     () => ({ lat: userCoords.lat, lng: userCoords.lng }),
     [userCoords.lat, userCoords.lng],
   );
+
+  useEffect(() => {
+    if (!locationReady || initialCameraDone.current) return;
+    initialCameraDone.current = true;
+    setCameraFocus({ position: center, zoom: 13 });
+  }, [locationReady, center]);
+
+  const focusOnMap = (point: JobMapPoint) => {
+    setFocusedMarkerId(point.id);
+    setCameraFocus({ position: point.position, zoom: FOCUS_ZOOM });
+  };
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'urgent' | 'nearest' | 'highest_value'>('all');
 
@@ -173,6 +191,14 @@ export default function HelperLiveMapPage() {
               </div>
               <button
                 type="button"
+                onClick={() => focusOnMap(point)}
+                className="mt-3 w-full py-2 bg-blue-50 text-blue-700 font-bold text-xs rounded-xl hover:bg-blue-100 transition-colors inline-flex items-center justify-center gap-1.5"
+              >
+                <Icons.Map className="w-3.5 h-3.5" />
+                {t('live_map.view_on_map')}
+              </button>
+              <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   addNotification({
@@ -205,6 +231,7 @@ export default function HelperLiveMapPage() {
               disableDefaultUI
               styles={MAP_STYLES}
             >
+              <MapCameraFocus position={cameraFocus?.position ?? null} zoom={cameraFocus?.zoom} />
               <AdvancedMarker position={center}>
                 <div className="relative flex justify-center items-center">
                   <div className="absolute inset-0 rounded-full border-4 border-blue-500 animate-ping opacity-50 z-0" />
@@ -217,6 +244,11 @@ export default function HelperLiveMapPage() {
                   key={point.id}
                   position={point.position}
                   title={point.data.clientName}
+                  open={focusedMarkerId === point.id}
+                  highlighted={focusedMarkerId === point.id}
+                  onOpenChange={(open) => {
+                    if (!open && focusedMarkerId === point.id) setFocusedMarkerId(null);
+                  }}
                   marker={
                     <ClientJobMapPin
                       clientName={point.data.clientName}

@@ -5,6 +5,7 @@ import Footer from './Footer';
 import { PageLoader } from '@/components/common/PageLoader';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { PwaInstallPrompt } from '@/components/layout/PwaInstallPrompt';
+import { PushNotificationPrompt } from '@/components/notifications/PushNotificationPrompt';
 import { isAppShellPath, isClientArea, isHelperArea } from '@/utils/navigation';
 import { clsx } from 'clsx';
 
@@ -35,6 +36,7 @@ export default function Layout() {
       </main>
       <div className={clsx(showMobileChrome && 'md:hidden')}>
         <PwaInstallPrompt />
+        <PushNotificationPrompt />
         <MobileBottomNav />
       </div>
       <Footer />

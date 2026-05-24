@@ -174,6 +174,11 @@ export const en = {
     switch_to_helper: 'Helper',
     switch_to_client: 'Client',
   },
+  push_notifications: {
+    title: 'Turn on notifications',
+    body: 'Enable notifications to get alerts for new requests and messages.',
+    enable: 'Enable notifications',
+  },
   pwa_install: {
     title: 'Install LinkHelp',
     body_chrome: 'Add LinkHelp to your home screen for faster access and an app-like experience.',
@@ -310,6 +315,7 @@ export const en = {
     notif_invite_title: 'Invite sent',
     notif_invite_body: 'You invited {{name}} for a job.',
     view_opportunity: 'View opportunity',
+    view_on_map: 'View on map',
     client_fallback: 'Client',
   },
   helper_profile: {

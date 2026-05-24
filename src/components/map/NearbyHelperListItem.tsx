@@ -9,9 +9,10 @@ type Props = {
   helper: NearbyHelperMapPoint;
   t: (key: string, vars?: Record<string, string | number>) => string;
   skillLabel: (skillId: string) => string;
+  onViewOnMap?: () => void;
 };
 
-export function NearbyHelperListItem({ helper, t, skillLabel }: Props) {
+export function NearbyHelperListItem({ helper, t, skillLabel, onViewOnMap }: Props) {
   return (
     <article className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:border-blue-200 transition-all">
       <div className="flex gap-3">
@@ -59,11 +60,22 @@ export function NearbyHelperListItem({ helper, t, skillLabel }: Props) {
         </div>
       ) : null}
 
+      {onViewOnMap ? (
+        <button
+          type="button"
+          onClick={onViewOnMap}
+          className="mt-3 w-full py-2 bg-blue-50 text-blue-700 font-bold text-xs rounded-xl hover:bg-blue-100 transition-colors inline-flex items-center justify-center gap-1.5"
+        >
+          <Icons.Map className="w-3.5 h-3.5" />
+          {t('live_map.view_on_map')}
+        </button>
+      ) : null}
+
       <button
         type="button"
         disabled
         title={t('helper_profile.chat_locked_hint')}
-        className="mt-3 w-full py-2 cursor-not-allowed bg-gray-50 text-gray-400 font-bold text-xs rounded-xl opacity-70"
+        className="mt-2 w-full py-2 cursor-not-allowed bg-gray-50 text-gray-400 font-bold text-xs rounded-xl opacity-70"
       >
         {t('live_map.chat')}
       </button>

@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { User } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
+import { MapCameraFocus } from '@/components/map/MapCameraFocus';
 import { MarkerWithInfoWindow } from '@/components/map/MarkerWithInfoWindow';
 import { NearbyHelperListItem } from '@/components/map/NearbyHelperListItem';
 import { MAP_STYLES } from '@/components/map/mapStyles';
@@ -23,9 +24,27 @@ export default function ClientNearbyMapPage() {
     return [...new Set(open.map((j) => j.category).filter(Boolean))];
   }, [jobs]);
 
-  const { helpers, helpersWithMapPosition, loading, clientCenter } = useNearbyHelpers({
+  const { helpers, helpersWithMapPosition, loading, clientCenter, locationReady } = useNearbyHelpers({
     relatedCategoryIds: relatedCategories,
   });
+
+  const initialCameraDone = useRef(false);
+  const [focusedMarkerId, setFocusedMarkerId] = useState<string | null>(null);
+  const [cameraFocus, setCameraFocus] = useState<{ position: google.maps.LatLngLiteral; zoom: number } | null>(
+    null,
+  );
+  const FOCUS_ZOOM = 15;
+
+  useEffect(() => {
+    if (!locationReady || initialCameraDone.current) return;
+    initialCameraDone.current = true;
+    setCameraFocus({ position: clientCenter, zoom: 12 });
+  }, [locationReady, clientCenter]);
+
+  const focusHelperOnMap = (helperId: string, position: google.maps.LatLngLiteral) => {
+    setFocusedMarkerId(helperId);
+    setCameraFocus({ position, zoom: FOCUS_ZOOM });
+  };
 
   const mapsReady = isGoogleMapsConfigured();
   const mapsApiKey = getGoogleMapsApiKey();
@@ -64,7 +83,17 @@ export default function ClientNearbyMapPage() {
             <p className="text-center p-8 text-gray-500 font-medium">{t('live_map.empty_no_nearby_helpers')}</p>
           ) : (
             helpers.map((helper) => (
-              <NearbyHelperListItem key={helper.id} helper={helper} t={t} skillLabel={skillLabel} />
+              <NearbyHelperListItem
+                key={helper.id}
+                helper={helper}
+                t={t}
+                skillLabel={skillLabel}
+                onViewOnMap={
+                  helper.mapPosition
+                    ? () => focusHelperOnMap(helper.id, helper.mapPosition!)
+                    : undefined
+                }
+              />
             ))
           )}
         </div>
@@ -81,6 +110,7 @@ export default function ClientNearbyMapPage() {
               disableDefaultUI
               styles={MAP_STYLES}
             >
+              <MapCameraFocus position={cameraFocus?.position ?? null} zoom={cameraFocus?.zoom} />
               <AdvancedMarker position={clientCenter} title={t('live_map.you_are_here')}>
                 <div className="relative flex justify-center items-center">
                   <div className="absolute inset-0 rounded-full border-4 border-blue-500 animate-ping opacity-50 z-0 motion-reduce:animate-none" />
@@ -94,6 +124,11 @@ export default function ClientNearbyMapPage() {
                     key={helper.id}
                     position={helper.mapPosition}
                     title={helper.name}
+                    open={focusedMarkerId === helper.id}
+                    highlighted={focusedMarkerId === helper.id}
+                    onOpenChange={(open) => {
+                      if (!open && focusedMarkerId === helper.id) setFocusedMarkerId(null);
+                    }}
                     marker={
                       helper.avatarUrl ? (
                         <div className="h-11 w-11 overflow-hidden rounded-full border-2 border-blue-600 bg-white shadow-md ring-2 ring-blue-200/80">

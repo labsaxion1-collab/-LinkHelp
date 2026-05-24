@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, ArrowLeft, Globe, Briefcase, Search, CheckCircle2 } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { ROUTES } from '@/utils/constants';
@@ -15,11 +15,15 @@ import type { AppLanguage } from '@/services/translationService';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t, language, setLanguage } = useLanguage();
   const { showToast } = useToast();
   const { signUpWithEmail, signInWithGoogle, isConfigured, session, profile, authBootstrapped, authLoading, refreshProfile, signInWithEmail } =
     useAuth();
-  const [userMode, setUserMode] = useState<'client' | 'helper' | null>(null);
+  const [userMode, setUserMode] = useState<'client' | 'helper' | null>(() => {
+    const q = searchParams.get('role');
+    return q === 'helper' || q === 'client' ? q : null;
+  });
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -186,6 +190,56 @@ export default function RegisterPage() {
           )}
 
           <form className="space-y-6" onSubmit={handleSubmit}>
+            <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
+              <h3 className="text-base font-black text-slate-900">{t('register_page.account_type_heading')}</h3>
+              <p className="mt-1 text-xs font-medium text-slate-500">{t('register_page.account_type_sub')}</p>
+                            <div className="mt-4 grid grid-cols-1 gap-3">
+                <label
+                  className={`relative flex cursor-pointer rounded-2xl border p-4 shadow-sm transition-all hover:shadow-md hover:border-slate-300 ${
+                    userMode === 'client' ? 'border-blue-500 bg-blue-50/40 ring-2 ring-blue-500/20' : 'border-slate-200 bg-white'
+                  }`}
+                >
+                  <input type="radio" name="mode" value="client" className="sr-only" onChange={selectClientMode} checked={userMode === 'client'} />
+                  <span className="flex flex-1 items-center gap-3">
+                                        <div
+                      className={`p-2.5 rounded-xl flex items-center justify-center transition-colors ${
+                        userMode === 'client' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      <Search className="w-5 h-5" />
+                    </div>
+                    <span className="flex flex-col text-left">
+                      <span className="block text-sm font-bold text-slate-900">{t('register_page.mode_client_title')}</span>
+                      <span className="block text-xs font-medium text-slate-500 mt-0.5">{t('register_page.mode_client_sub')}</span>
+                    </span>
+                  </span>
+                  {userMode === 'client' ? <CheckCircle2 className="h-5 w-5 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" /> : null}
+                </label>
+
+                <label
+                  className={`relative flex cursor-pointer rounded-2xl border p-4 shadow-sm transition-all hover:shadow-md hover:border-slate-300 ${
+                    userMode === 'helper' ? 'border-blue-500 bg-blue-50/40 ring-2 ring-blue-500/20' : 'border-slate-200 bg-white'
+                  }`}
+                >
+                  <input type="radio" name="mode" value="helper" className="sr-only" onChange={selectHelperMode} checked={userMode === 'helper'} />
+                  <span className="flex flex-1 items-center gap-3">
+                    <div
+                      className={`p-2.5 rounded-xl flex items-center justify-center transition-colors ${
+                        userMode === 'helper' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      <Briefcase className="w-5 h-5" />
+                    </div>
+                    <span className="flex flex-col text-left">
+                      <span className="block text-sm font-bold text-slate-900">{t('register_page.mode_helper_title')}</span>
+                      <span className="block text-xs font-medium text-slate-500 mt-0.5">{t('register_page.mode_helper_sub')}</span>
+                    </span>
+                  </span>
+                  {userMode === 'helper' ? <CheckCircle2 className="h-5 w-5 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" /> : null}
+                </label>
+              </div>
+            </section>
+
             <div className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">
@@ -301,64 +355,6 @@ export default function RegisterPage() {
                   disabled={submitting}
                   placeholder={t('register_page.city_placeholder')}
                 />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-3">
-                {t('register_page.use_mode_label')}
-              </label>
-              <div className="grid grid-cols-1 gap-3">
-                <label
-                  className={`relative flex cursor-pointer rounded-2xl border p-4 shadow-sm transition-all hover:shadow-md hover:border-slate-300 ${
-                    userMode === 'client' ? 'border-blue-500 bg-blue-50/40 ring-2 ring-blue-500/20' : 'border-slate-200 bg-white'
-                  }`}
-                >
-                  <input type="radio" name="mode" value="client" className="sr-only" onChange={selectClientMode} checked={userMode === 'client'} />
-                  <span className="flex flex-1 items-center gap-3">
-                    <div
-                      className={`p-2.5 rounded-xl flex items-center justify-center transition-colors ${
-                        userMode === 'client' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
-                      }`}
-                    >
-                      <Search className="w-5 h-5" />
-                    </div>
-                    <span className="flex flex-col text-left">
-                      <span className="block text-sm font-bold text-slate-900">{t('register_page.mode_client_title')}</span>
-                      <span className="block text-xs font-medium text-slate-500 mt-0.5">{t('register_page.mode_client_sub')}</span>
-                    </span>
-                  </span>
-                  {userMode === 'client' && <CheckCircle2 className="h-5 w-5 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" />}
-                </label>
-
-                <label
-                  className={`relative flex cursor-pointer rounded-2xl border p-4 shadow-sm transition-all hover:shadow-md hover:border-slate-300 ${
-                    userMode === 'helper' ? 'border-blue-500 bg-blue-50/40 ring-2 ring-blue-500/20' : 'border-slate-200 bg-white'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="mode"
-                    value="helper"
-                    className="sr-only"
-                    onChange={selectHelperMode}
-                    checked={userMode === 'helper'}
-                  />
-                  <span className="flex flex-1 items-center gap-3">
-                    <div
-                      className={`p-2.5 rounded-xl flex items-center justify-center transition-colors ${
-                        userMode === 'helper' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
-                      }`}
-                    >
-                      <Briefcase className="w-5 h-5" />
-                    </div>
-                    <span className="flex flex-col text-left">
-                      <span className="block text-sm font-bold text-slate-900">{t('register_page.mode_helper_title')}</span>
-                      <span className="block text-xs font-medium text-slate-500 mt-0.5">{t('register_page.mode_helper_sub')}</span>
-                    </span>
-                  </span>
-                  {userMode === 'helper' && <CheckCircle2 className="h-5 w-5 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" />}
-                </label>
               </div>
             </div>
 

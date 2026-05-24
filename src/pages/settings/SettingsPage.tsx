@@ -6,8 +6,6 @@ import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useLanguage } from '@/context/LanguageContext';
 import { ROUTES } from '@/utils/constants';
 import { useAuth } from '@/context/AuthContext';
-import { useAppMode } from '@/context/AppModeContext';
-import { useModeSwitch } from '@/hooks/useModeSwitch';
 import { useToast } from '@/context/ToastContext';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
@@ -34,8 +32,6 @@ const SPOKEN_LANGUAGE_OPTIONS = [
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
   const { profile, updateProfile, signOut, session, isConfigured, refreshProfile } = useAuth();
-  const { mode } = useAppMode();
-  const { toClient, toHelper, modeSwitchBusy } = useModeSwitch();
   const { showToast } = useToast();
   const { evaluateProfileRewards } = useOnboardingRewards();
   const [helperSkillCount, setHelperSkillCount] = useState(0);
@@ -440,31 +436,18 @@ export default function SettingsPage() {
                 </div>
               </div>
             ) : null}
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
+              <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{t('app_pages.settings_account_type')}</p>
+              <p className="mt-1 text-sm font-bold text-gray-900">
+                {profile?.role === 'helper'
+                  ? t('register_page.mode_helper_title')
+                  : t('register_page.mode_client_title')}
+              </p>
+            </div>
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" checked={notifOn} onChange={(e) => setNotifOn(e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
               <span className="text-sm font-medium text-gray-800">{t('app_pages.settings_notif')}</span>
             </label>
-            <div>
-              <p className="text-sm font-semibold text-gray-700 mb-2">{t('app_pages.settings_mode')}</p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => void toClient()}
-                  disabled={modeSwitchBusy}
-                  className={`flex-1 rounded-xl border px-3 py-2 text-sm font-bold ${mode === 'client' ? 'border-blue-600 bg-blue-50 text-blue-900' : 'border-gray-200 bg-gray-50 text-gray-700'}`}
-                >
-                  {t('app_pages.settings_mode_client')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void toHelper()}
-                  disabled={modeSwitchBusy}
-                  className={`flex-1 rounded-xl border px-3 py-2 text-sm font-bold ${mode === 'helper' ? 'border-blue-600 bg-blue-50 text-blue-900' : 'border-gray-200 bg-gray-50 text-gray-700'}`}
-                >
-                  {t('app_pages.settings_mode_helper')}
-                </button>
-              </div>
-            </div>
           </div>
         </section>
 

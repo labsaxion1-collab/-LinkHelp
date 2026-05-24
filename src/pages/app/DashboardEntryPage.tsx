@@ -3,19 +3,19 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { PageLoader } from '@/components/common/PageLoader';
 import { OAuthRolePicker } from '@/components/auth/OAuthRolePicker';
 import { useAuth } from '@/context/AuthContext';
-import { resolveEntryDashboardPath } from '@/context/AppModeContext';
 import { ROUTES } from '@/utils/constants';
-import { modeSwitchLog, readStoredAppMode } from '@/utils/appModeStorage';
 import { authFlowLog } from '@/lib/authDebug';
 import { getSupabase } from '@/lib/supabase';
 import { userNeedsOAuthRoleSelection } from '@/utils/parseOAuthCallbackError';
+import { confirmInitialProfileRole } from '@/services/supabase/profileRoleRemote';
+import { dashboardPathForRole } from '@/utils/userRole';
 
 /**
- * Post-OAuth gate: create/load profile, ask Client vs Helper when needed, then redirect.
+ * Post-OAuth gate: create/load profile, ask Client vs Helper once, then redirect.
  */
 export default function DashboardEntryPage() {
   const navigate = useNavigate();
-  const { session, profile, authBootstrapped, authLoading, refreshProfile, updateProfile, isConfigured } = useAuth();
+  const { session, profile, authBootstrapped, authLoading, refreshProfile, isConfigured } = useAuth();
   const attempts = useRef(0);
   const redirected = useRef(false);
   const [roleBusy, setRoleBusy] = useState(false);
@@ -37,14 +37,8 @@ export default function DashboardEntryPage() {
   useEffect(() => {
     if (!isConfigured || !authBootstrapped || !session?.user || !profile || redirected.current || needsRole) return;
     redirected.current = true;
-    const storedMode = readStoredAppMode();
-    const dest = resolveEntryDashboardPath(profile.role);
-    modeSwitchLog('protectedRouteDecision', {
-      storedMode,
-      profileRole: profile.role,
-      navigatingTo: dest,
-    });
-    authFlowLog('Redirecting to dashboard', { path: dest, role: profile.role, storedMode });
+    const dest = dashboardPathForRole(profile.role);
+    authFlowLog('Redirecting to dashboard', { path: dest, role: profile.role });
     navigate(dest, { replace: true });
   }, [isConfigured, authBootstrapped, session, profile, navigate, needsRole]);
 
@@ -65,16 +59,15 @@ export default function DashboardEntryPage() {
           },
         });
       }
-      await updateProfile({
-        role,
-        accepted_terms: true,
-        accepted_terms_at: now,
-        helper_terms_accepted: role === 'helper',
-        helper_terms_accepted_at: role === 'helper' ? now : null,
-      });
+
+      const result = await confirmInitialProfileRole(role);
+      if (!result.ok) {
+        console.warn('[LinkHelp] confirmInitialProfileRole', result.message);
+      }
+
       await refreshProfile(session.user);
       redirected.current = true;
-      navigate(role === 'helper' ? ROUTES.helperDashboard : ROUTES.clientDashboard, { replace: true });
+      navigate(dashboardPathForRole(role), { replace: true });
     } finally {
       setRoleBusy(false);
     }

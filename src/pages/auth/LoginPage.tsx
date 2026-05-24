@@ -4,7 +4,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, ArrowLeft } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { ROUTES } from '@/utils/constants';
-import { readStoredAppMode } from '@/utils/appModeStorage';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -12,6 +11,7 @@ import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { oauthErrorMessageKey, type OAuthCallbackErrorCode } from '@/utils/parseOAuthCallbackError';
 import { readKeepSignedIn, writeKeepSignedIn } from '@/utils/rememberSession';
 import { getSupabase } from '@/lib/supabase';
+import { resolvePostLoginPath } from '@/utils/userRole';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -43,12 +43,8 @@ export default function LoginPage() {
     }
   }, [location.state, location.pathname, navigate, from, t]);
 
-  const goAfterLogin = () => {
-    if (from && from !== ROUTES.login) {
-      navigate(from, { replace: true });
-      return;
-    }
-    navigate(ROUTES.clientHome, { replace: true });
+  const goAfterLogin = (role: 'client' | 'helper') => {
+    navigate(resolvePostLoginPath(role, from), { replace: true });
   };
 
   useEffect(() => {
@@ -58,20 +54,7 @@ export default function LoginPage() {
       void refreshProfile(session.user);
       return;
     }
-    if (from && from !== ROUTES.login && from.startsWith('/') && !from.startsWith('//')) {
-      navigate(from, { replace: true });
-      return;
-    }
-    const stored = readStoredAppMode();
-    const dest =
-      stored === 'helper'
-        ? ROUTES.helperHome
-        : stored === 'client'
-          ? ROUTES.clientHome
-          : profile.role === 'helper'
-            ? ROUTES.helperHome
-            : ROUTES.clientHome;
-    navigate(dest, { replace: true });
+    navigate(resolvePostLoginPath(profile.role, from), { replace: true });
   }, [isConfigured, authBootstrapped, authLoading, session, profile, from, navigate, refreshProfile]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -90,7 +73,8 @@ export default function LoginPage() {
       if (import.meta.env.DEV && err.devRaw) console.info('[LinkHelp] signIn raw:', err.devRaw);
       return;
     }
-    goAfterLogin();
+    const recovered = await refreshProfile();
+    goAfterLogin(recovered?.role === 'helper' ? 'helper' : 'client');
   };
 
   const handleGoogle = async () => {

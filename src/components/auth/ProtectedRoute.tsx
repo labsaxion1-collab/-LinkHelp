@@ -4,8 +4,6 @@ import { PageLoader } from '@/components/common/PageLoader';
 import { useAuth } from '@/context/AuthContext';
 import { authFlowLog } from '@/lib/authDebug';
 import { ROUTES } from '@/utils/constants';
-import { modeSwitchLog, readStoredAppMode } from '@/utils/appModeStorage';
-import { pathImpliesAppMode } from '@/utils/navigation';
 
 /** Require Supabase env, real session, and a `profiles` row for workspace routes. */
 export function ProtectedRoute() {
@@ -25,13 +23,6 @@ export function ProtectedRoute() {
       authLoading,
       hasSession: !!session,
       hasProfile: !!profile,
-    });
-    modeSwitchLog('protectedRouteDecision', {
-      pathname: location.pathname,
-      storedMode: readStoredAppMode(),
-      impliedMode: pathImpliesAppMode(location.pathname),
-      profileRole: profile?.role ?? null,
-      hasSession: !!session,
     });
   }, [location.pathname, location.search, authBootstrapped, authLoading, session, profile]);
 

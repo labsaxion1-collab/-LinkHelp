@@ -6,19 +6,15 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useAuth } from '@/context/AuthContext';
 import { ROUTES } from '@/utils/constants';
-import { useAppMode } from '@/context/AppModeContext';
 import { useToast } from '@/context/ToastContext';
-import { isAppShellPath, isHelperArea, pathImpliesAppMode } from '@/utils/navigation';
+import { isAppShellPath } from '@/utils/navigation';
 import { NotificationsDropdown } from './NotificationsDropdown';
-import { HelperTermsGateModal } from '@/components/auth/HelperTermsGateModal';
 import { MobileProfileMenu } from '@/components/layout/MobileProfileMenu';
 
 export default function Navbar() {
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [helperTermsOpen, setHelperTermsOpen] = useState(false);
-  const [helperTermsSaving, setHelperTermsSaving] = useState(false);
   const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
@@ -26,72 +22,17 @@ export default function Navbar() {
   const desktopProfileRef = useRef<HTMLDivElement>(null);
 
   const isConnected = isAppShellPath(location.pathname);
-  const { mode, modeSwitchBusy, switchToClient, switchToHelper } = useAppMode();
   const me = useSessionViewer();
   const userAvatar = me.avatar;
   const userId = me.id;
-  const { signOut, isConfigured, session, profile, updateProfile } = useAuth();
+  const { signOut, isConfigured, session, profile } = useAuth();
 
-  const isHelperNav =
-    isHelperArea(location.pathname) || (pathImpliesAppMode(location.pathname) === null && mode === 'helper');
-  const helperTermsStorageKey = userId ? `linkhelp:helper-terms:${userId}` : '';
+  const isHelperNav = profile?.role === 'helper';
   const logoTarget = isConnected
     ? isHelperNav
       ? ROUTES.helperOpportunities
       : ROUTES.clientDashboard
     : ROUTES.home;
-
-  const runModeSwitch = async (target: 'client' | 'helper', skipHelperPrep = false) => {
-    if (modeSwitchBusy) return;
-    const ok =
-      target === 'helper'
-        ? await switchToHelper(skipHelperPrep ? { skipHelperPrep: true } : undefined)
-        : await switchToClient();
-    if (!ok) {
-      showToast(t('nav.mode_switch_failed'), 'error');
-    }
-  };
-
-  const goHelperOrPrompt = () => {
-    if (modeSwitchBusy) return;
-    const acceptedLocally =
-      helperTermsStorageKey && typeof window !== 'undefined'
-        ? window.localStorage.getItem(helperTermsStorageKey) === 'true'
-        : false;
-    if (profile && profile.helper_terms_accepted !== true && !acceptedLocally) {
-      setHelperTermsOpen(true);
-      return;
-    }
-    void runModeSwitch('helper');
-  };
-
-  const confirmNavbarHelperTerms = async () => {
-    setHelperTermsSaving(true);
-    const err = await updateProfile({
-      helper_terms_accepted: true,
-      helper_terms_accepted_at: new Date().toISOString(),
-    });
-    setHelperTermsSaving(false);
-    if (err) {
-      if (import.meta.env.DEV && err.devRaw) console.info('[LinkHelp] updateProfile raw:', err.devRaw);
-    }
-    if (helperTermsStorageKey && typeof window !== 'undefined') {
-      window.localStorage.setItem(helperTermsStorageKey, 'true');
-    }
-    setHelperTermsOpen(false);
-    setProfileOpen(false);
-    setMobileProfileOpen(false);
-    await runModeSwitch('helper', true);
-  };
-
-  const toggleClientHelper = () => {
-    if (modeSwitchBusy) return;
-    if (isHelperNav) {
-      void runModeSwitch('client');
-    } else {
-      goHelperOrPrompt();
-    }
-  };
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -123,25 +64,6 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex md:items-center md:space-x-8">
-            <Link
-              to={ROUTES.clientDashboard}
-              className="text-gray-500 hover:text-gray-900 font-medium text-sm transition-colors"
-            >
-              {t('nav.find_help')}
-            </Link>
-            <button
-              type="button"
-              onClick={toggleClientHelper}
-              disabled={modeSwitchBusy}
-              className="text-gray-500 hover:text-gray-900 font-medium text-sm transition-colors disabled:opacity-60"
-            >
-              {modeSwitchBusy
-                ? t('common.loading')
-                : isHelperNav
-                  ? t('nav.switch_to_client')
-                  : t('nav.switch_to_helper')}
-            </button>
-
             <div className="relative">
               <button
                 type="button"
@@ -326,16 +248,8 @@ export default function Navbar() {
         onClose={() => setMobileProfileOpen(false)}
         isConnected={isConnected}
         isHelperNav={isHelperNav}
-        onSwitchMode={toggleClientHelper}
-        modeSwitchBusy={modeSwitchBusy}
       />
     </nav>
-    <HelperTermsGateModal
-      open={helperTermsOpen}
-      onClose={() => setHelperTermsOpen(false)}
-      onConfirm={() => void confirmNavbarHelperTerms()}
-      loading={helperTermsSaving}
-    />
   </>
   );
 }

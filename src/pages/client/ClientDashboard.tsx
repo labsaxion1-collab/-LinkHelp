@@ -5,7 +5,6 @@ import { useSessionViewer } from '@/hooks/useSessionViewer';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
-import { useModeSwitch } from '@/hooks/useModeSwitch';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
@@ -104,7 +103,6 @@ export default function ClientDashboard() {
   const navigate = useNavigate();
   const routerLocation = useLocation();
   const isClientJobsPage = routerLocation.pathname === ROUTES.clientJobs;
-  const { toHelper, modeSwitchBusy } = useModeSwitch();
 
   const { t } = useLanguage();
   const skillChip = (skill: string) =>
@@ -451,20 +449,7 @@ export default function ClientDashboard() {
                   </button>
                 );
               })}
-              <button
-                type="button"
-                title={t('sidebar.switch_helper')}
-                aria-label={t('sidebar.switch_helper')}
-                onClick={() => void toHelper()}
-                disabled={modeSwitchBusy}
-                className="group relative ml-auto inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-60 md:h-12 md:w-12 md:gap-0 md:rounded-2xl md:px-0"
-              >
-                <Icons.RefreshCw className="h-4 w-4 md:h-5 md:w-5" />
-                <span className="sr-only">{t('sidebar.switch_helper')}</span>
-                <span className="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-20 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-bold text-white opacity-0 shadow-lg transition-opacity md:block md:group-hover:opacity-100 md:group-focus-visible:opacity-100">
-                  {t('sidebar.switch_helper')}
-                </span>
-              </button>
+              
             </div>
           </div>
 

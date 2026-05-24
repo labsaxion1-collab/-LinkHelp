@@ -3,14 +3,12 @@ import { Logo } from '@/components/ui/Logo';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
 import { useLanguage } from '@/context/LanguageContext';
-import { useModeSwitch } from '@/hooks/useModeSwitch';
 import { isAppShellPath } from '@/utils/navigation';
 import { clsx } from 'clsx';
 
 export default function Footer() {
   const { t } = useLanguage();
   const { pathname } = useLocation();
-  const { toClient, toHelper, modeSwitchBusy } = useModeSwitch();
   const year = new Date().getFullYear();
   const compactMobile = isAppShellPath(pathname);
 
@@ -30,22 +28,18 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-wrap justify-center gap-6">
-            <button
-              type="button"
-              onClick={() => void toClient()}
-              disabled={modeSwitchBusy}
+            <Link
+              to={`${ROUTES.signup}?role=client`}
               className="text-xs font-semibold text-gray-500 hover:text-blue-600 transition-colors min-h-[44px] flex items-center px-1"
             >
               {t('footer.for_clients')}
-            </button>
-            <button
-              type="button"
-              onClick={() => void toHelper()}
-              disabled={modeSwitchBusy}
+            </Link>
+            <Link
+              to={`${ROUTES.signup}?role=helper`}
               className="text-xs font-semibold text-gray-500 hover:text-blue-600 transition-colors min-h-[44px] flex items-center px-1"
             >
               {t('footer.for_helpers')}
-            </button>
+            </Link>
             <Link
               to={ROUTES.home}
               className="text-xs font-semibold text-gray-500 hover:text-blue-600 transition-colors min-h-[44px] flex items-center px-1"

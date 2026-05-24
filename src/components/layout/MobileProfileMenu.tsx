@@ -14,8 +14,6 @@ type Props = {
   onClose: () => void;
   isConnected: boolean;
   isHelperNav: boolean;
-  onSwitchMode?: () => void;
-  modeSwitchBusy?: boolean;
 };
 
 export function MobileProfileMenu({
@@ -23,8 +21,6 @@ export function MobileProfileMenu({
   onClose,
   isConnected,
   isHelperNav,
-  onSwitchMode,
-  modeSwitchBusy = false,
 }: Props) {
   const { t, language, setLanguage } = useLanguage();
   const { signOut, isConfigured, session } = useAuth();
@@ -114,21 +110,6 @@ export function MobileProfileMenu({
               <Settings className="h-4 w-4 text-slate-400" />
               {t('nav.profile_menu_settings')}
             </Link>
-            {onSwitchMode ? (
-              <button
-                type="button"
-                role="menuitem"
-                disabled={modeSwitchBusy}
-                onClick={() => {
-                  onClose();
-                  onSwitchMode();
-                }}
-                className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
-              >
-                <Briefcase className="h-4 w-4 text-slate-400" />
-                {isHelperNav ? t('nav.switch_to_client') : t('nav.switch_to_helper')}
-              </button>
-            ) : null}
             <div className="my-1 border-t border-slate-100 px-4 py-2">
               <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-2">
                 {t('nav.language_label')}

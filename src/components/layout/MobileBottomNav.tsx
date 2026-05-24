@@ -1,9 +1,9 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { Home, MessageCircle, ClipboardList, MapPin, UserRound } from 'lucide-react';
 import { ROUTES } from '@/utils/constants';
-import { isAppShellPath, isHelperArea, pathImpliesAppMode } from '@/utils/navigation';
+import { isAppShellPath } from '@/utils/navigation';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAppMode } from '@/context/AppModeContext';
+import { useAuth } from '@/context/AuthContext';
 import { clsx } from 'clsx';
 
 type Item = { to: string; end?: boolean; labelKey: string; icon: typeof Home };
@@ -26,12 +26,11 @@ function navClass(active: boolean, isHome = false) {
 export function MobileBottomNav() {
   const { pathname } = useLocation();
   const { t } = useLanguage();
-  const { mode } = useAppMode();
+  const { profile } = useAuth();
 
   if (!isAppShellPath(pathname)) return null;
 
-  const implied = pathImpliesAppMode(pathname);
-  const useHelperNav = isHelperArea(pathname) || (implied === null && mode === 'helper');
+  const useHelperNav = profile?.role === 'helper';
 
   const items: Item[] = useHelperNav
     ? [

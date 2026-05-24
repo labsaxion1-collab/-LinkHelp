@@ -4,6 +4,7 @@ import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
 import Layout from '@/components/layout/Layout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { RoleRoute } from '@/components/auth/RoleRoute';
 
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
@@ -38,43 +39,47 @@ export function AppRoutes() {
         <Route path={ROUTES.dashboard} element={<DashboardEntryPage />} />
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/client" element={<Navigate to={ROUTES.clientDashboard} replace />} />
-          <Route path={ROUTES.clientDashboard} element={<ClientDashboard />} />
-          <Route path={ROUTES.clientJobs} element={<ClientDashboard />} />
-
-          <Route path="/helper" element={<Navigate to={ROUTES.helperDashboard} replace />} />
-          <Route path={ROUTES.helperDashboard} element={<HelperDashboard />} />
-          <Route path={ROUTES.helperOpportunities} element={<HelperDashboard />} />
-          <Route path={ROUTES.helperPerformance} element={<HelperDashboard />} />
-          <Route path={ROUTES.helperJobs} element={<HelperUpcomingJobsPage />} />
-          <Route path="/helper/jobs/upcoming" element={<Navigate to={ROUTES.helperJobs} replace />} />
-          <Route
-            path={ROUTES.helperTraining}
-            element={
-              UI_VISIBILITY.training ? (
-                <HelperTrainingPage />
-              ) : (
-                <Navigate to={ROUTES.helperDashboard} replace />
-              )
-            }
-          />
-          <Route
-            path={ROUTES.helperCredits}
-            element={UI_VISIBILITY.helperCredits ? <HelperCreditsPage /> : <Navigate to={ROUTES.helperDashboard} replace />}
-          />
-
           <Route path={ROUTES.messages} element={<MessagesPage />} />
-          <Route
-            path={ROUTES.ideas}
-            element={UI_VISIBILITY.ideas ? <IdeasPage /> : <Navigate to={ROUTES.clientDashboard} replace />}
-          />
           <Route path={ROUTES.notifications} element={<NotificationsPage />} />
-          <Route path={ROUTES.map} element={<LiveMapPage />} />
-          <Route
-            path={ROUTES.payments}
-            element={UI_VISIBILITY.clientCredits ? <PaymentsPage /> : <Navigate to={ROUTES.clientDashboard} replace />}
-          />
           <Route path={ROUTES.settings} element={<SettingsPage />} />
+          <Route path={ROUTES.map} element={<LiveMapPage />} />
+
+          <Route element={<RoleRoute requiredRole="client" />}>
+            <Route path="/client" element={<Navigate to={ROUTES.clientDashboard} replace />} />
+            <Route path={ROUTES.clientDashboard} element={<ClientDashboard />} />
+            <Route path={ROUTES.clientJobs} element={<ClientDashboard />} />
+            <Route
+              path={ROUTES.ideas}
+              element={UI_VISIBILITY.ideas ? <IdeasPage /> : <Navigate to={ROUTES.clientDashboard} replace />}
+            />
+            <Route
+              path={ROUTES.payments}
+              element={UI_VISIBILITY.clientCredits ? <PaymentsPage /> : <Navigate to={ROUTES.clientDashboard} replace />}
+            />
+          </Route>
+
+          <Route element={<RoleRoute requiredRole="helper" />}>
+            <Route path="/helper" element={<Navigate to={ROUTES.helperDashboard} replace />} />
+            <Route path={ROUTES.helperDashboard} element={<HelperDashboard />} />
+            <Route path={ROUTES.helperOpportunities} element={<HelperDashboard />} />
+            <Route path={ROUTES.helperPerformance} element={<HelperDashboard />} />
+            <Route path={ROUTES.helperJobs} element={<HelperUpcomingJobsPage />} />
+            <Route path="/helper/jobs/upcoming" element={<Navigate to={ROUTES.helperJobs} replace />} />
+            <Route
+              path={ROUTES.helperTraining}
+              element={
+                UI_VISIBILITY.training ? (
+                  <HelperTrainingPage />
+                ) : (
+                  <Navigate to={ROUTES.helperDashboard} replace />
+                )
+              }
+            />
+            <Route
+              path={ROUTES.helperCredits}
+              element={UI_VISIBILITY.helperCredits ? <HelperCreditsPage /> : <Navigate to={ROUTES.helperDashboard} replace />}
+            />
+          </Route>
         </Route>
 
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />

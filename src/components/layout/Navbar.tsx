@@ -30,7 +30,7 @@ export default function Navbar() {
 
   const isHelperNav = profile?.role === 'helper';
   const isHome = location.pathname === ROUTES.home;
-  const usePremiumNav = isHome || location.pathname === ROUTES.login;
+  const usePremiumNav = isHome || location.pathname === ROUTES.login || isConnected;
   const logoTarget = isConnected
     ? isHelperNav
       ? ROUTES.helperOpportunities
@@ -57,7 +57,7 @@ export default function Navbar() {
 
   return (
     <>
-    <nav className={`sticky top-0 z-50 border-b ${usePremiumNav ? 'bg-[#071120]/95 border-white/12 shadow-[0_18px_55px_rgba(0,0,0,0.28)] backdrop-blur-2xl' : 'bg-white border-gray-100 backdrop-blur-xl'}`}>
+    <nav className={`sticky top-0 z-50 border-b ${usePremiumNav ? 'lh-nav-premium' : 'bg-white border-gray-100 backdrop-blur-xl'}`}>
       {usePremiumNav ? (
         <>
           <div
@@ -146,7 +146,7 @@ export default function Navbar() {
 
             <div className="flex items-center space-x-4 ml-4">
               {isConnected ? (
-                <div className="flex items-center space-x-4 pl-4 border-l border-gray-200">
+                <div className={clsx('flex items-center space-x-4 pl-4', usePremiumNav ? 'border-l border-white/15' : 'border-l border-gray-200')}>
                   <NotificationsDropdown userId={userId} />
                   {isConfigured && session ? (
                     <div className="relative" ref={desktopProfileRef}>

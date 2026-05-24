@@ -52,7 +52,7 @@ import { distanceToJobKm, sortOpportunitiesForHelper } from '@/utils/locationMat
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { HelperScorePanel } from '@/components/features/HelperScorePanel';
-import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboard';
+import { AppPageShell } from '@/components/design-system/AppPageShell';
 
 function formatSubscriptionBillingDate(iso: string | undefined, language: string): string {
   if (!iso) return '';
@@ -394,7 +394,7 @@ export default function HelperDashboard() {
     location.pathname === ROUTES.helperOpportunities;
 
   return (
-    <div className="bg-[#f0f2f5] min-h-[calc(100vh-64px)] py-4 sm:py-6 -mt-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 overflow-x-hidden">
+    <AppPageShell wide className="min-w-0 overflow-x-hidden">
       {/* Toast Notification */}
       {toastNotification.show && (
         <div className="fixed top-20 right-4 z-[100] animate-in slide-in-from-right-8 fade-in duration-300">
@@ -1038,6 +1038,6 @@ export default function HelperDashboard() {
         </div>
       ) : null}
 
-    </div>
+    </AppPageShell>
   );
 }

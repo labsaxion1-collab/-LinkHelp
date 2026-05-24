@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useSupabaseMessages } from '@/hooks/useSupabaseMessages';
 import { ROUTES } from '@/utils/constants';
-import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
+import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { useLanguage } from '@/context/LanguageContext';
 import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
@@ -400,7 +400,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col min-h-0 w-full max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 sm:py-4">
+    <AppPageShell className="flex flex-1 flex-col min-h-0 w-full max-w-7xl">
       <DesktopBackButton className="mb-3" />
       {showLimitModal && (
         <div
@@ -449,7 +449,7 @@ export default function MessagesPage() {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row flex-1 min-h-0 bg-white md:rounded-3xl md:border md:border-gray-100 md:shadow-lg overflow-hidden h-[calc(100dvh-4rem-5rem)] md:h-[calc(100dvh-5rem)] max-md:rounded-none">
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 lh-glass-card-solid md:rounded-3xl overflow-hidden h-[calc(100dvh-4rem-5rem)] md:h-[calc(100dvh-5rem)] max-md:rounded-none">
         <div
           className={clsx(
             'w-full md:w-80 md:max-w-[40%] border-r border-gray-100 flex flex-col min-h-0 bg-slate-50/60',
@@ -560,6 +560,6 @@ export default function MessagesPage() {
           )}
         </div>
       </div>
-    </div>
+    </AppPageShell>
   );
 }

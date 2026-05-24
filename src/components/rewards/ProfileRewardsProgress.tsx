@@ -30,7 +30,7 @@ export function ProfileRewardsProgress({ skillCount = 0, className }: Props) {
   return (
     <section
       className={clsx(
-        'rounded-2xl border border-blue-100/90 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 p-4 shadow-sm',
+        'rounded-2xl border border-blue-100/90 bg-gradient-to-br from-[#1565FF]/10 via-white/[0.04] to-indigo-500/5 p-4 shadow-[var(--lh-shadow-premium)] backdrop-blur-md',
         className,
       )}
       aria-labelledby="profile-rewards-progress-title"

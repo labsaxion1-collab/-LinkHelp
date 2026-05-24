@@ -7,7 +7,7 @@ import { HelperDashboardNav } from '@/components/helpers/HelperDashboardNav';
 import { ROUTES } from '@/utils/constants';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboard';
-import { CreditRefundStatusCard } from '@/components/features/CreditRefundStatusCard';
+import { AppPageShell } from '@/components/design-system/AppPageShell';
 
 export default function HelperCreditsPage() {
   const { t } = useLanguage();
@@ -22,7 +22,7 @@ export default function HelperCreditsPage() {
   const creditsUsed = wallet?.totalSpent ?? 0;
 
   return (
-    <div className="bg-[#f0f2f5] min-h-[calc(100vh-64px)] py-4 sm:py-6 -mt-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 overflow-x-hidden">
+    <AppPageShell wide className="min-w-0 overflow-x-hidden">
       <div className="mx-auto max-w-[1600px] min-w-0">
         <HelperDashboardNav
           activeTab="match"
@@ -116,6 +116,6 @@ export default function HelperCreditsPage() {
         </div>
         </div>
       </div>
-    </div>
+    </AppPageShell>
   );
 }

@@ -18,6 +18,7 @@ import type { TrainingCertLevel } from '@/utils/helperTrainingProgress';
 import { helperPlanFromRoleKey, helperTierFromApplication } from '@/utils/helperPlanFromRoleKey';
 import { ClientMapWidget } from '@/components/client/ClientMapWidget';
 import { LhCard } from '@/components/design-system/LhCard';
+import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useToast } from '@/context/ToastContext';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
@@ -210,7 +211,7 @@ export default function ClientDashboard() {
   };
 
   return (
-    <div className="bg-[#f0f2f5] min-h-[calc(100vh-64px)] py-4 sm:py-6 -mt-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+    <AppPageShell wide className="min-w-0 overflow-x-hidden">
       {/* Toast Notification */}
       {toastNotification.show && (
         <div className="fixed top-20 right-4 z-[100] animate-in slide-in-from-right-8 fade-in duration-300">
@@ -1141,6 +1142,6 @@ export default function ClientDashboard() {
         </div>
       )}
 
-    </div>
+    </AppPageShell>
   );
 }

@@ -18,7 +18,7 @@ export function NearbyHelperListItem({ helper, t, skillLabel, onViewOnMap, highl
   return (
     <article
       className={clsx(
-        'bg-white p-4 rounded-2xl shadow-sm border transition-all',
+        'rounded-2xl border border-[#33B6FF]/20 bg-white/[0.04] p-4 shadow-sm backdrop-blur-md transition-all',
         highlighted ? 'border-blue-400 ring-2 ring-blue-200/80 shadow-md' : 'border-gray-100 hover:border-blue-200',
       )}
     >

@@ -2,11 +2,12 @@ import type { HTMLAttributes } from 'react';
 import { clsx } from 'clsx';
 
 type Padding = 'none' | 'md' | 'lg';
+type Variant = 'premium' | 'legacy';
 
 type Props = HTMLAttributes<HTMLDivElement> & {
-  /** Elevated surface with card shadow */
   elevated?: boolean;
   padding?: Padding;
+  variant?: Variant;
 };
 
 const pad: Record<Padding, string> = {
@@ -15,15 +16,14 @@ const pad: Record<Padding, string> = {
   lg: 'p-4 sm:p-5',
 };
 
-/**
- * Standard surface for LinkHelp cards (feed, radar, hub, sidebar inner panels).
- */
-export function LhCard({ className, elevated = true, padding = 'lg', ...rest }: Props) {
+/** Standard surface for LinkHelp cards (premium glass by default). */
+export function LhCard({ className, elevated = true, padding = 'lg', variant = 'premium', ...rest }: Props) {
   return (
     <div
       className={clsx(
-        'rounded-[var(--lh-radius-lg)] border border-slate-200/80 bg-white',
-        elevated && 'shadow-[var(--lh-shadow-card)]',
+        variant === 'premium'
+          ? clsx('lh-glass-card-solid', elevated && 'shadow-[var(--lh-shadow-premium)]')
+          : clsx('rounded-[var(--lh-radius-lg)] border border-slate-200/80 bg-white', elevated && 'shadow-[var(--lh-shadow-card)]'),
         pad[padding],
         className,
       )}

@@ -9,7 +9,7 @@ export function HelperScorePanel({ className = '' }: Props) {
   const data = MOCK_HELPER_SCORE;
 
   return (
-    <section className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${className}`}>
+    <section className={`rounded-2xl lh-glass-card-solid p-4 shadow-sm ${className}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-black uppercase tracking-wide text-blue-600">{t('helper_score.title')}</p>

@@ -108,8 +108,8 @@ export default function HelperLiveMapPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-80px)] w-full relative flex flex-col sm:flex-row bg-gray-50 overflow-hidden">
-      <aside className="w-full sm:w-[400px] h-[40vh] sm:h-full bg-white shadow-2xl z-10 flex flex-col overflow-hidden relative order-2 sm:order-1">
+    <div className="h-[calc(100vh-80px)] w-full relative flex flex-col sm:flex-row bg-[#0B0F19] overflow-hidden lh-app-page">
+      <aside className="lh-sidebar w-full sm:w-[400px] h-[40vh] sm:h-full shadow-2xl z-10 flex flex-col overflow-hidden relative order-2 sm:order-1">
         <header className="p-6 border-b border-gray-100 shrink-0">
           <DesktopBackButton className="mb-4" />
           <button

@@ -298,8 +298,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       !isConfirmStepComplete(preferredDateMode, preferredDateIso, selectedCategory, preferredTimeSpecific));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={handleClose}>
-      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[min(92dvh,900px)]" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lh-modal-overlay animate-in fade-in duration-200" onClick={handleClose}>
+      <div className="lh-modal-panel w-full max-w-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[min(92dvh,900px)]" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3 bg-gray-50/50 shrink-0">
           <DesktopBackButton alwaysVisible onClose={handleClose} className="shrink-0" />
           <h3 className="min-w-0 flex-1 text-xl font-bold text-gray-900 font-display flex items-center gap-2">

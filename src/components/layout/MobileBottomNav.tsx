@@ -13,14 +13,14 @@ function navClass(active: boolean, isHome = false) {
     'flex flex-col items-center justify-center touch-manipulation transition-all',
     isHome
       ? [
-          '-mt-6 mx-auto h-[74px] w-[74px] rounded-[28px] border shadow-[0_-4px_22px_rgba(21,101,255,0.35)]',
+          '-mt-6 mx-auto h-[74px] w-[74px] rounded-[28px] border shadow-[0_-4px_22px_rgba(21,101,255,0.45)]',
           active
-            ? 'border-blue-500 bg-[#1565ff] text-white ring-2 ring-blue-200'
-            : 'border-blue-100 bg-white text-gray-500 active:text-[#1565ff]',
+            ? 'border-[#33B6FF]/50 bg-[#1565FF] text-white ring-2 ring-[#33B6FF]/30'
+            : 'border-[#33B6FF]/20 bg-[#0D1B2A]/90 text-[#F2F4F7]/60 active:text-[#33B6FF]',
         ]
       : [
           'min-h-[54px] rounded-2xl px-1 py-2',
-          active ? 'text-primary-600 bg-primary-50/90' : 'text-gray-500 hover:text-gray-800 active:bg-gray-100',
+          active ? 'text-[#33B6FF] bg-[#1565FF]/12' : 'text-[#F2F4F7]/55 hover:text-[#F2F4F7] active:bg-white/5',
         ],
   );
 }
@@ -51,10 +51,7 @@ export function MobileBottomNav() {
       ];
 
   return (
-    <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-gray-200/90 bg-white/95 backdrop-blur-md pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-8px_32px_rgba(15,23,42,0.08)]"
-      aria-label={t('mobile_nav.aria')}
-    >
+    <nav className="lh-bottom-nav md:hidden fixed bottom-0 inset-x-0 z-40 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2" aria-label={t('mobile_nav.aria')}>
       <ul className="flex justify-around items-stretch gap-0.5 px-1 max-w-lg mx-auto">
         {items.map((item) => {
           const Icon = item.icon;

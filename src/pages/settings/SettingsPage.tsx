@@ -31,7 +31,7 @@ import { useOnboardingRewards } from '@/hooks/useOnboardingRewards';
 import { fetchHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { SIGNUP_BONUS_LC } from '@/config/onboardingRewards';
-import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
+import { AppPageShell } from '@/components/design-system/AppPageShell';
 
 const SPOKEN_LANGUAGE_OPTIONS = [
   { id: 'pt', label: 'Português' },
@@ -52,7 +52,7 @@ function SettingsCard({
   id?: string;
 }) {
   return (
-    <section id={id} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+    <section id={id} className="lh-glass-card-solid p-5">
       <div className="mb-4 flex items-center gap-2">
         {icon}
         <h2 className="text-base font-black text-gray-900">{title}</h2>
@@ -248,7 +248,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-64px)] bg-[#f0f2f5] px-4 py-6 sm:px-6">
+    <AppPageShell className="min-h-[calc(100dvh-64px)]">
       <div className="mx-auto max-w-lg space-y-4">
         <DesktopBackButton />
         <button
@@ -513,6 +513,6 @@ export default function SettingsPage() {
           {t('app_pages.settings_logout')}
         </button>
       </div>
-    </div>
+    </AppPageShell>
   );
 }

@@ -7,33 +7,16 @@ import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { ScrollToTop } from '@/components/layout/ScrollToTop';
 import { PwaInstallPrompt } from '@/components/layout/PwaInstallPrompt';
 import { PushNotificationPrompt } from '@/components/notifications/PushNotificationPrompt';
-import { isAppShellPath, isClientArea, isHelperArea } from '@/utils/navigation';
+import { isAppShellPath } from '@/utils/navigation';
 import { clsx } from 'clsx';
-import appBackground from '../../../referencia/referencia-bg-linear-01.png';
 
 export default function Layout() {
   const { pathname } = useLocation();
   const showMobileChrome = isAppShellPath(pathname);
-  const shell = isHelperArea(pathname) ? 'helper' : isClientArea(pathname) ? 'client' : 'neutral';
+  const isAppShell = isAppShellPath(pathname);
 
   return (
-    <div
-      className={clsx(
-        'relative min-h-dvh flex flex-col bg-[#050816] font-sans text-gray-900',
-        shell === 'helper' && 'text-gray-900',
-        shell === 'client' && 'text-gray-900',
-        shell === 'neutral' && 'text-gray-900',
-      )}
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none fixed -inset-4 z-0 bg-cover bg-center opacity-65 blur-[3px] scale-[1.03]"
-        style={{ backgroundImage: `url(${appBackground})` }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(180deg,rgba(5,8,22,0.38)_0%,rgba(5,8,22,0.64)_100%)]"
-      />
+    <div className={clsx('relative min-h-dvh flex flex-col font-sans', isAppShell ? 'lh-app-bg text-[#F2F4F7]' : 'bg-[#050816] text-[#F2F4F7]')}>
       <div className="relative z-50">
         <Navbar />
       </div>
@@ -53,9 +36,11 @@ export default function Layout() {
         <PushNotificationPrompt />
         <MobileBottomNav />
       </div>
-      <div className="relative z-10">
-        <Footer />
-      </div>
+      {!isAppShell ? (
+        <div className="relative z-10">
+          <Footer />
+        </div>
+      ) : null}
     </div>
   );
 }

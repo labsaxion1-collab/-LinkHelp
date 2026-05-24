@@ -64,13 +64,12 @@ export function ProfileRewardsProgress({ skillCount = 0, className }: Props) {
                     <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">
                       {t('rewards.check_claimed')}
                     </span>
+                  ) : complete ? (
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">
+                      {t('rewards.check_pending')}
+                    </span>
                   ) : (
-                    <span
-                      className={clsx(
-                        'text-xs font-black tabular-nums',
-                        complete ? 'text-emerald-700' : 'text-blue-600',
-                      )}
-                    >
+                    <span className="text-xs font-black tabular-nums text-blue-600">
                       +{formatLinkCredits(amount, language)}
                     </span>
                   )}

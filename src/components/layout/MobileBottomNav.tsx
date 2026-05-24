@@ -13,8 +13,10 @@ function navClass(active: boolean, isHome = false) {
     'flex flex-col items-center justify-center touch-manipulation transition-all',
     isHome
       ? [
-          '-mt-6 mx-auto h-[74px] w-[74px] rounded-[28px] border border-blue-100 bg-white shadow-[0_-4px_22px_rgba(37,99,235,0.18)]',
-          active ? 'text-primary-600 ring-2 ring-primary-100' : 'text-gray-500 active:text-primary-600',
+          '-mt-6 mx-auto h-[74px] w-[74px] rounded-[28px] border shadow-[0_-4px_22px_rgba(21,101,255,0.35)]',
+          active
+            ? 'border-blue-500 bg-[#1565ff] text-white ring-2 ring-blue-200'
+            : 'border-blue-100 bg-white text-gray-500 active:text-[#1565ff]',
         ]
       : [
           'min-h-[54px] rounded-2xl px-1 py-2',

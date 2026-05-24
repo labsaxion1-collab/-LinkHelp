@@ -40,10 +40,10 @@ export default function LandingPage() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 mb-10">
-              <Link to={ROUTES.signup} className="w-full sm:w-auto px-8 py-4 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-all shadow-[0_8px_30px_rgb(37,99,235,0.24)] hover:shadow-[0_8px_30px_rgb(37,99,235,0.4)] hover:-translate-y-1 flex items-center justify-center gap-2 text-lg">
+              <Link to={`${ROUTES.signup}?role=client`} className="w-full sm:w-auto px-8 py-4 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-all shadow-[0_8px_30px_rgb(37,99,235,0.24)] hover:shadow-[0_8px_30px_rgb(37,99,235,0.4)] hover:-translate-y-1 flex items-center justify-center gap-2 text-lg">
                 {t('landing.cta_find')}
               </Link>
-              <Link to={ROUTES.signup} className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-gray-900 border border-gray-200 font-bold hover:border-gray-300 hover:bg-gray-50 transition-all hover:-translate-y-1 shadow-sm flex items-center justify-center gap-2 text-lg">
+              <Link to={`${ROUTES.signup}?role=helper`} className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-gray-900 border border-gray-200 font-bold hover:border-gray-300 hover:bg-gray-50 transition-all hover:-translate-y-1 shadow-sm flex items-center justify-center gap-2 text-lg">
                 {t('landing.cta_helper')}
               </Link>
             </div>
@@ -340,7 +340,7 @@ export default function LandingPage() {
                 <p className="text-lg font-black text-slate-950">{pkg.pack}</p>
                 <p className="mt-3 text-3xl font-black text-blue-600">{pkg.price}</p>
                 <p className="mt-4 text-sm font-semibold leading-relaxed text-slate-500">
-                  {index === 0 ? t('landing.credits_note_client') : index === 1 ? t('landing.credits_note_helper') : t('landing.credits_note_control')}
+                  {index === 0 ? t('landing.credits_note_client') : index === 1 ? t('landing.credits_note_control') : t('landing.credits_note_control')}
                 </p>
               </div>
             ))}

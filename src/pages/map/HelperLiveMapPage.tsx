@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { useNavigate } from 'react-router-dom';
+import { clsx } from 'clsx';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { useAppData } from '@/context/AppDataContext';
@@ -41,6 +42,7 @@ export default function HelperLiveMapPage() {
   const me = useSessionViewer();
   const { coords: userCoords, ready: locationReady } = useUserLocation();
   const initialCameraDone = useRef(false);
+  const mapSectionRef = useRef<HTMLElement>(null);
   const [focusedMarkerId, setFocusedMarkerId] = useState<string | null>(null);
   const [cameraFocus, setCameraFocus] = useState<{ position: google.maps.LatLngLiteral; zoom: number } | null>(
     null,
@@ -63,6 +65,9 @@ export default function HelperLiveMapPage() {
   const focusOnMap = (point: JobMapPoint) => {
     setFocusedMarkerId(point.id);
     setCameraFocus({ position: point.position, zoom: FOCUS_ZOOM });
+    requestAnimationFrame(() => {
+      mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'urgent' | 'nearest' | 'highest_value'>('all');
@@ -164,9 +169,14 @@ export default function HelperLiveMapPage() {
           {filteredPoints.map((point) => (
             <div
               key={point.id}
-              className={`bg-white p-4 rounded-2xl shadow-sm border transition-all cursor-pointer group ${
-                point.urgency ? 'border-red-200 hover:border-red-300' : 'border-gray-100 hover:border-blue-200'
-              }`}
+              className={clsx(
+                'bg-white p-4 rounded-2xl shadow-sm border transition-all cursor-pointer group',
+                focusedMarkerId === point.id
+                  ? 'border-blue-400 ring-2 ring-blue-200/80 shadow-md'
+                  : point.urgency
+                    ? 'border-red-200 hover:border-red-300'
+                    : 'border-gray-100 hover:border-blue-200',
+              )}
             >
               <div className="flex justify-between items-start mb-2">
                 <div>
@@ -219,7 +229,10 @@ export default function HelperLiveMapPage() {
         </div>
       </aside>
 
-      <section className="flex-1 relative h-[60vh] sm:h-full order-1 sm:order-2 min-h-[240px]">
+      <section
+        ref={mapSectionRef}
+        className="flex-1 relative h-[60vh] sm:h-full order-1 sm:order-2 min-h-[240px]"
+      >
         {mapsReady ? (
           <APIProvider apiKey={mapsApiKey} version="weekly">
             <Map

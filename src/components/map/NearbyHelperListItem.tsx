@@ -1,3 +1,4 @@
+import { clsx } from 'clsx';
 import * as Icons from 'lucide-react';
 import { UserPresenceBadge } from '@/components/ui/UserPresenceBadge';
 import { parseSkillKey } from '@/data/helperSkillsCatalog';
@@ -10,11 +11,17 @@ type Props = {
   t: (key: string, vars?: Record<string, string | number>) => string;
   skillLabel: (skillId: string) => string;
   onViewOnMap?: () => void;
+  highlighted?: boolean;
 };
 
-export function NearbyHelperListItem({ helper, t, skillLabel, onViewOnMap }: Props) {
+export function NearbyHelperListItem({ helper, t, skillLabel, onViewOnMap, highlighted = false }: Props) {
   return (
-    <article className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:border-blue-200 transition-all">
+    <article
+      className={clsx(
+        'bg-white p-4 rounded-2xl shadow-sm border transition-all',
+        highlighted ? 'border-blue-400 ring-2 ring-blue-200/80 shadow-md' : 'border-gray-100 hover:border-blue-200',
+      )}
+    >
       <div className="flex gap-3">
         {helper.avatarUrl ? (
           <img src={helper.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover border border-gray-100 shrink-0" />

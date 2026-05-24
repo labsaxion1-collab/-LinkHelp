@@ -1,13 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { FilePickerLabel } from '@/components/common/HiddenFileInput';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { GraduationCap, Settings, Bell, User, Loader2, Camera, LogOut } from 'lucide-react';
+import {
+  ArrowLeft,
+  GraduationCap,
+  Bell,
+  User,
+  Loader2,
+  Camera,
+  LogOut,
+  Languages,
+  Briefcase,
+  Image,
+} from 'lucide-react';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useLanguage } from '@/context/LanguageContext';
 import { ROUTES } from '@/utils/constants';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
 import { logMediaPicker } from '@/utils/mediaPickerDebug';
 import { cropSquareAvatarFromFile } from '@/utils/portfolioMediaProcessing';
@@ -16,6 +26,7 @@ import { ProfilePhoneField } from '@/components/profile/ProfilePhoneField';
 import type { QuebecPlace } from '@/data/quebecRegions';
 import { parseStoredPhone, validatePhoneNumber } from '@/utils/phoneFormat';
 import { ProfileRewardsProgress } from '@/components/rewards/ProfileRewardsProgress';
+import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { useOnboardingRewards } from '@/hooks/useOnboardingRewards';
 import { fetchHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
@@ -28,6 +39,28 @@ const SPOKEN_LANGUAGE_OPTIONS = [
   { id: 'fr', label: 'Français' },
   { id: 'es', label: 'Español' },
 ] as const;
+
+function SettingsCard({
+  icon,
+  title,
+  children,
+  id,
+}: {
+  icon: ReactNode;
+  title: string;
+  children: ReactNode;
+  id?: string;
+}) {
+  return (
+    <section id={id} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-center gap-2">
+        {icon}
+        <h2 className="text-base font-black text-gray-900">{title}</h2>
+      </div>
+      {children}
+    </section>
+  );
+}
 
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
@@ -52,12 +85,14 @@ export default function SettingsPage() {
   const [spokenLanguages, setSpokenLanguages] = useState<string[]>([]);
   const [notifOn, setNotifOn] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [pwBusy, setPwBusy] = useState(false);
+
+  const isHelper = profile?.role === 'helper';
 
   useEffect(() => {
     if (!profile) return;
     const meta = (session?.user?.user_metadata ?? {}) as Record<string, unknown>;
-    const metaName = typeof meta.full_name === 'string' ? meta.full_name : typeof meta.name === 'string' ? meta.name : '';
+    const metaName =
+      typeof meta.full_name === 'string' ? meta.full_name : typeof meta.name === 'string' ? meta.name : '';
     setName(profile.name?.trim() || metaName || '');
     setPhone(profile.phone ?? null);
     const c = profile.city ?? '';
@@ -96,16 +131,15 @@ export default function SettingsPage() {
   useEffect(() => () => revokeAvatarObjectUrl(), []);
 
   useEffect(() => {
-    if (!session?.user?.id || profile?.role !== 'helper' || !isConfigured) {
+    if (!session?.user?.id || !isHelper || !isConfigured) {
       setHelperSkillCount(0);
       return;
     }
     void fetchHelperSkills(session.user.id).then((keys) => setHelperSkillCount(keys.length));
-  }, [session?.user?.id, profile?.role, isConfigured]);
+  }, [session?.user?.id, isHelper, isConfigured]);
 
   const authEmail = session?.user?.email?.trim() ?? '';
-  const signupBonusLc =
-    profile?.role === 'helper' ? SIGNUP_BONUS_LC.helper : SIGNUP_BONUS_LC.client;
+  const signupBonusLc = isHelper ? SIGNUP_BONUS_LC.helper : SIGNUP_BONUS_LC.client;
 
   const saveAccount = async () => {
     const { countryId, nationalNumber } = parseStoredPhone(phone);
@@ -120,45 +154,37 @@ export default function SettingsPage() {
       return;
     }
     setSaving(true);
-    const err = await updateProfile({
+    const base = {
       name: name.trim() || null,
       phone: phone?.trim() ? phone.trim() : null,
       city: (cityCanon.trim() || cityDisplay.trim()) || null,
       region: province.trim() || null,
       country: country.trim() || null,
-      bio: bio.trim() || null,
       preferred_language: language,
-      spoken_languages: spokenLanguages.length ? spokenLanguages : [language],
-    });
+    };
+    const err = await updateProfile(
+      isHelper
+        ? {
+            ...base,
+            bio: bio.trim() || null,
+            spoken_languages: spokenLanguages.length ? spokenLanguages : [language],
+          }
+        : base,
+    );
     setSaving(false);
     if (err) showToast(t(err.messageKey, err.vars), 'error');
     else {
       await refreshProfile();
       showToast(t('app_pages.settings_saved'), 'success');
-      void evaluateProfileRewards({
-        avatarUrl: profile?.avatar_url,
-        bio: bio.trim() || null,
-        phone: phone?.trim() ? phone.trim() : null,
-        skillCount: helperSkillCount,
-      });
+      if (isHelper) {
+        void evaluateProfileRewards({
+          avatarUrl: profile?.avatar_url,
+          bio: bio.trim() || null,
+          phone: phone?.trim() ? phone.trim() : null,
+          skillCount: helperSkillCount,
+        });
+      }
     }
-  };
-
-  const sendPasswordReset = async () => {
-    const em = authEmail;
-    if (!em || !isSupabaseConfigured()) return;
-    setPwBusy(true);
-    const sb = getSupabase();
-    if (!sb) {
-      setPwBusy(false);
-      return;
-    }
-    const { error } = await sb.auth.resetPasswordForEmail(em, {
-      redirectTo: `${window.location.origin}${ROUTES.login}`,
-    });
-    setPwBusy(false);
-    if (error) showToast(error.message, 'error');
-    else showToast(t('app_pages.settings_toast_reset'), 'success');
   };
 
   const logout = async () => {
@@ -176,7 +202,6 @@ export default function SettingsPage() {
   const onAvatarFile = (files: FileList | null) => {
     const f = files?.[0];
     if (!f) return;
-    console.log('[media-picker] SET_SELECTED_FILE', f.name);
     revokeAvatarObjectUrl();
     const preview = URL.createObjectURL(f);
     avatarObjectUrlRef.current = preview;
@@ -187,7 +212,6 @@ export default function SettingsPage() {
 
   const saveAvatar = async () => {
     if (!avatarSelectedFile || !isConfigured || !session?.user?.id) return;
-    logMediaPicker('SAVE CLICKED');
     setAvatarSaving(true);
     try {
       let uploadFile: File = avatarSelectedFile;
@@ -197,25 +221,24 @@ export default function SettingsPage() {
       } catch {
         logMediaPicker('CROP FALLBACK — uploading original file');
       }
-      logMediaPicker('UPLOAD START');
       const { publicUrl } = await uploadAvatarImage(session.user.id, uploadFile);
-      logMediaPicker('UPLOAD SUCCESS', publicUrl);
       const err = await updateProfile({ avatar_url: publicUrl });
       if (err) {
         showToast(t(err.messageKey, err.vars), 'error');
         return;
       }
       await refreshProfile();
-      logMediaPicker('PROFILE UPDATED', publicUrl);
       revokeAvatarObjectUrl();
       setAvatarSelectedFile(null);
       showToast(t('app_pages.settings_avatar_saved'), 'success');
-      void evaluateProfileRewards({
-        avatarUrl: publicUrl,
-        bio: bio.trim() || null,
-        phone: phone?.trim() ? phone.trim() : null,
-        skillCount: helperSkillCount,
-      });
+      if (isHelper) {
+        void evaluateProfileRewards({
+          avatarUrl: publicUrl,
+          bio: bio.trim() || null,
+          phone: phone?.trim() ? phone.trim() : null,
+          skillCount: helperSkillCount,
+        });
+      }
     } catch (e) {
       const raw = formatStorageError(e);
       showToast(raw && raw !== 'NO_SUPABASE' ? raw : t('profile_setup.avatar_save_error'), 'error');
@@ -225,34 +248,37 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="bg-[#f0f2f5] min-h-[calc(100vh-64px)] py-8 px-4 sm:px-6">
-      <div className="max-w-3xl mx-auto space-y-6">
+    <div className="min-h-[calc(100dvh-64px)] bg-[#f0f2f5] px-4 py-6 sm:px-6">
+      <div className="mx-auto max-w-lg space-y-4">
         <DesktopBackButton />
-        <div className="text-center sm:text-left">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-sm border border-gray-100 mb-4">
-            <Settings className="w-7 h-7" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">{t('app_pages.settings_title')}</h1>
-          <p className="text-gray-500 font-medium mt-2 text-sm max-w-xl">{t('app_pages.settings_sub')}</p>
-          {isConfigured && profile ? (
-            <p className="mt-3 text-sm font-semibold text-blue-700">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="mb-1 flex items-center gap-2 text-sm font-bold text-gray-500 transition-colors hover:text-gray-900 lg:hidden"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t('nav.back')}
+        </button>
+
+        <header className="pb-1">
+          <h1 className="text-2xl font-black tracking-tight text-gray-900">{t('app_pages.settings_title')}</h1>
+          <p className="mt-1 text-sm font-medium text-gray-500">{t('app_pages.settings_sub')}</p>
+        </header>
+
+        {isHelper ? <ProfileRewardsProgress skillCount={helperSkillCount} /> : null}
+
+        {isConfigured && profile && isHelper ? (
+          <section className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-white p-4 shadow-sm">
+            <p className="text-sm font-bold text-blue-900">
               {t('rewards.signup_balance', {
                 amount: formatLinkCredits(profile.credits ?? signupBonusLc, language),
               })}
             </p>
-          ) : null}
-        </div>
-
-        {isConfigured && profile?.role === 'helper' ? (
-          <ProfileRewardsProgress skillCount={helperSkillCount} />
+          </section>
         ) : null}
 
-        <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <User className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-black text-gray-900">{t('app_pages.settings_account')}</h2>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+        <SettingsCard icon={<User className="h-5 w-5 text-blue-600" />} title={t('app_pages.settings_account')}>
+          <div className="space-y-4">
             <label className="block text-sm font-semibold text-gray-700">
               {t('app_pages.settings_name')}
               <input
@@ -261,89 +287,73 @@ export default function SettingsPage() {
                 className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
               />
             </label>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">{t('app_pages.settings_email')}</label>
-              <input
-                type="email"
-                readOnly
-                disabled
-                value={authEmail}
-                className="mt-1 block w-full rounded-xl border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-600 cursor-not-allowed"
-                placeholder={authEmail ? undefined : t('profile_form.email_empty')}
-              />
-              <p className="mt-1 text-xs text-gray-500">{t('profile_form.email_readonly_hint')}</p>
-            </div>
-            <div className="sm:col-span-2">
-              <ProfilePhoneField
-                label={t('app_pages.settings_phone')}
-                value={phone}
-                onChange={setPhone}
-                disabled={!isConfigured || saving}
-                t={t}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <CityRegionAutocomplete
-                label={t('app_pages.settings_city')}
-                value={cityDisplay}
-                onChangeText={(text) => {
-                  setCityDisplay(text);
-                  setCityCanon('');
-                  setProvince('');
-                  setCountry('');
-                }}
-                onPickPlace={(p: QuebecPlace) => {
-                  setCityDisplay(p.label);
-                  setCityCanon(p.city);
-                  setProvince(p.region);
-                  setCountry(p.country);
-                }}
-                disabled={!isConfigured}
-                placeholder={t('profile_form.city_placeholder')}
-              />
-            </div>
+            {authEmail ? (
+              <p className="text-xs text-gray-500">
+                {t('app_pages.settings_email')}: <span className="font-semibold text-gray-700">{authEmail}</span>
+              </p>
+            ) : null}
+            <ProfilePhoneField
+              label={t('app_pages.settings_phone')}
+              value={phone}
+              onChange={setPhone}
+              disabled={!isConfigured || saving}
+              t={t}
+            />
+            <CityRegionAutocomplete
+              label={t('app_pages.settings_city')}
+              value={cityDisplay}
+              onChangeText={(text) => {
+                setCityDisplay(text);
+                setCityCanon('');
+                setProvince('');
+                setCountry('');
+              }}
+              onPickPlace={(p: QuebecPlace) => {
+                setCityDisplay(p.label);
+                setCityCanon(p.city);
+                setProvince(p.region);
+                setCountry(p.country);
+              }}
+              disabled={!isConfigured}
+              placeholder={t('profile_form.city_placeholder')}
+            />
           </div>
-        </section>
+        </SettingsCard>
 
-        <section id="settings-avatar" className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <Camera className="w-5 h-5 text-violet-600" />
-            <h2 className="text-lg font-black text-gray-900">{t('app_pages.settings_avatar_title')}</h2>
-          </div>
-          <p className="text-sm text-gray-600 mb-4">{t('app_pages.settings_avatar_hint')}</p>
-          <div className="flex flex-col sm:flex-row gap-6 items-start">
+        <SettingsCard
+          id="settings-avatar"
+          icon={<Camera className="h-5 w-5 text-violet-600" />}
+          title={t('app_pages.settings_avatar_title')}
+        >
+          <p className="mb-4 text-sm text-gray-600">{t('app_pages.settings_avatar_hint')}</p>
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
             <div className="relative shrink-0">
               <FilePickerLabel
                 accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
                 disabled={!isConfigured || avatarSaving}
                 onFiles={onAvatarFile}
-                className="h-28 w-28 rounded-full overflow-hidden border-4 border-gray-100 bg-gray-100 shadow-inner"
+                className="h-24 w-24 overflow-hidden rounded-full border-4 border-gray-100 bg-gray-100 shadow-inner"
               >
                 {avatarDisplay ? (
-                  <img src={avatarDisplay} alt="" className="h-full w-full object-cover pointer-events-none" />
+                  <img src={avatarDisplay} alt="" className="pointer-events-none h-full w-full object-cover" />
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center text-gray-400 pointer-events-none">
-                    <User className="w-12 h-12" />
+                  <div className="pointer-events-none flex h-full w-full items-center justify-center text-gray-400">
+                    <User className="h-10 w-10" />
                   </div>
                 )}
                 {avatarSaving ? (
-                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                    <Loader2 className="h-8 w-8 text-white animate-spin" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                    <Loader2 className="h-7 w-7 animate-spin text-white" />
                   </div>
                 ) : null}
               </FilePickerLabel>
             </div>
-            <div className="flex-1 min-w-0 space-y-3">
-              {avatarSelectedFile ? (
-                <p className="text-xs font-semibold text-gray-600 truncate" title={avatarSelectedFile.name}>
-                  {avatarSelectedFile.name}
-                </p>
-              ) : null}
+            <div className="w-full min-w-0 space-y-2 sm:flex-1">
               <FilePickerLabel
                 accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
                 disabled={!isConfigured || avatarSaving}
                 onFiles={onAvatarFile}
-                className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-50 min-h-[44px]"
+                className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-50 sm:w-auto"
               >
                 {t('app_pages.settings_avatar_choose')}
               </FilePickerLabel>
@@ -351,44 +361,56 @@ export default function SettingsPage() {
                 type="button"
                 disabled={!avatarSelectedFile || avatarSaving || !isConfigured}
                 onClick={() => void saveAvatar()}
-                className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white hover:bg-blue-700 disabled:opacity-50 min-h-[44px]"
+                className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white hover:bg-blue-700 disabled:opacity-50 sm:w-auto"
               >
                 {avatarSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {t('app_pages.settings_avatar_save')}
               </button>
             </div>
           </div>
-        </section>
+        </SettingsCard>
 
-        <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <User className="w-5 h-5 text-violet-600" />
-            <h2 className="text-lg font-black text-gray-900">{t('app_pages.settings_profile')}</h2>
-          </div>
-          <label className="block text-sm font-semibold text-gray-700">
-            {t('app_pages.settings_bio')}
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              rows={4}
-              className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
-            />
-          </label>
-          {profile?.role === 'helper' ? (
-            <p className="mt-2 text-xs text-gray-500">
-              {t('app_pages.settings_skills_hint')}{' '}
-              <Link to={ROUTES.helperDashboard} className="font-bold text-blue-600 hover:underline">
-                {t('app_pages.settings_skills_link')}
-              </Link>
-            </p>
-          ) : null}
-        </section>
+        {isHelper ? (
+          <>
+            <SettingsCard icon={<User className="h-5 w-5 text-violet-600" />} title={t('app_pages.settings_profile')}>
+              <label className="block text-sm font-semibold text-gray-700">
+                {t('app_pages.settings_bio')}
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  rows={4}
+                  className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
+                />
+              </label>
+            </SettingsCard>
 
-        <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <Bell className="w-5 h-5 text-amber-500" />
-            <h2 className="text-lg font-black text-gray-900">{t('app_pages.settings_preferences')}</h2>
-          </div>
+            <SettingsCard icon={<Briefcase className="h-5 w-5 text-sky-600" />} title={t('app_pages.settings_helper_extras')}>
+              <div className="space-y-3 text-sm">
+                <Link
+                  to={ROUTES.helperDashboard}
+                  className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 font-bold text-gray-800 transition-colors hover:border-blue-200 hover:bg-blue-50/50"
+                >
+                  {t('app_pages.settings_skills_link')}
+                  <span className="text-blue-600">→</span>
+                </Link>
+                <Link
+                  to={ROUTES.helperDashboard}
+                  className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 font-bold text-gray-800 transition-colors hover:border-blue-200 hover:bg-blue-50/50"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <Image className="h-4 w-4 text-sky-600" />
+                    {t('app_pages.settings_portfolio_link')}
+                  </span>
+                  <span className="text-blue-600">→</span>
+                </Link>
+              </div>
+            </SettingsCard>
+
+            <HelperScorePanel />
+          </>
+        ) : null}
+
+        <SettingsCard icon={<Bell className="h-5 w-5 text-amber-500" />} title={t('app_pages.settings_preferences')}>
           <div className="space-y-4">
             <label className="block text-sm font-semibold text-gray-700">
               {t('app_pages.settings_lang')}
@@ -397,7 +419,9 @@ export default function SettingsPage() {
                 onChange={(e) => {
                   const next = e.target.value as 'en' | 'pt' | 'fr';
                   setLanguage(next);
-                  setSpokenLanguages((prev) => (prev.length ? prev : [next]));
+                  if (isHelper) {
+                    setSpokenLanguages((prev) => (prev.length ? prev : [next]));
+                  }
                 }}
                 className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
               >
@@ -406,9 +430,13 @@ export default function SettingsPage() {
                 <option value="fr">Français</option>
               </select>
             </label>
-            {profile?.role === 'helper' ? (
+
+            {isHelper ? (
               <div>
-                <p className="text-sm font-semibold text-gray-700 mb-2">{t('app_pages.settings_spoken_languages')}</p>
+                <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+                  <Languages className="h-4 w-4 text-blue-600" />
+                  {t('app_pages.settings_spoken_languages')}
+                </p>
                 <div className="grid grid-cols-2 gap-2">
                   {SPOKEN_LANGUAGE_OPTIONS.map((option) => {
                     const active = spokenLanguages.includes(option.id);
@@ -436,52 +464,41 @@ export default function SettingsPage() {
                 </div>
               </div>
             ) : null}
-            <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
-              <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{t('app_pages.settings_account_type')}</p>
-              <p className="mt-1 text-sm font-bold text-gray-900">
-                {profile?.role === 'helper'
-                  ? t('register_page.mode_helper_title')
-                  : t('register_page.mode_client_title')}
-              </p>
-            </div>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={notifOn} onChange={(e) => setNotifOn(e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
+
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-3 py-3">
+              <input
+                type="checkbox"
+                checked={notifOn}
+                onChange={(e) => setNotifOn(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
               <span className="text-sm font-medium text-gray-800">{t('app_pages.settings_notif')}</span>
             </label>
           </div>
-        </section>
+        </SettingsCard>
 
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between sm:items-center">
-          <Link
-            to={ROUTES.home}
-            className="inline-flex justify-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-50"
-          >
-            {t('app_pages.back_home')}
-          </Link>
-          <button
-            type="button"
-            disabled={saving || !isConfigured}
-            onClick={() => void saveAccount()}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-black text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {t('app_pages.settings_save')}
-          </button>
-        </div>
+        <button
+          type="button"
+          disabled={saving || !isConfigured}
+          onClick={() => void saveAccount()}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3.5 text-sm font-black text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {t('app_pages.settings_save')}
+        </button>
 
-        {UI_VISIBILITY.training ? (
+        {isHelper && UI_VISIBILITY.training ? (
           <Link
             to={ROUTES.helperTraining}
-            className="block rounded-3xl border border-indigo-100 bg-white p-6 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all group"
+            className="block rounded-2xl border border-indigo-100 bg-white p-5 shadow-sm transition-all hover:border-indigo-200 hover:shadow-md"
           >
-            <div className="flex items-start gap-4">
-              <div className="shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg">
-                <GraduationCap className="w-6 h-6" />
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg">
+                <GraduationCap className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-lg font-black text-gray-900 group-hover:text-indigo-700">{t('training.page_title')}</h2>
-                <p className="text-sm text-gray-500 font-medium mt-1">{t('training.settings_teaser')}</p>
-                <span className="inline-flex mt-3 text-sm font-black text-indigo-600">{t('training.membership_link')} →</span>
+                <h2 className="text-base font-black text-gray-900">{t('training.page_title')}</h2>
+                <p className="mt-1 text-sm font-medium text-gray-500">{t('training.settings_teaser')}</p>
               </div>
             </div>
           </Link>
@@ -490,7 +507,7 @@ export default function SettingsPage() {
         <button
           type="button"
           onClick={() => void logout()}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm font-bold text-red-700 hover:bg-red-100 min-h-[48px]"
+          className="flex w-full min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm font-bold text-red-700 hover:bg-red-100"
         >
           <LogOut className="h-4 w-4" />
           {t('app_pages.settings_logout')}

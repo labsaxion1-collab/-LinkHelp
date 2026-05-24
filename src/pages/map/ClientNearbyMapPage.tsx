@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
-import { User } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
 import { MapCameraFocus } from '@/components/map/MapCameraFocus';
 import { MarkerWithInfoWindow } from '@/components/map/MarkerWithInfoWindow';
+import { AvatarMapPin } from '@/components/map/AvatarMapPin';
 import { NearbyHelperListItem } from '@/components/map/NearbyHelperListItem';
 import { MAP_STYLES } from '@/components/map/mapStyles';
 import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
@@ -29,6 +29,7 @@ export default function ClientNearbyMapPage() {
   });
 
   const initialCameraDone = useRef(false);
+  const mapSectionRef = useRef<HTMLElement>(null);
   const [focusedMarkerId, setFocusedMarkerId] = useState<string | null>(null);
   const [cameraFocus, setCameraFocus] = useState<{ position: google.maps.LatLngLiteral; zoom: number } | null>(
     null,
@@ -44,6 +45,9 @@ export default function ClientNearbyMapPage() {
   const focusHelperOnMap = (helperId: string, position: google.maps.LatLngLiteral) => {
     setFocusedMarkerId(helperId);
     setCameraFocus({ position, zoom: FOCUS_ZOOM });
+    requestAnimationFrame(() => {
+      mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
 
   const mapsReady = isGoogleMapsConfigured();
@@ -88,6 +92,7 @@ export default function ClientNearbyMapPage() {
                 helper={helper}
                 t={t}
                 skillLabel={skillLabel}
+                highlighted={focusedMarkerId === helper.id}
                 onViewOnMap={
                   helper.mapPosition
                     ? () => focusHelperOnMap(helper.id, helper.mapPosition!)
@@ -99,7 +104,10 @@ export default function ClientNearbyMapPage() {
         </div>
       </aside>
 
-      <section className="flex-1 relative h-[60vh] sm:h-full order-1 sm:order-2 min-h-[240px]">
+      <section
+        ref={mapSectionRef}
+        className="flex-1 relative h-[60vh] sm:h-full order-1 sm:order-2 min-h-[240px]"
+      >
         {mapsReady ? (
           <APIProvider apiKey={mapsApiKey} version="weekly">
             <Map
@@ -129,17 +137,7 @@ export default function ClientNearbyMapPage() {
                     onOpenChange={(open) => {
                       if (!open && focusedMarkerId === helper.id) setFocusedMarkerId(null);
                     }}
-                    marker={
-                      helper.avatarUrl ? (
-                        <div className="h-11 w-11 overflow-hidden rounded-full border-2 border-blue-600 bg-white shadow-md ring-2 ring-blue-200/80">
-                          <img src={helper.avatarUrl} alt="" className="h-full w-full object-cover" />
-                        </div>
-                      ) : (
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-blue-600 bg-blue-50 shadow-md ring-2 ring-blue-200/80">
-                          <User className="w-5 h-5 text-blue-600" />
-                        </div>
-                      )
-                    }
+                    marker={<AvatarMapPin name={helper.name} avatarUrl={helper.avatarUrl} variant="helper" />}
                   >
                     <div>
                       <p className="text-sm font-black text-gray-900">{helper.name}</p>

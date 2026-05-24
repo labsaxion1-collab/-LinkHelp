@@ -57,7 +57,7 @@ export default function Navbar() {
 
   return (
     <>
-    <nav className={`sticky top-0 z-50 overflow-hidden border-b ${usePremiumNav ? 'bg-[#071120]/95 border-white/12 shadow-[0_18px_55px_rgba(0,0,0,0.28)] backdrop-blur-2xl' : 'bg-white border-gray-100 backdrop-blur-xl'}`}>
+    <nav className={`sticky top-0 z-50 border-b ${usePremiumNav ? 'bg-[#071120]/95 border-white/12 shadow-[0_18px_55px_rgba(0,0,0,0.28)] backdrop-blur-2xl' : 'bg-white border-gray-100 backdrop-blur-xl'}`}>
       {usePremiumNav ? (
         <>
           <div

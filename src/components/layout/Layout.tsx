@@ -19,7 +19,7 @@ export default function Layout() {
   return (
     <div
       className={clsx(
-        'relative isolate min-h-dvh flex flex-col overflow-hidden bg-[#050816] font-sans text-gray-900',
+        'relative min-h-dvh flex flex-col bg-[#050816] font-sans text-gray-900',
         shell === 'helper' && 'text-gray-900',
         shell === 'client' && 'text-gray-900',
         shell === 'neutral' && 'text-gray-900',
@@ -27,14 +27,16 @@ export default function Layout() {
     >
       <div
         aria-hidden
-        className="pointer-events-none fixed -inset-4 -z-10 bg-cover bg-center opacity-65 blur-[3px] scale-[1.03]"
+        className="pointer-events-none fixed -inset-4 z-0 bg-cover bg-center opacity-65 blur-[3px] scale-[1.03]"
         style={{ backgroundImage: `url(${appBackground})` }}
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(180deg,rgba(5,8,22,0.38)_0%,rgba(5,8,22,0.64)_100%)]"
+        className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(180deg,rgba(5,8,22,0.38)_0%,rgba(5,8,22,0.64)_100%)]"
       />
-      <Navbar />
+      <div className="relative z-50">
+        <Navbar />
+      </div>
       <main
         className={clsx(
           'relative z-10 flex flex-1 flex-col min-h-0 w-full max-w-[100vw] overflow-x-hidden',
@@ -51,7 +53,9 @@ export default function Layout() {
         <PushNotificationPrompt />
         <MobileBottomNav />
       </div>
-      <Footer />
+      <div className="relative z-10">
+        <Footer />
+      </div>
     </div>
   );
 }

@@ -19,45 +19,12 @@ import {
 } from 'lucide-react';
 import { LogoIcon } from '@/components/ui/Logo';
 import { ROUTES } from '@/utils/constants';
+import { useLanguage } from '@/context/LanguageContext';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
   visible: { opacity: 1, y: 0 },
 };
-
-const howItWorks = [
-  {
-    title: 'Request Help',
-    body: 'Post what you need and match with nearby people ready to help.',
-    icon: UsersRound,
-  },
-  {
-    title: 'Find Opportunities',
-    body: 'Discover real local services, urgent tasks, and qualified leads.',
-    icon: Sparkles,
-  },
-  {
-    title: 'Earn Money',
-    body: 'Turn your time and skills into flexible income with LinkCredits.',
-    icon: Banknote,
-  },
-];
-
-const services = [
-  { title: 'Electrician', icon: PlugZap, meta: 'Verified pros' },
-  { title: 'Cleaning', icon: Sparkles, meta: 'Home and office' },
-  { title: 'Gardening', icon: Flower2, meta: 'Outdoor care' },
-  { title: 'Delivery', icon: Truck, meta: 'Fast local runs' },
-  { title: 'Nail Services', icon: Brush, meta: 'Beauty at home' },
-  { title: 'Furniture Assembly', icon: Hammer, meta: 'Setup made easy' },
-];
-
-const benefits = [
-  { title: 'Secure Payments', value: 'Protected', icon: LockKeyhole },
-  { title: 'Fast Service', value: '7 min', icon: Clock3 },
-  { title: 'Trusted Connections', value: '4.9/5', icon: ShieldCheck },
-  { title: 'Real Opportunities', value: '50k+', icon: PackageCheck },
-];
 
 function FuturisticBackground() {
   const { scrollYProgress } = useScroll();
@@ -131,6 +98,41 @@ function SectionHeading({ eyebrow, title, body }: { eyebrow: string; title: stri
 }
 
 export default function LandingPage() {
+  const { t } = useLanguage();
+  const clientSignup = `${ROUTES.signup}?role=client`;
+  const helperSignup = `${ROUTES.signup}?role=helper`;
+  const howItWorks = [
+    {
+      title: t('landing.premium_how_request_title'),
+      body: t('landing.premium_how_request_body'),
+      icon: UsersRound,
+    },
+    {
+      title: t('landing.premium_how_opportunities_title'),
+      body: t('landing.premium_how_opportunities_body'),
+      icon: Sparkles,
+    },
+    {
+      title: t('landing.premium_how_earn_title'),
+      body: t('landing.premium_how_earn_body'),
+      icon: Banknote,
+    },
+  ];
+  const services = [
+    { title: t('landing.service_electrician'), icon: PlugZap, meta: t('landing.service_verified_pros') },
+    { title: t('landing.card_cleaning'), icon: Sparkles, meta: t('landing.service_home_office') },
+    { title: t('landing.service_gardening'), icon: Flower2, meta: t('landing.service_outdoor_care') },
+    { title: t('landing.service_delivery'), icon: Truck, meta: t('landing.service_fast_runs') },
+    { title: t('landing.service_nails'), icon: Brush, meta: t('landing.service_beauty_home') },
+    { title: t('landing.card_assembly'), icon: Hammer, meta: t('landing.service_setup_easy') },
+  ];
+  const benefits = [
+    { title: t('landing.trust_payments_title'), value: t('landing.benefit_protected'), icon: LockKeyhole },
+    { title: t('landing.benefit_fast_service'), value: t('landing.benefit_fast_value'), icon: Clock3 },
+    { title: t('landing.benefit_trusted_connections'), value: t('landing.reviews_score'), icon: ShieldCheck },
+    { title: t('landing.benefit_real_opportunities'), value: '50k+', icon: PackageCheck },
+  ];
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-transparent text-white">
       <FuturisticBackground />
@@ -159,7 +161,7 @@ export default function LandingPage() {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00D4FF] opacity-75" />
                   <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#00D4FF]" />
                 </span>
-                Premium local opportunity network
+                {t('landing.premium_badge')}
               </motion.div>
 
               <motion.div variants={fadeUp} className="mb-8 flex justify-center lg:justify-start">
@@ -174,7 +176,7 @@ export default function LandingPage() {
                     <p className="text-4xl font-extrabold tracking-tight sm:text-6xl">
                       Link<span className="bg-gradient-to-r from-[#33B6FF] to-[#1677FF] bg-clip-text text-transparent">Help</span>
                     </p>
-                    <p className="mt-2 text-xs font-bold uppercase tracking-[0.28em] text-[#33B6FF]">Help is opportunity</p>
+                    <p className="mt-2 text-xs font-bold uppercase tracking-[0.28em] text-[#33B6FF]">{t('landing.brand_tagline')}</p>
                   </div>
                 </motion.div>
               </motion.div>
@@ -183,33 +185,33 @@ export default function LandingPage() {
                 variants={fadeUp}
                 className="text-balance text-5xl font-extrabold leading-[0.98] tracking-tight text-white sm:text-7xl lg:text-8xl"
               >
-                Time is money. Help is opportunity.
+                {t('landing.premium_hero_title')}
               </motion.h1>
               <motion.p variants={fadeUp} className="mx-auto mt-7 max-w-2xl text-lg font-medium leading-8 text-[#C7D2FE]/82 sm:text-xl lg:mx-0">
-                Connect with people, services, and opportunities instantly.
+                {t('landing.premium_hero_sub')}
               </motion.p>
 
               <motion.div variants={fadeUp} className="mt-10 flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
                 <Link
-                  to={ROUTES.signup}
+                  to={clientSignup}
                   className="group inline-flex min-h-[56px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#1677FF] to-[#00D4FF] px-7 text-base font-extrabold text-white shadow-[0_18px_55px_rgba(22,119,255,0.42)] transition-all hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(0,212,255,0.36)]"
                 >
-                  Get Started
+                  {t('landing.premium_cta_start')}
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Link>
                 <a
                   href="#services"
                   className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-white/14 bg-white/[0.055] px-7 text-base font-extrabold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-xl transition-all hover:-translate-y-1 hover:border-[#33B6FF]/50 hover:bg-white/[0.09]"
                 >
-                  Explore Services
+                  {t('landing.premium_cta_explore')}
                 </a>
               </motion.div>
 
               <motion.div variants={fadeUp} className="mt-10 grid grid-cols-3 gap-3 text-left sm:max-w-xl">
                 {[
-                  ['50k+', 'connected users'],
-                  ['4.9', 'average rating'],
-                  ['24/7', 'live requests'],
+                  ['50k+', t('landing.stat_connected_users')],
+                  [t('landing.reviews_score'), t('landing.stat_average_rating')],
+                  ['24/7', t('landing.stat_live_requests')],
                 ].map(([value, label]) => (
                   <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 backdrop-blur-xl">
                     <p className="text-2xl font-extrabold text-white">{value}</p>
@@ -238,14 +240,14 @@ export default function LandingPage() {
                 <div className="relative mx-auto flex h-full max-w-sm flex-col rounded-[2rem] border border-white/12 bg-[#050816]/74 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_30px_90px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
                   <div className="mb-6 flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-bold text-white">Hello, Lucas</p>
-                      <p className="text-xs font-medium text-[#C7D2FE]/60">Ready to help today?</p>
+                      <p className="text-sm font-bold text-white">{t('landing.demo_hello')}</p>
+                      <p className="text-xs font-medium text-[#C7D2FE]/60">{t('landing.demo_ready')}</p>
                     </div>
                     <div className="h-9 w-9 rounded-2xl border border-white/10 bg-white/[0.06]" />
                   </div>
 
                   <div className="rounded-3xl border border-[#33B6FF]/25 bg-gradient-to-br from-[#1677FF]/26 to-white/[0.035] p-5 shadow-[0_0_50px_rgba(22,119,255,0.18)]">
-                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#33B6FF]">Available balance</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#33B6FF]">{t('landing.demo_balance')}</p>
                     <p className="mt-3 text-4xl font-extrabold text-white">$2,540</p>
                     <div className="mt-5 h-2 rounded-full bg-white/10">
                       <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-[#1677FF] to-[#00D4FF]" />
@@ -262,14 +264,14 @@ export default function LandingPage() {
 
                   <div className="mt-5 space-y-3">
                     {[
-                      ['Delivery request', '+ $45.00'],
-                      ['Cleaning service', '+ $120.00'],
-                      ['Assembly task', '+ $85.00'],
+                      [t('landing.demo_delivery_request'), '+ $45.00'],
+                      [t('landing.demo_cleaning_service'), '+ $120.00'],
+                      [t('landing.demo_assembly_task'), '+ $85.00'],
                     ].map(([title, value]) => (
                       <div key={title} className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.045] px-4 py-3">
                         <div>
                           <p className="text-sm font-bold text-white">{title}</p>
-                          <p className="text-xs font-semibold text-[#C7D2FE]/50">Live opportunity</p>
+                          <p className="text-xs font-semibold text-[#C7D2FE]/50">{t('landing.demo_live_opportunity')}</p>
                         </div>
                         <p className="text-sm font-extrabold text-[#00D4FF]">{value}</p>
                       </div>
@@ -280,8 +282,8 @@ export default function LandingPage() {
                 <div className="absolute bottom-7 left-7 right-7 rounded-3xl border border-white/12 bg-[#050816]/72 p-5 backdrop-blur-xl">
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#33B6FF]">Live marketplace</p>
-                      <p className="mt-1 text-xl font-extrabold text-white">Opportunities near you</p>
+                      <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#33B6FF]">{t('landing.demo_marketplace')}</p>
+                      <p className="mt-1 text-xl font-extrabold text-white">{t('landing.demo_near_you')}</p>
                     </div>
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1677FF] shadow-[0_0_30px_rgba(22,119,255,0.55)]">
                       <Sparkles className="h-6 w-6" />
@@ -297,9 +299,9 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(22,119,255,0.18),transparent_38%)]" />
           <div className="relative mx-auto max-w-7xl">
             <SectionHeading
-              eyebrow="How it works"
-              title="A premium operating system for local help"
-              body="From request to opportunity to payout, LinkHelp makes each step feel instant, secure, and beautifully simple."
+              eyebrow={t('landing.premium_how_eyebrow')}
+              title={t('landing.premium_how_title')}
+              body={t('landing.premium_how_body')}
             />
             <motion.div
               initial="hidden"
@@ -331,9 +333,9 @@ export default function LandingPage() {
           <div className="absolute inset-x-0 top-0 h-full bg-[radial-gradient(circle_at_78%_10%,rgba(51,182,255,0.12),transparent_32%),linear-gradient(180deg,transparent,rgba(7,17,32,0.28),transparent)]" />
           <div className="relative mx-auto max-w-7xl">
             <SectionHeading
-              eyebrow="Featured services"
-              title="A marketplace that feels fast, alive, and curated"
-              body="Premium cards, clear categories, and polished motion make local services feel as trustworthy as modern finance."
+              eyebrow={t('landing.premium_services_eyebrow')}
+              title={t('landing.premium_services_title')}
+              body={t('landing.premium_services_body')}
             />
             <motion.div
               initial="hidden"
@@ -345,7 +347,8 @@ export default function LandingPage() {
               {services.map((service) => {
                 const Icon = service.icon;
                 return (
-                  <GlassCard key={service.title} className="min-h-[190px]">
+                  <Link key={service.title} to={clientSignup} className="block focus:outline-none focus:ring-2 focus:ring-[#33B6FF]/60 rounded-[1.75rem]">
+                    <GlassCard className="min-h-[190px]">
                     <div className="flex h-full flex-col justify-between">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#33B6FF]/20 bg-[#1677FF]/14 text-[#33B6FF] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
@@ -358,7 +361,8 @@ export default function LandingPage() {
                         <p className="mt-2 text-sm font-semibold text-[#C7D2FE]/70">{service.meta}</p>
                       </div>
                     </div>
-                  </GlassCard>
+                    </GlassCard>
+                  </Link>
                 );
               })}
             </motion.div>
@@ -368,9 +372,9 @@ export default function LandingPage() {
         <section className="relative px-4 py-20 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
             <SectionHeading
-              eyebrow="Benefits"
-              title="Trust, speed, and opportunity in one premium layer"
-              body="The platform is designed to make everyday help feel secure, immediate, and valuable."
+              eyebrow={t('landing.premium_benefits_eyebrow')}
+              title={t('landing.premium_benefits_title')}
+              body={t('landing.premium_benefits_body')}
             />
             <motion.div
               initial="hidden"
@@ -412,23 +416,23 @@ export default function LandingPage() {
               <div className="mx-auto mb-7 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[#1677FF] to-[#00D4FF] shadow-[0_0_50px_rgba(0,212,255,0.45)]">
                 <BadgeCheck className="h-8 w-8" />
               </div>
-              <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-6xl">Start building opportunity today.</h2>
+              <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-6xl">{t('landing.premium_final_title')}</h2>
               <p className="mx-auto mt-6 max-w-2xl text-lg font-medium leading-8 text-[#C7D2FE]/82">
-                Join LinkHelp and turn every request, skill, and local connection into momentum.
+                {t('landing.premium_final_body')}
               </p>
               <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
                 <Link
-                  to={ROUTES.signup}
+                  to={helperSignup}
                   className="inline-flex min-h-[56px] items-center justify-center gap-3 rounded-2xl bg-white px-7 text-base font-extrabold text-[#071120] shadow-[0_18px_60px_rgba(255,255,255,0.2)] transition-all hover:-translate-y-1"
                 >
-                  Get Started
+                  {t('landing.premium_cta_start')}
                   <ArrowRight className="h-5 w-5" />
                 </Link>
                 <Link
                   to={ROUTES.login}
                   className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-white/18 bg-white/[0.06] px-7 text-base font-extrabold text-white backdrop-blur-xl transition-all hover:-translate-y-1 hover:bg-white/[0.1]"
                 >
-                  Sign in
+                  {t('login_page.submit')}
                 </Link>
               </div>
             </div>

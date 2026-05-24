@@ -11,45 +11,47 @@ export default function Footer() {
   const { pathname } = useLocation();
   const year = new Date().getFullYear();
   const compactMobile = isAppShellPath(pathname);
+  const isHome = pathname === ROUTES.home;
 
   return (
     <footer
       className={clsx(
-        'bg-white border-t border-gray-100 py-8 shrink-0',
+        'border-t py-8 shrink-0',
+        isHome ? 'bg-[#050816] border-white/10' : 'bg-white border-gray-100',
         compactMobile && 'hidden md:block pb-[max(env(safe-area-inset-bottom),0.75rem)]',
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
-            <Logo iconClassName="w-6 h-6" textClassName="text-sm font-bold" />
-            <span className="text-gray-300 hidden md:block">|</span>
-            <p className="text-xs text-gray-500 font-medium">{t('footer.copyright', { year })}</p>
+            <Logo iconClassName="w-6 h-6" textClassName="text-sm font-bold" tone={isHome ? 'light' : 'dark'} />
+            <span className={clsx('hidden md:block', isHome ? 'text-white/20' : 'text-gray-300')}>|</span>
+            <p className={clsx('text-xs font-medium', isHome ? 'text-[#C7D2FE]/65' : 'text-gray-500')}>{t('footer.copyright', { year })}</p>
           </div>
 
           <div className="flex flex-wrap justify-center gap-6">
             <Link
               to={`${ROUTES.signup}?role=client`}
-              className="text-xs font-semibold text-gray-500 hover:text-blue-600 transition-colors min-h-[44px] flex items-center px-1"
+              className={clsx('text-xs font-semibold transition-colors min-h-[44px] flex items-center px-1', isHome ? 'text-[#C7D2FE]/70 hover:text-white' : 'text-gray-500 hover:text-blue-600')}
             >
               {t('footer.for_clients')}
             </Link>
             <Link
               to={`${ROUTES.signup}?role=helper`}
-              className="text-xs font-semibold text-gray-500 hover:text-blue-600 transition-colors min-h-[44px] flex items-center px-1"
+              className={clsx('text-xs font-semibold transition-colors min-h-[44px] flex items-center px-1', isHome ? 'text-[#C7D2FE]/70 hover:text-white' : 'text-gray-500 hover:text-blue-600')}
             >
               {t('footer.for_helpers')}
             </Link>
             <Link
               to={ROUTES.home}
-              className="text-xs font-semibold text-gray-500 hover:text-blue-600 transition-colors min-h-[44px] flex items-center px-1"
+              className={clsx('text-xs font-semibold transition-colors min-h-[44px] flex items-center px-1', isHome ? 'text-[#C7D2FE]/70 hover:text-white' : 'text-gray-500 hover:text-blue-600')}
             >
               {t('footer.about')}
             </Link>
             {UI_VISIBILITY.ideas ? (
               <Link
                 to={ROUTES.ideas}
-                className="text-xs font-semibold text-gray-500 hover:text-blue-600 transition-colors min-h-[44px] flex items-center px-1"
+                className={clsx('text-xs font-semibold transition-colors min-h-[44px] flex items-center px-1', isHome ? 'text-[#C7D2FE]/70 hover:text-white' : 'text-gray-500 hover:text-blue-600')}
               >
                 {t('footer.support_ideas')}
               </Link>

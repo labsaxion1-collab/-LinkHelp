@@ -9,6 +9,7 @@ import { PwaInstallPrompt } from '@/components/layout/PwaInstallPrompt';
 import { PushNotificationPrompt } from '@/components/notifications/PushNotificationPrompt';
 import { isAppShellPath, isClientArea, isHelperArea } from '@/utils/navigation';
 import { clsx } from 'clsx';
+import appBackground from '../../../referencia/referencia-bg-linear-01.png';
 
 export default function Layout() {
   const { pathname } = useLocation();
@@ -18,16 +19,25 @@ export default function Layout() {
   return (
     <div
       className={clsx(
-        'min-h-dvh flex flex-col font-sans text-gray-900',
-        shell === 'helper' && 'bg-slate-100',
-        shell === 'client' && 'bg-[#f8fafc]',
-        shell === 'neutral' && 'bg-gray-50',
+        'relative isolate min-h-dvh flex flex-col overflow-hidden bg-[#050816] font-sans text-gray-900',
+        shell === 'helper' && 'text-gray-900',
+        shell === 'client' && 'text-gray-900',
+        shell === 'neutral' && 'text-gray-900',
       )}
     >
+      <div
+        aria-hidden
+        className="pointer-events-none fixed -inset-4 -z-10 bg-cover bg-center opacity-65 blur-[3px] scale-[1.03]"
+        style={{ backgroundImage: `url(${appBackground})` }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(180deg,rgba(5,8,22,0.38)_0%,rgba(5,8,22,0.64)_100%)]"
+      />
       <Navbar />
       <main
         className={clsx(
-          'flex flex-1 flex-col min-h-0 w-full max-w-[100vw] overflow-x-hidden',
+          'relative z-10 flex flex-1 flex-col min-h-0 w-full max-w-[100vw] overflow-x-hidden',
           showMobileChrome && 'pb-[calc(4.75rem+env(safe-area-inset-bottom))] md:pb-0',
         )}
       >
@@ -36,7 +46,7 @@ export default function Layout() {
           <Outlet />
         </Suspense>
       </main>
-      <div className={clsx(showMobileChrome && 'md:hidden')}>
+      <div className={clsx('relative z-20', showMobileChrome && 'md:hidden')}>
         <PwaInstallPrompt />
         <PushNotificationPrompt />
         <MobileBottomNav />

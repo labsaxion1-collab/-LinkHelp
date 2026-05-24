@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -13,6 +13,7 @@
   --color-accent-600: #16a34a;
 
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Sora", "Poppins", "Inter", ui-sans-serif, system-ui, sans-serif;
 
   --radius-lh-sm: var(--lh-radius-sm);
   --radius-lh-md: var(--lh-radius-md);

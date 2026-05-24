@@ -131,11 +131,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-b from-slate-50 to-white flex flex-col">
+    <div className="min-h-[100dvh] bg-transparent flex flex-col">
       <div className="px-4 pt-6 pb-2 sm:px-8 max-w-lg mx-auto w-full">
         <Link
           to={ROUTES.home}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+          className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-xl transition-colors hover:bg-white/[0.1] hover:text-white"
         >
           <ArrowLeft className="w-4 h-4" />
           {t('login_page.back_home')}
@@ -144,18 +144,25 @@ export default function LoginPage() {
 
       <div className="flex-1 flex flex-col justify-center px-4 pb-10 sm:px-6">
         <div className="max-w-md mx-auto w-full">
-          <div className="text-center mb-8">
-            <Logo className="mx-auto mb-5" iconClassName="w-11 h-11" textClassName="text-2xl sm:text-3xl font-bold tracking-tight" />
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{t('login_page.title')}</h1>
-            <p className="mt-3 text-sm text-slate-500">
-              {t('login_page.subtitle_no_account')}{' '}
-              <Link to={ROUTES.signup} className="font-bold text-blue-600 hover:text-blue-700">
-                {t('login_page.signup_link')}
-              </Link>
-            </p>
-          </div>
+          <div className="relative overflow-hidden rounded-[2rem] border border-white/24 bg-white/[0.68] p-6 shadow-[0_36px_120px_rgba(0,0,0,0.52)] ring-1 ring-white/45 backdrop-blur-3xl sm:p-8">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#33B6FF]/70 to-transparent" />
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.42)_0%,rgba(255,255,255,0.12)_36%,rgba(51,182,255,0.08)_72%,rgba(255,255,255,0.18)_100%)]" />
+            <div className="pointer-events-none absolute inset-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(255,255,255,0.16)]" />
+            <div className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-[#33B6FF]/22 blur-3xl" />
+            <div className="pointer-events-none absolute -right-20 bottom-24 h-48 w-48 rounded-full bg-[#1677FF]/16 blur-3xl" />
 
-          <div className="rounded-3xl bg-white/95 backdrop-blur shadow-2xl shadow-slate-200/50 border border-slate-100/90 p-6 sm:p-8 ring-1 ring-slate-100/80">
+            <div className="relative text-center mb-8">
+              <Logo className="mx-auto mb-5 justify-center" iconClassName="w-12 h-12" textClassName="text-2xl sm:text-3xl font-bold tracking-tight" />
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">{t('login_page.title')}</h1>
+              <p className="mt-3 text-sm font-medium text-slate-600">
+                {t('login_page.subtitle_no_account')}{' '}
+                <Link to={ROUTES.signup} className="font-bold text-blue-600 hover:text-blue-700">
+                  {t('login_page.signup_link')}
+                </Link>
+              </p>
+            </div>
+
+            <div className="relative">
             {error && (
               <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 font-medium animate-in fade-in zoom-in-95 duration-200">
                 {error}
@@ -243,7 +250,7 @@ export default function LoginPage() {
                   <div className="w-full border-t border-slate-200" />
                 </div>
                 <div className="relative flex justify-center text-xs font-bold uppercase tracking-wider text-slate-400">
-                  <span className="bg-white px-3">{t('login_page.divider')}</span>
+                  <span className="bg-white/80 px-3 backdrop-blur-sm">{t('login_page.divider')}</span>
                 </div>
               </div>
 
@@ -253,6 +260,7 @@ export default function LoginPage() {
                 disabled={submitting}
                 onClick={() => void handleGoogle()}
               />
+            </div>
             </div>
           </div>
         </div>

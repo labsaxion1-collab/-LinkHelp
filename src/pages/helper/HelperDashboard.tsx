@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Briefcase, Clock, MapPin, X, CheckCircle2, Loader2 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -361,28 +361,48 @@ export default function HelperDashboard() {
     }
   };
 
-  // Filter jobs based on activeTab
-  let displayedJobs = jobs.filter(j => j.status === 'open');
-  if (selectedCategoryFilter) {
-    displayedJobs = displayedJobs.filter((j) => {
-      const id = resolveCategoryId(j.category) || j.category;
-      return id === selectedCategoryFilter;
-    });
-  }
-  
-  if (activeTab === 'emergencia') {
-    displayedJobs = displayedJobs.filter(j => j.urgency === 'high');
-  } else if (activeTab === 'recentes') {
-    displayedJobs = [...displayedJobs].sort((a, b) => b.createdAt - a.createdAt);
-  } else if (activeTab === 'match') {
-    displayedJobs = sortOpportunitiesForHelper(displayedJobs, {
-      origin: helperCoords,
-      helperSkillIds: profileSettings.skillIds,
-      helperPlanTier: me.subscriptionTier,
-    });
-  } else if (activeTab === 'candidaturas') {
-    displayedJobs = []; // handled separately
-  }
+  const applicationCountsByJobId = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const a of applications) {
+      if (a.status === 'cancelled') continue;
+      counts.set(a.jobId, (counts.get(a.jobId) ?? 0) + 1);
+    }
+    return counts;
+  }, [applications]);
+
+  const displayedJobs = useMemo(() => {
+    let list = jobs.filter((j) => j.status === 'open');
+    if (selectedCategoryFilter) {
+      list = list.filter((j) => {
+        const id = resolveCategoryId(j.category) || j.category;
+        return id === selectedCategoryFilter;
+      });
+    }
+    if (activeTab === 'emergencia') {
+      list = list.filter((j) => j.urgency === 'high');
+    } else if (activeTab === 'recentes') {
+      list = [...list].sort((a, b) => b.createdAt - a.createdAt);
+    } else if (activeTab === 'match') {
+      list = sortOpportunitiesForHelper(list, {
+        origin: helperCoords,
+        helperSkillIds: profileSettings.skillIds,
+        helperPlanTier: me.subscriptionTier,
+      });
+    } else if (activeTab === 'candidaturas') {
+      list = [];
+    }
+    return list;
+  }, [
+    jobs,
+    selectedCategoryFilter,
+    activeTab,
+    helperCoords,
+    profileSettings.skillIds,
+    me.subscriptionTier,
+  ]);
+
+  const feedActiveTab =
+    activeTab === 'match' || activeTab === 'recentes' || activeTab === 'emergencia' ? activeTab : 'match';
 
   const radarJobs = jobs
     .filter((j) => j.status === 'open')
@@ -714,22 +734,22 @@ export default function HelperDashboard() {
           ) : null}
 
           {/* Job Categories Filter & Tabs */}
-          <div className="mb-4 rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-white p-3 shadow-sm">
-            <h3 className="mb-3 flex items-center gap-2 text-base font-black text-slate-950">
+          <div className="mb-4 rounded-2xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-white p-2 shadow-sm md:rounded-3xl md:p-3">
+            <h3 className="mb-2 flex items-center gap-1.5 text-sm font-black text-slate-950 md:mb-3 md:gap-2 md:text-base">
               {activeTab === 'candidaturas' ? (
-                <><span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-600 text-white"><Icons.ClipboardList className="h-5 w-5" /></span> {t('helper_dashboard.filter_apps_title')}</>
+                <><span className="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-600 text-white md:h-9 md:w-9 md:rounded-2xl"><Icons.ClipboardList className="h-4 w-4 md:h-5 md:w-5" /></span> {t('helper_dashboard.filter_apps_title')}</>
               ) : (
-                <><span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-600 text-white"><Icons.Target className="h-5 w-5" /></span> {t('helper_dashboard.filter_find_title')}</>
+                <><span className="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-600 text-white md:h-9 md:w-9 md:rounded-2xl"><Icons.Target className="h-4 w-4 md:h-5 md:w-5" /></span> {t('helper_dashboard.filter_find_title')}</>
               )}
             </h3>
             
-            <div className="mb-3 flex gap-2 overflow-x-auto border-b border-blue-100/70 pb-3 hide-scrollbar">
+            <div className="mb-2 flex gap-1.5 overflow-x-auto border-b border-blue-100/70 pb-2 hide-scrollbar md:mb-3 md:gap-2 md:pb-3">
               <button 
                 onClick={() => setSelectedCategoryFilter('')} 
-                className={`flex min-h-[46px] items-center gap-2 whitespace-nowrap rounded-2xl border px-3 text-xs font-black transition-colors sm:text-sm ${!selectedCategoryFilter ? 'border-blue-300 bg-white text-blue-700 shadow-sm' : 'border-transparent bg-white/70 text-slate-600 hover:bg-white'}`}
+                className={`flex min-h-[36px] items-center gap-1.5 whitespace-nowrap rounded-xl border px-2 text-[10px] font-black transition-colors md:min-h-[46px] md:gap-2 md:rounded-2xl md:px-3 md:text-xs sm:text-sm ${!selectedCategoryFilter ? 'border-blue-300 bg-white text-blue-700 shadow-sm' : 'border-transparent bg-white/70 text-slate-600 hover:bg-white'}`}
               >
-                <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${!selectedCategoryFilter ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  <Icons.Layers className="h-4 w-4" />
+                <span className={`flex h-6 w-6 items-center justify-center rounded-lg md:h-8 md:w-8 md:rounded-xl ${!selectedCategoryFilter ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  <Icons.Layers className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 </span>
                 {t('helper_dashboard.all_categories')}
               </button>
@@ -740,10 +760,10 @@ export default function HelperDashboard() {
                   <button 
                     key={cat.id}
                     onClick={() => setSelectedCategoryFilter(cat.id)}
-                    className={`flex min-h-[46px] items-center gap-2 whitespace-nowrap rounded-2xl border px-3 text-xs font-black transition-all sm:text-sm ${isSelected ? 'border-blue-300 bg-white text-blue-700 shadow-sm' : 'border-transparent bg-white/70 text-slate-600 hover:bg-white'}`}
+                    className={`flex min-h-[36px] items-center gap-1.5 whitespace-nowrap rounded-xl border px-2 text-[10px] font-black transition-all md:min-h-[46px] md:gap-2 md:rounded-2xl md:px-3 md:text-xs sm:text-sm ${isSelected ? 'border-blue-300 bg-white text-blue-700 shadow-sm' : 'border-transparent bg-white/70 text-slate-600 hover:bg-white'}`}
                   >
-                    <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                      <IconComponent className="h-4 w-4" />
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-lg md:h-8 md:w-8 md:rounded-xl ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                      <IconComponent className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     </span>
                     {t(`categories.${cat.id}`)}
                   </button>
@@ -751,11 +771,11 @@ export default function HelperDashboard() {
               })}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:overflow-x-auto sm:pb-1 hide-scrollbar">
-              <button onClick={() => setActiveTab('match')} className={`min-h-[40px] rounded-2xl px-3 text-xs font-black whitespace-nowrap transition-colors sm:text-sm ${activeTab === 'match' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.tab_match')}</button>
-              <button onClick={() => setActiveTab('recentes')} className={`min-h-[40px] rounded-2xl px-3 text-xs font-black whitespace-nowrap transition-colors sm:text-sm ${activeTab === 'recentes' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.tab_recent')}</button>
-              <button onClick={() => setActiveTab('emergencia')} className={`min-h-[40px] rounded-2xl px-3 text-xs font-black whitespace-nowrap transition-colors sm:text-sm ${activeTab === 'emergencia' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.tab_emergency')}</button>
-              <button onClick={() => setActiveTab('candidaturas')} className={`min-h-[40px] rounded-2xl px-3 text-xs font-black whitespace-nowrap transition-colors sm:text-sm ${activeTab === 'candidaturas' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.nav_applications')}</button>
+            <div className="grid grid-cols-2 gap-1.5 md:gap-2 lg:flex lg:overflow-x-auto lg:pb-1 hide-scrollbar">
+              <button onClick={() => setActiveTab('match')} className={`min-h-[32px] rounded-lg px-2 py-1 text-[10px] font-black leading-tight transition-colors md:min-h-[40px] md:rounded-2xl md:px-3 md:text-xs lg:text-sm ${activeTab === 'match' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.tab_match')}</button>
+              <button onClick={() => setActiveTab('recentes')} className={`min-h-[32px] rounded-lg px-2 py-1 text-[10px] font-black leading-tight transition-colors md:min-h-[40px] md:rounded-2xl md:px-3 md:text-xs lg:text-sm ${activeTab === 'recentes' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.tab_recent')}</button>
+              <button onClick={() => setActiveTab('emergencia')} className={`min-h-[32px] rounded-lg px-2 py-1 text-[10px] font-black leading-tight transition-colors md:min-h-[40px] md:rounded-2xl md:px-3 md:text-xs lg:text-sm ${activeTab === 'emergencia' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.tab_emergency')}</button>
+              <button onClick={() => setActiveTab('candidaturas')} className={`min-h-[32px] rounded-lg px-2 py-1 text-[10px] font-black leading-tight transition-colors md:min-h-[40px] md:rounded-2xl md:px-3 md:text-xs lg:text-sm ${activeTab === 'candidaturas' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.nav_applications')}</button>
             </div>
           </div>
 
@@ -838,19 +858,15 @@ export default function HelperDashboard() {
               )
             ) : displayedJobs.length > 0 ? (
               <div className="grid w-full max-w-full min-w-0 grid-cols-1 gap-3 md:gap-4 md:grid-cols-2 2xl:grid-cols-3">
-              {displayedJobs.map((job) => {
-                const hasApplied = appliedJobIds.has(job.id);
-                const isApplying = applyingJobId === job.id;
-                const distKm = distanceToJobKm(helperCoords, job);
-                return (
-                  <React.Fragment key={job.id}>
+              {displayedJobs.map((job) => (
                     <HelperOpportunityCard
+                      key={job.id}
                       job={job}
-                      activeTab={activeTab === 'match' || activeTab === 'recentes' || activeTab === 'emergencia' ? activeTab : 'match'}
-                      hasApplied={hasApplied}
-                      isApplying={isApplying}
-                      distanceKm={distKm}
-                      applicationsCount={applications.filter((a) => a.jobId === job.id && a.status !== 'cancelled').length}
+                      activeTab={feedActiveTab}
+                      hasApplied={appliedJobIds.has(job.id)}
+                      isApplying={applyingJobId === job.id}
+                      distanceKm={distanceToJobKm(helperCoords, job)}
+                      applicationsCount={applicationCountsByJobId.get(job.id) ?? 0}
                       onApply={handleApply}
                       onViewClientProfile={setClientProfileJob}
                       onViewDetails={setDetailOpportunity}
@@ -858,9 +874,7 @@ export default function HelperDashboard() {
                       translateCategory={translateCategory}
                       formatJobSchedule={formatJobScheduleDisplay}
                     />
-                  </React.Fragment>
-                );
-              })}
+              ))}
               </div>
             ) : (
               <LhCard className="text-center py-12 border-dashed" padding="lg">

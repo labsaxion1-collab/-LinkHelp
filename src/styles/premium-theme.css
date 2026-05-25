@@ -38,9 +38,15 @@
     z-index: 1;
     width: 100%;
     max-width: 100%;
-    min-height: calc(100dvh - 72px);
+    min-height: calc(100dvh - 60px);
     color: var(--lh-premium-text);
     overflow-x: hidden;
+  }
+
+  @media (min-width: 768px) {
+    .lh-app-page {
+      min-height: calc(100dvh - 72px);
+    }
   }
 
   .lh-glass-card {

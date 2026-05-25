@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import * as Icons from 'lucide-react';
 import { Check, CheckCircle2, Clock, MapPin } from 'lucide-react';
 import type { Job } from '@/types/job';
@@ -64,7 +65,7 @@ function valueLabel(job: Job, t: TFn): string {
   return formatJobBudgetDisplay(job, t);
 }
 
-export function HelperOpportunityCard({
+function HelperOpportunityCardInner({
   job,
   activeTab,
   hasApplied,
@@ -102,7 +103,7 @@ export function HelperOpportunityCard({
 
   const header =
     tier === 'urgent' ? (
-      <div className="flex items-center justify-between gap-2 border-b border-rose-200/70 bg-rose-50/90 px-3 py-2 md:px-4 md:py-2.5">
+      <div className="hidden items-center justify-between gap-2 border-b border-rose-200/70 bg-rose-50/90 px-3 py-2 md:flex md:px-4 md:py-2.5">
         <div className="flex min-w-0 items-center gap-2">
           <Icons.AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
           <span className="truncate text-[10px] font-bold uppercase tracking-wide text-rose-900 md:text-[11px]">
@@ -114,7 +115,7 @@ export function HelperOpportunityCard({
         </span>
       </div>
     ) : tier === 'best' ? (
-      <div className="flex items-center justify-between gap-2 border-b border-emerald-200/70 bg-emerald-50/85 px-3 py-2 md:px-4 md:py-2.5">
+      <div className="hidden items-center justify-between gap-2 border-b border-emerald-200/70 bg-emerald-50/85 px-3 py-2 md:flex md:px-4 md:py-2.5">
         <div className="flex min-w-0 items-center gap-2">
           <Icons.Sparkles className="h-4 w-4 shrink-0 text-emerald-700" />
           <span className="truncate text-[10px] font-bold uppercase tracking-wide text-emerald-950 md:text-[11px]">
@@ -140,44 +141,38 @@ export function HelperOpportunityCard({
     <LhCard padding="none" className={cardShell}>
       {header}
 
-      {/* Mobile compact */}
-      <div className="w-full max-w-full p-3 md:hidden">
-        <div className="mb-2 flex items-start gap-2.5">
-          <img
-            src={job.clientAvatar}
-            alt=""
-            className="h-10 w-10 shrink-0 rounded-full border border-slate-100 object-cover"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-slate-900">{job.clientName}</p>
-            <p className="truncate text-xs font-medium text-slate-500">
-              {category} · {job.title}
-            </p>
-          </div>
+      {/* Mobile compact — scan-first: horário, valor, distância, urgência */}
+      <div className="w-full max-w-full p-2.5 md:hidden">
+        <div className="mb-2 flex items-center justify-between gap-2">
           {tier === 'urgent' ? (
-            <span className="shrink-0 rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[9px] font-black uppercase text-rose-800">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-rose-600 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow-sm shadow-rose-600/30">
+              <Icons.AlertTriangle className="h-3 w-3" />
               {t('helper_dashboard.job_card_urgent')}
             </span>
           ) : tier === 'best' ? (
-            <span className="shrink-0 rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-black uppercase text-emerald-800">
-              {qualityScore}%
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-500/15 px-2 py-1 text-[10px] font-black text-emerald-100">
+              <Icons.Sparkles className="h-3 w-3 text-emerald-300" />
+              {t('helper_dashboard.compatibility', { pct: 95 })}
             </span>
-          ) : null}
-        </div>
-
-        <div className="mb-2.5 flex flex-wrap gap-x-2 gap-y-1 text-[11px] font-semibold text-slate-600">
-          <span className="inline-flex max-w-full items-center gap-1 truncate">
-            <Clock className="h-3 w-3 shrink-0 text-slate-400" />
+          ) : (
+            <span className="truncate text-[10px] font-bold uppercase tracking-wide text-slate-400">{category}</span>
+          )}
+          <span className="inline-flex min-w-0 max-w-[58%] items-center gap-1 text-sm font-black tabular-nums text-slate-100">
+            <Clock className="h-3.5 w-3.5 shrink-0 text-[#33B6FF]" />
             <span className="truncate">{schedule}</span>
           </span>
-          <span className="text-slate-300">·</span>
-          <span className="inline-flex max-w-[45%] items-center gap-1 truncate">
-            <MapPin className="h-3 w-3 shrink-0 text-slate-400" />
+        </div>
+
+        <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span className="text-lg font-black leading-none text-[#33B6FF]">{budget}</span>
+          <span className="inline-flex items-center gap-1 text-sm font-bold text-[#F2F4F7]">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-[#1565FF]" />
             <span className="truncate">{loc}</span>
           </span>
-          <span className="text-slate-300">·</span>
-          <span className="truncate text-slate-700">{budget}</span>
         </div>
+
+        <p className="mb-0.5 line-clamp-1 text-xs font-semibold text-slate-300">{job.title}</p>
+        <p className="mb-2 truncate text-[10px] font-medium text-slate-500">{job.clientName}</p>
 
         <div className="flex gap-2">
           {onViewDetails ? (
@@ -229,8 +224,10 @@ export function HelperOpportunityCard({
             <img
               src={job.clientAvatar}
               alt=""
-              className="h-10 w-10 rounded-full border border-slate-100 object-cover shadow-sm"
-            />
+            className="h-10 w-10 rounded-full border border-slate-100 object-cover shadow-sm"
+            loading="lazy"
+            decoding="async"
+          />
             <div className="min-w-0">
               <button
                 type="button"
@@ -341,3 +338,18 @@ export function HelperOpportunityCard({
     </LhCard>
   );
 }
+
+export const HelperOpportunityCard = memo(HelperOpportunityCardInner, (prev, next) => {
+  return (
+    prev.job.id === next.job.id &&
+    prev.job.createdAt === next.job.createdAt &&
+    prev.job.title === next.job.title &&
+    prev.job.urgency === next.job.urgency &&
+    prev.job.status === next.job.status &&
+    prev.hasApplied === next.hasApplied &&
+    prev.isApplying === next.isApplying &&
+    prev.activeTab === next.activeTab &&
+    prev.distanceKm === next.distanceKm &&
+    prev.applicationsCount === next.applicationsCount
+  );
+});

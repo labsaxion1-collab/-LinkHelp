@@ -93,19 +93,20 @@ export default function HelperLiveMapPage() {
       .filter((p): p is JobMapPoint => p != null);
   }, [jobs, userCoords, me.id]);
 
-  let filteredPoints = jobPoints.filter((p) => {
-    if (activeFilter === 'urgent') return p.urgency;
-    return true;
-  });
+  const filteredPoints = useMemo(() => {
+    let list = jobPoints.filter((p) => (activeFilter === 'urgent' ? p.urgency : true));
+    if (activeFilter === 'nearest') {
+      list = [...list].sort((a, b) => a.dist - b.dist);
+    } else if (activeFilter === 'highest_value') {
+      list = [...list].sort((a, b) => {
+        const parseVal = (v: string) => Number.parseFloat(v.replace(/[^\d.]/g, '')) || 0;
+        return parseVal(b.data.value) - parseVal(a.data.value);
+      });
+    }
+    return list;
+  }, [jobPoints, activeFilter]);
 
-  if (activeFilter === 'nearest') {
-    filteredPoints = [...filteredPoints].sort((a, b) => a.dist - b.dist);
-  } else if (activeFilter === 'highest_value') {
-    filteredPoints = [...filteredPoints].sort((a, b) => {
-      const parseVal = (v: string) => Number.parseFloat(v.replace(/[^\d.]/g, '')) || 0;
-      return parseVal(b.data.value) - parseVal(a.data.value);
-    });
-  }
+  const mapMarkerPoints = useMemo(() => filteredPoints.slice(0, 40), [filteredPoints]);
 
   return (
     <div className="h-[calc(100vh-80px)] w-full relative flex flex-col sm:flex-row bg-[#0B0F19] overflow-hidden lh-app-page">
@@ -252,7 +253,7 @@ export default function HelperLiveMapPage() {
                 </div>
               </AdvancedMarker>
 
-              {filteredPoints.map((point) => (
+              {mapMarkerPoints.map((point) => (
                 <MarkerWithInfoWindow
                   key={point.id}
                   position={point.position}

@@ -23,7 +23,7 @@ export default function Layout() {
       <main
         className={clsx(
           'relative z-10 flex flex-1 flex-col min-h-0 w-full max-w-full overflow-x-hidden',
-          showMobileChrome && 'pb-[calc(4.75rem+env(safe-area-inset-bottom))] md:pb-0',
+          showMobileChrome && 'pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0',
         )}
       >
         <ScrollToTop />

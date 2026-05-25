@@ -83,7 +83,7 @@ export default function Navbar() {
         </>
       ) : null}
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-[72px]">
+        <div className="flex justify-between h-[60px] md:h-[72px]">
           <div className="flex items-center">
             <Link
               to={logoTarget}
@@ -249,8 +249,8 @@ export default function Navbar() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 md:hidden">
-            {isConnected ? <NotificationsDropdown userId={userId} /> : null}
+          <div className="flex items-center gap-1.5 md:hidden">
+            {isConnected ? <NotificationsDropdown userId={userId} compact /> : null}
             <button
               type="button"
               onClick={() => {
@@ -260,15 +260,15 @@ export default function Navbar() {
                 }
                 setMobileProfileOpen((o) => !o);
               }}
-              className="rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              className="rounded-full p-0.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               aria-label={isConnected ? t('mobile_nav.profile_menu') : t('nav.login')}
               aria-expanded={mobileProfileOpen}
             >
               {isConnected ? (
-                <img src={userAvatar} alt="" className="h-10 w-10 rounded-full border-2 border-white object-cover shadow-sm" />
+                <img src={userAvatar} alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover shadow-sm" loading="lazy" decoding="async" />
               ) : (
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-                  <User className="h-5 w-5" />
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                  <User className="h-4 w-4" />
                 </span>
               )}
             </button>

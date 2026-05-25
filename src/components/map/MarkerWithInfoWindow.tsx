@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { memo, useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps';
 
@@ -17,7 +17,7 @@ type Props = {
   highlighted?: boolean;
 };
 
-export function MarkerWithInfoWindow({
+function MarkerWithInfoWindowInner({
   position,
   title,
   marker,
@@ -73,3 +73,5 @@ export function MarkerWithInfoWindow({
     </>
   );
 }
+
+export const MarkerWithInfoWindow = memo(MarkerWithInfoWindowInner);

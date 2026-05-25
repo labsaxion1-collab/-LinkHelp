@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, memo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, ChevronRight, MessageSquare, Briefcase, DollarSign, Target, Star } from 'lucide-react';
 import { useAppData } from '@/context/AppDataContext';
@@ -8,9 +8,11 @@ import { getLocalizedNotificationText, getNotificationActionUrl } from '@/utils/
 
 interface NotificationsDropdownProps {
   userId: string;
+  /** Smaller trigger on mobile topbar */
+  compact?: boolean;
 }
 
-export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
+function NotificationsDropdownInner({ userId, compact = false }: NotificationsDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -18,10 +20,12 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
   const { notifications, markNotificationAsRead, markAllAsRead } = useAppData();
   const { t } = useLanguage();
 
-  const userNotifications = notifications
-    .filter((n) => n.userId === userId)
-    .sort((a, b) => b.createdAt - a.createdAt);
-  const unreadCount = userNotifications.filter((n) => !n.read).length;
+  const userNotifications = useMemo(
+    () => notifications.filter((n) => n.userId === userId).sort((a, b) => b.createdAt - a.createdAt),
+    [notifications, userId],
+  );
+  const unreadCount = useMemo(() => userNotifications.filter((n) => !n.read).length, [userNotifications]);
+  const previewNotifications = useMemo(() => userNotifications.slice(0, 10), [userNotifications]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -81,11 +85,11 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="text-gray-400 hover:text-gray-600 relative p-2 rounded-full hover:bg-gray-100 transition-colors focus:outline-none"
+        className={`relative rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus:outline-none ${compact ? 'p-1' : 'p-2'}`}
       >
-        <Bell className={`w-5 h-5 ${recentlyReceivedId ? 'animate-bounce text-blue-500' : ''}`} />
+        <Bell className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} ${recentlyReceivedId ? 'animate-bounce text-blue-500' : ''}`} />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-white shadow-sm ring-1 ring-red-500/50">
+          <span className={`absolute flex items-center justify-center rounded-full border border-white bg-red-500 font-bold text-white shadow-sm ring-1 ring-red-500/50 ${compact ? 'top-0 right-0 h-3.5 w-3.5 text-[8px]' : 'top-1 right-1 h-4 w-4 text-[10px]'}`}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -114,7 +118,7 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
-                {userNotifications.slice(0, 10).map((notification) => {
+                {previewNotifications.map((notification) => {
                   const localized = getLocalizedNotificationText(notification, t);
                   const actionUrl = getNotificationActionUrl(notification);
                   return (
@@ -177,3 +181,5 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
     </div>
   );
 }
+
+export const NotificationsDropdown = memo(NotificationsDropdownInner);

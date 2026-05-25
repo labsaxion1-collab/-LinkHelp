@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { premium } from './premiumClasses';
@@ -20,6 +20,13 @@ const sizes = {
 };
 
 export function LhModal({ open, onClose, title, children, footer, size = 'md', className }: Props) {
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    bodyRef.current?.scrollTo(0, 0);
+  }, [open, title]);
+
   if (!open) return null;
 
   return (
@@ -43,7 +50,9 @@ export function LhModal({ open, onClose, title, children, footer, size = 'md', c
             </button>
           </header>
         ) : null}
-        <div className={premium.modalBody}>{children}</div>
+        <div ref={bodyRef} className={premium.modalBody}>
+          {children}
+        </div>
         {footer ? <footer className={premium.modalFooter}>{footer}</footer> : null}
       </div>
     </div>

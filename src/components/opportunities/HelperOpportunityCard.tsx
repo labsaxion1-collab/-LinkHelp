@@ -53,6 +53,17 @@ function estimateLeadQuality(job: Job, distanceKm?: number | null): number {
   return Math.min(score, 98);
 }
 
+function locationLabel(job: Job, distanceKm: number | null | undefined, t: TFn): string {
+  if (distanceKm != null) return t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) });
+  const loc = job.location?.trim();
+  if (!loc || /remot|remote|en ligne|online/i.test(loc)) return t('jobs.remote');
+  return loc.length > 28 ? `${loc.slice(0, 26)}…` : loc;
+}
+
+function valueLabel(job: Job, t: TFn): string {
+  return formatJobBudgetDisplay(job, t);
+}
+
 export function HelperOpportunityCard({
   job,
   activeTab,
@@ -71,161 +82,261 @@ export function HelperOpportunityCard({
   const leadCost = estimateLeadCost(job, distanceKm);
   const qualityScore = estimateLeadQuality(job, distanceKm);
   const helperLimit = tier === 'urgent' ? 5 : 3;
+  const schedule = formatJobSchedule(job, t);
+  const category = translateCategory(job.category, t);
+  const loc = locationLabel(job, distanceKm, t);
+  const budget = valueLabel(job, t);
+
+  const ctaBase =
+    'inline-flex min-h-[40px] flex-1 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2.5 text-sm font-bold transition-all duration-200';
+
+  const cardShell = clsx(
+    'group/card h-full w-full max-w-full overflow-hidden border bg-white/95 transition-all duration-300',
+    'md:hover:-translate-y-0.5 md:hover:shadow-xl md:hover:shadow-slate-900/10 motion-reduce:transform-none',
+    'md:hover:ring-2 md:hover:ring-blue-500/15',
+    tier === 'urgent' &&
+      'border-rose-200/90 ring-1 ring-rose-200/50 shadow-md shadow-rose-500/10 motion-reduce:animate-none md:animate-pulse',
+    tier === 'best' && 'border-emerald-200/80 ring-1 ring-emerald-100/60 shadow-sm shadow-emerald-500/10',
+    tier === 'normal' && 'border-slate-200/80',
+  );
 
   const header =
     tier === 'urgent' ? (
-      <div className="px-4 py-2.5 flex items-center justify-between border-b border-rose-200/70 bg-rose-50/90">
-        <div className="flex items-center gap-2 min-w-0">
-          <Icons.AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-          <span className="text-[11px] font-bold text-rose-900 tracking-wide uppercase">{t('helper_dashboard.job_card_urgent')}</span>
+      <div className="flex items-center justify-between gap-2 border-b border-rose-200/70 bg-rose-50/90 px-3 py-2 md:px-4 md:py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <Icons.AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
+          <span className="truncate text-[10px] font-bold uppercase tracking-wide text-rose-900 md:text-[11px]">
+            {t('helper_dashboard.job_card_urgent')}
+          </span>
         </div>
-        <span className="text-[10px] font-bold text-rose-900 bg-white/95 border border-rose-200/90 px-2 py-1 rounded-md shrink-0">
+        <span className="shrink-0 rounded-md border border-rose-200/90 bg-white/95 px-2 py-0.5 text-[10px] font-bold text-rose-900">
           {t('helper_dashboard.job_card_high_priority')}
         </span>
       </div>
     ) : tier === 'best' ? (
-      <div className="px-4 py-2.5 flex items-center justify-between border-b border-emerald-200/70 bg-emerald-50/85">
-        <div className="flex items-center gap-2 min-w-0">
-          <Icons.Sparkles className="w-4 h-4 text-emerald-700 shrink-0" />
-          <span className="text-[11px] font-bold text-emerald-950 tracking-wide uppercase">{t('helper_dashboard.job_card_best_match')}</span>
+      <div className="flex items-center justify-between gap-2 border-b border-emerald-200/70 bg-emerald-50/85 px-3 py-2 md:px-4 md:py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <Icons.Sparkles className="h-4 w-4 shrink-0 text-emerald-700" />
+          <span className="truncate text-[10px] font-bold uppercase tracking-wide text-emerald-950 md:text-[11px]">
+            {t('helper_dashboard.job_card_best_match')}
+          </span>
         </div>
-        <span className="text-[10px] font-bold text-emerald-900 bg-white/95 border border-emerald-200/90 px-2 py-1 rounded-md flex items-center gap-1 shrink-0 tabular-nums">
-          <Icons.Zap className="w-3 h-3 text-emerald-600 shrink-0" /> {t('helper_dashboard.compatibility', { pct: 95 })}
+        <span className="flex shrink-0 items-center gap-1 rounded-md border border-emerald-200/90 bg-white/95 px-2 py-0.5 text-[10px] font-bold tabular-nums text-emerald-900">
+          <Icons.Zap className="h-3 w-3 shrink-0 text-emerald-600" /> {t('helper_dashboard.compatibility', { pct: 95 })}
         </span>
       </div>
     ) : (
-      <div className="px-4 py-2 border-b border-slate-100/90 bg-slate-50/70">
-        <div className="flex items-center gap-2 min-w-0">
-          <Icons.CircleDot className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.12em]">{t('helper_dashboard.job_card_standard')}</span>
+      <div className="hidden border-b border-slate-100/90 bg-slate-50/70 px-4 py-2 md:block">
+        <div className="flex min-w-0 items-center gap-2">
+          <Icons.CircleDot className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+            {t('helper_dashboard.job_card_standard')}
+          </span>
         </div>
       </div>
     );
 
-  const ctaBase =
-    'flex-1 inline-flex min-h-[42px] px-3 rounded-[var(--lh-radius-md)] font-bold text-sm items-center justify-center gap-2 transition-all duration-200';
-
   return (
-    <LhCard
-      padding="none"
-      className={clsx(
-        'group/card h-full overflow-hidden border bg-white/95 transition-all duration-300',
-        'hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-900/10 motion-reduce:transform-none',
-        'hover:ring-2 hover:ring-blue-500/15',
-        tier === 'urgent' &&
-          'border-rose-200/90 ring-1 ring-rose-200/50 shadow-md shadow-rose-500/10 motion-reduce:animate-none animate-pulse',
-        tier === 'best' && 'border-emerald-200/80 ring-1 ring-emerald-100/60 shadow-sm shadow-emerald-500/10',
-        tier === 'normal' && 'border-slate-200/80',
-      )}
-    >
+    <LhCard padding="none" className={cardShell}>
       {header}
 
-      <div className="p-4">
-        <div className="flex items-center gap-3 mb-3">
+      {/* Mobile compact */}
+      <div className="w-full max-w-full p-3 md:hidden">
+        <div className="mb-2 flex items-start gap-2.5">
           <img
             src={job.clientAvatar}
             alt=""
-            className="w-10 h-10 rounded-full object-cover border border-slate-100 shadow-sm"
+            className="h-10 w-10 shrink-0 rounded-full border border-slate-100 object-cover"
           />
-          <div className="min-w-0">
-            <button
-              type="button"
-              onClick={() => onViewClientProfile?.(job)}
-              className="block max-w-full truncate text-left font-bold leading-tight text-slate-900 transition-colors hover:text-blue-700"
-            >
-              {job.clientName}
-            </button>
-            <p className="text-xs text-slate-500 flex items-center gap-1 font-medium truncate">{translateCategory(job.category, t)}</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold text-slate-900">{job.clientName}</p>
+            <p className="truncate text-xs font-medium text-slate-500">
+              {category} · {job.title}
+            </p>
           </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => onViewDetails?.(job)}
-          className="text-base font-bold text-slate-900 mb-2 leading-snug line-clamp-2 text-left hover:text-blue-700"
-        >
-          {job.title}
-        </button>
-        <p className="text-sm text-slate-600 mb-4 leading-relaxed line-clamp-2">{job.description}</p>
-        <div className="flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800">
-            <Icons.BadgeCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> {t('helper_dashboard.lead_quality', { pct: qualityScore })}
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-800">
-            <Icons.Coins className="w-3.5 h-3.5 text-blue-600 shrink-0" /> {t('helper_dashboard.lead_cost', { count: leadCost })}
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-900">
-            <Icons.Users className="w-3.5 h-3.5 text-amber-600 shrink-0" /> {t('helper_dashboard.lead_competition', { count: helperLimit })}
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-bold text-blue-800">
-            <Icons.UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" /> {t('helper_dashboard.applications_count', { count: applicationsCount })}
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-slate-50/80 px-2.5 py-1.5 text-xs font-medium text-slate-700">
-            <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {formatJobSchedule(job, t)}
-          </span>
-          {isBeautyScheduledJob(job) ? (
-            <span className="inline-flex items-center gap-1 rounded-[var(--lh-radius-sm)] border border-violet-100 bg-violet-50 px-2.5 py-1.5 text-xs font-bold text-violet-800">
-              <span aria-hidden>🕒</span>
-              {job.preferredTime}
-              <span className="font-semibold text-violet-600/90">· {t('jobs.scheduled_time_badge')}</span>
+          {tier === 'urgent' ? (
+            <span className="shrink-0 rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[9px] font-black uppercase text-rose-800">
+              {t('helper_dashboard.job_card_urgent')}
+            </span>
+          ) : tier === 'best' ? (
+            <span className="shrink-0 rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-black uppercase text-emerald-800">
+              {qualityScore}%
             </span>
           ) : null}
-          <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800">
-            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />{' '}
-            {distanceKm != null
-              ? t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) })
-              : job.location}
+        </div>
+
+        <div className="mb-2.5 flex flex-wrap gap-x-2 gap-y-1 text-[11px] font-semibold text-slate-600">
+          <span className="inline-flex max-w-full items-center gap-1 truncate">
+            <Clock className="h-3 w-3 shrink-0 text-slate-400" />
+            <span className="truncate">{schedule}</span>
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-slate-50/90 px-2.5 py-1.5 text-xs font-semibold text-slate-700">
-            <Icons.Handshake className="w-3.5 h-3.5 text-slate-500 shrink-0" /> {t('helper_dashboard.compensation_neutral')}
+          <span className="text-slate-300">·</span>
+          <span className="inline-flex max-w-[45%] items-center gap-1 truncate">
+            <MapPin className="h-3 w-3 shrink-0 text-slate-400" />
+            <span className="truncate">{loc}</span>
           </span>
+          <span className="text-slate-300">·</span>
+          <span className="truncate text-slate-700">{budget}</span>
+        </div>
+
+        <div className="flex gap-2">
+          {onViewDetails ? (
+            <button
+              type="button"
+              onClick={() => onViewDetails(job)}
+              className={`${ctaBase} border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50`}
+            >
+              <Icons.FileText className="h-4 w-4 shrink-0" />
+              <span className="truncate">{t('notifications.view_details')}</span>
+            </button>
+          ) : null}
+          {hasApplied ? (
+            <button
+              type="button"
+              disabled
+              className={`${ctaBase} cursor-not-allowed border border-emerald-200/80 bg-emerald-100 text-emerald-800`}
+            >
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <span className="truncate">{t('helper_dashboard.applied_sent')}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onApply(job.id)}
+              disabled={isApplying}
+              className={`${ctaBase} border border-blue-600/90 bg-blue-600 text-white hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-70`}
+            >
+              {isApplying ? (
+                <>
+                  <Icons.Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                  <span className="truncate">{t('helper_dashboard.apply_sending')}</span>
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{t('helper_dashboard.apply_now')}</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
-      <div className="mx-4 mb-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
-        <p className="line-clamp-2 text-xs font-semibold leading-relaxed text-slate-600">
-          {t('helper_dashboard.lead_unlock_note')}
-        </p>
-      </div>
-      <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/60 flex flex-col gap-2">
-        {onViewDetails ? (
+
+      {/* Desktop full */}
+      <div className="hidden w-full max-w-full md:block">
+        <div className="p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <img
+              src={job.clientAvatar}
+              alt=""
+              className="h-10 w-10 rounded-full border border-slate-100 object-cover shadow-sm"
+            />
+            <div className="min-w-0">
+              <button
+                type="button"
+                onClick={() => onViewClientProfile?.(job)}
+                className="block max-w-full truncate text-left font-bold leading-tight text-slate-900 transition-colors hover:text-blue-700"
+              >
+                {job.clientName}
+              </button>
+              <p className="flex items-center gap-1 truncate text-xs font-medium text-slate-500">
+                {category}
+              </p>
+            </div>
+          </div>
           <button
             type="button"
-            onClick={() => onViewDetails(job)}
+            onClick={() => onViewDetails?.(job)}
+            className="mb-2 line-clamp-2 text-left text-base font-bold leading-snug text-slate-900 hover:text-blue-700"
+          >
+            {job.title}
+          </button>
+          <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-slate-600">{job.description}</p>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800">
+              <Icons.BadgeCheck className="h-3.5 w-3.5 shrink-0 text-emerald-600" />{' '}
+              {t('helper_dashboard.lead_quality', { pct: qualityScore })}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-800">
+              <Icons.Coins className="h-3.5 w-3.5 shrink-0 text-blue-600" /> {t('helper_dashboard.lead_cost', { count: leadCost })}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-900">
+              <Icons.Users className="h-3.5 w-3.5 shrink-0 text-amber-600" />{' '}
+              {t('helper_dashboard.lead_competition', { count: helperLimit })}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-bold text-blue-800">
+              <Icons.UserCheck className="h-3.5 w-3.5 shrink-0 text-blue-600" />{' '}
+              {t('helper_dashboard.applications_count', { count: applicationsCount })}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-slate-50/80 px-2.5 py-1.5 text-xs font-medium text-slate-700">
+              <Clock className="h-3.5 w-3.5 shrink-0 text-slate-400" /> {schedule}
+            </span>
+            {isBeautyScheduledJob(job) ? (
+              <span className="inline-flex items-center gap-1 rounded-[var(--lh-radius-sm)] border border-violet-100 bg-violet-50 px-2.5 py-1.5 text-xs font-bold text-violet-800">
+                <span aria-hidden>🕒</span>
+                {job.preferredTime}
+                <span className="font-semibold text-violet-600/90">· {t('jobs.scheduled_time_badge')}</span>
+              </span>
+            ) : null}
+            <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800">
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" /> {loc}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-slate-50/90 px-2.5 py-1.5 text-xs font-semibold text-slate-700">
+              <Icons.Handshake className="h-3.5 w-3.5 shrink-0 text-slate-500" /> {budget}
+            </span>
+          </div>
+        </div>
+        <div className="mx-4 mb-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
+          <p className="line-clamp-2 text-xs font-semibold leading-relaxed text-slate-600">
+            {t('helper_dashboard.lead_unlock_note')}
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3">
+          {onViewDetails ? (
+            <button
+              type="button"
+              onClick={() => onViewDetails(job)}
+              className="inline-flex min-h-[38px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+            >
+              <Icons.FileText className="h-4 w-4" />
+              {t('notifications.view_details')}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => onViewClientProfile?.(job)}
             className="inline-flex min-h-[38px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
           >
-            <Icons.FileText className="h-4 w-4" />
-            {t('notifications.view_details')}
+            <Icons.Eye className="h-4 w-4" />
+            {t('helper_public.view_profile')}
           </button>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => onViewClientProfile?.(job)}
-          className="inline-flex min-h-[38px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-        >
-          <Icons.Eye className="h-4 w-4" />
-          {t('helper_public.view_profile')}
-        </button>
-        {hasApplied ? (
-          <button type="button" disabled className={`${ctaBase} cursor-not-allowed bg-emerald-100 text-emerald-800 border border-emerald-200/80`}>
-            <CheckCircle2 className="w-4 h-4 shrink-0" /> {t('helper_dashboard.applied_sent')}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => onApply(job.id)}
-            disabled={isApplying}
-            className={`${ctaBase} bg-blue-600 text-white border border-blue-600/90 hover:bg-blue-700 hover:shadow-md hover:shadow-blue-600/15 active:scale-[0.99] disabled:opacity-70 disabled:pointer-events-none`}
-          >
-            {isApplying ? (
-              <>
-                <Icons.Loader2 className="w-4 h-4 animate-spin shrink-0" /> {t('helper_dashboard.apply_sending')}
-              </>
-            ) : (
-              <>
-                <Check className="w-4 h-4 shrink-0" /> {t('helper_dashboard.apply_now')}
-              </>
-            )}
-          </button>
-        )}
+          {hasApplied ? (
+            <button
+              type="button"
+              disabled
+              className={`${ctaBase} w-full cursor-not-allowed border border-emerald-200/80 bg-emerald-100 text-emerald-800`}
+            >
+              <CheckCircle2 className="h-4 w-4 shrink-0" /> {t('helper_dashboard.applied_sent')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onApply(job.id)}
+              disabled={isApplying}
+              className={`${ctaBase} w-full border border-blue-600/90 bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md hover:shadow-blue-600/15 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-70`}
+            >
+              {isApplying ? (
+                <>
+                  <Icons.Loader2 className="h-4 w-4 shrink-0 animate-spin" /> {t('helper_dashboard.apply_sending')}
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 shrink-0" /> {t('helper_dashboard.apply_now')}
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </LhCard>
   );

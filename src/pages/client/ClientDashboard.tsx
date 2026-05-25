@@ -378,7 +378,7 @@ export default function ClientDashboard() {
         }}
       />
 
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 w-full max-w-full px-0 sm:px-4 md:px-0">
         
         {/* Left Sidebar */}
         <aside className="hidden">
@@ -456,9 +456,9 @@ export default function ClientDashboard() {
 
         {/* Main Feed */}
         {activeSidebarTab === 'dashboard' && (
-          <div className="w-full max-w-5xl mx-auto animate-in fade-in duration-300">
+          <div className="w-full max-w-full mx-auto animate-in fade-in duration-300 min-w-0">
           
-          <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <LhCard className="mb-6 w-full max-w-full min-w-0">
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-2xl font-black tracking-tight text-slate-950">{t('client_dashboard.category_hub_title')}</h2>
@@ -474,11 +474,11 @@ export default function ClientDashboard() {
               </button>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid w-full max-w-full min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {SERVICE_CATEGORIES.map((cat) => {
                 const IconComponent = getCategoryLucideIcon(cat.icon);
                 return (
-                  <section key={cat.id} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 transition-all hover:border-blue-200 hover:bg-blue-50/50 hover:shadow-sm">
+                  <section key={cat.id} className="w-full max-w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 transition-all hover:border-blue-200 hover:bg-blue-50/50 hover:shadow-sm">
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
@@ -507,7 +507,7 @@ export default function ClientDashboard() {
                 );
               })}
             </div>
-          </div>
+          </LhCard>
 
           <div className="mb-4">
             <h2 className="text-xl font-bold text-gray-900 mb-2">{t('client_dashboard.home_feed_title')}</h2>
@@ -524,7 +524,7 @@ export default function ClientDashboard() {
               .map((job) => {
                const jobApps = applications.filter((a) => a.jobId === job.id && a.status !== 'cancelled');
                return (
-                 <div key={job.id} className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden hover:-translate-y-1 transition-transform duration-300 p-5 relative">
+                 <LhCard key={job.id} className="overflow-hidden hover:-translate-y-1 transition-transform duration-300 relative">
                    <div className={`absolute top-0 left-0 w-1 h-full ${job.status === 'open' ? 'bg-yellow-400' : 'bg-green-500'}`}></div>
                    <div className="flex justify-between items-start mb-2">
                      <div>
@@ -562,7 +562,7 @@ export default function ClientDashboard() {
                        </button>
                      ) : null}
                    </div>
-                 </div>
+                 </LhCard>
                );
             })}
             
@@ -601,7 +601,7 @@ export default function ClientDashboard() {
         {/* My Helpers Tab */}
         {activeSidebarTab === 'my-helpers' && (
           <div className="w-full max-w-[680px] mx-auto animate-in fade-in duration-300">
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6 p-6">
+            <LhCard className="mb-6 overflow-hidden">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('client_helpers.favorites_title')}</h2>
               <p className="text-gray-500 mb-6">{t('client_helpers.favorites_sub')}</p>
               
@@ -663,7 +663,7 @@ export default function ClientDashboard() {
                   </div>
                 ))}
               </div>
-            </div>
+            </LhCard>
           </div>
         )}
 
@@ -671,7 +671,7 @@ export default function ClientDashboard() {
         {activeSidebarTab === 'active-services' && (
           <div className="w-full animate-in fade-in duration-300">
             {isClientJobsPage ? <DesktopBackButton className="mb-4" /> : null}
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6 p-6">
+            <LhCard className="mb-6 overflow-hidden">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">{t('sidebar.active_services')}</h2>
                 <p className="text-gray-500 text-sm">{t('client_dashboard.active_services_intro')}</p>
@@ -909,27 +909,27 @@ export default function ClientDashboard() {
                   </div>
                 )}
               </div>
-            </div>
+            </LhCard>
           </div>
         )}
 
         {/* Saved Tab */}
         {activeSidebarTab === 'saved' && (
           <div className="w-full max-w-[680px] mx-auto animate-in fade-in duration-300">
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6 p-6 text-center py-16">
+            <LhCard className="mb-6 overflow-hidden text-center py-16">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Icons.Bookmark className="w-8 h-8 text-gray-400" />
               </div>
               <h2 className="text-xl font-bold text-gray-900 mb-2">{t('client_dashboard.saved_empty_title')}</h2>
               <p className="text-gray-500 max-w-sm mx-auto">{t('client_dashboard.saved_empty_body')}</p>
-            </div>
+            </LhCard>
           </div>
         )}
         </main>
 
         {/* Right Sidebar */}
         <div className="hidden lg:flex flex-col sticky top-24 h-[calc(100vh-120px)] space-y-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <LhCard padding="md">
             <div className="mb-3 flex items-center justify-between gap-2">
               <h3 className="text-sm font-black text-slate-950">{t('client_dashboard.my_requests_sidebar_title')}</h3>
               <button
@@ -971,7 +971,7 @@ export default function ClientDashboard() {
                 </div>
               )}
             </div>
-          </div>
+          </LhCard>
           
           <ClientMapWidget
             t={t}

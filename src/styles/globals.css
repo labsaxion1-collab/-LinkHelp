@@ -60,6 +60,8 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 body {
@@ -68,6 +70,7 @@ body {
   color: var(--lh-premium-text, #f2f4f7);
   margin: 0;
   overflow-x: hidden;
+  max-width: 100%;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -76,6 +79,9 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Reduce scroll chaining issues on iOS */

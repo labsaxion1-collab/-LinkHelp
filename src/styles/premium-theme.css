@@ -36,8 +36,11 @@
   .lh-app-page {
     position: relative;
     z-index: 1;
+    width: 100%;
+    max-width: 100%;
     min-height: calc(100dvh - 72px);
     color: var(--lh-premium-text);
+    overflow-x: hidden;
   }
 
   .lh-glass-card {
@@ -167,16 +170,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
+    padding: max(0.75rem, env(safe-area-inset-left)) max(0.75rem, env(safe-area-inset-right));
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
     background: rgb(5 8 22 / 0.72);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    overflow-x: hidden;
   }
 
   .lh-modal-panel {
     display: flex;
     max-height: min(92dvh, 900px);
     width: 100%;
+    max-width: min(42rem, calc(100vw - 1.5rem));
     flex-direction: column;
     overflow: hidden;
     border-radius: 1.5rem;
@@ -215,11 +222,37 @@
   }
 
   .lh-bottom-nav {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     border-top: 1px solid rgb(51 182 255 / 0.16);
     background: rgb(11 15 25 / 0.88);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     box-shadow: 0 -12px 40px rgb(0 0 0 / 0.35);
+  }
+
+  .lh-bottom-nav-list {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.125rem;
+    padding-left: max(0.25rem, env(safe-area-inset-left));
+    padding-right: max(0.25rem, env(safe-area-inset-right));
+  }
+
+  .lh-bottom-nav-item {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 20%;
+  }
+
+  .lh-bottom-nav-home {
+    flex: 0 0 auto;
+    width: 3.25rem;
+    max-width: 3.25rem;
   }
 
   .lh-sidebar {

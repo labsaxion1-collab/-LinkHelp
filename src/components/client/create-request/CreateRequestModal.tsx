@@ -298,9 +298,12 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       !isConfirmStepComplete(preferredDateMode, preferredDateIso, selectedCategory, preferredTimeSpecific));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lh-modal-overlay animate-in fade-in duration-200" onClick={handleClose}>
-      <div className="lh-modal-panel w-full max-w-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[min(92dvh,900px)]" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3 bg-gray-50/50 shrink-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center lh-modal-overlay animate-in fade-in duration-200" onClick={handleClose}>
+      <div
+        className="lh-modal-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[min(92dvh,900px)] min-w-0"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2 sm:gap-3 bg-gray-50/50 shrink-0 min-w-0">
           <DesktopBackButton alwaysVisible onClose={handleClose} className="shrink-0" />
           <h3 className="min-w-0 flex-1 text-xl font-bold text-gray-900 font-display flex items-center gap-2">
             <Icons.PlusCircle className="w-5 h-5 text-blue-600 shrink-0" />
@@ -310,20 +313,25 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
             <Icons.X className="w-5 h-5" />
           </button>
         </div>
-        <div className="px-6 pt-5 pb-2 shrink-0">
-          <div className="flex items-center justify-between relative">
-            <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-100 -translate-y-1/2 rounded-full" />
+        <div className="px-4 sm:px-6 pt-4 pb-2 shrink-0 min-w-0">
+          <div className="relative grid w-full max-w-full grid-cols-5 gap-1">
+            <div className="pointer-events-none absolute top-1/2 left-[10%] right-[10%] h-0.5 -translate-y-1/2 rounded-full bg-gray-100" />
             <div
-              className="absolute top-1/2 left-0 h-1 bg-blue-600 -translate-y-1/2 z-0 transition-all duration-500 rounded-full"
-              style={{ width: (stepIndex / Math.max(STEPS.length - 1, 1)) * 100 + '%' }}
+              className="pointer-events-none absolute top-1/2 left-[10%] z-0 h-0.5 -translate-y-1/2 rounded-full bg-blue-600 transition-all duration-500"
+              style={{ width: `calc(${(stepIndex / Math.max(STEPS.length - 1, 1)) * 80}% + 10%)` }}
             />
             {STEPS.map((s, idx) => {
               const Icon = stepIcons[s];
               const isActive = idx <= stepIndex;
               return (
                 <div key={s} className="relative z-10 flex flex-col items-center">
-                  <div className={'w-8 h-8 rounded-full flex items-center justify-center text-sm ' + (isActive ? 'bg-blue-600 text-white shadow-md' : 'bg-white border-2 border-gray-200 text-gray-400')}>
-                    {idx < stepIndex ? <Icons.Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+                  <div
+                    className={
+                      'flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full text-sm ' +
+                      (isActive ? 'bg-blue-600 text-white shadow-md' : 'bg-white border-2 border-gray-200 text-gray-400')
+                    }
+                  >
+                    {idx < stepIndex ? <Icons.Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                   </div>
                 </div>
               );
@@ -332,7 +340,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
         </div>
         <div
           ref={scrollBodyRef}
-          className="p-6 overflow-y-auto overscroll-contain flex-1 min-h-0 ios-scroll"
+          className="p-4 sm:p-6 overflow-y-auto overflow-x-hidden overscroll-contain flex-1 min-h-0 min-w-0 ios-scroll w-full max-w-full"
         >
           {step === 'category' && (
             <div className="animate-in fade-in duration-300">
@@ -347,7 +355,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                   {t('create_modal.marketplace_tip_body')}
                 </p>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 w-full max-w-full">
                 {SERVICE_CATEGORIES.map((cat) => {
                   const IconComponent = getCategoryLucideIcon(cat.icon);
                   return (
@@ -355,7 +363,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                       key={cat.id}
                       type="button"
                       onClick={() => { setSelectedCategory(cat.id); setSelectedSubcategory(''); setStep('subcategory'); }}
-                      className="flex flex-col items-center p-4 rounded-2xl border-2 border-gray-200 hover:border-blue-300 bg-white hover:shadow-md transition-all"
+                      className="flex w-full max-w-full min-w-0 flex-col items-center p-4 rounded-2xl border-2 border-gray-200 hover:border-blue-300 bg-white hover:shadow-md transition-all"
                     >
                       <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
                         <IconComponent className="w-6 h-6" />
@@ -374,15 +382,15 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               </button>
               <h4 className="text-2xl font-bold text-gray-900 mb-2">{t('create_modal.select_sub')}</h4>
               <p className="text-gray-500 text-sm mb-6">{t('create_modal.select_sub_desc', { category: activeCat ? t('categories.' + activeCat.id) : '' })}</p>
-              <div className="space-y-3">
+              <div className="space-y-3 w-full max-w-full min-w-0">
                 {activeCat?.subKeys.map((subKey) => (
                   <button
                     key={subKey}
                     type="button"
                     onClick={() => { setSelectedSubcategory(subKey); setStep('description'); }}
-                    className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 bg-white text-left"
+                    className="w-full max-w-full min-w-0 flex items-center justify-between gap-2 p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 bg-white text-left"
                   >
-                    <span className="font-bold text-gray-900">{t('service_subs.' + activeCat.id + '.' + subKey)}</span>
+                    <span className="min-w-0 flex-1 truncate font-bold text-gray-900">{t('service_subs.' + activeCat.id + '.' + subKey)}</span>
                     <Icons.ChevronRight className="w-5 h-5 text-gray-400" />
                   </button>
                 ))}
@@ -576,7 +584,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
             />
           )}
         </div>
-        <div className="px-6 py-4 bg-white border-t border-gray-100 flex justify-between items-center shrink-0">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 bg-white border-t border-gray-100 flex flex-wrap justify-between items-center gap-2 shrink-0 min-w-0 w-full max-w-full">
           {step === 'category' ? (
             <span />
           ) : (

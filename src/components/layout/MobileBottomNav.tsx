@@ -10,16 +10,16 @@ type Item = { to: string; end?: boolean; labelKey: string; icon: typeof Home };
 
 function navClass(active: boolean, isHome = false) {
   return clsx(
-    'flex flex-col items-center justify-center touch-manipulation transition-all',
+    'mx-auto flex w-full max-w-full flex-col items-center justify-center touch-manipulation transition-all',
     isHome
       ? [
-          '-mt-6 mx-auto h-[74px] w-[74px] rounded-[28px] border shadow-[0_-4px_22px_rgba(21,101,255,0.45)]',
+          '-mt-3 h-14 w-14 rounded-[1.35rem] border shadow-[0_-4px_18px_rgba(21,101,255,0.4)]',
           active
             ? 'border-[#33B6FF]/50 bg-[#1565FF] text-white ring-2 ring-[#33B6FF]/30'
             : 'border-[#33B6FF]/20 bg-[#0D1B2A]/90 text-[#F2F4F7]/60 active:text-[#33B6FF]',
         ]
       : [
-          'min-h-[54px] rounded-2xl px-1 py-2',
+          'min-h-[48px] max-w-full rounded-xl px-0.5 py-1.5',
           active ? 'text-[#33B6FF] bg-[#1565FF]/12' : 'text-[#F2F4F7]/55 hover:text-[#F2F4F7] active:bg-white/5',
         ],
   );
@@ -51,13 +51,16 @@ export function MobileBottomNav() {
       ];
 
   return (
-    <nav className="lh-bottom-nav md:hidden fixed bottom-0 inset-x-0 z-40 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2" aria-label={t('mobile_nav.aria')}>
-      <ul className="flex justify-around items-stretch gap-0.5 px-1 max-w-lg mx-auto">
+    <nav
+      className="lh-bottom-nav md:hidden fixed bottom-0 inset-x-0 z-40 w-full max-w-full pt-1.5 pb-[max(env(safe-area-inset-bottom),0.5rem)]"
+      aria-label={t('mobile_nav.aria')}
+    >
+      <ul className="lh-bottom-nav-list">
         {items.map((item) => {
           const Icon = item.icon;
           const isHome = item.icon === Home;
           return (
-            <li key={item.to} className="flex-1 min-w-0">
+            <li key={item.to} className={clsx(isHome ? 'lh-bottom-nav-home' : 'lh-bottom-nav-item')}>
               <NavLink
                 to={item.to}
                 end={item.end}
@@ -65,7 +68,7 @@ export function MobileBottomNav() {
                 aria-label={t(item.labelKey)}
                 className={({ isActive }) => navClass(isActive, isHome)}
               >
-                <Icon className={clsx('shrink-0', isHome ? 'h-9 w-9' : 'h-7 w-7')} strokeWidth={2.25} aria-hidden />
+                <Icon className={clsx('shrink-0', isHome ? 'h-7 w-7' : 'h-6 w-6')} strokeWidth={2.25} aria-hidden />
                 <span className="sr-only">{t(item.labelKey)}</span>
               </NavLink>
             </li>

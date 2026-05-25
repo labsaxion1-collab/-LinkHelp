@@ -16,13 +16,13 @@ export default function Layout() {
   const isAppShell = isAppShellPath(pathname);
 
   return (
-    <div className={clsx('relative min-h-dvh flex flex-col font-sans', isAppShell ? 'lh-app-bg text-[#F2F4F7]' : 'bg-[#050816] text-[#F2F4F7]')}>
+    <div className={clsx('relative min-h-dvh flex flex-col font-sans w-full max-w-full overflow-x-hidden', isAppShell ? 'lh-app-bg text-[#F2F4F7]' : 'bg-[#050816] text-[#F2F4F7]')}>
       <div className="relative z-50">
         <Navbar />
       </div>
       <main
         className={clsx(
-          'relative z-10 flex flex-1 flex-col min-h-0 w-full max-w-[100vw] overflow-x-hidden',
+          'relative z-10 flex flex-1 flex-col min-h-0 w-full max-w-full overflow-x-hidden',
           showMobileChrome && 'pb-[calc(4.75rem+env(safe-area-inset-bottom))] md:pb-0',
         )}
       >

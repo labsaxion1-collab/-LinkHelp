@@ -53,6 +53,7 @@ import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
+import { LhCard } from '@/components/design-system/LhCard';
 
 function formatSubscriptionBillingDate(iso: string | undefined, language: string): string {
   if (!iso) return '';
@@ -582,7 +583,7 @@ export default function HelperDashboard() {
         </div>
       )}
 
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 px-3 sm:px-4 md:px-0">
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 w-full max-w-full px-0 sm:px-4 md:px-0">
         <aside className="hidden">
           <div className="sticky top-24 space-y-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
             <button onClick={() => setShowProfileModal(true)} className="flex w-full items-center gap-3 rounded-2xl p-2 text-left hover:bg-slate-50">
@@ -787,7 +788,7 @@ export default function HelperDashboard() {
                   if (!job) return null;
 
                   return (
-                    <div key={app.id} className="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                    <LhCard key={app.id} padding="none" className="overflow-hidden transition-shadow duration-200 hover:shadow-md">
                       <div className="p-4 flex items-center justify-between border-b border-gray-50 bg-gray-50/50">
                         <div className="flex items-center gap-2">
                            <Icons.Clock className="w-4 h-4 text-gray-500" />
@@ -826,17 +827,17 @@ export default function HelperDashboard() {
                           </div>
                         )}
                       </div>
-                    </div>
+                    </LhCard>
                   );
                 })
               ) : (
-                <div className="text-center py-12 bg-white rounded-2xl border border-gray-200 border-dashed">
+                <LhCard className="text-center py-12 border-dashed" padding="lg">
                   <Icons.ClipboardList className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-500 font-medium">{t('helper_dashboard.empty_applications')}</p>
-                </div>
+                </LhCard>
               )
             ) : displayedJobs.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+              <div className="grid w-full max-w-full min-w-0 grid-cols-1 gap-3 md:gap-4 md:grid-cols-2 2xl:grid-cols-3">
               {displayedJobs.map((job) => {
                 const hasApplied = appliedJobIds.has(job.id);
                 const isApplying = applyingJobId === job.id;
@@ -862,10 +863,10 @@ export default function HelperDashboard() {
               })}
               </div>
             ) : (
-              <div className="text-center py-12 bg-white rounded-2xl border border-gray-200 border-dashed">
+              <LhCard className="text-center py-12 border-dashed" padding="lg">
                 <Icons.SearchX className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500 font-medium">{t('helper_dashboard.empty_feed')}</p>
-              </div>
+              </LhCard>
             )}
           </div>
           </>

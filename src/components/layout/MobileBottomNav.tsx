@@ -16,11 +16,11 @@ function navClass(active: boolean, isHome = false) {
           '-mt-3 h-14 w-14 rounded-[1.35rem] border shadow-[0_-4px_18px_rgba(21,101,255,0.4)]',
           active
             ? 'border-[#33B6FF]/50 bg-[#1565FF] text-white ring-2 ring-[#33B6FF]/30'
-            : 'border-[#33B6FF]/20 bg-[#0D1B2A]/90 text-[#F2F4F7]/60 active:text-[#33B6FF]',
+            : 'border-[#1565FF]/15 bg-white/85 text-[#52677E] active:text-[#1565FF]',
         ]
       : [
           'min-h-[48px] max-w-full rounded-xl px-0.5 py-1.5',
-          active ? 'text-[#33B6FF] bg-[#1565FF]/12' : 'text-[#F2F4F7]/55 hover:text-[#F2F4F7] active:bg-white/5',
+          active ? 'text-[#1565FF] bg-[#EAF7FF]' : 'text-[#52677E] hover:text-[#1565FF] active:bg-[#EAF7FF]',
         ],
   );
 }

@@ -63,7 +63,7 @@ export default function ClientNearbyMapPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-80px)] w-full relative flex flex-col sm:flex-row bg-[#0B0F19] overflow-hidden lh-app-page">
+    <div className="h-[calc(100vh-80px)] w-full relative flex flex-col sm:flex-row bg-[#EAF7FF] overflow-hidden lh-app-page">
       <aside className="lh-sidebar w-full sm:w-[400px] h-[40vh] sm:h-full shadow-2xl z-10 flex flex-col overflow-hidden relative order-2 sm:order-1">
         <header className="p-6 border-b border-gray-100 shrink-0">
           <DesktopBackButton className="mb-4" />
@@ -159,7 +159,7 @@ export default function ClientNearbyMapPage() {
         )}
 
         {mapsReady && helpers.length > 0 ? (
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-gray-900/90 backdrop-blur-sm text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-20 whitespace-nowrap">
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 border border-blue-100 bg-white/90 backdrop-blur-sm text-[#0D1B2A] px-5 py-3 rounded-2xl shadow-2xl shadow-blue-500/10 flex items-center gap-3 z-20 whitespace-nowrap">
             <span className="flex h-3 w-3 relative">
               <span className="animate-ping absolute inset-0 rounded-full bg-green-400 opacity-75 motion-reduce:animate-none" />
               <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" />

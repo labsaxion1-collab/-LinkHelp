@@ -489,7 +489,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                     disabled={budgetType === 'fixed' && Boolean(budgetMin || budgetMax)}
                     className={`mt-3 flex min-h-[44px] w-full items-center justify-center rounded-xl border px-4 text-sm font-black transition-colors ${
                       budgetType === 'negotiable'
-                        ? 'border-slate-900 bg-slate-900 text-white'
+                        ? 'border-[#1565FF] bg-[#1565FF] text-white'
                         : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45'
                     }`}
                   >
@@ -609,7 +609,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               type="button"
               disabled={continueDisabled}
               onClick={goNext}
-              className="bg-gray-900 hover:bg-black disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 px-8 rounded-xl ml-auto flex items-center gap-2"
+              className="bg-[#1565FF] hover:bg-[#0F55D9] disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 px-8 rounded-xl ml-auto flex items-center gap-2"
             >
               {t('common.continue')} <Icons.ArrowRight className="w-5 h-5" />
             </button>

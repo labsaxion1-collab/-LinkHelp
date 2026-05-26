@@ -9,6 +9,7 @@ import { PwaInstallPrompt } from '@/components/layout/PwaInstallPrompt';
 import { PushNotificationPrompt } from '@/components/notifications/PushNotificationPrompt';
 import { isAppShellPath } from '@/utils/navigation';
 import { clsx } from 'clsx';
+import { AppErrorBoundary } from '@/components/common/AppErrorBoundary';
 
 export default function Layout() {
   const { pathname } = useLocation();
@@ -16,7 +17,7 @@ export default function Layout() {
   const isAppShell = isAppShellPath(pathname);
 
   return (
-    <div className={clsx('relative min-h-dvh flex flex-col font-sans w-full max-w-full overflow-x-hidden', isAppShell ? 'lh-app-bg text-[#F2F4F7]' : 'bg-[#050816] text-[#F2F4F7]')}>
+    <div className={clsx('relative min-h-dvh flex flex-col font-sans w-full max-w-full overflow-x-hidden', isAppShell ? 'lh-app-bg text-[#0D1B2A]' : 'bg-[#050816] text-[#F2F4F7]')}>
       <div className="relative z-50">
         <Navbar />
       </div>
@@ -27,9 +28,11 @@ export default function Layout() {
         )}
       >
         <ScrollToTop />
-        <Suspense fallback={<PageLoader />}>
-          <Outlet />
-        </Suspense>
+        <AppErrorBoundary resetKey={`${pathname}`}>
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
+        </AppErrorBoundary>
       </main>
       <div className={clsx('relative z-20', showMobileChrome && 'md:hidden')}>
         <PwaInstallPrompt />

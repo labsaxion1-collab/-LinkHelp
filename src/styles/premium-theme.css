@@ -1,17 +1,18 @@
 /* LinkHelp Premium Dark — global design tokens & utilities */
 
 :root {
-  --lh-premium-bg: #0b0f19;
-  --lh-premium-bg-2: #0d1b2a;
+  --lh-premium-bg: #f4fbff;
+  --lh-premium-bg-2: #eaf7ff;
   --lh-premium-blue: #1565ff;
   --lh-premium-cyan: #33b6ff;
-  --lh-premium-text: #f2f4f7;
+  --lh-premium-text: #0d1b2a;
+  --lh-premium-muted: #52677e;
   --lh-premium-white: #ffffff;
-  --lh-premium-border: rgb(51 182 255 / 0.18);
-  --lh-premium-glass: rgb(13 27 42 / 0.72);
-  --lh-premium-glass-hover: rgb(13 27 42 / 0.88);
-  --lh-shadow-premium: 0 24px 80px rgb(0 0 0 / 0.36);
-  --lh-shadow-glow: 0 0 40px rgb(21 101 255 / 0.22);
+  --lh-premium-border: rgb(21 101 255 / 0.14);
+  --lh-premium-glass: rgb(255 255 255 / 0.72);
+  --lh-premium-glass-hover: rgb(255 255 255 / 0.9);
+  --lh-shadow-premium: 0 22px 70px rgb(21 101 255 / 0.12);
+  --lh-shadow-glow: 0 18px 44px rgb(21 101 255 / 0.16);
 }
 
 @layer components {
@@ -28,9 +29,9 @@
     inset: 0;
     z-index: 0;
     background:
-      radial-gradient(circle at 12% 8%, rgb(51 182 255 / 0.14), transparent 42%),
-      radial-gradient(circle at 88% 18%, rgb(21 101 255 / 0.1), transparent 38%),
-      linear-gradient(180deg, rgb(11 15 25 / 0.2) 0%, rgb(5 8 22 / 0.92) 100%);
+      radial-gradient(circle at 12% 8%, rgb(51 182 255 / 0.28), transparent 42%),
+      radial-gradient(circle at 88% 18%, rgb(21 101 255 / 0.16), transparent 38%),
+      linear-gradient(180deg, #f4fbff 0%, #eaf7ff 48%, #dff4ff 100%);
   }
 
   .lh-app-page {
@@ -52,7 +53,7 @@
   .lh-glass-card {
     border-radius: 1.25rem;
     border: 1px solid var(--lh-premium-border);
-    background: linear-gradient(145deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.03));
+    background: linear-gradient(145deg, rgb(255 255 255 / 0.82), rgb(255 255 255 / 0.58));
     box-shadow: var(--lh-shadow-premium);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -102,7 +103,7 @@
     gap: 0.5rem;
     border-radius: 9999px;
     border: 1px solid var(--lh-premium-border);
-    background: rgb(255 255 255 / 0.04);
+    background: rgb(255 255 255 / 0.68);
     padding: 0.625rem 1.25rem;
     font-size: 0.875rem;
     font-weight: 700;
@@ -111,7 +112,7 @@
   }
 
   .lh-btn-secondary:hover:not(:disabled) {
-    background: rgb(255 255 255 / 0.08);
+    background: rgb(255 255 255 / 0.92);
     border-color: rgb(51 182 255 / 0.35);
   }
 
@@ -127,7 +128,7 @@
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--lh-premium-cyan);
+    color: var(--lh-premium-blue);
   }
 
   .lh-section-title {
@@ -135,14 +136,14 @@
     font-size: 1.5rem;
     font-weight: 800;
     letter-spacing: -0.02em;
-    color: var(--lh-premium-white);
+    color: var(--lh-premium-text);
   }
 
   .lh-section-subtitle {
     margin-top: 0.375rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: rgb(242 244 247 / 0.72);
+    color: var(--lh-premium-muted);
   }
 
   .lh-input {
@@ -151,16 +152,16 @@
     min-height: 44px;
     border-radius: 0.875rem;
     border: 1px solid rgb(51 182 255 / 0.22);
-    background: rgb(11 15 25 / 0.55);
+    background: rgb(255 255 255 / 0.76);
     padding: 0.625rem 0.875rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--lh-premium-white);
+    color: var(--lh-premium-text);
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
   .lh-input::placeholder {
-    color: rgb(242 244 247 / 0.45);
+    color: rgb(82 103 126 / 0.7);
   }
 
   .lh-input:focus {
@@ -179,7 +180,7 @@
     padding: max(0.75rem, env(safe-area-inset-left)) max(0.75rem, env(safe-area-inset-right));
     padding-top: max(0.75rem, env(safe-area-inset-top));
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
-    background: rgb(5 8 22 / 0.72);
+    background: rgb(13 27 42 / 0.28);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     overflow-x: hidden;
@@ -194,7 +195,7 @@
     overflow: hidden;
     border-radius: 1.5rem;
     border: 1px solid var(--lh-premium-border);
-    background: linear-gradient(160deg, rgb(13 27 42 / 0.96) 0%, rgb(11 15 25 / 0.98) 100%);
+    background: linear-gradient(160deg, rgb(255 255 255 / 0.92) 0%, rgb(234 247 255 / 0.94) 100%);
     box-shadow: var(--lh-shadow-premium), var(--lh-shadow-glow);
     color: var(--lh-premium-text);
   }
@@ -224,18 +225,18 @@
     gap: 0.75rem;
     border-top: 1px solid rgb(51 182 255 / 0.12);
     padding: 1rem 1.25rem;
-    background: rgb(11 15 25 / 0.4);
+    background: rgb(234 247 255 / 0.62);
   }
 
   .lh-bottom-nav {
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
-    border-top: 1px solid rgb(51 182 255 / 0.16);
-    background: rgb(11 15 25 / 0.88);
+    border-top: 1px solid rgb(21 101 255 / 0.12);
+    background: rgb(255 255 255 / 0.82);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 -12px 40px rgb(0 0 0 / 0.35);
+    box-shadow: 0 -12px 40px rgb(21 101 255 / 0.12);
   }
 
   .lh-bottom-nav-list {
@@ -262,8 +263,8 @@
   }
 
   .lh-sidebar {
-    border-right: 1px solid rgb(51 182 255 / 0.12);
-    background: rgb(13 27 42 / 0.82);
+    border-right: 1px solid rgb(21 101 255 / 0.12);
+    background: rgb(255 255 255 / 0.74);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     color: var(--lh-premium-text);
@@ -279,11 +280,11 @@
   }
 
   .lh-text-muted {
-    color: rgb(242 244 247 / 0.65);
+    color: var(--lh-premium-muted);
   }
 
   .lh-text-heading {
-    color: var(--lh-premium-white);
+    color: var(--lh-premium-text);
   }
 
   /* Premium app page — soften legacy light surfaces */
@@ -291,7 +292,7 @@
   .lh-app-page h2,
   .lh-app-page h3,
   .lh-app-page h4 {
-    color: var(--lh-premium-white);
+    color: var(--lh-premium-text);
   }
 
   .lh-app-page .text-gray-900,
@@ -304,14 +305,14 @@
   .lh-app-page .text-gray-800,
   .lh-app-page .text-slate-700,
   .lh-app-page .text-slate-800 {
-    color: rgb(242 244 247 / 0.88);
+    color: #24384f;
   }
 
   .lh-app-page .text-gray-500,
   .lh-app-page .text-gray-600,
   .lh-app-page .text-slate-500,
   .lh-app-page .text-slate-600 {
-    color: rgb(242 244 247 / 0.65);
+    color: var(--lh-premium-muted);
   }
 
   .lh-app-page .bg-white {
@@ -328,7 +329,7 @@
 
   .lh-app-page .bg-slate-50,
   .lh-app-page .bg-gray-50 {
-    background: rgb(255 255 255 / 0.04);
+    background: rgb(255 255 255 / 0.46);
   }
 
   .lh-icon-chip {

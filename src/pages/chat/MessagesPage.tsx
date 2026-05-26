@@ -246,14 +246,14 @@ export default function MessagesPage() {
   );
 
   const jobBanner = (
-    <div className="bg-slate-900 text-white px-3 sm:px-4 py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-800 shrink-0">
+    <div className="border-b border-blue-100 bg-gradient-to-r from-[#EAF7FF] via-white to-[#DFF4FF] px-3 sm:px-4 py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shrink-0 text-[#0D1B2A]">
       <div className="min-w-0">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{t('messages_page.current_service')}</p>
-        <p className="text-sm font-semibold text-white break-words">{threadTitle}</p>
+        <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-0.5">{t('messages_page.current_service')}</p>
+        <p className="text-sm font-semibold text-[#0D1B2A] break-words">{threadTitle}</p>
       </div>
       <button
         type="button"
-        className="text-sm font-bold text-slate-900 bg-white px-4 py-2.5 rounded-xl min-h-[44px] shrink-0 self-start sm:self-auto hover:bg-slate-100 transition-colors"
+        className="text-sm font-bold text-white bg-[#1565FF] px-4 py-2.5 rounded-xl min-h-[44px] shrink-0 self-start sm:self-auto hover:bg-[#0F55D9] transition-colors"
       >
         {t('messages_page.view_details')}
       </button>
@@ -392,7 +392,7 @@ export default function MessagesPage() {
 
   if (!useRemoteChat) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center min-h-[50vh] p-8 text-center max-w-md mx-auto">
+      <div className="mx-auto flex min-h-[50vh] max-w-md flex-1 flex-col items-center justify-center rounded-3xl border border-blue-100 bg-white/75 p-8 text-center shadow-lg shadow-blue-500/10 backdrop-blur">
         <Icons.MessageCircle className="w-12 h-12 text-slate-300 mb-3" aria-hidden />
         <p className="text-sm font-semibold text-slate-700">{t('messages_page.sign_in_required')}</p>
       </div>
@@ -404,7 +404,7 @@ export default function MessagesPage() {
       <DesktopBackButton className="mb-3" />
       {showLimitModal && (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/55 backdrop-blur-sm"
+          className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-[#0D1B2A]/30 backdrop-blur-sm"
           role="presentation"
           onClick={() => setShowLimitModal(false)}
         >

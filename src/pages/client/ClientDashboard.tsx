@@ -754,6 +754,7 @@ export default function ClientDashboard() {
                     const canCancelJob = job.status === 'open' || job.status === 'in_progress';
                     const qualityScore = estimateClientLeadQuality(job.description, job.location, job.value, jobApps.length);
                     const helperSlots = [...jobApps.slice(0, 3), ...Array(Math.max(0, 3 - jobApps.length)).fill(null)];
+                    const acceptedApps = jobApps.filter((app) => app.status === 'accepted' || app.chatUnlocked);
                     
                     return (
                       <div key={job.id} className="min-w-0 border border-blue-100 bg-white rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col shadow-sm">
@@ -761,7 +762,11 @@ export default function ClientDashboard() {
                         <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start mb-4">
                           <div className="min-w-0">
                             <span className={`text-xs font-bold px-2.5 py-1 rounded-md mb-2 inline-block ${job.status === 'open' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                              {job.status === 'cancelled' ? t('upcoming_jobs.status_cancelled') : job.status === 'open' ? 'Aguardando Helpers' : 'Em Andamento'}
+                              {job.status === 'cancelled'
+                                ? t('upcoming_jobs.status_cancelled')
+                                : job.status === 'open'
+                                  ? t('client_dashboard.status_waiting_helpers')
+                                  : t('client_dashboard.status_in_progress')}
                             </span>
                             <h3 className="font-bold text-gray-900 text-lg leading-snug line-clamp-2">{job.title}</h3>
                             <p className="text-gray-500 text-xs md:text-sm flex items-center gap-1 mt-1 min-w-0">
@@ -816,7 +821,7 @@ export default function ClientDashboard() {
 
                         <div className="border-t border-gray-200 pt-4 mt-auto">
                           <div className="mb-3 flex items-center justify-between gap-2">
-                            <h4 className="font-black text-gray-900 text-sm">Helpers interessados</h4>
+                            <h4 className="font-black text-gray-900 text-sm">{t('client_dashboard.interested_helpers_title')}</h4>
                             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-600">{jobApps.length}/3</span>
                           </div>
                           <div className="grid grid-cols-1 gap-2">
@@ -853,7 +858,7 @@ export default function ClientDashboard() {
                                       <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
                                         <Icons.Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                                         <span>{app.helperRating}</span>
-                                        <span>{app.helperJobs} jobs</span>
+                                        <span>{t('client_dashboard.helper_jobs_count', { count: app.helperJobs })}</span>
                                       </p>
                                     </div>
                                     <span className="shrink-0 rounded-lg bg-white px-2.5 py-1 text-[11px] font-black text-blue-700 ring-1 ring-blue-100">
@@ -863,7 +868,7 @@ export default function ClientDashboard() {
                                 </button>
                               ) : (
                                 <div key={`empty-${job.id}-${index}`} className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-3 text-sm font-bold text-slate-400">
-                                  Aguardando helper
+                                  {t('client_dashboard.waiting_helper_slot')}
                                 </div>
                               )
                             ))}
@@ -876,23 +881,49 @@ export default function ClientDashboard() {
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        void updateApplicationStatus(app.id, 'accepted').catch(console.error);
-                                        setToastNotification({ message: `Candidatura de ${app.helperName} aceita.`, show: true });
-                                        setTimeout(() => setToastNotification({ message: '', show: false }), 5000);
+                                        void (async () => {
+                                          const conversationId = await officiallyHireHelper(app.id, '');
+                                          setToastNotification({
+                                            message: t('client_dashboard.application_accepted_toast', { name: app.helperName }),
+                                            show: true,
+                                          });
+                                          setTimeout(() => setToastNotification({ message: '', show: false }), 5000);
+                                          navigate(conversationId ? `${ROUTES.messages}?c=${conversationId}` : ROUTES.messages);
+                                        })().catch(console.error);
                                       }}
                                       className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700"
                                     >
-                                      Aceitar {app.helperName.split(' ')[0]}
+                                      {t('client_dashboard.accept_helper', { name: app.helperName.split(' ')[0] })}
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => void updateApplicationStatus(app.id, 'rejected').catch(console.error)}
                                       className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100"
                                     >
-                                      Recusar
+                                      {t('client_dashboard.reject_helper')}
                                     </button>
                                   </React.Fragment>
                                 ) : null
+                              ))}
+                            </div>
+                          ) : null}
+                          {acceptedApps.length > 0 ? (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {acceptedApps.slice(0, 3).map((app) => (
+                                <button
+                                  key={`chat-${app.id}`}
+                                  type="button"
+                                  onClick={() => {
+                                    void (async () => {
+                                      const conversationId = await officiallyHireHelper(app.id, '');
+                                      navigate(conversationId ? `${ROUTES.messages}?c=${conversationId}` : ROUTES.messages);
+                                    })().catch(console.error);
+                                  }}
+                                  className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700"
+                                >
+                                  <Icons.MessageSquare className="h-3.5 w-3.5" />
+                                  {t('client_dashboard.open_chat_with', { name: app.helperName.split(' ')[0] })}
+                                </button>
                               ))}
                             </div>
                           ) : null}

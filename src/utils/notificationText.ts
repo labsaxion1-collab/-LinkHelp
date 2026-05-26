@@ -19,7 +19,7 @@ export function getLocalizedNotificationText(notification: AppNotification, t: T
   const normalizedTitle = title.toLowerCase();
   const normalizedMessage = message.toLowerCase();
 
-  if (normalizedTitle === 'new application') {
+  if (normalizedTitle.includes('new application')) {
     const helper = leadingName(message, ' applied to ') || t('notifications.fallback_helper');
     const job = quotedValue(message);
     return {
@@ -28,7 +28,7 @@ export function getLocalizedNotificationText(notification: AppNotification, t: T
     };
   }
 
-  if (normalizedTitle === 'application accepted') {
+  if (normalizedTitle.includes('application accepted')) {
     const job = quotedValue(message);
     return {
       title: t('notifications.event_application_accepted_title'),
@@ -36,14 +36,14 @@ export function getLocalizedNotificationText(notification: AppNotification, t: T
     };
   }
 
-  if (normalizedTitle === 'application update') {
+  if (normalizedTitle.includes('application update')) {
     return {
       title: t('notifications.event_application_update_title'),
       message: t('notifications.event_application_update_body'),
     };
   }
 
-  if (normalizedTitle === 'new message') {
+  if (normalizedTitle.includes('new message')) {
     const sender = leadingName(message, ' sent you ') || t('notifications.fallback_user');
     return {
       title: t('notifications.event_new_message_title'),
@@ -51,14 +51,14 @@ export function getLocalizedNotificationText(notification: AppNotification, t: T
     };
   }
 
-  if (normalizedTitle === 'application withdrawn') {
+  if (normalizedTitle.includes('application withdrawn')) {
     return {
       title: t('notifications.event_application_withdrawn_title'),
       message: t('notifications.event_application_withdrawn_body'),
     };
   }
 
-  if (normalizedTitle === 'official hire') {
+  if (normalizedTitle.includes('official hire')) {
     const job = quotedValue(message);
     return {
       title: t('notifications.event_official_hire_title'),
@@ -66,7 +66,7 @@ export function getLocalizedNotificationText(notification: AppNotification, t: T
     };
   }
 
-  if (normalizedTitle === 'helper hired') {
+  if (normalizedTitle.includes('helper hired')) {
     const job = quotedValue(message);
     return {
       title: t('notifications.event_helper_hired_title'),
@@ -98,7 +98,7 @@ export function getNotificationActionUrl(notification: AppNotification): string 
   }
 
   if (title.includes('application accepted')) {
-    return ROUTES.helperJobs;
+    return ROUTES.messages;
   }
 
   if (title.includes('application update') || title.includes('declined')) {

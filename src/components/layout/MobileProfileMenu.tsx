@@ -23,7 +23,7 @@ export function MobileProfileMenu({
   isHelperNav,
 }: Props) {
   const { t, language, setLanguage } = useLanguage();
-  const { signOut, isConfigured, session } = useAuth();
+  const { signOut, isConfigured, session, updateProfile } = useAuth();
   const navigate = useNavigate();
   const { showToast } = useToast();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -39,6 +39,9 @@ export function MobileProfileMenu({
 
   const setLang = (lang: AppLanguage) => {
     setLanguage(lang);
+    if (isConnected && isConfigured && session) {
+      void updateProfile({ preferred_language: lang });
+    }
     onClose();
   };
 

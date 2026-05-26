@@ -10,9 +10,11 @@ import { PushNotificationPrompt } from '@/components/notifications/PushNotificat
 import { isAppShellPath } from '@/utils/navigation';
 import { clsx } from 'clsx';
 import { AppErrorBoundary } from '@/components/common/AppErrorBoundary';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function Layout() {
   const { pathname } = useLocation();
+  const { t } = useLanguage();
   const showMobileChrome = isAppShellPath(pathname);
   const isAppShell = isAppShellPath(pathname);
 
@@ -28,7 +30,12 @@ export default function Layout() {
         )}
       >
         <ScrollToTop />
-        <AppErrorBoundary resetKey={`${pathname}`}>
+        <AppErrorBoundary
+          resetKey={`${pathname}`}
+          title={t('route_error.title')}
+          body={t('route_error.body')}
+          reloadLabel={t('route_error.reload')}
+        >
           <Suspense fallback={<PageLoader />}>
             <Outlet />
           </Suspense>

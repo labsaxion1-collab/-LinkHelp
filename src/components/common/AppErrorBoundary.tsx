@@ -4,6 +4,9 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 type Props = {
   children: React.ReactNode;
   resetKey?: string;
+  title?: string;
+  body?: string;
+  reloadLabel?: string;
 };
 
 type State = {
@@ -36,9 +39,9 @@ export class AppErrorBoundary extends React.Component<Props, State> {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-50 text-[#1565FF]">
             <AlertTriangle className="h-7 w-7" />
           </div>
-          <h2 className="mt-4 text-xl font-black">Ops, esta tela nao carregou.</h2>
+          <h2 className="mt-4 text-xl font-black">{this.props.title ?? 'Ops, esta tela nao carregou.'}</h2>
           <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">
-            Tente abrir novamente. Se continuar, volte para o inicio e tente outra acao.
+            {this.props.body ?? 'Tente abrir novamente. Se continuar, volte para o inicio e tente outra acao.'}
           </p>
           <button
             type="button"
@@ -46,7 +49,7 @@ export class AppErrorBoundary extends React.Component<Props, State> {
             className="mt-5 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-[#1565FF] px-5 text-sm font-bold text-white shadow-lg shadow-blue-500/20"
           >
             <RefreshCw className="h-4 w-4" />
-            Recarregar tela
+            {this.props.reloadLabel ?? 'Recarregar tela'}
           </button>
         </div>
       </div>

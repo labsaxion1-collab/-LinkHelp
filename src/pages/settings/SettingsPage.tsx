@@ -32,6 +32,7 @@ import { fetchHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { SIGNUP_BONUS_LC } from '@/config/onboardingRewards';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
+import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 
 const SPOKEN_LANGUAGE_OPTIONS = [
   { id: 'pt', label: 'Português' },

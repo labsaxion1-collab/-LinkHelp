@@ -20,6 +20,11 @@ export const fr = {
     view_profile: 'Voir le profil',
     check_orders: 'Consultez vos demandes',
   },
+  route_error: {
+    title: "Cette page n'a pas pu charger.",
+    body: "Essayez de l'ouvrir a nouveau. Si le probleme continue, revenez a l'accueil.",
+    reload: 'Recharger',
+  },
   profile_form: {
     saving: 'Enregistrement…',
     email_empty: 'Courriel non disponible',
@@ -264,6 +269,8 @@ export const fr = {
     filter_notice: 'Une partie du texte a été ajustée pour garder tout le monde sur la plateforme jusqu’à confirmation du service.',
     pre_match_counter: '{{used}} sur {{total}} messages pré-contrat utilisés',
     pre_match_counter_unlimited: 'Messages pré-contrat : illimités',
+    remove_conversation: 'Retirer la conversation',
+    remove_conversation_confirm: 'Retirer cette conversation de votre liste ?',
     system_intro_pre:
       'Vous pouvez aligner les détails et la disponibilité ici. Les contacts externes s’activent après confirmation du service.',
     prematch_limit_modal_title: 'Poursuivre la conversation',
@@ -1140,7 +1147,16 @@ export const fr = {
     qualified_requests_body:
       'Les demandes collectent maintenant categorie, acces, horaire, details et budget indicatif pour montrer de meilleurs leads aux helpers.',
     request_quality: '{{pct}}% qualite de la demande',
-    request_helper_limit: "Jusqu'a {{count}} helpers",
+    request_helper_limit: "Jusqu'a {{count}} assistants",
+    status_waiting_helpers: "En attente d'assistants",
+    status_in_progress: 'En cours',
+    interested_helpers_title: 'Assistants interesses',
+    helper_jobs_count: '{{count}} travaux',
+    waiting_helper_slot: "En attente d'un assistant",
+    application_accepted_toast: 'Candidature de {{name}} acceptee. Chat ouvert.',
+    accept_helper: 'Accepter {{name}}',
+    reject_helper: 'Refuser',
+    open_chat_with: 'Discuter avec {{name}}',
     success_modal_title: 'C’est bon',
     success_modal_body: 'Merci. Vos crédits ou votre forfait seront mis à jour sous peu.',
     success_modal_close: 'Compris',

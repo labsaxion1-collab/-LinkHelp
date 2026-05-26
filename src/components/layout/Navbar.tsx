@@ -26,7 +26,7 @@ export default function Navbar() {
   const me = useSessionViewer();
   const userAvatar = me.avatar;
   const userId = me.id;
-  const { signOut, isConfigured, session, profile } = useAuth();
+  const { signOut, isConfigured, session, profile, updateProfile } = useAuth();
 
   const isHelperNav = profile?.role === 'helper';
   const isHome = location.pathname === ROUTES.home;
@@ -53,6 +53,14 @@ export default function Navbar() {
     navigate(ROUTES.login, { replace: true });
     setProfileOpen(false);
     setMobileProfileOpen(false);
+  };
+
+  const changeLanguage = (nextLanguage: 'en' | 'pt' | 'fr') => {
+    setLanguage(nextLanguage);
+    setIsLangMenuOpen(false);
+    if (isConnected && isConfigured && session) {
+      void updateProfile({ preferred_language: nextLanguage });
+    }
   };
 
   return (
@@ -112,30 +120,21 @@ export default function Navbar() {
                 <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                   <button
                     type="button"
-                    onClick={() => {
-                      setLanguage('en');
-                      setIsLangMenuOpen(false);
-                    }}
+                    onClick={() => changeLanguage('en')}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${language === 'en' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
                   >
                     English
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setLanguage('pt');
-                      setIsLangMenuOpen(false);
-                    }}
+                    onClick={() => changeLanguage('pt')}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${language === 'pt' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
                   >
                     Português
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setLanguage('fr');
-                      setIsLangMenuOpen(false);
-                    }}
+                    onClick={() => changeLanguage('fr')}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${language === 'fr' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
                   >
                     Français

@@ -9,6 +9,7 @@ import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useSupabaseMessages } from '@/hooks/useSupabaseMessages';
 import { ROUTES } from '@/utils/constants';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
+import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { useLanguage } from '@/context/LanguageContext';
 import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
@@ -111,7 +112,7 @@ export default function MessagesPage() {
   }, [useRemoteChat, remote.summaries, searchQuery, hiddenConversationIds]);
 
   const hideConversation = (conversationId: string) => {
-    if (!window.confirm('Remover esta conversa da sua lista?')) return;
+    if (!window.confirm(t('messages_page.remove_conversation_confirm'))) return;
     setHiddenConversationIds((prev) => {
       const next = new Set(prev);
       next.add(conversationId);
@@ -520,7 +521,7 @@ export default function MessagesPage() {
                       type="button"
                       onClick={() => hideConversation(s.id)}
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-600"
-                      aria-label="Remover conversa"
+                      aria-label={t('messages_page.remove_conversation')}
                     >
                       <Icons.Trash2 className="h-4 w-4" />
                     </button>

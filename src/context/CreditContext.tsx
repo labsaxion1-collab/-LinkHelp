@@ -1,7 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { fetchRemoteCreditState } from '@/services/supabase/creditsRemote';
+import { fetchRemoteCreditState, getWalletBalance } from '@/services/supabase/creditsRemote';
+import { remoteEnsureSignupCredits } from '@/services/supabase/rewardsRemote';
 import type { CreditPackage, CreditTransaction, CreditWallet, OpportunityUnlock } from '@/types/credits';
 import { CREDIT_PACKAGES, HELPER_SIGNUP_BONUS_CREDITS } from '@/utils/credits';
 
@@ -76,8 +77,18 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       if (remote) {
+        await remoteEnsureSignupCredits(helperId, 'helper');
         const state = await fetchRemoteCreditState(helperId);
-        setWallet(state.wallet);
+        let wallet = state.wallet;
+        if (!wallet) {
+          const balance = await getWalletBalance(helperId);
+          const w = newWallet(helperId);
+          wallet = { ...w, balance, totalBonus: Math.max(w.totalBonus, balance) };
+        } else if (wallet.balance === 0 && !state.transactions.some((tx) => tx.type === 'FREE_BONUS')) {
+          const balance = await getWalletBalance(helperId);
+          wallet = { ...wallet, balance, totalBonus: Math.max(wallet.totalBonus, balance) };
+        }
+        setWallet(wallet);
         setTransactions(state.transactions);
         setUnlocks(state.unlocks);
         setPackages(state.packages);

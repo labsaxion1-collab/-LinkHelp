@@ -7,12 +7,15 @@ import { HelperDashboardNav } from '@/components/helpers/HelperDashboardNav';
 import { ROUTES } from '@/utils/constants';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboard';
+import { CreditRefundStatusCard } from '@/components/features/CreditRefundStatusCard';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
+import { formatLinkCredits } from '@/utils/formatLinkCredits';
 
 export default function HelperCreditsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { profile } = useAuth();
   const { wallet, transactions, packages, unlocks, loading } = useCredits();
+  const balanceLabel = formatLinkCredits(wallet?.balance ?? 0, language);
 
   const helperWorkspace = profile?.role === 'helper';
   if (!helperWorkspace) {
@@ -41,7 +44,7 @@ export default function HelperCreditsPage() {
             <div className="grid grid-cols-3 gap-2 sm:min-w-[280px]">
               <div className="rounded-2xl bg-blue-50 px-4 py-3 text-center">
                 <p className="text-[10px] font-black uppercase tracking-wide text-blue-500">{t('helper_dashboard.credits_label')}</p>
-                <p className="text-2xl font-black text-blue-950">{loading ? '…' : wallet?.balance ?? 0}</p>
+                <p className="text-2xl font-black text-blue-950">{loading ? '…' : balanceLabel}</p>
               </div>
               <div className="rounded-2xl bg-slate-50 px-3 py-3 text-center">
                 <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{t('helper_dashboard.credits_used_month')}</p>

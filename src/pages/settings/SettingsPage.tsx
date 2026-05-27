@@ -27,6 +27,7 @@ import type { QuebecPlace } from '@/data/quebecRegions';
 import { parseStoredPhone, validatePhoneNumber } from '@/utils/phoneFormat';
 import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { useOnboardingRewards } from '@/hooks/useOnboardingRewards';
+import { useCredits } from '@/context/CreditContext';
 import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { SIGNUP_BONUS_LC } from '@/config/onboardingRewards';
@@ -71,6 +72,7 @@ export default function SettingsPage() {
   const { profile, updateProfile, signOut, session, isConfigured, refreshProfile } = useAuth();
   const { showToast } = useToast();
   useOnboardingRewards();
+  const { wallet: helperWallet, loading: creditsLoading } = useCredits();
   const [helperSkillCount, setHelperSkillCount] = useState(0);
   const [helperSkillIds, setHelperSkillIds] = useState<string[]>([]);
   const navigate = useNavigate();
@@ -292,10 +294,13 @@ export default function SettingsPage() {
         {isConfigured && profile && isHelper ? (
           <section className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-white p-4 shadow-sm">
             <p className="text-sm font-bold text-blue-900">{t('rewards.welcome_signup_credits')}</p>
-            <p className="mt-1 text-xs font-medium text-slate-600">
-              {t('rewards.welcome_signup_balance', {
-                amount: formatLinkCredits(signupBonusLc, language),
-              })}
+            <p className="mt-1 text-xs font-medium text-slate-600">{t('rewards.welcome_signup_purchase_note')}</p>
+            <p className="mt-2 text-xs font-bold text-blue-800">
+              {creditsLoading
+                ? t('common.loading')
+                : t('rewards.welcome_signup_balance', {
+                    amount: formatLinkCredits(helperWallet?.balance ?? signupBonusLc, language),
+                  })}
             </p>
           </section>
         ) : null}

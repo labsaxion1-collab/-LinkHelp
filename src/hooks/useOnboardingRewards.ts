@@ -54,11 +54,12 @@ export function useOnboardingRewards() {
 
   useEffect(() => {
     if (!userId || !remote || profile?.role !== 'helper') return;
-    void remoteEnsureSignupCredits(userId, 'helper').then(() => {
-      void reloadGranted();
-      void refreshCredits();
-      void refreshProfile();
-    });
+    void (async () => {
+      await remoteEnsureSignupCredits(userId, 'helper');
+      await reloadGranted();
+      await refreshCredits();
+      await refreshProfile();
+    })();
   }, [userId, remote, profile?.role, reloadGranted, refreshCredits, refreshProfile]);
 
   const notifyGrant = useCallback(

@@ -36,6 +36,7 @@ import {
 import {
   hideJobForUser,
   isJobExpired,
+  isJobCancelled,
   isJobVisibleToClient,
   readHiddenJobIds,
 } from '@/utils/jobVisibility';
@@ -717,10 +718,8 @@ export default function ClientDashboard() {
                     });
                     if (jobsListTab === 'history') {
                       return (
-                        hiddenJobIds.has(j.id) ||
-                        j.status === 'cancelled' ||
-                        j.status === 'completed' ||
-                        isJobExpired(j)
+                        !isJobCancelled(j) &&
+                        (hiddenJobIds.has(j.id) || j.status === 'completed' || isJobExpired(j))
                       );
                     }
                     return visible && (j.status === 'open' || j.status === 'in_progress');
@@ -731,10 +730,8 @@ export default function ClientDashboard() {
                     .filter((j) => {
                       if (jobsListTab === 'history') {
                         return (
-                          hiddenJobIds.has(j.id) ||
-                          j.status === 'cancelled' ||
-                          j.status === 'completed' ||
-                          isJobExpired(j)
+                          !isJobCancelled(j) &&
+                          (hiddenJobIds.has(j.id) || j.status === 'completed' || isJobExpired(j))
                         );
                       }
                       return (

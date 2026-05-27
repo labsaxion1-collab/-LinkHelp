@@ -56,6 +56,7 @@ import { useUserLocation } from '@/hooks/useUserLocation';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
 import { HelperProfileSkillsSection } from '@/components/helpers/profile/HelperProfileSkillsSection';
 import { distanceToJobKm, sortOpportunitiesForHelper } from '@/utils/locationMatching';
+import { isJobCancelled } from '@/utils/jobVisibility';
 import {
   filterToPreferredCategoriesIfPossible,
   getHelperCategoryPreferences,
@@ -409,7 +410,7 @@ export default function HelperDashboard() {
   }, [applications]);
 
   const displayedJobs = useMemo(() => {
-    let list = jobs.filter((j) => j.status === 'open');
+    let list = jobs.filter((j) => j.status === 'open' && !isJobCancelled(j));
     if (selectedCategoryFilter) {
       list = list.filter((j) => {
         const id = resolveCategoryId(j.category) || j.category;
@@ -451,7 +452,7 @@ export default function HelperDashboard() {
     activeTab === 'match' || activeTab === 'recentes' || activeTab === 'emergencia' ? activeTab : 'match';
 
   const radarJobs = filterToPreferredCategoriesIfPossible(
-    jobs.filter((j) => j.status === 'open'),
+    jobs.filter((j) => j.status === 'open' && !isJobCancelled(j)),
     categoryPrefs,
   )
     .map((job) => ({ job, distanceKm: distanceToJobKm(helperCoords, job) }))

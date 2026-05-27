@@ -1,4 +1,10 @@
-import type { Job } from '@/types/job';
+import type { Job, JobStatus } from '@/types/job';
+
+const CANCELLED_STATUSES = new Set<JobStatus | string>(['cancelled', 'canceled']);
+
+export function isJobCancelled(job: Pick<Job, 'status'>): boolean {
+  return CANCELLED_STATUSES.has(job.status);
+}
 
 /**
  * Client-side soft hide for requests (remove from list UI only).
@@ -41,6 +47,6 @@ export function isJobVisibleToClient(
 ): boolean {
   if (hidden.has(job.id)) return false;
   if (isJobExpired(job) && !options?.includeHistory) return false;
-  if (job.status === 'cancelled' && !options?.includeHistory) return false;
+  if (isJobCancelled(job)) return false;
   return true;
 }

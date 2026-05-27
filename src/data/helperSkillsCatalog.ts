@@ -2,6 +2,7 @@
  * Helper skills — primary category + subcategory (stored as `primary:sub` keys).
  * Synced to `helper_skills` (category, subcategory) in Supabase.
  */
+import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 
 export type HelperSkillPrimaryId =
   | 'electrical'
@@ -174,6 +175,12 @@ for (const sub of BEAUTY_LEGACY_SUBS) {
   VALID_KEYS.add(skillKey('beauty', sub));
 }
 
+for (const cat of SERVICE_CATEGORIES) {
+  for (const sub of cat.subKeys) {
+    VALID_KEYS.add(skillKey(cat.id, sub));
+  }
+}
+
 export function skillKey(primary: string, sub: string): string {
   return `${primary}:${sub}`;
 }
@@ -189,6 +196,8 @@ export function parseSkillKey(key: string): { primary: string; sub: string } | n
   if (primary === 'beauty' && (BEAUTY_LEGACY_SUBS as readonly string[]).includes(sub)) {
     return { primary, sub };
   }
+  const svc = SERVICE_CATEGORIES.find((c) => c.id === primary);
+  if (svc && (svc.subKeys as readonly string[]).includes(sub)) return { primary, sub };
   return null;
 }
 
@@ -217,14 +226,39 @@ export function groupSkillKeysByPrimary(keys: string[]): Map<string, string[]> {
     list.push(key);
     map.set(parsed.primary, list);
   }
-  const order = HELPER_SKILLS_CATALOG.map((c) => c.id);
-  return new Map(order.filter((id) => map.has(id)).map((id) => [id, map.get(id)!]));
+  const order = [
+    ...SERVICE_CATEGORIES.map((c) => c.id),
+    ...HELPER_SKILLS_CATALOG.map((c) => c.id),
+  ];
+  const seen = new Set<string>();
+  return new Map(
+    order.filter((id) => map.has(id) && !seen.has(id) && seen.add(id)).map((id) => [id, map.get(id)!]),
+  );
+}
+
+export function groupSkillKeysByServiceCategory(keys: string[]): Map<string, string[]> {
+  const serviceIds = new Set(SERVICE_CATEGORIES.map((c) => c.id));
+  const map = new Map<string, string[]>();
+  for (const key of keys) {
+    const parsed = parseSkillKey(key);
+    if (!parsed || !serviceIds.has(parsed.primary)) continue;
+    const list = map.get(parsed.primary) ?? [];
+    list.push(key);
+    map.set(parsed.primary, list);
+  }
+  return new Map(SERVICE_CATEGORIES.filter((c) => map.has(c.id)).map((c) => [c.id, map.get(c.id)!]));
 }
 
 export function skillSubLabelKey(primary: string, sub: string): string {
+  if (SERVICE_CATEGORIES.some((c) => c.id === primary)) return `service_subs.${primary}.${sub}`;
   return `helper_skills.sub.${primary}.${sub}`;
 }
 
 export function skillPrimaryLabelKey(primary: string): string {
+  if (SERVICE_CATEGORIES.some((c) => c.id === primary)) return `categories.${primary}`;
   return `helper_skills.primary.${primary}`;
+}
+
+export function getServiceCategorySubs(categoryId: string): readonly string[] {
+  return SERVICE_CATEGORIES.find((c) => c.id === categoryId)?.subKeys ?? [];
 }

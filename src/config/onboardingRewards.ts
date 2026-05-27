@@ -18,15 +18,16 @@ export type RewardType =
 export const SIGNUP_BONUS_LC = {
   /** Clients do not receive signup LC (boosts only, future). */
   client: 0,
-  helper: 12,
+  /** Helpers receive a one-time welcome balance at signup only. */
+  helper: 20,
 } as const;
 
-/** One-time action rewards (LC). */
+/** Legacy action rewards — profile completion no longer grants LC. */
 export const ACTION_REWARD_LC: Record<Exclude<RewardType, 'SIGNUP_CLIENT' | 'SIGNUP_HELPER'>, number> = {
-  PROFILE_PHOTO: 2,
-  PROFILE_DESCRIPTION: 1,
-  PROFILE_SKILLS: 2,
-  PHONE_VERIFIED: 3,
+  PROFILE_PHOTO: 0,
+  PROFILE_DESCRIPTION: 0,
+  PROFILE_SKILLS: 0,
+  PHONE_VERIFIED: 0,
   FIRST_REQUEST_CREATED: 5,
   FIRST_APPLICATION_SENT: 5,
   FIRST_REVIEW_RECEIVED: 3,
@@ -46,37 +47,13 @@ export type ProfileRewardCheckId =
   | 'PROFILE_SKILLS'
   | 'PHONE_VERIFIED';
 
+/** Profile completion no longer grants credits — kept empty for legacy UI hooks. */
 export const PROFILE_REWARD_CHECKS: {
   id: ProfileRewardCheckId;
   rewardType: ProfileRewardCheckId;
   labelKey: string;
   hintKey: string;
-}[] = [
-  {
-    id: 'PROFILE_PHOTO',
-    rewardType: 'PROFILE_PHOTO',
-    labelKey: 'rewards.check_photo',
-    hintKey: 'rewards.check_photo_hint',
-  },
-  {
-    id: 'PROFILE_DESCRIPTION',
-    rewardType: 'PROFILE_DESCRIPTION',
-    labelKey: 'rewards.check_bio',
-    hintKey: 'rewards.check_bio_hint',
-  },
-  {
-    id: 'PROFILE_SKILLS',
-    rewardType: 'PROFILE_SKILLS',
-    labelKey: 'rewards.check_skills',
-    hintKey: 'rewards.check_skills_hint',
-  },
-  {
-    id: 'PHONE_VERIFIED',
-    rewardType: 'PHONE_VERIFIED',
-    labelKey: 'rewards.check_phone',
-    hintKey: 'rewards.check_phone_hint',
-  },
-];
+}[] = [];
 
 /** Future: daily streak, promo events, referral milestones. */
 export const FUTURE_REWARD_CHANNELS = {

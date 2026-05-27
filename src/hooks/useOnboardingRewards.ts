@@ -15,8 +15,6 @@ import {
   remoteEnsureSignupCredits,
 } from '@/services/supabase/rewardsRemote';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
-import { fetchHelperSkills } from '@/services/supabase/helperSkillsRemote';
-import { validatePhoneNumber, parseStoredPhone } from '@/utils/phoneFormat';
 
 export type ProfileRewardSnapshot = {
   avatarUrl?: string | null;
@@ -99,35 +97,10 @@ export function useOnboardingRewards() {
     [userId, grantedTypes, notifyGrant, refreshCredits, refreshProfile, reloadGranted],
   );
 
-  const evaluateProfileRewards = useCallback(
-    async (snapshot: ProfileRewardSnapshot) => {
-      if (!userId) return;
-
-      let skillCount = snapshot.skillCount;
-      if (skillCount === undefined && profile?.role === 'helper' && remote) {
-        const keys = await fetchHelperSkills(userId);
-        skillCount = keys.length;
-      }
-
-      if (snapshot.avatarUrl?.trim()) {
-        await tryGrant('PROFILE_PHOTO', undefined, 'rewards.toast_profile_photo');
-      }
-      if (snapshot.bio?.trim()) {
-        await tryGrant('PROFILE_DESCRIPTION', undefined, 'rewards.toast_profile_bio');
-      }
-      if (profile?.role === 'helper' && (skillCount ?? 0) >= 1) {
-        await tryGrant('PROFILE_SKILLS', undefined, 'rewards.toast_profile_skills');
-      }
-      if (snapshot.phone?.trim()) {
-        const { countryId, nationalNumber } = parseStoredPhone(snapshot.phone);
-        const phoneValidation = validatePhoneNumber(countryId, nationalNumber);
-        if (phoneValidation.valid) {
-          await tryGrant('PHONE_VERIFIED', undefined, 'rewards.toast_phone');
-        }
-      }
-    },
-    [userId, profile?.role, remote, tryGrant],
-  );
+  /** Profile completion no longer grants credits — kept for API compatibility. */
+  const evaluateProfileRewards = useCallback(async (_snapshot: ProfileRewardSnapshot) => {
+    return;
+  }, []);
 
   const profileChecks = useMemo(() => {
     const isHelper = profile?.role === 'helper';

@@ -41,7 +41,7 @@ function bonusTx(helperId: string): CreditTransaction {
     type: 'FREE_BONUS',
     amount: HELPER_SIGNUP_BONUS_CREDITS,
     balanceAfter: HELPER_SIGNUP_BONUS_CREDITS,
-    description: 'Bônus inicial de helper',
+    description: 'Créditos iniciais de boas-vindas',
     createdAt: Date.now(),
   };
 }

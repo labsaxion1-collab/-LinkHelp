@@ -7,7 +7,12 @@ import { useAuth } from '@/context/AuthContext';
 import { uploadAvatarImage } from '@/lib/storageUpload';
 import { logMediaPicker } from '@/utils/mediaPickerDebug';
 import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
-import { filterValidSkillKeys, parseSkillKey, skillSubLabelKey } from '@/data/helperSkillsCatalog';
+import {
+  filterValidSkillKeys,
+  groupSkillKeysByServiceCategory,
+  parseSkillKey,
+  skillSubLabelKey,
+} from '@/data/helperSkillsCatalog';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData, type UpcomingJob } from '@/context/AppDataContext';
 import { useToast } from '@/context/ToastContext';
@@ -15,7 +20,7 @@ import { useCredits } from '@/context/CreditContext';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { UpcomingJobsSidebar } from '@/components/helpers/UpcomingJobsSidebar';
 import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailModal';
-import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
+import { SERVICE_CATEGORIES, type ServiceCategoryId } from '@/data/serviceCategories';
 import { resolveCategoryId, translateCategory, translateJobTitle } from '@/utils/translateCategory';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
@@ -34,7 +39,7 @@ import { HelperRadialCategoryMenu } from '@/components/helper/HelperRadialCatego
 import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
 import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
 import { jobHasBoundedBudget, jobIsNegotiableBudget } from '@/utils/jobProposal';
-import { SkillsProfileModal } from '@/components/helpers/profile-setup/ProfileSetupModals';
+import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
 import {
   SimpleAvatarUploadModal,
   type AvatarUploadDraft,
@@ -46,7 +51,6 @@ import {
 } from '@/utils/helperProfileSettings';
 import type { CompletionRowKey } from '@/utils/helperProfileCompletion';
 import { computeHelperProfileCompletion } from '@/utils/helperProfileCompletion';
-import { useOnboardingRewards } from '@/hooks/useOnboardingRewards';
 import { helperProfileSuggestionKeys } from '@/utils/helperProfileSuggestions';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
@@ -95,7 +99,8 @@ export default function HelperDashboard() {
   const me = useSessionViewer();
   const { coords: helperCoords } = useUserLocation();
   const { session, profile, isConfigured, updateProfile, refreshProfile } = useAuth();
-  const { evaluateProfileRewards } = useOnboardingRewards();
+  const [helperPrimaryCategory, setHelperPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
+  const [helperSecondaryCategories, setHelperSecondaryCategories] = useState<ServiceCategoryId[]>([]);
 
   useEffect(() => {
     const st = location.state as { openUpgrade?: boolean } | null;
@@ -131,6 +136,11 @@ export default function HelperDashboard() {
     () => getHelperCategoryPreferences(profile, profileSettings.skillIds),
     [profile, profileSettings.skillIds],
   );
+
+  useEffect(() => {
+    setHelperPrimaryCategory(categoryPrefs.primaryCategory);
+    setHelperSecondaryCategories(categoryPrefs.secondaryCategories);
+  }, [categoryPrefs.primaryCategory, categoryPrefs.secondaryCategories]);
   const visibleServiceCategories = useMemo(
     () => SERVICE_CATEGORIES.filter((cat) => categoryPrefs.visibleCategories.includes(cat.id)),
     [categoryPrefs],
@@ -178,7 +188,7 @@ export default function HelperDashboard() {
         throw new Error('SKILLS_SYNC');
       }
     },
-    [isConfigured, storageUserId, pushToast, t, evaluateProfileRewards],
+    [isConfigured, storageUserId, pushToast, t],
   );
 
   const handleAvatarSave = React.useCallback(
@@ -199,14 +209,13 @@ export default function HelperDashboard() {
         setProfileSettings((p) => ({ ...p, avatarDataUrl: publicUrl }));
         logMediaPicker('PROFILE UPDATED', publicUrl);
         pushToast(t('profile_setup.avatar_uploaded_ok'));
-        void evaluateProfileRewards({ avatarUrl: publicUrl, skillCount: profileSettings.skillIds.length });
       } catch (e) {
         const isAuthErr = Boolean(e && typeof e === 'object' && 'messageKey' in e);
         if (!isAuthErr) pushToast(t('profile_setup.avatar_save_error'));
         throw e;
       }
     },
-    [isConfigured, session?.user?.id, updateProfile, refreshProfile, pushToast, t, evaluateProfileRewards, profileSettings.skillIds.length],
+    [isConfigured, session?.user?.id, updateProfile, refreshProfile, pushToast, t],
   );
 
   const onCompletionRowClick = React.useCallback((key: CompletionRowKey) => {
@@ -586,14 +595,59 @@ export default function HelperDashboard() {
           onToast={pushToast}
         />
       )}
-      <SkillsProfileModal
-        open={profileSetupModal === 'skills'}
-        onClose={() => setProfileSetupModal(null)}
-        skillIds={profileSettings.skillIds}
-        onSave={(ids) => setProfileSettings((p) => ({ ...p, skillIds: filterValidSkillKeys(ids) }))}
-        onSaveAsync={handleSkillsSave}
-        t={t}
-      />
+      {profileSetupModal === 'skills' ? (
+        <div className="fixed inset-0 z-[110] flex items-end justify-center" role="presentation">
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-900/55 backdrop-blur-sm"
+            aria-label={t('common.close')}
+            onClick={() => setProfileSetupModal(null)}
+          />
+          <div className="relative z-10 flex max-h-[min(88dvh,640px)] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-slate-200" />
+            <header className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+              <h3 className="text-lg font-black text-slate-950">{t('helper_categories.title')}</h3>
+              <button
+                type="button"
+                onClick={() => setProfileSetupModal(null)}
+                className="rounded-full bg-slate-100 p-2 text-slate-600"
+              >
+                <Icons.X className="h-5 w-5" />
+              </button>
+            </header>
+            <div className="flex-1 overflow-y-auto px-4 py-3">
+              <HelperCategoriesManager
+                t={t}
+                skillIds={profileSettings.skillIds}
+                primaryCategory={helperPrimaryCategory}
+                secondaryCategories={helperSecondaryCategories}
+                onSkillsChange={(ids) => setProfileSettings((p) => ({ ...p, skillIds: filterValidSkillKeys(ids) }))}
+                onCategoriesChange={(primary, secondary) => {
+                  setHelperPrimaryCategory(primary);
+                  setHelperSecondaryCategories(secondary);
+                }}
+                onSaveAsync={async (ids) => {
+                  const valid = filterValidSkillKeys(ids);
+                  const cats = [...groupSkillKeysByServiceCategory(valid).keys()] as ServiceCategoryId[];
+                  let primary = helperPrimaryCategory;
+                  if (cats.length && !cats.includes(primary)) primary = cats[0];
+                  const secondary = cats.filter((id) => id !== primary);
+                  setHelperPrimaryCategory(primary);
+                  setHelperSecondaryCategories(secondary);
+                  await handleSkillsSave(valid);
+                  if (isConfigured && session?.user?.id) {
+                    await updateProfile({
+                      primary_category: primary,
+                      secondary_categories: secondary,
+                    });
+                    await refreshProfile();
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
       {/* Idea Modal */}
       {UI_VISIBILITY.ideas && showIdeaModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => setShowIdeaModal(false)}>

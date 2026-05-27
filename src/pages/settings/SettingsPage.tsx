@@ -12,7 +12,6 @@ import {
   Languages,
   Briefcase,
   Image,
-  CheckCircle2,
 } from 'lucide-react';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useLanguage } from '@/context/LanguageContext';
@@ -26,17 +25,17 @@ import { CityRegionAutocomplete } from '@/components/common/CityRegionAutocomple
 import { ProfilePhoneField } from '@/components/profile/ProfilePhoneField';
 import type { QuebecPlace } from '@/data/quebecRegions';
 import { parseStoredPhone, validatePhoneNumber } from '@/utils/phoneFormat';
-import { ProfileRewardsProgress } from '@/components/rewards/ProfileRewardsProgress';
 import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { useOnboardingRewards } from '@/hooks/useOnboardingRewards';
-import { fetchHelperSkills } from '@/services/supabase/helperSkillsRemote';
+import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { SIGNUP_BONUS_LC } from '@/config/onboardingRewards';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
-import { SERVICE_CATEGORIES, type ServiceCategoryId } from '@/data/serviceCategories';
-import { getCategoryLucideIcon } from '@/utils/categoryIcons';
-import { HELPER_CATEGORY_ACCENTS, getHelperCategoryPreferences } from '@/utils/helperCategoryPreferences';
+import { type ServiceCategoryId } from '@/data/serviceCategories';
+import { getHelperCategoryPreferences } from '@/utils/helperCategoryPreferences';
+import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
+import { filterValidSkillKeys, groupSkillKeysByServiceCategory } from '@/data/helperSkillsCatalog';
 
 const SPOKEN_LANGUAGE_OPTIONS = [
   { id: 'pt', label: 'Português' },
@@ -71,7 +70,7 @@ export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
   const { profile, updateProfile, signOut, session, isConfigured, refreshProfile } = useAuth();
   const { showToast } = useToast();
-  const { evaluateProfileRewards } = useOnboardingRewards();
+  useOnboardingRewards();
   const [helperSkillCount, setHelperSkillCount] = useState(0);
   const [helperSkillIds, setHelperSkillIds] = useState<string[]>([]);
   const navigate = useNavigate();
@@ -198,15 +197,26 @@ export default function SettingsPage() {
     else {
       await refreshProfile();
       showToast(t('app_pages.settings_saved'), 'success');
-      if (isHelper) {
-        void evaluateProfileRewards({
-          avatarUrl: profile?.avatar_url,
-          bio: bio.trim() || null,
-          phone: phone?.trim() ? phone.trim() : null,
-          skillCount: helperSkillCount,
-        });
-      }
     }
+  };
+
+  const persistHelperSkills = async (ids: string[]) => {
+    const valid = filterValidSkillKeys(ids);
+    setHelperSkillIds(valid);
+    setHelperSkillCount(valid.length);
+    if (!session?.user?.id || !isConfigured) return;
+    const cats = [...groupSkillKeysByServiceCategory(valid).keys()] as ServiceCategoryId[];
+    let primary = primaryCategory;
+    if (cats.length && !cats.includes(primary)) primary = cats[0];
+    const secondary = cats.filter((id) => id !== primary);
+    setPrimaryCategory(primary);
+    setSecondaryCategories(secondary);
+    await syncHelperSkills(session.user.id, valid);
+    await updateProfile({
+      primary_category: primary,
+      secondary_categories: secondary,
+    });
+    await refreshProfile();
   };
 
   const logout = async () => {
@@ -253,14 +263,6 @@ export default function SettingsPage() {
       revokeAvatarObjectUrl();
       setAvatarSelectedFile(null);
       showToast(t('app_pages.settings_avatar_saved'), 'success');
-      if (isHelper) {
-        void evaluateProfileRewards({
-          avatarUrl: publicUrl,
-          bio: bio.trim() || null,
-          phone: phone?.trim() ? phone.trim() : null,
-          skillCount: helperSkillCount,
-        });
-      }
     } catch (e) {
       const raw = formatStorageError(e);
       showToast(raw && raw !== 'NO_SUPABASE' ? raw : t('profile_setup.avatar_save_error'), 'error');
@@ -287,13 +289,12 @@ export default function SettingsPage() {
           <p className="mt-1 text-sm font-medium text-gray-500">{t('app_pages.settings_sub')}</p>
         </header>
 
-        {isHelper ? <ProfileRewardsProgress skillCount={helperSkillCount} /> : null}
-
         {isConfigured && profile && isHelper ? (
           <section className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-white p-4 shadow-sm">
-            <p className="text-sm font-bold text-blue-900">
-              {t('rewards.signup_balance', {
-                amount: formatLinkCredits(profile.credits ?? signupBonusLc, language),
+            <p className="text-sm font-bold text-blue-900">{t('rewards.welcome_signup_credits')}</p>
+            <p className="mt-1 text-xs font-medium text-slate-600">
+              {t('rewards.welcome_signup_balance', {
+                amount: formatLinkCredits(signupBonusLc, language),
               })}
             </p>
           </section>
@@ -410,90 +411,19 @@ export default function SettingsPage() {
               icon={<Briefcase className="h-5 w-5 text-blue-600" />}
               title={t('helper_categories.title')}
             >
-              <div className="space-y-5">
-                <div>
-                  <div className="mb-3">
-                    <p className="text-sm font-black text-slate-900">{t('helper_categories.primary_label')}</p>
-                    <p className="text-xs font-semibold text-slate-500">{t('helper_categories.primary_hint')}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {SERVICE_CATEGORIES.map((cat) => {
-                      const IconComponent = getCategoryLucideIcon(cat.icon);
-                      const active = primaryCategory === cat.id;
-                      const accent = HELPER_CATEGORY_ACCENTS[cat.id];
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => {
-                            setPrimaryCategory(cat.id);
-                            setSecondaryCategories((prev) => prev.filter((id) => id !== cat.id));
-                          }}
-                          className={`group min-h-[96px] rounded-2xl border p-3 text-left transition-all ${
-                            active
-                              ? `${accent.active} shadow-sm ${accent.glow}`
-                              : 'border-white/70 bg-white/70 text-slate-700 hover:border-blue-200 hover:bg-white'
-                          }`}
-                        >
-                          <span
-                            className={`mb-3 flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm transition-transform group-hover:scale-105 ${
-                              active ? accent.icon : 'bg-slate-100 text-slate-500'
-                            }`}
-                          >
-                            <IconComponent className="h-5 w-5" />
-                          </span>
-                          <span className="block text-sm font-black leading-tight">{t(`categories.${cat.id}`)}</span>
-                          {active ? (
-                            <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wide text-emerald-700">
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                              {t('helper_categories.selected_primary')}
-                            </span>
-                          ) : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="mb-3">
-                    <p className="text-sm font-black text-slate-900">{t('helper_categories.secondary_label')}</p>
-                    <p className="text-xs font-semibold text-slate-500">{t('helper_categories.secondary_hint')}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {SERVICE_CATEGORIES.filter((cat) => cat.id !== primaryCategory).map((cat) => {
-                      const IconComponent = getCategoryLucideIcon(cat.icon);
-                      const active = secondaryCategories.includes(cat.id);
-                      const accent = HELPER_CATEGORY_ACCENTS[cat.id];
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() =>
-                            setSecondaryCategories((prev) =>
-                              prev.includes(cat.id)
-                                ? prev.filter((id) => id !== cat.id)
-                                : [...prev, cat.id],
-                            )
-                          }
-                          className={`inline-flex min-h-[42px] items-center gap-2 rounded-2xl border px-3 text-xs font-black transition-all ${
-                            active
-                              ? `${accent.active} shadow-sm`
-                              : 'border-white/70 bg-white/70 text-slate-600 hover:border-blue-200 hover:bg-white'
-                          }`}
-                        >
-                          <IconComponent className="h-4 w-4" />
-                          {t(`categories.${cat.id}`)}
-                          {active ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className="mt-3 text-xs font-bold text-blue-700">
-                    {t('helper_categories.secondary_count', { count: secondaryCategories.length })}
-                  </p>
-                </div>
-              </div>
+              <p className="mb-3 text-xs font-medium text-slate-500">{t('helper_categories.compact_hint')}</p>
+              <HelperCategoriesManager
+                t={t}
+                skillIds={helperSkillIds}
+                primaryCategory={primaryCategory}
+                secondaryCategories={secondaryCategories}
+                onSkillsChange={setHelperSkillIds}
+                onCategoriesChange={(primary, secondary) => {
+                  setPrimaryCategory(primary);
+                  setSecondaryCategories(secondary);
+                }}
+                onSaveAsync={persistHelperSkills}
+              />
             </SettingsCard>
 
             <SettingsCard icon={<Briefcase className="h-5 w-5 text-sky-600" />} title={t('app_pages.settings_helper_extras')}>

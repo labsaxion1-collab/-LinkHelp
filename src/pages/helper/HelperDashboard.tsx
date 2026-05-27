@@ -31,6 +31,8 @@ import { HelperCreditsWalletCard } from '@/components/helpers/HelperCreditsWalle
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
 import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
+import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
+import { jobHasBoundedBudget, jobIsNegotiableBudget } from '@/utils/jobProposal';
 import { SkillsProfileModal } from '@/components/helpers/profile-setup/ProfileSetupModals';
 import {
   SimpleAvatarUploadModal,
@@ -74,6 +76,8 @@ export default function HelperDashboard() {
   const [postText, setPostText] = useState('');
   const [activeTab, setActiveTab] = useState<'match' | 'recentes' | 'emergencia' | 'candidaturas'>('match');
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
+  const [proposalJob, setProposalJob] = useState<Job | null>(null);
+  const [dismissedJobIds, setDismissedJobIds] = useState<Set<string>>(() => new Set());
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
   const [cancelTarget, setCancelTarget] = useState<Application | null>(null);
@@ -334,11 +338,14 @@ export default function HelperDashboard() {
       job.workflowStatus !== 'awaiting_client_confirmation',
   );
 
-  const handleApply = async (jobId: string) => {
+  const needsProposalFlow = (job: Job) => jobHasBoundedBudget(job) || jobIsNegotiableBudget(job);
+
+  const submitApply = async (jobId: string, proposedAmount: number | null) => {
     if (appliedJobIds.has(jobId)) return;
     setApplyingJobId(jobId);
     try {
-      await applyForJob(jobId, helperUserId);
+      await applyForJob(jobId, helperUserId, proposedAmount);
+      setProposalJob(null);
       setToastNotification({ message: t('helper_dashboard.toast_apply_success'), show: true });
       setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
     } catch (err: unknown) {
@@ -352,11 +359,20 @@ export default function HelperDashboard() {
         setToastNotification({ message: t('helper_dashboard.apply_duplicate'), show: true });
         setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
       } else {
-        alert(msg || 'Erro');
+        showToast(msg || 'Erro', 'error');
       }
     } finally {
       setApplyingJobId(null);
     }
+  };
+
+  const requestApply = (job: Job) => {
+    if (appliedJobIds.has(job.id)) return;
+    if (needsProposalFlow(job)) {
+      setProposalJob(job);
+      return;
+    }
+    void submitApply(job.id, null);
   };
 
   const confirmCancelApplication = async () => {
@@ -415,7 +431,7 @@ export default function HelperDashboard() {
         categoryPrefs,
       );
     }
-    return list;
+    return list.filter((j) => !dismissedJobIds.has(j.id));
   }, [
     jobs,
     selectedCategoryFilter,
@@ -424,6 +440,7 @@ export default function HelperDashboard() {
     profileSettings.skillIds,
     me.subscriptionTier,
     categoryPrefs,
+    dismissedJobIds,
   ]);
 
   const feedActiveTab =
@@ -892,7 +909,8 @@ export default function HelperDashboard() {
                       isApplying={applyingJobId === job.id}
                       distanceKm={distanceToJobKm(helperCoords, job)}
                       applicationsCount={applicationCountsByJobId.get(job.id) ?? 0}
-                      onApply={handleApply}
+                      onApply={requestApply}
+                      onDismiss={(jobId) => setDismissedJobIds((prev) => new Set(prev).add(jobId))}
                       onViewClientProfile={setClientProfileJob}
                       onViewDetails={setDetailOpportunity}
                       t={t}
@@ -1001,6 +1019,15 @@ export default function HelperDashboard() {
         translateCategory={translateCategory}
         locale={upcomingLocale}
         onUpdateWorkflow={updateUpcomingWorkflow}
+      />
+
+      <HelperProposalModal
+        open={Boolean(proposalJob)}
+        job={proposalJob}
+        submitting={proposalJob ? applyingJobId === proposalJob.id : false}
+        onClose={() => !applyingJobId && setProposalJob(null)}
+        onSubmit={(amount) => proposalJob && void submitApply(proposalJob.id, amount)}
+        t={t}
       />
 
       <HelperOpportunityDetailModal

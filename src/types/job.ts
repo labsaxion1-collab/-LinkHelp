@@ -29,6 +29,8 @@ export interface Job {
   currency?: string | null;
   budgetMin?: number | null;
   budgetMax?: number | null;
+  /** Amount accepted from helper proposal after client hire. */
+  acceptedAmount?: number | null;
   urgency: JobUrgency;
   status: JobStatus;
   createdAt: number;

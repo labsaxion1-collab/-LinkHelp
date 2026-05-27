@@ -25,6 +25,7 @@ import { UserProfileModal } from '@/components/profile/UserProfileModal';
 import { JobTaskActionsBar } from '@/components/features/JobTaskActionsBar';
 import { HelperPublicProfileView } from '@/components/features/HelperPublicProfileView';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
+import { formatMoneyAmount } from '@/utils/jobProposal';
 import {
   findClientHelperApplication,
   isClientChatUnlockedForHelper,
@@ -755,7 +756,6 @@ export default function ClientDashboard() {
                     const canCancelJob = job.status === 'open' || job.status === 'in_progress';
                     const qualityScore = estimateClientLeadQuality(job.description, job.location, job.value, jobApps.length);
                     const helperSlots = [...jobApps.slice(0, 3), ...Array(Math.max(0, 3 - jobApps.length)).fill(null)];
-                    const acceptedApps = jobApps.filter((app) => app.status === 'accepted' || app.chatUnlocked);
                     
                     return (
                       <div key={job.id} className="min-w-0 border border-blue-100 bg-white rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col shadow-sm">
@@ -828,29 +828,12 @@ export default function ClientDashboard() {
                           <div className="grid grid-cols-1 gap-2">
                             {helperSlots.map((app, index) => (
                               app ? (
-                                <button
+                                <div
                                   key={app.id}
-                                  type="button"
-                                  onClick={() => {
-                                    openHelperProfile(
-                                      {
-                                        id: app.helperId,
-                                        name: app.helperName,
-                                        avatar: app.helperAvatar,
-                                        rating: app.helperRating,
-                                        roleKey: 'pro_helper',
-                                        roleColor: '',
-                                        skills: [],
-                                        isOnline: true,
-                                        trainingCert: 'none',
-                                      },
-                                      app.id,
-                                    );
-                                  }}
-                                  className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-left transition-all hover:border-blue-200 hover:bg-blue-50"
+                                  className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/70 p-3"
                                 >
                                   <div className="flex min-w-0 items-center gap-3">
-                                    <img src={app.helperAvatar} alt="" className="h-10 w-10 shrink-0 rounded-full border border-white object-cover shadow-sm" />
+                                    <img src={app.helperAvatar} alt="" className="h-10 w-10 shrink-0 rounded-full border border-white object-cover shadow-sm" loading="lazy" />
                                     <div className="min-w-0 flex-1">
                                       <p className="flex min-w-0 items-center gap-1.5 text-sm font-black text-slate-950">
                                         <span className="truncate">{app.helperName}</span>
@@ -861,12 +844,87 @@ export default function ClientDashboard() {
                                         <span>{app.helperRating}</span>
                                         <span>{t('client_dashboard.helper_jobs_count', { count: app.helperJobs })}</span>
                                       </p>
+                                      {app.proposedAmount != null ? (
+                                        <p className="mt-1 text-xs font-black text-blue-700">
+                                          {t('client_dashboard.helper_proposal_amount', {
+                                            amount: formatMoneyAmount(app.proposedAmount, job.currency || 'CAD'),
+                                          })}
+                                        </p>
+                                      ) : null}
                                     </div>
-                                    <span className="shrink-0 rounded-lg bg-white px-2.5 py-1 text-[11px] font-black text-blue-700 ring-1 ring-blue-100">
-                                      {t('helper_public.view_profile')}
-                                    </span>
                                   </div>
-                                </button>
+                                  <div className="mt-3 flex flex-wrap gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        openHelperProfile(
+                                          {
+                                            id: app.helperId,
+                                            name: app.helperName,
+                                            avatar: app.helperAvatar,
+                                            rating: app.helperRating,
+                                            roleKey: 'pro_helper',
+                                            roleColor: '',
+                                            skills: [],
+                                            isOnline: true,
+                                            trainingCert: 'none',
+                                          },
+                                          app.id,
+                                        );
+                                      }}
+                                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50"
+                                    >
+                                      {t('helper_public.view_profile')}
+                                    </button>
+                                    {app.status === 'pending' || app.status === 'viewed' ? (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            void (async () => {
+                                              const conversationId = await officiallyHireHelper(app.id, '');
+                                              setToastNotification({
+                                                message: t('client_dashboard.application_accepted_toast', { name: app.helperName }),
+                                                show: true,
+                                              });
+                                              setTimeout(() => setToastNotification({ message: '', show: false }), 5000);
+                                              navigate(conversationId ? `${ROUTES.messages}?c=${conversationId}` : ROUTES.messages);
+                                            })().catch(console.error);
+                                          }}
+                                          className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700"
+                                        >
+                                          {t('client_dashboard.accept_proposal')}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => void updateApplicationStatus(app.id, 'rejected').catch(console.error)}
+                                          className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100"
+                                        >
+                                          {t('client_dashboard.reject_helper')}
+                                        </button>
+                                      </>
+                                    ) : app.chatUnlocked ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          void (async () => {
+                                            const conversationId = await officiallyHireHelper(app.id, '');
+                                            navigate(conversationId ? `${ROUTES.messages}?c=${conversationId}` : ROUTES.messages);
+                                          })().catch(console.error);
+                                        }}
+                                        className="inline-flex min-h-[32px] items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700"
+                                      >
+                                        <Icons.MessageSquare className="h-3.5 w-3.5" />
+                                        {t('client_dashboard.open_chat_with', { name: app.helperName.split(' ')[0] })}
+                                      </button>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-400 opacity-70">
+                                        <Icons.MessageSquare className="h-3.5 w-3.5" />
+                                        {t('client_dashboard.chat_locked_until_accept')}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                               ) : (
                                 <div key={`empty-${job.id}-${index}`} className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-3 text-sm font-bold text-slate-400">
                                   {t('client_dashboard.waiting_helper_slot')}
@@ -874,60 +932,6 @@ export default function ClientDashboard() {
                               )
                             ))}
                           </div>
-                          {jobApps.some((app) => app.status === 'pending' || app.status === 'viewed') ? (
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {jobApps.slice(0, 3).map((app) => (
-                                app.status === 'pending' || app.status === 'viewed' ? (
-                                  <React.Fragment key={`actions-${app.id}`}>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        void (async () => {
-                                          const conversationId = await officiallyHireHelper(app.id, '');
-                                          setToastNotification({
-                                            message: t('client_dashboard.application_accepted_toast', { name: app.helperName }),
-                                            show: true,
-                                          });
-                                          setTimeout(() => setToastNotification({ message: '', show: false }), 5000);
-                                          navigate(conversationId ? `${ROUTES.messages}?c=${conversationId}` : ROUTES.messages);
-                                        })().catch(console.error);
-                                      }}
-                                      className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700"
-                                    >
-                                      {t('client_dashboard.accept_helper', { name: app.helperName.split(' ')[0] })}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => void updateApplicationStatus(app.id, 'rejected').catch(console.error)}
-                                      className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100"
-                                    >
-                                      {t('client_dashboard.reject_helper')}
-                                    </button>
-                                  </React.Fragment>
-                                ) : null
-                              ))}
-                            </div>
-                          ) : null}
-                          {acceptedApps.length > 0 ? (
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {acceptedApps.slice(0, 3).map((app) => (
-                                <button
-                                  key={`chat-${app.id}`}
-                                  type="button"
-                                  onClick={() => {
-                                    void (async () => {
-                                      const conversationId = await officiallyHireHelper(app.id, '');
-                                      navigate(conversationId ? `${ROUTES.messages}?c=${conversationId}` : ROUTES.messages);
-                                    })().catch(console.error);
-                                  }}
-                                  className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700"
-                                >
-                                  <Icons.MessageSquare className="h-3.5 w-3.5" />
-                                  {t('client_dashboard.open_chat_with', { name: app.helperName.split(' ')[0] })}
-                                </button>
-                              ))}
-                            </div>
-                          ) : null}
                         </div>
                       </div>
                     );

@@ -79,6 +79,7 @@ export type RequestRow = {
   currency: string | null;
   budget_min: number | null;
   budget_max: number | null;
+  accepted_amount: number | null;
   status: RequestStatus;
   created_at: string;
   updated_at: string;
@@ -91,6 +92,7 @@ export type ApplicationRow = {
   client_id: string;
   status: DbApplicationStatus;
   message: string | null;
+  proposed_amount: number | null;
   created_at: string;
   updated_at: string;
 };

@@ -34,7 +34,7 @@ interface AppDataContextData {
   notifications: AppNotification[];
   dataLoading: boolean;
   createJob: (job: Omit<Job, 'id' | 'createdAt' | 'status'>) => Promise<void>;
-  applyForJob: (jobId: string, helperId: string) => Promise<void>;
+  applyForJob: (jobId: string, helperId: string, proposedAmount?: number | null) => Promise<void>;
   updateJobStatus: (jobId: string, status: JobStatus) => Promise<void>;
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => Promise<void>;
   officiallyHireHelper: (applicationId: string, initialMessage?: string) => Promise<string | null>;
@@ -172,7 +172,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     setJobs((prev) => migrateJobAvatars([newJob, ...prev]));
   };
 
-  const applyForJob = async (jobId: string, helperId: string) => {
+  const applyForJob = async (jobId: string, helperId: string, proposedAmount?: number | null) => {
     const existing = applicationsRef.current.find((a) => a.jobId === jobId && a.helperId === helperId);
     if (existing) {
       throw new Error('ALREADY_APPLIED');
@@ -186,6 +186,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         requestId: jobId,
         helperId,
         clientId: job.clientId,
+        proposedAmount: proposedAmount ?? null,
       });
       await refreshRemote();
       return;
@@ -202,6 +203,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       jobId,
       helperId,
       clientId: job.clientId,
+      proposedAmount: proposedAmount ?? null,
       helperName,
       helperAvatar,
       helperRating: profile?.rating ?? 0,
@@ -214,7 +216,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
     if (job.clientId) {
       const title = 'Nova Candidatura Recebida';
-      const message = `${helperName} se candidatou para "${job.title}".`;
+      const proposalText =
+        proposedAmount != null
+          ? `${helperName} enviou uma proposta de CAD $${Math.round(proposedAmount)} para "${job.title}".`
+          : `${helperName} se candidatou para "${job.title}".`;
+      const message = proposalText;
       addNotification({
         userId: job.clientId,
         type: 'application',

@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useRef } from 'react';
 import * as Icons from 'lucide-react';
 import { Check, CheckCircle2, Clock, MapPin } from 'lucide-react';
 import type { Job } from '@/types/job';
@@ -18,7 +18,8 @@ export type HelperOpportunityCardProps = {
   activeTab: HelperOpportunityCardTab;
   hasApplied: boolean;
   isApplying: boolean;
-  onApply: (jobId: string) => void;
+  onApply: (job: Job) => void;
+  onDismiss?: (jobId: string) => void;
   onViewClientProfile?: (job: Job) => void;
   onViewDetails?: (job: Job) => void;
   applicationsCount?: number;
@@ -72,6 +73,7 @@ function HelperOpportunityCardInner({
   hasApplied,
   isApplying,
   onApply,
+  onDismiss,
   onViewClientProfile,
   onViewDetails,
   t,
@@ -88,6 +90,22 @@ function HelperOpportunityCardInner({
   const category = translateCategory(job.category, t);
   const loc = locationLabel(job, distanceKm, t);
   const budget = valueLabel(job, t);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart.current || hasApplied) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = e.changedTouches[0].clientY - touchStart.current.y;
+    if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+      if (dx > 0) onApply(job);
+      else onDismiss?.(job.id);
+    }
+    touchStart.current = null;
+  };
 
   const ctaBase =
     'inline-flex min-h-[40px] flex-1 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2.5 text-sm font-bold transition-all duration-200';
@@ -143,7 +161,11 @@ function HelperOpportunityCardInner({
       {header}
 
       {/* Mobile compact — scan-first: horário, valor, distância, urgência */}
-      <div className="w-full max-w-full p-2.5 md:hidden">
+      <div
+        className="w-full max-w-full p-2.5 md:hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <div className="mb-2 flex items-center justify-between gap-2">
           {tier === 'urgent' ? (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-rose-600 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow-sm shadow-rose-600/30">
@@ -198,7 +220,7 @@ function HelperOpportunityCardInner({
           ) : (
             <button
               type="button"
-              onClick={() => onApply(job.id)}
+              onClick={() => onApply(job)}
               disabled={isApplying}
               className={`${ctaBase} border border-blue-600/90 bg-blue-600 text-white hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-70`}
             >
@@ -319,7 +341,7 @@ function HelperOpportunityCardInner({
           ) : (
             <button
               type="button"
-              onClick={() => onApply(job.id)}
+              onClick={() => onApply(job)}
               disabled={isApplying}
               className={`${ctaBase} w-full border border-blue-600/90 bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md hover:shadow-blue-600/15 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-70`}
             >

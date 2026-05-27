@@ -215,21 +215,36 @@ export async function remoteApply(input: {
   helperId: string;
   clientId: string;
   message?: string | null;
+  proposedAmount?: number | null;
 }): Promise<void> {
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
 
-  const { error } = await sb.from('applications').insert({
+  const payload: Record<string, unknown> = {
     request_id: input.requestId,
     helper_id: input.helperId,
     client_id: input.clientId,
     message: input.message ?? null,
     status: 'pending',
-  });
+  };
+  if (input.proposedAmount != null) {
+    payload.proposed_amount = input.proposedAmount;
+  }
+
+  const { error } = await sb.from('applications').insert(payload);
 
   if (error) {
     if (error.code === '23505') return;
-    throw new Error(error.message || 'APPLICATION_INSERT_FAILED');
+    if (input.proposedAmount != null && isMissingColumnError(error, 'proposed_amount')) {
+      delete payload.proposed_amount;
+      const { error: retryErr } = await sb.from('applications').insert(payload);
+      if (retryErr) {
+        if (retryErr.code === '23505') return;
+        throw new Error(retryErr.message || 'APPLICATION_INSERT_FAILED');
+      }
+    } else {
+      throw new Error(error.message || 'APPLICATION_INSERT_FAILED');
+    }
   }
 
   const { data: req } = await sb.from('requests').select('title').eq('id', input.requestId).maybeSingle();
@@ -238,11 +253,16 @@ export async function remoteApply(input: {
   const { data: helper } = await sb.from('profiles').select('name').eq('id', input.helperId).maybeSingle();
   const hName = (helper as { name?: string } | null)?.name ?? 'A helper';
 
+  const proposalPart =
+    input.proposedAmount != null
+      ? ` sent a proposal of CAD $${Math.round(input.proposedAmount)} for "${title}".`
+      : ` applied to "${title}".`;
+
   await sb.from('notifications').insert({
     user_id: input.clientId,
     type: 'application',
     title: 'New application',
-    description: `${hName} applied to "${title}".`,
+    description: `${hName}${proposalPart}`,
     action_url: '/client/dashboard',
     read: false,
   });
@@ -332,11 +352,26 @@ export async function remoteOfficiallyHireHelper(
   if (fetchErr || !appRow) throw fetchErr ?? new Error('NOT_FOUND');
 
   const app = appRow as ApplicationRow;
+  const acceptedAmount = app.proposed_amount != null ? Number(app.proposed_amount) : null;
+  const valueHint =
+    acceptedAmount != null
+      ? `${jobSnapshot.currency?.trim() || 'CAD'} $${Math.round(acceptedAmount)}`
+      : jobSnapshot.value;
 
   if (app.status !== 'accepted') {
     const { error: upErr } = await sb.from('applications').update({ status: 'accepted' }).eq('id', applicationId);
     if (upErr) throw upErr;
     await sb.from('requests').update({ status: 'in_progress' }).eq('id', app.request_id);
+    if (acceptedAmount != null) {
+      const reqUpdate: Record<string, unknown> = {
+        accepted_amount: acceptedAmount,
+        budget: valueHint,
+      };
+      const { error: amtErr } = await sb.from('requests').update(reqUpdate).eq('id', app.request_id);
+      if (amtErr && isMissingColumnError(amtErr, 'accepted_amount')) {
+        await sb.from('requests').update({ budget: valueHint }).eq('id', app.request_id);
+      }
+    }
 
     const { data: existingUpcoming } = await sb
       .from('upcoming_jobs')
@@ -356,7 +391,7 @@ export async function remoteOfficiallyHireHelper(
         category: jobSnapshot.category,
         description: jobSnapshot.description,
         location: jobSnapshot.location,
-        value_hint: jobSnapshot.value,
+        value_hint: valueHint,
         urgency: jobSnapshot.urgency,
         scheduled_at: scheduledAt,
         workflow_status: 'scheduled',
@@ -405,7 +440,10 @@ export async function remoteOfficiallyHireHelper(
     user_id: app.helper_id,
     type: 'application',
     title: 'Official hire',
-    description: `The client officially hired you for "${jobSnapshot.title}". Chat is now open.`,
+    description:
+      acceptedAmount != null
+        ? `Your proposal of CAD $${Math.round(acceptedAmount)} was accepted for "${jobSnapshot.title}". Chat is now open.`
+        : `The client officially hired you for "${jobSnapshot.title}". Chat is now open.`,
     action_url: `/messages?c=${conversationId}`,
     read: false,
   });

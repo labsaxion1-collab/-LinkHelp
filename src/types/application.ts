@@ -9,6 +9,8 @@ export interface Application {
   /** Present when loaded from Supabase */
   clientId?: string;
   message?: string | null;
+  /** Helper proposed price when applying (CAD). */
+  proposedAmount?: number | null;
   helperName: string;
   helperAvatar: string;
   helperRating: number;

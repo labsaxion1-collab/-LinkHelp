@@ -123,8 +123,11 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const parsedBudgetMax = budgetType === 'fixed' && selectedCategory !== 'translation' ? parseBudgetInt(budgetMax) : null;
   const rangeBudgetIsValid =
     budgetType === 'fixed' &&
-    Boolean(parsedBudgetMin || parsedBudgetMax) &&
-    (parsedBudgetMin == null || parsedBudgetMax == null || parsedBudgetMin <= parsedBudgetMax);
+    parsedBudgetMin != null &&
+    parsedBudgetMax != null &&
+    parsedBudgetMin <= parsedBudgetMax;
+  const budgetStepComplete =
+    selectedCategory === 'translation' || budgetType === 'negotiable' || rangeBudgetIsValid;
   const rangeBudgetIsInvalid =
     budgetType === 'fixed' &&
     parsedBudgetMin != null &&
@@ -307,12 +310,12 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   };
 
   const continueDisabled =
-    (step === 'description' && (!descriptionComplete || rangeBudgetIsInvalid)) ||
+    (step === 'description' && (!descriptionComplete || !budgetStepComplete || rangeBudgetIsInvalid)) ||
     (step === 'confirm' &&
       !isConfirmStepComplete(preferredDateMode, preferredDateIso, selectedCategory, preferredTimeSpecific));
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center lh-modal-overlay animate-in fade-in duration-200" onClick={handleClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center lh-modal-overlay animate-in fade-in duration-200" onClick={handleClose}>
       <div
         className="lh-modal-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[min(92dvh,900px)] min-w-0"
         onClick={(e) => e.stopPropagation()}
@@ -459,9 +462,13 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                 <label className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.budget_hint_label')}</label>
                 <div className="w-full max-w-full overflow-hidden rounded-2xl border-2 border-gray-200 bg-white p-3 sm:p-4 focus-within:border-blue-500">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <label
-                      className={`flex min-h-[52px] min-w-0 flex-1 items-center rounded-xl border px-3 focus-within:border-blue-500 focus-within:bg-white ${
-                        budgetType === 'negotiable' ? 'border-slate-200 bg-slate-50/70 opacity-75' : 'border-slate-200 bg-slate-50'
+                    <div
+                      className={`pointer-events-auto flex min-h-[52px] min-w-0 flex-1 items-center rounded-xl border px-3 ${
+                        budgetType === 'fixed' && budgetMin
+                          ? 'border-[#1565FF] bg-blue-50/60 ring-2 ring-blue-100'
+                          : budgetType === 'negotiable'
+                            ? 'border-slate-200 bg-slate-50/70 opacity-60'
+                            : 'border-slate-200 bg-slate-50'
                       }`}
                     >
                       <span className="mr-2 shrink-0 text-[10px] font-bold uppercase text-slate-500">{t('create_modal.budget_min_label')}</span>
@@ -472,6 +479,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                         pattern="[0-9]*"
                         min="0"
                         step="1"
+                        disabled={budgetType === 'negotiable'}
                         value={budgetMin}
                         onFocus={() => setBudgetType('fixed')}
                         onChange={(e) => {
@@ -479,13 +487,17 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                           setBudgetMin(parseBudgetInput(e.target.value));
                         }}
                         placeholder="50"
-                        className="min-w-0 flex-1 bg-transparent px-2 text-base font-black text-slate-950 outline-none placeholder:text-slate-400 sm:text-lg"
+                        className="pointer-events-auto min-w-0 flex-1 bg-transparent px-2 text-base font-black text-slate-950 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed sm:text-lg"
                       />
-                    </label>
+                    </div>
                     <span className="hidden shrink-0 text-sm font-bold text-slate-400 sm:inline">{t('create_modal.budget_range_to')}</span>
-                    <label
-                      className={`flex min-h-[52px] min-w-0 flex-1 items-center rounded-xl border px-3 focus-within:border-blue-500 focus-within:bg-white ${
-                        budgetType === 'negotiable' ? 'border-slate-200 bg-slate-50/70 opacity-75' : 'border-slate-200 bg-slate-50'
+                    <div
+                      className={`pointer-events-auto flex min-h-[52px] min-w-0 flex-1 items-center rounded-xl border px-3 ${
+                        budgetType === 'fixed' && budgetMax
+                          ? 'border-[#1565FF] bg-blue-50/60 ring-2 ring-blue-100'
+                          : budgetType === 'negotiable'
+                            ? 'border-slate-200 bg-slate-50/70 opacity-60'
+                            : 'border-slate-200 bg-slate-50'
                       }`}
                     >
                       <span className="mr-2 shrink-0 text-[10px] font-bold uppercase text-slate-500">{t('create_modal.budget_max_label')}</span>
@@ -496,6 +508,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                         pattern="[0-9]*"
                         min="0"
                         step="1"
+                        disabled={budgetType === 'negotiable'}
                         value={budgetMax}
                         onFocus={() => setBudgetType('fixed')}
                         onChange={(e) => {
@@ -503,9 +516,9 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                           setBudgetMax(parseBudgetInput(e.target.value));
                         }}
                         placeholder="120"
-                        className="min-w-0 flex-1 bg-transparent px-2 text-base font-black text-slate-950 outline-none placeholder:text-slate-400 sm:text-lg"
+                        className="pointer-events-auto min-w-0 flex-1 bg-transparent px-2 text-base font-black text-slate-950 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed sm:text-lg"
                       />
-                    </label>
+                    </div>
                   </div>
                   {rangeBudgetIsInvalid ? (
                     <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700">

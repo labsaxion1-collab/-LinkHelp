@@ -17,6 +17,9 @@ import { TrainingCertBadge } from '@/components/training/TrainingCertBadge';
 import type { TrainingCertLevel } from '@/utils/helperTrainingProgress';
 import { helperPlanFromRoleKey, helperTierFromApplication } from '@/utils/helperPlanFromRoleKey';
 import { ClientMapWidget } from '@/components/client/ClientMapWidget';
+import { ClientNearbyHelpersList } from '@/components/client/ClientNearbyHelpersList';
+import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
+import type { NearbyHelperMapPoint } from '@/types/nearbyHelper';
 import { LhCard } from '@/components/design-system/LhCard';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
@@ -108,6 +111,7 @@ export default function ClientDashboard() {
   const isClientJobsPage = routerLocation.pathname === ROUTES.clientJobs;
 
   const { t } = useLanguage();
+  const { showToast } = useToast();
   const skillChip = (skill: string) =>
     skill === 'support' ? t('skills.support') : t(`categories.${skill}`);
   const { jobs, applications, notifications, updateApplicationStatus, updateJobStatus, officiallyHireHelper } = useAppData();
@@ -172,6 +176,33 @@ export default function ClientDashboard() {
   const openHelperProfile = (helper: RecommendedHelperCard, applicationId?: string) => {
     setSelectedHelper(helper);
     setSelectedApplicationId(applicationId ?? null);
+    setShowHelperProfileModal(true);
+  };
+
+  const myOpenJobCategories = useMemo(
+    () => [...new Set(jobs.filter((j) => j.clientId === me.id && j.status === 'open').map((j) => j.category).filter(Boolean))],
+    [jobs, me.id],
+  );
+  const { helpers: nearbyHelpers, loading: nearbyHelpersLoading } = useNearbyHelpers({
+    relatedCategoryIds: myOpenJobCategories,
+  });
+
+  const removeClientJob = async (jobId: string) => {
+    await updateJobStatus(jobId, 'cancelled');
+    hideJobForUser(me.id, jobId);
+    setHiddenJobIds(readHiddenJobIds(me.id));
+  };
+
+  const openNearbyHelperProfile = (helper: NearbyHelperMapPoint) => {
+    setSelectedHelper({
+      id: helper.id,
+      name: helper.name,
+      avatar: helper.avatarUrl ?? avatarUrlForName(helper.name),
+      rating: helper.rating ?? 4.5,
+      skills: helper.skillIds,
+      isOnline: helper.onlineStatus === 'available',
+    });
+    setSelectedApplicationId(null);
     setShowHelperProfileModal(true);
   };
 
@@ -459,7 +490,23 @@ export default function ClientDashboard() {
         {/* Main Feed */}
         {activeSidebarTab === 'dashboard' && (
           <div className="w-full max-w-full mx-auto animate-in fade-in duration-300 min-w-0">
-          
+
+          <div className="mb-6 lg:hidden">
+            <ClientMapWidget
+              t={t}
+              clientId={me.id}
+              jobs={jobs}
+              applications={applications}
+              notifications={notifications}
+            />
+            <ClientNearbyHelpersList
+              helpers={nearbyHelpers}
+              loading={nearbyHelpersLoading}
+              t={t}
+              onViewProfile={openNearbyHelperProfile}
+            />
+          </div>
+
           <LhCard className="mb-6 w-full max-w-full min-w-0">
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -511,63 +558,7 @@ export default function ClientDashboard() {
             </div>
           </LhCard>
 
-          <div className="mb-4">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">{t('client_dashboard.home_feed_title')}</h2>
-            <p className="text-sm text-gray-500 mb-3">{t('client_dashboard.home_feed_sub')}</p>
-          </div>
-
-          {/* Posts (Feed) */}
           <div className="space-y-6">
-            
-            {/* Active Requests Summary */}
-            {jobs
-              .filter((j) => j.clientId === me.id && !hiddenJobIds.has(j.id))
-              .slice(0, 2)
-              .map((job) => {
-               const jobApps = applications.filter((a) => a.jobId === job.id && a.status !== 'cancelled');
-               return (
-                 <LhCard key={job.id} className="overflow-hidden hover:-translate-y-1 transition-transform duration-300 relative">
-                   <div className={`absolute top-0 left-0 w-1 h-full ${job.status === 'open' ? 'bg-yellow-400' : 'bg-green-500'}`}></div>
-                   <div className="flex justify-between items-start mb-2">
-                     <div>
-                       <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md mb-2 inline-block uppercase tracking-wider ${job.status === 'open' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 'bg-green-100 text-green-700 border border-green-200'}`}>
-                         {job.status === 'open' ? t('jobs.request_status_open') : t('jobs.request_status_in_progress')}
-                       </span>
-                       <h3 className="font-bold text-gray-900 text-lg leading-tight">{translateJobTitle(job.title, job.category, job.subcategory, t)}</h3>
-                     </div>
-                     <span className="font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg text-sm border border-blue-100">
-                      {jobApps.length === 0
-                        ? t('client_dashboard.helpers_interest_neutral')
-                        : t('client_dashboard.helpers_applied_count', { count: jobApps.length })}
-                    </span>
-                   </div>
-                   <div className="flex flex-wrap items-center gap-2 mt-3">
-                     <button
-                       type="button"
-                       onClick={() => { navigate(ROUTES.clientJobs); setActiveSidebarTab('active-services'); }}
-                       className="text-sm font-bold text-gray-600 hover:text-gray-900 flex items-center gap-1"
-                     >
-                       {t('notifications.view_details')} <Icons.ChevronRight className="w-4 h-4" />
-                     </button>
-                     {!hiddenJobIds.has(job.id) ? (
-                       <button
-                         type="button"
-                         onClick={() => {
-                           if (window.confirm(t('job_actions.remove_confirm'))) {
-                             hideJobForUser(me.id, job.id);
-                             setHiddenJobIds(readHiddenJobIds(me.id));
-                           }
-                         }}
-                         className="text-sm font-bold text-slate-500 hover:text-rose-700"
-                       >
-                         {t('job_actions.remove')}
-                       </button>
-                     ) : null}
-                   </div>
-                 </LhCard>
-               );
-            })}
-            
             <section className="rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-white p-5 sm:p-6 shadow-sm">
               <h3 className="text-lg font-black text-slate-950">{t('client_how_it_works.title')}</h3>
               <div className="mt-4 grid gap-4 md:grid-cols-3">
@@ -798,8 +789,7 @@ export default function ClientDashboard() {
                           }}
                           onRemove={() => {
                             if (window.confirm(t('job_actions.remove_confirm'))) {
-                              hideJobForUser(me.id, job.id);
-                              setHiddenJobIds(readHiddenJobIds(me.id));
+                              void removeClientJob(job.id).catch(console.error);
                             }
                           }}
                           onRepublish={() => openCreateModal(job.category, job.subcategory ?? '')}
@@ -965,50 +955,6 @@ export default function ClientDashboard() {
 
         {/* Right Sidebar */}
         <div className="hidden lg:flex flex-col sticky top-24 h-[calc(100vh-120px)] space-y-4">
-          <LhCard padding="md">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 className="text-sm font-black text-slate-950">{t('client_dashboard.my_requests_sidebar_title')}</h3>
-              <button
-                type="button"
-                onClick={() => {
-                  navigate(ROUTES.clientJobs);
-                  setActiveSidebarTab('active-services');
-                }}
-                className="text-xs font-bold text-blue-600 hover:text-blue-800"
-              >
-                {t('notifications.view_all')}
-              </button>
-            </div>
-            <div className="space-y-2">
-              {jobs.filter((j) => j.clientId === me.id).slice(0, 4).length > 0 ? (
-                jobs.filter((j) => j.clientId === me.id).slice(0, 4).map((job) => {
-                  const jobApps = applications.filter((a) => a.jobId === job.id && a.status !== 'cancelled');
-                  return (
-                    <button
-                      key={job.id}
-                      type="button"
-                      onClick={() => {
-                        navigate(ROUTES.clientJobs);
-                        setActiveSidebarTab('active-services');
-                      }}
-                      className="w-full rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-left transition-colors hover:border-blue-200 hover:bg-blue-50"
-                    >
-                      <span className="line-clamp-2 text-xs font-black text-slate-900">{translateJobTitle(job.title, job.category, job.subcategory, t)}</span>
-                      <span className="mt-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-500">
-                        <span>{formatJobScheduleDisplay(job, t)}</span>
-                        <span className="text-blue-700">{t('client_dashboard.helpers_applied_count', { count: jobApps.length })}</span>
-                      </span>
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center">
-                  <p className="text-xs font-semibold text-slate-500">{t('client_dashboard.empty_no_published_requests')}</p>
-                </div>
-              )}
-            </div>
-          </LhCard>
-          
           <ClientMapWidget
             t={t}
             clientId={me.id}
@@ -1016,12 +962,18 @@ export default function ClientDashboard() {
             applications={applications}
             notifications={notifications}
           />
+          <ClientNearbyHelpersList
+            helpers={nearbyHelpers}
+            loading={nearbyHelpersLoading}
+            t={t}
+            onViewProfile={openNearbyHelperProfile}
+          />
         </div>
 
       </div>
 
       {showHelperProfileModal && selectedHelper && (
-        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/55 p-0 backdrop-blur-sm sm:items-center sm:p-4">
           <div className="bg-white w-full sm:max-w-lg max-h-[92vh] sm:max-h-[90vh] flex flex-col shadow-2xl rounded-t-3xl sm:rounded-3xl border border-gray-100/80 transition-opacity duration-200 ease-out">
             <div className="shrink-0 relative rounded-t-3xl sm:rounded-t-3xl">
               <div className="h-28 sm:h-36 bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-800 sm:rounded-t-3xl relative overflow-hidden">
@@ -1100,7 +1052,7 @@ export default function ClientDashboard() {
       )}
 
       {showHireModal && selectedHelper && (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col relative animation-bounce-in">
             <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-blue-50 to-white opacity-50" />
 

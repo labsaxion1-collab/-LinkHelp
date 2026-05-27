@@ -30,6 +30,7 @@ import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/Helpe
 import { HelperCreditsWalletCard } from '@/components/helpers/HelperCreditsWalletCard';
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
+import { HelperRadialCategoryMenu } from '@/components/helper/HelperRadialCategoryMenu';
 import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
 import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
 import { jobHasBoundedBudget, jobIsNegotiableBudget } from '@/utils/jobProposal';
@@ -51,9 +52,7 @@ import { useUserLocation } from '@/hooks/useUserLocation';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
 import { HelperProfileSkillsSection } from '@/components/helpers/profile/HelperProfileSkillsSection';
 import { distanceToJobKm, sortOpportunitiesForHelper } from '@/utils/locationMatching';
-import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import {
-  HELPER_CATEGORY_ACCENTS,
   filterToPreferredCategoriesIfPossible,
   getHelperCategoryPreferences,
   sortJobsByHelperCategoryPreference,
@@ -80,6 +79,7 @@ export default function HelperDashboard() {
   const [dismissedJobIds, setDismissedJobIds] = useState<Set<string>>(() => new Set());
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
+  const [radialFilterOpen, setRadialFilterOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<Application | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
 
@@ -135,11 +135,6 @@ export default function HelperDashboard() {
     () => SERVICE_CATEGORIES.filter((cat) => categoryPrefs.visibleCategories.includes(cat.id)),
     [categoryPrefs],
   );
-  const primaryCategoryMeta =
-    SERVICE_CATEGORIES.find((cat) => cat.id === categoryPrefs.primaryCategory) ?? SERVICE_CATEGORIES[0];
-  const PrimaryCategoryIcon = getCategoryLucideIcon(primaryCategoryMeta.icon);
-  const primaryAccent = HELPER_CATEGORY_ACCENTS[categoryPrefs.primaryCategory];
-
   useEffect(() => {
     if (!isConfigured || !storageUserId) return;
     let cancelled = false;
@@ -745,20 +740,6 @@ export default function HelperDashboard() {
             </div>
           ) : null}
 
-          {!isPerformancePage && UI_VISIBILITY.helperCredits ? (
-            <div className="mt-5 flex min-w-0 items-center gap-2 md:mt-0">
-              <HelperCreditsWalletCard
-                balance={creditBalance}
-                usedThisMonth={creditsUsedThisMonth}
-                unlocksCount={unlocks.length}
-                loading={creditsLoading}
-                compact
-                t={t}
-                onBuyCredits={goToCredits}
-              />
-            </div>
-          ) : null}
-
           {!isPerformancePage ? (
           <>
           {needsStatusUpdate ? (
@@ -770,56 +751,71 @@ export default function HelperDashboard() {
             </div>
           ) : null}
 
-          {/* Job Categories Filter & Tabs */}
-          <div className="mb-4 rounded-2xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-white p-2 shadow-sm md:rounded-3xl md:p-3">
-            <h3 className="mb-2 flex items-center gap-1.5 text-sm font-black text-slate-950 md:mb-3 md:gap-2 md:text-base">
-              {activeTab === 'candidaturas' ? (
-                <><span className="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-600 text-white md:h-9 md:w-9 md:rounded-2xl"><Icons.ClipboardList className="h-4 w-4 md:h-5 md:w-5" /></span> {t('helper_dashboard.filter_apps_title')}</>
-              ) : (
-                <>
-                  <span className={`flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-br ${primaryAccent.chip} text-white md:h-9 md:w-9 md:rounded-2xl ${primaryAccent.glow}`}>
-                    <PrimaryCategoryIcon className="h-4 w-4 md:h-5 md:w-5" />
-                  </span>
-                  {t('helper_dashboard.filter_find_title')}
-                </>
-              )}
-            </h3>
-            
-            <div className="mb-2 flex gap-1.5 overflow-x-auto border-b border-blue-100/70 pb-2 hide-scrollbar md:mb-3 md:gap-2 md:pb-3">
-              <button 
-                onClick={() => setSelectedCategoryFilter('')} 
-                className={`flex min-h-[36px] items-center gap-1.5 whitespace-nowrap rounded-xl border px-2 text-[10px] font-black transition-colors md:min-h-[46px] md:gap-2 md:rounded-2xl md:px-3 md:text-xs sm:text-sm ${!selectedCategoryFilter ? 'border-blue-300 bg-white text-blue-700 shadow-sm' : 'border-transparent bg-white/70 text-slate-600 hover:bg-white'}`}
-              >
-                <span className={`flex h-6 w-6 items-center justify-center rounded-lg md:h-8 md:w-8 md:rounded-xl ${!selectedCategoryFilter ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  <Icons.Layers className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          <div className="mb-3 flex items-start justify-between gap-2">
+            {activeTab === 'candidaturas' ? (
+              <h3 className="flex items-center gap-2 text-sm font-black text-slate-950">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white">
+                  <Icons.ClipboardList className="h-4 w-4" />
                 </span>
-                {t('helper_dashboard.all_categories')}
-              </button>
-              {visibleServiceCategories.map((cat) => {
-                const IconComponent = getCategoryLucideIcon(cat.icon);
-                const isSelected = selectedCategoryFilter === cat.id;
-                const accent = HELPER_CATEGORY_ACCENTS[cat.id];
-                return (
-                  <button 
-                    key={cat.id}
-                    onClick={() => setSelectedCategoryFilter(cat.id)}
-                    className={`flex min-h-[36px] items-center gap-1.5 whitespace-nowrap rounded-xl border px-2 text-[10px] font-black transition-all md:min-h-[46px] md:gap-2 md:rounded-2xl md:px-3 md:text-xs sm:text-sm ${isSelected ? `${accent.active} shadow-sm` : 'border-transparent bg-white/70 text-slate-600 hover:bg-white'}`}
-                  >
-                    <span className={`flex h-6 w-6 items-center justify-center rounded-lg md:h-8 md:w-8 md:rounded-xl ${isSelected ? accent.icon : 'bg-slate-100 text-slate-400'}`}>
-                      <IconComponent className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                    </span>
-                    {t(`categories.${cat.id}`)}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="grid grid-cols-2 gap-1.5 md:gap-2 lg:flex lg:overflow-x-auto lg:pb-1 hide-scrollbar">
-              <button onClick={() => setActiveTab('match')} className={`min-h-[32px] rounded-lg px-2 py-1 text-[10px] font-black leading-tight transition-colors md:min-h-[40px] md:rounded-2xl md:px-3 md:text-xs lg:text-sm ${activeTab === 'match' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.tab_match')}</button>
-              <button onClick={() => setActiveTab('recentes')} className={`min-h-[32px] rounded-lg px-2 py-1 text-[10px] font-black leading-tight transition-colors md:min-h-[40px] md:rounded-2xl md:px-3 md:text-xs lg:text-sm ${activeTab === 'recentes' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.tab_recent')}</button>
-              <button onClick={() => setActiveTab('candidaturas')} className={`min-h-[32px] rounded-lg px-2 py-1 text-[10px] font-black leading-tight transition-colors md:min-h-[40px] md:rounded-2xl md:px-3 md:text-xs lg:text-sm ${activeTab === 'candidaturas' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.nav_applications')}</button>
-            </div>
+                {t('helper_dashboard.filter_apps_title')}
+              </h3>
+            ) : (
+              <HelperRadialCategoryMenu
+                open={radialFilterOpen}
+                onToggle={() => setRadialFilterOpen((v) => !v)}
+                categories={visibleServiceCategories}
+                primaryCategoryId={categoryPrefs.primaryCategory}
+                selectedId={selectedCategoryFilter}
+                onSelect={setSelectedCategoryFilter}
+                t={t}
+              />
+            )}
+            {!isPerformancePage && UI_VISIBILITY.helperCredits ? (
+              <HelperCreditsWalletCard
+                balance={creditBalance}
+                usedThisMonth={creditsUsedThisMonth}
+                unlocksCount={unlocks.length}
+                loading={creditsLoading}
+                compact
+                t={t}
+                onBuyCredits={goToCredits}
+              />
+            ) : null}
           </div>
+
+          {activeTab !== 'candidaturas' ? (
+            <div className="mb-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('match')}
+                className={`min-h-[34px] flex-1 rounded-xl px-2 text-[11px] font-black ${activeTab === 'match' ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}
+              >
+                {t('helper_dashboard.tab_match')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('recentes')}
+                className={`min-h-[34px] flex-1 rounded-xl px-2 text-[11px] font-black ${activeTab === 'recentes' ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}
+              >
+                {t('helper_dashboard.tab_recent')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('candidaturas')}
+                className="min-h-[34px] shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-[11px] font-black text-slate-600"
+              >
+                {t('helper_dashboard.nav_applications')}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setActiveTab('match')}
+              className="mb-3 text-xs font-bold text-blue-700"
+            >
+              {t('helper_dashboard.back_to_feed')}
+            </button>
+          )}
 
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900">{activeTab === 'candidaturas' ? t('helper_dashboard.feed_title_apps') : t('helper_dashboard.feed_title_jobs')}</h2>

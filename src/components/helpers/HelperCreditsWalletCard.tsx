@@ -33,12 +33,12 @@ export function HelperCreditsWalletCard({
       <button
         type="button"
         onClick={onBuyCredits}
-        className="mb-3 inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-blue-100 bg-white px-3 text-left text-sm font-bold text-slate-700 shadow-sm hover:border-blue-200 hover:bg-blue-50"
+        className="inline-flex min-h-[34px] max-w-[9.5rem] shrink-0 items-center gap-1.5 rounded-full border border-blue-200/80 bg-white/95 px-2.5 py-1 text-left text-[11px] font-bold text-slate-700 shadow-sm hover:border-blue-300 hover:bg-blue-50"
       >
-        <Icons.Coins className="h-4 w-4 text-blue-600" />
-        <span className="text-slate-500">{t('helper_dashboard.credits_label')}</span>
-        <span className="text-sm font-black tabular-nums text-slate-950">{loading ? '...' : balanceLabel}</span>
-        {lowBalance ? <span className="h-2 w-2 rounded-full bg-amber-400" /> : null}
+        <Icons.Coins className="h-3.5 w-3.5 shrink-0 text-blue-600" />
+        <span className="truncate text-slate-500">{t('helper_dashboard.credits_label')}</span>
+        <span className="truncate text-[11px] font-black tabular-nums text-slate-950">{loading ? '…' : balanceLabel}</span>
+        {lowBalance ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" /> : null}
       </button>
     );
   }

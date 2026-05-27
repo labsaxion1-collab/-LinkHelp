@@ -1,6 +1,7 @@
-import { memo, useRef } from 'react';
+import { memo, useState } from 'react';
 import * as Icons from 'lucide-react';
-import { Check, CheckCircle2, Clock, MapPin } from 'lucide-react';
+import { CheckCircle2, Clock, MapPin } from 'lucide-react';
+import { motion, useMotionValue, useTransform, type PanInfo } from 'motion/react';
 import type { Job } from '@/types/job';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { isBeautyScheduledJob } from '@/utils/jobDisplay';
@@ -90,21 +91,28 @@ function HelperOpportunityCardInner({
   const category = translateCategory(job.category, t);
   const loc = locationLabel(job, distanceKm, t);
   const budget = valueLabel(job, t);
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const dragX = useMotionValue(0);
+  const rotate = useTransform(dragX, [-120, 0, 120], [-6, 0, 6]);
+  const acceptOpacity = useTransform(dragX, [20, 90], [0, 1]);
+  const passOpacity = useTransform(dragX, [-90, -20], [1, 0]);
+  const [swipeTint, setSwipeTint] = useState<'none' | 'accept' | 'pass'>('none');
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  const finishSwipe = (offset: number) => {
+    if (hasApplied) return;
+    if (offset > 90) {
+      setSwipeTint('accept');
+      window.setTimeout(() => onApply(job), 180);
+      return;
+    }
+    if (offset < -90) {
+      setSwipeTint('pass');
+      window.setTimeout(() => onDismiss?.(job.id), 180);
+    }
   };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStart.current || hasApplied) return;
-    const dx = e.changedTouches[0].clientX - touchStart.current.x;
-    const dy = e.changedTouches[0].clientY - touchStart.current.y;
-    if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.4) {
-      if (dx > 0) onApply(job);
-      else onDismiss?.(job.id);
-    }
-    touchStart.current = null;
+  const onDragEnd = (_: unknown, info: PanInfo) => {
+    finishSwipe(info.offset.x);
+    if (Math.abs(info.offset.x) <= 90) dragX.set(0);
   };
 
   const ctaBase =
@@ -160,12 +168,31 @@ function HelperOpportunityCardInner({
     <LhCard padding="none" className={cardShell}>
       {header}
 
-      {/* Mobile compact — scan-first: horário, valor, distância, urgência */}
-      <div
-        className="w-full max-w-full p-2.5 md:hidden"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+      {/* Mobile compact — swipe to apply / pass */}
+      <motion.div
+        className={clsx(
+          'relative w-full max-w-full touch-pan-y p-2.5 md:hidden',
+          swipeTint === 'accept' && 'bg-emerald-500/15',
+          swipeTint === 'pass' && 'bg-rose-500/15',
+        )}
+        style={{ x: dragX, rotate }}
+        drag={hasApplied ? false : 'x'}
+        dragConstraints={{ left: -140, right: 140 }}
+        dragElastic={0.2}
+        onDragEnd={onDragEnd}
       >
+        <motion.div
+          style={{ opacity: acceptOpacity }}
+          className="pointer-events-none absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg"
+        >
+          <Icons.Check className="h-5 w-5" />
+        </motion.div>
+        <motion.div
+          style={{ opacity: passOpacity }}
+          className="pointer-events-none absolute left-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg"
+        >
+          <Icons.X className="h-5 w-5" />
+        </motion.div>
         <div className="mb-2 flex items-center justify-between gap-2">
           {tier === 'urgent' ? (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-rose-600 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow-sm shadow-rose-600/30">
@@ -197,48 +224,31 @@ function HelperOpportunityCardInner({
         <p className="mb-0.5 line-clamp-1 text-xs font-semibold text-slate-300">{translateJobTitle(job.title, job.category, job.subcategory, t)}</p>
         <p className="mb-2 truncate text-[10px] font-medium text-slate-500">{job.clientName}</p>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-1.5">
           {onViewDetails ? (
             <button
               type="button"
               onClick={() => onViewDetails(job)}
-              className={`${ctaBase} border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50`}
+              className={`${ctaBase} w-full border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50`}
             >
               <Icons.FileText className="h-4 w-4 shrink-0" />
               <span className="truncate">{t('notifications.view_details')}</span>
             </button>
           ) : null}
           {hasApplied ? (
-            <button
-              type="button"
-              disabled
-              className={`${ctaBase} cursor-not-allowed border border-emerald-200/80 bg-emerald-100 text-emerald-800`}
-            >
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              <span className="truncate">{t('helper_dashboard.applied_sent')}</span>
-            </button>
+            <p className="text-center text-[10px] font-bold text-emerald-700">{t('helper_dashboard.applied_sent')}</p>
+          ) : isApplying ? (
+            <p className="flex items-center justify-center gap-1 text-center text-[10px] font-bold text-blue-700">
+              <Icons.Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {t('helper_dashboard.apply_sending')}
+            </p>
           ) : (
-            <button
-              type="button"
-              onClick={() => onApply(job)}
-              disabled={isApplying}
-              className={`${ctaBase} border border-blue-600/90 bg-blue-600 text-white hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-70`}
-            >
-              {isApplying ? (
-                <>
-                  <Icons.Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                  <span className="truncate">{t('helper_dashboard.apply_sending')}</span>
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{t('helper_dashboard.apply_now')}</span>
-                </>
-              )}
-            </button>
+            <p className="text-center text-[10px] font-semibold text-slate-500">
+              {t('helper_dashboard.swipe_apply_hint')}
+            </p>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Desktop full */}
       <div className="hidden w-full max-w-full md:block">
@@ -351,7 +361,7 @@ function HelperOpportunityCardInner({
                 </>
               ) : (
                 <>
-                  <Check className="h-4 w-4 shrink-0" /> {t('helper_dashboard.apply_now')}
+                  <Icons.Check className="h-4 w-4 shrink-0" /> {t('helper_dashboard.apply_now')}
                 </>
               )}
             </button>

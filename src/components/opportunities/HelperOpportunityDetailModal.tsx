@@ -26,7 +26,7 @@ export function HelperOpportunityDetailModal({
   if (!open || !job) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center p-0 sm:items-center sm:p-4">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/55 p-0 backdrop-blur-sm sm:items-center sm:p-4">
       <button
         type="button"
         className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"

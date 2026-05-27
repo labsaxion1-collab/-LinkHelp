@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { premium } from './premiumClasses';
@@ -38,7 +39,7 @@ export function LhModal({ open, onClose, title, children, footer, size = 'md', c
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className={premium.modalOverlay} onClick={onClose} role="presentation">
       <div
         role="dialog"
@@ -64,6 +65,7 @@ export function LhModal({ open, onClose, title, children, footer, size = 'md', c
         </div>
         {footer ? <footer className={premium.modalFooter}>{footer}</footer> : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

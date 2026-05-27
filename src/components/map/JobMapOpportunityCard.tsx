@@ -1,7 +1,7 @@
 import * as Icons from 'lucide-react';
 import type { Job } from '@/types/job';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
-import { translateCategory } from '@/utils/translateCategory';
+import { translateCategory, translateJobTitle } from '@/utils/translateCategory';
 
 type Props = {
   job: Job;
@@ -20,7 +20,7 @@ export function JobMapOpportunityCard({ job, distanceKm, t, onViewOpportunity }:
           {translateCategory(job.category, t)}
         </span>
         <p className="mt-1 text-sm font-black text-gray-900 leading-snug">{clientName}</p>
-        <p className="text-xs font-medium text-gray-500 line-clamp-2">{job.title}</p>
+        <p className="text-xs font-medium text-gray-500 line-clamp-2">{translateJobTitle(job.title, job.category, job.subcategory, t)}</p>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-gray-600">
         <span className="inline-flex items-center gap-1">

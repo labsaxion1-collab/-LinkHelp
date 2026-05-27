@@ -18,6 +18,8 @@ export type ProfileRow = {
   phone: string | null;
   preferred_language: string | null;
   spoken_languages: string[] | null;
+  primary_category: string | null;
+  secondary_categories: string[] | null;
   /** State / province (e.g. QC). */
   region: string | null;
   country: string | null;

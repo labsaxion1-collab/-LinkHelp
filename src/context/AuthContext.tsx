@@ -641,6 +641,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         'phone',
         'preferred_language',
         'spoken_languages',
+        'primary_category',
+        'secondary_categories',
         'rating',
         'credits',
         'accepted_terms',

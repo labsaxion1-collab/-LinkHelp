@@ -5,6 +5,7 @@ import { formatScheduledClock, formatScheduledDay } from '@/utils/upcomingJobUti
 import { ROUTES } from '@/utils/constants';
 import { LhModal } from '@/components/design-system/LhModal';
 import { premium } from '@/components/design-system/premiumClasses';
+import { translateJobTitle } from '@/utils/translateCategory';
 
 interface UpcomingJobDetailModalProps {
   job: UpcomingJob | null;
@@ -19,19 +20,19 @@ interface UpcomingJobDetailModalProps {
 function statusBadgeClass(s: UpcomingWorkflowStatus): string {
   switch (s) {
     case 'scheduled':
-      return 'border-sky-400/30 bg-sky-500/15 text-sky-200';
+      return 'border-sky-200 bg-sky-50 text-sky-800';
     case 'in_progress':
-      return 'border-amber-400/30 bg-amber-500/15 text-amber-200';
+      return 'border-amber-200 bg-amber-50 text-amber-900';
     case 'arriving':
-      return 'border-violet-400/30 bg-violet-500/15 text-violet-200';
+      return 'border-violet-200 bg-violet-50 text-violet-800';
     case 'awaiting_client_confirmation':
-      return 'border-blue-400/30 bg-blue-500/15 text-blue-200';
+      return 'border-blue-200 bg-blue-50 text-blue-800';
     case 'completed':
-      return 'border-emerald-400/30 bg-emerald-500/15 text-emerald-200';
+      return 'border-emerald-200 bg-emerald-50 text-emerald-800';
     case 'cancelled':
-      return 'border-white/15 bg-white/5 text-[#F2F4F7]/60';
+      return 'border-slate-200 bg-slate-100 text-slate-600';
     default:
-      return 'border-white/15 bg-white/5 text-[#F2F4F7]/70';
+      return 'border-slate-200 bg-slate-50 text-slate-700';
   }
 }
 
@@ -47,7 +48,7 @@ function statusLabel(s: UpcomingWorkflowStatus, t: (key: string) => string): str
   return t(map[s]);
 }
 
-const statCell = 'rounded-2xl border border-[#33B6FF]/15 bg-white/[0.04] p-3';
+const statCell = 'rounded-2xl border border-sky-100 bg-white/80 p-3 shadow-sm';
 
 export function UpcomingJobDetailModal({
   job,
@@ -65,6 +66,7 @@ export function UpcomingJobDetailModal({
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.location)}`;
   const day = formatScheduledDay(job.scheduledAt, locale);
   const clock = formatScheduledClock(job.scheduledAt, locale);
+  const translatedTitle = translateJobTitle(job.title, job.category, null, t);
   const urgencyLabel =
     job.urgency === 'high' ? t('upcoming_jobs.urgency_high') : t('upcoming_jobs.urgency_normal');
   const isTerminal =
@@ -78,8 +80,8 @@ export function UpcomingJobDetailModal({
         <Icons.Briefcase className="h-5 w-5" />
       </div>
       <div className="min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-[#33B6FF]/80">{t('upcoming_jobs.modal_title')}</p>
-        <p className="truncate text-base font-black text-white">{job.title}</p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600">{t('upcoming_jobs.modal_title')}</p>
+        <p className="truncate text-base font-black text-slate-950">{translatedTitle}</p>
       </div>
     </div>
   );
@@ -94,7 +96,7 @@ export function UpcomingJobDetailModal({
             className="h-14 w-14 shrink-0 rounded-2xl border-2 border-[#33B6FF]/20 object-cover shadow-md"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold leading-snug text-[#F2F4F7]">
+            <p className="text-sm font-bold leading-snug text-slate-900">
               {t('upcoming_jobs.client_label', { name: job.clientName })}
             </p>
             <span
@@ -107,30 +109,30 @@ export function UpcomingJobDetailModal({
 
         <div className="grid grid-cols-2 gap-3">
           <div className={statCell}>
-            <p className="mb-1 text-[10px] font-bold uppercase text-[#F2F4F7]/50">{t('upcoming_jobs.category')}</p>
-            <p className="text-sm font-bold leading-tight text-white">{translateCategory(job.category, t)}</p>
+            <p className="mb-1 text-[10px] font-bold uppercase text-slate-500">{t('upcoming_jobs.category')}</p>
+            <p className="text-sm font-bold leading-tight text-slate-950">{translateCategory(job.category, t)}</p>
           </div>
           <div className={statCell}>
-            <p className="mb-1 text-[10px] font-bold uppercase text-[#F2F4F7]/50">{t('upcoming_jobs.date_time')}</p>
-            <p className="text-sm font-bold leading-tight text-white">
+            <p className="mb-1 text-[10px] font-bold uppercase text-slate-500">{t('upcoming_jobs.date_time')}</p>
+            <p className="text-sm font-bold leading-tight text-slate-950">
               {day} · {clock}
             </p>
           </div>
           <div className={`${statCell} col-span-2`}>
-            <p className="mb-1 text-[10px] font-bold uppercase text-[#F2F4F7]/50">{t('upcoming_jobs.location')}</p>
-            <p className="text-sm font-bold leading-tight text-white">{job.location}</p>
+            <p className="mb-1 text-[10px] font-bold uppercase text-slate-500">{t('upcoming_jobs.location')}</p>
+            <p className="text-sm font-bold leading-tight text-slate-950">{job.location}</p>
           </div>
           <div className={statCell}>
-            <p className="mb-1 text-[10px] font-bold uppercase text-[#F2F4F7]/50">{t('upcoming_jobs.payment_est')}</p>
-            <p className="text-sm font-bold leading-tight text-emerald-300">${job.value}</p>
+            <p className="mb-1 text-[10px] font-bold uppercase text-slate-500">{t('upcoming_jobs.payment_est')}</p>
+            <p className="text-sm font-bold leading-tight text-emerald-700">${job.value}</p>
           </div>
           <div className={statCell}>
-            <p className="mb-1 text-[10px] font-bold uppercase text-[#F2F4F7]/50">{t('upcoming_jobs.urgency_label')}</p>
-            <p className="text-sm font-bold leading-tight text-white">{urgencyLabel}</p>
+            <p className="mb-1 text-[10px] font-bold uppercase text-slate-500">{t('upcoming_jobs.urgency_label')}</p>
+            <p className="text-sm font-bold leading-tight text-slate-950">{urgencyLabel}</p>
           </div>
           <div className={`${statCell} col-span-2`}>
-            <p className="mb-1 text-[10px] font-bold uppercase text-[#F2F4F7]/50">{t('upcoming_jobs.details')}</p>
-            <p className="text-sm font-medium leading-snug text-[#F2F4F7]/80">{job.description}</p>
+            <p className="mb-1 text-[10px] font-bold uppercase text-slate-500">{t('upcoming_jobs.details')}</p>
+            <p className="text-sm font-medium leading-snug text-slate-700">{job.description}</p>
           </div>
         </div>
 
@@ -195,7 +197,7 @@ export function UpcomingJobDetailModal({
             <button
               type="button"
               onClick={() => onUpdateWorkflow(job.id, 'cancelled')}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 py-3 text-sm font-bold text-red-200 transition-colors hover:bg-red-500/20"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-3 text-sm font-bold text-red-700 transition-colors hover:bg-red-100"
             >
               <Icons.Ban className="h-4 w-4" />
               {t('upcoming_jobs.cancel_job')}

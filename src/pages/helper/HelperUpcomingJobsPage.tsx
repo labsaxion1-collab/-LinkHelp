@@ -4,7 +4,7 @@ import * as Icons from 'lucide-react';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData, type UpcomingJob, type UpcomingWorkflowStatus } from '@/context/AppDataContext';
-import { translateCategory } from '@/utils/translateCategory';
+import { translateCategory, translateJobTitle } from '@/utils/translateCategory';
 import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailModal';
 import { formatScheduledClock, formatScheduledDay } from '@/utils/upcomingJobUtils';
 import { ROUTES } from '@/utils/constants';
@@ -122,7 +122,7 @@ export default function HelperUpcomingJobsPage() {
                         {tc(job.category)}
                       </span>
                     </div>
-                    <h2 className="font-bold text-gray-900 text-base sm:text-lg leading-snug truncate">{job.title}</h2>
+                    <h2 className="font-bold text-gray-900 text-base sm:text-lg leading-snug truncate">{translateJobTitle(job.title, job.category, null, t)}</h2>
                     <p className="text-sm text-gray-500 mt-1">
                       {t('upcoming_jobs.client_label', { name: job.clientName })}
                     </p>

@@ -27,6 +27,15 @@ export function LhModal({ open, onClose, title, children, footer, size = 'md', c
     bodyRef.current?.scrollTo(0, 0);
   }, [open, title]);
 
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -39,11 +48,11 @@ export function LhModal({ open, onClose, title, children, footer, size = 'md', c
       >
         {title ? (
           <header className={premium.modalHeader}>
-            <div className="min-w-0 flex-1 text-lg font-black text-white">{title}</div>
+            <div className="min-w-0 flex-1 text-lg font-black text-slate-950">{title}</div>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-white/10 bg-white/5 p-2 text-[#F2F4F7]/70 transition-colors hover:bg-white/10 hover:text-white"
+              className="rounded-full border border-sky-100 bg-white/70 p-2 text-slate-500 transition-colors hover:bg-white hover:text-slate-900"
               aria-label="Close"
             >
               <X className="h-5 w-5" />

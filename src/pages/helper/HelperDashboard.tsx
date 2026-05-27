@@ -16,7 +16,7 @@ import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { UpcomingJobsSidebar } from '@/components/helpers/UpcomingJobsSidebar';
 import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailModal';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
-import { resolveCategoryId, translateCategory } from '@/utils/translateCategory';
+import { resolveCategoryId, translateCategory, translateJobTitle } from '@/utils/translateCategory';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
@@ -50,6 +50,12 @@ import { UserProfileModal } from '@/components/profile/UserProfileModal';
 import { HelperProfileSkillsSection } from '@/components/helpers/profile/HelperProfileSkillsSection';
 import { distanceToJobKm, sortOpportunitiesForHelper } from '@/utils/locationMatching';
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
+import {
+  HELPER_CATEGORY_ACCENTS,
+  filterToPreferredCategoriesIfPossible,
+  getHelperCategoryPreferences,
+  sortJobsByHelperCategoryPreference,
+} from '@/utils/helperCategoryPreferences';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
@@ -117,6 +123,18 @@ export default function HelperDashboard() {
 
   const storageUserId = session?.user?.id ?? profile?.id ?? null;
   const helperAvatarUrl = profile?.avatar_url?.trim() || profileSettings.avatarDataUrl?.trim() || null;
+  const categoryPrefs = useMemo(
+    () => getHelperCategoryPreferences(profile, profileSettings.skillIds),
+    [profile, profileSettings.skillIds],
+  );
+  const visibleServiceCategories = useMemo(
+    () => SERVICE_CATEGORIES.filter((cat) => categoryPrefs.visibleCategories.includes(cat.id)),
+    [categoryPrefs],
+  );
+  const primaryCategoryMeta =
+    SERVICE_CATEGORIES.find((cat) => cat.id === categoryPrefs.primaryCategory) ?? SERVICE_CATEGORIES[0];
+  const PrimaryCategoryIcon = getCategoryLucideIcon(primaryCategoryMeta.icon);
+  const primaryAccent = HELPER_CATEGORY_ACCENTS[categoryPrefs.primaryCategory];
 
   useEffect(() => {
     if (!isConfigured || !storageUserId) return;
@@ -391,6 +409,12 @@ export default function HelperDashboard() {
     } else if (activeTab === 'candidaturas') {
       list = [];
     }
+    if (!selectedCategoryFilter && activeTab !== 'candidaturas') {
+      list = filterToPreferredCategoriesIfPossible(
+        sortJobsByHelperCategoryPreference(list, categoryPrefs),
+        categoryPrefs,
+      );
+    }
     return list;
   }, [
     jobs,
@@ -399,13 +423,16 @@ export default function HelperDashboard() {
     helperCoords,
     profileSettings.skillIds,
     me.subscriptionTier,
+    categoryPrefs,
   ]);
 
   const feedActiveTab =
     activeTab === 'match' || activeTab === 'recentes' || activeTab === 'emergencia' ? activeTab : 'match';
 
-  const radarJobs = jobs
-    .filter((j) => j.status === 'open')
+  const radarJobs = filterToPreferredCategoriesIfPossible(
+    jobs.filter((j) => j.status === 'open'),
+    categoryPrefs,
+  )
     .map((job) => ({ job, distanceKm: distanceToJobKm(helperCoords, job) }))
     .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
     .slice(0, 3);
@@ -712,13 +739,6 @@ export default function HelperDashboard() {
                 t={t}
                 onBuyCredits={goToCredits}
               />
-              <Link
-                to={ROUTES.helperJobs}
-                className="mb-3 inline-flex min-h-[40px] shrink-0 items-center gap-2 rounded-xl border border-blue-100 bg-white px-3 text-sm font-bold text-slate-700 shadow-sm hover:border-blue-200 hover:bg-blue-50"
-              >
-                <Icons.CalendarDays className="h-4 w-4 text-blue-600" />
-                <span>{t('helper_dashboard.nav_active_services')}</span>
-              </Link>
             </div>
           ) : null}
 
@@ -739,7 +759,12 @@ export default function HelperDashboard() {
               {activeTab === 'candidaturas' ? (
                 <><span className="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-600 text-white md:h-9 md:w-9 md:rounded-2xl"><Icons.ClipboardList className="h-4 w-4 md:h-5 md:w-5" /></span> {t('helper_dashboard.filter_apps_title')}</>
               ) : (
-                <><span className="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-600 text-white md:h-9 md:w-9 md:rounded-2xl"><Icons.Target className="h-4 w-4 md:h-5 md:w-5" /></span> {t('helper_dashboard.filter_find_title')}</>
+                <>
+                  <span className={`flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-br ${primaryAccent.chip} text-white md:h-9 md:w-9 md:rounded-2xl ${primaryAccent.glow}`}>
+                    <PrimaryCategoryIcon className="h-4 w-4 md:h-5 md:w-5" />
+                  </span>
+                  {t('helper_dashboard.filter_find_title')}
+                </>
               )}
             </h3>
             
@@ -753,16 +778,17 @@ export default function HelperDashboard() {
                 </span>
                 {t('helper_dashboard.all_categories')}
               </button>
-              {SERVICE_CATEGORIES.map((cat) => {
+              {visibleServiceCategories.map((cat) => {
                 const IconComponent = getCategoryLucideIcon(cat.icon);
                 const isSelected = selectedCategoryFilter === cat.id;
+                const accent = HELPER_CATEGORY_ACCENTS[cat.id];
                 return (
                   <button 
                     key={cat.id}
                     onClick={() => setSelectedCategoryFilter(cat.id)}
-                    className={`flex min-h-[36px] items-center gap-1.5 whitespace-nowrap rounded-xl border px-2 text-[10px] font-black transition-all md:min-h-[46px] md:gap-2 md:rounded-2xl md:px-3 md:text-xs sm:text-sm ${isSelected ? 'border-blue-300 bg-white text-blue-700 shadow-sm' : 'border-transparent bg-white/70 text-slate-600 hover:bg-white'}`}
+                    className={`flex min-h-[36px] items-center gap-1.5 whitespace-nowrap rounded-xl border px-2 text-[10px] font-black transition-all md:min-h-[46px] md:gap-2 md:rounded-2xl md:px-3 md:text-xs sm:text-sm ${isSelected ? `${accent.active} shadow-sm` : 'border-transparent bg-white/70 text-slate-600 hover:bg-white'}`}
                   >
-                    <span className={`flex h-6 w-6 items-center justify-center rounded-lg md:h-8 md:w-8 md:rounded-xl ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-lg md:h-8 md:w-8 md:rounded-xl ${isSelected ? accent.icon : 'bg-slate-100 text-slate-400'}`}>
                       <IconComponent className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     </span>
                     {t(`categories.${cat.id}`)}
@@ -774,7 +800,6 @@ export default function HelperDashboard() {
             <div className="grid grid-cols-2 gap-1.5 md:gap-2 lg:flex lg:overflow-x-auto lg:pb-1 hide-scrollbar">
               <button onClick={() => setActiveTab('match')} className={`min-h-[32px] rounded-lg px-2 py-1 text-[10px] font-black leading-tight transition-colors md:min-h-[40px] md:rounded-2xl md:px-3 md:text-xs lg:text-sm ${activeTab === 'match' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.tab_match')}</button>
               <button onClick={() => setActiveTab('recentes')} className={`min-h-[32px] rounded-lg px-2 py-1 text-[10px] font-black leading-tight transition-colors md:min-h-[40px] md:rounded-2xl md:px-3 md:text-xs lg:text-sm ${activeTab === 'recentes' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.tab_recent')}</button>
-              <button onClick={() => setActiveTab('emergencia')} className={`min-h-[32px] rounded-lg px-2 py-1 text-[10px] font-black leading-tight transition-colors md:min-h-[40px] md:rounded-2xl md:px-3 md:text-xs lg:text-sm ${activeTab === 'emergencia' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.tab_emergency')}</button>
               <button onClick={() => setActiveTab('candidaturas')} className={`min-h-[32px] rounded-lg px-2 py-1 text-[10px] font-black leading-tight transition-colors md:min-h-[40px] md:rounded-2xl md:px-3 md:text-xs lg:text-sm ${activeTab === 'candidaturas' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t('helper_dashboard.nav_applications')}</button>
             </div>
           </div>
@@ -826,7 +851,7 @@ export default function HelperDashboard() {
                             <p className="text-xs text-gray-400 font-medium">{translateCategory(job.category, t)}</p>
                           </div>
                         </div>
-                        <h4 className="text-lg font-bold text-gray-900 mb-3 leading-tight">{job.title}</h4>
+                        <h4 className="text-lg font-bold text-gray-900 mb-3 leading-tight">{translateJobTitle(job.title, job.category, job.subcategory, t)}</h4>
                         <div className="flex flex-wrap gap-2 text-sm text-gray-500 mb-2">
                           <span className="bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-gray-600"><Clock className="w-3.5 h-3.5 text-gray-400" /> {formatJobScheduleDisplay(job, t)}</span>
                           <span className="bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-gray-600"><MapPin className="w-3.5 h-3.5 text-gray-400" /> {job.location}</span>
@@ -915,7 +940,7 @@ export default function HelperDashboard() {
                      <Icons.MapPin className="h-4 w-4" />
                    </span>
                    <span className="min-w-0 flex-1">
-                     <span className="block truncate text-sm font-black text-slate-900">{job.title}</span>
+                     <span className="block truncate text-sm font-black text-slate-900">{translateJobTitle(job.title, job.category, job.subcategory, t)}</span>
                      <span className="block truncate text-xs font-bold text-slate-500">
                        {distanceKm != null ? t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) }) : job.city || job.location}
                      </span>

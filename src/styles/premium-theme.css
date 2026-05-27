@@ -173,7 +173,7 @@
   .lh-modal-overlay {
     position: fixed;
     inset: 0;
-    z-index: 50;
+    z-index: 90;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -184,6 +184,7 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .lh-modal-panel {

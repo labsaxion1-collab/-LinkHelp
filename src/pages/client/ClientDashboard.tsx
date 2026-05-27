@@ -35,6 +35,7 @@ import {
   isJobVisibleToClient,
   readHiddenJobIds,
 } from '@/utils/jobVisibility';
+import { translateJobTitle } from '@/utils/translateCategory';
 type RecommendedHelperCard = {
   id: number;
   name: string;
@@ -531,7 +532,7 @@ export default function ClientDashboard() {
                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md mb-2 inline-block uppercase tracking-wider ${job.status === 'open' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 'bg-green-100 text-green-700 border border-green-200'}`}>
                          {job.status === 'open' ? t('jobs.request_status_open') : t('jobs.request_status_in_progress')}
                        </span>
-                       <h3 className="font-bold text-gray-900 text-lg leading-tight">{job.title}</h3>
+                       <h3 className="font-bold text-gray-900 text-lg leading-tight">{translateJobTitle(job.title, job.category, job.subcategory, t)}</h3>
                      </div>
                      <span className="font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg text-sm border border-blue-100">
                       {jobApps.length === 0
@@ -768,7 +769,7 @@ export default function ClientDashboard() {
                                   ? t('client_dashboard.status_waiting_helpers')
                                   : t('client_dashboard.status_in_progress')}
                             </span>
-                            <h3 className="font-bold text-gray-900 text-lg leading-snug line-clamp-2">{job.title}</h3>
+                            <h3 className="font-bold text-gray-900 text-lg leading-snug line-clamp-2">{translateJobTitle(job.title, job.category, job.subcategory, t)}</h3>
                             <p className="text-gray-500 text-xs md:text-sm flex items-center gap-1 mt-1 min-w-0">
                               <Icons.Clock className="w-4 h-4 shrink-0" />
                               <span className="truncate">{formatJobScheduleDisplay(job, t)}</span>
@@ -988,7 +989,7 @@ export default function ClientDashboard() {
                       }}
                       className="w-full rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-left transition-colors hover:border-blue-200 hover:bg-blue-50"
                     >
-                      <span className="line-clamp-2 text-xs font-black text-slate-900">{job.title}</span>
+                      <span className="line-clamp-2 text-xs font-black text-slate-900">{translateJobTitle(job.title, job.category, job.subcategory, t)}</span>
                       <span className="mt-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-500">
                         <span>{formatJobScheduleDisplay(job, t)}</span>
                         <span className="text-blue-700">{t('client_dashboard.helpers_applied_count', { count: jobApps.length })}</span>

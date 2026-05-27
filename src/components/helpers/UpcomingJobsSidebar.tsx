@@ -4,6 +4,7 @@ import * as Icons from 'lucide-react';
 import type { UpcomingJob, UpcomingWorkflowStatus } from '@/context/AppDataContext';
 import { formatScheduledClock, formatScheduledDay } from '@/utils/upcomingJobUtils';
 import { ROUTES } from '@/utils/constants';
+import { translateJobTitle } from '@/utils/translateCategory';
 
 function isActiveStatus(s: UpcomingWorkflowStatus) {
   return s !== 'completed' && s !== 'cancelled';
@@ -147,7 +148,7 @@ export function UpcomingJobsSidebar({
                   {t('helper_dashboard.compensation_neutral')}
                 </span>
               </div>
-              <h4 className="font-bold text-gray-900 text-sm leading-snug mb-1.5 line-clamp-2">{job.title}</h4>
+              <h4 className="font-bold text-gray-900 text-sm leading-snug mb-1.5 line-clamp-2">{translateJobTitle(job.title, job.category, null, t)}</h4>
               <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-1">
                 <Icons.Clock className="w-3.5 h-3.5 shrink-0 text-gray-400" />
                 <span className="truncate">

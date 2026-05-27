@@ -12,6 +12,7 @@ import {
   Languages,
   Briefcase,
   Image,
+  CheckCircle2,
 } from 'lucide-react';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useLanguage } from '@/context/LanguageContext';
@@ -33,6 +34,9 @@ import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { SIGNUP_BONUS_LC } from '@/config/onboardingRewards';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
+import { SERVICE_CATEGORIES, type ServiceCategoryId } from '@/data/serviceCategories';
+import { getCategoryLucideIcon } from '@/utils/categoryIcons';
+import { HELPER_CATEGORY_ACCENTS, getHelperCategoryPreferences } from '@/utils/helperCategoryPreferences';
 
 const SPOKEN_LANGUAGE_OPTIONS = [
   { id: 'pt', label: 'Português' },
@@ -69,6 +73,7 @@ export default function SettingsPage() {
   const { showToast } = useToast();
   const { evaluateProfileRewards } = useOnboardingRewards();
   const [helperSkillCount, setHelperSkillCount] = useState(0);
+  const [helperSkillIds, setHelperSkillIds] = useState<string[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
@@ -84,6 +89,8 @@ export default function SettingsPage() {
   const [country, setCountry] = useState('');
   const [bio, setBio] = useState('');
   const [spokenLanguages, setSpokenLanguages] = useState<string[]>([]);
+  const [primaryCategory, setPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
+  const [secondaryCategories, setSecondaryCategories] = useState<ServiceCategoryId[]>([]);
   const [notifOn, setNotifOn] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -112,6 +119,13 @@ export default function SettingsPage() {
   }, [profile, session, language]);
 
   useEffect(() => {
+    if (!profile || !isHelper) return;
+    const prefs = getHelperCategoryPreferences(profile, helperSkillIds);
+    setPrimaryCategory(prefs.primaryCategory);
+    setSecondaryCategories(prefs.secondaryCategories);
+  }, [profile, isHelper, helperSkillIds]);
+
+  useEffect(() => {
     if (location.hash === '#avatar') {
       requestAnimationFrame(() =>
         document.getElementById('settings-avatar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
@@ -134,9 +148,13 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!session?.user?.id || !isHelper || !isConfigured) {
       setHelperSkillCount(0);
+      setHelperSkillIds([]);
       return;
     }
-    void fetchHelperSkills(session.user.id).then((keys) => setHelperSkillCount(keys.length));
+    void fetchHelperSkills(session.user.id).then((keys) => {
+      setHelperSkillIds(keys);
+      setHelperSkillCount(keys.length);
+    });
   }, [session?.user?.id, isHelper, isConfigured]);
 
   const authEmail = session?.user?.email?.trim() ?? '';
@@ -163,12 +181,15 @@ export default function SettingsPage() {
       country: country.trim() || null,
       preferred_language: language,
     };
+    const normalizedSecondary = secondaryCategories.filter((id) => id !== primaryCategory);
     const err = await updateProfile(
       isHelper
         ? {
             ...base,
             bio: bio.trim() || null,
             spoken_languages: spokenLanguages.length ? spokenLanguages : [language],
+            primary_category: primaryCategory,
+            secondary_categories: normalizedSecondary,
           }
         : base,
     );
@@ -383,6 +404,96 @@ export default function SettingsPage() {
                   className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
                 />
               </label>
+            </SettingsCard>
+
+            <SettingsCard
+              icon={<Briefcase className="h-5 w-5 text-blue-600" />}
+              title={t('helper_categories.title')}
+            >
+              <div className="space-y-5">
+                <div>
+                  <div className="mb-3">
+                    <p className="text-sm font-black text-slate-900">{t('helper_categories.primary_label')}</p>
+                    <p className="text-xs font-semibold text-slate-500">{t('helper_categories.primary_hint')}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {SERVICE_CATEGORIES.map((cat) => {
+                      const IconComponent = getCategoryLucideIcon(cat.icon);
+                      const active = primaryCategory === cat.id;
+                      const accent = HELPER_CATEGORY_ACCENTS[cat.id];
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            setPrimaryCategory(cat.id);
+                            setSecondaryCategories((prev) => prev.filter((id) => id !== cat.id));
+                          }}
+                          className={`group min-h-[96px] rounded-2xl border p-3 text-left transition-all ${
+                            active
+                              ? `${accent.active} shadow-sm ${accent.glow}`
+                              : 'border-white/70 bg-white/70 text-slate-700 hover:border-blue-200 hover:bg-white'
+                          }`}
+                        >
+                          <span
+                            className={`mb-3 flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm transition-transform group-hover:scale-105 ${
+                              active ? accent.icon : 'bg-slate-100 text-slate-500'
+                            }`}
+                          >
+                            <IconComponent className="h-5 w-5" />
+                          </span>
+                          <span className="block text-sm font-black leading-tight">{t(`categories.${cat.id}`)}</span>
+                          {active ? (
+                            <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wide text-emerald-700">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              {t('helper_categories.selected_primary')}
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-3">
+                    <p className="text-sm font-black text-slate-900">{t('helper_categories.secondary_label')}</p>
+                    <p className="text-xs font-semibold text-slate-500">{t('helper_categories.secondary_hint')}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {SERVICE_CATEGORIES.filter((cat) => cat.id !== primaryCategory).map((cat) => {
+                      const IconComponent = getCategoryLucideIcon(cat.icon);
+                      const active = secondaryCategories.includes(cat.id);
+                      const accent = HELPER_CATEGORY_ACCENTS[cat.id];
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() =>
+                            setSecondaryCategories((prev) =>
+                              prev.includes(cat.id)
+                                ? prev.filter((id) => id !== cat.id)
+                                : [...prev, cat.id],
+                            )
+                          }
+                          className={`inline-flex min-h-[42px] items-center gap-2 rounded-2xl border px-3 text-xs font-black transition-all ${
+                            active
+                              ? `${accent.active} shadow-sm`
+                              : 'border-white/70 bg-white/70 text-slate-600 hover:border-blue-200 hover:bg-white'
+                          }`}
+                        >
+                          <IconComponent className="h-4 w-4" />
+                          {t(`categories.${cat.id}`)}
+                          {active ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-3 text-xs font-bold text-blue-700">
+                    {t('helper_categories.secondary_count', { count: secondaryCategories.length })}
+                  </p>
+                </div>
+              </div>
             </SettingsCard>
 
             <SettingsCard icon={<Briefcase className="h-5 w-5 text-sky-600" />} title={t('app_pages.settings_helper_extras')}>

@@ -2,6 +2,7 @@ import * as Icons from 'lucide-react';
 import type { Job } from '@/types/job';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
+import { translateJobTitle } from '@/utils/translateCategory';
 
 type Props = {
   job: Job | null;
@@ -48,7 +49,7 @@ export function HelperOpportunityDetailModal({
             <p className="text-[10px] font-black uppercase tracking-wide text-blue-600">
               {translateCategory(job.category, t)}
             </p>
-            <h2 className="mt-1 text-xl font-black text-slate-950">{job.title}</h2>
+            <h2 className="mt-1 text-xl font-black text-slate-950">{translateJobTitle(job.title, job.category, job.subcategory, t)}</h2>
           </div>
           <p className="text-sm font-medium leading-relaxed text-slate-600">{job.description}</p>
           <div className="grid grid-cols-2 gap-3">

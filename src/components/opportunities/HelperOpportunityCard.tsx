@@ -4,6 +4,7 @@ import { Check, CheckCircle2, Clock, MapPin } from 'lucide-react';
 import type { Job } from '@/types/job';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { isBeautyScheduledJob } from '@/utils/jobDisplay';
+import { translateJobTitle } from '@/utils/translateCategory';
 import { LhCard } from '@/components/design-system/LhCard';
 import { clsx } from 'clsx';
 
@@ -171,7 +172,7 @@ function HelperOpportunityCardInner({
           </span>
         </div>
 
-        <p className="mb-0.5 line-clamp-1 text-xs font-semibold text-slate-300">{job.title}</p>
+        <p className="mb-0.5 line-clamp-1 text-xs font-semibold text-slate-300">{translateJobTitle(job.title, job.category, job.subcategory, t)}</p>
         <p className="mb-2 truncate text-[10px] font-medium text-slate-500">{job.clientName}</p>
 
         <div className="flex gap-2">
@@ -246,7 +247,7 @@ function HelperOpportunityCardInner({
             onClick={() => onViewDetails?.(job)}
             className="mb-2 line-clamp-2 text-left text-base font-bold leading-snug text-slate-900 hover:text-blue-700"
           >
-            {job.title}
+            {translateJobTitle(job.title, job.category, job.subcategory, t)}
           </button>
           <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-slate-600">{job.description}</p>
           <div className="flex flex-wrap gap-2">

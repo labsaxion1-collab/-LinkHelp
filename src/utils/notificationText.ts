@@ -1,5 +1,6 @@
 import type { AppNotification } from '@/types/notification';
 import { ROUTES } from '@/utils/constants';
+import { translateJobTitle } from '@/utils/translateCategory';
 
 type Translate = (key: string, variables?: Record<string, string | number>) => string;
 
@@ -13,6 +14,11 @@ function leadingName(text: string, marker: string): string {
   return index > 0 ? text.slice(0, index).trim() : '';
 }
 
+function localizedQuotedJob(text: string, t: Translate): string {
+  const raw = quotedValue(text);
+  return raw ? translateJobTitle(raw, '', null, t) : raw;
+}
+
 export function getLocalizedNotificationText(notification: AppNotification, t: Translate) {
   const title = notification.title.trim();
   const message = notification.message.trim();
@@ -21,7 +27,7 @@ export function getLocalizedNotificationText(notification: AppNotification, t: T
 
   if (normalizedTitle.includes('new application')) {
     const helper = leadingName(message, ' applied to ') || t('notifications.fallback_helper');
-    const job = quotedValue(message);
+    const job = localizedQuotedJob(message, t);
     return {
       title: t('notifications.event_new_application_title'),
       message: t('notifications.event_new_application_body', { helper, job }),
@@ -29,7 +35,7 @@ export function getLocalizedNotificationText(notification: AppNotification, t: T
   }
 
   if (normalizedTitle.includes('application accepted')) {
-    const job = quotedValue(message);
+    const job = localizedQuotedJob(message, t);
     return {
       title: t('notifications.event_application_accepted_title'),
       message: t('notifications.event_application_accepted_body', { job }),
@@ -59,7 +65,7 @@ export function getLocalizedNotificationText(notification: AppNotification, t: T
   }
 
   if (normalizedTitle.includes('official hire')) {
-    const job = quotedValue(message);
+    const job = localizedQuotedJob(message, t);
     return {
       title: t('notifications.event_official_hire_title'),
       message: t('notifications.event_official_hire_body', { job }),
@@ -67,7 +73,7 @@ export function getLocalizedNotificationText(notification: AppNotification, t: T
   }
 
   if (normalizedTitle.includes('helper hired')) {
-    const job = quotedValue(message);
+    const job = localizedQuotedJob(message, t);
     return {
       title: t('notifications.event_helper_hired_title'),
       message: t('notifications.event_helper_hired_body', { job }),

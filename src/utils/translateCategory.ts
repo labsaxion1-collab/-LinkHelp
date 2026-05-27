@@ -29,11 +29,40 @@ const LEGACY_CATEGORY_MAP: Record<string, string> = {
   Montagem: 'assembly',
   'Montagem de Móveis': 'furniture',
   'Montagem de Móveis IKEA': 'assembly',
+  'Montagem e instalação': 'assembly',
   'Pequena Mudança': 'moving',
   'Pequenas Mudanças': 'moving',
   Mudança: 'moving',
+  'Mudanças e entregas': 'moving',
   Limpeza: 'cleaning',
   Tradução: 'translation',
+  Translation: 'translation',
+  Higienização: 'sanitization',
+  Automotivo: 'automotive',
+  'Reforma e manutenção': 'renovation',
+  Cleaning: 'cleaning',
+  Sanitization: 'sanitization',
+  Automotive: 'automotive',
+  'Assembly & installation': 'assembly',
+  'Aesthetics & beauty': 'beauty',
+  'Moves & deliveries': 'moving',
+  'Renovation & maintenance': 'renovation',
+  'Outdoor & yard': 'outdoor',
+  Pets: 'pet',
+  'Kitchen & cooking': 'cooking',
+  'IT support': 'tech',
+  Nettoyage: 'cleaning',
+  Hygiénisation: 'sanitization',
+  Automobile: 'automotive',
+  'Montage et installation': 'assembly',
+  Traduction: 'translation',
+  'Esthétique et beauté': 'beauty',
+  'Déménagement et livraisons': 'moving',
+  'Rénovation et entretien': 'renovation',
+  'Espaces extérieurs': 'outdoor',
+  Animaux: 'pet',
+  Cuisine: 'cooking',
+  'Support informatique': 'tech',
   Delivery: 'delivery',
   'Auxílio em Entregas': 'delivery',
   Elétrica: 'renovation',
@@ -59,4 +88,25 @@ export function translateCategory(raw: string, t: (key: string) => string): stri
   const id = resolveCategoryId(raw);
   if (id) return t(`categories.${id}`);
   return raw;
+}
+
+export function translateJobTitle(
+  title: string,
+  category: string,
+  subcategory: string | null | undefined,
+  t: (key: string) => string,
+): string {
+  const [prefix, ...rest] = title.split(':');
+  const suffix = rest.join(':').trim();
+  const categoryId = resolveCategoryId(category) || resolveCategoryId(prefix.trim());
+  if (!categoryId) return title;
+
+  const categoryLabel = t(`categories.${categoryId}`);
+  if (subcategory) {
+    const subKey = `service_subs.${categoryId}.${subcategory}`;
+    const subLabel = t(subKey);
+    if (subLabel !== subKey) return `${categoryLabel}: ${subLabel}`;
+  }
+
+  return suffix ? `${categoryLabel}: ${suffix}` : categoryLabel;
 }

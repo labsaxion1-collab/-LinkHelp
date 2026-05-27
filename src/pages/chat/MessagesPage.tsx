@@ -16,6 +16,7 @@ import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import { clsx } from 'clsx';
 import { sanitizePreMatchMessage } from '@/utils/preMatchChatFilter';
 import { isUnlimitedPreMatch, preMatchOutgoingLimit } from '@/utils/preMatchLimits';
+import { translateJobTitle } from '@/utils/translateCategory';
 
 type ChatRow =
   | { id: string | number; kind: 'system'; text: string; time: string; variant?: 'info' | 'warn' }
@@ -181,7 +182,9 @@ export default function MessagesPage() {
     return t('messages_page.pre_match_counter', { used: usedPreMatch, total: limit });
   }, [serviceConfirmed, unlimited, usedPreMatch, limit, t]);
 
-  const threadTitle = useRemoteChat ? remote.requestTitle || t('messages_page.thread_title') : t('messages_page.thread_title');
+  const threadTitle = useRemoteChat
+    ? translateJobTitle(remote.requestTitle || t('messages_page.thread_title'), '', null, t)
+    : t('messages_page.thread_title');
 
   const chatHeader = (
     <div className="p-3 sm:p-4 border-b border-gray-100/90 flex justify-between items-center bg-white/95 backdrop-blur-sm shrink-0 gap-2">
@@ -514,7 +517,7 @@ export default function MessagesPage() {
                           <h3 className="text-sm font-bold text-gray-900 truncate">{s.peerName.split(' ')[0] || s.peerName}</h3>
                           <span className="text-[10px] font-bold text-blue-600 shrink-0">{t('notifications.time_now')}</span>
                         </div>
-                        <p className="text-sm text-gray-600 truncate font-medium">{s.requestTitle}</p>
+                        <p className="text-sm text-gray-600 truncate font-medium">{translateJobTitle(s.requestTitle, '', null, t)}</p>
                       </div>
                     </button>
                     <button

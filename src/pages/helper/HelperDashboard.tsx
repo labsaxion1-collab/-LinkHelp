@@ -40,7 +40,6 @@ import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperO
 import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
 import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
 import { InsufficientCreditsError, leadCostsForJob } from '@/services/helperLeadCredits';
-import { jobHasBoundedBudget, jobIsNegotiableBudget } from '@/utils/jobProposal';
 import { buildReviewCountByUserId } from '@/utils/reviewCounts';
 import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
 import {
@@ -85,6 +84,7 @@ export default function HelperDashboard() {
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const [proposalJob, setProposalJob] = useState<Job | null>(null);
   const [dismissedJobIds, setDismissedJobIds] = useState<Set<string>>(() => new Set());
+  const [exitingJobId, setExitingJobId] = useState<string | null>(null);
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
   const [radialFilterOpen, setRadialFilterOpen] = useState(false);
@@ -295,7 +295,7 @@ export default function HelperDashboard() {
   const appliedJobIds = new Set(
     helperApplications.filter((a) => a.status !== 'cancelled').map((a) => a.jobId),
   );
-  const creditBalance = wallet?.balance ?? null;
+  const creditBalance = creditsLoading ? null : (wallet?.balance ?? 0);
   const goToCredits = React.useCallback(() => navigate(ROUTES.helperCredits), [navigate]);
   const creditsUsedThisMonth = React.useMemo(() => {
     const now = new Date();
@@ -354,22 +354,34 @@ export default function HelperDashboard() {
       job.workflowStatus !== 'awaiting_client_confirmation',
   );
 
-  const needsProposalFlow = (job: Job) => jobHasBoundedBudget(job) || jobIsNegotiableBudget(job);
+  const openProposalModal = (job: Job) => {
+    if (appliedJobIds.has(job.id)) return;
+    setProposalJob(job);
+  };
 
-  const submitApply = async (job: Job, proposedAmount: number | null) => {
+  const submitApply = async (
+    job: Job,
+    proposedAmount: number | null,
+    message: string | null = null,
+  ) => {
     if (appliedJobIds.has(job.id)) return;
     const distanceKm = distanceToJobKm(helperCoords, job);
     const interestCost = leadCostsForJob(job, { distanceKm }).interestCost;
-    if (creditBalance != null && creditBalance < interestCost) {
+    if (creditBalance < interestCost) {
       setInsufficientCreditsLc(interestCost);
       return;
     }
     setApplyingJobId(job.id);
     try {
-      await applyForJob(job.id, helperUserId, proposedAmount, { distanceKm });
+      await applyForJob(job.id, helperUserId, proposedAmount, { distanceKm, message });
       setProposalJob(null);
+      setExitingJobId(job.id);
       setToastNotification({ message: t('helper_dashboard.toast_apply_success'), show: true });
-      setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
+      setTimeout(() => {
+        setDismissedJobIds((prev) => new Set(prev).add(job.id));
+        setExitingJobId(null);
+        setToastNotification({ message: '', show: false });
+      }, 420);
     } catch (err: unknown) {
       if (err instanceof InsufficientCreditsError) {
         setInsufficientCreditsLc(err.requiredLc);
@@ -392,14 +404,7 @@ export default function HelperDashboard() {
     }
   };
 
-  const requestApply = (job: Job) => {
-    if (appliedJobIds.has(job.id)) return;
-    if (jobHasBoundedBudget(job) || jobIsNegotiableBudget(job)) {
-      setProposalJob(job);
-      return;
-    }
-    void submitApply(job, null);
-  };
+  const requestApply = openProposalModal;
 
   const confirmCancelApplication = async () => {
     if (!cancelTarget) return;
@@ -851,7 +856,7 @@ export default function HelperDashboard() {
                 balance={creditBalance}
                 usedThisMonth={creditsUsedThisMonth}
                 unlocksCount={unlocks.length}
-                loading={creditsLoading || wallet == null}
+                loading={creditsLoading}
                 compact
                 t={t}
                 onBuyCredits={goToCredits}
@@ -983,6 +988,8 @@ export default function HelperDashboard() {
                       applicationsCount={applicationCountsByJobId.get(job.id) ?? 0}
                       clientReviewCount={reviewCountByUserId.get(job.clientId) ?? 0}
                       onApply={requestApply}
+                      onSwipeInterest={openProposalModal}
+                      isExiting={exitingJobId === job.id}
                       onDismiss={(jobId) => setDismissedJobIds((prev) => new Set(prev).add(jobId))}
                       onViewClientProfile={setClientProfileJob}
                       onViewDetails={setDetailOpportunity}
@@ -1099,7 +1106,9 @@ export default function HelperDashboard() {
         job={proposalJob}
         submitting={proposalJob ? applyingJobId === proposalJob.id : false}
         onClose={() => !applyingJobId && setProposalJob(null)}
-        onSubmit={(amount) => proposalJob && void submitApply(proposalJob, amount)}
+        onSubmit={({ amount, message }) =>
+          proposalJob && void submitApply(proposalJob, amount, message)
+        }
         t={t}
         distanceKm={proposalJob ? distanceToJobKm(helperCoords, proposalJob) : null}
       />

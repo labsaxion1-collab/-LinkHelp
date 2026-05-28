@@ -622,6 +622,8 @@ export const pt = {
     submit: 'Enviar candidatura',
     negotiable_hint: 'Este pedido está a combinar. Você pode enviar uma proposta se quiser.',
     optional: 'opcional',
+    message_label: 'Mensagem',
+    message_placeholder: 'Mensagem opcional para o cliente…',
     error_required: 'Informe sua proposta.',
     error_invalid: 'Informe um valor válido.',
     error_out_of_range: 'Informe um valor entre {{currency}} ${{min}} e {{currency}} ${{max}}.',

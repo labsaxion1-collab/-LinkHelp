@@ -43,7 +43,7 @@ interface AppDataContextData {
     jobId: string,
     helperId: string,
     proposedAmount?: number | null,
-    options?: { distanceKm?: number | null },
+    options?: { distanceKm?: number | null; message?: string | null },
   ) => Promise<void>;
   updateJobStatus: (jobId: string, status: JobStatus) => Promise<void>;
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => Promise<void>;
@@ -196,7 +196,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     setJobs((prev) => migrateJobAvatars([newJob, ...prev]));
   };
 
-  const applyForJob = async (jobId: string, helperId: string, proposedAmount?: number | null) => {
+  const applyForJob = async (
+    jobId: string,
+    helperId: string,
+    proposedAmount?: number | null,
+    options?: { distanceKm?: number | null; message?: string | null },
+  ) => {
     const existing = applicationsRef.current.find((a) => a.jobId === jobId && a.helperId === helperId);
     if (existing) {
       throw new Error('ALREADY_APPLIED');
@@ -205,12 +210,17 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const job = jobsRef.current.find((j) => j.id === jobId);
     if (!job) throw new Error('JOB_NOT_FOUND');
 
+    const distanceKm = options?.distanceKm ?? null;
+    const interestCost = leadCostsForJob(job, { distanceKm }).interestCost;
+    await chargeApplicationInterest(jobId, interestCost);
+
     if (useRemote) {
       await remoteApply({
         requestId: jobId,
         helperId,
         clientId: job.clientId,
         proposedAmount: proposedAmount ?? null,
+        message: options?.message?.trim() || null,
       });
       await refreshRemote();
       return;

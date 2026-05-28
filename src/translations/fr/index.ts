@@ -619,6 +619,8 @@ export const fr = {
     submit: 'Envoyer la candidature',
     negotiable_hint: 'Cette demande est à négocier. Vous pouvez envoyer une proposition si vous le souhaitez.',
     optional: 'facultatif',
+    message_label: 'Message',
+    message_placeholder: 'Message facultatif pour le client…',
     error_required: 'Indiquez votre proposition.',
     error_invalid: 'Indiquez un montant valide.',
     error_out_of_range: 'Indiquez un montant entre {{currency}} ${{min}} et {{currency}} ${{max}}.',

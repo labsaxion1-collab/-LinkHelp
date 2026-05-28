@@ -1,4 +1,4 @@
-import { memo, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import * as Icons from 'lucide-react';
 import { CheckCircle2, Clock, MapPin } from 'lucide-react';
 import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
@@ -21,7 +21,9 @@ export type HelperOpportunityCardProps = {
   hasApplied: boolean;
   isApplying: boolean;
   onApply: (job: Job) => void;
+  onSwipeInterest?: (job: Job) => void;
   onDismiss?: (jobId: string) => void;
+  isExiting?: boolean;
   onViewClientProfile?: (job: Job) => void;
   onViewDetails?: (job: Job) => void;
   applicationsCount?: number;
@@ -69,7 +71,9 @@ function HelperOpportunityCardInner({
   hasApplied,
   isApplying,
   onApply,
+  onSwipeInterest,
   onDismiss,
+  isExiting = false,
   onViewClientProfile,
   onViewDetails,
   t,
@@ -86,8 +90,27 @@ function HelperOpportunityCardInner({
   const category = translateCategory(job.category, t);
   const loc = locationLabel(job, distanceKm, t);
   const budget = valueLabel(job, t);
+  const SWIPE_THRESHOLD = 90;
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const [swipeOverlay, setSwipeOverlay] = useState<'none' | 'accept' | 'pass'>('none');
+  const [localExit, setLocalExit] = useState<'none' | 'left' | 'right'>('none');
   const swipeStartX = useRef(0);
+  const interestTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (interestTimerRef.current != null) window.clearTimeout(interestTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isExiting) setLocalExit('right');
+  }, [isExiting]);
+
+  const acceptOpacity = Math.min(Math.max(dragX / 110, 0), 1);
+  const passOpacity = Math.min(Math.max(-dragX / 110, 0), 1);
+  const contentFade = 1 - Math.min(0.32, Math.abs(dragX) / 220);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const subLabel =
     job.subcategory && job.category
@@ -96,29 +119,45 @@ function HelperOpportunityCardInner({
 
   const finishSwipe = (offset: number) => {
     if (hasApplied) return;
-    if (offset > 90) {
+    setIsDragging(false);
+
+    if (offset > SWIPE_THRESHOLD) {
+      setDragX(0);
       setSwipeOverlay('accept');
-      window.setTimeout(() => onApply(job), 160);
+      if (interestTimerRef.current != null) window.clearTimeout(interestTimerRef.current);
+      interestTimerRef.current = window.setTimeout(() => {
+        (onSwipeInterest ?? onApply)(job);
+        setSwipeOverlay('none');
+        interestTimerRef.current = null;
+      }, 240);
       return;
     }
-    if (offset < -90) {
+
+    if (offset < -SWIPE_THRESHOLD) {
       setSwipeOverlay('pass');
-      window.setTimeout(() => onDismiss?.(job.id), 160);
+      setLocalExit('left');
+      window.setTimeout(() => onDismiss?.(job.id), 320);
+      return;
     }
+
+    setDragX(0);
     setSwipeOverlay('none');
   };
 
   const onSwipeStart = (clientX: number) => {
-    if (hasApplied) return;
+    if (hasApplied || localExit !== 'none') return;
     swipeStartX.current = clientX;
+    setIsDragging(true);
     setSwipeOverlay('none');
   };
 
   const onSwipeMove = (clientX: number) => {
-    if (hasApplied) return;
-    const dx = clientX - swipeStartX.current;
-    if (dx > 36) setSwipeOverlay('accept');
-    else if (dx < -36) setSwipeOverlay('pass');
+    if (hasApplied || !isDragging || localExit !== 'none') return;
+    const raw = clientX - swipeStartX.current;
+    const damped = Math.sign(raw) * Math.min(Math.abs(raw), 140);
+    setDragX(damped);
+    if (damped > 36) setSwipeOverlay('accept');
+    else if (damped < -36) setSwipeOverlay('pass');
     else setSwipeOverlay('none');
   };
 
@@ -175,27 +214,45 @@ function HelperOpportunityCardInner({
     <LhCard padding="none" className={cardShell}>
       {header}
 
-      {/* Mobile compact — swipe shows overlay only; card stays fixed */}
+      {/* Mobile compact — swipe with drag, hints, modal on interest */}
       <div
-        className="relative w-full max-w-full overflow-hidden md:hidden"
+        className={clsx(
+          'relative w-full max-w-full overflow-hidden md:hidden',
+          localExit !== 'none' && 'pointer-events-none',
+        )}
         onTouchStart={(e) => onSwipeStart(e.touches[0]?.clientX ?? 0)}
         onTouchMove={(e) => onSwipeMove(e.touches[0]?.clientX ?? 0)}
         onTouchEnd={(e) => finishSwipe((e.changedTouches[0]?.clientX ?? 0) - swipeStartX.current)}
       >
+        <div className="pointer-events-none absolute inset-0 z-0">
+          <div className="absolute inset-y-0 left-0 flex w-[44%] items-center justify-center bg-gradient-to-r from-rose-500/[0.07] to-transparent">
+            <div className="flex flex-col items-center gap-1 rounded-2xl border border-rose-200/35 bg-rose-50/45 px-2.5 py-2 text-rose-700/65 backdrop-blur-[1px]">
+              <Icons.X className="h-5 w-5" strokeWidth={2.5} />
+              <span className="max-w-[4.5rem] text-center text-[9px] font-black uppercase leading-tight tracking-wide">
+                {t('helper_dashboard.swipe_not_interested')}
+              </span>
+            </div>
+          </div>
+          <div className="absolute inset-y-0 right-0 flex w-[44%] items-center justify-center bg-gradient-to-l from-emerald-500/[0.07] to-transparent">
+            <div className="flex flex-col items-center gap-1 rounded-2xl border border-emerald-200/35 bg-emerald-50/45 px-2.5 py-2 text-emerald-700/65 backdrop-blur-[1px]">
+              <Icons.Check className="h-5 w-5" strokeWidth={2.5} />
+              <span className="max-w-[4.5rem] text-center text-[9px] font-black uppercase leading-tight tracking-wide">
+                {t('helper_dashboard.swipe_interest')}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <div
-          className={clsx(
-            'pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 transition-opacity duration-150',
-            swipeOverlay === 'accept' ? 'bg-emerald-500 opacity-100 text-white' : 'opacity-0',
-          )}
+          className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-emerald-500 text-white transition-opacity duration-200"
+          style={{ opacity: Math.max(acceptOpacity, swipeOverlay === 'accept' ? 1 : 0) }}
         >
           <Icons.Check className="h-10 w-10" strokeWidth={2.5} />
           <span className="text-sm font-black">{t('helper_dashboard.swipe_interest')}</span>
         </div>
         <div
-          className={clsx(
-            'pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 transition-opacity duration-150',
-            swipeOverlay === 'pass' ? 'bg-rose-500 opacity-100 text-white' : 'opacity-0',
-          )}
+          className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-rose-500 text-white transition-opacity duration-200"
+          style={{ opacity: Math.max(passOpacity, swipeOverlay === 'pass' ? 1 : 0) }}
         >
           <Icons.X className="h-10 w-10" strokeWidth={2.5} />
           <span className="text-sm font-black">{t('helper_dashboard.swipe_not_interested')}</span>
@@ -203,9 +260,20 @@ function HelperOpportunityCardInner({
 
         <div
           className={clsx(
-            'relative z-10 bg-white p-2.5 transition-opacity duration-150',
-            swipeOverlay !== 'none' && 'opacity-0',
+            'relative z-20 bg-white p-2.5 will-change-transform',
+            localExit === 'left' && '-translate-x-[115%] opacity-0',
+            localExit === 'right' && 'translate-x-[115%] opacity-0',
           )}
+          style={{
+            transform:
+              localExit === 'none'
+                ? `translateX(${dragX}px) rotate(${dragX * 0.035}deg)`
+                : undefined,
+            opacity: localExit === 'none' ? contentFade : undefined,
+            transition: isDragging
+              ? 'none'
+              : 'transform 0.38s cubic-bezier(0.34, 1.45, 0.64, 1), opacity 0.28s ease',
+          }}
         >
           <p className="truncate text-[10px] font-black uppercase tracking-wide text-blue-600">{category}</p>
           <p className="line-clamp-1 text-xs font-bold text-slate-900">{subLabel}</p>
@@ -416,6 +484,7 @@ export const HelperOpportunityCard = memo(HelperOpportunityCardInner, (prev, nex
     prev.activeTab === next.activeTab &&
     prev.distanceKm === next.distanceKm &&
     prev.applicationsCount === next.applicationsCount &&
-    prev.clientReviewCount === next.clientReviewCount
+    prev.clientReviewCount === next.clientReviewCount &&
+    prev.isExiting === next.isExiting
   );
 });

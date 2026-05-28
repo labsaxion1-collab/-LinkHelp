@@ -617,6 +617,8 @@ export const en = {
     submit: 'Submit application',
     negotiable_hint: 'This request is negotiable. You may send a proposal if you want.',
     optional: 'optional',
+    message_label: 'Message',
+    message_placeholder: 'Optional message for the client…',
     error_required: 'Enter your proposal.',
     error_invalid: 'Enter a valid amount.',
     error_out_of_range: 'Enter an amount between {{currency}} ${{min}} and {{currency}} ${{max}}.',

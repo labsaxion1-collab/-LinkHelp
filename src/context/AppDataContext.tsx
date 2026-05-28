@@ -28,6 +28,7 @@ import type { PendingServiceReview, ServiceReview } from '@/types/review';
 import { dispatchPushEvent } from '@/services/push/pushEventDispatcher';
 import { useCredits } from '@/context/CreditContext';
 import { InsufficientCreditsError, leadCostsForJob, remoteChargeHelperOnClientHire } from '@/services/helperLeadCredits';
+import { isJobCancelled } from '@/utils/jobVisibility';
 
 export type { Job, JobStatus, JobUrgency, Application, ApplicationStatus, UpcomingJob, UpcomingWorkflowStatus };
 export type { AppNotification, NotificationType };
@@ -91,6 +92,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [reviews, setReviews] = useState<ServiceReview[]>([]);
 
+  const filterUpcomingByRequestStatus = useCallback((rows: UpcomingJob[], jobRows: Job[]) => {
+    const jobStatusById = new Map(jobRows.map((j) => [j.id, j.status]));
+    return rows.filter((u) => {
+      if (u.workflowStatus === 'cancelled' || u.workflowStatus === 'completed') return false;
+      const jobStatus = jobStatusById.get(u.jobId);
+      return !jobStatus || !isJobCancelled({ status: jobStatus });
+    });
+  }, []);
+
   const jobsRef = useRef(jobs);
   const applicationsRef = useRef(applications);
   jobsRef.current = jobs;
@@ -107,13 +117,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       const [d, reviewRows] = await Promise.all([fetchRemoteJobsAndApps(), fetchRemoteReviews()]);
       setJobs(d.jobs);
       setApplications(d.applications);
-      setUpcomingJobs(d.upcomingJobs);
+      setUpcomingJobs(filterUpcomingByRequestStatus(d.upcomingJobs, d.jobs));
       setNotifications(d.notifications);
       setReviews(reviewRows);
     } finally {
       setDataLoading(false);
     }
-  }, [useRemote]);
+  }, [useRemote, filterUpcomingByRequestStatus]);
 
   useEffect(() => {
     if (!useRemote) return;
@@ -290,6 +300,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status } : job)));
+    if (isJobCancelled({ status })) {
+      setUpcomingJobs((prev) => prev.filter((u) => u.jobId !== jobId));
+    }
   };
 
   const updateApplicationStatus = async (applicationId: string, status: ApplicationStatus) => {
@@ -472,8 +485,14 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getUpcomingJobsForHelper = (helperId: string) => {
+    const jobStatusById = new Map(jobs.map((j) => [j.id, j.status]));
     return upcomingJobs
-      .filter((u) => u.helperId === helperId)
+      .filter((u) => {
+        if (u.helperId !== helperId) return false;
+        if (u.workflowStatus === 'cancelled' || u.workflowStatus === 'completed') return false;
+        const jobStatus = jobStatusById.get(u.jobId);
+        return !jobStatus || !isJobCancelled({ status: jobStatus });
+      })
       .sort((a, b) => a.scheduledAt - b.scheduledAt);
   };
 

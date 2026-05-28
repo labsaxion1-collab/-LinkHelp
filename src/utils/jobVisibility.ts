@@ -1,6 +1,6 @@
 import type { Job, JobStatus } from '@/types/job';
 
-const CANCELLED_STATUSES = new Set<JobStatus | string>(['cancelled', 'canceled']);
+const CANCELLED_STATUSES = new Set<JobStatus | string>(['cancelled', 'canceled', 'client_cancelled']);
 
 export function isJobCancelled(job: Pick<Job, 'status'>): boolean {
   return CANCELLED_STATUSES.has(job.status);

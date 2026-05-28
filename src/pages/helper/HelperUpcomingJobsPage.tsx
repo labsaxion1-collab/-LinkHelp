@@ -9,6 +9,7 @@ import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailMod
 import { formatScheduledClock, formatScheduledDay } from '@/utils/upcomingJobUtils';
 import { ROUTES } from '@/utils/constants';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
+import { isJobCancelled } from '@/utils/jobVisibility';
 
 function badgeClass(s: UpcomingWorkflowStatus): string {
   switch (s) {
@@ -43,7 +44,7 @@ function statusLabel(s: UpcomingWorkflowStatus, t: (k: string) => string) {
 
 export default function HelperUpcomingJobsPage() {
   const { t, language } = useLanguage();
-  const { upcomingJobs, updateUpcomingWorkflow } = useAppData();
+  const { jobs, upcomingJobs, updateUpcomingWorkflow } = useAppData();
   const [selected, setSelected] = useState<UpcomingJob | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -53,9 +54,14 @@ export default function HelperUpcomingJobsPage() {
   const list = useMemo(
     () =>
       upcomingJobs
-        .filter((j) => j.helperId === me.id)
+        .filter((j) => {
+          if (j.helperId !== me.id) return false;
+          if (j.workflowStatus !== 'scheduled' && j.workflowStatus !== 'in_progress') return false;
+          const request = jobs.find((r) => r.id === j.jobId);
+          return !request || !isJobCancelled(request);
+        })
         .sort((a, b) => a.scheduledAt - b.scheduledAt),
-    [upcomingJobs, me.id],
+    [upcomingJobs, me.id, jobs],
   );
 
   const selectedFresh = useMemo(

@@ -290,9 +290,14 @@ export default function HelperDashboard() {
   const helperUpcomingList = React.useMemo(
     () =>
       upcomingJobs
-        .filter((u) => u.helperId === helperUserId)
+        .filter((u) => {
+          if (u.helperId !== helperUserId) return false;
+          if (u.workflowStatus !== 'scheduled' && u.workflowStatus !== 'in_progress') return false;
+          const request = jobs.find((j) => j.id === u.jobId);
+          return !request || !isJobCancelled(request);
+        })
         .sort((a, b) => a.scheduledAt - b.scheduledAt),
-    [upcomingJobs, helperUserId],
+    [upcomingJobs, helperUserId, jobs],
   );
 
   const upcomingModalJobFresh = React.useMemo(
@@ -307,6 +312,14 @@ export default function HelperDashboard() {
 
   const upcomingLocale = language === 'fr' ? 'fr-CA' : language === 'pt' ? 'pt-BR' : 'en-CA';
   const helperApplications = getHelperApplications(helperUserId);
+  const helperApplicationsVisible = React.useMemo(
+    () =>
+      helperApplications.filter((app) => {
+        const request = jobs.find((j) => j.id === app.jobId);
+        return !request || !isJobCancelled(request);
+      }),
+    [helperApplications, jobs],
+  );
   const appliedJobIds = new Set(
     helperApplications.filter((a) => a.status !== 'cancelled').map((a) => a.jobId),
   );
@@ -1051,8 +1064,8 @@ export default function HelperDashboard() {
           {/* Posts (Feed) */}
           <div className="space-y-4">
             {activeTab === 'candidaturas' ? (
-              helperApplications.length > 0 ? (
-                helperApplications.map(app => {
+              helperApplicationsVisible.length > 0 ? (
+                helperApplicationsVisible.map(app => {
                   const statusColors: Record<string, string> = {
                     pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
                     viewed: 'bg-blue-50 text-blue-700 border-blue-200',

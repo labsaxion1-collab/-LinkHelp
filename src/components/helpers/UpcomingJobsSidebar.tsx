@@ -7,7 +7,7 @@ import { ROUTES } from '@/utils/constants';
 import { translateJobTitle } from '@/utils/translateCategory';
 
 function isActiveStatus(s: UpcomingWorkflowStatus) {
-  return s !== 'completed' && s !== 'cancelled';
+  return s === 'scheduled' || s === 'in_progress';
 }
 
 function relativeStartLabel(

@@ -14,6 +14,8 @@ import { CREDIT_PACKAGES, HELPER_SIGNUP_BONUS_CREDITS } from '@/utils/credits';
 
 type CreditContextValue = {
   wallet: CreditWallet | null;
+  /** Balance shown in UI (includes optimistic debits). */
+  displayBalance: number | null;
   transactions: CreditTransaction[];
   unlocks: OpportunityUnlock[];
   packages: CreditPackage[];
@@ -21,6 +23,8 @@ type CreditContextValue = {
   refreshCredits: () => Promise<void>;
   chargeApplicationInterest: (requestId: string, amount?: number) => Promise<void>;
   chargeApplicationSelected: (requestId: string, applicationId: string, amount: number) => Promise<void>;
+  /** Returns rollback fn if optimistic debit applied. */
+  applyOptimisticDebit: (amount: number) => () => void;
 };
 
 const CreditContext = createContext<CreditContextValue | null>(null);
@@ -66,6 +70,7 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
   const [unlocks, setUnlocks] = useState<OpportunityUnlock[]>([]);
   const [packages, setPackages] = useState<CreditPackage[]>(CREDIT_PACKAGES);
   const [loading, setLoading] = useState(false);
+  const [optimisticDelta, setOptimisticDelta] = useState(0);
 
   const persistLocal = useCallback(
     (next: { wallet: CreditWallet; transactions: CreditTransaction[]; unlocks: OpportunityUnlock[] }) => {
@@ -131,6 +136,18 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
     void refreshCredits();
   }, [refreshCredits]);
 
+  useEffect(() => {
+    setOptimisticDelta(0);
+  }, [wallet?.balance, wallet?.updatedAt]);
+
+  const displayBalance =
+    wallet != null ? Math.max(0, wallet.balance + optimisticDelta) : null;
+
+  const applyOptimisticDebit = useCallback((amount: number) => {
+    setOptimisticDelta((d) => d - amount);
+    return () => setOptimisticDelta((d) => d + amount);
+  }, []);
+
   const chargeApplicationInterest = useCallback(
     async (requestId: string, amount = 1) => {
       if (!helperId || !isHelper) throw new Error('NOT_HELPER');
@@ -181,6 +198,7 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(
     () => ({
       wallet,
+      displayBalance,
       transactions,
       unlocks,
       packages,
@@ -188,8 +206,20 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
       refreshCredits,
       chargeApplicationInterest,
       chargeApplicationSelected,
+      applyOptimisticDebit,
     }),
-    [wallet, transactions, unlocks, packages, loading, refreshCredits, chargeApplicationInterest, chargeApplicationSelected],
+    [
+      wallet,
+      displayBalance,
+      transactions,
+      unlocks,
+      packages,
+      loading,
+      refreshCredits,
+      chargeApplicationInterest,
+      chargeApplicationSelected,
+      applyOptimisticDebit,
+    ],
   );
 
   return <CreditContext.Provider value={value}>{children}</CreditContext.Provider>;

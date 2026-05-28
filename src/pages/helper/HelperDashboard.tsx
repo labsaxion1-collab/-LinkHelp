@@ -42,6 +42,9 @@ import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
 import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
 import { InsufficientCreditsError, leadCostsForJob } from '@/services/helperLeadCredits';
 import { recordMarketSignal } from '@/services/marketSignals';
+import { recordProposalAnalytics, type ProposalAnalyticsSource } from '@/services/proposalAnalytics';
+import { checkSwipeInterestRateLimit } from '@/utils/swipeRateLimit';
+import { getBrowserTimezone } from '@/utils/browserTimezone';
 import { hapticSuccess } from '@/utils/haptic';
 import { buildReviewCountByUserId } from '@/utils/reviewCounts';
 import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
@@ -268,7 +271,15 @@ export default function HelperDashboard() {
   const { jobs, applications, applyForJob, getHelperApplications, upcomingJobs, updateUpcomingWorkflow, updateApplicationStatus, dataLoading, reviews } = useAppData();
   const reviewCountByUserId = useMemo(() => buildReviewCountByUserId(reviews), [reviews]);
   const { showToast } = useToast();
-  const { wallet, transactions: creditTransactions, unlocks, loading: creditsLoading } = useCredits();
+  const {
+    wallet,
+    displayBalance,
+    applyOptimisticDebit,
+    refreshCredits,
+    transactions: creditTransactions,
+    unlocks,
+    loading: creditsLoading,
+  } = useCredits();
 
   const [upcomingModalJob, setUpcomingModalJob] = useState<UpcomingJob | null>(null);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
@@ -299,7 +310,10 @@ export default function HelperDashboard() {
   const appliedJobIds = new Set(
     helperApplications.filter((a) => a.status !== 'cancelled').map((a) => a.jobId),
   );
-  const creditBalance = wallet?.balance ?? null;
+  const creditBalance = displayBalance ?? wallet?.balance ?? null;
+  const [swipeCooldownUntil, setSwipeCooldownUntil] = useState(0);
+  const proposalOpenedAtRef = React.useRef<number | null>(null);
+  const proposalSourceRef = React.useRef<ProposalAnalyticsSource>('modal');
   const goToCredits = React.useCallback(() => navigate(ROUTES.helperCredits), [navigate]);
   const creditsUsedThisMonth = React.useMemo(() => {
     const now = new Date();
@@ -367,8 +381,53 @@ export default function HelperDashboard() {
         next.delete(jobId);
         return next;
       });
-    }, 420);
+    }, 520);
   }, []);
+
+  const logProposalAnalytics = React.useCallback(
+    (event: 'opened' | 'closed' | 'cancelled' | 'submitted', job: Job, extra?: { proposedAmount?: number | null }) => {
+      const openedAt = proposalOpenedAtRef.current;
+      const durationMs = openedAt ? Date.now() - openedAt : null;
+      recordProposalAnalytics({
+        requestId: job.id,
+        helperId: helperUserId,
+        event,
+        source: proposalSourceRef.current,
+        proposedAmount: extra?.proposedAmount ?? null,
+        budgetMin: job.budgetMin ?? null,
+        budgetMax: job.budgetMax ?? null,
+        durationMs,
+        timezone: getBrowserTimezone(),
+      });
+    },
+    [helperUserId],
+  );
+
+  const openProposalForJob = React.useCallback(
+    (job: Job, source: ProposalAnalyticsSource) => {
+      if (appliedJobIds.has(job.id)) {
+        pushToast(t('helper_dashboard.already_interested'));
+        return;
+      }
+      proposalSourceRef.current = source;
+      proposalOpenedAtRef.current = Date.now();
+      recordMarketSignal({
+        requestId: job.id,
+        helperId: helperUserId,
+        event: 'opened',
+        category: job.category,
+        city: job.city ?? null,
+        province: job.region ?? null,
+        budgetMin: job.budgetMin ?? null,
+        budgetMax: job.budgetMax ?? null,
+        distanceKm: distanceToJobKm(helperCoords, job),
+        source,
+      });
+      logProposalAnalytics('opened', job);
+      setProposalJob(job);
+    },
+    [appliedJobIds, helperUserId, helperCoords, logProposalAnalytics, pushToast, t],
+  );
 
   const submitApply = async (job: Job, proposedAmount: number | null, proposalMessage?: string | null) => {
     if (appliedJobIds.has(job.id) || isSubmittingApplyRef.current) return;
@@ -380,27 +439,34 @@ export default function HelperDashboard() {
     }
     isSubmittingApplyRef.current = true;
     setApplyingJobId(job.id);
+    const rollbackOptimistic = applyOptimisticDebit(interestCost);
     try {
       await applyForJob(job.id, helperUserId, proposedAmount, {
         distanceKm,
         message: proposalMessage ?? null,
       });
+      await refreshCredits();
       recordMarketSignal({
         requestId: job.id,
         helperId: helperUserId,
-        kind: 'applied',
+        event: 'proposal_sent',
         category: job.category,
         city: job.city ?? null,
+        province: job.region ?? null,
         budgetMin: job.budgetMin ?? null,
         budgetMax: job.budgetMax ?? null,
         distanceKm,
+        source: proposalSourceRef.current,
       });
+      logProposalAnalytics('submitted', job, { proposedAmount });
       hapticSuccess();
       setProposalJob(null);
+      proposalOpenedAtRef.current = null;
       dismissJobWithAnimation(job.id);
       setToastNotification({ message: t('helper_dashboard.toast_apply_success'), show: true });
       setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
     } catch (err: unknown) {
+      rollbackOptimistic();
       if (err instanceof InsufficientCreditsError) {
         setInsufficientCreditsLc(err.requiredLc);
         return;
@@ -412,11 +478,13 @@ export default function HelperDashboard() {
             ? String((err as { message?: unknown }).message ?? '')
             : '';
       if (msg === 'ALREADY_APPLIED') {
-        setToastNotification({ message: t('helper_dashboard.apply_duplicate'), show: true });
-        setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
-      } else {
-        showToast(msg || 'Erro', 'error');
+        logProposalAnalytics('closed', job);
+        setProposalJob(null);
+        proposalOpenedAtRef.current = null;
+        pushToast(t('helper_dashboard.already_interested'));
+        return;
       }
+      showToast(msg || 'Erro', 'error');
     } finally {
       setApplyingJobId(null);
       isSubmittingApplyRef.current = false;
@@ -424,29 +492,43 @@ export default function HelperDashboard() {
   };
 
   const requestApply = (job: Job) => {
-    if (appliedJobIds.has(job.id) || isSubmittingApplyRef.current) return;
-    setProposalJob(job);
+    if (isSubmittingApplyRef.current) return;
+    openProposalForJob(job, 'modal');
   };
 
   const handleProposalClose = () => {
-    if (applyingJobId) return;
+    if (applyingJobId || !proposalJob) return;
+    logProposalAnalytics('cancelled', proposalJob);
     setProposalJob(null);
+    proposalOpenedAtRef.current = null;
   };
 
   const handleSwipeInterest = (job: Job) => {
     if (appliedJobIds.has(job.id) || isSubmittingApplyRef.current) return;
+    if (Date.now() < swipeCooldownUntil) {
+      pushToast(t('helper_dashboard.swipe_rate_limit'));
+      return;
+    }
+    const rate = checkSwipeInterestRateLimit();
+    if (!rate.allowed) {
+      setSwipeCooldownUntil(Date.now() + rate.retryAfterMs);
+      pushToast(t('helper_dashboard.swipe_rate_limit'));
+      return;
+    }
     const distanceKm = distanceToJobKm(helperCoords, job);
     recordMarketSignal({
       requestId: job.id,
       helperId: helperUserId,
-      kind: 'interest',
+      event: 'interested',
       category: job.category,
       city: job.city ?? null,
+      province: job.region ?? null,
       budgetMin: job.budgetMin ?? null,
       budgetMax: job.budgetMax ?? null,
       distanceKm,
+      source: 'swipe',
     });
-    setProposalJob(job);
+    openProposalForJob(job, 'swipe');
   };
 
   const handleSwipeDismiss = (jobId: string) => {
@@ -455,16 +537,20 @@ export default function HelperDashboard() {
       recordMarketSignal({
         requestId: job.id,
         helperId: helperUserId,
-        kind: 'ignore',
+        event: 'not_interested',
         category: job.category,
         city: job.city ?? null,
+        province: job.region ?? null,
         budgetMin: job.budgetMin ?? null,
         budgetMax: job.budgetMax ?? null,
         distanceKm: distanceToJobKm(helperCoords, job),
+        source: 'swipe',
       });
     }
     dismissJobWithAnimation(jobId);
   };
+
+  const swipeRateLimited = Date.now() < swipeCooldownUntil;
 
   const confirmCancelApplication = async () => {
     if (!cancelTarget) return;
@@ -1047,7 +1133,8 @@ export default function HelperDashboard() {
                       key={job.id}
                       className={clsx(
                         'min-w-0 transition-[margin,opacity,transform] duration-[420ms] ease-[cubic-bezier(0.34,1.15,0.64,1)]',
-                        exitingJobIds.has(job.id) && 'pointer-events-none -mt-2 scale-[0.98] opacity-0',
+                        exitingJobIds.has(job.id) &&
+                          'pointer-events-none -mt-3 scale-[0.92] opacity-0 -translate-x-6 rotate-[-2deg]',
                       )}
                     >
                       <HelperOpportunityCard
@@ -1056,8 +1143,9 @@ export default function HelperDashboard() {
                         hasApplied={appliedJobIds.has(job.id)}
                         isApplying={applyingJobId === job.id}
                         isExiting={exitingJobIds.has(job.id)}
-                        interactionLocked={Boolean(applyingJobId)}
+                        interactionLocked={Boolean(applyingJobId) || swipeRateLimited}
                         proposalOpen={proposalJob?.id === job.id}
+                        swipeRateLimited={swipeRateLimited}
                         distanceKm={distanceToJobKm(helperCoords, job)}
                         applicationsCount={applicationCountsByJobId.get(job.id) ?? 0}
                         clientReviewCount={reviewCountByUserId.get(job.clientId) ?? 0}

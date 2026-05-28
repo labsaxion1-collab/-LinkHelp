@@ -28,6 +28,7 @@ export type HelperOpportunityCardProps = {
   isExiting?: boolean;
   interactionLocked?: boolean;
   proposalOpen?: boolean;
+  swipeRateLimited?: boolean;
   onViewClientProfile?: (job: Job) => void;
   onViewDetails?: (job: Job) => void;
   applicationsCount?: number;
@@ -72,6 +73,7 @@ function HelperOpportunityCardInner({
   isExiting = false,
   interactionLocked = false,
   proposalOpen = false,
+  swipeRateLimited = false,
   onViewClientProfile,
   onViewDetails,
   t,
@@ -91,6 +93,7 @@ function HelperOpportunityCardInner({
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [swipeOverlay, setSwipeOverlay] = useState<'none' | 'accept' | 'pass'>('none');
+  const [passExiting, setPassExiting] = useState(false);
   const swipeStartX = useRef(0);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const subLabel =
@@ -129,13 +132,15 @@ function HelperOpportunityCardInner({
       return;
     }
     if (offset < -SWIPE_COMMIT_PX) {
+      hapticLight();
+      setPassExiting(true);
       setSwipeOverlay('pass');
-      setDragX(-140);
+      setDragX(-Math.min(typeof window !== 'undefined' ? window.innerWidth * 0.45 : 280, 280));
       window.setTimeout(() => {
         onDismiss?.(job.id);
-        setDragX(0);
-        setSwipeOverlay('none');
-      }, 200);
+        setPassExiting(false);
+        resetSwipeVisual();
+      }, 520);
       return;
     }
     setDragX(0);
@@ -143,14 +148,14 @@ function HelperOpportunityCardInner({
   };
 
   const onSwipeStart = (clientX: number) => {
-    if (hasApplied || isExiting || interactionLocked || proposalOpen) return;
+    if (hasApplied || isExiting || interactionLocked || proposalOpen || swipeRateLimited) return;
     setDragging(true);
     swipeStartX.current = clientX;
     setSwipeOverlay('none');
   };
 
   const onSwipeMove = (clientX: number) => {
-    if (hasApplied || isExiting || interactionLocked || proposalOpen) return;
+    if (hasApplied || isExiting || interactionLocked || proposalOpen || swipeRateLimited) return;
     const dx = clientX - swipeStartX.current;
     setDragX(dx);
     if (dx > 36) setSwipeOverlay('accept');
@@ -165,7 +170,9 @@ function HelperOpportunityCardInner({
     'group/card h-full w-full max-w-full overflow-hidden border bg-white/95 transition-all duration-300',
     'md:hover:-translate-y-0.5 md:hover:shadow-xl md:hover:shadow-slate-900/10 motion-reduce:transform-none',
     'md:hover:ring-2 md:hover:ring-blue-500/15',
-    isExiting && 'pointer-events-none scale-[0.96] opacity-0 -translate-y-2',
+    (isExiting || passExiting) &&
+      'pointer-events-none scale-[0.88] opacity-0 -translate-x-8 -rotate-2 duration-[520ms] ease-[cubic-bezier(0.34,1.15,0.64,1)]',
+    swipeRateLimited && !isExiting && 'opacity-75',
     tier === 'urgent' &&
       'border-rose-200/90 ring-1 ring-rose-200/50 shadow-md shadow-rose-500/10 motion-reduce:animate-none md:animate-pulse',
     tier === 'best' && 'border-emerald-200/80 ring-1 ring-emerald-100/60 shadow-sm shadow-emerald-500/10',
@@ -476,6 +483,7 @@ export const HelperOpportunityCard = memo(HelperOpportunityCardInner, (prev, nex
     prev.isExiting === next.isExiting &&
     prev.interactionLocked === next.interactionLocked &&
     prev.proposalOpen === next.proposalOpen &&
+    prev.swipeRateLimited === next.swipeRateLimited &&
     prev.activeTab === next.activeTab &&
     prev.distanceKm === next.distanceKm &&
     prev.applicationsCount === next.applicationsCount &&

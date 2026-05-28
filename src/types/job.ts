@@ -41,4 +41,6 @@ export interface Job {
   /** IANA timezone captured at publish (e.g. America/Toronto). */
   timezone?: string | null;
   createdTimezone?: string | null;
+  /** Internal 0–100; not shown in UI */
+  leadQualityScore?: number | null;
 }

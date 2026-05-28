@@ -226,9 +226,20 @@ export async function remoteApply(input: {
   clientId: string;
   message?: string | null;
   proposedAmount?: number | null;
-}): Promise<boolean> {
+}): Promise<{ outcome: 'created' } | { outcome: 'already_exists'; applicationId: string }> {
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
+
+  const findExisting = async (): Promise<string | null> => {
+    const { data } = await sb
+      .from('applications')
+      .select('id')
+      .eq('request_id', input.requestId)
+      .eq('helper_id', input.helperId)
+      .neq('status', 'cancelled')
+      .maybeSingle();
+    return (data as { id?: string } | null)?.id ?? null;
+  };
 
   const payload: Record<string, unknown> = {
     request_id: input.requestId,
@@ -244,12 +255,18 @@ export async function remoteApply(input: {
   const { error } = await sb.from('applications').insert(payload);
 
   if (error) {
-    if (error.code === '23505') return false;
+    if (error.code === '23505') {
+      const existingId = await findExisting();
+      return { outcome: 'already_exists', applicationId: existingId ?? '' };
+    }
     if (input.proposedAmount != null && isMissingColumnError(error, 'proposed_amount')) {
       delete payload.proposed_amount;
       const { error: retryErr } = await sb.from('applications').insert(payload);
       if (retryErr) {
-        if (retryErr.code === '23505') return false;
+        if (retryErr.code === '23505') {
+          const existingId = await findExisting();
+          return { outcome: 'already_exists', applicationId: existingId ?? '' };
+        }
         throw new Error(retryErr.message || 'APPLICATION_INSERT_FAILED');
       }
     } else {
@@ -284,7 +301,7 @@ export async function remoteApply(input: {
     contactUnlocked: false,
   });
 
-  return true;
+  return { outcome: 'created' };
 }
 
 export async function remoteUpdateRequestStatus(requestId: string, status: RequestStatus): Promise<void> {

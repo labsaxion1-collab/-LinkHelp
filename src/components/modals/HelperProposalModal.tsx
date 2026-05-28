@@ -228,7 +228,7 @@ export function HelperProposalModal({
             {submitting ? (
               <>
                 <Icons.Loader2 className="h-4 w-4 animate-spin" />
-                {t('helper_dashboard.apply_sending')}
+                {t('helper_dashboard.apply_sending_modal')}
               </>
             ) : (
               t('helper_proposal.submit')

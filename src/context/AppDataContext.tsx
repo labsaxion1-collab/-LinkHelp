@@ -215,14 +215,14 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const interestCost = leadCostsForJob(job, { distanceKm: options?.distanceKm ?? null }).interestCost;
 
     if (useRemote) {
-      const created = await remoteApply({
+      const applyResult = await remoteApply({
         requestId: jobId,
         helperId,
         clientId: job.clientId,
         proposedAmount: proposedAmount ?? null,
         message: options?.message?.trim() || null,
       });
-      if (!created) {
+      if (applyResult.outcome === 'already_exists') {
         throw new Error('ALREADY_APPLIED');
       }
       if (helperId === profile?.id) {

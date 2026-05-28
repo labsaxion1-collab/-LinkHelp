@@ -95,6 +95,7 @@ export function subscribeRemoteData(onChange: () => void): () => void {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'upcoming_jobs' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, onChange)
     .subscribe();
 
   return () => {

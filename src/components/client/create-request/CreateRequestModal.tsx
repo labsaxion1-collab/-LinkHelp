@@ -19,6 +19,7 @@ import {
   buildBudgetLabelFromRange,
   parseBudgetInput,
   parseBudgetInt,
+  type BudgetMode,
 } from '@/utils/formatJobBudget';
 import {
   buildJobDateLabel,
@@ -55,7 +56,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [postText, setPostText] = useState('');
-  const [budgetType, setBudgetType] = useState<'fixed' | 'negotiable'>('negotiable');
+  const [budgetType, setBudgetType] = useState<BudgetMode>('unset');
   const [budgetMin, setBudgetMin] = useState('');
   const [budgetMax, setBudgetMax] = useState('');
   const [translationFromLanguage, setTranslationFromLanguage] = useState('');
@@ -141,7 +142,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setSelectedCategory(initialCategory);
     setSelectedSubcategory(initialSubcategory);
     setPostText('');
-    setBudgetType('negotiable');
+    setBudgetType('unset');
     setBudgetMin('');
     setBudgetMax('');
     setTranslationFromLanguage('');
@@ -462,13 +463,11 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                 <label className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.budget_hint_label')}</label>
                 <div className="w-full max-w-full overflow-hidden rounded-2xl border-2 border-gray-200 bg-white p-3 sm:p-4 focus-within:border-blue-500">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <div
-                      className={`pointer-events-auto flex min-h-[52px] min-w-0 flex-1 items-center rounded-xl border px-3 ${
+                    <label
+                      className={`flex min-h-[52px] min-w-0 flex-1 cursor-text items-center rounded-xl border px-3 ${
                         budgetType === 'fixed' && budgetMin
                           ? 'border-[#1565FF] bg-blue-50/60 ring-2 ring-blue-100'
-                          : budgetType === 'negotiable'
-                            ? 'border-slate-200 bg-slate-50/70 opacity-60'
-                            : 'border-slate-200 bg-slate-50'
+                          : 'border-slate-200 bg-slate-50'
                       }`}
                     >
                       <span className="mr-2 shrink-0 text-[10px] font-bold uppercase text-slate-500">{t('create_modal.budget_min_label')}</span>
@@ -476,10 +475,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                       <input
                         type="number"
                         inputMode="numeric"
-                        pattern="[0-9]*"
-                        min="0"
-                        step="1"
-                        disabled={budgetType === 'negotiable'}
+                        min={0}
+                        step={1}
                         value={budgetMin}
                         onFocus={() => setBudgetType('fixed')}
                         onChange={(e) => {
@@ -487,17 +484,15 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                           setBudgetMin(parseBudgetInput(e.target.value));
                         }}
                         placeholder="50"
-                        className="pointer-events-auto min-w-0 flex-1 bg-transparent px-2 text-base font-black text-slate-950 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed sm:text-lg"
+                        className="min-w-0 flex-1 bg-transparent px-2 text-base font-black text-slate-950 outline-none placeholder:text-slate-400 sm:text-lg"
                       />
-                    </div>
+                    </label>
                     <span className="hidden shrink-0 text-sm font-bold text-slate-400 sm:inline">{t('create_modal.budget_range_to')}</span>
-                    <div
-                      className={`pointer-events-auto flex min-h-[52px] min-w-0 flex-1 items-center rounded-xl border px-3 ${
+                    <label
+                      className={`flex min-h-[52px] min-w-0 flex-1 cursor-text items-center rounded-xl border px-3 ${
                         budgetType === 'fixed' && budgetMax
                           ? 'border-[#1565FF] bg-blue-50/60 ring-2 ring-blue-100'
-                          : budgetType === 'negotiable'
-                            ? 'border-slate-200 bg-slate-50/70 opacity-60'
-                            : 'border-slate-200 bg-slate-50'
+                          : 'border-slate-200 bg-slate-50'
                       }`}
                     >
                       <span className="mr-2 shrink-0 text-[10px] font-bold uppercase text-slate-500">{t('create_modal.budget_max_label')}</span>
@@ -505,10 +500,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                       <input
                         type="number"
                         inputMode="numeric"
-                        pattern="[0-9]*"
-                        min="0"
-                        step="1"
-                        disabled={budgetType === 'negotiable'}
+                        min={0}
+                        step={1}
                         value={budgetMax}
                         onFocus={() => setBudgetType('fixed')}
                         onChange={(e) => {
@@ -516,9 +509,9 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                           setBudgetMax(parseBudgetInput(e.target.value));
                         }}
                         placeholder="120"
-                        className="pointer-events-auto min-w-0 flex-1 bg-transparent px-2 text-base font-black text-slate-950 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed sm:text-lg"
+                        className="min-w-0 flex-1 bg-transparent px-2 text-base font-black text-slate-950 outline-none placeholder:text-slate-400 sm:text-lg"
                       />
-                    </div>
+                    </label>
                   </div>
                   {rangeBudgetIsInvalid ? (
                     <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
@@ -541,13 +534,15 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                     {budgetType === 'negotiable' ? <Icons.Check className="mr-2 h-4 w-4" /> : null}
                     {t('create_modal.budget_negotiate')}
                   </button>
-                  <div className="mt-3 rounded-xl bg-blue-50 px-3 py-2 text-sm font-bold text-blue-950">
-                    {budgetType === 'negotiable'
-                      ? t('create_modal.budget_selected_negotiable')
-                      : budgetStorageType === 'fixed'
-                        ? budgetLabel
-                        : t('create_modal.budget_summary_negotiable')}
-                  </div>
+                  {budgetType !== 'unset' ? (
+                    <div className="mt-3 rounded-xl bg-blue-50 px-3 py-2 text-sm font-bold text-blue-950">
+                      {budgetType === 'negotiable'
+                        ? t('create_modal.budget_selected_negotiable')
+                        : budgetStorageType === 'fixed'
+                          ? budgetLabel
+                          : t('create_modal.budget_pick_range')}
+                    </div>
+                  ) : null}
                 </div>
                 <p className="mt-1.5 text-xs font-medium text-gray-500">{t('create_modal.budget_hint_help')}</p>
               </div>

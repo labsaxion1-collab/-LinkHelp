@@ -1109,6 +1109,14 @@ export default function HelperDashboard() {
                 />
                 <div className="min-w-0">
                   <p className="truncate text-xl font-black text-slate-950">{clientProfileJob.clientName}</p>
+                  {clientProfileJob.clientRating != null && clientProfileJob.clientRating > 0 ? (
+                    <p className="mt-0.5 flex items-center gap-1 text-sm font-bold text-amber-600">
+                      <Icons.Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                      {t('helper_public.avg_rating', { rating: clientProfileJob.clientRating.toFixed(1) })}
+                    </p>
+                  ) : (
+                    <p className="mt-0.5 text-xs font-semibold text-slate-500">{t('service_review.no_rating_yet')}</p>
+                  )}
                   <p className="truncate text-sm font-bold text-slate-500">
                     {[clientProfileJob.city, clientProfileJob.region].filter(Boolean).join(', ') ||
                       clientProfileJob.location ||

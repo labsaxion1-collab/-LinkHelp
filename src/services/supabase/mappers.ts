@@ -22,6 +22,7 @@ export function requestRowToJob(row: RequestRow, client: MapperProfile): Job {
     clientId: row.client_id,
     clientName: display,
     clientAvatar: client.avatar_url || avatarUrlForName(display, 'f1f5f9', '334155'),
+    clientRating: client.rating ?? null,
     title: row.title,
     category: row.category,
     description: row.description,

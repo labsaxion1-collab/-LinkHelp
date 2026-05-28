@@ -94,9 +94,15 @@ export function HelperPublicProfileView({ helper }: Props) {
         </div>
       ) : null}
 
-      <p className="text-center text-xs font-medium text-slate-400">
-        {t('helper_public.reviews_placeholder')}
-      </p>
+      {helper.rating > 0 ? (
+        <p className="text-center text-xs font-medium text-slate-500">
+          {t('helper_public.avg_rating', { rating: helper.rating.toFixed(1) })}
+        </p>
+      ) : (
+        <p className="text-center text-xs font-medium text-slate-400">
+          {t('helper_public.reviews_placeholder')}
+        </p>
+      )}
     </div>
   );
 }

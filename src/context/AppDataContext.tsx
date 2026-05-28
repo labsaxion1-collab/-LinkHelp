@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { avatarUrlForName } from '@/utils/avatarUrl';
@@ -22,6 +22,9 @@ import {
   remoteUpdateUpcomingWorkflow,
   subscribeRemoteData,
 } from '@/services/supabase/appDataRemote';
+import { fetchRemoteReviews, remoteSubmitReview } from '@/services/supabase/reviewsRemote';
+import { buildPendingServiceReviews } from '@/utils/serviceReviewQueue';
+import type { PendingServiceReview, ServiceReview } from '@/types/review';
 import { dispatchPushEvent } from '@/services/push/pushEventDispatcher';
 
 export type { Job, JobStatus, JobUrgency, Application, ApplicationStatus, UpcomingJob, UpcomingWorkflowStatus };
@@ -45,6 +48,14 @@ interface AppDataContextData {
   addNotification: (notification: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => void;
   markNotificationAsRead: (id: string) => void;
   markAllAsRead: () => void;
+  reviews: ServiceReview[];
+  pendingServiceReviews: PendingServiceReview[];
+  submitServiceReview: (input: {
+    requestId: string;
+    targetUserId: string;
+    rating: number;
+    comment?: string | null;
+  }) => Promise<void>;
 }
 
 const AppDataContext = createContext<AppDataContextData>({} as AppDataContextData);
@@ -62,12 +73,15 @@ function migrateJobAvatars(jobs: Job[]): Job[] {
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const { session, profile } = useAuth();
   const useRemote = isSupabaseConfigured() && !!session;
+  const userId = session?.user?.id ?? '';
+  const userRole = profile?.role ?? 'client';
 
   const [dataLoading, setDataLoading] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [upcomingJobs, setUpcomingJobs] = useState<UpcomingJob[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [reviews, setReviews] = useState<ServiceReview[]>([]);
 
   const jobsRef = useRef(jobs);
   const applicationsRef = useRef(applications);
@@ -82,11 +96,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     if (!useRemote) return;
     setDataLoading(true);
     try {
-      const d = await fetchRemoteJobsAndApps();
+      const [d, reviewRows] = await Promise.all([fetchRemoteJobsAndApps(), fetchRemoteReviews()]);
       setJobs(d.jobs);
       setApplications(d.applications);
       setUpcomingJobs(d.upcomingJobs);
       setNotifications(d.notifications);
+      setReviews(reviewRows);
     } finally {
       setDataLoading(false);
     }
@@ -437,6 +452,45 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     setUpcomingJobs((prev) => prev.map((u) => (u.id === upcomingId ? { ...u, workflowStatus } : u)));
   };
 
+  const pendingServiceReviews = useMemo(
+    () =>
+      userId
+        ? buildPendingServiceReviews(userId, userRole, jobs, applications, reviews)
+        : [],
+    [userId, userRole, jobs, applications, reviews],
+  );
+
+  const submitServiceReview = async (input: {
+    requestId: string;
+    targetUserId: string;
+    rating: number;
+    comment?: string | null;
+  }) => {
+    if (!userId) throw new Error('NOT_AUTHENTICATED');
+    if (useRemote) {
+      const row = await remoteSubmitReview({
+        requestId: input.requestId,
+        reviewerId: userId,
+        targetUserId: input.targetUserId,
+        rating: input.rating,
+        comment: input.comment,
+      });
+      setReviews((prev) => [row, ...prev.filter((r) => r.id !== row.id)]);
+      await refreshRemote();
+      return;
+    }
+    const local: ServiceReview = {
+      id: `rev_${Date.now()}`,
+      requestId: input.requestId,
+      reviewerId: userId,
+      targetUserId: input.targetUserId,
+      rating: input.rating,
+      comment: input.comment?.trim() || null,
+      createdAt: Date.now(),
+    };
+    setReviews((prev) => [local, ...prev]);
+  };
+
   return (
     <AppDataContext.Provider
       value={{
@@ -457,6 +511,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         addNotification,
         markNotificationAsRead,
         markAllAsRead,
+        reviews,
+        pendingServiceReviews,
+        submitServiceReview,
       }}
     >
       {children}

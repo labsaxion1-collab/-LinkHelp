@@ -26,6 +26,7 @@ import { ProfilePhoneField } from '@/components/profile/ProfilePhoneField';
 import type { QuebecPlace } from '@/data/quebecRegions';
 import { parseStoredPhone, validatePhoneNumber } from '@/utils/phoneFormat';
 import { HelperScorePanel } from '@/components/features/HelperScorePanel';
+import { Star } from 'lucide-react';
 import { useOnboardingRewards } from '@/hooks/useOnboardingRewards';
 import { useCredits } from '@/context/CreditContext';
 import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
@@ -289,6 +290,14 @@ export default function SettingsPage() {
         <header className="pb-1">
           <h1 className="text-2xl font-black tracking-tight text-gray-900">{t('app_pages.settings_title')}</h1>
           <p className="mt-1 text-sm font-medium text-gray-500">{t('app_pages.settings_sub')}</p>
+          {profile?.rating != null && profile.rating > 0 ? (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-amber-100 bg-amber-50 px-3 py-1.5 text-sm font-bold text-amber-800">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+              {t('service_review.profile_rating')}: {profile.rating.toFixed(1)}
+            </p>
+          ) : (
+            <p className="mt-2 text-xs font-medium text-slate-500">{t('service_review.no_rating_yet')}</p>
+          )}
         </header>
 
         {isConfigured && profile && isHelper ? (

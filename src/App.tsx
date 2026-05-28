@@ -14,6 +14,7 @@ import { ToastProvider } from '@/context/ToastContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AppModeProvider } from '@/context/AppModeContext';
 import { CreditProvider } from '@/context/CreditContext';
+import { ServiceReviewProvider } from '@/context/ServiceReviewContext';
 import { AppRoutes } from '@/routes/AppRoutes';
 import { checkSupabaseConnection, isSupabaseConfigured } from '@/lib/supabase';
 import { authDevLog } from '@/lib/authDebug';
@@ -37,13 +38,15 @@ export default function App() {
           <ToastProvider>
             <DevSupabasePing />
             <AppDataProvider>
-              <BrowserRouter>
-                <AppModeProvider>
-                  <CreditProvider>
-                    <AppRoutes />
-                  </CreditProvider>
-                </AppModeProvider>
-              </BrowserRouter>
+              <ServiceReviewProvider>
+                <BrowserRouter>
+                  <AppModeProvider>
+                    <CreditProvider>
+                      <AppRoutes />
+                    </CreditProvider>
+                  </AppModeProvider>
+                </BrowserRouter>
+              </ServiceReviewProvider>
             </AppDataProvider>
           </ToastProvider>
         </AuthProvider>

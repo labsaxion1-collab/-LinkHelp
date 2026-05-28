@@ -1,6 +1,7 @@
 import { memo, useState } from 'react';
 import * as Icons from 'lucide-react';
 import { CheckCircle2, Clock, MapPin } from 'lucide-react';
+import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
 import { motion, useMotionValue, useTransform, type PanInfo } from 'motion/react';
 import type { Job } from '@/types/job';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
@@ -209,10 +210,23 @@ function HelperOpportunityCardInner({
           dragElastic={0.18}
           onDragEnd={onDragEnd}
         >
-          <div className="mb-1.5 flex items-start justify-between gap-2">
-            <div className="min-w-0">
+          <div className="mb-1.5 flex items-start gap-2">
+            <img
+              src={job.clientAvatar}
+              alt=""
+              className="h-9 w-9 shrink-0 rounded-full border border-slate-100 object-cover shadow-sm"
+              loading="lazy"
+              decoding="async"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <p className="truncate text-[11px] font-bold text-slate-800">{job.clientName}</p>
+                {job.clientRating != null && job.clientRating > 0 ? (
+                  <StarRatingDisplay rating={job.clientRating} />
+                ) : null}
+              </div>
               <p className="truncate text-[10px] font-black uppercase tracking-wide text-blue-600">{category}</p>
-              <p className="line-clamp-1 text-xs font-bold text-slate-800">{subLabel}</p>
+              <p className="line-clamp-1 text-[11px] font-semibold text-slate-700">{subLabel}</p>
             </div>
             {schedule ? (
               <span className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-bold text-slate-600">
@@ -221,8 +235,6 @@ function HelperOpportunityCardInner({
               </span>
             ) : null}
           </div>
-
-          <p className="mb-0.5 truncate text-[11px] font-semibold text-slate-700">{job.clientName}</p>
 
           <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-bold">
             <span className="text-blue-700">{budget}</span>
@@ -273,9 +285,12 @@ function HelperOpportunityCardInner({
               <button
                 type="button"
                 onClick={() => onViewClientProfile?.(job)}
-                className="block max-w-full truncate text-left font-bold leading-tight text-slate-900 transition-colors hover:text-blue-700"
+                className="flex max-w-full items-center gap-1.5 truncate text-left font-bold leading-tight text-slate-900 transition-colors hover:text-blue-700"
               >
-                {job.clientName}
+                <span className="truncate">{job.clientName}</span>
+                {job.clientRating != null && job.clientRating > 0 ? (
+                  <StarRatingDisplay rating={job.clientRating} />
+                ) : null}
               </button>
               <p className="flex items-center gap-1 truncate text-xs font-medium text-slate-500">
                 {category}
@@ -387,6 +402,8 @@ export const HelperOpportunityCard = memo(HelperOpportunityCardInner, (prev, nex
     prev.job.title === next.job.title &&
     prev.job.urgency === next.job.urgency &&
     prev.job.status === next.job.status &&
+    prev.job.clientAvatar === next.job.clientAvatar &&
+    prev.job.clientRating === next.job.clientRating &&
     prev.hasApplied === next.hasApplied &&
     prev.isApplying === next.isApplying &&
     prev.activeTab === next.activeTab &&

@@ -36,13 +36,16 @@ export function formatJobBudgetDisplay(job: BudgetFields, t: (key: string) => st
   return t('jobs.value_negotiable');
 }
 
+export type BudgetMode = 'unset' | 'fixed' | 'negotiable';
+
 export function buildBudgetLabelFromRange(
-  budgetType: 'fixed' | 'negotiable',
+  budgetType: BudgetMode,
   min: number | null,
   max: number | null,
   t: (key: string) => string,
   currency = 'CAD',
 ): string {
+  if (budgetType === 'unset') return '';
   if (budgetType === 'negotiable') return t('jobs.value_negotiable');
   if (min != null && min > 0 && max != null && max > 0) {
     if (min === max) return `${currency} $${min}`;

@@ -6,6 +6,8 @@ export interface Job {
   clientId: string;
   clientName: string;
   clientAvatar: string;
+  /** Average rating from helpers (profiles.rating). */
+  clientRating?: number | null;
   title: string;
   category: string;
   description: string;

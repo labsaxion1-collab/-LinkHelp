@@ -5,6 +5,7 @@ import { useSessionViewer } from '@/hooks/useSessionViewer';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
+import { useServiceReview } from '@/context/ServiceReviewContext';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
@@ -115,7 +116,8 @@ export default function ClientDashboard() {
   const { showToast } = useToast();
   const skillChip = (skill: string) =>
     skill === 'support' ? t('skills.support') : t(`categories.${skill}`);
-  const { jobs, applications, notifications, updateApplicationStatus, updateJobStatus, officiallyHireHelper } = useAppData();
+  const { jobs, applications, notifications, updateApplicationStatus, updateJobStatus, officiallyHireHelper, pendingServiceReviews } = useAppData();
+  const { openReviewByRequestId } = useServiceReview();
   const me = useSessionViewer();
 
   const myJobIds = useMemo(() => jobs.filter((j) => j.clientId === me.id).map((j) => j.id), [jobs, me.id]);
@@ -774,6 +776,18 @@ export default function ClientDashboard() {
                             <p className="inline-flex rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-sm font-black text-blue-800">{formatJobBudgetDisplay(job, t)}</p>
                           </div>
                         </div>
+                        {jobsListTab === 'history' &&
+                        job.status === 'completed' &&
+                        pendingServiceReviews.some((p) => p.requestId === job.id) ? (
+                          <button
+                            type="button"
+                            onClick={() => openReviewByRequestId(job.id)}
+                            className="mb-3 inline-flex min-h-[40px] w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-bold text-amber-900 hover:bg-amber-100"
+                          >
+                            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                            {t('service_review.rate_now')}
+                          </button>
+                        ) : null}
                         <JobTaskActionsBar
                           canCancel={canCancelJob}
                           canRemove={!hiddenJobIds.has(job.id)}
@@ -790,7 +804,13 @@ export default function ClientDashboard() {
                             }
                           }}
                           onRepublish={() => openCreateModal(job.category, job.subcategory ?? '')}
-                          onFinalize={() => void updateJobStatus(job.id, 'completed').catch(console.error)}
+                          onFinalize={() => {
+                            void updateJobStatus(job.id, 'completed')
+                              .then(() => {
+                                window.setTimeout(() => openReviewByRequestId(job.id), 400);
+                              })
+                              .catch(console.error);
+                          }}
                         />
                         <div className="mb-4 flex flex-wrap gap-2">
                           <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800">

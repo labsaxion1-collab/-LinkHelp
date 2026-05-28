@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import * as Icons from 'lucide-react';
-import { Search, Send, ChevronLeft, ShieldCheck, Lock } from 'lucide-react';
+import { Search, Send, ChevronLeft, ShieldCheck, Lock, ChevronUp, ChevronDown } from 'lucide-react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppData } from '@/context/AppDataContext';
 import { useAppMode } from '@/context/AppModeContext';
@@ -17,6 +17,7 @@ import { clsx } from 'clsx';
 import { sanitizePreMatchMessage } from '@/utils/preMatchChatFilter';
 import { isUnlimitedPreMatch, preMatchOutgoingLimit } from '@/utils/preMatchLimits';
 import { translateJobTitle } from '@/utils/translateCategory';
+import { dedupeConversationSummaries } from '@/services/supabase/chatRemote';
 
 type ChatRow =
   | { id: string | number; kind: 'system'; text: string; time: string; variant?: 'info' | 'warn' }
@@ -67,7 +68,10 @@ export default function MessagesPage() {
       return new Set();
     }
   });
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesScrollRef = useRef<HTMLDivElement>(null);
+  const [showScrollTopFab, setShowScrollTopFab] = useState(false);
+  const [showScrollBottomFab, setShowScrollBottomFab] = useState(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
 
   const serviceConfirmed = useRemoteChat ? remote.contactUnlocked : false;
 
@@ -103,8 +107,8 @@ export default function MessagesPage() {
   const filteredSummaries = useMemo(() => {
     if (!useRemoteChat) return [];
     const q = searchQuery.trim().toLowerCase();
-    const visible = remote.summaries.filter(
-      (s) => s.contactUnlocked && !hiddenConversationIds.has(s.id),
+    const visible = dedupeConversationSummaries(
+      remote.summaries.filter((s) => !hiddenConversationIds.has(s.id)),
     );
     if (!q) return visible;
     return visible.filter(
@@ -126,13 +130,53 @@ export default function MessagesPage() {
     }
   };
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const updateScrollFabState = useCallback(() => {
+    const el = messagesScrollRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    const nearBottom = scrollHeight - scrollTop - clientHeight < 72;
+    setShowScrollBottomFab(!nearBottom && scrollHeight > clientHeight + 24);
+    setShowScrollTopFab(scrollTop > 120);
+  }, []);
+
+  const scrollMessagesTo = useCallback((mode: 'top' | 'bottom', behavior: ScrollBehavior = 'smooth') => {
+    const el = messagesScrollRef.current;
+    if (!el) return;
+    const top = mode === 'top' ? 0 : el.scrollHeight;
+    el.scrollTo({ top, behavior });
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [threadMessages, isTyping, scrollToBottom, mobilePanel]);
+    const el = messagesScrollRef.current;
+    if (!el) return;
+    const onScroll = () => updateScrollFabState();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    updateScrollFabState();
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [updateScrollFabState, remote.selectedId, mobilePanel]);
+
+  useEffect(() => {
+    if (mobilePanel !== 'thread' && !isMd) return;
+    scrollMessagesTo('bottom', 'auto');
+    const t = window.setTimeout(() => scrollMessagesTo('bottom', 'auto'), 50);
+    return () => window.clearTimeout(t);
+  }, [threadMessages, isTyping, scrollMessagesTo, mobilePanel, isMd, remote.selectedId]);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const sync = () => {
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKeyboardInset(inset > 40 ? inset : 0);
+    };
+    vv.addEventListener('resize', sync);
+    vv.addEventListener('scroll', sync);
+    sync();
+    return () => {
+      vv.removeEventListener('resize', sync);
+      vv.removeEventListener('scroll', sync);
+    };
+  }, []);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,6 +208,7 @@ export default function MessagesPage() {
     try {
       await remote.sendRemoteMessage(filtered);
       setMessage('');
+      requestAnimationFrame(() => scrollMessagesTo('bottom', 'smooth'));
     } catch {
       /* remote hook sets sendError */
     }
@@ -261,7 +306,10 @@ export default function MessagesPage() {
   );
 
   const messageList = (
-    <div className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6 space-y-4 sm:space-y-5 bg-[#f4f6f8] ios-scroll min-h-0 relative">
+    <div
+      ref={messagesScrollRef}
+      className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6 space-y-4 sm:space-y-5 bg-[#f4f6f8] ios-scroll min-h-0 relative"
+    >
       {useRemoteChat && remote.threadLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
           <Icons.Loader2 className="w-8 h-8 text-blue-600 animate-spin" aria-hidden />
@@ -335,7 +383,26 @@ export default function MessagesPage() {
           </div>
         ),
       )}
-      <div ref={messagesEndRef} />
+      {showScrollTopFab ? (
+        <button
+          type="button"
+          onClick={() => scrollMessagesTo('top')}
+          className="absolute top-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-blue-100 bg-white/95 text-blue-700 shadow-lg backdrop-blur-md"
+          aria-label={t('messages_page.scroll_top')}
+        >
+          <ChevronUp className="h-5 w-5" />
+        </button>
+      ) : null}
+      {showScrollBottomFab ? (
+        <button
+          type="button"
+          onClick={() => scrollMessagesTo('bottom')}
+          className="absolute bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-blue-100 bg-white/95 text-blue-700 shadow-lg backdrop-blur-md"
+          aria-label={t('messages_page.scroll_bottom')}
+        >
+          <ChevronDown className="h-5 w-5" />
+        </button>
+      ) : null}
     </div>
   );
 
@@ -343,7 +410,10 @@ export default function MessagesPage() {
     useRemoteChat && (!remote.selectedId || remote.threadLoading || !remote.peerId || remote.listLoading);
 
   const inputBar = (
-    <div className="p-3 sm:p-4 bg-white/95 backdrop-blur-md border-t border-gray-100 shrink-0 pb-[max(env(safe-area-inset-bottom),0.75rem)] md:pb-4 space-y-2">
+    <div
+      className="p-3 sm:p-4 bg-white/95 backdrop-blur-md border-t border-gray-100 shrink-0 pb-[max(env(safe-area-inset-bottom),0.75rem)] md:pb-4 space-y-2"
+      style={keyboardInset > 0 ? { paddingBottom: `max(${keyboardInset}px, env(safe-area-inset-bottom))` } : undefined}
+    >
       {counterLabel && (
         <div className="flex items-center justify-between px-1 gap-2">
           <span className="text-[11px] font-semibold text-slate-500 tabular-nums">{counterLabel}</span>
@@ -400,7 +470,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <AppPageShell className="flex flex-1 flex-col min-h-0 w-full max-w-7xl">
+    <AppPageShell className="flex flex-1 flex-col min-h-0 w-full max-w-7xl overflow-hidden">
       <DesktopBackButton className="mb-3" />
       {showLimitModal && (
         <div
@@ -449,7 +519,7 @@ export default function MessagesPage() {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row flex-1 min-h-0 lh-glass-card-solid md:rounded-3xl overflow-hidden h-[calc(100dvh-4rem-5rem)] md:h-[calc(100dvh-5rem)] max-md:rounded-none">
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 max-h-[calc(100dvh-4rem-5rem)] md:max-h-[calc(100dvh-5rem)] lh-glass-card-solid md:rounded-3xl overflow-hidden max-md:rounded-none">
         <div
           className={clsx(
             'w-full md:w-80 md:max-w-[40%] border-r border-gray-100 flex flex-col min-h-0 bg-slate-50/60',
@@ -531,7 +601,11 @@ export default function MessagesPage() {
         </div>
 
         <div
-          className={clsx('flex flex-col flex-1 bg-white min-h-0 min-w-0', !showThread && 'hidden', 'md:flex')}
+          className={clsx(
+            'flex flex-col flex-1 bg-white min-h-0 min-w-0 overflow-hidden max-h-full',
+            !showThread && 'hidden',
+            'md:flex',
+          )}
         >
           {remoteListBoot ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-600">

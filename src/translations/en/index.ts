@@ -283,6 +283,8 @@ export const en = {
     reply_other_post: 'Perfect — I have everything I need on my side.',
     no_conversations: 'No conversations yet. Officially hire a helper to unlock chat.',
     pick_conversation: 'Select a conversation from the list.',
+    scroll_top: 'Older messages',
+    scroll_bottom: 'Latest message',
     send_failed: 'Could not send the message. Please try again.',
   },
   live_map: {

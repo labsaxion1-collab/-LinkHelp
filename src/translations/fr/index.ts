@@ -285,6 +285,8 @@ export const fr = {
     reply_other_post: 'Super — de mon côté tout est bon.',
     no_conversations: 'Pas encore de conversations. Engagez officiellement un helper pour ouvrir le chat.',
     pick_conversation: 'Choisissez une conversation dans la liste.',
+    scroll_top: 'Messages plus anciens',
+    scroll_bottom: 'Dernier message',
     send_failed: 'Impossible d’envoyer le message. Réessayez.',
   },
   live_map: {

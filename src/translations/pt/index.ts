@@ -288,6 +288,8 @@ export const pt = {
     reply_other_post: 'Ótimo — aqui está tudo certo do meu lado.',
     no_conversations: 'Nenhuma conversa ainda. Contrate um helper oficialmente para liberar o chat.',
     pick_conversation: 'Escolha uma conversa na lista.',
+    scroll_top: 'Mensagens antigas',
+    scroll_bottom: 'Última mensagem',
     send_failed: 'Não foi possível enviar a mensagem. Tente novamente.',
   },
   live_map: {

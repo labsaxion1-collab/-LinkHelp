@@ -34,6 +34,31 @@ function requestTitleFromRow(row: ConvSelectRow): string {
   return r.title ?? '—';
 }
 
+function threadKey(summary: Pick<ChatConversationSummary, 'requestId' | 'peerId'>): string {
+  return `${summary.requestId}:${summary.peerId}`;
+}
+
+/** Keep one row per request + peer (same chamado/thread). */
+export function dedupeConversationSummaries(list: ChatConversationSummary[]): ChatConversationSummary[] {
+  const groups = new Map<string, ChatConversationSummary[]>();
+  for (const item of list) {
+    const key = threadKey(item);
+    const bucket = groups.get(key) ?? [];
+    bucket.push(item);
+    groups.set(key, bucket);
+  }
+
+  const out: ChatConversationSummary[] = [];
+  for (const bucket of groups.values()) {
+    const unlocked = bucket.find((s) => s.contactUnlocked);
+    out.push(unlocked ?? bucket[0]!);
+  }
+
+  const order = new Map(list.map((s, i) => [s.id, i]));
+  out.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+  return out;
+}
+
 export async function fetchChatConversationSummaries(userId: string): Promise<ChatConversationSummary[]> {
   const sb = getSupabase();
   if (!sb) return [];

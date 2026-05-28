@@ -99,10 +99,10 @@ export function useSupabaseMessages(opts: UseSupabaseMessagesOpts) {
     const want =
       searchConversationId ||
       initialConversationId ||
-      (appliedInitial.current ? null : summaries.find((s) => s.contactUnlocked)?.id) ||
+      (appliedInitial.current ? null : summaries[0]?.id) ||
       null;
     if (!want) return;
-    const exists = summaries.some((s) => s.id === want && s.contactUnlocked);
+    const exists = summaries.some((s) => s.id === want);
     if (exists) {
       setSelectedId(want);
       appliedInitial.current = true;

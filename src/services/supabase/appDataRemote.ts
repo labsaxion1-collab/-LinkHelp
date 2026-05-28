@@ -11,6 +11,7 @@ import {
   upcomingRowToUpcoming,
 } from '@/services/supabase/mappers';
 import { fetchProfilesAsMapperMap } from '@/services/supabase/fetchUserViews';
+import { ensureConversation } from '@/services/supabase/conversationEnsure';
 
 export async function fetchRemoteJobsAndApps(): Promise<{
   jobs: Job[];
@@ -267,6 +268,13 @@ export async function remoteApply(input: {
     action_url: '/client/dashboard',
     read: false,
   });
+
+  await ensureConversation({
+    requestId: input.requestId,
+    clientId: input.clientId,
+    helperId: input.helperId,
+    contactUnlocked: false,
+  });
 }
 
 export async function remoteUpdateRequestStatus(requestId: string, status: RequestStatus): Promise<void> {
@@ -400,31 +408,12 @@ export async function remoteOfficiallyHireHelper(
     }
   }
 
-  const { data: existingConv } = await sb
-    .from('conversations')
-    .select('id')
-    .eq('request_id', app.request_id)
-    .eq('helper_id', app.helper_id)
-    .maybeSingle();
-
-  let conversationId: string;
-  if (!existingConv) {
-    const { data: inserted, error: convInsErr } = await sb
-      .from('conversations')
-      .insert({
-        request_id: app.request_id,
-        client_id: app.client_id,
-        helper_id: app.helper_id,
-        contact_unlocked: true,
-      })
-      .select('id')
-      .single();
-    if (convInsErr || !inserted) throw convInsErr ?? new Error('CONVERSATION_CREATE_FAILED');
-    conversationId = (inserted as { id: string }).id;
-  } else {
-    conversationId = (existingConv as { id: string }).id;
-    await sb.from('conversations').update({ contact_unlocked: true }).eq('id', conversationId);
-  }
+  const conversationId = await ensureConversation({
+    requestId: app.request_id,
+    clientId: app.client_id,
+    helperId: app.helper_id,
+    contactUnlocked: true,
+  });
 
   const cleanInitialMessage = initialMessage?.trim();
   if (cleanInitialMessage) {

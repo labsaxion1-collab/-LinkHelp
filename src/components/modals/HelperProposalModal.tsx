@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import * as Icons from 'lucide-react';
+import { clsx } from 'clsx';
 import type { Job } from '@/types/job';
-import { LhModal } from '@/components/design-system/LhModal';
-import { premium } from '@/components/design-system/premiumClasses';
 import { formatBudgetRange, jobHasBoundedBudget, jobIsNegotiableBudget, validateHelperProposal } from '@/utils/jobProposal';
 
 type Props = {
@@ -17,6 +17,7 @@ type Props = {
 export function HelperProposalModal({ open, job, submitting = false, onClose, onSubmit, t }: Props) {
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
+  const [keyboardInset, setKeyboardInset] = useState(0);
 
   const bounded = job ? jobHasBoundedBudget(job) : false;
   const negotiable = job ? jobIsNegotiableBudget(job) : false;
@@ -28,6 +29,32 @@ export function HelperProposalModal({ open, job, submitting = false, onClose, on
       setError('');
     }
   }, [open, job?.id]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const sync = () => {
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKeyboardInset(inset > 48 ? inset : 0);
+    };
+    vv.addEventListener('resize', sync);
+    vv.addEventListener('scroll', sync);
+    sync();
+    return () => {
+      vv.removeEventListener('resize', sync);
+      vv.removeEventListener('scroll', sync);
+    };
+  }, [open]);
 
   if (!open || !job) return null;
 
@@ -41,19 +68,107 @@ export function HelperProposalModal({ open, job, submitting = false, onClose, on
     onSubmit(result.amount);
   };
 
-  return (
-    <LhModal
-      open={open}
-      onClose={onClose}
-      title={t('helper_proposal.title')}
-      size="md"
-      className="max-w-md"
-      footer={
-        <div className="flex w-full gap-2">
-          <button type="button" onClick={onClose} disabled={submitting} className={`${premium.btnSecondary} flex-1`}>
-            {t('helper_proposal.back')}
+  const currency = job.currency?.trim() || 'CAD';
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[120] flex items-end justify-center sm:items-center p-0 sm:p-4"
+      style={{ paddingBottom: keyboardInset > 0 ? keyboardInset : undefined }}
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        className="absolute inset-0 bg-[#0D1B2A]/40 backdrop-blur-md"
+        aria-hidden
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="helper-proposal-title"
+        className={clsx(
+          'relative z-10 flex w-full max-w-md flex-col overflow-hidden',
+          'rounded-t-[1.75rem] sm:rounded-[1.75rem]',
+          'border border-sky-100/90 bg-gradient-to-b from-white via-[#F4FAFF] to-[#E8F4FF]',
+          'shadow-[0_-8px_40px_rgba(21,101,255,0.12),0_24px_64px_rgba(13,27,42,0.18)]',
+          'max-h-[min(92dvh,640px)]',
+        )}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-sky-200 sm:hidden" aria-hidden />
+
+        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-sky-100/80 px-5 pb-4 pt-4 sm:pt-5">
+          <div className="min-w-0">
+            <h2 id="helper-proposal-title" className="text-xl font-black tracking-tight text-slate-950">
+              {t('helper_proposal.title')}
+            </h2>
+            <p className="mt-1 truncate text-sm font-bold text-blue-700">{job.title}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-sky-100 bg-white/90 text-slate-500 shadow-sm hover:bg-white hover:text-slate-900"
+            aria-label={t('common.close')}
+          >
+            <Icons.X className="h-5 w-5" />
           </button>
-          <button type="button" onClick={handleSubmit} disabled={submitting} className={`${premium.btnPrimary} flex-1`}>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+          {bounded ? (
+            <div className="mb-4 rounded-2xl border border-blue-200/80 bg-gradient-to-r from-blue-50 to-sky-50 px-4 py-3.5">
+              <p className="text-[10px] font-black uppercase tracking-wider text-blue-700">
+                {t('helper_proposal.client_suggested')}
+              </p>
+              <p className="mt-1 text-xl font-black text-slate-900">{formatBudgetRange(job, t)}</p>
+            </div>
+          ) : negotiable ? (
+            <p className="mb-4 rounded-2xl border border-sky-100 bg-white/80 px-4 py-3.5 text-sm font-medium leading-relaxed text-slate-600">
+              {t('helper_proposal.negotiable_hint')}
+            </p>
+          ) : null}
+
+          <label className="mb-2 block text-sm font-bold text-slate-800">
+            {t('helper_proposal.your_proposal')}
+            {!required ? (
+              <span className="ml-1 text-xs font-semibold text-slate-500">({t('helper_proposal.optional')})</span>
+            ) : null}
+          </label>
+          <div className="flex min-h-[60px] items-center rounded-2xl border-2 border-blue-200/70 bg-white px-4 shadow-inner shadow-blue-500/5 focus-within:border-[#1565FF] focus-within:ring-4 focus-within:ring-blue-500/15">
+            <span className="mr-2 shrink-0 text-base font-black text-slate-500">{currency} $</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9]*"
+              autoComplete="off"
+              value={amount}
+              onChange={(e) => {
+                setAmount(e.target.value.replace(/[^\d.,]/g, ''));
+                setError('');
+              }}
+              placeholder={bounded ? String(Math.round(job.budgetMin!)) : '0'}
+              className="min-w-0 flex-1 bg-transparent text-2xl font-black text-slate-950 outline-none placeholder:text-slate-300"
+              autoFocus
+            />
+          </div>
+          {error ? <p className="mt-2 text-sm font-semibold text-rose-600">{error}</p> : null}
+        </div>
+
+        <footer className="flex shrink-0 gap-3 border-t border-sky-100/80 bg-white/70 px-5 py-4 backdrop-blur-sm pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className="min-h-[52px] flex-1 rounded-2xl border-2 border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-50"
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#1565FF] to-[#33B6FF] px-4 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition hover:brightness-105 disabled:opacity-60"
+          >
             {submitting ? (
               <>
                 <Icons.Loader2 className="h-4 w-4 animate-spin" />
@@ -63,46 +178,9 @@ export function HelperProposalModal({ open, job, submitting = false, onClose, on
               t('helper_proposal.submit')
             )}
           </button>
-        </div>
-      }
-    >
-      <div className="space-y-4">
-        <p className="text-sm font-medium lh-text-muted">{job.title}</p>
-
-        {bounded ? (
-          <div className="rounded-2xl border border-[#33B6FF]/20 bg-[#1565FF]/10 px-4 py-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-[#33B6FF]">{t('helper_proposal.client_suggested')}</p>
-            <p className="mt-1 text-lg font-black text-white">{formatBudgetRange(job, t)}</p>
-          </div>
-        ) : negotiable ? (
-          <p className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-medium lh-text-muted">
-            {t('helper_proposal.negotiable_hint')}
-          </p>
-        ) : null}
-
-        <div>
-          <label className="mb-2 block text-sm font-bold text-[#F2F4F7]">
-            {t('helper_proposal.your_proposal')}
-            {!required ? <span className="ml-1 text-xs font-semibold lh-text-muted">({t('helper_proposal.optional')})</span> : null}
-          </label>
-          <div className="flex min-h-[52px] items-center rounded-xl border-2 border-[#33B6FF]/20 bg-white/[0.04] px-3 focus-within:border-[#1565FF]">
-            <span className="mr-2 shrink-0 text-sm font-black text-[#F2F4F7]/70">{job.currency?.trim() || 'CAD'} $</span>
-            <input
-              inputMode="decimal"
-              pattern="[0-9]*"
-              value={amount}
-              onChange={(e) => {
-                setAmount(e.target.value.replace(/[^\d.,]/g, ''));
-                setError('');
-              }}
-              placeholder={bounded ? String(Math.round(job.budgetMin!)) : '0'}
-              className="min-w-0 flex-1 bg-transparent text-lg font-black text-white outline-none placeholder:text-[#F2F4F7]/35"
-              autoFocus
-            />
-          </div>
-          {error ? <p className="mt-2 text-sm font-semibold text-rose-400">{error}</p> : null}
-        </div>
+        </footer>
       </div>
-    </LhModal>
+    </div>,
+    document.body,
   );
 }

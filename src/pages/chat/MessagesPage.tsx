@@ -619,6 +619,14 @@ export default function MessagesPage() {
             !showThread && 'hidden',
             'md:flex',
           )}
+          style={
+            !isMd && keyboardInset > 0
+              ? {
+                  maxHeight: `calc(100dvh - ${Math.min(keyboardInset, 280)}px)`,
+                  height: `calc(100dvh - ${Math.min(keyboardInset, 280)}px)`,
+                }
+              : undefined
+          }
         >
           {remoteListBoot ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-600">

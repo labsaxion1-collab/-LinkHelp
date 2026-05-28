@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { ROUTES } from '@/utils/constants';
 import { useLanguage } from '@/context/LanguageContext';
-import { formatLinkCredits } from '@/utils/formatLinkCredits';
+import { formatLinkCredits, normalizeLinkCreditsAmount } from '@/utils/formatLinkCredits';
 
 type Props = {
   balance: number | null;
@@ -37,8 +37,11 @@ export function HelperCreditsWalletCard({
         className="inline-flex min-h-[34px] max-w-[9.5rem] shrink-0 items-center gap-1.5 rounded-full border border-blue-200/80 bg-white/95 px-2.5 py-1 text-left text-[11px] font-bold text-slate-700 shadow-sm hover:border-blue-300 hover:bg-blue-50"
       >
         <Icons.Coins className="h-3.5 w-3.5 shrink-0 text-blue-600" />
-        <span className="truncate text-slate-500">{t('helper_dashboard.credits_label')}</span>
-        <span className="truncate text-[11px] font-black tabular-nums text-slate-950">{balanceLabel}</span>
+        <span className="truncate text-[11px] font-black tabular-nums text-slate-950">
+          {unresolvedBalance
+            ? '...'
+            : t('helper_dashboard.credits_balance', { amount: normalizeLinkCreditsAmount(balance!) })}
+        </span>
         {lowBalance ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" /> : null}
       </button>
     );

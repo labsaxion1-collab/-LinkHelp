@@ -129,6 +129,8 @@ export type RemoteCreateRequestInput = {
   currency?: string | null;
   budgetMin?: number | null;
   budgetMax?: number | null;
+  timezone?: string | null;
+  createdTimezone?: string | null;
 };
 
 const EXTENDED_REQUEST_COLUMNS = [
@@ -144,6 +146,8 @@ const EXTENDED_REQUEST_COLUMNS = [
   'currency',
   'budget_min',
   'budget_max',
+  'timezone',
+  'created_timezone',
 ] as const;
 
 function isMissingColumnError(error: { code?: string; message?: string } | null, column: string): boolean {
@@ -188,6 +192,8 @@ function buildRequestInsertPayload(input: RemoteCreateRequestInput, extended: bo
     currency: input.currency ?? 'CAD',
     budget_min: input.budgetMin ?? null,
     budget_max: input.budgetMax ?? null,
+    timezone: input.timezone ?? input.createdTimezone ?? null,
+    created_timezone: input.createdTimezone ?? input.timezone ?? null,
   };
 }
 
@@ -220,7 +226,7 @@ export async function remoteApply(input: {
   clientId: string;
   message?: string | null;
   proposedAmount?: number | null;
-}): Promise<void> {
+}): Promise<boolean> {
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
 
@@ -238,12 +244,12 @@ export async function remoteApply(input: {
   const { error } = await sb.from('applications').insert(payload);
 
   if (error) {
-    if (error.code === '23505') return;
+    if (error.code === '23505') return false;
     if (input.proposedAmount != null && isMissingColumnError(error, 'proposed_amount')) {
       delete payload.proposed_amount;
       const { error: retryErr } = await sb.from('applications').insert(payload);
       if (retryErr) {
-        if (retryErr.code === '23505') return;
+        if (retryErr.code === '23505') return false;
         throw new Error(retryErr.message || 'APPLICATION_INSERT_FAILED');
       }
     } else {
@@ -277,6 +283,8 @@ export async function remoteApply(input: {
     helperId: input.helperId,
     contactUnlocked: false,
   });
+
+  return true;
 }
 
 export async function remoteUpdateRequestStatus(requestId: string, status: RequestStatus): Promise<void> {

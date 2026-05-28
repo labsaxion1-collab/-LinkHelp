@@ -41,6 +41,8 @@ import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperO
 import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
 import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
 import { InsufficientCreditsError, leadCostsForJob } from '@/services/helperLeadCredits';
+import { recordMarketSignal } from '@/services/marketSignals';
+import { hapticSuccess } from '@/utils/haptic';
 import { buildReviewCountByUserId } from '@/utils/reviewCounts';
 import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
 import {
@@ -83,6 +85,7 @@ export default function HelperDashboard() {
   const [postText, setPostText] = useState('');
   const [activeTab, setActiveTab] = useState<'match' | 'recentes' | 'emergencia' | 'candidaturas'>('match');
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
+  const isSubmittingApplyRef = React.useRef(false);
   const [proposalJob, setProposalJob] = useState<Job | null>(null);
   const [dismissedJobIds, setDismissedJobIds] = useState<Set<string>>(() => new Set());
   const [exitingJobIds, setExitingJobIds] = useState<Set<string>>(() => new Set());
@@ -368,19 +371,31 @@ export default function HelperDashboard() {
   }, []);
 
   const submitApply = async (job: Job, proposedAmount: number | null, proposalMessage?: string | null) => {
-    if (appliedJobIds.has(job.id)) return;
+    if (appliedJobIds.has(job.id) || isSubmittingApplyRef.current) return;
     const distanceKm = distanceToJobKm(helperCoords, job);
     const interestCost = leadCostsForJob(job, { distanceKm }).interestCost;
     if (creditBalance != null && creditBalance < interestCost) {
       setInsufficientCreditsLc(interestCost);
       return;
     }
+    isSubmittingApplyRef.current = true;
     setApplyingJobId(job.id);
     try {
       await applyForJob(job.id, helperUserId, proposedAmount, {
         distanceKm,
         message: proposalMessage ?? null,
       });
+      recordMarketSignal({
+        requestId: job.id,
+        helperId: helperUserId,
+        kind: 'applied',
+        category: job.category,
+        city: job.city ?? null,
+        budgetMin: job.budgetMin ?? null,
+        budgetMax: job.budgetMax ?? null,
+        distanceKm,
+      });
+      hapticSuccess();
       setProposalJob(null);
       dismissJobWithAnimation(job.id);
       setToastNotification({ message: t('helper_dashboard.toast_apply_success'), show: true });
@@ -404,16 +419,51 @@ export default function HelperDashboard() {
       }
     } finally {
       setApplyingJobId(null);
+      isSubmittingApplyRef.current = false;
     }
   };
 
   const requestApply = (job: Job) => {
-    if (appliedJobIds.has(job.id)) return;
+    if (appliedJobIds.has(job.id) || isSubmittingApplyRef.current) return;
     setProposalJob(job);
   };
 
+  const handleProposalClose = () => {
+    if (applyingJobId) return;
+    setProposalJob(null);
+  };
+
   const handleSwipeInterest = (job: Job) => {
-    requestApply(job);
+    if (appliedJobIds.has(job.id) || isSubmittingApplyRef.current) return;
+    const distanceKm = distanceToJobKm(helperCoords, job);
+    recordMarketSignal({
+      requestId: job.id,
+      helperId: helperUserId,
+      kind: 'interest',
+      category: job.category,
+      city: job.city ?? null,
+      budgetMin: job.budgetMin ?? null,
+      budgetMax: job.budgetMax ?? null,
+      distanceKm,
+    });
+    setProposalJob(job);
+  };
+
+  const handleSwipeDismiss = (jobId: string) => {
+    const job = jobs.find((j) => j.id === jobId);
+    if (job) {
+      recordMarketSignal({
+        requestId: job.id,
+        helperId: helperUserId,
+        kind: 'ignore',
+        category: job.category,
+        city: job.city ?? null,
+        budgetMin: job.budgetMin ?? null,
+        budgetMax: job.budgetMax ?? null,
+        distanceKm: distanceToJobKm(helperCoords, job),
+      });
+    }
+    dismissJobWithAnimation(jobId);
   };
 
   const confirmCancelApplication = async () => {
@@ -986,7 +1036,12 @@ export default function HelperDashboard() {
                 </LhCard>
               )
             ) : displayedJobs.length > 0 ? (
-              <div className="grid w-full max-w-full min-w-0 grid-cols-1 gap-3 md:gap-4 md:grid-cols-2 2xl:grid-cols-3">
+              <div
+                className={clsx(
+                  'grid w-full max-w-full min-w-0 grid-cols-1 gap-3 md:gap-4 md:grid-cols-2 2xl:grid-cols-3 transition-[filter,opacity] duration-300',
+                  proposalJob && 'pointer-events-none brightness-[0.92] md:brightness-[0.88]',
+                )}
+              >
               {displayedJobs.map((job) => (
                     <div
                       key={job.id}
@@ -1001,12 +1056,14 @@ export default function HelperDashboard() {
                         hasApplied={appliedJobIds.has(job.id)}
                         isApplying={applyingJobId === job.id}
                         isExiting={exitingJobIds.has(job.id)}
+                        interactionLocked={Boolean(applyingJobId)}
+                        proposalOpen={proposalJob?.id === job.id}
                         distanceKm={distanceToJobKm(helperCoords, job)}
                         applicationsCount={applicationCountsByJobId.get(job.id) ?? 0}
                         clientReviewCount={reviewCountByUserId.get(job.clientId) ?? 0}
                         onApply={requestApply}
                         onSwipeInterest={handleSwipeInterest}
-                        onDismiss={dismissJobWithAnimation}
+                        onDismiss={handleSwipeDismiss}
                         onViewClientProfile={setClientProfileJob}
                         onViewDetails={setDetailOpportunity}
                         t={t}
@@ -1122,9 +1179,11 @@ export default function HelperDashboard() {
         open={Boolean(proposalJob)}
         job={proposalJob}
         submitting={proposalJob ? applyingJobId === proposalJob.id : false}
-        onClose={() => !applyingJobId && setProposalJob(null)}
+        creditBalance={creditBalance}
+        onClose={handleProposalClose}
         onSubmit={(amount, message) => proposalJob && void submitApply(proposalJob, amount, message)}
         t={t}
+        language={language}
         distanceKm={proposalJob ? distanceToJobKm(helperCoords, proposalJob) : null}
       />
 

@@ -30,6 +30,7 @@ import {
   type RequestPriority,
 } from '@/utils/requestSchedule';
 import { getMarketBudgetSuggestion } from '@/utils/marketBudgetSuggestions';
+import { getBrowserTimezone } from '@/utils/browserTimezone';
 
 type ModalStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
 const STEPS: ModalStep[] = ['category', 'subcategory', 'description', 'confirm', 'review'];
@@ -287,6 +288,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
         budgetMax: rangeBudgetIsValid ? parsedBudgetMax : null,
         currency: 'CAD',
         urgency: jobUrgencyFromPriority(priority),
+        timezone: getBrowserTimezone(),
+        createdTimezone: getBrowserTimezone(),
       });
       handleClose();
       onPublished?.();

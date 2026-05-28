@@ -1,4 +1,6 @@
-import { memo, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
+import { hapticLight, hapticSuccess } from '@/utils/haptic';
+import { computeLeadQualityScore } from '@/utils/leadQualityScore';
 import * as Icons from 'lucide-react';
 import { CheckCircle2, Clock, MapPin } from 'lucide-react';
 import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
@@ -24,6 +26,8 @@ export type HelperOpportunityCardProps = {
   onSwipeInterest?: (job: Job) => void;
   onDismiss?: (jobId: string) => void;
   isExiting?: boolean;
+  interactionLocked?: boolean;
+  proposalOpen?: boolean;
   onViewClientProfile?: (job: Job) => void;
   onViewDetails?: (job: Job) => void;
   applicationsCount?: number;
@@ -46,16 +50,6 @@ function jobMatchTier(job: Job, activeTab: HelperOpportunityCardTab): 'urgent' |
   return 'normal';
 }
 
-function estimateLeadQuality(job: Job, distanceKm?: number | null): number {
-  let score = 58;
-  if (job.description.length > 120) score += 14;
-  if (job.location.trim()) score += 10;
-  if (job.value && !/negotiable|combinar|agree/i.test(job.value)) score += 8;
-  if (job.urgency === 'high') score += 6;
-  if (distanceKm != null && distanceKm <= 10) score += 4;
-  return Math.min(score, 98);
-}
-
 function locationLabel(job: Job, distanceKm: number | null | undefined, t: TFn): string {
   if (distanceKm != null) return t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) });
   const loc = job.location?.trim();
@@ -76,6 +70,8 @@ function HelperOpportunityCardInner({
   onSwipeInterest,
   onDismiss,
   isExiting = false,
+  interactionLocked = false,
+  proposalOpen = false,
   onViewClientProfile,
   onViewDetails,
   t,
@@ -86,7 +82,7 @@ function HelperOpportunityCardInner({
   clientReviewCount = 0,
 }: HelperOpportunityCardProps) {
   const tier = jobMatchTier(job, activeTab);
-  const qualityScore = estimateLeadQuality(job, distanceKm);
+  const qualityScore = computeLeadQualityScore({ job, distanceKm });
   const helperLimit = tier === 'urgent' ? 5 : 3;
   const schedule = formatJobSchedule(job, t);
   const category = translateCategory(job.category, t);
@@ -102,24 +98,34 @@ function HelperOpportunityCardInner({
       ? t(`service_subs.${job.category}.${job.subcategory}`)
       : title;
 
-  const acceptOpacity = Math.min(1, Math.max(0, dragX / 120));
-  const passOpacity = Math.min(1, Math.max(0, -dragX / 120));
-  const contentFade = 1 - Math.min(0.35, Math.abs(dragX) / 220);
+  const acceptOpacity = Math.min(0.42, Math.max(0, dragX / 140));
+  const passOpacity = Math.min(0.42, Math.max(0, -dragX / 140));
+  const dragRotation = Math.max(-6, Math.min(6, dragX * 0.04));
+
+  const resetSwipeVisual = () => {
+    setDragX(0);
+    setSwipeOverlay('none');
+    setDragging(false);
+  };
+
+  const wasProposalOpen = useRef(false);
+  useEffect(() => {
+    if (wasProposalOpen.current && !proposalOpen) {
+      resetSwipeVisual();
+    }
+    wasProposalOpen.current = proposalOpen;
+  }, [proposalOpen]);
 
   const finishSwipe = (offset: number) => {
     setDragging(false);
-    if (hasApplied) {
-      setDragX(0);
-      setSwipeOverlay('none');
+    if (hasApplied || interactionLocked) {
+      resetSwipeVisual();
       return;
     }
     if (offset > SWIPE_COMMIT_PX) {
-      setDragX(0);
-      setSwipeOverlay('accept');
-      window.setTimeout(() => {
-        onSwipeInterest?.(job);
-        setSwipeOverlay('none');
-      }, 220);
+      hapticLight();
+      resetSwipeVisual();
+      onSwipeInterest?.(job);
       return;
     }
     if (offset < -SWIPE_COMMIT_PX) {
@@ -137,14 +143,14 @@ function HelperOpportunityCardInner({
   };
 
   const onSwipeStart = (clientX: number) => {
-    if (hasApplied || isExiting) return;
+    if (hasApplied || isExiting || interactionLocked || proposalOpen) return;
     setDragging(true);
     swipeStartX.current = clientX;
     setSwipeOverlay('none');
   };
 
   const onSwipeMove = (clientX: number) => {
-    if (hasApplied || isExiting) return;
+    if (hasApplied || isExiting || interactionLocked || proposalOpen) return;
     const dx = clientX - swipeStartX.current;
     setDragX(dx);
     if (dx > 36) setSwipeOverlay('accept');
@@ -237,15 +243,15 @@ function HelperOpportunityCardInner({
         </div>
 
         <div
-          className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-emerald-500 text-white transition-opacity duration-100"
-          style={{ opacity: Math.max(acceptOpacity, swipeOverlay === 'accept' ? 0.92 : 0) }}
+          className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-emerald-500/30 text-emerald-950 backdrop-blur-[2px] transition-opacity duration-100"
+          style={{ opacity: acceptOpacity }}
         >
           <Icons.Check className="h-10 w-10" strokeWidth={2.5} />
           <span className="text-sm font-black">{t('helper_dashboard.swipe_interest')}</span>
         </div>
         <div
-          className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-rose-500 text-white transition-opacity duration-100"
-          style={{ opacity: Math.max(passOpacity, swipeOverlay === 'pass' ? 0.92 : 0) }}
+          className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-rose-500/30 text-rose-950 backdrop-blur-[2px] transition-opacity duration-100"
+          style={{ opacity: passOpacity }}
         >
           <Icons.X className="h-10 w-10" strokeWidth={2.5} />
           <span className="text-sm font-black">{t('helper_dashboard.swipe_not_interested')}</span>
@@ -257,8 +263,8 @@ function HelperOpportunityCardInner({
             !dragging && 'transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.2,0.64,1)]',
           )}
           style={{
-            transform: `translateX(${dragX}px)`,
-            opacity: contentFade,
+            transform: `translateX(${dragX}px) rotate(${dragRotation}deg)`,
+            opacity: 1 - Math.min(0.12, Math.abs(dragX) / 400),
           }}
         >
           <p className="truncate text-[10px] font-black uppercase tracking-wide text-blue-600">{category}</p>
@@ -468,6 +474,8 @@ export const HelperOpportunityCard = memo(HelperOpportunityCardInner, (prev, nex
     prev.hasApplied === next.hasApplied &&
     prev.isApplying === next.isApplying &&
     prev.isExiting === next.isExiting &&
+    prev.interactionLocked === next.interactionLocked &&
+    prev.proposalOpen === next.proposalOpen &&
     prev.activeTab === next.activeTab &&
     prev.distanceKm === next.distanceKm &&
     prev.applicationsCount === next.applicationsCount &&

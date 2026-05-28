@@ -182,6 +182,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         currency: jobDetails.currency ?? 'CAD',
         budgetMin: jobDetails.budgetMin ?? null,
         budgetMax: jobDetails.budgetMax ?? null,
+        timezone: jobDetails.timezone ?? jobDetails.createdTimezone ?? null,
+        createdTimezone: jobDetails.createdTimezone ?? jobDetails.timezone ?? null,
       });
       await refreshRemote();
       return;
@@ -211,20 +213,27 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     if (!job) throw new Error('JOB_NOT_FOUND');
 
     const interestCost = leadCostsForJob(job, { distanceKm: options?.distanceKm ?? null }).interestCost;
-    if (helperId === profile?.id) {
-      await chargeApplicationInterest(jobId, interestCost);
-    }
 
     if (useRemote) {
-      await remoteApply({
+      const created = await remoteApply({
         requestId: jobId,
         helperId,
         clientId: job.clientId,
         proposedAmount: proposedAmount ?? null,
         message: options?.message?.trim() || null,
       });
+      if (!created) {
+        throw new Error('ALREADY_APPLIED');
+      }
+      if (helperId === profile?.id) {
+        await chargeApplicationInterest(jobId, interestCost);
+      }
       await refreshRemote();
       return;
+    }
+
+    if (helperId === profile?.id) {
+      await chargeApplicationInterest(jobId, interestCost);
     }
 
     const helperName = profile?.name?.trim() || 'Helper';

@@ -38,4 +38,7 @@ export interface Job {
   urgency: JobUrgency;
   status: JobStatus;
   createdAt: number;
+  /** IANA timezone captured at publish (e.g. America/Toronto). */
+  timezone?: string | null;
+  createdTimezone?: string | null;
 }

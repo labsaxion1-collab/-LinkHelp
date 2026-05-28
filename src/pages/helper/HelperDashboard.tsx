@@ -292,7 +292,7 @@ export default function HelperDashboard() {
   const appliedJobIds = new Set(
     helperApplications.filter((a) => a.status !== 'cancelled').map((a) => a.jobId),
   );
-  const creditBalance = wallet?.balance ?? 0;
+  const creditBalance = wallet?.balance ?? null;
   const goToCredits = React.useCallback(() => navigate(ROUTES.helperCredits), [navigate]);
   const creditsUsedThisMonth = React.useMemo(() => {
     const now = new Date();
@@ -832,7 +832,7 @@ export default function HelperDashboard() {
                 balance={creditBalance}
                 usedThisMonth={creditsUsedThisMonth}
                 unlocksCount={unlocks.length}
-                loading={creditsLoading}
+                loading={creditsLoading || wallet == null}
                 compact
                 t={t}
                 onBuyCredits={goToCredits}

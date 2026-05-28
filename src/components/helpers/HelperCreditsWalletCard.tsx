@@ -6,7 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
 
 type Props = {
-  balance: number;
+  balance: number | null;
   usedThisMonth: number;
   unlocksCount: number;
   loading?: boolean;
@@ -25,8 +25,9 @@ export function HelperCreditsWalletCard({
   onBuyCredits,
 }: Props) {
   const { language } = useLanguage();
-  const balanceLabel = formatLinkCredits(balance, language);
-  const lowBalance = balance <= 500;
+  const unresolvedBalance = loading || balance == null;
+  const balanceLabel = unresolvedBalance ? '...' : formatLinkCredits(balance, language);
+  const lowBalance = !unresolvedBalance && balance <= 500;
 
   if (compact) {
     return (
@@ -37,7 +38,7 @@ export function HelperCreditsWalletCard({
       >
         <Icons.Coins className="h-3.5 w-3.5 shrink-0 text-blue-600" />
         <span className="truncate text-slate-500">{t('helper_dashboard.credits_label')}</span>
-        <span className="truncate text-[11px] font-black tabular-nums text-slate-950">{loading ? '…' : balanceLabel}</span>
+        <span className="truncate text-[11px] font-black tabular-nums text-slate-950">{balanceLabel}</span>
         {lowBalance ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" /> : null}
       </button>
     );
@@ -69,7 +70,7 @@ export function HelperCreditsWalletCard({
               'text-4xl',
             )}
           >
-            {loading ? '…' : balanceLabel}
+            {balanceLabel}
           </p>
           <p className="mt-1.5 text-[11px] font-medium leading-snug text-slate-600">
             {t('helper_dashboard.credits_wallet_sub')}

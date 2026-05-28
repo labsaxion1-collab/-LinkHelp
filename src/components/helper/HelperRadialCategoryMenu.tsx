@@ -19,9 +19,9 @@ type Props = {
 };
 
 function polarPosition(index: number, total: number, radius: number) {
-  const start = -160;
-  const end = -20;
-  const angle = total <= 1 ? -90 : start + ((end - start) * index) / (total - 1);
+  const start = 28;
+  const end = 152;
+  const angle = total <= 1 ? 90 : start + ((end - start) * index) / (total - 1);
   const rad = (angle * Math.PI) / 180;
   return { x: Math.cos(rad) * radius, y: Math.sin(rad) * radius };
 }
@@ -63,10 +63,7 @@ function HelperRadialCategoryMenuInner({
   return (
     <div
       ref={rootRef}
-      className={clsx(
-        'relative z-20 mb-2 flex min-h-[52px] items-start gap-2 transition-[min-height] duration-200',
-        open && 'min-h-[11rem] pt-2',
-      )}
+      className={clsx('relative z-20 mb-2 flex min-h-[52px] items-start gap-2')}
     >
       <motion.button
         type="button"
@@ -99,7 +96,7 @@ function HelperRadialCategoryMenuInner({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="pointer-events-none absolute left-0 top-10 z-40 h-48 w-52"
+            className="pointer-events-none absolute left-0 top-10 z-40 h-52 w-56"
           >
             <motion.button
               type="button"
@@ -107,7 +104,7 @@ function HelperRadialCategoryMenuInner({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 420, damping: 26, delay: 0.02 }}
-              style={{ left: 24, top: 40 }}
+              style={{ left: 24, top: 12 }}
               className="pointer-events-auto absolute flex h-11 min-w-[4.5rem] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white px-2 text-[10px] font-black text-slate-700 shadow-md"
               onClick={() => {
                 onSelect('');
@@ -126,9 +123,9 @@ function HelperRadialCategoryMenuInner({
                 <motion.button
                   key={cat.id}
                   type="button"
-                  initial={{ scale: 0, opacity: 0, x: 24, y: 40 }}
-                  animate={{ scale: 1, opacity: 1, x: 24 + pos.x, y: 40 + pos.y }}
-                  exit={{ scale: 0, opacity: 0, x: 24, y: 40 }}
+                  initial={{ scale: 0, opacity: 0, x: 24, y: 16 }}
+                  animate={{ scale: 1, opacity: 1, x: 24 + pos.x, y: 16 + pos.y }}
+                  exit={{ scale: 0, opacity: 0, x: 24, y: 16 }}
                   transition={{ type: 'spring', stiffness: 380, damping: 24, delay: 0.04 + i * 0.03 }}
                   className={clsx(
                     'pointer-events-auto absolute flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border text-[9px] font-black leading-none shadow-md',

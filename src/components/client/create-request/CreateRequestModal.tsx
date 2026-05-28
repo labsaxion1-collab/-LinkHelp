@@ -170,9 +170,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setPriority('flexible');
     setPreferredDateMode('today');
     setPreferredDateIso('');
-    setPreferredTimeWindow('');
+    setPreferredTimeChoice('');
     setPreferredTimeSpecific('');
-    setShowSpecificTime(false);
     setMovePropertyType('');
     setMovePickupAddress(emptyRequestAddress());
     setMoveDeliveryAddress(emptyRequestAddress());

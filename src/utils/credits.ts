@@ -7,10 +7,10 @@ export const HELPER_SIGNUP_BONUS_CREDITS = SIGNUP_BONUS_LC.helper;
 export const CLIENT_SIGNUP_BONUS_LC = SIGNUP_BONUS_LC.client;
 
 export const CREDIT_PACKAGES: CreditPackage[] = [
-  { id: 'starter', name: 'Starter', credits: 20, priceCad: 15, active: true, highlightLabel: null, createdAt: 0 },
-  { id: 'plus', name: 'Plus', credits: 50, priceCad: 35, active: true, highlightLabel: 'Popular', createdAt: 0 },
-  { id: 'pro', name: 'Pro', credits: 120, priceCad: 70, active: true, highlightLabel: 'Melhor valor', createdAt: 0 },
-  { id: 'business', name: 'Business', credits: 250, priceCad: 130, active: true, highlightLabel: 'Business', createdAt: 0 },
+  { id: 'starter', name: 'Starter', credits: 35, priceCad: 14.99, active: true, highlightLabel: null, createdAt: 0 },
+  { id: 'popular', name: 'Popular', credits: 80, priceCad: 29.99, active: true, highlightLabel: 'Mais popular', createdAt: 0 },
+  { id: 'pro', name: 'Pro', credits: 180, priceCad: 59.99, active: true, highlightLabel: null, createdAt: 0 },
+  { id: 'power', name: 'Power', credits: 400, priceCad: 119.99, active: true, highlightLabel: 'Melhor valor', createdAt: 0 },
 ];
 
 const CATEGORY_BASE_PRICE: Record<string, number> = {

@@ -24,8 +24,12 @@ function txFromRow(row: Record<string, unknown>): CreditTransaction {
     helperId: String(row.helper_id),
     type: row.type as CreditTransaction['type'],
     amount: normalizeLinkCreditsAmount(Number(row.amount ?? 0)),
+    balanceBefore:
+      row.balance_before != null ? normalizeLinkCreditsAmount(Number(row.balance_before)) : null,
     balanceAfter: normalizeLinkCreditsAmount(Number(row.balance_after ?? 0)),
     relatedOpportunityId: (row.related_opportunity_id as string | null) ?? null,
+    requestId: (row.request_id as string | null) ?? null,
+    applicationId: (row.application_id as string | null) ?? null,
     relatedPaymentId: (row.related_payment_id as string | null) ?? null,
     description: String(row.description ?? ''),
     createdAt: toMs(row.created_at as string),

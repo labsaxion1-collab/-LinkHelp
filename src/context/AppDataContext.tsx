@@ -26,6 +26,8 @@ import { fetchRemoteReviews, remoteSubmitReview } from '@/services/supabase/revi
 import { buildPendingServiceReviews } from '@/utils/serviceReviewQueue';
 import type { PendingServiceReview, ServiceReview } from '@/types/review';
 import { dispatchPushEvent } from '@/services/push/pushEventDispatcher';
+import { useCredits } from '@/context/CreditContext';
+import { InsufficientCreditsError, leadCostsForJob, remoteChargeHelperOnClientHire } from '@/services/helperLeadCredits';
 
 export type { Job, JobStatus, JobUrgency, Application, ApplicationStatus, UpcomingJob, UpcomingWorkflowStatus };
 export type { AppNotification, NotificationType };
@@ -37,7 +39,12 @@ interface AppDataContextData {
   notifications: AppNotification[];
   dataLoading: boolean;
   createJob: (job: Omit<Job, 'id' | 'createdAt' | 'status'>) => Promise<void>;
-  applyForJob: (jobId: string, helperId: string, proposedAmount?: number | null) => Promise<void>;
+  applyForJob: (
+    jobId: string,
+    helperId: string,
+    proposedAmount?: number | null,
+    options?: { distanceKm?: number | null },
+  ) => Promise<void>;
   updateJobStatus: (jobId: string, status: JobStatus) => Promise<void>;
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => Promise<void>;
   officiallyHireHelper: (applicationId: string, initialMessage?: string) => Promise<string | null>;
@@ -72,6 +79,7 @@ function migrateJobAvatars(jobs: Job[]): Job[] {
 
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const { session, profile } = useAuth();
+  const { chargeApplicationInterest, chargeApplicationSelected } = useCredits();
   const useRemote = isSupabaseConfigured() && !!session;
   const userId = session?.user?.id ?? '';
   const userRole = profile?.role ?? 'client';
@@ -358,7 +366,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const jobSnapshot = targetApp ? jobsRef.current.find((j) => j.id === targetApp.jobId) : undefined;
     if (!targetApp || !jobSnapshot) return null;
 
+    const selectedCost = leadCostsForJob(jobSnapshot).selectedCost;
+
     if (useRemote) {
+      await remoteChargeHelperOnClientHire(applicationId, selectedCost);
       const conversationId = await remoteOfficiallyHireHelper(applicationId, jobSnapshot, initialMessage);
       await refreshRemote();
       return conversationId;

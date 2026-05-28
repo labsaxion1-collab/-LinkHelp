@@ -29,6 +29,7 @@ import {
   type RequestPriority,
   type TimeWindow,
 } from '@/utils/requestSchedule';
+import { getMarketBudgetSuggestion } from '@/utils/marketBudgetSuggestions';
 
 type ModalStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
 const STEPS: ModalStep[] = ['category', 'subcategory', 'description', 'confirm', 'review'];
@@ -136,6 +137,10 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     parsedBudgetMin > parsedBudgetMax;
   const budgetLabel = buildBudgetLabelFromRange(budgetType, parsedBudgetMin, parsedBudgetMax, t);
   const budgetStorageType: 'fixed' | 'negotiable' = rangeBudgetIsValid ? 'fixed' : 'negotiable';
+  const marketSuggestion = useMemo(() => {
+    if (!selectedCategory || selectedCategory === 'translation') return null;
+    return getMarketBudgetSuggestion(selectedCategory, selectedSubcategory || null);
+  }, [selectedCategory, selectedSubcategory]);
 
   const reset = () => {
     setStep(initialCategory && initialSubcategory ? 'description' : initialCategory ? 'subcategory' : 'category');
@@ -461,6 +466,30 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               {selectedCategory !== 'translation' ? (
               <div>
                 <label className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.budget_hint_label')}</label>
+                {marketSuggestion ? (
+                  <div className="mb-3 rounded-xl border border-blue-100 bg-blue-50/90 px-3 py-2.5">
+                    <p className="text-xs font-bold uppercase tracking-wide text-blue-800">
+                      {t('create_modal.market_suggestion_title')}
+                    </p>
+                    <p className="mt-1 text-sm font-black text-slate-900">
+                      {t('create_modal.market_suggestion_range', {
+                        min: marketSuggestion.min,
+                        max: marketSuggestion.max,
+                      })}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBudgetType('fixed');
+                        setBudgetMin(String(marketSuggestion.min));
+                        setBudgetMax(String(marketSuggestion.max));
+                      }}
+                      className="mt-2 text-xs font-bold text-blue-700 underline-offset-2 hover:underline"
+                    >
+                      {t('create_modal.market_suggestion_apply')}
+                    </button>
+                  </div>
+                ) : null}
                 <div className="w-full max-w-full overflow-hidden rounded-2xl border-2 border-gray-200 bg-white p-3 sm:p-4 focus-within:border-blue-500">
                   <div className="relative z-[1] flex flex-col gap-3 sm:flex-row sm:items-center">
                     <div

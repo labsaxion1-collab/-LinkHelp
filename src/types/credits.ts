@@ -3,7 +3,9 @@ export type CreditTransactionType =
   | 'FREE_BONUS'
   | 'OPPORTUNITY_UNLOCK'
   | 'REFUND'
-  | 'ADMIN_ADJUSTMENT';
+  | 'ADMIN_ADJUSTMENT'
+  | 'APPLICATION_INTEREST'
+  | 'APPLICATION_SELECTED';
 
 export type OpportunityUnlockStatus = 'unlocked' | 'refunded' | 'cancelled';
 
@@ -24,7 +26,10 @@ export type CreditTransaction = {
   type: CreditTransactionType;
   amount: number;
   balanceAfter: number;
+  balanceBefore?: number | null;
   relatedOpportunityId?: string | null;
+  requestId?: string | null;
+  applicationId?: string | null;
   relatedPaymentId?: string | null;
   description: string;
   createdAt: number;

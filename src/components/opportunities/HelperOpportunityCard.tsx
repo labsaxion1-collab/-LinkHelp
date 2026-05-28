@@ -41,13 +41,6 @@ function jobMatchTier(job: Job, activeTab: HelperOpportunityCardTab): 'urgent' |
   return 'normal';
 }
 
-function estimateLeadCost(job: Job, distanceKm?: number | null): number {
-  let cost = job.urgency === 'high' ? 4 : 2;
-  if (job.description.length > 180) cost += 1;
-  if (distanceKm != null && distanceKm <= 8) cost += 1;
-  return Math.min(cost, 6);
-}
-
 function estimateLeadQuality(job: Job, distanceKm?: number | null): number {
   let score = 58;
   if (job.description.length > 120) score += 14;
@@ -86,7 +79,6 @@ function HelperOpportunityCardInner({
   clientReviewCount = 0,
 }: HelperOpportunityCardProps) {
   const tier = jobMatchTier(job, activeTab);
-  const leadCost = estimateLeadCost(job, distanceKm);
   const qualityScore = estimateLeadQuality(job, distanceKm);
   const helperLimit = tier === 'urgent' ? 5 : 3;
   const schedule = formatJobSchedule(job, t);
@@ -205,7 +197,7 @@ function HelperOpportunityCardInner({
           )}
         >
           <Icons.X className="h-10 w-10" strokeWidth={2.5} />
-          <span className="text-sm font-black">{t('helper_dashboard.swipe_pass')}</span>
+          <span className="text-sm font-black">{t('helper_dashboard.swipe_not_interested')}</span>
         </div>
 
         <div
@@ -322,7 +314,7 @@ function HelperOpportunityCardInner({
               {t('helper_dashboard.lead_quality', { pct: qualityScore })}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-800">
-              <Icons.Coins className="h-3.5 w-3.5 shrink-0 text-blue-600" /> {t('helper_dashboard.lead_cost', { count: leadCost })}
+              <Icons.Coins className="h-3.5 w-3.5 shrink-0 text-blue-600" /> {t('helper_dashboard.credits_interest_hint')}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-900">
               <Icons.Users className="h-3.5 w-3.5 shrink-0 text-amber-600" />{' '}

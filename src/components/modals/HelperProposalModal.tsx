@@ -51,7 +51,7 @@ export function HelperProposalModal({ open, job, submitting = false, onClose, on
       footer={
         <div className="flex w-full gap-2">
           <button type="button" onClick={onClose} disabled={submitting} className={`${premium.btnSecondary} flex-1`}>
-            {t('common.cancel')}
+            {t('helper_proposal.back')}
           </button>
           <button type="button" onClick={handleSubmit} disabled={submitting} className={`${premium.btnPrimary} flex-1`}>
             {submitting ? (

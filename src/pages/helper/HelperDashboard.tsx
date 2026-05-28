@@ -38,6 +38,8 @@ import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportun
 import { HelperRadialCategoryMenu } from '@/components/helper/HelperRadialCategoryMenu';
 import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
 import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
+import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
+import { InsufficientCreditsError, leadCostsForJob } from '@/services/helperLeadCredits';
 import { jobHasBoundedBudget, jobIsNegotiableBudget } from '@/utils/jobProposal';
 import { buildReviewCountByUserId } from '@/utils/reviewCounts';
 import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
@@ -88,6 +90,7 @@ export default function HelperDashboard() {
   const [radialFilterOpen, setRadialFilterOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<Application | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
+  const [insufficientCreditsLc, setInsufficientCreditsLc] = useState<number | null>(null);
 
   // Modals state
   const [planModal, setPlanModal] = useState<HelperPlanModalView | null>(null);
@@ -299,7 +302,13 @@ export default function HelperDashboard() {
     return creditTransactions
       .filter((tx) => {
         const d = new Date(tx.createdAt);
-        return tx.type === 'OPPORTUNITY_UNLOCK' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        return (
+          (tx.type === 'OPPORTUNITY_UNLOCK' ||
+            tx.type === 'APPLICATION_INTEREST' ||
+            tx.type === 'APPLICATION_SELECTED') &&
+          d.getMonth() === now.getMonth() &&
+          d.getFullYear() === now.getFullYear()
+        );
       })
       .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   }, [creditTransactions]);
@@ -347,15 +356,25 @@ export default function HelperDashboard() {
 
   const needsProposalFlow = (job: Job) => jobHasBoundedBudget(job) || jobIsNegotiableBudget(job);
 
-  const submitApply = async (jobId: string, proposedAmount: number | null) => {
-    if (appliedJobIds.has(jobId)) return;
-    setApplyingJobId(jobId);
+  const submitApply = async (job: Job, proposedAmount: number | null) => {
+    if (appliedJobIds.has(job.id)) return;
+    const distanceKm = distanceToJobKm(helperCoords, job);
+    const interestCost = leadCostsForJob(job, { distanceKm }).interestCost;
+    if (creditBalance != null && creditBalance < interestCost) {
+      setInsufficientCreditsLc(interestCost);
+      return;
+    }
+    setApplyingJobId(job.id);
     try {
-      await applyForJob(jobId, helperUserId, proposedAmount);
+      await applyForJob(job.id, helperUserId, proposedAmount, { distanceKm });
       setProposalJob(null);
       setToastNotification({ message: t('helper_dashboard.toast_apply_success'), show: true });
       setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
     } catch (err: unknown) {
+      if (err instanceof InsufficientCreditsError) {
+        setInsufficientCreditsLc(err.requiredLc);
+        return;
+      }
       const msg =
         err instanceof Error
           ? err.message
@@ -375,11 +394,11 @@ export default function HelperDashboard() {
 
   const requestApply = (job: Job) => {
     if (appliedJobIds.has(job.id)) return;
-    if (needsProposalFlow(job)) {
+    if (jobHasBoundedBudget(job) || jobIsNegotiableBudget(job)) {
       setProposalJob(job);
       return;
     }
-    void submitApply(job.id, null);
+    void submitApply(job, null);
   };
 
   const confirmCancelApplication = async () => {
@@ -1080,8 +1099,16 @@ export default function HelperDashboard() {
         job={proposalJob}
         submitting={proposalJob ? applyingJobId === proposalJob.id : false}
         onClose={() => !applyingJobId && setProposalJob(null)}
-        onSubmit={(amount) => proposalJob && void submitApply(proposalJob.id, amount)}
+        onSubmit={(amount) => proposalJob && void submitApply(proposalJob, amount)}
         t={t}
+      />
+
+      <HelperInsufficientCreditsModal
+        open={insufficientCreditsLc != null}
+        requiredLc={insufficientCreditsLc ?? 0}
+        onClose={() => setInsufficientCreditsLc(null)}
+        t={t}
+        language={language}
       />
 
       <HelperOpportunityDetailModal

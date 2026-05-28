@@ -3,6 +3,12 @@ import { useAuth } from '@/context/AuthContext';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { fetchRemoteCreditState, getWalletBalance } from '@/services/supabase/creditsRemote';
 import { remoteEnsureSignupCredits } from '@/services/supabase/rewardsRemote';
+import {
+  InsufficientCreditsError,
+  localDebit,
+  remoteDebitApplicationInterest,
+  remoteDebitApplicationSelected,
+} from '@/services/helperLeadCredits';
 import type { CreditPackage, CreditTransaction, CreditWallet, OpportunityUnlock } from '@/types/credits';
 import { CREDIT_PACKAGES, HELPER_SIGNUP_BONUS_CREDITS } from '@/utils/credits';
 
@@ -13,6 +19,8 @@ type CreditContextValue = {
   packages: CreditPackage[];
   loading: boolean;
   refreshCredits: () => Promise<void>;
+  chargeApplicationInterest: (requestId: string, amount?: number) => Promise<void>;
+  chargeApplicationSelected: (requestId: string, applicationId: string, amount: number) => Promise<void>;
 };
 
 const CreditContext = createContext<CreditContextValue | null>(null);
@@ -123,6 +131,53 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
     void refreshCredits();
   }, [refreshCredits]);
 
+  const chargeApplicationInterest = useCallback(
+    async (requestId: string, amount = 1) => {
+      if (!helperId || !isHelper) throw new Error('NOT_HELPER');
+      if (remote) {
+        await remoteDebitApplicationInterest(helperId, requestId, amount);
+        await refreshCredits();
+        return;
+      }
+      if (!wallet) throw new InsufficientCreditsError(amount);
+      const next = localDebit(wallet, transactions, {
+        helperId,
+        type: 'APPLICATION_INTEREST',
+        amount,
+        requestId,
+        description: 'Interesse em oportunidade',
+      });
+      setWallet({ ...wallet, ...next.wallet, updatedAt: Date.now() });
+      setTransactions(next.transactions);
+      persistLocal({ wallet: { ...wallet, ...next.wallet }, transactions: next.transactions, unlocks });
+    },
+    [helperId, isHelper, remote, refreshCredits, wallet, transactions, unlocks, persistLocal],
+  );
+
+  const chargeApplicationSelected = useCallback(
+    async (requestId: string, applicationId: string, amount: number) => {
+      if (!helperId || !isHelper) throw new Error('NOT_HELPER');
+      if (remote) {
+        await remoteDebitApplicationSelected(helperId, requestId, applicationId, amount);
+        await refreshCredits();
+        return;
+      }
+      if (!wallet) throw new InsufficientCreditsError(amount);
+      const next = localDebit(wallet, transactions, {
+        helperId,
+        type: 'APPLICATION_SELECTED',
+        amount,
+        requestId,
+        applicationId,
+        description: 'Contratação confirmada pelo cliente',
+      });
+      setWallet({ ...wallet, ...next.wallet, updatedAt: Date.now() });
+      setTransactions(next.transactions);
+      persistLocal({ wallet: { ...wallet, ...next.wallet }, transactions: next.transactions, unlocks });
+    },
+    [helperId, isHelper, remote, refreshCredits, wallet, transactions, unlocks, persistLocal],
+  );
+
   const value = useMemo(
     () => ({
       wallet,
@@ -131,8 +186,10 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
       packages,
       loading,
       refreshCredits,
+      chargeApplicationInterest,
+      chargeApplicationSelected,
     }),
-    [wallet, transactions, unlocks, packages, loading, refreshCredits],
+    [wallet, transactions, unlocks, packages, loading, refreshCredits, chargeApplicationInterest, chargeApplicationSelected],
   );
 
   return <CreditContext.Provider value={value}>{children}</CreditContext.Provider>;

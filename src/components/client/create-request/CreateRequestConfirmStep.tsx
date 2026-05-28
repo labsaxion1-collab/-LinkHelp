@@ -1,7 +1,8 @@
 import * as Icons from 'lucide-react';
 import {
-  BEAUTY_PREFERRED_TIME_SLOTS,
   type PreferredDateMode,
+  type PreferredTimeChoice,
+  isPreferredTimeComplete,
 } from '@/utils/requestSchedule';
 
 type Props = {
@@ -11,35 +12,35 @@ type Props = {
   setPreferredDateMode: (m: PreferredDateMode) => void;
   preferredDateIso: string;
   setPreferredDateIso: (v: string) => void;
+  preferredTimeChoice: PreferredTimeChoice;
+  setPreferredTimeChoice: (c: PreferredTimeChoice) => void;
   preferredTimeSpecific: string;
   setPreferredTimeSpecific: (v: string) => void;
 };
 
 export function CreateRequestConfirmStep({
   t,
-  selectedCategory,
   preferredDateMode,
   setPreferredDateMode,
   preferredDateIso,
   setPreferredDateIso,
+  preferredTimeChoice,
+  setPreferredTimeChoice,
   preferredTimeSpecific,
   setPreferredTimeSpecific,
 }: Props) {
-  const isBeauty = selectedCategory === 'beauty';
   const dateComplete =
     preferredDateMode === 'today' ||
     preferredDateMode === 'tomorrow' ||
     (preferredDateMode === 'pick' && Boolean(preferredDateIso));
-  const timeComplete = !isBeauty || Boolean(preferredTimeSpecific.trim());
+  const timeComplete = isPreferredTimeComplete(preferredTimeChoice, preferredTimeSpecific);
   const stepComplete = dateComplete && timeComplete;
 
   return (
     <div className="animate-in fade-in duration-300 space-y-4">
       <div>
         <h4 className="text-2xl font-bold text-gray-900">{t('create_modal.preferred_date')}</h4>
-        <p className="text-gray-500 text-sm mt-1">
-          {isBeauty ? t('create_modal.beauty_schedule_sub') : t('create_modal.confirm_when')}
-        </p>
+        <p className="text-gray-500 text-sm mt-1">{t('create_modal.confirm_when')}</p>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
@@ -73,38 +74,45 @@ export function CreateRequestConfirmStep({
             className="w-full min-h-[44px] rounded-xl border-2 border-gray-200 px-3 text-sm font-bold text-slate-800 focus:border-blue-500 focus:outline-none"
           />
         ) : null}
+      </div>
 
-        {isBeauty ? (
-          <div className="pt-2 border-t border-slate-200">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">
-              {t('create_modal.preferred_time_select')}
-            </p>
-            <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
-              {BEAUTY_PREFERRED_TIME_SLOTS.map((slot) => (
-                <button
-                  key={slot}
-                  type="button"
-                  onClick={() => setPreferredTimeSpecific(slot)}
-                  className={`min-h-[40px] rounded-lg border text-xs font-black transition-colors ${
-                    preferredTimeSpecific === slot
-                      ? 'border-blue-600 bg-blue-600 text-white'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-blue-200'
-                  }`}
-                >
-                  {slot}
-                </button>
-              ))}
-            </div>
-            <label className="mt-2 flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-500 shrink-0">{t('create_modal.preferred_time_custom')}</span>
-              <input
-                type="time"
-                value={preferredTimeSpecific}
-                onChange={(e) => setPreferredTimeSpecific(e.target.value)}
-                className="min-h-[40px] flex-1 rounded-lg border-2 border-slate-200 px-2 text-sm font-bold text-slate-800 focus:border-blue-500 focus:outline-none"
-              />
-            </label>
-          </div>
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{t('create_modal.preferred_time')}</p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {(['morning', 'afternoon', 'evening', 'pick'] as const).map((choice) => (
+            <button
+              key={choice}
+              type="button"
+              onClick={() => {
+                setPreferredTimeChoice(choice);
+                if (choice !== 'pick') setPreferredTimeSpecific('');
+              }}
+              className={`min-h-[44px] rounded-xl border-2 px-2 text-sm font-black transition-colors ${
+                preferredTimeChoice === choice
+                  ? 'border-blue-600 bg-blue-50 text-blue-900'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-blue-200'
+              }`}
+            >
+              {choice === 'morning'
+                ? t('create_modal.time_morning')
+                : choice === 'afternoon'
+                  ? t('create_modal.time_afternoon')
+                  : choice === 'evening'
+                    ? t('create_modal.time_evening')
+                    : t('create_modal.time_pick')}
+            </button>
+          ))}
+        </div>
+        {preferredTimeChoice === 'pick' ? (
+          <label className="flex flex-col gap-2">
+            <span className="text-xs font-semibold text-slate-600">{t('create_modal.time_pick_hint')}</span>
+            <input
+              type="time"
+              value={preferredTimeSpecific}
+              onChange={(e) => setPreferredTimeSpecific(e.target.value)}
+              className="w-full min-h-[48px] rounded-xl border-2 border-blue-200 bg-white px-3 text-lg font-black text-slate-900 focus:border-blue-500 focus:outline-none"
+            />
+          </label>
         ) : null}
       </div>
 
@@ -125,13 +133,12 @@ export function CreateRequestConfirmStep({
 export function isConfirmStepComplete(
   preferredDateMode: PreferredDateMode,
   preferredDateIso: string,
-  category: string,
+  preferredTimeChoice: PreferredTimeChoice,
   preferredTimeSpecific: string,
 ): boolean {
   const dateOk =
     preferredDateMode === 'today' ||
     preferredDateMode === 'tomorrow' ||
     (preferredDateMode === 'pick' && Boolean(preferredDateIso));
-  if (category !== 'beauty') return dateOk;
-  return dateOk && Boolean(preferredTimeSpecific.trim());
+  return dateOk && isPreferredTimeComplete(preferredTimeChoice, preferredTimeSpecific);
 }

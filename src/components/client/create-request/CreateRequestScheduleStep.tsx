@@ -4,11 +4,7 @@ import {
   RequestAddressInput,
   type RequestAddressValue,
 } from '@/components/client/create-request/RequestAddressInput';
-import type {
-  PreferredDateMode,
-  RequestPriority,
-  TimeWindow,
-} from '@/utils/requestSchedule';
+import type { RequestPriority } from '@/utils/requestSchedule';
 
 export type MovePropertyType = 'house' | 'apartment' | 'office' | 'business' | '';
 
@@ -18,16 +14,6 @@ type Props = {
   selectedSubcategory: string;
   priority: RequestPriority;
   setPriority: (p: RequestPriority) => void;
-  preferredDateMode: PreferredDateMode;
-  setPreferredDateMode: (m: PreferredDateMode) => void;
-  preferredDateIso: string;
-  setPreferredDateIso: (v: string) => void;
-  preferredTimeWindow: TimeWindow;
-  setPreferredTimeWindow: (w: TimeWindow) => void;
-  preferredTimeSpecific: string;
-  setPreferredTimeSpecific: (v: string) => void;
-  showSpecificTime: boolean;
-  setShowSpecificTime: (v: boolean | ((prev: boolean) => boolean)) => void;
   requestAddress: RequestAddressValue;
   setRequestAddress: (v: RequestAddressValue) => void;
   movePropertyType: MovePropertyType;

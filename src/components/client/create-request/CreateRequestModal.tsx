@@ -26,8 +26,8 @@ import {
   jobUrgencyFromPriority,
   resolvePreferredDateIso,
   type PreferredDateMode,
+  type PreferredTimeChoice,
   type RequestPriority,
-  type TimeWindow,
 } from '@/utils/requestSchedule';
 import { getMarketBudgetSuggestion } from '@/utils/marketBudgetSuggestions';
 
@@ -67,9 +67,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const [priority, setPriority] = useState<RequestPriority>('flexible');
   const [preferredDateMode, setPreferredDateMode] = useState<PreferredDateMode>('today');
   const [preferredDateIso, setPreferredDateIso] = useState('');
-  const [preferredTimeWindow, setPreferredTimeWindow] = useState<TimeWindow>('');
+  const [preferredTimeChoice, setPreferredTimeChoice] = useState<PreferredTimeChoice>('');
   const [preferredTimeSpecific, setPreferredTimeSpecific] = useState('');
-  const [showSpecificTime, setShowSpecificTime] = useState(false);
   const [movePropertyType, setMovePropertyType] = useState<MovePropertyType>('');
   const [movePickupAddress, setMovePickupAddress] = useState<RequestAddressValue>(() => emptyRequestAddress());
   const [moveDeliveryAddress, setMoveDeliveryAddress] = useState<RequestAddressValue>(() => emptyRequestAddress());
@@ -89,9 +88,23 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     el.scrollTo({ top: 0, behavior });
   }, []);
 
+  const preferredPeriod =
+    preferredTimeChoice === 'morning' ||
+    preferredTimeChoice === 'afternoon' ||
+    preferredTimeChoice === 'evening'
+      ? preferredTimeChoice
+      : null;
+  const preferredExactTime = preferredTimeChoice === 'pick' ? preferredTimeSpecific.trim() || null : null;
+
   const scheduleInput = useMemo(
-    () => ({ priority, preferredDateMode, preferredDateIso, preferredTimeWindow, preferredTimeSpecific }),
-    [priority, preferredDateMode, preferredDateIso, preferredTimeWindow, preferredTimeSpecific],
+    () => ({
+      priority,
+      preferredDateMode,
+      preferredDateIso,
+      preferredTimeWindow: preferredPeriod ?? '',
+      preferredTimeSpecific: preferredExactTime ?? '',
+    }),
+    [priority, preferredDateMode, preferredDateIso, preferredPeriod, preferredExactTime],
   );
 
   const detailsComplete = useMemo(() => {
@@ -264,8 +277,9 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
         latitude: addr.latitude,
         longitude: addr.longitude,
         preferredDate: resolvePreferredDateIso(scheduleInput),
-        preferredTimeWindow: preferredTimeWindow || null,
-        preferredTime: preferredTimeSpecific.trim() || null,
+        preferredPeriod,
+        preferredTimeWindow: preferredPeriod,
+        preferredTime: preferredExactTime,
         date: buildJobDateLabel(scheduleInput),
         value: budgetLabel,
         budgetType: budgetStorageType,
@@ -318,7 +332,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const continueDisabled =
     (step === 'description' && (!descriptionComplete || !budgetStepComplete || rangeBudgetIsInvalid)) ||
     (step === 'confirm' &&
-      !isConfirmStepComplete(preferredDateMode, preferredDateIso, selectedCategory, preferredTimeSpecific));
+      !isConfirmStepComplete(preferredDateMode, preferredDateIso, preferredTimeChoice, preferredTimeSpecific));
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center lh-modal-overlay animate-in fade-in duration-200" onClick={handleClose}>
@@ -428,16 +442,6 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                 selectedSubcategory={selectedSubcategory}
                 priority={priority}
                 setPriority={setPriority}
-                preferredDateMode={preferredDateMode}
-                setPreferredDateMode={setPreferredDateMode}
-                preferredDateIso={preferredDateIso}
-                setPreferredDateIso={setPreferredDateIso}
-                preferredTimeWindow={preferredTimeWindow}
-                setPreferredTimeWindow={setPreferredTimeWindow}
-                preferredTimeSpecific={preferredTimeSpecific}
-                setPreferredTimeSpecific={setPreferredTimeSpecific}
-                showSpecificTime={showSpecificTime}
-                setShowSpecificTime={setShowSpecificTime}
                 requestAddress={requestAddress}
                 setRequestAddress={setRequestAddress}
                 movePropertyType={movePropertyType}
@@ -648,11 +652,12 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
           {step === 'confirm' && (
             <CreateRequestConfirmStep
               t={t}
-              selectedCategory={selectedCategory}
               preferredDateMode={preferredDateMode}
               setPreferredDateMode={setPreferredDateMode}
               preferredDateIso={preferredDateIso}
               setPreferredDateIso={setPreferredDateIso}
+              preferredTimeChoice={preferredTimeChoice}
+              setPreferredTimeChoice={setPreferredTimeChoice}
               preferredTimeSpecific={preferredTimeSpecific}
               setPreferredTimeSpecific={setPreferredTimeSpecific}
             />
@@ -671,8 +676,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               moveDeliveryAddress={moveDeliveryAddress}
               movePropertyType={movePropertyType}
               priority={priority}
-              preferredTimeWindow={preferredTimeWindow}
-              preferredTimeSpecific={preferredTimeSpecific}
+              preferredTimeWindow={preferredPeriod ?? ''}
+              preferredTimeSpecific={preferredExactTime ?? ''}
               preferredDateMode={preferredDateMode}
               preferredDateIso={preferredDateIso}
             />

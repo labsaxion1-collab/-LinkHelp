@@ -1101,6 +1101,7 @@ export default function HelperDashboard() {
         onClose={() => !applyingJobId && setProposalJob(null)}
         onSubmit={(amount) => proposalJob && void submitApply(proposalJob, amount)}
         t={t}
+        distanceKm={proposalJob ? distanceToJobKm(helperCoords, proposalJob) : null}
       />
 
       <HelperInsufficientCreditsModal

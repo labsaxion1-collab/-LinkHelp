@@ -121,6 +121,7 @@ export type RemoteCreateRequestInput = {
   preferredDate?: string | null;
   preferredTimeWindow?: string | null;
   preferredTime?: string | null;
+  preferredPeriod?: string | null;
   dateLabel: string;
   budgetHint: string;
   budgetType?: 'fixed' | 'negotiable';
@@ -179,8 +180,9 @@ function buildRequestInsertPayload(input: RemoteCreateRequestInput, extended: bo
     region: input.region ?? null,
     postal_code: input.postalCode ?? null,
     preferred_date: input.preferredDate ?? null,
-    preferred_time_window: input.preferredTimeWindow ?? null,
+    preferred_time_window: input.preferredPeriod ?? input.preferredTimeWindow ?? null,
     preferred_time: input.preferredTime?.trim() ? input.preferredTime : null,
+    preferred_period: input.preferredPeriod ?? input.preferredTimeWindow ?? null,
     budget_type: input.budgetType ?? 'negotiable',
     budget_amount: input.budgetType === 'fixed' ? input.budgetAmount ?? null : null,
     currency: input.currency ?? 'CAD',

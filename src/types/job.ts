@@ -21,6 +21,8 @@ export interface Job {
   preferredDate?: string | null;
   preferredTimeWindow?: string | null;
   preferredTime?: string | null;
+  /** morning | afternoon | evening */
+  preferredPeriod?: string | null;
   /** Optional coordinates for future proximity / map */
   latitude?: number | null;
   longitude?: number | null;

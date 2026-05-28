@@ -3,6 +3,7 @@ import type { Job } from '@/types/job';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { translateJobTitle } from '@/utils/translateCategory';
 import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
+import { HelperCreditCostBlock } from '@/components/helpers/HelperCreditCostBlock';
 
 type Props = {
   job: Job | null;
@@ -132,6 +133,10 @@ export function HelperOpportunityDetailModal({
               {schedule}
             </p>
           ) : null}
+
+          <div className="mt-4">
+            <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="detail" />
+          </div>
 
           {job.address || job.city ? (
             <p className="mt-2 flex items-start gap-2 text-xs font-medium text-slate-600">

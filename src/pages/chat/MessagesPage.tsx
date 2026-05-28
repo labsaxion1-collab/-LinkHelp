@@ -17,6 +17,7 @@ import { clsx } from 'clsx';
 import { sanitizePreMatchMessage } from '@/utils/preMatchChatFilter';
 import { isUnlimitedPreMatch, preMatchOutgoingLimit } from '@/utils/preMatchLimits';
 import { translateJobTitle } from '@/utils/translateCategory';
+import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 import { dedupeConversationSummaries } from '@/services/supabase/chatRemote';
 
 type ChatRow =
@@ -30,7 +31,7 @@ export default function MessagesPage() {
   const [searchParams] = useSearchParams();
   const convQuery = searchParams.get('c');
   const { isClientMode } = useAppMode();
-  const { addNotification } = useAppData();
+  const { addNotification, jobs } = useAppData();
   const { session, isConfigured, profile } = useAuth();
   const me = useSessionViewer();
 
@@ -227,6 +228,15 @@ export default function MessagesPage() {
     ? translateJobTitle(remote.requestTitle || t('messages_page.thread_title'), '', null, t)
     : t('messages_page.thread_title');
 
+  const activeJobSchedule = useMemo(() => {
+    if (!useRemoteChat || !remote.selectedId) return null;
+    const summary = remote.summaries.find((s) => s.id === remote.selectedId);
+    if (!summary) return null;
+    const job = jobs.find((j) => j.id === summary.requestId);
+    if (!job) return null;
+    return formatJobScheduleDisplay(job, t);
+  }, [useRemoteChat, remote.selectedId, remote.summaries, jobs, t]);
+
   const chatHeader = (
     <div className="p-3 sm:p-4 border-b border-gray-100/90 flex justify-between items-center bg-white/95 backdrop-blur-sm shrink-0 gap-2">
       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -295,6 +305,9 @@ export default function MessagesPage() {
       <div className="min-w-0">
         <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-0.5">{t('messages_page.current_service')}</p>
         <p className="text-sm font-semibold text-[#0D1B2A] break-words">{threadTitle}</p>
+        {activeJobSchedule ? (
+          <p className="mt-0.5 text-xs font-bold text-blue-700">{activeJobSchedule}</p>
+        ) : null}
       </div>
       <button
         type="button"

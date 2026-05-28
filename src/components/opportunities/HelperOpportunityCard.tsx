@@ -8,6 +8,7 @@ import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { isBeautyScheduledJob } from '@/utils/jobDisplay';
 import { translateJobTitle } from '@/utils/translateCategory';
 import { LhCard } from '@/components/design-system/LhCard';
+import { HelperCreditCostBlock } from '@/components/helpers/HelperCreditCostBlock';
 
 export type HelperOpportunityCardTab = 'match' | 'recentes' | 'emergencia';
 
@@ -246,6 +247,9 @@ function HelperOpportunityCardInner({
               {loc}
             </span>
           </div>
+          <div className="mb-2">
+            <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" />
+          </div>
 
           {onViewDetails ? (
             <button
@@ -313,8 +317,8 @@ function HelperOpportunityCardInner({
               <Icons.BadgeCheck className="h-3.5 w-3.5 shrink-0 text-emerald-600" />{' '}
               {t('helper_dashboard.lead_quality', { pct: qualityScore })}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-800">
-              <Icons.Coins className="h-3.5 w-3.5 shrink-0 text-blue-600" /> {t('helper_dashboard.credits_interest_hint')}
+            <span className="inline-flex max-w-full flex-col gap-0.5 rounded-[var(--lh-radius-sm)] border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-800">
+              <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" />
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-900">
               <Icons.Users className="h-3.5 w-3.5 shrink-0 text-amber-600" />{' '}

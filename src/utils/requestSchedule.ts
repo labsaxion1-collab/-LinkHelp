@@ -1,6 +1,7 @@
 export type RequestPriority = 'emergency' | 'urgent' | 'today' | 'flexible';
 export type PreferredDateMode = 'today' | 'tomorrow' | 'pick';
 export type TimeWindow = 'morning' | 'afternoon' | 'evening' | '';
+export type PreferredTimeChoice = TimeWindow | 'pick' | '';
 
 /** Quick slots for beauty / aesthetics appointments */
 export const BEAUTY_PREFERRED_TIME_SLOTS = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'] as const;
@@ -74,12 +75,37 @@ export function formatPreferredDateLabel(
   return '—';
 }
 
+export function formatPreferredPeriodLabel(
+  period: string | null | undefined,
+  t: (key: string) => string,
+): string | null {
+  if (period === 'morning') return t('create_modal.time_morning');
+  if (period === 'afternoon') return t('create_modal.time_afternoon');
+  if (period === 'evening') return t('create_modal.time_evening');
+  return null;
+}
+
 export function formatPreferredDateTimeLabel(
-  input: Pick<RequestScheduleInput, 'preferredDateMode' | 'preferredDateIso' | 'preferredTimeSpecific'>,
+  input: Pick<RequestScheduleInput, 'preferredDateMode' | 'preferredDateIso' | 'preferredTimeWindow' | 'preferredTimeSpecific'>,
   t: (key: string, vars?: Record<string, string | number>) => string,
 ): string {
   const datePart = formatPreferredDateLabel(input, t);
-  const time = input.preferredTimeSpecific.trim();
-  if (!time) return datePart;
-  return t('jobs.schedule_date_at_time', { date: datePart, time });
+  const customTime = input.preferredTimeSpecific.trim();
+  if (customTime) {
+    return t('jobs.schedule_date_with_period', { date: datePart, period: customTime });
+  }
+  const periodLabel = formatPreferredPeriodLabel(input.preferredTimeWindow, t);
+  if (periodLabel) {
+    return t('jobs.schedule_date_with_period', { date: datePart, period: periodLabel });
+  }
+  return datePart;
+}
+
+export function isPreferredTimeComplete(
+  choice: PreferredTimeChoice,
+  preferredTimeSpecific: string,
+): boolean {
+  if (!choice) return false;
+  if (choice === 'pick') return Boolean(preferredTimeSpecific.trim());
+  return choice === 'morning' || choice === 'afternoon' || choice === 'evening';
 }

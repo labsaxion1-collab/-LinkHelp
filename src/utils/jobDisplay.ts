@@ -28,14 +28,32 @@ function formatPreferredDateFromIso(iso: string, t: (key: string) => string): st
   }
 }
 
-/** Client/helper cards: show date + optional booked time when stored on the job */
-export function formatJobScheduleDisplay(job: Pick<Job, 'date' | 'preferredDate' | 'preferredTime' | 'category'>, t: (key: string, vars?: Record<string, string | number>) => string): string {
+function formatPeriodFromJob(
+  job: Pick<Job, 'preferredPeriod' | 'preferredTimeWindow'>,
+  t: (key: string) => string,
+): string | null {
+  const period = job.preferredPeriod ?? job.preferredTimeWindow;
+  if (period === 'morning') return t('create_modal.time_morning');
+  if (period === 'afternoon') return t('create_modal.time_afternoon');
+  if (period === 'evening') return t('create_modal.time_evening');
+  return null;
+}
+
+/** Client/helper cards: show date + period or exact time (e.g. "Hoje · Manhã") */
+export function formatJobScheduleDisplay(
+  job: Pick<Job, 'date' | 'preferredDate' | 'preferredTime' | 'preferredPeriod' | 'preferredTimeWindow' | 'category'>,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): string {
   const datePart = job.preferredDate
     ? formatPreferredDateFromIso(job.preferredDate, t)
     : formatJobSchedule(job.date, t);
-  const time = job.preferredTime?.trim();
-  if (time) {
-    return t('jobs.schedule_date_at_time', { date: datePart, time });
+  const exactTime = job.preferredTime?.trim();
+  if (exactTime) {
+    return t('jobs.schedule_date_with_period', { date: datePart, period: exactTime });
+  }
+  const periodLabel = formatPeriodFromJob(job, t);
+  if (periodLabel) {
+    return t('jobs.schedule_date_with_period', { date: datePart, period: periodLabel });
   }
   return datePart;
 }

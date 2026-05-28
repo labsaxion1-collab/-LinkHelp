@@ -4,6 +4,7 @@ import * as Icons from 'lucide-react';
 import { clsx } from 'clsx';
 import type { Job } from '@/types/job';
 import { formatBudgetRange, jobHasBoundedBudget, jobIsNegotiableBudget, validateHelperProposal } from '@/utils/jobProposal';
+import { getHelperLeadCreditSummary } from '@/utils/helperCreditDisplay';
 
 type Props = {
   open: boolean;
@@ -12,9 +13,10 @@ type Props = {
   onClose: () => void;
   onSubmit: (amount: number | null) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
+  distanceKm?: number | null;
 };
 
-export function HelperProposalModal({ open, job, submitting = false, onClose, onSubmit, t }: Props) {
+export function HelperProposalModal({ open, job, submitting = false, onClose, onSubmit, t, distanceKm }: Props) {
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
   const [keyboardInset, setKeyboardInset] = useState(0);
@@ -69,6 +71,7 @@ export function HelperProposalModal({ open, job, submitting = false, onClose, on
   };
 
   const currency = job.currency?.trim() || 'CAD';
+  const costs = getHelperLeadCreditSummary(job, distanceKm);
 
   return createPortal(
     <div
@@ -152,6 +155,11 @@ export function HelperProposalModal({ open, job, submitting = false, onClose, on
             />
           </div>
           {error ? <p className="mt-2 text-sm font-semibold text-rose-600">{error}</p> : null}
+
+          <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm font-semibold leading-relaxed text-slate-700">
+            <p>{t('helper_dashboard.proposal_credit_interest', { count: costs.interestCost })}</p>
+            <p className="mt-1 text-blue-900">{t('helper_dashboard.proposal_credit_selected', { count: costs.selectedCost })}</p>
+          </div>
         </div>
 
         <footer className="flex shrink-0 gap-3 border-t border-sky-100/80 bg-white/70 px-5 py-4 backdrop-blur-sm pb-[max(1rem,env(safe-area-inset-bottom))]">

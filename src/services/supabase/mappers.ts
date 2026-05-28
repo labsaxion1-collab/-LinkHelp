@@ -37,6 +37,9 @@ export function requestRowToJob(row: RequestRow, client: MapperProfile): Job {
     preferredDate: row.preferred_date,
     preferredTimeWindow: row.preferred_time_window,
     preferredTime: row.preferred_time,
+    preferredPeriod:
+      (row as RequestRow & { preferred_period?: string | null }).preferred_period ??
+      row.preferred_time_window,
     subcategory: row.subcategory,
     budgetType: row.budget_type,
     budgetAmount: row.budget_amount,

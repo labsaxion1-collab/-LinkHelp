@@ -132,8 +132,8 @@ export function HelperCategoriesManager({
     : [];
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
+    <div className="relative space-y-2">
+      <div className="flex flex-wrap gap-2 pr-12">
         {categoryOrder.map((catId) => {
           const meta = SERVICE_CATEGORIES.find((c) => c.id === catId);
           if (!meta) return null;
@@ -147,7 +147,7 @@ export function HelperCategoriesManager({
                 type="button"
                 onClick={() => setMenuCategory(menuCategory === catId ? null : catId)}
                 className={clsx(
-                  'inline-flex min-h-[36px] max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-left text-xs font-black transition-colors',
+                  'inline-flex min-h-[34px] max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-left text-xs font-black transition-colors',
                   isPrimary
                     ? `${accent.active} shadow-sm`
                     : 'border-slate-200 bg-white text-slate-800 hover:border-blue-200',
@@ -209,10 +209,11 @@ export function HelperCategoriesManager({
         type="button"
         onClick={openAdd}
         disabled={saving || existingCategoryIds.size >= SERVICE_CATEGORIES.length}
-        className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/40 text-sm font-black text-blue-800 transition-colors hover:border-blue-300 hover:bg-blue-50 disabled:opacity-50"
+        title={t('helper_categories.add_category')}
+        aria-label={t('helper_categories.add_category')}
+        className="absolute right-0 top-0 flex h-9 w-9 items-center justify-center rounded-full border border-blue-200 bg-blue-600 text-white shadow-md transition-transform hover:bg-blue-700 active:scale-95 disabled:opacity-50"
       >
-        {saving ? <Icons.Loader2 className="h-4 w-4 animate-spin" /> : <Icons.Plus className="h-4 w-4" />}
-        {t('helper_categories.add_category')}
+        {saving ? <Icons.Loader2 className="h-4 w-4 animate-spin" /> : <Icons.Plus className="h-5 w-5" />}
       </button>
 
       {categoryOrder.length === 0 ? (

@@ -147,9 +147,7 @@ export default function MessagesPage() {
     }
 
     const blockedTok = t('messages_page.contact_blocked_notice');
-    const { text: filtered, hadReplacement } = serviceConfirmed
-      ? { text: raw, hadReplacement: false }
-      : sanitizePreMatchMessage(raw, blockedTok);
+    const { text: filtered, hadReplacement } = sanitizePreMatchMessage(raw, blockedTok);
 
     if (!filtered.trim()) {
       setFilterBanner(true);
@@ -157,11 +155,9 @@ export default function MessagesPage() {
       return;
     }
 
-    if (!serviceConfirmed) {
-      setFilterBanner(hadReplacement);
-      if (hadReplacement) {
-        setTimeout(() => setFilterBanner(false), 8000);
-      }
+    if (hadReplacement) {
+      setFilterBanner(true);
+      setTimeout(() => setFilterBanner(false), 8000);
     }
 
     if (!remote.selectedId) return;

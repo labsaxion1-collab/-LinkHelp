@@ -39,6 +39,7 @@ import { HelperRadialCategoryMenu } from '@/components/helper/HelperRadialCatego
 import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
 import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
 import { jobHasBoundedBudget, jobIsNegotiableBudget } from '@/utils/jobProposal';
+import { buildReviewCountByUserId } from '@/utils/reviewCounts';
 import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
 import {
   SimpleAvatarUploadModal,
@@ -257,7 +258,8 @@ export default function HelperDashboard() {
     }
   }, [location.pathname]);
 
-  const { jobs, applications, applyForJob, getHelperApplications, upcomingJobs, updateUpcomingWorkflow, updateApplicationStatus, dataLoading } = useAppData();
+  const { jobs, applications, applyForJob, getHelperApplications, upcomingJobs, updateUpcomingWorkflow, updateApplicationStatus, dataLoading, reviews } = useAppData();
+  const reviewCountByUserId = useMemo(() => buildReviewCountByUserId(reviews), [reviews]);
   const { showToast } = useToast();
   const { wallet, transactions: creditTransactions, unlocks, loading: creditsLoading } = useCredits();
 
@@ -960,6 +962,7 @@ export default function HelperDashboard() {
                       isApplying={applyingJobId === job.id}
                       distanceKm={distanceToJobKm(helperCoords, job)}
                       applicationsCount={applicationCountsByJobId.get(job.id) ?? 0}
+                      clientReviewCount={reviewCountByUserId.get(job.clientId) ?? 0}
                       onApply={requestApply}
                       onDismiss={(jobId) => setDismissedJobIds((prev) => new Set(prev).add(jobId))}
                       onViewClientProfile={setClientProfileJob}
@@ -1085,6 +1088,12 @@ export default function HelperDashboard() {
         job={detailOpportunity}
         open={Boolean(detailOpportunity)}
         onClose={() => setDetailOpportunity(null)}
+        hasApplied={detailOpportunity ? appliedJobIds.has(detailOpportunity.id) : false}
+        isApplying={detailOpportunity ? applyingJobId === detailOpportunity.id : false}
+        onApply={requestApply}
+        clientReviewCount={
+          detailOpportunity ? reviewCountByUserId.get(detailOpportunity.clientId) ?? 0 : 0
+        }
         t={t}
         translateCategory={translateCategory}
         formatJobSchedule={formatJobScheduleDisplay}

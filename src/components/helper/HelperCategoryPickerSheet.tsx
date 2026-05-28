@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as Icons from 'lucide-react';
-import { motion } from 'motion/react';
 import { clsx } from 'clsx';
 import { SERVICE_CATEGORIES, type ServiceCategoryId } from '@/data/serviceCategories';
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
-import { getServiceCategorySubs, parseSkillKey, skillKey } from '@/data/helperSkillsCatalog';
+import { getServiceCategorySubs } from '@/data/helperSkillsCatalog';
 import { HELPER_CATEGORY_ACCENTS } from '@/utils/helperCategoryPreferences';
 
 type TFn = (key: string, options?: Record<string, string | number>) => string;
@@ -89,23 +88,18 @@ export function HelperCategoryPickerSheet({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-end justify-center" role="presentation">
-      <button
-        type="button"
-        className="absolute inset-0 bg-slate-900/55 backdrop-blur-sm"
-        aria-label={t('common.close')}
-        onClick={onClose}
-      />
-      <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-        className="relative z-10 flex max-h-[min(88dvh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl"
+    <div
+      className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-900/55 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-sm"
+      role="presentation"
+    >
+      <button type="button" className="absolute inset-0" aria-label={t('common.close')} onClick={onClose} />
+      <div
+        className="relative z-10 flex w-full max-w-lg max-h-[80dvh] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
-        <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-slate-200" />
-        <header className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
+        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
           <div className="min-w-0">
             <h3 className="text-lg font-black text-slate-950">
               {step === 'primary' ? t('helper_categories.picker_title') : t(`categories.${activeCategory}`)}
@@ -124,7 +118,7 @@ export function HelperCategoryPickerSheet({
           </button>
         </header>
 
-        <div className="border-b border-slate-100 px-4 py-2">
+        <div className="shrink-0 border-b border-slate-100 px-4 py-2">
           <div className="relative">
             <Icons.Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -136,7 +130,7 @@ export function HelperCategoryPickerSheet({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
           {step === 'primary' ? (
             <ul className="space-y-1.5">
               {filteredCategories.map((cat) => {
@@ -222,7 +216,7 @@ export function HelperCategoryPickerSheet({
             </button>
           </footer>
         ) : null}
-      </motion.div>
+      </div>
     </div>
   );
 }

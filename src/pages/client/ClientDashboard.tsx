@@ -494,22 +494,6 @@ export default function ClientDashboard() {
         {activeSidebarTab === 'dashboard' && (
           <div className="w-full max-w-full mx-auto animate-in fade-in duration-300 min-w-0">
 
-          <div className="mb-6 lg:hidden">
-            <ClientMapWidget
-              t={t}
-              clientId={me.id}
-              jobs={jobs}
-              applications={applications}
-              notifications={notifications}
-            />
-            <ClientNearbyHelpersList
-              helpers={nearbyHelpers}
-              loading={nearbyHelpersLoading}
-              t={t}
-              onViewProfile={openNearbyHelperProfile}
-            />
-          </div>
-
           <LhCard className="mb-6 w-full max-w-full min-w-0">
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>

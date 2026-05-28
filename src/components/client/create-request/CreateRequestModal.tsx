@@ -462,56 +462,72 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               <div>
                 <label className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.budget_hint_label')}</label>
                 <div className="w-full max-w-full overflow-hidden rounded-2xl border-2 border-gray-200 bg-white p-3 sm:p-4 focus-within:border-blue-500">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <label
-                      className={`flex min-h-[52px] min-w-0 flex-1 cursor-text items-center rounded-xl border px-3 ${
+                  <div className="relative z-[1] flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div
+                      className={`flex min-h-[52px] min-w-0 flex-1 items-center rounded-xl border px-3 ${
                         budgetType === 'fixed' && budgetMin
                           ? 'border-[#1565FF] bg-blue-50/60 ring-2 ring-blue-100'
-                          : 'border-slate-200 bg-slate-50'
+                          : budgetType === 'negotiable'
+                            ? 'border-slate-200 bg-slate-100/80'
+                            : 'border-slate-200 bg-slate-50'
                       }`}
                     >
                       <span className="mr-2 shrink-0 text-[10px] font-bold uppercase text-slate-500">{t('create_modal.budget_min_label')}</span>
                       <span className="shrink-0 text-sm font-black text-slate-900">CAD $</span>
                       <input
-                        type="number"
+                        type="text"
                         inputMode="numeric"
-                        min={0}
-                        step={1}
+                        pattern="[0-9]*"
+                        autoComplete="off"
+                        readOnly={budgetType === 'negotiable'}
+                        tabIndex={budgetType === 'negotiable' ? -1 : 0}
                         value={budgetMin}
-                        onFocus={() => setBudgetType('fixed')}
+                        onFocus={() => {
+                          if (budgetType === 'negotiable') return;
+                          setBudgetType('fixed');
+                        }}
+                        onClick={() => setBudgetType('fixed')}
                         onChange={(e) => {
                           setBudgetType('fixed');
                           setBudgetMin(parseBudgetInput(e.target.value));
                         }}
                         placeholder="50"
-                        className="min-w-0 flex-1 bg-transparent px-2 text-base font-black text-slate-950 outline-none placeholder:text-slate-400 sm:text-lg"
+                        className="relative z-[2] min-w-0 flex-1 touch-manipulation bg-transparent px-2 text-base font-black text-slate-950 outline-none placeholder:text-slate-400 read-only:cursor-not-allowed read-only:text-slate-400 sm:text-lg"
                       />
-                    </label>
+                    </div>
                     <span className="hidden shrink-0 text-sm font-bold text-slate-400 sm:inline">{t('create_modal.budget_range_to')}</span>
-                    <label
-                      className={`flex min-h-[52px] min-w-0 flex-1 cursor-text items-center rounded-xl border px-3 ${
+                    <div
+                      className={`flex min-h-[52px] min-w-0 flex-1 items-center rounded-xl border px-3 ${
                         budgetType === 'fixed' && budgetMax
                           ? 'border-[#1565FF] bg-blue-50/60 ring-2 ring-blue-100'
-                          : 'border-slate-200 bg-slate-50'
+                          : budgetType === 'negotiable'
+                            ? 'border-slate-200 bg-slate-100/80'
+                            : 'border-slate-200 bg-slate-50'
                       }`}
                     >
                       <span className="mr-2 shrink-0 text-[10px] font-bold uppercase text-slate-500">{t('create_modal.budget_max_label')}</span>
                       <span className="shrink-0 text-sm font-black text-slate-900">CAD $</span>
                       <input
-                        type="number"
+                        type="text"
                         inputMode="numeric"
-                        min={0}
-                        step={1}
+                        pattern="[0-9]*"
+                        autoComplete="off"
+                        readOnly={budgetType === 'negotiable'}
+                        tabIndex={budgetType === 'negotiable' ? -1 : 0}
                         value={budgetMax}
-                        onFocus={() => setBudgetType('fixed')}
+                        onFocus={() => {
+                          if (budgetType === 'negotiable') return;
+                          setBudgetType('fixed');
+                        }}
+                        onClick={() => setBudgetType('fixed')}
                         onChange={(e) => {
                           setBudgetType('fixed');
                           setBudgetMax(parseBudgetInput(e.target.value));
                         }}
                         placeholder="120"
-                        className="min-w-0 flex-1 bg-transparent px-2 text-base font-black text-slate-950 outline-none placeholder:text-slate-400 sm:text-lg"
+                        className="relative z-[2] min-w-0 flex-1 touch-manipulation bg-transparent px-2 text-base font-black text-slate-950 outline-none placeholder:text-slate-400 read-only:cursor-not-allowed read-only:text-slate-400 sm:text-lg"
                       />
-                    </label>
+                    </div>
                   </div>
                   {rangeBudgetIsInvalid ? (
                     <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
@@ -521,11 +537,15 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                   <button
                     type="button"
                     onClick={() => {
+                      if (budgetType === 'negotiable') {
+                        setBudgetType('unset');
+                        return;
+                      }
                       setBudgetType('negotiable');
                       setBudgetMin('');
                       setBudgetMax('');
                     }}
-                    className={`mt-3 flex min-h-[44px] w-full items-center justify-center rounded-xl border px-4 text-sm font-black transition-colors ${
+                    className={`relative z-[1] mt-3 flex min-h-[44px] w-full items-center justify-center rounded-xl border px-4 text-sm font-black transition-colors ${
                       budgetType === 'negotiable'
                         ? 'border-[#1565FF] bg-[#1565FF] text-white'
                         : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'

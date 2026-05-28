@@ -1,14 +1,13 @@
-import { memo, useState } from 'react';
+import { memo, useRef, useState } from 'react';
 import * as Icons from 'lucide-react';
 import { CheckCircle2, Clock, MapPin } from 'lucide-react';
 import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
-import { motion, useMotionValue, useTransform, type PanInfo } from 'motion/react';
+import { clsx } from 'clsx';
 import type { Job } from '@/types/job';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { isBeautyScheduledJob } from '@/utils/jobDisplay';
 import { translateJobTitle } from '@/utils/translateCategory';
 import { LhCard } from '@/components/design-system/LhCard';
-import { clsx } from 'clsx';
 
 export type HelperOpportunityCardTab = 'match' | 'recentes' | 'emergencia';
 
@@ -25,6 +24,7 @@ export type HelperOpportunityCardProps = {
   onViewClientProfile?: (job: Job) => void;
   onViewDetails?: (job: Job) => void;
   applicationsCount?: number;
+  clientReviewCount?: number;
   t: TFn;
   translateCategory: TranslateFn;
   formatJobSchedule: (job: Job, t: TFn) => string;
@@ -83,6 +83,7 @@ function HelperOpportunityCardInner({
   formatJobSchedule,
   distanceKm,
   applicationsCount = 0,
+  clientReviewCount = 0,
 }: HelperOpportunityCardProps) {
   const tier = jobMatchTier(job, activeTab);
   const leadCost = estimateLeadCost(job, distanceKm);
@@ -92,12 +93,8 @@ function HelperOpportunityCardInner({
   const category = translateCategory(job.category, t);
   const loc = locationLabel(job, distanceKm, t);
   const budget = valueLabel(job, t);
-  const dragX = useMotionValue(0);
-  const rotate = useTransform(dragX, [-120, 0, 120], [-4, 0, 4]);
-  const acceptOverlayOpacity = useTransform(dragX, [18, 72], [0, 1]);
-  const passOverlayOpacity = useTransform(dragX, [-72, -18], [1, 0]);
-  const contentOpacity = useTransform(dragX, [-56, -20, 20, 56], [0.12, 1, 1, 0.12]);
-  const [swipeTint, setSwipeTint] = useState<'none' | 'accept' | 'pass'>('none');
+  const [swipeOverlay, setSwipeOverlay] = useState<'none' | 'accept' | 'pass'>('none');
+  const swipeStartX = useRef(0);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const subLabel =
     job.subcategory && job.category
@@ -107,19 +104,29 @@ function HelperOpportunityCardInner({
   const finishSwipe = (offset: number) => {
     if (hasApplied) return;
     if (offset > 90) {
-      setSwipeTint('accept');
-      window.setTimeout(() => onApply(job), 180);
+      setSwipeOverlay('accept');
+      window.setTimeout(() => onApply(job), 160);
       return;
     }
     if (offset < -90) {
-      setSwipeTint('pass');
-      window.setTimeout(() => onDismiss?.(job.id), 180);
+      setSwipeOverlay('pass');
+      window.setTimeout(() => onDismiss?.(job.id), 160);
     }
+    setSwipeOverlay('none');
   };
 
-  const onDragEnd = (_: unknown, info: PanInfo) => {
-    finishSwipe(info.offset.x);
-    if (Math.abs(info.offset.x) <= 90) dragX.set(0);
+  const onSwipeStart = (clientX: number) => {
+    if (hasApplied) return;
+    swipeStartX.current = clientX;
+    setSwipeOverlay('none');
+  };
+
+  const onSwipeMove = (clientX: number) => {
+    if (hasApplied) return;
+    const dx = clientX - swipeStartX.current;
+    if (dx > 36) setSwipeOverlay('accept');
+    else if (dx < -36) setSwipeOverlay('pass');
+    else setSwipeOverlay('none');
   };
 
   const ctaBase =
@@ -175,42 +182,42 @@ function HelperOpportunityCardInner({
     <LhCard padding="none" className={cardShell}>
       {header}
 
-      {/* Mobile compact — swipe overlays behind card content */}
-      <div className="relative w-full max-w-full overflow-hidden md:hidden">
-        <motion.div
-          style={{ opacity: acceptOverlayOpacity }}
+      {/* Mobile compact — swipe shows overlay only; card stays fixed */}
+      <div
+        className="relative w-full max-w-full overflow-hidden md:hidden"
+        onTouchStart={(e) => onSwipeStart(e.touches[0]?.clientX ?? 0)}
+        onTouchMove={(e) => onSwipeMove(e.touches[0]?.clientX ?? 0)}
+        onTouchEnd={(e) => finishSwipe((e.changedTouches[0]?.clientX ?? 0) - swipeStartX.current)}
+      >
+        <div
           className={clsx(
-            'pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 bg-emerald-500 text-white',
-            swipeTint === 'accept' && 'opacity-100',
+            'pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 transition-opacity duration-150',
+            swipeOverlay === 'accept' ? 'bg-emerald-500 opacity-100 text-white' : 'opacity-0',
           )}
         >
           <Icons.Check className="h-10 w-10" strokeWidth={2.5} />
           <span className="text-sm font-black">{t('helper_dashboard.swipe_interest')}</span>
-        </motion.div>
-        <motion.div
-          style={{ opacity: passOverlayOpacity }}
+        </div>
+        <div
           className={clsx(
-            'pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 bg-rose-500 text-white',
-            swipeTint === 'pass' && 'opacity-100',
+            'pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 transition-opacity duration-150',
+            swipeOverlay === 'pass' ? 'bg-rose-500 opacity-100 text-white' : 'opacity-0',
           )}
         >
           <Icons.X className="h-10 w-10" strokeWidth={2.5} />
           <span className="text-sm font-black">{t('helper_dashboard.swipe_pass')}</span>
-        </motion.div>
+        </div>
 
-        <motion.div
+        <div
           className={clsx(
-            'relative z-10 touch-pan-y bg-white p-2.5',
-            swipeTint === 'accept' && 'bg-emerald-50',
-            swipeTint === 'pass' && 'bg-rose-50',
+            'relative z-10 bg-white p-2.5 transition-opacity duration-150',
+            swipeOverlay !== 'none' && 'opacity-0',
           )}
-          style={{ x: dragX, rotate, opacity: contentOpacity }}
-          drag={hasApplied ? false : 'x'}
-          dragConstraints={{ left: -120, right: 120 }}
-          dragElastic={0.18}
-          onDragEnd={onDragEnd}
         >
-          <div className="mb-1.5 flex items-start gap-2">
+          <p className="truncate text-[10px] font-black uppercase tracking-wide text-blue-600">{category}</p>
+          <p className="line-clamp-1 text-xs font-bold text-slate-900">{subLabel}</p>
+
+          <div className="mt-1.5 mb-1.5 flex items-center gap-2">
             <img
               src={job.clientAvatar}
               alt=""
@@ -219,14 +226,18 @@ function HelperOpportunityCardInner({
               decoding="async"
             />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <p className="truncate text-[11px] font-bold text-slate-800">{job.clientName}</p>
-                {job.clientRating != null && job.clientRating > 0 ? (
+              <p className="truncate text-[11px] font-bold text-slate-800">{job.clientName}</p>
+              {job.clientRating != null && job.clientRating > 0 ? (
+                <p className="mt-0.5 flex flex-wrap items-center gap-1 text-[10px] font-bold text-amber-700">
                   <StarRatingDisplay rating={job.clientRating} />
-                ) : null}
-              </div>
-              <p className="truncate text-[10px] font-black uppercase tracking-wide text-blue-600">{category}</p>
-              <p className="line-clamp-1 text-[11px] font-semibold text-slate-700">{subLabel}</p>
+                  <span>
+                    {t('helper_dashboard.client_rating_short', {
+                      rating: job.clientRating.toFixed(1),
+                      count: clientReviewCount,
+                    })}
+                  </span>
+                </p>
+              ) : null}
             </div>
             {schedule ? (
               <span className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-bold text-slate-600">
@@ -267,7 +278,7 @@ function HelperOpportunityCardInner({
               {t('helper_dashboard.swipe_apply_hint')}
             </p>
           )}
-        </motion.div>
+        </div>
       </div>
 
       {/* Desktop full */}
@@ -408,6 +419,7 @@ export const HelperOpportunityCard = memo(HelperOpportunityCardInner, (prev, nex
     prev.isApplying === next.isApplying &&
     prev.activeTab === next.activeTab &&
     prev.distanceKm === next.distanceKm &&
-    prev.applicationsCount === next.applicationsCount
+    prev.applicationsCount === next.applicationsCount &&
+    prev.clientReviewCount === next.clientReviewCount
   );
 });

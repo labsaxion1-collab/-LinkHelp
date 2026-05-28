@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Briefcase, Clock, MapPin, X, CheckCircle2, Loader2 } from 'lucide-react';
+import { clsx } from 'clsx';
 import * as Icons from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
@@ -84,7 +85,7 @@ export default function HelperDashboard() {
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const [proposalJob, setProposalJob] = useState<Job | null>(null);
   const [dismissedJobIds, setDismissedJobIds] = useState<Set<string>>(() => new Set());
-  const [exitingJobId, setExitingJobId] = useState<string | null>(null);
+  const [exitingJobIds, setExitingJobIds] = useState<Set<string>>(() => new Set());
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
   const [radialFilterOpen, setRadialFilterOpen] = useState(false);
@@ -295,7 +296,7 @@ export default function HelperDashboard() {
   const appliedJobIds = new Set(
     helperApplications.filter((a) => a.status !== 'cancelled').map((a) => a.jobId),
   );
-  const creditBalance = creditsLoading ? null : (wallet?.balance ?? 0);
+  const creditBalance = wallet?.balance ?? null;
   const goToCredits = React.useCallback(() => navigate(ROUTES.helperCredits), [navigate]);
   const creditsUsedThisMonth = React.useMemo(() => {
     const now = new Date();
@@ -354,34 +355,36 @@ export default function HelperDashboard() {
       job.workflowStatus !== 'awaiting_client_confirmation',
   );
 
-  const openProposalModal = (job: Job) => {
-    if (appliedJobIds.has(job.id)) return;
-    setProposalJob(job);
-  };
+  const dismissJobWithAnimation = React.useCallback((jobId: string) => {
+    setExitingJobIds((prev) => new Set(prev).add(jobId));
+    window.setTimeout(() => {
+      setDismissedJobIds((prev) => new Set(prev).add(jobId));
+      setExitingJobIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+    }, 420);
+  }, []);
 
-  const submitApply = async (
-    job: Job,
-    proposedAmount: number | null,
-    message: string | null = null,
-  ) => {
+  const submitApply = async (job: Job, proposedAmount: number | null, proposalMessage?: string | null) => {
     if (appliedJobIds.has(job.id)) return;
     const distanceKm = distanceToJobKm(helperCoords, job);
     const interestCost = leadCostsForJob(job, { distanceKm }).interestCost;
-    if (creditBalance < interestCost) {
+    if (creditBalance != null && creditBalance < interestCost) {
       setInsufficientCreditsLc(interestCost);
       return;
     }
     setApplyingJobId(job.id);
     try {
-      await applyForJob(job.id, helperUserId, proposedAmount, { distanceKm, message });
+      await applyForJob(job.id, helperUserId, proposedAmount, {
+        distanceKm,
+        message: proposalMessage ?? null,
+      });
       setProposalJob(null);
-      setExitingJobId(job.id);
+      dismissJobWithAnimation(job.id);
       setToastNotification({ message: t('helper_dashboard.toast_apply_success'), show: true });
-      setTimeout(() => {
-        setDismissedJobIds((prev) => new Set(prev).add(job.id));
-        setExitingJobId(null);
-        setToastNotification({ message: '', show: false });
-      }, 420);
+      setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
     } catch (err: unknown) {
       if (err instanceof InsufficientCreditsError) {
         setInsufficientCreditsLc(err.requiredLc);
@@ -404,7 +407,14 @@ export default function HelperDashboard() {
     }
   };
 
-  const requestApply = openProposalModal;
+  const requestApply = (job: Job) => {
+    if (appliedJobIds.has(job.id)) return;
+    setProposalJob(job);
+  };
+
+  const handleSwipeInterest = (job: Job) => {
+    requestApply(job);
+  };
 
   const confirmCancelApplication = async () => {
     if (!cancelTarget) return;
@@ -856,7 +866,7 @@ export default function HelperDashboard() {
                 balance={creditBalance}
                 usedThisMonth={creditsUsedThisMonth}
                 unlocksCount={unlocks.length}
-                loading={creditsLoading}
+                loading={creditsLoading && creditBalance == null}
                 compact
                 t={t}
                 onBuyCredits={goToCredits}
@@ -978,25 +988,32 @@ export default function HelperDashboard() {
             ) : displayedJobs.length > 0 ? (
               <div className="grid w-full max-w-full min-w-0 grid-cols-1 gap-3 md:gap-4 md:grid-cols-2 2xl:grid-cols-3">
               {displayedJobs.map((job) => (
-                    <HelperOpportunityCard
+                    <div
                       key={job.id}
-                      job={job}
-                      activeTab={feedActiveTab}
-                      hasApplied={appliedJobIds.has(job.id)}
-                      isApplying={applyingJobId === job.id}
-                      distanceKm={distanceToJobKm(helperCoords, job)}
-                      applicationsCount={applicationCountsByJobId.get(job.id) ?? 0}
-                      clientReviewCount={reviewCountByUserId.get(job.clientId) ?? 0}
-                      onApply={requestApply}
-                      onSwipeInterest={openProposalModal}
-                      isExiting={exitingJobId === job.id}
-                      onDismiss={(jobId) => setDismissedJobIds((prev) => new Set(prev).add(jobId))}
-                      onViewClientProfile={setClientProfileJob}
-                      onViewDetails={setDetailOpportunity}
-                      t={t}
-                      translateCategory={translateCategory}
-                      formatJobSchedule={formatJobScheduleDisplay}
-                    />
+                      className={clsx(
+                        'min-w-0 transition-[margin,opacity,transform] duration-[420ms] ease-[cubic-bezier(0.34,1.15,0.64,1)]',
+                        exitingJobIds.has(job.id) && 'pointer-events-none -mt-2 scale-[0.98] opacity-0',
+                      )}
+                    >
+                      <HelperOpportunityCard
+                        job={job}
+                        activeTab={feedActiveTab}
+                        hasApplied={appliedJobIds.has(job.id)}
+                        isApplying={applyingJobId === job.id}
+                        isExiting={exitingJobIds.has(job.id)}
+                        distanceKm={distanceToJobKm(helperCoords, job)}
+                        applicationsCount={applicationCountsByJobId.get(job.id) ?? 0}
+                        clientReviewCount={reviewCountByUserId.get(job.clientId) ?? 0}
+                        onApply={requestApply}
+                        onSwipeInterest={handleSwipeInterest}
+                        onDismiss={dismissJobWithAnimation}
+                        onViewClientProfile={setClientProfileJob}
+                        onViewDetails={setDetailOpportunity}
+                        t={t}
+                        translateCategory={translateCategory}
+                        formatJobSchedule={formatJobScheduleDisplay}
+                      />
+                    </div>
               ))}
               </div>
             ) : (
@@ -1106,9 +1123,7 @@ export default function HelperDashboard() {
         job={proposalJob}
         submitting={proposalJob ? applyingJobId === proposalJob.id : false}
         onClose={() => !applyingJobId && setProposalJob(null)}
-        onSubmit={({ amount, message }) =>
-          proposalJob && void submitApply(proposalJob, amount, message)
-        }
+        onSubmit={(amount, message) => proposalJob && void submitApply(proposalJob, amount, message)}
         t={t}
         distanceKm={proposalJob ? distanceToJobKm(helperCoords, proposalJob) : null}
       />

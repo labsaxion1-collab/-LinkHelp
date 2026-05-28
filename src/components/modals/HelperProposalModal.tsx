@@ -6,24 +6,19 @@ import type { Job } from '@/types/job';
 import { formatBudgetRange, jobHasBoundedBudget, jobIsNegotiableBudget, validateHelperProposal } from '@/utils/jobProposal';
 import { getHelperLeadCreditSummary } from '@/utils/helperCreditDisplay';
 
-export type HelperProposalSubmitPayload = {
-  amount: number | null;
-  message: string | null;
-};
-
 type Props = {
   open: boolean;
   job: Job | null;
   submitting?: boolean;
   onClose: () => void;
-  onSubmit: (payload: HelperProposalSubmitPayload) => void;
+  onSubmit: (amount: number | null, message?: string | null) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
   distanceKm?: number | null;
 };
 
 export function HelperProposalModal({ open, job, submitting = false, onClose, onSubmit, t, distanceKm }: Props) {
   const [amount, setAmount] = useState('');
-  const [message, setMessage] = useState('');
+  const [proposalMessage, setProposalMessage] = useState('');
   const [error, setError] = useState('');
   const [keyboardInset, setKeyboardInset] = useState(0);
 
@@ -34,7 +29,6 @@ export function HelperProposalModal({ open, job, submitting = false, onClose, on
   useEffect(() => {
     if (!open) {
       setAmount('');
-      setMessage('');
       setError('');
     }
   }, [open, job?.id]);
@@ -74,11 +68,8 @@ export function HelperProposalModal({ open, job, submitting = false, onClose, on
       return;
     }
     setError('');
-    const trimmedMessage = message.trim();
-    onSubmit({
-      amount: result.amount,
-      message: trimmedMessage.length > 0 ? trimmedMessage : null,
-    });
+    const trimmed = proposalMessage.trim();
+    onSubmit(result.amount, trimmed || null);
   };
 
   const currency = job.currency?.trim() || 'CAD';
@@ -105,7 +96,6 @@ export function HelperProposalModal({ open, job, submitting = false, onClose, on
           'border border-sky-100/90 bg-gradient-to-b from-white via-[#F4FAFF] to-[#E8F4FF]',
           'shadow-[0_-8px_40px_rgba(21,101,255,0.12),0_24px_64px_rgba(13,27,42,0.18)]',
           'max-h-[min(92dvh,640px)]',
-          'animate-in fade-in slide-in-from-bottom-4 duration-300 sm:zoom-in-95',
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -173,12 +163,12 @@ export function HelperProposalModal({ open, job, submitting = false, onClose, on
             <span className="ml-1 text-xs font-semibold text-slate-500">({t('helper_proposal.optional')})</span>
           </label>
           <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            value={proposalMessage}
+            onChange={(e) => setProposalMessage(e.target.value)}
             rows={3}
             maxLength={500}
             placeholder={t('helper_proposal.message_placeholder')}
-            className="w-full resize-none rounded-2xl border-2 border-sky-100/90 bg-white/90 px-4 py-3 text-sm font-medium text-slate-800 shadow-inner shadow-blue-500/5 outline-none placeholder:text-slate-400 focus:border-[#1565FF] focus:ring-4 focus:ring-blue-500/15"
+            className="w-full resize-none rounded-2xl border-2 border-sky-100/90 bg-white/90 px-4 py-3 text-sm font-medium text-slate-800 shadow-inner shadow-blue-500/5 outline-none transition placeholder:text-slate-400 focus:border-[#1565FF] focus:ring-4 focus:ring-blue-500/15"
           />
 
           <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm font-semibold leading-relaxed text-slate-700">

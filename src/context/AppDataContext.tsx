@@ -210,9 +210,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const job = jobsRef.current.find((j) => j.id === jobId);
     if (!job) throw new Error('JOB_NOT_FOUND');
 
-    const distanceKm = options?.distanceKm ?? null;
-    const interestCost = leadCostsForJob(job, { distanceKm }).interestCost;
-    await chargeApplicationInterest(jobId, interestCost);
+    const interestCost = leadCostsForJob(job, { distanceKm: options?.distanceKm ?? null }).interestCost;
+    if (helperId === profile?.id) {
+      await chargeApplicationInterest(jobId, interestCost);
+    }
 
     if (useRemote) {
       await remoteApply({
@@ -237,6 +238,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       jobId,
       helperId,
       clientId: job.clientId,
+      message: options?.message?.trim() || null,
       proposedAmount: proposedAmount ?? null,
       helperName,
       helperAvatar,

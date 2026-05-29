@@ -729,6 +729,13 @@ export default function HelperDashboard() {
         }}
         footer={
           <div className="space-y-4">
+            {completionBreakdown.percent < 100 ? (
+              <HelperProfileCompletionBar
+                breakdown={completionBreakdown}
+                onRowClick={onCompletionRowClick}
+                suggestions={completionSuggestions}
+              />
+            ) : null}
             {profile?.spoken_languages?.length ? (
               <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
                 <h4 className="text-sm font-bold text-gray-900">{t('helper_dashboard.languages_label')}</h4>
@@ -946,15 +953,6 @@ export default function HelperDashboard() {
         </aside>
         <main className="w-full min-w-0 pb-2">
           {showDesktopBack ? <DesktopBackButton className="mb-4" /> : null}
-          {completionBreakdown.percent < 100 ? (
-            <div className="md:hidden mb-4">
-              <HelperProfileCompletionBar
-                breakdown={completionBreakdown}
-                onRowClick={onCompletionRowClick}
-                suggestions={completionSuggestions}
-              />
-            </div>
-          ) : null}
 
           {isPerformancePage ? (
             <div className="space-y-4">

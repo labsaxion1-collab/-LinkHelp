@@ -33,6 +33,14 @@ import { isJobCancelled } from '@/utils/jobVisibility';
 export type { Job, JobStatus, JobUrgency, Application, ApplicationStatus, UpcomingJob, UpcomingWorkflowStatus };
 export type { AppNotification, NotificationType };
 
+export type OfficialHirePayload = {
+  requestId: string;
+  applicationId: string;
+  helperId: string;
+  proposedAmount?: number | null;
+  slotIndex?: number;
+};
+
 interface AppDataContextData {
   jobs: Job[];
   applications: Application[];
@@ -48,7 +56,7 @@ interface AppDataContextData {
   ) => Promise<void>;
   updateJobStatus: (jobId: string, status: JobStatus) => Promise<void>;
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => Promise<void>;
-  officiallyHireHelper: (applicationId: string, initialMessage?: string) => Promise<string | null>;
+  officiallyHireHelper: (payload: OfficialHirePayload, initialMessage?: string) => Promise<string | null>;
   getHelperApplications: (helperId: string) => Application[];
   getJobApplications: (jobId: string) => Application[];
   getUpcomingJobsForHelper: (helperId: string) => UpcomingJob[];
@@ -221,6 +229,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
     const job = jobsRef.current.find((j) => j.id === jobId);
     if (!job) throw new Error('JOB_NOT_FOUND');
+
+    if (job.clientId === helperId) {
+      console.log('[LinkHelp] Self request blocked', { requestId: jobId, helperId });
+      throw new Error('SELF_REQUEST');
+    }
 
     const interestCost = leadCostsForJob(job, { distanceKm: options?.distanceKm ?? null }).interestCost;
 
@@ -396,24 +409,68 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const officiallyHireHelper = async (applicationId: string, initialMessage?: string): Promise<string | null> => {
+  const officiallyHireHelper = async (payload: OfficialHirePayload, initialMessage?: string): Promise<string | null> => {
+    const { requestId, applicationId, helperId } = payload;
     const targetApp = applicationsRef.current.find((a) => a.id === applicationId);
-    const jobSnapshot = targetApp ? jobsRef.current.find((j) => j.id === targetApp.jobId) : undefined;
-    if (!targetApp || !jobSnapshot) return null;
+    const jobSnapshot = jobsRef.current.find((j) => j.id === requestId);
+
+    if (!targetApp || !jobSnapshot) {
+      throw new Error('APPLICATION_NOT_FOUND');
+    }
+    if (targetApp.jobId !== requestId || targetApp.helperId !== helperId) {
+      throw new Error('APPLICATION_MISMATCH');
+    }
 
     const selectedCost = leadCostsForJob(jobSnapshot).selectedCost;
 
+    const applyOptimisticHire = () => {
+      setApplications((prev) =>
+        prev.map((app) => {
+          if (app.id === applicationId) {
+            return { ...app, status: 'accepted' as ApplicationStatus, chatUnlocked: true };
+          }
+          if (
+            app.jobId === requestId &&
+            app.id !== applicationId &&
+            (app.status === 'pending' || app.status === 'viewed')
+          ) {
+            return { ...app, status: 'rejected' as ApplicationStatus };
+          }
+          return app;
+        }),
+      );
+      setJobs((prev) =>
+        prev.map((job) => (job.id === requestId ? { ...job, status: 'in_progress' as JobStatus } : job)),
+      );
+    };
+
     if (useRemote) {
-      await remoteChargeHelperOnClientHire(applicationId, selectedCost);
-      const conversationId = await remoteOfficiallyHireHelper(applicationId, jobSnapshot, initialMessage);
-      await refreshRemote();
-      return conversationId;
+      applyOptimisticHire();
+      try {
+        await remoteChargeHelperOnClientHire(applicationId, selectedCost);
+        const conversationId = await remoteOfficiallyHireHelper(payload, jobSnapshot, initialMessage);
+        await refreshRemote();
+        return conversationId;
+      } catch (error) {
+        await refreshRemote();
+        throw error;
+      }
     }
 
     setApplications((prev) =>
-      prev.map((app) =>
-        app.id === applicationId ? { ...app, status: 'accepted' as ApplicationStatus, chatUnlocked: true } : app,
-      ),
+      prev.map((app) => {
+        if (app.id === applicationId) {
+          return { ...app, status: 'accepted' as ApplicationStatus, chatUnlocked: true };
+        }
+        if (
+          app.jobId === requestId &&
+          app.id !== applicationId &&
+          (app.status === 'pending' || app.status === 'viewed')
+        ) {
+          return { ...app, status: 'rejected' as ApplicationStatus };
+        }
+        return app;
+      }),
     );
     setJobs((prev) =>
       prev.map((job) => (job.id === targetApp.jobId ? { ...job, status: 'in_progress' as JobStatus } : job)),

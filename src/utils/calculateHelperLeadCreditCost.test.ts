@@ -20,11 +20,11 @@ const baseJob = (overrides: Partial<Job> = {}): Job => ({
 });
 
 describe('calculateHelperLeadCreditCost', () => {
-  it('charges 1 LC interest and clamps selected cost', () => {
+  it('charges 4 LC interest and clamps selected cost', () => {
     const costs = calculateHelperLeadCreditCost(baseJob({ budgetMin: 60, budgetMax: 80, budgetType: 'fixed' }), {
       distanceKm: 3,
     });
-    expect(costs.interestCost).toBe(1);
+    expect(costs.interestCost).toBe(4);
     expect(costs.selectedCost).toBeGreaterThanOrEqual(2);
     expect(costs.selectedCost).toBeLessThanOrEqual(30);
   });

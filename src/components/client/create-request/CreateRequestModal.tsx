@@ -31,13 +31,17 @@ import {
 } from '@/utils/requestSchedule';
 import { getMarketBudgetSuggestion } from '@/utils/marketBudgetSuggestions';
 import { getBrowserTimezone } from '@/utils/browserTimezone';
+import {
+  movingNeedsBuildingDetails,
+  movingPropertyTypeFromSubKey,
+} from '@/data/movingRequestConfig';
 
 type ModalStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
 const STEPS: ModalStep[] = ['category', 'subcategory', 'description', 'confirm', 'review'];
 const TRANSLATION_LANGUAGE_OPTIONS = ['Português', 'Inglês', 'Francês', 'Espanhol', 'Italiano', 'Árabe'] as const;
 
-function needsBuilding(type: MovePropertyType) {
-  return type === 'apartment' || type === 'office' || type === 'business';
+function needsBuildingForMoving(subKey: string) {
+  return movingNeedsBuildingDetails(subKey);
 }
 
 type Props = {
@@ -110,8 +114,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
 
   const detailsComplete = useMemo(() => {
     if (selectedCategory === 'moving') {
-      if (!movePropertyType || !movePickupAddress.display.trim() || !moveDeliveryAddress.display.trim()) return false;
-      if (needsBuilding(movePropertyType)) {
+      if (!movePickupAddress.display.trim() || !moveDeliveryAddress.display.trim()) return false;
+      if (needsBuildingForMoving(selectedSubcategory)) {
         return Boolean(movePickupFloor.trim() && movePickupElevator && moveDeliveryFloor.trim() && moveDeliveryElevator);
       }
       return true;
@@ -194,6 +198,9 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   useEffect(() => {
     if (!open) return;
     reset();
+    if (initialCategory === 'moving' && initialSubcategory) {
+      setMovePropertyType(movingPropertyTypeFromSubKey(initialSubcategory));
+    }
   }, [open, initialCategory, initialSubcategory]);
 
   useEffect(() => {
@@ -217,12 +224,13 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     const yn = (v: string) => (v === 'yes' ? t('create_modal.moving_yes') : v === 'no' ? t('create_modal.moving_no') : '—');
     let extra = '';
     if (selectedCategory === 'moving') {
+      const subLabel = activeCat ? t(`service_subs.${activeCat.id}.${selectedSubcategory}`) : selectedSubcategory;
       const lines = [
-        t('create_modal.moving_property_type') + ': ' + t('create_modal.moving_property_' + movePropertyType),
+        t('create_modal.moving_property_type') + ': ' + subLabel,
         t('create_modal.moving_pickup_address') + ': ' + movePickupAddress.display,
         t('create_modal.moving_delivery_address') + ': ' + moveDeliveryAddress.display,
       ];
-      if (needsBuilding(movePropertyType)) {
+      if (needsBuildingForMoving(selectedSubcategory)) {
         lines.push(t('create_modal.moving_floor_pickup') + ': ' + movePickupFloor.trim());
         lines.push(t('create_modal.moving_elevator_label') + ': ' + yn(movePickupElevator));
         lines.push(t('create_modal.moving_floor_delivery') + ': ' + moveDeliveryFloor.trim());
@@ -426,7 +434,13 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                   <button
                     key={subKey}
                     type="button"
-                    onClick={() => { setSelectedSubcategory(subKey); setStep('description'); }}
+                    onClick={() => {
+                      setSelectedSubcategory(subKey);
+                      if (selectedCategory === 'moving') {
+                        setMovePropertyType(movingPropertyTypeFromSubKey(subKey));
+                      }
+                      setStep('description');
+                    }}
                     className="w-full max-w-full min-w-0 flex items-center justify-between gap-2 p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 bg-white text-left"
                   >
                     <span className="min-w-0 flex-1 truncate font-bold text-gray-900">{t('service_subs.' + activeCat.id + '.' + subKey)}</span>

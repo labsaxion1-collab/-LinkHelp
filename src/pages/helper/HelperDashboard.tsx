@@ -595,7 +595,7 @@ export default function HelperDashboard() {
   }, [applications]);
 
   const displayedJobs = useMemo(() => {
-    let list = jobs.filter((j) => j.status === 'open' && !isJobCancelled(j));
+    let list = jobs.filter((j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== me.id);
     if (selectedCategoryFilter) {
       list = list.filter((j) => {
         const id = resolveCategoryId(j.category) || j.category;
@@ -631,13 +631,14 @@ export default function HelperDashboard() {
     me.subscriptionTier,
     categoryPrefs,
     dismissedJobIds,
+    me.id,
   ]);
 
   const feedActiveTab =
     activeTab === 'match' || activeTab === 'recentes' || activeTab === 'emergencia' ? activeTab : 'match';
 
   const radarJobs = filterToPreferredCategoriesIfPossible(
-    jobs.filter((j) => j.status === 'open' && !isJobCancelled(j)),
+    jobs.filter((j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== me.id),
     categoryPrefs,
   )
     .map((job) => ({ job, distanceKm: distanceToJobKm(helperCoords, job) }))

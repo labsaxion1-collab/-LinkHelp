@@ -5,8 +5,19 @@ import {
   type RequestAddressValue,
 } from '@/components/client/create-request/RequestAddressInput';
 import type { RequestPriority } from '@/utils/requestSchedule';
+import { movingNeedsBuildingDetails } from '@/data/movingRequestConfig';
 
 export type MovePropertyType = 'house' | 'apartment' | 'office' | 'business' | '';
+
+const FLOOR_OPTIONS = [
+  { value: 'ground', labelKey: 'create_modal.cleaning_floor_ground' },
+  { value: '1', labelKey: '1' },
+  { value: '2', labelKey: '2' },
+  { value: '3', labelKey: '3' },
+  { value: '4', labelKey: '4' },
+  { value: '5', labelKey: '5' },
+  { value: '6+', labelKey: '6+' },
+] as const;
 
 type Props = {
   t: (key: string, vars?: Record<string, string | number>) => string;
@@ -40,10 +51,6 @@ type Props = {
   setTranslationServiceMode: (v: 'online' | 'in_person' | '') => void;
 };
 
-function needsBuilding(type: MovePropertyType) {
-  return type === 'apartment' || type === 'office' || type === 'business';
-}
-
 export function CreateRequestScheduleStep(props: Props) {
   const {
     t,
@@ -51,8 +58,6 @@ export function CreateRequestScheduleStep(props: Props) {
     selectedSubcategory,
     requestAddress,
     setRequestAddress,
-    movePropertyType,
-    setMovePropertyType,
     movePickupAddress,
     setMovePickupAddress,
     moveDeliveryAddress,
@@ -75,6 +80,16 @@ export function CreateRequestScheduleStep(props: Props) {
     setTranslationServiceMode,
   } = props;
 
+  const floorOptions = FLOOR_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: opt.labelKey.startsWith('create_modal.') ? t(opt.labelKey) : opt.labelKey,
+  }));
+
+  const yesNoOptions = [
+    { value: 'yes', label: t('create_modal.moving_yes') },
+    { value: 'no', label: t('create_modal.moving_no') },
+  ];
+
   const addressFields = (label: string, value: RequestAddressValue, onChange: (v: RequestAddressValue) => void) => (
     <div>
       <p className="text-sm font-bold text-gray-800 mb-2">{label}</p>
@@ -89,6 +104,8 @@ export function CreateRequestScheduleStep(props: Props) {
     </div>
   );
 
+  const needsBuildingAccess = selectedCategory === 'moving' && movingNeedsBuildingDetails(selectedSubcategory);
+
   return (
     <section className="space-y-5 animate-in fade-in duration-300">
       <div>
@@ -102,68 +119,42 @@ export function CreateRequestScheduleStep(props: Props) {
             <Icons.Truck className="w-4 h-4 text-blue-600" />
             {t('create_modal.moving_details_title')}
           </p>
-          <ChoiceChipGroup
-            label={t('create_modal.moving_property_type')}
-            required
-            value={movePropertyType}
-            onChange={(v) => setMovePropertyType(v as MovePropertyType)}
-            options={[
-              { value: 'house', label: t('create_modal.moving_property_house') },
-              { value: 'apartment', label: t('create_modal.moving_property_apartment') },
-              { value: 'office', label: t('create_modal.moving_property_office') },
-              { value: 'business', label: t('create_modal.moving_property_business') },
-            ]}
-          />
           {addressFields(t('create_modal.moving_pickup_address'), movePickupAddress, setMovePickupAddress)}
-          {needsBuilding(movePropertyType) && (
-            <div>
-              <label className="block text-xs font-bold text-gray-500 mb-1">
-                {t('create_modal.moving_floor_pickup')} *
-              </label>
-              <input
+          {needsBuildingAccess && (
+            <div className="space-y-3">
+              <ChoiceChipGroup
+                label={t('create_modal.moving_floor_pickup')}
+                required
                 value={movePickupFloor}
-                onChange={(e) => setMovePickupFloor(e.target.value)}
-                className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm mb-3"
-                placeholder={t('create_modal.moving_floor_placeholder')}
+                onChange={setMovePickupFloor}
+                options={floorOptions}
               />
-              <label className="block text-xs font-bold text-gray-500 mb-1">
-                {t('create_modal.moving_elevator_label')} *
-              </label>
-              <select
+              <ChoiceChipGroup
+                label={t('create_modal.moving_elevator_label')}
+                required
                 value={movePickupElevator}
-                onChange={(e) => setMovePickupElevator(e.target.value)}
-                className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold"
-              >
-                <option value="">—</option>
-                <option value="yes">{t('create_modal.moving_yes')}</option>
-                <option value="no">{t('create_modal.moving_no')}</option>
-              </select>
+                onChange={setMovePickupElevator}
+                options={yesNoOptions}
+              />
             </div>
           )}
           {addressFields(t('create_modal.moving_delivery_address'), moveDeliveryAddress, setMoveDeliveryAddress)}
-          {needsBuilding(movePropertyType) && (
-            <div>
-              <label className="block text-xs font-bold text-gray-500 mb-1">
-                {t('create_modal.moving_floor_delivery')} *
-              </label>
-              <input
+          {needsBuildingAccess && (
+            <div className="space-y-3">
+              <ChoiceChipGroup
+                label={t('create_modal.moving_floor_delivery')}
+                required
                 value={moveDeliveryFloor}
-                onChange={(e) => setMoveDeliveryFloor(e.target.value)}
-                className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm mb-3"
-                placeholder={t('create_modal.moving_floor_placeholder')}
+                onChange={setMoveDeliveryFloor}
+                options={floorOptions}
               />
-              <label className="block text-xs font-bold text-gray-500 mb-1">
-                {t('create_modal.moving_elevator_delivery')} *
-              </label>
-              <select
+              <ChoiceChipGroup
+                label={t('create_modal.moving_elevator_delivery')}
+                required
                 value={moveDeliveryElevator}
-                onChange={(e) => setMoveDeliveryElevator(e.target.value)}
-                className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold"
-              >
-                <option value="">—</option>
-                <option value="yes">{t('create_modal.moving_yes')}</option>
-                <option value="no">{t('create_modal.moving_no')}</option>
-              </select>
+                onChange={setMoveDeliveryElevator}
+                options={yesNoOptions}
+              />
             </div>
           )}
         </div>
@@ -219,25 +210,14 @@ export function CreateRequestScheduleStep(props: Props) {
             required
             value={cleaningAptFloor}
             onChange={setCleaningAptFloor}
-            options={[
-              { value: 'ground', label: t('create_modal.cleaning_floor_ground') },
-              { value: '1', label: '1' },
-              { value: '2', label: '2' },
-              { value: '3', label: '3' },
-              { value: '4', label: '4' },
-              { value: '5', label: '5' },
-              { value: '6+', label: '6+' },
-            ]}
+            options={floorOptions}
           />
           <ChoiceChipGroup
             label={t('create_modal.cleaning_elevator')}
             required
             value={cleaningHasElevator}
             onChange={setCleaningHasElevator}
-            options={[
-              { value: 'yes', label: t('create_modal.moving_yes') },
-              { value: 'no', label: t('create_modal.moving_no') },
-            ]}
+            options={yesNoOptions}
           />
         </div>
       )}

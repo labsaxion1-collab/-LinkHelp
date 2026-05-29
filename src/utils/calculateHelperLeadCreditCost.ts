@@ -1,7 +1,7 @@
 import type { Job } from '@/types/job';
 import { resolveCategoryId } from '@/utils/translateCategory';
 
-const INTEREST_COST_LC = 1;
+const INTEREST_COST_LC = 4;
 
 const LOW_COMPLEXITY_CATEGORIES = new Set(['translation', 'pet', 'cooking']);
 const MEDIUM_COMPLEXITY_CATEGORIES = new Set(['cleaning', 'sanitization', 'beauty', 'outdoor', 'tech']);

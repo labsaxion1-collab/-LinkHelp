@@ -230,6 +230,10 @@ export async function remoteApply(input: {
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
 
+  if (input.clientId === input.helperId) {
+    throw new Error('SELF_REQUEST');
+  }
+
   const findExisting = async (): Promise<string | null> => {
     const { data } = await sb
       .from('applications')
@@ -377,10 +381,11 @@ export async function remoteUpdateApplicationStatus(
 
 /** Creates/unlocks chat — only after client clicks “Contratar oficialmente”. */
 export async function remoteOfficiallyHireHelper(
-  applicationId: string,
+  payload: { requestId: string; applicationId: string; helperId: string },
   jobSnapshot: Job,
   initialMessage?: string,
 ): Promise<string | null> {
+  const { requestId, applicationId, helperId } = payload;
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
 
@@ -388,6 +393,9 @@ export async function remoteOfficiallyHireHelper(
   if (fetchErr || !appRow) throw fetchErr ?? new Error('NOT_FOUND');
 
   const app = appRow as ApplicationRow;
+  if (app.request_id !== requestId || app.helper_id !== helperId) {
+    throw new Error('APPLICATION_MISMATCH');
+  }
   const acceptedAmount = app.proposed_amount != null ? Number(app.proposed_amount) : null;
   const valueHint =
     acceptedAmount != null
@@ -433,6 +441,13 @@ export async function remoteOfficiallyHireHelper(
         workflow_status: 'scheduled',
       });
     }
+
+    await sb
+      .from('applications')
+      .update({ status: 'rejected' })
+      .eq('request_id', app.request_id)
+      .neq('id', applicationId)
+      .in('status', ['pending', 'viewed']);
   }
 
   const conversationId = await ensureConversation({

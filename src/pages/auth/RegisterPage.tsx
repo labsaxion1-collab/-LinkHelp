@@ -154,7 +154,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-b from-slate-50 via-white to-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative">
+    <div className="lh-auth-bg min-h-[100dvh] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative">
       <HelperTermsGateModal
         open={helperModalOpen}
         onClose={() => {
@@ -169,20 +169,20 @@ export default function RegisterPage() {
 
       <Link
         to={ROUTES.home}
-        className="absolute top-8 left-8 flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors z-10"
+        className="absolute top-8 left-8 flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-4 py-2 text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-xl transition-colors hover:bg-white/[0.1] hover:text-white z-10"
       >
         <ArrowLeft className="w-4 h-4" />
         <span className="text-sm font-semibold">{t('login_page.back_home')}</span>
       </Link>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-xl text-center flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <Logo className="mb-4" iconClassName="w-12 h-12" textClassName="text-3xl font-bold" />
-        <h2 className="text-center text-3xl font-black tracking-tight text-slate-900 mt-2">{t('register_page.title')}</h2>
-        <p className="mt-2 text-center text-sm text-slate-500 max-w-sm leading-relaxed">{t('register_page.subtitle')}</p>
+        <Logo className="mb-4" iconClassName="w-12 h-12" textClassName="text-3xl font-bold" tone="light" />
+        <h2 className="text-center text-3xl font-black tracking-tight text-white mt-2">{t('register_page.title')}</h2>
+        <p className="mt-2 text-center text-sm text-slate-200/88 max-w-sm leading-relaxed">{t('register_page.subtitle')}</p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-[500px] animate-in fade-in slide-in-from-bottom-8 duration-700">
-        <div className="bg-white/90 backdrop-blur py-8 px-4 shadow-2xl shadow-slate-200/60 sm:rounded-3xl sm:px-10 border border-slate-100 ring-1 ring-slate-100/80">
+        <div className="bg-white/[0.82] backdrop-blur-3xl py-8 px-4 shadow-[0_36px_120px_rgba(0,0,0,0.48)] sm:rounded-3xl sm:px-10 border border-white/35 ring-1 ring-white/45">
           {error && (
             <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 font-medium animate-in fade-in zoom-in-95 duration-200">
               {error}

@@ -131,7 +131,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-transparent flex flex-col">
+    <div className="lh-auth-bg min-h-[100dvh] flex flex-col">
       <div className="px-4 pt-6 pb-2 sm:px-8 max-w-lg mx-auto w-full">
         <Link
           to={ROUTES.home}

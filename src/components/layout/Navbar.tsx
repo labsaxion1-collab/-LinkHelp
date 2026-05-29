@@ -1,7 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Activity, Briefcase, Globe, ChevronDown, Home, MessageCircle, User, LogOut } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Logo } from '@/components/ui/Logo';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useAuth } from '@/context/AuthContext';
@@ -30,7 +29,7 @@ export default function Navbar() {
 
   const isHelperNav = profile?.role === 'helper';
   const isHome = location.pathname === ROUTES.home;
-  const usePremiumNav = isHome || location.pathname === ROUTES.login || isConnected;
+  const usePremiumNav = isHome || location.pathname === ROUTES.login || location.pathname === ROUTES.signup || isConnected;
   const logoTarget = isConnected
     ? isHelperNav
       ? ROUTES.helperOpportunities
@@ -65,28 +64,25 @@ export default function Navbar() {
 
   return (
     <>
-    <nav className={`sticky top-0 z-50 border-b ${usePremiumNav ? 'lh-nav-premium' : 'bg-white border-gray-100 backdrop-blur-xl'}`}>
+    <nav className={`sticky top-0 z-50 ${usePremiumNav ? 'lh-nav-premium' : 'border-b bg-white border-gray-100 backdrop-blur-xl'}`}>
       {usePremiumNav ? (
         <>
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[linear-gradient(100deg,#8DCAE3_0%,#6CB5D2_14%,#2D719B_35%,#102D48_64%,#050816_100%)]"
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(102deg,#0A63B8_0%,#07427D_18%,#031A3B_46%,#020817_76%,#00040F_100%)]"
           />
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.36)_0%,rgba(255,255,255,0.14)_20%,rgba(0,212,255,0.08)_45%,transparent_72%)]"
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(63,170,255,0.28)_0%,rgba(22,119,255,0.12)_28%,rgba(0,212,255,0.09)_48%,transparent_76%)]"
+          />
+          <div aria-hidden className="lh-nav-shine" />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-[#80CCFF]/75 via-[#1B8FFF]/55 to-transparent"
           />
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-white/75 via-[#9BE7FF]/45 to-transparent"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-white/20 via-[#33B6FF]/50 to-transparent"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute left-0 top-0 h-full w-[34rem] bg-[radial-gradient(circle_at_4rem_50%,rgba(255,255,255,0.42),rgba(155,231,255,0.18)_34%,transparent_68%)]"
+            className="pointer-events-none absolute left-0 top-0 h-full w-[34rem] bg-[radial-gradient(circle_at_4rem_50%,rgba(70,180,255,0.38),rgba(0,109,255,0.18)_34%,transparent_68%)]"
           />
         </>
       ) : null}
@@ -96,20 +92,30 @@ export default function Navbar() {
             <Link
               to={logoTarget}
               className={clsx(
-                'flex items-center rounded-2xl transition-all',
-                usePremiumNav && 'px-3 py-2 ring-1 ring-white/16 bg-white/[0.07] shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_14px_38px_rgba(0,0,0,0.16)] backdrop-blur-md hover:bg-white/[0.1]',
+                'lh-nav-brand flex items-center rounded-2xl transition-opacity hover:opacity-90',
               )}
             >
-              <Logo tone="dark" />
+              <span className="lh-nav-brand-icon">
+                <img
+                  src="/brand/linkhelp-handshake-icon.png"
+                  alt=""
+                  className="h-11 w-11 object-contain md:h-14 md:w-14"
+                  loading="eager"
+                  decoding="async"
+                />
+              </span>
+              <span className="lh-nav-brand-name-wrap" aria-label="Link Help">
+                <span className="lh-nav-brand-name">Link Help</span>
+              </span>
             </Link>
           </div>
 
-          <div className={clsx('hidden md:flex md:items-center md:space-x-8', usePremiumNav && 'rounded-full border border-white/10 bg-[#050816]/20 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-xl')}>
+          <div className={clsx('hidden md:flex md:items-center md:space-x-8', usePremiumNav && 'lh-nav-controls rounded-full px-3 py-2 backdrop-blur-xl')}>
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                className={`flex items-center space-x-1 rounded-full px-3 py-2 transition-colors focus:outline-none ${usePremiumNav ? 'text-slate-100/92 hover:bg-white/10 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`flex items-center space-x-1 rounded-full px-3 py-2 transition-colors focus:outline-none ${usePremiumNav ? 'lh-nav-link text-slate-100/92 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
               >
                 <Globe className="w-4 h-4" />
                 <span className="text-sm font-medium uppercase">{language}</span>
@@ -233,13 +239,13 @@ export default function Navbar() {
                 <>
                   <Link
                     to={ROUTES.login}
-                    className={`font-semibold text-sm transition-colors ${usePremiumNav ? 'rounded-full px-4 py-2 text-slate-100/92 hover:bg-white/10 hover:text-white' : 'text-gray-900 hover:text-primary-600'}`}
+                    className={`font-semibold text-sm transition-colors ${usePremiumNav ? 'lh-nav-link rounded-full px-4 py-2 text-slate-100/92 hover:text-white' : 'text-gray-900 hover:text-primary-600'}`}
                   >
                     {t('nav.login')}
                   </Link>
                   <Link
                     to={ROUTES.signup}
-                    className={`${usePremiumNav ? 'bg-gradient-to-r from-[#1677FF] via-[#1B8FFF] to-[#00D4FF] shadow-[0_0_0_1px_rgba(255,255,255,0.18)_inset,0_16px_42px_rgba(22,119,255,0.42)] hover:brightness-110 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.22)_inset,0_20px_55px_rgba(0,212,255,0.35)]' : 'bg-primary-600 hover:bg-primary-700 shadow-sm'} text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all`}
+                    className={`${usePremiumNav ? 'lh-nav-cta bg-gradient-to-r from-[#1677FF] via-[#1B8FFF] to-[#00D4FF] hover:brightness-110' : 'bg-primary-600 hover:bg-primary-700 shadow-sm'} text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all`}
                   >
                     {t('nav.signup')}
                   </Link>

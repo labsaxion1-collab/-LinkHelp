@@ -66,6 +66,97 @@
       transform: translateY(0) scale(1);
     }
   }
+
+  @keyframes lhNavShine {
+    0%,
+    44% {
+      transform: translateX(-120%) skewX(-18deg);
+      opacity: 0;
+    }
+    52% {
+      opacity: 1;
+    }
+    70% {
+      opacity: 0.9;
+    }
+    100% {
+      transform: translateX(520%) skewX(-18deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes lhAuthBgShine {
+    0%,
+    28% {
+      background-position: -140% 50%, 18% 78%, 0 0;
+      opacity: 0.72;
+    }
+    52% {
+      background-position: 210% 50%, 18% 78%, 0 0;
+      opacity: 0.95;
+    }
+    100% {
+      background-position: 210% 50%, 18% 78%, 0 0;
+      opacity: 0.72;
+    }
+  }
+
+  @keyframes lhBrandNameReveal {
+    0% {
+      opacity: 0;
+      transform: translateX(-105%);
+      filter: blur(5px);
+    }
+    3%,
+    84% {
+      opacity: 1;
+      transform: translateX(0);
+      filter: blur(0);
+    }
+    88%,
+    100% {
+      opacity: 0;
+      transform: translateX(-105%);
+      filter: blur(5px);
+    }
+  }
+
+  @keyframes lhBrandNameSpace {
+    0% {
+      max-width: 0;
+    }
+    3%,
+    84% {
+      max-width: 10.5rem;
+    }
+    88%,
+    100% {
+      max-width: 0;
+    }
+  }
+
+  @keyframes lhBrandTextGlow {
+    0%,
+    100% {
+      text-shadow: 0 0 12px rgb(51 182 255 / 0.22), 0 0 26px rgb(21 101 255 / 0.16);
+    }
+    50% {
+      text-shadow: 0 0 18px rgb(155 231 255 / 0.38), 0 0 34px rgb(0 132 255 / 0.24);
+    }
+  }
+
+  @keyframes lhBrandTextSheen {
+    0%,
+    18% {
+      background-position: 0% 50%;
+    }
+    48% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
 }
 
 html {
@@ -83,6 +174,46 @@ body {
   overflow-x: hidden;
   max-width: 100%;
   -webkit-tap-highlight-color: transparent;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+button,
+a,
+label {
+  overflow-wrap: anywhere;
+}
+
+button,
+a {
+  max-width: 100%;
 }
 
 #root {
@@ -107,4 +238,30 @@ body {
 [data-linkhelp-lang] main,
 [data-linkhelp-lang] nav {
   transition: opacity 0.15s ease-out;
+}
+
+@media (max-width: 640px) {
+  .lh-btn-primary,
+  .lh-btn-secondary {
+    width: 100%;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .lh-modal-header,
+  .lh-modal-body,
+  .lh-modal-footer {
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+
+  .lh-modal-footer {
+    flex-wrap: wrap;
+  }
+
+  .lh-glass-card,
+  .lh-glass-card-solid {
+    border-radius: 1rem;
+  }
 }

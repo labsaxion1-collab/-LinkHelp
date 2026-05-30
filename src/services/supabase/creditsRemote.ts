@@ -54,10 +54,22 @@ function unlockFromRow(row: Record<string, unknown>): OpportunityUnlock {
 export async function getWalletBalance(helperId: string): Promise<number> {
   const sb = getSupabase();
   if (!sb) return 0;
-  await sb.rpc('ensure_helper_credit_wallet', { p_helper_id: helperId });
-  const { data, error } = await sb.rpc('get_wallet_balance', { p_helper_id: helperId });
-  if (error) throw error;
-  return typeof data === 'number' ? normalizeLinkCreditsAmount(data) : 0;
+  try {
+    const { error: ensureErr } = await sb.rpc('ensure_helper_credit_wallet', { p_helper_id: helperId });
+    if (ensureErr) {
+      console.warn('[LinkHelp] ensure_helper_credit_wallet', ensureErr.message);
+      return 0;
+    }
+    const { data, error } = await sb.rpc('get_wallet_balance', { p_helper_id: helperId });
+    if (error) {
+      console.warn('[LinkHelp] get_wallet_balance', error.message);
+      return 0;
+    }
+    return typeof data === 'number' ? normalizeLinkCreditsAmount(data) : 0;
+  } catch (e) {
+    console.warn('[LinkHelp] getWalletBalance', e);
+    return 0;
+  }
 }
 
 export async function fetchRemoteCreditState(helperId: string): Promise<{
@@ -69,29 +81,38 @@ export async function fetchRemoteCreditState(helperId: string): Promise<{
   const sb = getSupabase();
   if (!sb) return { wallet: null, transactions: [], unlocks: [], packages: CREDIT_PACKAGES };
 
-  await sb.rpc('ensure_helper_credit_wallet', { p_helper_id: helperId });
+  try {
+    const { error: ensureErr } = await sb.rpc('ensure_helper_credit_wallet', { p_helper_id: helperId });
+    if (ensureErr) {
+      console.warn('[LinkHelp] ensure_helper_credit_wallet', ensureErr.message);
+      return { wallet: null, transactions: [], unlocks: [], packages: CREDIT_PACKAGES };
+    }
 
-  const [{ data: wallet }, { data: transactions }, { data: unlocks }, { data: packages }] = await Promise.all([
-    sb.from('credit_wallets').select('*').eq('helper_id', helperId).maybeSingle(),
-    sb.from('credit_transactions').select('*').eq('helper_id', helperId).order('created_at', { ascending: false }),
-    sb.from('opportunity_unlocks').select('*').eq('helper_id', helperId).order('created_at', { ascending: false }),
-    sb.from('credit_packages').select('*').eq('active', true).order('credits', { ascending: true }),
-  ]);
+    const [{ data: wallet }, { data: transactions }, { data: unlocks }, { data: packages }] = await Promise.all([
+      sb.from('credit_wallets').select('*').eq('helper_id', helperId).maybeSingle(),
+      sb.from('credit_transactions').select('*').eq('helper_id', helperId).order('created_at', { ascending: false }),
+      sb.from('opportunity_unlocks').select('*').eq('helper_id', helperId).order('created_at', { ascending: false }),
+      sb.from('credit_packages').select('*').eq('active', true).order('credits', { ascending: true }),
+    ]);
 
-  return {
-    wallet: wallet ? walletFromRow(wallet as Record<string, unknown>) : null,
-    transactions: (transactions ?? []).map((row) => txFromRow(row as Record<string, unknown>)),
-    unlocks: (unlocks ?? []).map((row) => unlockFromRow(row as Record<string, unknown>)),
-    packages: packages?.length
-      ? (packages as Record<string, unknown>[]).map((p) => ({
-          id: String(p.id),
-          name: String(p.name),
-          credits: Number(p.credits),
-          priceCad: Number(p.price_cad),
-          active: Boolean(p.active),
-          highlightLabel: (p.highlight_label as string | null) ?? null,
-          createdAt: toMs(p.created_at as string),
-        }))
-      : CREDIT_PACKAGES,
-  };
+    return {
+      wallet: wallet ? walletFromRow(wallet as Record<string, unknown>) : null,
+      transactions: (transactions ?? []).map((row) => txFromRow(row as Record<string, unknown>)),
+      unlocks: (unlocks ?? []).map((row) => unlockFromRow(row as Record<string, unknown>)),
+      packages: packages?.length
+        ? (packages as Record<string, unknown>[]).map((p) => ({
+            id: String(p.id),
+            name: String(p.name),
+            credits: Number(p.credits),
+            priceCad: Number(p.price_cad),
+            active: Boolean(p.active),
+            highlightLabel: (p.highlight_label as string | null) ?? null,
+            createdAt: toMs(p.created_at as string),
+          }))
+        : CREDIT_PACKAGES,
+    };
+  } catch (e) {
+    console.warn('[LinkHelp] fetchRemoteCreditState', e);
+    return { wallet: null, transactions: [], unlocks: [], packages: CREDIT_PACKAGES };
+  }
 }

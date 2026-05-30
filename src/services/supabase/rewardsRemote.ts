@@ -77,10 +77,22 @@ export async function remoteEnsureSignupCredits(
   if (!sb) return 0;
 
   if (role === 'helper') {
-    await sb.rpc('ensure_helper_credit_wallet', { p_helper_id: userId });
-    const { data, error } = await sb.rpc('get_wallet_balance', { p_helper_id: userId });
-    if (error) throw error;
-    return typeof data === 'number' ? data : 0;
+    try {
+      const { error: ensureErr } = await sb.rpc('ensure_helper_credit_wallet', { p_helper_id: userId });
+      if (ensureErr) {
+        console.warn('[LinkHelp] ensure_helper_credit_wallet', ensureErr.message);
+        return 0;
+      }
+      const { data, error } = await sb.rpc('get_wallet_balance', { p_helper_id: userId });
+      if (error) {
+        console.warn('[LinkHelp] get_wallet_balance', error.message);
+        return 0;
+      }
+      return typeof data === 'number' ? data : 0;
+    } catch (e) {
+      console.warn('[LinkHelp] remoteEnsureSignupCredits', e);
+      return 0;
+    }
   }
 
   const { data, error } = await sb.rpc('ensure_client_signup_credits', { p_client_id: userId });

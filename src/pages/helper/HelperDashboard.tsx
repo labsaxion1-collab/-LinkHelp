@@ -114,6 +114,28 @@ export default function HelperDashboard() {
   const { t, language } = useLanguage();
   const me = useSessionViewer();
   const { session, profile, isConfigured, updateProfile, refreshProfile } = useAuth();
+  const { showToast } = useToast();
+  const {
+    jobs,
+    applications,
+    applyForJob,
+    getHelperApplications,
+    upcomingJobs,
+    updateUpcomingWorkflow,
+    updateApplicationStatus,
+    dataLoading,
+    reviews,
+  } = useAppData();
+  const reviewCountByUserId = useMemo(() => buildReviewCountByUserId(reviews), [reviews]);
+  const {
+    wallet,
+    displayBalance,
+    applyOptimisticDebit,
+    refreshCredits,
+    transactions: creditTransactions,
+    unlocks,
+    loading: creditsLoading,
+  } = useCredits();
   const [helperPrimaryCategory, setHelperPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
   const [helperSecondaryCategories, setHelperSecondaryCategories] = useState<ServiceCategoryId[]>([]);
 
@@ -310,24 +332,11 @@ export default function HelperDashboard() {
     }
   }, [location.pathname]);
 
-  const { jobs, applications, applyForJob, getHelperApplications, upcomingJobs, updateUpcomingWorkflow, updateApplicationStatus, dataLoading, reviews } = useAppData();
-  const reviewCountByUserId = useMemo(() => buildReviewCountByUserId(reviews), [reviews]);
-  const { showToast } = useToast();
-  const {
-    wallet,
-    displayBalance,
-    applyOptimisticDebit,
-    refreshCredits,
-    transactions: creditTransactions,
-    unlocks,
-    loading: creditsLoading,
-  } = useCredits();
-
   const [upcomingModalJob, setUpcomingModalJob] = useState<UpcomingJob | null>(null);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
   const [clientProfileJob, setClientProfileJob] = useState<Job | null>(null);
   const [detailOpportunity, setDetailOpportunity] = useState<Job | null>(null);
-  const helperUserId = session?.user?.id ?? me.id;
+  const helperUserId = session?.user?.id ?? profile?.id ?? (me?.id && me.id !== 'guest' && me.id !== '…' ? me.id : null);
 
   const helperUpcomingList = React.useMemo(
     () =>
@@ -353,7 +362,7 @@ export default function HelperDashboard() {
   );
 
   const upcomingLocale = language === 'fr' ? 'fr-CA' : language === 'pt' ? 'pt-BR' : 'en-CA';
-  const helperApplications = getHelperApplications(helperUserId);
+  const helperApplications = getHelperApplications(helperUserId ?? '');
   const helperApplicationsVisible = React.useMemo(
     () =>
       helperApplications.filter((app) => {
@@ -388,6 +397,18 @@ export default function HelperDashboard() {
   }, [creditTransactions]);
 
   const helperMvpStats = React.useMemo((): HelperStatsStripModel => {
+    if (!helperUserId) {
+      return {
+        sent: 0,
+        accepted: 0,
+        completed: 0,
+        responseRatePct: null,
+        avgRating: me?.rating ?? 0,
+        estimatedEarnings: '—',
+        reputation: 0,
+        matchScore: 0,
+      };
+    }
     const apps = helperApplications.filter((a) => a.status !== 'cancelled');
     const sent = apps.length;
     const accepted = apps.filter((a) => a.status === 'accepted').length;
@@ -405,20 +426,20 @@ export default function HelperDashboard() {
       if (job) earnings += parseHint(job.value);
     }
     const estimatedEarnings = earnings > 0 ? `$${Math.round(earnings).toLocaleString()}` : '—';
-    const reputation = Math.min(100, completed * 8 + accepted * 5 + Math.round(me.rating * 8));
-    const hash = me.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    const reputation = Math.min(100, completed * 8 + accepted * 5 + Math.round((me?.rating ?? 0) * 8));
+    const hash = (helperUserId ?? '0').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
     const matchScore = Math.min(99, 72 + (hash % 18) + Math.min(8, accepted * 2));
     return {
       sent,
       accepted,
       completed,
       responseRatePct,
-      avgRating: me.rating,
+      avgRating: me?.rating ?? 0,
       estimatedEarnings,
       reputation,
       matchScore,
     };
-  }, [helperApplications, jobs, me.id, me.rating]);
+  }, [helperApplications, helperUserId, jobs, me?.rating]);
 
   const needsStatusUpdate = helperUpcomingList.some(
     (job) =>
@@ -635,8 +656,9 @@ export default function HelperDashboard() {
   }, [applications]);
 
   const displayedJobs = useMemo(() => {
+    const viewerId = helperUserId ?? me?.id ?? '';
     let list = jobs.filter(
-      (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== me.id && getJobServiceCategoryId(j),
+      (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== viewerId && getJobServiceCategoryId(j),
     );
     if (selectedCategoryFilter) {
       list = list.filter((j) => {
@@ -652,7 +674,7 @@ export default function HelperDashboard() {
       list = sortOpportunitiesForHelper(list, {
         origin: helperBaseCoords,
         helperSkillIds: profileSettings.skillIds,
-        helperPlanTier: me.subscriptionTier,
+        helperPlanTier: me?.subscriptionTier ?? 'BASIC',
       });
     } else if (activeTab === 'candidaturas') {
       list = [];
@@ -670,17 +692,24 @@ export default function HelperDashboard() {
     activeTab,
     helperBaseCoords,
     profileSettings.skillIds,
-    me.subscriptionTier,
+    helperUserId,
+    me?.subscriptionTier,
     categoryPrefs,
     dismissedJobIds,
-    me.id,
+    me?.id,
   ]);
 
   const feedActiveTab =
     activeTab === 'match' || activeTab === 'recentes' || activeTab === 'emergencia' ? activeTab : 'match';
 
   const radarJobs = filterToPreferredCategoriesIfPossible(
-    jobs.filter((j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== me.id && getJobServiceCategoryId(j)),
+    jobs.filter(
+      (j) =>
+        j.status === 'open' &&
+        !isJobCancelled(j) &&
+        j.clientId !== (helperUserId ?? me?.id ?? '') &&
+        getJobServiceCategoryId(j),
+    ),
     categoryPrefs,
   )
     .map((job) => ({ job, distanceKm: baseDistanceToJobKm(job) }))
@@ -1283,7 +1312,7 @@ export default function HelperDashboard() {
           </div>
 
           <UpcomingJobsSidebar
-            helperId={me.id}
+            helperId={helperUserId ?? me?.id ?? ''}
             jobs={helperUpcomingList}
             locale={upcomingLocale}
             t={t}

@@ -127,6 +127,13 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
         setUnlocks([]);
       }
       setPackages(CREDIT_PACKAGES);
+    } catch (e) {
+      console.warn('[LinkHelp] refreshCredits', e);
+      const w = newWallet(helperId);
+      setWallet({ ...w, balance: 0, totalBonus: 0 });
+      setTransactions([]);
+      setUnlocks([]);
+      setPackages(CREDIT_PACKAGES);
     } finally {
       setLoading(false);
     }

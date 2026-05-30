@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Bookmark, Settings, Globe, LogOut, X } from 'lucide-react';
+import { User, Bookmark, Settings, Globe, LogOut, X, Home, MessageCircle, Briefcase } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -50,6 +50,11 @@ export function MobileProfileMenu({
     navigate(ROUTES.login, { replace: true });
   };
 
+  const go = (path: string) => {
+    onClose();
+    navigate(path);
+  };
+
   const goFavorites = () => {
     onClose();
     navigate(ROUTES.clientDashboard, { state: { tab: 'saved' } });
@@ -83,6 +88,47 @@ export function MobileProfileMenu({
         <div className="max-h-[calc(85dvh-4rem-env(safe-area-inset-bottom))] overflow-y-auto overscroll-contain py-1">
           {isConnected ? (
             <>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() =>
+                  go(isHelperNav ? ROUTES.helperDashboard : ROUTES.clientDashboard)
+                }
+                className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              >
+                <Home className="h-4 w-4 text-slate-400" />
+                {t('sidebar.dashboard')}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => go(ROUTES.messages)}
+                className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              >
+                <MessageCircle className="h-4 w-4 text-slate-400" />
+                {t('messages_page.title')}
+              </button>
+              {isHelperNav ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => go(ROUTES.helperJobs)}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                >
+                  <Briefcase className="h-4 w-4 text-slate-400" />
+                  {t('helper_dashboard.nav_active_services')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => go(ROUTES.clientJobs)}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                >
+                  <Briefcase className="h-4 w-4 text-slate-400" />
+                  {t('sidebar.active_services')}
+                </button>
+              )}
               {isHelperNav ? (
                 <button
                   type="button"

@@ -34,10 +34,10 @@ import { SIGNUP_BONUS_LC } from '@/config/onboardingRewards';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { type ServiceCategoryId } from '@/data/serviceCategories';
-import { getHelperCategoryPreferences } from '@/utils/helperCategoryPreferences';
+import { getHelperCategoryPreferences, deriveHelperCategoriesFromSkillKeys } from '@/utils/helperCategoryPreferences';
 import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
 import { ByFluxBadge } from '@/components/brand/ByFluxBadge';
-import { filterValidSkillKeys, groupSkillKeysByServiceCategory } from '@/data/helperSkillsCatalog';
+import { filterValidSkillKeys } from '@/data/helperSkillsCatalog';
 
 const SPOKEN_LANGUAGE_OPTIONS = [
   { id: 'pt', label: 'Português' },
@@ -203,20 +203,20 @@ export default function SettingsPage() {
     }
   };
 
-  const persistHelperSkills = async (ids: string[]) => {
+  const persistHelperSkills = async (
+    ids: string[],
+    categoryOverride?: { primary: ServiceCategoryId; secondary: ServiceCategoryId[] },
+  ) => {
     const valid = filterValidSkillKeys(ids);
     setHelperSkillIds(valid);
     setHelperSkillCount(valid.length);
+    const { primary, secondary } = categoryOverride ?? deriveHelperCategoriesFromSkillKeys(valid, primaryCategory);
+    setPrimaryCategory(primary);
+    setSecondaryCategories(secondary);
     if (!session?.user?.id || !isConfigured) {
       if (valid.length > 0) showToast(t('helper_categories.saved_ok'), 'success');
       return;
     }
-    const cats = [...groupSkillKeysByServiceCategory(valid).keys()] as ServiceCategoryId[];
-    let primary = primaryCategory;
-    if (cats.length && !cats.includes(primary)) primary = cats[0];
-    const secondary = cats.filter((id) => id !== primary);
-    setPrimaryCategory(primary);
-    setSecondaryCategories(secondary);
     try {
       await syncHelperSkills(session.user.id, valid);
       const err = await updateProfile({
@@ -228,6 +228,9 @@ export default function SettingsPage() {
       const synced = await fetchHelperSkills(session.user.id);
       setHelperSkillIds(synced);
       setHelperSkillCount(synced.length);
+      const syncedCats = deriveHelperCategoriesFromSkillKeys(synced, primary);
+      setPrimaryCategory(syncedCats.primary);
+      setSecondaryCategories(syncedCats.secondary);
       showToast(t('helper_categories.saved_ok'), 'success');
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

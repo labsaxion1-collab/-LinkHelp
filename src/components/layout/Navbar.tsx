@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Activity, Briefcase, Globe, ChevronDown, Home, MessageCircle, User, LogOut } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
@@ -22,6 +22,8 @@ export default function Navbar() {
   const { showToast } = useToast();
   const langButtonRef = useRef<HTMLButtonElement>(null);
   const profileButtonRef = useRef<HTMLButtonElement>(null);
+  const langPanelRef = useRef<HTMLDivElement>(null);
+  const profilePanelRef = useRef<HTMLDivElement>(null);
   const navControlsRef = useRef<HTMLDivElement>(null);
   const [langPanelStyle, setLangPanelStyle] = useState<CSSProperties>({});
   const [profilePanelStyle, setProfilePanelStyle] = useState<CSSProperties>({});
@@ -45,6 +47,11 @@ export default function Navbar() {
     setIsLangMenuOpen(false);
     setProfileOpen(false);
   }, [location.pathname]);
+
+  const isNavSurfaceTarget = useCallback((target: Node) => {
+    const refs = [navControlsRef, langButtonRef, profileButtonRef, langPanelRef, profilePanelRef];
+    return refs.some((ref) => ref.current?.contains(target));
+  }, []);
 
   const updateLangPanelPosition = useCallback(() => {
     const rect = langButtonRef.current?.getBoundingClientRect();
@@ -96,21 +103,27 @@ export default function Navbar() {
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (navControlsRef.current?.contains(target)) return;
+      if (isNavSurfaceTarget(e.target as Node)) return;
       setProfileOpen(false);
       setIsLangMenuOpen(false);
     };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
-  }, []);
+  }, [isNavSurfaceTarget]);
+
+  const closeProfile = () => setProfileOpen(false);
+
+  const goProfileRoute = (path: string) => {
+    closeProfile();
+    navigate(path);
+  };
 
   const doLogout = async () => {
+    closeProfile();
+    setMobileProfileOpen(false);
     await signOut();
     showToast(t('nav.toast_logout'), 'success');
     navigate(ROUTES.login, { replace: true });
-    setProfileOpen(false);
-    setMobileProfileOpen(false);
   };
 
   const changeLanguage = (nextLanguage: 'en' | 'pt' | 'fr') => {
@@ -148,8 +161,9 @@ export default function Navbar() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-[60px] md:h-[72px]">
           <div className="flex items-center">
-            <Link
-              to={logoTarget}
+            <button
+              type="button"
+              onClick={() => navigate(logoTarget)}
               className={clsx(
                 'lh-nav-brand flex items-center rounded-2xl transition-opacity hover:opacity-90',
               )}
@@ -166,7 +180,7 @@ export default function Navbar() {
               <span className="lh-nav-brand-name-wrap" aria-label="Link Help">
                 <span className="lh-nav-brand-name">Link Help</span>
               </span>
-            </Link>
+            </button>
           </div>
 
           <div ref={navControlsRef} className={clsx('hidden md:flex md:items-center md:space-x-8', usePremiumNav && 'lh-nav-controls rounded-full px-3 py-2 backdrop-blur-xl')}>
@@ -214,25 +228,31 @@ export default function Navbar() {
                       </button>
                     </div>
                   ) : (
-                    <Link to={ROUTES.settings} className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate(ROUTES.settings)}
+                      className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                    >
                       <img src={userAvatar} alt="" className="w-9 h-9 rounded-full border-2 border-gray-100 object-cover" />
-                    </Link>
+                    </button>
                   )}
                 </div>
               ) : (
                 <>
-                  <Link
-                    to={ROUTES.login}
+                  <button
+                    type="button"
+                    onClick={() => navigate(ROUTES.login)}
                     className={`font-semibold text-sm transition-colors ${usePremiumNav ? 'lh-nav-link rounded-full px-4 py-2 text-slate-100/92 hover:text-white' : 'text-gray-900 hover:text-primary-600'}`}
                   >
                     {t('nav.login')}
-                  </Link>
-                  <Link
-                    to={ROUTES.signup}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(ROUTES.signup)}
                     className={`${usePremiumNav ? 'lh-nav-cta bg-gradient-to-r from-[#1677FF] via-[#1B8FFF] to-[#00D4FF] hover:brightness-110' : 'bg-primary-600 hover:bg-primary-700 shadow-sm'} text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all`}
                   >
                     {t('nav.signup')}
-                  </Link>
+                  </button>
                 </>
               )}
             </div>
@@ -275,9 +295,11 @@ export default function Navbar() {
       {isLangMenuOpen
         ? createPortal(
             <div
+              ref={langPanelRef}
               style={langPanelStyle}
               className="hidden md:block rounded-xl border border-gray-100 bg-white py-2 shadow-xl shadow-slate-900/10 animate-in fade-in zoom-in-95 duration-150"
               role="menu"
+              onMouseDown={(e) => e.stopPropagation()}
             >
               <button
                 type="button"
@@ -311,60 +333,69 @@ export default function Navbar() {
       {profileOpen
         ? createPortal(
             <div
+              ref={profilePanelRef}
               style={profilePanelStyle}
               className="hidden md:block rounded-2xl border border-gray-100 bg-white py-2 shadow-xl shadow-slate-900/10 animate-in fade-in zoom-in-95 duration-150"
               role="menu"
+              onMouseDown={(e) => e.stopPropagation()}
             >
-              <Link
-                to={isHelperNav ? ROUTES.helperDashboard : ROUTES.clientDashboard}
-                onClick={() => setProfileOpen(false)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => goProfileRoute(isHelperNav ? ROUTES.helperDashboard : ROUTES.clientDashboard)}
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
               >
                 <Home className="w-4 h-4 text-gray-400" /> {t('sidebar.dashboard')}
-              </Link>
-              <Link
-                to={ROUTES.messages}
-                onClick={() => setProfileOpen(false)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => goProfileRoute(ROUTES.messages)}
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
               >
                 <MessageCircle className="w-4 h-4 text-gray-400" /> {t('messages_page.title')}
-              </Link>
+              </button>
               {isHelperNav ? (
                 <>
-                  <Link
-                    to={ROUTES.helperPerformance}
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => goProfileRoute(ROUTES.helperPerformance)}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
                   >
                     <Activity className="w-4 h-4 text-gray-400" /> {t('helper_dashboard.nav_performance')}
-                  </Link>
-                  <Link
-                    to={ROUTES.helperJobs}
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => goProfileRoute(ROUTES.helperJobs)}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
                   >
                     <Briefcase className="w-4 h-4 text-gray-400" /> {t('helper_dashboard.nav_active_services')}
-                  </Link>
+                  </button>
                 </>
               ) : (
-                <Link
-                  to={ROUTES.clientJobs}
-                  onClick={() => setProfileOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => goProfileRoute(ROUTES.clientJobs)}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
                 >
                   <Briefcase className="w-4 h-4 text-gray-400" /> {t('sidebar.active_services')}
-                </Link>
+                </button>
               )}
-              <Link
-                to={ROUTES.settings}
-                onClick={() => setProfileOpen(false)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => goProfileRoute(ROUTES.settings)}
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
               >
                 <User className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_profile')}
-              </Link>
+              </button>
               <div className="my-1 border-t border-gray-100" />
               <button
                 type="button"
+                role="menuitem"
                 onClick={() => void doLogout()}
                 className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-bold text-red-600 hover:bg-red-50"
               >

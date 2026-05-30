@@ -10,7 +10,6 @@ import { logMediaPicker } from '@/utils/mediaPickerDebug';
 import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import {
   filterValidSkillKeys,
-  groupSkillKeysByServiceCategory,
   parseSkillKey,
   skillSubLabelKey,
 } from '@/data/helperSkillsCatalog';
@@ -67,6 +66,7 @@ import { distanceToJobKm, sortOpportunitiesForHelper } from '@/utils/locationMat
 import { isJobCancelled } from '@/utils/jobVisibility';
 import {
   filterToPreferredCategoriesIfPossible,
+  deriveHelperCategoriesFromSkillKeys,
   getHelperCategoryPreferences,
   sortJobsByHelperCategoryPreference,
 } from '@/utils/helperCategoryPreferences';
@@ -188,21 +188,22 @@ export default function HelperDashboard() {
   }, []);
 
   const handleSkillsSave = React.useCallback(
-    async (ids: string[]) => {
+    async (
+      ids: string[],
+      categoryOverride?: { primary: ServiceCategoryId; secondary: ServiceCategoryId[] },
+    ) => {
       const valid = filterValidSkillKeys(ids);
       setProfileSettings((p) => ({ ...p, skillIds: valid }));
+      const { primary, secondary } =
+        categoryOverride ?? deriveHelperCategoriesFromSkillKeys(valid, helperPrimaryCategory);
+      setHelperPrimaryCategory(primary);
+      setHelperSecondaryCategories(secondary);
       if (!isConfigured || !storageUserId) {
         if (valid.length > 0) showToast(t('helper_categories.saved_ok'), 'success');
         return;
       }
       try {
         await syncHelperSkills(storageUserId, valid);
-        const cats = [...groupSkillKeysByServiceCategory(valid).keys()] as ServiceCategoryId[];
-        let primary = helperPrimaryCategory;
-        if (cats.length && !cats.includes(primary)) primary = cats[0];
-        const secondary = cats.filter((id) => id !== primary);
-        setHelperPrimaryCategory(primary);
-        setHelperSecondaryCategories(secondary);
         const err = await updateProfile({
           primary_category: primary,
           secondary_categories: secondary,
@@ -211,6 +212,9 @@ export default function HelperDashboard() {
         await refreshProfile();
         const synced = await fetchHelperSkills(storageUserId);
         setProfileSettings((p) => ({ ...p, skillIds: synced }));
+        const syncedCats = deriveHelperCategoriesFromSkillKeys(synced, primary);
+        setHelperPrimaryCategory(syncedCats.primary);
+        setHelperSecondaryCategories(syncedCats.secondary);
         showToast(t('helper_categories.saved_ok'), 'success');
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -844,23 +848,7 @@ export default function HelperDashboard() {
                   setHelperPrimaryCategory(primary);
                   setHelperSecondaryCategories(secondary);
                 }}
-                onSaveAsync={async (ids) => {
-                  const valid = filterValidSkillKeys(ids);
-                  const cats = [...groupSkillKeysByServiceCategory(valid).keys()] as ServiceCategoryId[];
-                  let primary = helperPrimaryCategory;
-                  if (cats.length && !cats.includes(primary)) primary = cats[0];
-                  const secondary = cats.filter((id) => id !== primary);
-                  setHelperPrimaryCategory(primary);
-                  setHelperSecondaryCategories(secondary);
-                  await handleSkillsSave(valid);
-                  if (isConfigured && session?.user?.id) {
-                    await updateProfile({
-                      primary_category: primary,
-                      secondary_categories: secondary,
-                    });
-                    await refreshProfile();
-                  }
-                }}
+                onSaveAsync={handleSkillsSave}
               />
             </div>
           </div>

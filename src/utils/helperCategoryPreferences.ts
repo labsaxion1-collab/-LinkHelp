@@ -1,5 +1,5 @@
 import { SERVICE_CATEGORIES, type ServiceCategoryId } from '@/data/serviceCategories';
-import { parseSkillKey } from '@/data/helperSkillsCatalog';
+import { filterValidSkillKeys, groupSkillKeysByServiceCategory, parseSkillKey } from '@/data/helperSkillsCatalog';
 import type { Job } from '@/types/job';
 import { resolveCategoryId } from '@/utils/translateCategory';
 
@@ -110,10 +110,32 @@ export function categoryIdsFromSkillKeys(skillIds: string[]): ServiceCategoryId[
   const seen = new Set<ServiceCategoryId>();
   for (const key of skillIds) {
     const parsed = parseSkillKey(key);
-    const mapped = parsed ? SKILL_PRIMARY_TO_SERVICE[parsed.primary] : null;
+    if (!parsed) continue;
+    if (SERVICE_ID_SET.has(parsed.primary)) {
+      seen.add(parsed.primary as ServiceCategoryId);
+      continue;
+    }
+    const mapped = SKILL_PRIMARY_TO_SERVICE[parsed.primary];
     if (mapped) seen.add(mapped);
   }
   return [...seen];
+}
+
+/** Derive primary + all secondary categories from saved skill keys. */
+export function deriveHelperCategoriesFromSkillKeys(
+  skillIds: string[],
+  preferredPrimary?: ServiceCategoryId | null,
+): { primary: ServiceCategoryId; secondary: ServiceCategoryId[] } {
+  const cats = [
+    ...groupSkillKeysByServiceCategory(filterValidSkillKeys(skillIds)).keys(),
+  ] as ServiceCategoryId[];
+  if (cats.length === 0) {
+    return { primary: preferredPrimary ?? 'cleaning', secondary: [] };
+  }
+  const primary =
+    preferredPrimary && cats.includes(preferredPrimary) ? preferredPrimary : cats[0];
+  const secondary = cats.filter((id) => id !== primary);
+  return { primary, secondary };
 }
 
 export function getHelperCategoryPreferences(
@@ -126,14 +148,25 @@ export function getHelperCategoryPreferences(
   const explicitSecondary = rawSecondary
     .map((id) => normalizeHelperCategoryId(id))
     .filter((id): id is ServiceCategoryId => Boolean(id));
-  const primaryCategory = explicitPrimary ?? fromSkills[0] ?? 'cleaning';
-  const secondaryCategories = [...new Set([...explicitSecondary, ...fromSkills])]
-    .filter((id) => id !== primaryCategory)
-    .slice(0, 5);
+
+  if (fromSkills.length > 0) {
+    const { primary, secondary } = deriveHelperCategoriesFromSkillKeys(skillIds, explicitPrimary);
+    const visibleCategories = [primary, ...secondary];
+    return {
+      primaryCategory: primary,
+      secondaryCategories: secondary,
+      visibleCategories,
+      hasExplicitPreference: true,
+    };
+  }
+
+  const allCategoryIds = [...new Set([...(explicitPrimary ? [explicitPrimary] : []), ...explicitSecondary])];
+  const primaryCategory = explicitPrimary ?? 'cleaning';
+  const secondaryCategories = allCategoryIds.filter((id) => id !== primaryCategory);
   return {
     primaryCategory,
     secondaryCategories,
-    visibleCategories: [primaryCategory, ...secondaryCategories],
+    visibleCategories: allCategoryIds.length ? allCategoryIds : [primaryCategory],
     hasExplicitPreference: Boolean(explicitPrimary || explicitSecondary.length),
   };
 }

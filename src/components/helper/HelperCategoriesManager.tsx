@@ -10,10 +10,13 @@ import {
   parseSkillKey,
   skillKey,
 } from '@/data/helperSkillsCatalog';
+import { deriveHelperCategoriesFromSkillKeys } from '@/utils/helperCategoryPreferences';
 import { HELPER_CATEGORY_ACCENTS } from '@/utils/helperCategoryPreferences';
 import { HelperCategoryPickerSheet } from '@/components/helper/HelperCategoryPickerSheet';
 
 type TFn = (key: string, options?: Record<string, string | number>) => string;
+
+type CategoryOverride = { primary: ServiceCategoryId; secondary: ServiceCategoryId[] };
 
 type Props = {
   t: TFn;
@@ -22,7 +25,7 @@ type Props = {
   secondaryCategories: ServiceCategoryId[];
   onSkillsChange: (ids: string[]) => void;
   onCategoriesChange: (primary: ServiceCategoryId, secondary: ServiceCategoryId[]) => void;
-  onSaveAsync?: (ids: string[]) => Promise<void>;
+  onSaveAsync?: (ids: string[], categoryOverride?: CategoryOverride) => Promise<void>;
 };
 
 export function HelperCategoriesManager({
@@ -52,25 +55,21 @@ export function HelperCategoriesManager({
 
   const existingCategoryIds = useMemo(() => new Set(grouped.keys()), [grouped]);
 
-  const persistSkills = async (next: string[]) => {
+  const persistSkills = async (next: string[], categoryOverride?: CategoryOverride) => {
     const valid = filterValidSkillKeys(next);
     onSkillsChange(valid);
     if (onSaveAsync) {
       setSaving(true);
       try {
-        await onSaveAsync(valid);
+        await onSaveAsync(valid, categoryOverride);
       } finally {
         setSaving(false);
       }
     }
   };
 
-  const syncCategoriesFromSkills = (keys: string[]) => {
-    const cats = [...groupSkillKeysByServiceCategory(keys).keys()] as ServiceCategoryId[];
-    if (cats.length === 0) return;
-    let primary = primaryCategory;
-    if (!cats.includes(primary)) primary = cats[0];
-    const secondary = cats.filter((id) => id !== primary);
+  const syncCategoriesFromSkills = (keys: string[], preferredPrimary?: ServiceCategoryId) => {
+    const { primary, secondary } = deriveHelperCategoriesFromSkillKeys(keys, preferredPrimary ?? primaryCategory);
     onCategoriesChange(primary, secondary);
   };
 
@@ -81,39 +80,26 @@ export function HelperCategoriesManager({
     });
     const added = subKeys.map((sub) => skillKey(categoryId, sub));
     const next = [...withoutCategory, ...added];
-    const cats = [...groupSkillKeysByServiceCategory(next).keys()] as ServiceCategoryId[];
-    if (cats.length === 1) {
-      onCategoriesChange(categoryId, []);
-    } else if (!cats.includes(primaryCategory)) {
-      onCategoriesChange(categoryId, cats.filter((id) => id !== categoryId));
-    } else {
-      syncCategoriesFromSkills(next);
-    }
+    const preferredPrimary =
+      grouped.size === 0 && !editCategory ? categoryId : primaryCategory;
+    syncCategoriesFromSkills(next, preferredPrimary);
     await persistSkills(next);
     setEditCategory(null);
   };
 
   const removeCategory = async (categoryId: ServiceCategoryId) => {
     const next = skillIds.filter((key) => parseSkillKey(key)?.primary !== categoryId);
-    await persistSkills(next);
-    const cats = [...groupSkillKeysByServiceCategory(next).keys()] as ServiceCategoryId[];
-    if (cats.length === 0) {
-      onCategoriesChange('cleaning', []);
-    } else if (primaryCategory === categoryId) {
-      onCategoriesChange(cats[0], cats.slice(1));
-    } else {
-      onCategoriesChange(primaryCategory, secondaryCategories.filter((id) => id !== categoryId));
-    }
+    const { primary, secondary } = deriveHelperCategoriesFromSkillKeys(next);
+    onCategoriesChange(primary, secondary);
+    await persistSkills(next, { primary, secondary });
     setMenuCategory(null);
   };
 
   const setAsPrimary = (categoryId: ServiceCategoryId) => {
-    const secondary = [...secondaryCategories, primaryCategory].filter(
-      (id) => id !== categoryId && id !== primaryCategory,
-    );
-    const uniqueSecondary = [...new Set(secondary.filter((id) => grouped.has(id)))];
-    onCategoriesChange(categoryId, uniqueSecondary);
+    const secondary = categoryOrder.filter((id) => id !== categoryId);
+    onCategoriesChange(categoryId, secondary);
     setMenuCategory(null);
+    void persistSkills(skillIds, { primary: categoryId, secondary });
   };
 
   const openAdd = () => {

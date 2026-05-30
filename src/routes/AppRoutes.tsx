@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { lazy, type ComponentType } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
@@ -25,6 +25,24 @@ const LiveMapPage = lazy(() => import('@/pages/map/LiveMapPage'));
 const PaymentsPage = lazy(() => import('@/pages/payments/PaymentsPage'));
 const HelperCreditsPage = lazy(() => import('@/pages/helper/HelperCreditsPage'));
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
+
+function AdminDashboardLoadError() {
+  return (
+    <div className="mx-auto max-w-lg rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+      <p className="text-sm font-bold text-white">FLUX Admin unavailable</p>
+      <p className="mt-2 text-xs text-slate-500">
+        The admin dashboard module failed to load. Refresh the page or try again later.
+      </p>
+    </div>
+  );
+}
+
+const AdminDashboard = lazy(() =>
+  import('@/pages/admin/AdminDashboard').catch((error: unknown) => {
+    console.error('[LinkHelp] AdminDashboard chunk failed to load', error);
+    return { default: AdminDashboardLoadError as ComponentType };
+  }),
+);
 
 export function AppRoutes() {
   return (

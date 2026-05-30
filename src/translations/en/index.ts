@@ -1209,6 +1209,7 @@ export const en = {
     helper_proposal_negotiable: 'Proposal: To be agreed',
     client_budget_range: 'Client range: {{currency}} ${{min}} - {{currency}} ${{max}}',
     helper_hired_success_toast: 'Helper hired successfully.',
+    request_cancelled_toast: 'Request cancelled.',
     chat_locked_until_accept: 'Chat after acceptance',
     reject_helper: 'Reject',
     open_chat_with: 'Chat with {{name}}',
@@ -1849,10 +1850,19 @@ export const en = {
   },
   job_actions: {
     cancel: 'Cancel',
+    cancel_modal_title: 'Cancel this request?',
+    cancel_modal_body: 'This listing will be removed and interested helpers will be notified.',
+    cancel_modal_back: 'Go back',
+    cancel_modal_confirm: 'Yes, cancel request',
     remove: 'Remove',
     remove_confirm: 'Remove this request from your list?',
     republish: 'Republish',
     finalize: 'Complete task',
+  },
+  client_linkcredits: {
+    launch_promo: 'Launch offer: opening requests is free for the first 90 days.',
+    after_promo: 'After the promotional period, clients will use LinkCredits to open new requests.',
+    admin_flag: 'CLIENT_LINKCREDITS_ENABLED=false — clients are not charged to open requests.',
   },
   client_how_it_works: {
     title: 'How it works',

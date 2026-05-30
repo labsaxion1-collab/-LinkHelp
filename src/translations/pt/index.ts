@@ -1221,6 +1221,7 @@ export const pt = {
     helper_proposal_negotiable: 'Proposta: A combinar',
     client_budget_range: 'Faixa do cliente: {{currency}} ${{min}} - {{currency}} ${{max}}',
     helper_hired_success_toast: 'Ajudante contratado com sucesso.',
+    request_cancelled_toast: 'Chamado cancelado.',
     chat_locked_until_accept: 'Chat após aceitar',
     reject_helper: 'Recusar',
     open_chat_with: 'Conversar com {{name}}',
@@ -1862,10 +1863,19 @@ export const pt = {
   },
   job_actions: {
     cancel: 'Cancelar',
+    cancel_modal_title: 'Cancelar este chamado?',
+    cancel_modal_body: 'Este anúncio será removido e os helpers interessados serão avisados.',
+    cancel_modal_back: 'Voltar',
+    cancel_modal_confirm: 'Sim, cancelar chamado',
     remove: 'Remover',
     remove_confirm: 'Remover este pedido da sua lista?',
     republish: 'Republicar',
     finalize: 'Finalizar tarefa',
+  },
+  client_linkcredits: {
+    launch_promo: 'Lançamento: abrir chamados é grátis nos primeiros 90 dias.',
+    after_promo: 'Depois do período promocional, clientes poderão usar LinkCredits para abrir novos chamados.',
+    admin_flag: 'CLIENT_LINKCREDITS_ENABLED=false — clientes não são cobrados ao abrir chamados.',
   },
   client_how_it_works: {
     title: 'Como funciona',

@@ -2,22 +2,18 @@ import { useLanguage } from '@/context/LanguageContext';
 
 type Props = {
   canCancel?: boolean;
-  canRemove?: boolean;
   canRepublish?: boolean;
   canFinalize?: boolean;
   onCancel?: () => void;
-  onRemove?: () => void;
   onRepublish?: () => void;
   onFinalize?: () => void;
 };
 
 export function JobTaskActionsBar({
   canCancel = true,
-  canRemove = true,
   canRepublish = false,
   canFinalize = false,
   onCancel,
-  onRemove,
   onRepublish,
   onFinalize,
 }: Props) {
@@ -40,11 +36,6 @@ export function JobTaskActionsBar({
       {canRepublish && onRepublish ? (
         <button type="button" onClick={onRepublish} className={`${btn} border-blue-200 bg-white text-blue-700 hover:bg-blue-50`}>
           {t('job_actions.republish')}
-        </button>
-      ) : null}
-      {canRemove && onRemove ? (
-        <button type="button" onClick={onRemove} className={`${btn} border-slate-200 bg-white text-slate-600 hover:bg-slate-50`}>
-          {t('job_actions.remove')}
         </button>
       ) : null}
     </div>

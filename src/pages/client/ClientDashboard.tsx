@@ -35,13 +35,17 @@ import {
   isClientChatUnlockedForHelper,
 } from '@/utils/chatHireGate';
 import {
-  hideJobForUser,
   isJobExpired,
   isJobCancelled,
   isJobVisibleToClient,
   readHiddenJobIds,
 } from '@/utils/jobVisibility';
+import { CancelRequestModal } from '@/components/client/CancelRequestModal';
+import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
+import { extractErrorMessage } from '@/utils/errorMessage';
 import { translateJobTitle } from '@/utils/translateCategory';
+import type { Job } from '@/types/job';
+import type { Application } from '@/types/application';
 
 function formatClientBudgetRangeLabel(job: Job, t: (key: string, vars?: Record<string, string | number>) => string): string | null {
   if (!jobHasBoundedBudget(job)) return null;
@@ -118,6 +122,8 @@ export default function ClientDashboard() {
   const [jobsListTab, setJobsListTab] = useState<'active' | 'history'>('active');
   const [hiddenJobIds, setHiddenJobIds] = useState<Set<string>>(() => new Set());
   const [acceptingApplicationId, setAcceptingApplicationId] = useState<string | null>(null);
+  const [cancelTargetJobId, setCancelTargetJobId] = useState<string | null>(null);
+  const [cancellingJobId, setCancellingJobId] = useState<string | null>(null);
   
   const navigate = useNavigate();
   const routerLocation = useLocation();
@@ -207,10 +213,19 @@ export default function ClientDashboard() {
     relatedCategoryIds: myOpenJobCategories,
   });
 
-  const removeClientJob = async (jobId: string) => {
-    await updateJobStatus(jobId, 'cancelled');
-    hideJobForUser(me.id, jobId);
-    setHiddenJobIds(readHiddenJobIds(me.id));
+  const handleConfirmCancelJob = async () => {
+    if (!cancelTargetJobId || cancellingJobId) return;
+    setCancellingJobId(cancelTargetJobId);
+    try {
+      await updateJobStatus(cancelTargetJobId, 'cancelled');
+      showToast(t('client_dashboard.request_cancelled_toast'), 'success');
+      setCancelTargetJobId(null);
+    } catch (error) {
+      console.error(error);
+      showToast(extractErrorMessage(error, t('hire_modal.error_toast')), 'error');
+    } finally {
+      setCancellingJobId(null);
+    }
   };
 
   const openNearbyHelperProfile = (helper: NearbyHelperMapPoint) => {
@@ -235,15 +250,7 @@ export default function ClientDashboard() {
     showToast(t('helper_profile.chat_locked_hint'), 'info');
   };
 
-  const handleAcceptProposal = async (job: Job, app: Application, slotIndex: number) => {
-    console.log('[Accept proposal]', {
-      requestId: job.id,
-      applicationId: app.id,
-      helperId: app.helperId,
-      proposedAmount: app.proposedAmount ?? null,
-      slotIndex,
-    });
-
+  const handleAcceptProposal = async (job: Job, app: Application) => {
     if (acceptingApplicationId) return;
     setAcceptingApplicationId(app.id);
 
@@ -252,7 +259,6 @@ export default function ClientDashboard() {
       applicationId: app.id,
       helperId: app.helperId,
       proposedAmount: app.proposedAmount ?? null,
-      slotIndex,
     };
 
     try {
@@ -263,7 +269,7 @@ export default function ClientDashboard() {
       }
     } catch (error) {
       console.error(error);
-      showToast(t('hire_modal.error_toast'), 'error');
+      showToast(extractErrorMessage(error, t('hire_modal.error_toast')), 'error');
     } finally {
       setAcceptingApplicationId(null);
     }
@@ -300,7 +306,7 @@ export default function ClientDashboard() {
       }
     } catch (error) {
       console.error(error);
-      showToast(t('hire_modal.error_toast'), 'error');
+      showToast(extractErrorMessage(error, t('hire_modal.error_toast')), 'error');
     }
   };
 
@@ -329,6 +335,15 @@ export default function ClientDashboard() {
           </div>
         </div>
       )}
+
+      <CancelRequestModal
+        open={cancelTargetJobId != null}
+        onClose={() => {
+          if (!cancellingJobId) setCancelTargetJobId(null);
+        }}
+        onConfirm={() => void handleConfirmCancelJob()}
+        confirming={cancellingJobId != null}
+      />
 
       {/* Credits Modal */}
       {UI_VISIBILITY.clientCredits && showCreditModal && (
@@ -741,6 +756,13 @@ export default function ClientDashboard() {
                   </button>
                 </div>
               </div>
+
+              {!CLIENT_LINKCREDITS_ENABLED ? (
+                <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-xs leading-relaxed text-slate-600">
+                  <p>{t('client_linkcredits.launch_promo')}</p>
+                  <p className="mt-1 text-slate-500">{t('client_linkcredits.after_promo')}</p>
+                </div>
+              ) : null}
               
               <div className="mb-4 flex gap-2">
                 <button
@@ -843,19 +865,9 @@ export default function ClientDashboard() {
                         ) : null}
                         <JobTaskActionsBar
                           canCancel={canCancelJob}
-                          canRemove={!hiddenJobIds.has(job.id)}
                           canRepublish={job.status === 'cancelled' || isJobExpired(job)}
                           canFinalize={job.status === 'in_progress'}
-                          onCancel={() => {
-                            if (window.confirm(t('job_actions.cancel_confirm'))) {
-                              void updateJobStatus(job.id, 'cancelled').catch(console.error);
-                            }
-                          }}
-                          onRemove={() => {
-                            if (window.confirm(t('job_actions.remove_confirm'))) {
-                              void removeClientJob(job.id).catch(console.error);
-                            }
-                          }}
+                          onCancel={() => setCancelTargetJobId(job.id)}
                           onRepublish={() => openCreateModal(job.category, job.subcategory ?? '')}
                           onFinalize={() => {
                             void updateJobStatus(job.id, 'completed')
@@ -926,7 +938,7 @@ export default function ClientDashboard() {
                                         <button
                                           type="button"
                                           disabled={acceptingApplicationId === app.id}
-                                          onClick={() => void handleAcceptProposal(job, app, index)}
+                                          onClick={() => void handleAcceptProposal(job, app)}
                                           className="order-1 w-full rounded-xl bg-green-600 px-3 py-2.5 text-xs font-black text-white hover:bg-green-700 disabled:opacity-60 sm:order-3 sm:w-auto sm:min-w-[9rem]"
                                         >
                                           {t('client_dashboard.accept_proposal')}

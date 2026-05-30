@@ -1213,6 +1213,7 @@ export const fr = {
     helper_proposal_negotiable: 'Proposition : À combiner',
     client_budget_range: 'Fourchette client : {{currency}} ${{min}} - {{currency}} ${{max}}',
     helper_hired_success_toast: 'Assistant embauché avec succès.',
+    request_cancelled_toast: 'Demande annulée.',
     chat_locked_until_accept: 'Chat après acceptation',
     reject_helper: 'Refuser',
     open_chat_with: 'Discuter avec {{name}}',
@@ -1850,10 +1851,19 @@ export const fr = {
   },
   job_actions: {
     cancel: 'Annuler',
+    cancel_modal_title: 'Annuler cette demande ?',
+    cancel_modal_body: 'Cette annonce sera retirée et les helpers intéressés seront avertis.',
+    cancel_modal_back: 'Retour',
+    cancel_modal_confirm: 'Oui, annuler la demande',
     remove: 'Retirer',
     remove_confirm: 'Retirer cette demande de votre liste ?',
     republish: 'Republier',
     finalize: 'Terminer la tâche',
+  },
+  client_linkcredits: {
+    launch_promo: 'Lancement : ouvrir des demandes est gratuit pendant les 90 premiers jours.',
+    after_promo: 'Après la période promotionnelle, les clients utiliseront des LinkCredits pour ouvrir de nouvelles demandes.',
+    admin_flag: 'CLIENT_LINKCREDITS_ENABLED=false — les clients ne sont pas facturés pour ouvrir des demandes.',
   },
   client_how_it_works: {
     title: 'Comment ça marche',

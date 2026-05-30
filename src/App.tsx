@@ -9,6 +9,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { AppDataProvider } from '@/context/AppDataContext';
+import { JobReminderBridge } from '@/components/notifications/JobReminderBridge';
 import { AuthProvider } from '@/context/AuthContext';
 import { ToastProvider } from '@/context/ToastContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -39,6 +40,7 @@ export default function App() {
             <DevSupabasePing />
             <CreditProvider>
               <AppDataProvider>
+                <JobReminderBridge />
                 <ServiceReviewProvider>
                   <BrowserRouter>
                     <AppModeProvider>

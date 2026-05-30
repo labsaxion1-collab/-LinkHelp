@@ -1,12 +1,18 @@
 import { showForegroundNotification } from '@/services/push/pushNotificationClient';
 
-/** In-app / foreground notification types — server web-push can mirror these payloads later. */
+/**
+ * In-app / foreground notification types — server web-push should mirror these payloads.
+ * See docs/PUSH_NOTIFICATIONS.md for the full event matrix and edge-function wiring.
+ */
 export type PushEventKind =
   | 'helper_applied'
   | 'helper_accepted'
   | 'helper_rejected'
   | 'new_message'
-  | 'service_confirmed';
+  | 'service_confirmed'
+  | 'request_cancelled'
+  | 'new_opportunity'
+  | 'job_reminder_tomorrow';
 
 export type PushEventPayload = {
   title: string;

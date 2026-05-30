@@ -7,6 +7,7 @@ import { FluxMetricCard } from '@/components/admin/FluxMetricCard';
 import { FluxAiInsightsPanel } from '@/components/admin/FluxAiInsightsPanel';
 import { FluxCategoryIntelligence, type CategoryIntelRow } from '@/components/admin/FluxCategoryIntelligence';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
+import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
 
 export type FluxAdminOutletContext = {
   activeSection: 'overview' | 'insights' | 'categories';
@@ -151,6 +152,12 @@ export default function AdminDashboard() {
 
       {showInsights ? <FluxAiInsightsPanel insights={aiInsights} /> : null}
       {showCategories ? <FluxCategoryIntelligence rows={categoryRows} /> : null}
+
+      {!CLIENT_LINKCREDITS_ENABLED ? (
+        <p className="text-xs text-slate-500 leading-relaxed border-t border-white/5 pt-6">
+          {t('client_linkcredits.admin_flag')}
+        </p>
+      ) : null}
     </div>
   );
 }

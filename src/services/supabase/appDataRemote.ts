@@ -315,6 +315,65 @@ export async function remoteUpdateRequestStatus(requestId: string, status: Reque
   if (error) throw new Error(error.message || 'REQUEST_UPDATE_FAILED');
 }
 
+/** Client cancels an open/in-progress request — hides it from feeds and notifies helpers. */
+export async function remoteCancelClientRequest(requestId: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+
+  const { data: req, error: reqErr } = await sb
+    .from('requests')
+    .select('title, client_id')
+    .eq('id', requestId)
+    .single();
+  if (reqErr || !req) throw new Error(reqErr?.message || 'NOT_FOUND');
+
+  const title = (req as { title?: string }).title ?? 'Request';
+  const clientId = (req as { client_id: string }).client_id;
+
+  const { error: upErr } = await sb.from('requests').update({ status: 'cancelled' }).eq('id', requestId);
+  if (upErr) throw new Error(upErr.message || 'REQUEST_UPDATE_FAILED');
+
+  const { data: apps } = await sb
+    .from('applications')
+    .select('id, helper_id')
+    .eq('request_id', requestId)
+    .neq('status', 'cancelled');
+
+  if (apps?.length) {
+    const { error: appErr } = await sb
+      .from('applications')
+      .update({ status: 'cancelled' })
+      .eq('request_id', requestId)
+      .neq('status', 'cancelled');
+    if (appErr) throw new Error(appErr.message || 'APPLICATION_UPDATE_FAILED');
+
+    for (const app of apps as { id: string; helper_id: string }[]) {
+      await sb.from('notifications').insert({
+        user_id: app.helper_id,
+        type: 'job_update',
+        title: 'Request cancelled',
+        description: `The client cancelled the request "${title}".`,
+        action_url: '/helper/dashboard',
+        read: false,
+      });
+    }
+  }
+
+  await sb
+    .from('upcoming_jobs')
+    .update({ workflow_status: 'cancelled' })
+    .eq('request_id', requestId);
+
+  await sb.from('notifications').insert({
+    user_id: clientId,
+    type: 'job_update',
+    title: 'Request cancelled',
+    description: `Your request "${title}" was cancelled.`,
+    action_url: '/client/dashboard',
+    read: false,
+  });
+}
+
 export async function remoteUpdateApplicationStatus(
   applicationId: string,
   status: ApplicationStatus,
@@ -428,7 +487,7 @@ export async function remoteOfficiallyHireHelper(
 
   if (app.status !== 'accepted') {
     const { error: upErr } = await sb.from('applications').update({ status: 'accepted' }).eq('id', applicationId);
-    if (upErr) throw upErr;
+    if (upErr) throw new Error(upErr.message || 'APPLICATION_UPDATE_FAILED');
     await sb.from('requests').update({ status: 'in_progress' }).eq('id', app.request_id);
     if (acceptedAmount != null) {
       const reqUpdate: Record<string, unknown> = {

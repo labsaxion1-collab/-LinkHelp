@@ -17,6 +17,7 @@ import {
   remoteMarkAllNotificationsRead,
   remoteMarkNotificationRead,
   remoteUpdateRequestStatus,
+  remoteCancelClientRequest,
   remoteOfficiallyHireHelper,
   remoteUpdateApplicationStatus,
   remoteUpdateUpcomingWorkflow,
@@ -29,7 +30,6 @@ import { dispatchPushEvent } from '@/services/push/pushEventDispatcher';
 import { useCredits } from '@/context/CreditContext';
 import {
   fetchHelperBaseDistanceKm,
-  InsufficientCreditsError,
   leadCostsForJob,
   remoteChargeHelperOnClientHire,
 } from '@/services/helperLeadCredits';
@@ -260,6 +260,19 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       if (helperId === profile?.id) {
         await chargeApplicationInterest(jobId, interestCost);
       }
+      const helperName = profile?.name?.trim() || 'Helper';
+      const title = 'Nova candidatura recebida';
+      const proposalText =
+        proposedAmount != null
+          ? `${helperName} enviou uma proposta de CAD $${Math.round(proposedAmount)} para "${job.title}".`
+          : `${helperName} se candidatou para "${job.title}".`;
+      dispatchPushEvent({
+        kind: 'helper_applied',
+        userId: job.clientId,
+        title,
+        body: proposalText,
+        url: ROUTES.clientDashboard,
+      });
       await refreshRemote();
       return;
     }
@@ -316,14 +329,71 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateJobStatus = async (jobId: string, status: JobStatus) => {
+    const jobSnapshot = jobsRef.current.find((j) => j.id === jobId);
+
     if (useRemote) {
-      await remoteUpdateRequestStatus(jobId, status);
+      if (isJobCancelled({ status })) {
+        const relatedApps = applicationsRef.current.filter(
+          (a) => a.jobId === jobId && a.status !== 'cancelled',
+        );
+        await remoteCancelClientRequest(jobId);
+        if (jobSnapshot) {
+          for (const app of relatedApps) {
+            const cancelTitle = 'Chamado cancelado';
+            const cancelMessage = `O cliente cancelou o chamado "${jobSnapshot.title}".`;
+            dispatchPushEvent({
+              kind: 'request_cancelled',
+              userId: app.helperId,
+              title: cancelTitle,
+              body: cancelMessage,
+              url: ROUTES.helperDashboard,
+            });
+          }
+        }
+      } else {
+        await remoteUpdateRequestStatus(jobId, status);
+      }
       await refreshRemote();
       return;
     }
+
     setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status } : job)));
+
     if (isJobCancelled({ status })) {
-      setUpcomingJobs((prev) => prev.filter((u) => u.jobId !== jobId));
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.jobId === jobId && app.status !== 'cancelled'
+            ? { ...app, status: 'cancelled' as ApplicationStatus }
+            : app,
+        ),
+      );
+      setUpcomingJobs((prev) =>
+        prev.map((u) => (u.jobId === jobId ? { ...u, workflowStatus: 'cancelled' as UpcomingWorkflowStatus } : u)),
+      );
+
+      if (jobSnapshot) {
+        const relatedApps = applicationsRef.current.filter(
+          (a) => a.jobId === jobId && a.status !== 'cancelled',
+        );
+        for (const app of relatedApps) {
+          const cancelTitle = 'Chamado cancelado';
+          const cancelMessage = `O cliente cancelou o chamado "${jobSnapshot.title}".`;
+          addNotification({
+            userId: app.helperId,
+            type: 'job_update',
+            title: cancelTitle,
+            message: cancelMessage,
+            actionUrl: ROUTES.helperDashboard,
+          });
+          dispatchPushEvent({
+            kind: 'request_cancelled',
+            userId: app.helperId,
+            title: cancelTitle,
+            body: cancelMessage,
+            url: ROUTES.helperDashboard,
+          });
+        }
+      }
     }
   };
 
@@ -464,8 +534,24 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     if (useRemote) {
       applyOptimisticHire();
       try {
-        await remoteChargeHelperOnClientHire(applicationId, selectedCost);
         const conversationId = await remoteOfficiallyHireHelper(payload, jobSnapshot, initialMessage);
+
+        try {
+          await remoteChargeHelperOnClientHire(applicationId, selectedCost);
+        } catch (chargeErr) {
+          console.warn('[LinkHelp] Helper LC charge after hire failed (hire succeeded)', chargeErr);
+        }
+
+        const hireHelperTitle = 'Contratação oficial';
+        const hireHelperMessage = `O cliente aceitou sua proposta para "${jobSnapshot.title}". O chat está liberado.`;
+        dispatchPushEvent({
+          kind: 'helper_accepted',
+          userId: targetApp.helperId,
+          title: hireHelperTitle,
+          body: hireHelperMessage,
+          url: conversationId ? `${ROUTES.messages}?c=${conversationId}` : ROUTES.messages,
+        });
+
         await refreshRemote();
         return conversationId;
       } catch (error) {

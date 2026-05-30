@@ -1763,6 +1763,7 @@ export const pt = {
     secondary_hint: 'Adicione areas que voce tambem atende. O feed mostra elas depois da principal.',
     selected_primary: 'principal',
     secondary_count: '{{count}} secundarias selecionadas',
+    feed_no_categories_hint: 'Seu feed esta mostrando pedidos recentes. Adicione suas categorias para priorizar oportunidades certas para voce.',
   },
   client_jobs: {
     tab_active: 'Pedidos ativos',

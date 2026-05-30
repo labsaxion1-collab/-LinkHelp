@@ -1755,6 +1755,7 @@ export const en = {
     secondary_hint: 'Add areas you also cover. The feed shows them after your primary category.',
     selected_primary: 'primary',
     secondary_count: '{{count}} secondary selected',
+    feed_no_categories_hint: 'Your feed is showing recent requests. Add your categories to prioritize the right opportunities for you.',
   },
   client_jobs: {
     tab_active: 'Active requests',

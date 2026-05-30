@@ -1068,6 +1068,15 @@ export default function HelperDashboard() {
             </button>
           )}
 
+          {activeTab !== 'candidaturas' && !categoryPrefs.hasExplicitPreference ? (
+            <div className="mb-3 rounded-2xl border border-blue-100 bg-white/80 px-4 py-3 text-xs font-bold text-slate-600 shadow-sm">
+              <div className="flex items-start gap-2">
+                <Icons.Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                <span>{t('helper_categories.feed_no_categories_hint')}</span>
+              </div>
+            </div>
+          ) : null}
+
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900">{activeTab === 'candidaturas' ? t('helper_dashboard.feed_title_apps') : t('helper_dashboard.feed_title_jobs')}</h2>
           </div>

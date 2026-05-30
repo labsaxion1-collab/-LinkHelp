@@ -1760,6 +1760,7 @@ export const fr = {
     secondary_hint: 'Ajoutez les domaines que vous couvrez aussi. Le fil les affiche apres la principale.',
     selected_primary: 'principale',
     secondary_count: '{{count}} secondaires selectionnees',
+    feed_no_categories_hint: 'Votre fil affiche les demandes recentes. Ajoutez vos categories pour prioriser les bonnes opportunites.',
   },
   client_jobs: {
     tab_active: 'Demandes actives',

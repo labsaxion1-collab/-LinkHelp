@@ -3,6 +3,7 @@
  * Synced to `helper_skills` (category, subcategory) in Supabase.
  */
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
+import { resolveCategoryId } from '@/utils/translateCategory';
 
 export type HelperSkillPrimaryId =
   | 'electrical'
@@ -164,6 +165,7 @@ export const BEAUTY_LEGACY_SUBS = [
 ] as const;
 
 const PRIMARY_SET = new Set(HELPER_SKILLS_CATALOG.map((c) => c.id));
+const SERVICE_ID_SET = new Set(SERVICE_CATEGORIES.map((c) => c.id));
 const VALID_KEYS = new Set<string>();
 
 for (const cat of HELPER_SKILLS_CATALOG) {
@@ -185,28 +187,124 @@ export function skillKey(primary: string, sub: string): string {
   return `${primary}:${sub}`;
 }
 
+const LEGACY_SUB_MAP: Record<string, string> = {
+  apartamento: 'apartment',
+  apartamentos: 'apartments',
+  casa: 'house',
+  casas: 'houses',
+  comercial: 'commercial',
+  escritorio: 'offices',
+  escritorios: 'offices',
+  condominio: 'condominium',
+  condomínio: 'condominium',
+  governo: 'government',
+  escola: 'school',
+  faculdade: 'college',
+  documento: 'document',
+  documentos: 'document',
+  carro: 'car',
+  bateria: 'battery',
+  pneu: 'tire',
+};
+
+const LEGACY_PRIMARY_MAP: Record<string, string> = {
+  limpeza: 'cleaning',
+  higienizacao: 'sanitization',
+  mudancas: 'moving',
+  mudancas_e_entregas: 'moving',
+  mudanca: 'moving',
+  entregas: 'moving',
+  montagem: 'assembly',
+  montagem_e_instalacao: 'assembly',
+  instalacao: 'assembly',
+  instalacao_e_montagem: 'assembly',
+  automotivo: 'automotive',
+  traducao: 'translation',
+  estetica: 'beauty',
+  beleza: 'beauty',
+  reforma: 'renovation',
+  manutencao: 'renovation',
+  jardinagem: 'outdoor',
+  cozinha: 'cooking',
+  culinaria: 'cooking',
+  suporte_em_ti: 'tech',
+  informatica: 'tech',
+};
+
+function normalizeLegacyPart(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '_');
+}
+
+export function normalizeSkillKey(key: unknown): string | null {
+  if (typeof key !== 'string') return null;
+  const rawKey = key.trim();
+  const i = rawKey.indexOf(':');
+  if (i <= 0 || i >= rawKey.length - 1) return null;
+  const rawPrimary = rawKey.slice(0, i).trim();
+  const rawSub = rawKey.slice(i + 1).trim();
+  if (!rawPrimary || !rawSub) return null;
+
+  const primary =
+    resolveCategoryId(rawPrimary) ??
+    resolveCategoryId(normalizeLegacyPart(rawPrimary)) ??
+    LEGACY_PRIMARY_MAP[normalizeLegacyPart(rawPrimary)] ??
+    normalizeLegacyPart(rawPrimary);
+  const sub = LEGACY_SUB_MAP[normalizeLegacyPart(rawSub)] ?? normalizeLegacyPart(rawSub);
+
+  if (SERVICE_ID_SET.has(primary)) {
+    const svc = SERVICE_CATEGORIES.find((c) => c.id === primary);
+    if (svc && (svc.subKeys as readonly string[]).includes(sub)) return skillKey(primary, sub);
+  }
+
+  if (PRIMARY_SET.has(primary as HelperSkillPrimaryId)) {
+    const cat = HELPER_SKILLS_CATALOG.find((c) => c.id === primary);
+    if (cat && (cat.subs as readonly string[]).includes(sub)) return skillKey(primary, sub);
+    if (primary === 'beauty' && (BEAUTY_LEGACY_SUBS as readonly string[]).includes(sub)) {
+      return skillKey(primary, sub);
+    }
+  }
+
+  return null;
+}
+
 export function parseSkillKey(key: string): { primary: string; sub: string } | null {
-  const i = key.indexOf(':');
-  if (i <= 0 || i >= key.length - 1) return null;
-  const primary = key.slice(0, i);
-  const sub = key.slice(i + 1);
+  const normalized = normalizeSkillKey(key);
+  if (!normalized) return null;
+  const i = normalized.indexOf(':');
+  if (i <= 0 || i >= normalized.length - 1) return null;
+  const primary = normalized.slice(0, i);
+  const sub = normalized.slice(i + 1);
+  const svc = SERVICE_CATEGORIES.find((c) => c.id === primary);
+  if (svc && (svc.subKeys as readonly string[]).includes(sub)) return { primary, sub };
   if (!PRIMARY_SET.has(primary as HelperSkillPrimaryId)) return null;
   const cat = HELPER_SKILLS_CATALOG.find((c) => c.id === primary);
   if (cat && (cat.subs as readonly string[]).includes(sub)) return { primary, sub };
   if (primary === 'beauty' && (BEAUTY_LEGACY_SUBS as readonly string[]).includes(sub)) {
     return { primary, sub };
   }
-  const svc = SERVICE_CATEGORIES.find((c) => c.id === primary);
-  if (svc && (svc.subKeys as readonly string[]).includes(sub)) return { primary, sub };
   return null;
 }
 
 export function isValidSkillKey(key: string): boolean {
-  return VALID_KEYS.has(key);
+  const normalized = normalizeSkillKey(key);
+  return Boolean(normalized && VALID_KEYS.has(normalized));
 }
 
 export function filterValidSkillKeys(keys: string[]): string[] {
-  return keys.filter(isValidSkillKey);
+  const seen = new Set<string>();
+  const valid: string[] = [];
+  for (const key of Array.isArray(keys) ? keys : []) {
+    const normalized = normalizeSkillKey(key);
+    if (!normalized || !VALID_KEYS.has(normalized) || seen.has(normalized)) continue;
+    seen.add(normalized);
+    valid.push(normalized);
+  }
+  return valid;
 }
 
 export function getPrimaryCategories(): readonly HelperSkillCatalogEntry[] {

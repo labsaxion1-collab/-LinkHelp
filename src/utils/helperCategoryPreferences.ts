@@ -1,5 +1,5 @@
 import { SERVICE_CATEGORIES, type ServiceCategoryId } from '@/data/serviceCategories';
-import { filterValidSkillKeys, groupSkillKeysByServiceCategory, parseSkillKey } from '@/data/helperSkillsCatalog';
+import { filterValidSkillKeys, parseSkillKey } from '@/data/helperSkillsCatalog';
 import type { Job } from '@/types/job';
 import { resolveCategoryId } from '@/utils/translateCategory';
 
@@ -79,6 +79,12 @@ export const HELPER_CATEGORY_ACCENTS: Record<
     icon: 'bg-amber-500 text-white shadow-amber-200',
     glow: 'shadow-[0_0_28px_rgba(245,158,11,0.28)]',
   },
+  cooking: {
+    chip: 'from-rose-500 to-orange-500',
+    active: 'border-rose-300 bg-rose-50 text-rose-900',
+    icon: 'bg-rose-500 text-white shadow-rose-200',
+    glow: 'shadow-[0_0_28px_rgba(244,63,94,0.25)]',
+  },
   tech: {
     chip: 'from-blue-500 to-slate-700',
     active: 'border-blue-300 bg-blue-50 text-blue-900',
@@ -88,6 +94,43 @@ export const HELPER_CATEGORY_ACCENTS: Record<
 };
 
 const SERVICE_ID_SET = new Set<string>(SERVICE_CATEGORIES.map((c) => c.id));
+const warnedCategoryKeys = new Set<string>();
+
+const LEGACY_CATEGORY_ID_MAP: Record<string, ServiceCategoryId> = {
+  limpeza: 'cleaning',
+  higienizacao: 'sanitization',
+  mudanca: 'moving',
+  mudancas: 'moving',
+  mudancas_e_entregas: 'moving',
+  entregas: 'moving',
+  montagem: 'assembly',
+  montagem_e_instalacao: 'assembly',
+  instalacao: 'assembly',
+  automotivo: 'automotive',
+  traducao: 'translation',
+  estetica: 'beauty',
+  beleza: 'beauty',
+  reforma: 'renovation',
+  manutencao: 'renovation',
+  area_externa: 'outdoor',
+  jardinagem: 'outdoor',
+  pets: 'pet',
+  pet: 'pet',
+  cozinha: 'cooking',
+  culinaria: 'cooking',
+  suporte_em_ti: 'tech',
+  informatica: 'tech',
+};
+
+function normalizeLegacyCategoryKey(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[&/]+/g, ' ')
+    .replace(/\s+/g, '_');
+}
 
 const SKILL_PRIMARY_TO_SERVICE: Record<string, ServiceCategoryId> = {
   electrical: 'renovation',
@@ -102,15 +145,30 @@ const SKILL_PRIMARY_TO_SERVICE: Record<string, ServiceCategoryId> = {
 
 export function normalizeHelperCategoryId(raw?: string | null): ServiceCategoryId | null {
   if (!raw) return null;
-  const resolved = resolveCategoryId(raw) ?? raw;
-  return SERVICE_ID_SET.has(resolved) ? (resolved as ServiceCategoryId) : null;
+  const resolved =
+    resolveCategoryId(raw) ??
+    resolveCategoryId(normalizeLegacyCategoryKey(raw)) ??
+    LEGACY_CATEGORY_ID_MAP[normalizeLegacyCategoryKey(raw)] ??
+    raw;
+  if (SERVICE_ID_SET.has(resolved)) return resolved as ServiceCategoryId;
+  if (!warnedCategoryKeys.has(String(raw))) {
+    warnedCategoryKeys.add(String(raw));
+    console.warn('[LinkHelp] Unknown helper category key ignored:', raw);
+  }
+  return null;
 }
 
-export function categoryIdsFromSkillKeys(skillIds: string[]): ServiceCategoryId[] {
+export function categoryIdsFromSkillKeys(skillIds?: string[] | null): ServiceCategoryId[] {
   const seen = new Set<ServiceCategoryId>();
-  for (const key of skillIds) {
+  for (const key of Array.isArray(skillIds) ? skillIds : []) {
     const parsed = parseSkillKey(key);
-    if (!parsed) continue;
+    if (!parsed) {
+      if (typeof key === 'string' && key.trim() && !warnedCategoryKeys.has(key)) {
+        warnedCategoryKeys.add(key);
+        console.warn('[LinkHelp] Unknown helper skill key ignored:', key);
+      }
+      continue;
+    }
     if (SERVICE_ID_SET.has(parsed.primary)) {
       seen.add(parsed.primary as ServiceCategoryId);
       continue;
@@ -123,12 +181,10 @@ export function categoryIdsFromSkillKeys(skillIds: string[]): ServiceCategoryId[
 
 /** Derive primary + all secondary categories from saved skill keys. */
 export function deriveHelperCategoriesFromSkillKeys(
-  skillIds: string[],
+  skillIds?: string[] | null,
   preferredPrimary?: ServiceCategoryId | null,
 ): { primary: ServiceCategoryId; secondary: ServiceCategoryId[] } {
-  const cats = [
-    ...groupSkillKeysByServiceCategory(filterValidSkillKeys(skillIds)).keys(),
-  ] as ServiceCategoryId[];
+  const cats = categoryIdsFromSkillKeys(filterValidSkillKeys(Array.isArray(skillIds) ? skillIds : []));
   if (cats.length === 0) {
     return { primary: preferredPrimary ?? 'cleaning', secondary: [] };
   }
@@ -140,7 +196,7 @@ export function deriveHelperCategoriesFromSkillKeys(
 
 export function getHelperCategoryPreferences(
   profile: ProfileCategoryFields | null | undefined,
-  skillIds: string[] = [],
+  skillIds: string[] | null | undefined = [],
 ): HelperCategoryPreferences {
   const fromSkills = categoryIdsFromSkillKeys(skillIds);
   const explicitPrimary = normalizeHelperCategoryId(profile?.primary_category);
@@ -166,7 +222,7 @@ export function getHelperCategoryPreferences(
   return {
     primaryCategory,
     secondaryCategories,
-    visibleCategories: allCategoryIds.length ? allCategoryIds : [primaryCategory],
+    visibleCategories: allCategoryIds,
     hasExplicitPreference: Boolean(explicitPrimary || explicitSecondary.length),
   };
 }
@@ -179,6 +235,7 @@ export function sortJobsByHelperCategoryPreference<T extends Pick<Job, 'category
   jobs: T[],
   prefs: HelperCategoryPreferences,
 ): T[] {
+  if (!prefs.hasExplicitPreference) return [...jobs];
   const weight = (job: Pick<Job, 'category'>) => {
     const id = getJobServiceCategoryId(job);
     if (id === prefs.primaryCategory) return 0;
@@ -193,6 +250,7 @@ export function filterToPreferredCategoriesIfPossible<T extends Pick<Job, 'categ
   jobs: T[],
   prefs: HelperCategoryPreferences,
 ): T[] {
+  if (!prefs.hasExplicitPreference) return jobs;
   const preferred = jobs.filter((job) => {
     const id = getJobServiceCategoryId(job);
     return id === prefs.primaryCategory || Boolean(id && prefs.secondaryCategories.includes(id));

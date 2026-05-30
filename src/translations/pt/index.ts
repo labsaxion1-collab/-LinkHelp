@@ -1755,6 +1755,8 @@ export const pt = {
     edit_subs: 'Editar subcategorias',
     set_primary: 'Definir como principal',
     remove: 'Remover categoria',
+    saved_ok: 'Categorias salvas.',
+    save_error: 'Não foi possível salvar as categorias.',
     primary_label: 'Categoria principal',
     primary_hint: 'Escolha o servico mais forte. Ele guia seu feed, mapa e alertas inteligentes.',
     secondary_label: 'Categorias secundarias',

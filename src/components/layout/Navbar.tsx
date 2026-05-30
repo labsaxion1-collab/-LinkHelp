@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Activity, Briefcase, Globe, ChevronDown, Home, MessageCircle, User, LogOut } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useAuth } from '@/context/AuthContext';
@@ -19,7 +20,11 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const desktopProfileRef = useRef<HTMLDivElement>(null);
+  const langButtonRef = useRef<HTMLButtonElement>(null);
+  const profileButtonRef = useRef<HTMLButtonElement>(null);
+  const navControlsRef = useRef<HTMLDivElement>(null);
+  const [langPanelStyle, setLangPanelStyle] = useState<CSSProperties>({});
+  const [profilePanelStyle, setProfilePanelStyle] = useState<CSSProperties>({});
 
   const isConnected = isAppShellPath(location.pathname);
   const me = useSessionViewer();
@@ -37,10 +42,64 @@ export default function Navbar() {
     : ROUTES.home;
 
   useEffect(() => {
+    setIsLangMenuOpen(false);
+    setProfileOpen(false);
+  }, [location.pathname]);
+
+  const updateLangPanelPosition = useCallback(() => {
+    const rect = langButtonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const panelWidth = 128;
+    setLangPanelStyle({
+      position: 'fixed',
+      top: rect.bottom + 8,
+      left: Math.min(rect.right - panelWidth, window.innerWidth - panelWidth - 8),
+      width: panelWidth,
+      zIndex: 120,
+    });
+  }, []);
+
+  const updateProfilePanelPosition = useCallback(() => {
+    const rect = profileButtonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const panelWidth = 224;
+    setProfilePanelStyle({
+      position: 'fixed',
+      top: rect.bottom + 8,
+      left: Math.min(rect.right - panelWidth, window.innerWidth - panelWidth - 8),
+      width: panelWidth,
+      zIndex: 120,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isLangMenuOpen) return;
+    updateLangPanelPosition();
+    window.addEventListener('resize', updateLangPanelPosition);
+    window.addEventListener('scroll', updateLangPanelPosition, true);
+    return () => {
+      window.removeEventListener('resize', updateLangPanelPosition);
+      window.removeEventListener('scroll', updateLangPanelPosition, true);
+    };
+  }, [isLangMenuOpen, updateLangPanelPosition]);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    updateProfilePanelPosition();
+    window.addEventListener('resize', updateProfilePanelPosition);
+    window.addEventListener('scroll', updateProfilePanelPosition, true);
+    return () => {
+      window.removeEventListener('resize', updateProfilePanelPosition);
+      window.removeEventListener('scroll', updateProfilePanelPosition, true);
+    };
+  }, [profileOpen, updateProfilePanelPosition]);
+
+  useEffect(() => {
     const onDoc = (e: MouseEvent) => {
-      const t = e.target as Node;
-      const inDesktop = desktopProfileRef.current?.contains(t);
-      if (!inDesktop) setProfileOpen(false);
+      const target = e.target as Node;
+      if (navControlsRef.current?.contains(target)) return;
+      setProfileOpen(false);
+      setIsLangMenuOpen(false);
     };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
@@ -110,43 +169,23 @@ export default function Navbar() {
             </Link>
           </div>
 
-          <div className={clsx('hidden md:flex md:items-center md:space-x-8', usePremiumNav && 'lh-nav-controls rounded-full px-3 py-2 backdrop-blur-xl')}>
+          <div ref={navControlsRef} className={clsx('hidden md:flex md:items-center md:space-x-8', usePremiumNav && 'lh-nav-controls rounded-full px-3 py-2 backdrop-blur-xl')}>
             <div className="relative">
               <button
+                ref={langButtonRef}
                 type="button"
-                onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+                onClick={() => {
+                  setProfileOpen(false);
+                  setIsLangMenuOpen((o) => !o);
+                }}
                 className={`flex items-center space-x-1 rounded-full px-3 py-2 transition-colors focus:outline-none ${usePremiumNav ? 'lh-nav-link text-slate-100/92 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
+                aria-expanded={isLangMenuOpen}
+                aria-haspopup="true"
               >
                 <Globe className="w-4 h-4" />
                 <span className="text-sm font-medium uppercase">{language}</span>
-                <ChevronDown className="w-3 h-3" />
+                <ChevronDown className={`w-3 h-3 transition-transform ${isLangMenuOpen ? 'rotate-180' : ''}`} />
               </button>
-
-              {isLangMenuOpen && (
-                <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
-                  <button
-                    type="button"
-                    onClick={() => changeLanguage('en')}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${language === 'en' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
-                  >
-                    English
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => changeLanguage('pt')}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${language === 'pt' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
-                  >
-                    Português
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => changeLanguage('fr')}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${language === 'fr' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
-                  >
-                    Français
-                  </button>
-                </div>
-              )}
             </div>
 
             <div className="flex items-center space-x-4 ml-4">
@@ -154,10 +193,14 @@ export default function Navbar() {
                 <div className={clsx('flex items-center space-x-4 pl-4', usePremiumNav ? 'border-l border-white/15' : 'border-l border-gray-200')}>
                   <NotificationsDropdown userId={userId} />
                   {isConfigured && session ? (
-                    <div className="relative" ref={desktopProfileRef}>
+                    <div className="relative">
                       <button
+                        ref={profileButtonRef}
                         type="button"
-                        onClick={() => setProfileOpen((o) => !o)}
+                        onClick={() => {
+                          setIsLangMenuOpen(false);
+                          setProfileOpen((o) => !o);
+                        }}
                         className="flex items-center gap-1.5 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                         aria-expanded={profileOpen}
                         aria-haspopup="true"
@@ -169,65 +212,6 @@ export default function Navbar() {
                         />
                         <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
                       </button>
-                      {profileOpen && (
-                        <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-gray-100 bg-white py-2 shadow-xl shadow-slate-900/10 z-[60] animate-in fade-in zoom-in-95 duration-150">
-                          <Link
-                            to={isHelperNav ? ROUTES.helperDashboard : ROUTES.clientDashboard}
-                            onClick={() => setProfileOpen(false)}
-                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                          >
-                            <Home className="w-4 h-4 text-gray-400" /> {t('sidebar.dashboard')}
-                          </Link>
-                          <Link
-                            to={ROUTES.messages}
-                            onClick={() => setProfileOpen(false)}
-                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                          >
-                            <MessageCircle className="w-4 h-4 text-gray-400" /> {t('messages_page.title')}
-                          </Link>
-                          {isHelperNav ? (
-                            <>
-                              <Link
-                                to={ROUTES.helperPerformance}
-                                onClick={() => setProfileOpen(false)}
-                                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                              >
-                                <Activity className="w-4 h-4 text-gray-400" /> {t('helper_dashboard.nav_performance')}
-                              </Link>
-                              <Link
-                                to={ROUTES.helperJobs}
-                                onClick={() => setProfileOpen(false)}
-                                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                              >
-                                <Briefcase className="w-4 h-4 text-gray-400" /> {t('helper_dashboard.nav_active_services')}
-                              </Link>
-                            </>
-                          ) : (
-                            <Link
-                              to={ROUTES.clientJobs}
-                              onClick={() => setProfileOpen(false)}
-                              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                            >
-                              <Briefcase className="w-4 h-4 text-gray-400" /> {t('sidebar.active_services')}
-                            </Link>
-                          )}
-                          <Link
-                            to={ROUTES.settings}
-                            onClick={() => setProfileOpen(false)}
-                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                          >
-                            <User className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_profile')}
-                          </Link>
-                          <div className="my-1 border-t border-gray-100" />
-                          <button
-                            type="button"
-                            onClick={() => void doLogout()}
-                            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-bold text-red-600 hover:bg-red-50"
-                          >
-                            <LogOut className="w-4 h-4" /> {t('nav.profile_menu_logout')}
-                          </button>
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <Link to={ROUTES.settings} className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
@@ -287,6 +271,109 @@ export default function Navbar() {
         isConnected={isConnected}
         isHelperNav={isHelperNav}
       />
+
+      {isLangMenuOpen
+        ? createPortal(
+            <div
+              style={langPanelStyle}
+              className="hidden md:block rounded-xl border border-gray-100 bg-white py-2 shadow-xl shadow-slate-900/10 animate-in fade-in zoom-in-95 duration-150"
+              role="menu"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => changeLanguage('en')}
+                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${language === 'en' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => changeLanguage('pt')}
+                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${language === 'pt' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
+              >
+                Português
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => changeLanguage('fr')}
+                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${language === 'fr' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
+              >
+                Français
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
+
+      {profileOpen
+        ? createPortal(
+            <div
+              style={profilePanelStyle}
+              className="hidden md:block rounded-2xl border border-gray-100 bg-white py-2 shadow-xl shadow-slate-900/10 animate-in fade-in zoom-in-95 duration-150"
+              role="menu"
+            >
+              <Link
+                to={isHelperNav ? ROUTES.helperDashboard : ROUTES.clientDashboard}
+                onClick={() => setProfileOpen(false)}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+              >
+                <Home className="w-4 h-4 text-gray-400" /> {t('sidebar.dashboard')}
+              </Link>
+              <Link
+                to={ROUTES.messages}
+                onClick={() => setProfileOpen(false)}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+              >
+                <MessageCircle className="w-4 h-4 text-gray-400" /> {t('messages_page.title')}
+              </Link>
+              {isHelperNav ? (
+                <>
+                  <Link
+                    to={ROUTES.helperPerformance}
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                  >
+                    <Activity className="w-4 h-4 text-gray-400" /> {t('helper_dashboard.nav_performance')}
+                  </Link>
+                  <Link
+                    to={ROUTES.helperJobs}
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                  >
+                    <Briefcase className="w-4 h-4 text-gray-400" /> {t('helper_dashboard.nav_active_services')}
+                  </Link>
+                </>
+              ) : (
+                <Link
+                  to={ROUTES.clientJobs}
+                  onClick={() => setProfileOpen(false)}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                >
+                  <Briefcase className="w-4 h-4 text-gray-400" /> {t('sidebar.active_services')}
+                </Link>
+              )}
+              <Link
+                to={ROUTES.settings}
+                onClick={() => setProfileOpen(false)}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+              >
+                <User className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_profile')}
+              </Link>
+              <div className="my-1 border-t border-gray-100" />
+              <button
+                type="button"
+                onClick={() => void doLogout()}
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-bold text-red-600 hover:bg-red-50"
+              >
+                <LogOut className="w-4 h-4" /> {t('nav.profile_menu_logout')}
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
     </nav>
   </>
   );

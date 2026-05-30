@@ -191,16 +191,42 @@ export default function HelperDashboard() {
     async (ids: string[]) => {
       const valid = filterValidSkillKeys(ids);
       setProfileSettings((p) => ({ ...p, skillIds: valid }));
-      if (!isConfigured || !storageUserId) return;
+      if (!isConfigured || !storageUserId) {
+        if (valid.length > 0) showToast(t('helper_categories.saved_ok'), 'success');
+        return;
+      }
       try {
         await syncHelperSkills(storageUserId, valid);
-        pushToast(t('profile_setup.skills_saved_ok'));
-      } catch {
-        pushToast(t('profile_setup.skills_save_error'));
-        throw new Error('SKILLS_SYNC');
+        const cats = [...groupSkillKeysByServiceCategory(valid).keys()] as ServiceCategoryId[];
+        let primary = helperPrimaryCategory;
+        if (cats.length && !cats.includes(primary)) primary = cats[0];
+        const secondary = cats.filter((id) => id !== primary);
+        setHelperPrimaryCategory(primary);
+        setHelperSecondaryCategories(secondary);
+        const err = await updateProfile({
+          primary_category: primary,
+          secondary_categories: secondary,
+        });
+        if (err) throw new Error(t(err.messageKey, err.vars));
+        await refreshProfile();
+        const synced = await fetchHelperSkills(storageUserId);
+        setProfileSettings((p) => ({ ...p, skillIds: synced }));
+        showToast(t('helper_categories.saved_ok'), 'success');
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        showToast(msg || t('helper_categories.save_error'), 'error');
+        throw e;
       }
     },
-    [isConfigured, storageUserId, pushToast, t],
+    [
+      isConfigured,
+      storageUserId,
+      helperPrimaryCategory,
+      updateProfile,
+      refreshProfile,
+      showToast,
+      t,
+    ],
   );
 
   const handleAvatarSave = React.useCallback(
@@ -315,6 +341,7 @@ export default function HelperDashboard() {
   const helperApplicationsVisible = React.useMemo(
     () =>
       helperApplications.filter((app) => {
+        if (app.status === 'cancelled') return false;
         const request = jobs.find((j) => j.id === app.jobId);
         return !request || !isJobCancelled(request);
       }),
@@ -567,19 +594,16 @@ export default function HelperDashboard() {
 
   const confirmCancelApplication = async () => {
     if (!cancelTarget) return;
-    const job = jobs.find((j) => j.id === cancelTarget.jobId);
-    if (!job) {
-      setCancelTarget(null);
-      return;
-    }
     setCancelBusy(true);
     try {
       await updateApplicationStatus(cancelTarget.id, 'cancelled');
       showToast(t('helper_dashboard.toast_application_cancelled'), 'success');
       setCancelTarget(null);
     } catch (e) {
-      console.error(e);
-      showToast(t('helper_dashboard.toast_application_cancel_err'), 'error');
+      console.error('[LinkHelp] cancel application', e);
+      const backendMsg =
+        e instanceof Error && e.message && e.message !== 'NOT_FOUND' ? e.message : null;
+      showToast(backendMsg ?? t('helper_dashboard.toast_application_cancel_err'), 'error');
     } finally {
       setCancelBusy(false);
     }

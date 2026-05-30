@@ -77,11 +77,6 @@ export const SERVICE_CATEGORIES = [
     subKeys: ['walk', 'bath', 'sitter', 'boarding', 'daily_visit', 'feeding', 'travel_care'],
   },
   {
-    id: 'cooking',
-    icon: 'ChefHat',
-    subKeys: ['meal_boxes', 'cook', 'events', 'bbq', 'weekly_meals'],
-  },
-  {
     id: 'tech',
     icon: 'Monitor',
     subKeys: ['format', 'printer', 'wifi', 'slow_pc', 'install', 'tv', 'phone'],

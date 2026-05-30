@@ -233,12 +233,6 @@ const DATA: Record<Lang, Tree> = {
         exampleHint: 'I need someone to care for my pet while I’m away on a trip.',
       },
     },
-    cooking: uniform(catKeys('cooking'), {
-      suggestions: ['Weekly meal boxes', 'Private cook', 'Small event catering', 'BBQ / churrasco', 'Batch cooking'],
-      placeholder: 'e.g. Weekly healthy meals for two.',
-      tags: ['cooking', 'meals', 'chef'],
-      exampleHint: 'Meal prep for the week — low sodium.',
-    }),
     tech: uniform(catKeys('tech'), {
       suggestions: ['PC format / reinstall', 'Printer setup', 'Wi-Fi dead zones', 'Slow computer tune-up', 'Software install', 'Smart TV setup', 'Phone backup'],
       placeholder: 'e.g. Wi-Fi is slow on the second floor.',
@@ -458,12 +452,6 @@ const DATA: Record<Lang, Tree> = {
         exampleHint: 'Preciso de alguém para cuidar do pet durante a viagem.',
       },
     },
-    cooking: uniform(catKeys('cooking'), {
-      suggestions: ['Marmitas semanais', 'Cozinheiro em casa', 'Eventos pequenos', 'Churrasqueiro', 'Comida semanal'],
-      placeholder: 'Ex.: Marmitas saudáveis para a semana.',
-      tags: ['cozinha', 'marmitas', 'chef'],
-      exampleHint: 'Meal prep semanal para duas pessoas.',
-    }),
     tech: uniform(catKeys('tech'), {
       suggestions: [
         'Formatação / Windows',

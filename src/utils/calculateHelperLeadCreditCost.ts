@@ -3,7 +3,7 @@ import { resolveCategoryId } from '@/utils/translateCategory';
 
 const INTEREST_COST_LC = 4;
 
-const LOW_COMPLEXITY_CATEGORIES = new Set(['translation', 'pet', 'cooking']);
+const LOW_COMPLEXITY_CATEGORIES = new Set(['translation', 'pet']);
 const MEDIUM_COMPLEXITY_CATEGORIES = new Set(['cleaning', 'sanitization', 'beauty', 'outdoor', 'tech']);
 const HIGH_COMPLEXITY_CATEGORIES = new Set(['moving', 'assembly', 'automotive', 'renovation']);
 

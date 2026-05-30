@@ -16,7 +16,6 @@ const LANDING_IDS = [
   'outdoor',
   'assembly',
   'beauty',
-  'cooking',
   'tech',
   'pet',
   'automotive',

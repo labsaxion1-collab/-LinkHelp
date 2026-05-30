@@ -1747,6 +1747,8 @@ export const en = {
     edit_subs: 'Edit subcategories',
     set_primary: 'Set as primary',
     remove: 'Remove category',
+    saved_ok: 'Categories saved.',
+    save_error: 'Could not save categories.',
     primary_label: 'Primary category',
     primary_hint: 'Choose your strongest service. It guides your feed, map and smart alerts.',
     secondary_label: 'Secondary categories',

@@ -318,7 +318,7 @@ export async function remoteUpdateRequestStatus(requestId: string, status: Reque
 export async function remoteUpdateApplicationStatus(
   applicationId: string,
   status: ApplicationStatus,
-  jobSnapshot: Job,
+  jobSnapshot?: Job,
 ): Promise<void> {
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
@@ -329,9 +329,42 @@ export async function remoteUpdateApplicationStatus(
   const app = appRow as ApplicationRow;
 
   const { error: upErr } = await sb.from('applications').update({ status }).eq('id', applicationId);
-  if (upErr) throw upErr;
+  if (upErr) throw new Error(upErr.message || 'APPLICATION_UPDATE_FAILED');
 
-  if (status === 'accepted') {
+  const notifyClient = async (payload: { title: string; description: string; action_url: string }) => {
+    if (!app.client_id) return;
+    try {
+      const { error: notifErr } = await sb.from('notifications').insert({
+        user_id: app.client_id,
+        type: 'application',
+        title: payload.title,
+        description: payload.description,
+        action_url: payload.action_url,
+        read: false,
+      });
+      if (notifErr) console.warn('[LinkHelp] cancel notification insert', notifErr.message);
+    } catch (e) {
+      console.warn('[LinkHelp] cancel notification insert', e);
+    }
+  };
+
+  const notifyHelper = async (payload: { title: string; description: string; action_url: string }) => {
+    try {
+      const { error: notifErr } = await sb.from('notifications').insert({
+        user_id: app.helper_id,
+        type: 'application',
+        title: payload.title,
+        description: payload.description,
+        action_url: payload.action_url,
+        read: false,
+      });
+      if (notifErr) console.warn('[LinkHelp] application notification insert', notifErr.message);
+    } catch (e) {
+      console.warn('[LinkHelp] application notification insert', e);
+    }
+  };
+
+  if (status === 'accepted' && jobSnapshot) {
     await sb.from('requests').update({ status: 'in_progress' }).eq('id', app.request_id);
 
     const scheduledAt = new Date(Date.now() + 48 * 3600000).toISOString();
@@ -350,31 +383,22 @@ export async function remoteUpdateApplicationStatus(
       workflow_status: 'scheduled',
     });
 
-    await sb.from('notifications').insert({
-      user_id: app.helper_id,
-      type: 'application',
+    await notifyHelper({
       title: 'Application accepted',
       description: `The client accepted your application for "${jobSnapshot.title}".`,
       action_url: '/helper/jobs',
-      read: false,
     });
   } else if (status === 'rejected') {
-    await sb.from('notifications').insert({
-      user_id: app.helper_id,
-      type: 'application',
+    await notifyHelper({
       title: 'Application update',
-      description: `The client chose another helper this time.`,
+      description: 'The client chose another helper this time.',
       action_url: '/helper/opportunities',
-      read: false,
     });
   } else if (status === 'cancelled') {
-    await sb.from('notifications').insert({
-      user_id: app.client_id,
-      type: 'application',
+    await notifyClient({
       title: 'Application withdrawn',
-      description: `A helper cancelled their application for your request.`,
+      description: 'A helper cancelled their application for your request.',
       action_url: '/client/dashboard',
-      read: false,
     });
   }
 }

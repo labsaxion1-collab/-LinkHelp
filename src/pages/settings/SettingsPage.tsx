@@ -11,7 +11,6 @@ import {
   LogOut,
   Languages,
   Briefcase,
-  Image,
 } from 'lucide-react';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useLanguage } from '@/context/LanguageContext';
@@ -207,19 +206,33 @@ export default function SettingsPage() {
     const valid = filterValidSkillKeys(ids);
     setHelperSkillIds(valid);
     setHelperSkillCount(valid.length);
-    if (!session?.user?.id || !isConfigured) return;
+    if (!session?.user?.id || !isConfigured) {
+      if (valid.length > 0) showToast(t('helper_categories.saved_ok'), 'success');
+      return;
+    }
     const cats = [...groupSkillKeysByServiceCategory(valid).keys()] as ServiceCategoryId[];
     let primary = primaryCategory;
     if (cats.length && !cats.includes(primary)) primary = cats[0];
     const secondary = cats.filter((id) => id !== primary);
     setPrimaryCategory(primary);
     setSecondaryCategories(secondary);
-    await syncHelperSkills(session.user.id, valid);
-    await updateProfile({
-      primary_category: primary,
-      secondary_categories: secondary,
-    });
-    await refreshProfile();
+    try {
+      await syncHelperSkills(session.user.id, valid);
+      const err = await updateProfile({
+        primary_category: primary,
+        secondary_categories: secondary,
+      });
+      if (err) throw new Error(t(err.messageKey, err.vars));
+      await refreshProfile();
+      const synced = await fetchHelperSkills(session.user.id);
+      setHelperSkillIds(synced);
+      setHelperSkillCount(synced.length);
+      showToast(t('helper_categories.saved_ok'), 'success');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      showToast(msg || t('helper_categories.save_error'), 'error');
+      throw e;
+    }
   };
 
   const logout = async () => {
@@ -438,28 +451,6 @@ export default function SettingsPage() {
                 }}
                 onSaveAsync={persistHelperSkills}
               />
-            </SettingsCard>
-
-            <SettingsCard icon={<Briefcase className="h-5 w-5 text-sky-600" />} title={t('app_pages.settings_helper_extras')}>
-              <div className="space-y-3 text-sm">
-                <Link
-                  to={ROUTES.helperDashboard}
-                  className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 font-bold text-gray-800 transition-colors hover:border-blue-200 hover:bg-blue-50/50"
-                >
-                  {t('app_pages.settings_skills_link')}
-                  <span className="text-blue-600">→</span>
-                </Link>
-                <Link
-                  to={ROUTES.helperDashboard}
-                  className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 font-bold text-gray-800 transition-colors hover:border-blue-200 hover:bg-blue-50/50"
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <Image className="h-4 w-4 text-sky-600" />
-                    {t('app_pages.settings_portfolio_link')}
-                  </span>
-                  <span className="text-blue-600">→</span>
-                </Link>
-              </div>
             </SettingsCard>
 
             <HelperScorePanel />

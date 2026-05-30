@@ -5,6 +5,7 @@ import type { ServiceCategoryId } from '@/data/serviceCategories';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import {
+  filterValidSkillKeys,
   groupSkillKeysByServiceCategory,
   parseSkillKey,
   skillKey,
@@ -52,11 +53,12 @@ export function HelperCategoriesManager({
   const existingCategoryIds = useMemo(() => new Set(grouped.keys()), [grouped]);
 
   const persistSkills = async (next: string[]) => {
-    onSkillsChange(next);
+    const valid = filterValidSkillKeys(next);
+    onSkillsChange(valid);
     if (onSaveAsync) {
       setSaving(true);
       try {
-        await onSaveAsync(next);
+        await onSaveAsync(valid);
       } finally {
         setSaving(false);
       }

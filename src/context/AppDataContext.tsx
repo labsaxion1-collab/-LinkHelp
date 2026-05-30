@@ -322,8 +322,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const targetApp = applicationsRef.current.find((a) => a.id === applicationId);
     const jobSnapshot = targetApp ? jobsRef.current.find((j) => j.id === targetApp.jobId) : undefined;
 
-    if (useRemote && jobSnapshot) {
+    if (useRemote) {
       await remoteUpdateApplicationStatus(applicationId, status, jobSnapshot);
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId
+            ? { ...app, status, ...(status === 'accepted' ? { chatUnlocked: false } : {}) }
+            : app,
+        ),
+      );
       await refreshRemote();
       return;
     }

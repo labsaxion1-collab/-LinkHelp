@@ -1,12 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Bookmark, Settings, Globe, LogOut, Briefcase } from 'lucide-react';
+import { User, Bookmark, Settings, Globe, LogOut, X } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { useAppMode } from '@/context/AppModeContext';
 import { useToast } from '@/context/ToastContext';
 import { ROUTES } from '@/utils/constants';
-import { isHelperArea } from '@/utils/navigation';
 import type { AppLanguage } from '@/services/translationService';
 
 type Props = {
@@ -26,16 +25,15 @@ export function MobileProfileMenu({
   const { signOut, isConfigured, session, updateProfile } = useAuth();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) onClose();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
     };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, [open, onClose]);
+  }, [open]);
 
   const setLang = (lang: AppLanguage) => {
     setLanguage(lang);
@@ -59,95 +57,114 @@ export function MobileProfileMenu({
 
   if (!open) return null;
 
-  return (
-    <>
-      <div className="md:hidden fixed inset-0 z-[55] bg-slate-900/20" aria-hidden onClick={onClose} />
+  return createPortal(
+    <div className="fixed inset-0 z-[120] md:hidden" role="presentation">
+      <button
+        type="button"
+        className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]"
+        aria-label={t('common.close')}
+        onClick={onClose}
+      />
       <div
-        ref={panelRef}
-        className="md:hidden fixed top-[4.25rem] right-3 z-[60] w-[min(18rem,calc(100vw-1.5rem))] rounded-2xl border border-slate-100 bg-white py-2 shadow-xl shadow-slate-900/10 animate-in fade-in zoom-in-95 duration-150"
+        className="absolute inset-x-3 bottom-[max(1rem,env(safe-area-inset-bottom))] max-h-[min(85dvh,calc(100dvh-5rem))] overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-200"
         role="menu"
       >
-        {isConnected ? (
-          <>
-            {isHelperNav ? (
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  onClose();
-                  navigate(ROUTES.helperDashboard, { state: { openProfile: true } });
-                }}
-                className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
-              >
-                <User className="h-4 w-4 text-slate-400" />
-                {t('nav.profile_menu_profile')}
-              </button>
-            ) : (
+        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+          <p className="text-sm font-black text-gray-900">{t('mobile_nav.profile_menu')}</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+            aria-label={t('common.close')}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="max-h-[calc(85dvh-4rem-env(safe-area-inset-bottom))] overflow-y-auto overscroll-contain py-1">
+          {isConnected ? (
+            <>
+              {isHelperNav ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    onClose();
+                    navigate(ROUTES.helperDashboard, { state: { openProfile: true } });
+                  }}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                >
+                  <User className="h-4 w-4 text-slate-400" />
+                  {t('nav.profile_menu_profile')}
+                </button>
+              ) : (
+                <Link
+                  to={ROUTES.settings}
+                  role="menuitem"
+                  onClick={onClose}
+                  className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                >
+                  <User className="h-4 w-4 text-slate-400" />
+                  {t('nav.profile_menu_profile')}
+                </Link>
+              )}
+              {!isHelperNav ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={goFavorites}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                >
+                  <Bookmark className="h-4 w-4 text-slate-400" />
+                  {t('nav.profile_menu_favorites')}
+                </button>
+              ) : null}
               <Link
                 to={ROUTES.settings}
                 role="menuitem"
                 onClick={onClose}
                 className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
               >
-                <User className="h-4 w-4 text-slate-400" />
-                {t('nav.profile_menu_profile')}
+                <Settings className="h-4 w-4 text-slate-400" />
+                {t('nav.profile_menu_settings')}
               </Link>
-            )}
-            {!isHelperNav ? (
-              <button
-                type="button"
-                role="menuitem"
-                onClick={goFavorites}
-                className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
-              >
-                <Bookmark className="h-4 w-4 text-slate-400" />
-                {t('nav.profile_menu_favorites')}
-              </button>
-            ) : null}
-            <Link
-              to={ROUTES.settings}
-              role="menuitem"
-              onClick={onClose}
-              className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-            >
-              <Settings className="h-4 w-4 text-slate-400" />
-              {t('nav.profile_menu_settings')}
-            </Link>
-            <div className="my-1 border-t border-slate-100 px-4 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-2">
-                {t('nav.language_label')}
-              </p>
-              <div className="flex gap-2">
-                {(['en', 'pt', 'fr'] as AppLanguage[]).map((lang) => (
-                  <button
-                    key={lang}
-                    type="button"
-                    onClick={() => setLang(lang)}
-                    className={`rounded-lg px-2.5 py-1 text-xs font-bold border ${
-                      language === lang
-                        ? 'border-primary-500 bg-primary-50 text-primary-600'
-                        : 'border-slate-200 text-slate-600'
-                    }`}
-                  >
-                    {lang.toUpperCase()}
-                  </button>
-                ))}
+              <div className="my-1 border-t border-slate-100 px-4 py-3">
+                <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                  <Globe className="h-3.5 w-3.5" />
+                  {t('nav.language_label')}
+                </p>
+                <div className="flex gap-2">
+                  {(['en', 'pt', 'fr'] as AppLanguage[]).map((lang) => (
+                    <button
+                      key={lang}
+                      type="button"
+                      onClick={() => setLang(lang)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-bold border ${
+                        language === lang
+                          ? 'border-primary-500 bg-primary-50 text-primary-600'
+                          : 'border-slate-200 text-slate-600'
+                      }`}
+                    >
+                      {lang.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-            {isConfigured && session ? (
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => void logout()}
-                className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50"
-              >
-                <LogOut className="h-4 w-4" />
-                {t('nav.profile_menu_logout')}
-              </button>
-            ) : null}
-          </>
-        ) : null}
+              {isConfigured && session ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => void logout()}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50"
+                >
+                  <LogOut className="h-4 w-4" />
+                  {t('nav.profile_menu_logout')}
+                </button>
+              ) : null}
+            </>
+          ) : null}
+        </div>
       </div>
-    </>
+    </div>,
+    document.body,
   );
 }

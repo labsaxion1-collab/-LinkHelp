@@ -1752,6 +1752,8 @@ export const fr = {
     edit_subs: 'Modifier les sous-categories',
     set_primary: 'Definir comme principale',
     remove: 'Supprimer la categorie',
+    saved_ok: 'Categories enregistrees.',
+    save_error: 'Impossible d’enregistrer les categories.',
     primary_label: 'Categorie principale',
     primary_hint: 'Choisissez votre service le plus fort. Il guide le fil, la carte et les alertes intelligentes.',
     secondary_label: 'Categories secondaires',

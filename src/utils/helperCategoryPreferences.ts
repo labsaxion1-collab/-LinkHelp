@@ -79,12 +79,6 @@ export const HELPER_CATEGORY_ACCENTS: Record<
     icon: 'bg-amber-500 text-white shadow-amber-200',
     glow: 'shadow-[0_0_28px_rgba(245,158,11,0.28)]',
   },
-  cooking: {
-    chip: 'from-red-500 to-orange-500',
-    active: 'border-red-300 bg-red-50 text-red-900',
-    icon: 'bg-red-500 text-white shadow-red-200',
-    glow: 'shadow-[0_0_28px_rgba(239,68,68,0.25)]',
-  },
   tech: {
     chip: 'from-blue-500 to-slate-700',
     active: 'border-blue-300 bg-blue-50 text-blue-900',

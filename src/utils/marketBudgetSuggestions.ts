@@ -55,11 +55,6 @@ const SUGGESTIONS: Record<ServiceCategoryId, SuggestionMap> = {
     sitter: { min: 35, max: 80 },
     default: { min: 30, max: 70 },
   },
-  cooking: {
-    cook: { min: 50, max: 120 },
-    events: { min: 120, max: 350 },
-    default: { min: 70, max: 180 },
-  },
   tech: {
     default: { min: 55, max: 140 },
   },

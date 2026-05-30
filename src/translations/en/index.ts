@@ -700,6 +700,8 @@ export const en = {
     compatibility: '{{pct}}% match',
     distance_from_base_km: '~{{km}} km from your base',
     base_address_missing_short: 'Set your base address',
+    base_address_saved_pending_coords:
+      'Address saved. Exact distance will activate once coordinates are set.',
     base_address_banner: 'Add your base address to improve distance, costs, and opportunities.',
     apply_now: 'Apply now',
     apply_sending: 'Sending...',

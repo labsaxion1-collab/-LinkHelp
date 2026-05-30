@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, memo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Bell, ChevronRight, MessageSquare, Briefcase, DollarSign, Target, Star, X } from 'lucide-react';
 import { useAppData } from '@/context/AppDataContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -17,6 +17,7 @@ function NotificationsDropdownInner({ userId, compact = false }: NotificationsDr
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,16 +33,19 @@ function NotificationsDropdownInner({ userId, compact = false }: NotificationsDr
 
   const close = useCallback(() => setIsOpen(false), []);
 
+  const isSurfaceTarget = useCallback((target: Node) => {
+    const refs = [dropdownRef, buttonRef, panelRef];
+    return refs.some((ref) => ref.current?.contains(target));
+  }, []);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (compact) return;
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+      if (isSurfaceTarget(event.target as Node)) return;
+      setIsOpen(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [compact]);
+  }, [isSurfaceTarget]);
 
   useEffect(() => {
     close();
@@ -120,6 +124,22 @@ function NotificationsDropdownInner({ userId, compact = false }: NotificationsDr
     }
   }, [userNotifications, unreadCount]);
 
+  const handleMarkAllRead = () => {
+    markAllAsRead();
+    close();
+  };
+
+  const handleNotificationClick = (notificationId: string, actionUrl: string) => {
+    markNotificationAsRead(notificationId);
+    close();
+    if (actionUrl) navigate(actionUrl);
+  };
+
+  const handleViewAll = () => {
+    close();
+    navigate(ROUTES.notifications);
+  };
+
   const panelContent = (
     <>
       <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50/50">
@@ -128,7 +148,7 @@ function NotificationsDropdownInner({ userId, compact = false }: NotificationsDr
           {unreadCount > 0 && (
             <button
               type="button"
-              onClick={markAllAsRead}
+              onClick={handleMarkAllRead}
               className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
             >
               {t('notifications.mark_all_read')}
@@ -164,13 +184,7 @@ function NotificationsDropdownInner({ userId, compact = false }: NotificationsDr
                   type="button"
                   key={notification.id}
                   className={`block w-full p-4 text-left hover:bg-gray-50 transition-colors relative group ${!notification.read ? 'bg-blue-50/30' : ''}`}
-                  onClick={() => {
-                    if (!notification.read) {
-                      markNotificationAsRead(notification.id);
-                    }
-                    close();
-                    navigate(actionUrl);
-                  }}
+                  onClick={() => handleNotificationClick(notification.id, actionUrl)}
                 >
                   {!notification.read && (
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full" />
@@ -204,14 +218,14 @@ function NotificationsDropdownInner({ userId, compact = false }: NotificationsDr
 
       {userNotifications.length > 0 && (
         <div className="p-3 border-t border-gray-100 bg-gray-50 text-center">
-          <Link
-            to={ROUTES.notifications}
-            onClick={close}
-            className="text-xs font-bold text-gray-600 hover:text-gray-900 transition-colors flex items-center justify-center gap-1 group"
+          <button
+            type="button"
+            onClick={handleViewAll}
+            className="text-xs font-bold text-gray-600 hover:text-gray-900 transition-colors inline-flex items-center justify-center gap-1 group"
           >
             {t('notifications.view_all')}{' '}
             <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
+          </button>
         </div>
       )}
     </>
@@ -246,7 +260,11 @@ function NotificationsDropdownInner({ userId, compact = false }: NotificationsDr
                 aria-label={t('common.close')}
                 onClick={close}
               />
-              <div className="absolute inset-x-3 top-[max(4.5rem,calc(env(safe-area-inset-top)+3.5rem))] max-h-[calc(100dvh-6.5rem-env(safe-area-inset-bottom))] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+              <div
+                ref={panelRef}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="absolute inset-x-3 top-[max(4.5rem,calc(env(safe-area-inset-top)+3.5rem))] max-h-[calc(100dvh-6.5rem-env(safe-area-inset-bottom))] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+              >
                 {panelContent}
               </div>
             </div>,
@@ -257,7 +275,9 @@ function NotificationsDropdownInner({ userId, compact = false }: NotificationsDr
       {isOpen && !compact
         ? createPortal(
             <div
+              ref={panelRef}
               style={panelStyle}
+              onMouseDown={(e) => e.stopPropagation()}
               className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 overflow-hidden animate-in slide-in-from-top-2 duration-200"
             >
               {panelContent}

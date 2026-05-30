@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Bell, CheckCircle2, MessageSquare, Briefcase, DollarSign, Target, Star, Trash2, ChevronRight } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { NOTIFICATION_PREVIEW_TYPES } from '@/config/notificationPreviewTypes';
@@ -10,6 +10,7 @@ import { getLocalizedNotificationText, getNotificationActionUrl } from '@/utils/
 
 export default function NotificationsPage() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const me = useSessionViewer();
   const userId = me.id;
   const { notifications, markAllAsRead, markNotificationAsRead } = useAppData();
@@ -49,6 +50,11 @@ export default function NotificationsPage() {
     }
   };
 
+  const handleNotificationClick = (notificationId: string, read: boolean, actionUrl: string) => {
+    if (!read) markNotificationAsRead(notificationId);
+    if (actionUrl) navigate(actionUrl);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50/50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
@@ -68,7 +74,8 @@ export default function NotificationsPage() {
           </div>
           
           {unreadCount > 0 && (
-            <button 
+            <button
+              type="button"
               onClick={markAllAsRead}
               className="px-4 py-2 bg-white text-blue-600 font-bold border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-sm text-sm"
             >
@@ -135,7 +142,15 @@ export default function NotificationsPage() {
                     return (
                       <div
                         key={notification.id}
-                        onClick={() => !notification.read && markNotificationAsRead(notification.id)}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleNotificationClick(notification.id, notification.read, actionUrl)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleNotificationClick(notification.id, notification.read, actionUrl);
+                          }
+                        }}
                         className={`p-5 sm:p-6 hover:bg-gray-50 transition-all cursor-pointer relative group flex items-start gap-4 sm:gap-6 ${!notification.read ? 'bg-blue-50/20' : ''}`}
                       >
                         {!notification.read && (
@@ -159,18 +174,18 @@ export default function NotificationsPage() {
                             {localized.message}
                           </p>
 
-                          {actionUrl && (
-                            <Link
-                              to={actionUrl}
+                          {actionUrl ? (
+                            <button
+                              type="button"
                               className="inline-flex items-center text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 markNotificationAsRead(notification.id);
+                                e.stopPropagation();
+                                handleNotificationClick(notification.id, notification.read, actionUrl);
                               }}
                             >
                               {t('notifications.view_details')} <ChevronRight className="w-4 h-4 ml-0.5" />
-                            </Link>
-                          )}
+                            </button>
+                          ) : null}
                         </div>
 
                         <button className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0">

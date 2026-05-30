@@ -24,8 +24,13 @@ export function helperHasBaseAddress(profile: HelperBaseProfile | null | undefin
   return Boolean(
     profile?.helper_base_address?.trim() ||
       profile?.helper_base_city?.trim() ||
+      profile?.helper_base_postal_code?.trim() ||
       (validNumber(profile?.helper_base_lat) && validNumber(profile?.helper_base_lng)),
   );
+}
+
+export function helperHasExactBaseCoordinates(profile: HelperBaseProfile | null | undefined): boolean {
+  return validNumber(profile?.helper_base_lat) && validNumber(profile?.helper_base_lng);
 }
 
 export function helperBaseCoordinates(profile: HelperBaseProfile | null | undefined): Coordinates | null {
@@ -49,10 +54,24 @@ export function helperBaseCoordinates(profile: HelperBaseProfile | null | undefi
   return profileText ? lookupCoordinatesFromText(profileText) : null;
 }
 
+/** Distance using only stored helper_base_lat/lng (no text geocoding). */
+export function distanceFromExactHelperBaseToJobKm(
+  profile: HelperBaseProfile | null | undefined,
+  job: Job,
+): number | null {
+  if (!helperHasExactBaseCoordinates(profile)) return null;
+  const origin = { lat: profile!.helper_base_lat!, lng: profile!.helper_base_lng! };
+  const target = jobCoordinates(job);
+  if (!target) return null;
+  return distanceKm(origin.lat, origin.lng, target.lat, target.lng);
+}
+
 export function distanceFromHelperBaseToJobKm(
   profile: HelperBaseProfile | null | undefined,
   job: Job,
 ): number | null {
+  const exact = distanceFromExactHelperBaseToJobKm(profile, job);
+  if (exact != null) return exact;
   const origin = helperBaseCoordinates(profile);
   const target = jobCoordinates(job);
   if (!origin || !target) return null;

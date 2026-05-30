@@ -162,20 +162,24 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const markNotificationAsRead = (id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     if (useRemote) {
-      void remoteMarkNotificationRead(id, true).then(() => void refreshRemote());
+      void remoteMarkNotificationRead(id, true).catch((e) => {
+        console.warn('[LinkHelp] markNotificationAsRead', e);
+      });
       return;
     }
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
   };
 
   const markAllAsRead = () => {
     const uid = session?.user?.id;
+    setNotifications((prev) => prev.map((n) => (n.userId === uid ? { ...n, read: true } : n)));
     if (useRemote && uid) {
-      void remoteMarkAllNotificationsRead(uid).then(() => void refreshRemote());
+      void remoteMarkAllNotificationsRead(uid).catch((e) => {
+        console.warn('[LinkHelp] markAllAsRead', e);
+      });
       return;
     }
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
   const createJob = async (jobDetails: Omit<Job, 'id' | 'createdAt' | 'status'>) => {

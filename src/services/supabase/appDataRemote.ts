@@ -532,13 +532,15 @@ export async function remoteInsertNotification(n: Omit<AppNotification, 'id' | '
 export async function remoteMarkNotificationRead(id: string, read: boolean): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
-  await sb.from('notifications').update({ read }).eq('id', id);
+  const { error } = await sb.from('notifications').update({ read }).eq('id', id);
+  if (error) console.warn('[LinkHelp] remoteMarkNotificationRead', error.message);
 }
 
 export async function remoteMarkAllNotificationsRead(userId: string): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
-  await sb.from('notifications').update({ read: true }).eq('user_id', userId).eq('read', false);
+  const { error } = await sb.from('notifications').update({ read: true }).eq('user_id', userId).eq('read', false);
+  if (error) console.warn('[LinkHelp] remoteMarkAllNotificationsRead', error.message);
 }
 
 export async function remoteUpdateUpcomingWorkflow(id: string, workflowStatus: string): Promise<void> {

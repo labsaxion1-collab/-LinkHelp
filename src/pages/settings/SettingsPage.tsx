@@ -204,15 +204,24 @@ export default function SettingsPage() {
             helper_base_city: helperBaseCity.trim() || null,
             helper_base_province: helperBaseProvince.trim() || null,
             helper_base_postal_code: helperBasePostalCode.trim() || null,
+            helper_base_lat: profile.helper_base_lat ?? null,
+            helper_base_lng: profile.helper_base_lng ?? null,
           }
         : base,
     );
     setSaving(false);
-    if (err) showToast(t(err.messageKey, err.vars), 'error');
-    else {
-      await refreshProfile();
-      showToast(t('app_pages.settings_saved'), 'success');
+    if (err) {
+      showToast(t(err.messageKey, err.vars), 'error');
+      return;
     }
+    const refreshed = await refreshProfile();
+    if (refreshed && isHelper) {
+      setHelperBaseAddress(refreshed.helper_base_address ?? '');
+      setHelperBaseCity(refreshed.helper_base_city ?? '');
+      setHelperBaseProvince(refreshed.helper_base_province ?? '');
+      setHelperBasePostalCode(refreshed.helper_base_postal_code ?? '');
+    }
+    showToast(t('app_pages.settings_saved'), 'success');
   };
 
   const persistHelperSkills = async (

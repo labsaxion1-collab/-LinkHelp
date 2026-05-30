@@ -702,6 +702,8 @@ export const fr = {
     compatibility: '{{pct}} % de compatibilité',
     distance_from_base_km: '~{{km}} km de votre base',
     base_address_missing_short: 'Definissez votre adresse de base',
+    base_address_saved_pending_coords:
+      'Adresse enregistree. La distance exacte sera activee lorsque les coordonnees seront definies.',
     base_address_banner: 'Ajoutez votre adresse de base pour ameliorer les distances, les couts et les opportunites.',
     apply_now: 'Postuler maintenant',
     apply_sending: 'Envoi…',

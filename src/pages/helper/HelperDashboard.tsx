@@ -63,8 +63,10 @@ import { UserProfileModal } from '@/components/profile/UserProfileModal';
 import { HelperProfileSkillsSection } from '@/components/helpers/profile/HelperProfileSkillsSection';
 import { distanceToJobKm, sortOpportunitiesForHelper } from '@/utils/locationMatching';
 import {
+  distanceFromExactHelperBaseToJobKm,
   helperBaseCoordinates,
   helperHasBaseAddress,
+  helperHasExactBaseCoordinates,
 } from '@/utils/helperBaseLocation';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import {
@@ -175,9 +177,11 @@ export default function HelperDashboard() {
   );
   const helperBaseCoords = useMemo(() => helperBaseCoordinates(profile), [profile]);
   const hasHelperBaseAddress = useMemo(() => helperHasBaseAddress(profile), [profile]);
+  const hasExactBaseCoords = useMemo(() => helperHasExactBaseCoordinates(profile), [profile]);
+  const baseAddressPendingCoords = hasHelperBaseAddress && !hasExactBaseCoords;
   const baseDistanceToJobKm = React.useCallback(
-    (job: Job) => distanceToJobKm(helperBaseCoords, job),
-    [helperBaseCoords],
+    (job: Job) => distanceFromExactHelperBaseToJobKm(profile, job),
+    [profile],
   );
 
   useEffect(() => {
@@ -1232,8 +1236,9 @@ export default function HelperDashboard() {
                         proposalOpen={proposalJob?.id === job.id}
                         swipeRateLimited={swipeRateLimited}
                         distanceKm={baseDistanceToJobKm(job)}
-                        distanceFromBase={hasHelperBaseAddress}
+                        distanceFromBase={hasExactBaseCoords}
                         needsBaseAddress={!hasHelperBaseAddress}
+                        baseAddressPendingCoords={baseAddressPendingCoords}
                         applicationsCount={applicationCountsByJobId.get(job.id) ?? 0}
                         clientReviewCount={reviewCountByUserId.get(job.clientId) ?? 0}
                         onApply={requestApply}
@@ -1291,9 +1296,11 @@ export default function HelperDashboard() {
                      <span className="block truncate text-xs font-bold text-slate-500">
                        {!hasHelperBaseAddress
                          ? t('helper_dashboard.base_address_missing_short')
-                         : distanceKm != null
-                           ? t('helper_dashboard.distance_from_base_km', { km: distanceKm.toFixed(1) })
-                           : job.city || job.location}
+                         : baseAddressPendingCoords
+                           ? t('helper_dashboard.base_address_saved_pending_coords')
+                           : distanceKm != null
+                             ? t('helper_dashboard.distance_from_base_km', { km: distanceKm.toFixed(1) })
+                             : job.city || job.location}
                      </span>
                    </span>
                    <span className={`rounded-full px-2 py-1 text-[10px] font-black ${job.urgency === 'high' ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'}`}>
@@ -1388,8 +1395,9 @@ export default function HelperDashboard() {
         translateCategory={translateCategory}
         formatJobSchedule={formatJobScheduleDisplay}
         distanceKm={detailOpportunity ? baseDistanceToJobKm(detailOpportunity) : null}
-        distanceFromBase={hasHelperBaseAddress}
+        distanceFromBase={hasExactBaseCoords}
         needsBaseAddress={!hasHelperBaseAddress}
+        baseAddressPendingCoords={baseAddressPendingCoords}
       />
 
       {clientProfileJob ? (

@@ -315,6 +315,8 @@ export const pt = {
     distance_km: '~{{km}} km',
     distance_from_base_km: '~{{km}} km da sua base',
     base_address_missing_short: 'Defina seu endereco base',
+    base_address_saved_pending_coords:
+      'Endereco salvo. Distancia exata sera ativada quando coordenadas forem definidas.',
     base_address_banner: 'Adicione seu endereco base para melhorar distancia, custos e oportunidades.',
     filter_all: 'Todos',
     filter_nearest: 'Mais próximo',
@@ -708,6 +710,8 @@ export const pt = {
     compatibility: '{{pct}}% Compatível',
     distance_from_base_km: '~{{km}} km da sua base',
     base_address_missing_short: 'Defina seu endereco base',
+    base_address_saved_pending_coords:
+      'Endereco salvo. Distancia exata sera ativada quando coordenadas forem definidas.',
     base_address_banner: 'Adicione seu endereco base para melhorar distancia, custos e oportunidades.',
     apply_now: 'Candidatar-se Agora',
     apply_sending: 'Enviando...',

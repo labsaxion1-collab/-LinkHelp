@@ -39,6 +39,7 @@ export type HelperOpportunityCardProps = {
   distanceKm?: number | null;
   distanceFromBase?: boolean;
   needsBaseAddress?: boolean;
+  baseAddressPendingCoords?: boolean;
 };
 
 const SWIPE_COMMIT_PX = 90;
@@ -59,8 +60,10 @@ function locationLabel(
   t: TFn,
   distanceFromBase?: boolean,
   needsBaseAddress?: boolean,
+  baseAddressPendingCoords?: boolean,
 ): string {
   if (needsBaseAddress) return t('helper_dashboard.base_address_missing_short');
+  if (baseAddressPendingCoords) return t('helper_dashboard.base_address_saved_pending_coords');
   if (distanceKm != null) {
     return distanceFromBase
       ? t('helper_dashboard.distance_from_base_km', { km: distanceKm.toFixed(1) })
@@ -95,6 +98,7 @@ function HelperOpportunityCardInner({
   distanceKm,
   distanceFromBase = false,
   needsBaseAddress = false,
+  baseAddressPendingCoords = false,
   applicationsCount = 0,
   clientReviewCount = 0,
 }: HelperOpportunityCardProps) {
@@ -103,7 +107,7 @@ function HelperOpportunityCardInner({
   const helperLimit = tier === 'urgent' ? 5 : 3;
   const schedule = formatJobSchedule(job, t);
   const category = translateCategory(job.category, t);
-  const loc = locationLabel(job, distanceKm, t, distanceFromBase, needsBaseAddress);
+  const loc = locationLabel(job, distanceKm, t, distanceFromBase, needsBaseAddress, baseAddressPendingCoords);
   const budget = valueLabel(job, t);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);

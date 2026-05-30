@@ -135,6 +135,17 @@ export type Database = {
         Returns: unknown;
       };
       ensure_client_signup_credits: { Args: { p_client_id: string }; Returns: number };
+      update_helper_base_address: {
+        Args: {
+          p_address: string;
+          p_city: string;
+          p_province: string;
+          p_postal_code: string;
+          p_lat: number | null;
+          p_lng: number | null;
+        };
+        Returns: ProfileRow;
+      };
       ensure_profile_for_current_user: {
         Args: {
           p_role?: string | null;

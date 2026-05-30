@@ -26,6 +26,8 @@ export type ProfileRow = {
   helper_base_postal_code: string | null;
   helper_base_lat: number | null;
   helper_base_lng: number | null;
+  helper_base_updated_at: string | null;
+  helper_base_change_unlocked_by_admin: boolean;
   /** State / province (e.g. QC). */
   region: string | null;
   country: string | null;

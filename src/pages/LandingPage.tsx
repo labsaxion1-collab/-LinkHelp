@@ -18,6 +18,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { LogoIcon } from '@/components/ui/Logo';
+import { ByFluxBadge } from '@/components/brand/ByFluxBadge';
 import { ROUTES } from '@/utils/constants';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -177,6 +178,9 @@ export default function LandingPage() {
                       Link<span className="bg-gradient-to-r from-[#33B6FF] to-[#1677FF] bg-clip-text text-transparent">Help</span>
                     </p>
                     <p className="mt-2 text-xs font-bold uppercase tracking-[0.28em] text-[#33B6FF]">{t('landing.brand_tagline')}</p>
+                    <div className="mt-2">
+                      <ByFluxBadge className="text-cyan-200/45" />
+                    </div>
                   </div>
                 </motion.div>
               </motion.div>

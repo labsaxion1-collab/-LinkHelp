@@ -36,6 +36,7 @@ import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { type ServiceCategoryId } from '@/data/serviceCategories';
 import { getHelperCategoryPreferences } from '@/utils/helperCategoryPreferences';
 import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
+import { ByFluxBadge } from '@/components/brand/ByFluxBadge';
 import { filterValidSkillKeys, groupSkillKeysByServiceCategory } from '@/data/helperSkillsCatalog';
 
 const SPOKEN_LANGUAGE_OPTIONS = [
@@ -550,6 +551,13 @@ export default function SettingsPage() {
             </div>
           </Link>
         ) : null}
+
+        <SettingsCard icon={<Star className="h-5 w-5 text-slate-500" />} title={t('brand.about_title')}>
+          <p className="text-sm font-medium leading-relaxed text-gray-600">{t('brand.about_body')}</p>
+          <div className="mt-3 hidden md:block">
+            <ByFluxBadge className="text-slate-400" />
+          </div>
+        </SettingsCard>
 
         <button
           type="button"

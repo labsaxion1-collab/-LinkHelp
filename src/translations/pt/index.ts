@@ -1850,10 +1850,16 @@ export const pt = {
     helper_replied: 'Helper respondeu',
     client_replied: 'Cliente respondeu',
   },
+  brand: {
+    by_flux: 'by FLUX',
+    flux_tagline: 'Infinitas possibilidades.',
+    about_title: 'Sobre',
+    about_body: 'LinkHelp conecta clientes e helpers na sua região. Parte da suite FLUX.',
+  },
   flux_admin: {
     console_label: 'Admin Console',
-    header_title: 'FLUX Dashboard',
-    header_sub: 'Inteligência operacional multi-app',
+    header_title: 'FLUX',
+    header_sub: 'Infinitas possibilidades.',
     back_to_app: 'Voltar ao app',
     sign_out: 'Sair',
     app_switcher_label: 'Aplicativo',

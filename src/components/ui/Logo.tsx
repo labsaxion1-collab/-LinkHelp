@@ -1,7 +1,9 @@
+import { BRAND_ASSETS } from '@/assets/brand';
+
 export function LogoIcon({ className = 'w-8 h-8' }: { className?: string }) {
   return (
     <img
-      src="/brand/linkhelp-app-source.png"
+      src={BRAND_ASSETS.linkhelpLogo}
       alt=""
       aria-hidden="true"
       className={`object-contain ${className}`}

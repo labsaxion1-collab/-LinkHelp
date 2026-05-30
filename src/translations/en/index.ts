@@ -1842,10 +1842,16 @@ export const en = {
     helper_replied: 'Helper replied',
     client_replied: 'Client replied',
   },
+  brand: {
+    by_flux: 'by FLUX',
+    flux_tagline: 'Infinite possibilities.',
+    about_title: 'About',
+    about_body: 'LinkHelp connects clients and helpers in your area. Part of the FLUX suite.',
+  },
   flux_admin: {
     console_label: 'Admin Console',
-    header_title: 'FLUX Dashboard',
-    header_sub: 'Multi-app operational intelligence',
+    header_title: 'FLUX',
+    header_sub: 'Infinite possibilities.',
     back_to_app: 'Back to app',
     sign_out: 'Sign out',
     app_switcher_label: 'Application',

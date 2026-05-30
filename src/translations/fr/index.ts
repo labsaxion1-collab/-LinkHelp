@@ -1847,10 +1847,16 @@ export const fr = {
     helper_replied: 'Helper a répondu',
     client_replied: 'Client a répondu',
   },
+  brand: {
+    by_flux: 'by FLUX',
+    flux_tagline: 'Infinitas possibilidades.',
+    about_title: 'À propos',
+    about_body: 'LinkHelp connecte clients et helpers dans votre région. Fait partie de la suite FLUX.',
+  },
   flux_admin: {
     console_label: 'Console Admin',
-    header_title: 'Tableau FLUX',
-    header_sub: 'Intelligence opérationnelle multi-app',
+    header_title: 'FLUX',
+    header_sub: 'Infinitas possibilidades.',
     back_to_app: 'Retour à l’app',
     sign_out: 'Déconnexion',
     app_switcher_label: 'Application',

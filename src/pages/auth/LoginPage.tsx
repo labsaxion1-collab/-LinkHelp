@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, ArrowLeft } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
+import { ByFluxBadge } from '@/components/brand/ByFluxBadge';
 import { ROUTES } from '@/utils/constants';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
@@ -152,7 +153,10 @@ export default function LoginPage() {
             <div className="pointer-events-none absolute -right-20 bottom-24 h-48 w-48 rounded-full bg-[#1677FF]/16 blur-3xl" />
 
             <div className="relative text-center mb-8">
-              <Logo className="mx-auto mb-5 justify-center" iconClassName="w-12 h-12" textClassName="text-2xl sm:text-3xl font-bold tracking-tight" />
+              <Logo className="mx-auto mb-3 justify-center" iconClassName="w-12 h-12" textClassName="text-2xl sm:text-3xl font-bold tracking-tight" />
+              <div className="mb-4 flex justify-center">
+                <ByFluxBadge className="text-slate-500/80" />
+              </div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">{t('login_page.title')}</h1>
               <p className="mt-3 text-sm font-medium text-slate-600">
                 {t('login_page.subtitle_no_account')}{' '}

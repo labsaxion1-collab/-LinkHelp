@@ -2,6 +2,7 @@ import { LayoutDashboard, Sparkles, Layers, Settings, ChevronDown } from 'lucide
 import { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { FLUX_ADMIN_APPS, DEFAULT_FLUX_APP_ID } from '@/config/fluxAdminApps';
+import { FluxBrandMark } from '@/components/brand/FluxBrandMark';
 
 type Props = {
   activeSection: 'overview' | 'insights' | 'categories';
@@ -21,19 +22,9 @@ export function FluxAdminSidebar({ activeSection, onSectionChange }: Props) {
   ];
 
   return (
-    <aside className="flux-admin-sidebar flex h-full w-[260px] shrink-0 flex-col border-r border-white/8 bg-[#0B0F19]">
+    <aside className="flux-admin-sidebar flex h-full w-[260px] shrink-0 flex-col border-r border-cyan-500/10 bg-[#030308]/95 backdrop-blur-xl">
       <div className="border-b border-white/8 px-5 py-5">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-blue-600 text-xs font-black text-white shadow-lg shadow-violet-900/40">
-            FL
-          </div>
-          <div>
-            <p className="text-sm font-black tracking-wide text-white">FLUX</p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-300/80">
-              {t('flux_admin.console_label')}
-            </p>
-          </div>
-        </div>
+        <FluxBrandMark />
       </div>
 
       <div className="border-b border-white/8 px-4 py-4">
@@ -91,11 +82,11 @@ export function FluxAdminSidebar({ activeSection, onSectionChange }: Props) {
               onClick={() => onSectionChange(item.id)}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-all ${
                 active
-                  ? 'bg-gradient-to-r from-violet-600/30 to-blue-600/20 text-white shadow-inner shadow-violet-900/20'
+                  ? 'bg-gradient-to-r from-cyan-500/20 via-violet-600/15 to-violet-700/10 text-white shadow-[inset_0_1px_0_rgba(0,242,255,0.12)]'
                   : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
               }`}
             >
-              <Icon className={`h-4 w-4 ${active ? 'text-violet-300' : ''}`} />
+              <Icon className={`h-4 w-4 ${active ? 'text-cyan-300' : ''}`} />
               {item.label}
             </button>
           );

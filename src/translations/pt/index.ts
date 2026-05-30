@@ -1343,8 +1343,8 @@ export const pt = {
     renovation: 'Reforma e manutenção',
     outdoor: 'Área externa',
     pet: 'Pets',
-    cooking: 'Cozinha',
     tech: 'Suporte em TI',
+    other: 'Outros',
     interpretation: 'Interpretação',
     furniture: 'Montagem de móveis',
     snow: 'Remoção de neve',
@@ -1457,6 +1457,7 @@ export const pt = {
       leaves: 'Folhas',
       fence: 'Cerca',
       exterior_clean: 'Limpeza externa',
+      pool_cleaning: 'Limpeza de piscina',
     },
     pet: {
       walk: 'Passeio',
@@ -1482,6 +1483,9 @@ export const pt = {
       install: 'Instalação',
       tv: 'TV',
       phone: 'Celular',
+    },
+    other: {
+      other: 'Outros',
     },
   },
   ideas: {

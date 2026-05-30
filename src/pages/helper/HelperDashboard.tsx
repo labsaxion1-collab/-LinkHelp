@@ -71,6 +71,7 @@ import {
   filterToPreferredCategoriesIfPossible,
   deriveHelperCategoriesFromSkillKeys,
   getHelperCategoryPreferences,
+  getJobServiceCategoryId,
   sortJobsByHelperCategoryPreference,
 } from '@/utils/helperCategoryPreferences';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
@@ -634,7 +635,9 @@ export default function HelperDashboard() {
   }, [applications]);
 
   const displayedJobs = useMemo(() => {
-    let list = jobs.filter((j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== me.id);
+    let list = jobs.filter(
+      (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== me.id && getJobServiceCategoryId(j),
+    );
     if (selectedCategoryFilter) {
       list = list.filter((j) => {
         const id = resolveCategoryId(j.category) || j.category;
@@ -677,7 +680,7 @@ export default function HelperDashboard() {
     activeTab === 'match' || activeTab === 'recentes' || activeTab === 'emergencia' ? activeTab : 'match';
 
   const radarJobs = filterToPreferredCategoriesIfPossible(
-    jobs.filter((j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== me.id),
+    jobs.filter((j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== me.id && getJobServiceCategoryId(j)),
     categoryPrefs,
   )
     .map((job) => ({ job, distanceKm: baseDistanceToJobKm(job) }))

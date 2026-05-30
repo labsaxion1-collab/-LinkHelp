@@ -79,17 +79,17 @@ export const HELPER_CATEGORY_ACCENTS: Record<
     icon: 'bg-amber-500 text-white shadow-amber-200',
     glow: 'shadow-[0_0_28px_rgba(245,158,11,0.28)]',
   },
-  cooking: {
-    chip: 'from-rose-500 to-orange-500',
-    active: 'border-rose-300 bg-rose-50 text-rose-900',
-    icon: 'bg-rose-500 text-white shadow-rose-200',
-    glow: 'shadow-[0_0_28px_rgba(244,63,94,0.25)]',
-  },
   tech: {
     chip: 'from-blue-500 to-slate-700',
     active: 'border-blue-300 bg-blue-50 text-blue-900',
     icon: 'bg-blue-600 text-white shadow-blue-200',
     glow: 'shadow-[0_0_28px_rgba(21,101,255,0.3)]',
+  },
+  other: {
+    chip: 'from-slate-500 to-sky-600',
+    active: 'border-sky-300 bg-sky-50 text-sky-900',
+    icon: 'bg-sky-600 text-white shadow-sky-200',
+    glow: 'shadow-[0_0_28px_rgba(14,165,233,0.25)]',
   },
 };
 
@@ -116,10 +116,9 @@ const LEGACY_CATEGORY_ID_MAP: Record<string, ServiceCategoryId> = {
   jardinagem: 'outdoor',
   pets: 'pet',
   pet: 'pet',
-  cozinha: 'cooking',
-  culinaria: 'cooking',
   suporte_em_ti: 'tech',
   informatica: 'tech',
+  outros: 'other',
 };
 
 function normalizeLegacyCategoryKey(raw: string): string {

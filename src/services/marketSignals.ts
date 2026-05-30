@@ -65,6 +65,11 @@ function persistLocal(payload: MarketSignalPayload) {
   }
 }
 
+function marketSignalCategory(category?: string | null): string | null {
+  if (!category) return null;
+  return category === 'other' ? 'outros' : category;
+}
+
 /** Fire-and-forget market metrics (local queue + Supabase + lead score refresh). */
 export function recordMarketSignal(payload: MarketSignalPayload): void {
   const tz = payload.timezone ?? getBrowserTimezone();
@@ -86,7 +91,7 @@ export function recordMarketSignal(payload: MarketSignalPayload): void {
       helper_id: row.helperId ?? null,
       signal: legacySignalFromEvent(row.event),
       event: row.event,
-      category: row.category ?? null,
+      category: marketSignalCategory(row.category),
       city: row.city ?? null,
       province: row.province ?? null,
       budget_min: row.budgetMin ?? null,

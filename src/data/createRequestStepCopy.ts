@@ -193,7 +193,6 @@ const DATA: Record<Lang, Tree> = {
     renovation: uniform(catKeys('renovation'), {
       suggestions: [
         'Plumbing / leak',
-        'Clogged sink / drain',
         'Shower / faucet',
         'Interior painting',
         'Roof patch / inspection',
@@ -205,39 +204,28 @@ const DATA: Record<Lang, Tree> = {
       exampleHint: 'Small plumbing repair and patch drywall.',
     }),
     outdoor: uniform(catKeys('outdoor'), {
-      suggestions: ['Snow removal', 'Lawn mowing', 'Garden tidy', 'Leaf cleanup', 'Fence repair', 'Exterior wash'],
+      suggestions: ['Snow removal', 'Garden tidy', 'Fence repair', 'Exterior wash', 'Pool cleaning'],
       placeholder: 'e.g. Snow removal for driveway and walkway.',
       tags: ['outdoor', 'yard', 'seasonal'],
-      exampleHint: 'Lawn mowing and edge trim bi-weekly.',
+      exampleHint: 'I need help with my outdoor area.',
     }),
-    pet: {
-      ...uniform(
-        catKeys('pet').filter((k) => k !== 'travel_care'),
-        {
-          suggestions: ['Dog walking', 'Bath / groom', 'Pet sitter', 'Weekend boarding', 'Daily drop-in visit', 'Feeding / meds'],
-          placeholder: 'e.g. Walk my dog twice this week.',
-          tags: ['pets', 'dog', 'care'],
-          exampleHint: 'Pet sitter for a weekend trip.',
-        },
-      ),
-      travel_care: {
-        suggestions: [
-          'Care while I travel',
-          'Daily visits + feeding',
-          'Litter / yard breaks',
-          'Medication schedule',
-          'Someone to stay with my pet while I’m away',
-        ],
-        placeholder: 'e.g. I need someone to care for my pet during a trip.',
-        tags: ['pets', 'travel', 'sitting'],
-        exampleHint: 'I need someone to care for my pet while I’m away on a trip.',
-      },
-    },
+    other: uniform(catKeys('other'), {
+      suggestions: ['Describe the task', 'Share location details', 'Mention timing and access'],
+      placeholder: 'e.g. Describe the help you need.',
+      tags: ['other', 'help', 'local'],
+      exampleHint: 'I need help with a task that does not fit the listed categories.',
+    }),
+    pet: uniform(catKeys('pet'), {
+      suggestions: ['Dog walking', 'Bath / groom', 'Pet sitter'],
+      placeholder: 'e.g. Walk my dog twice this week.',
+      tags: ['pets', 'dog', 'care'],
+      exampleHint: 'I need pet care help.',
+    }),
     tech: uniform(catKeys('tech'), {
-      suggestions: ['PC format / reinstall', 'Printer setup', 'Wi-Fi dead zones', 'Slow computer tune-up', 'Software install', 'Smart TV setup', 'Phone backup'],
+      suggestions: ['PC format / reinstall', 'Wi-Fi dead zones', 'Software install', 'Smart TV setup', 'Phone backup'],
       placeholder: 'e.g. Wi-Fi is slow on the second floor.',
       tags: ['tech', 'wifi', 'support'],
-      exampleHint: 'Printer won’t connect to Wi-Fi — need help.',
+      exampleHint: 'I need help setting up Wi-Fi and my smart TV.',
     }),
   },
   pt: {
@@ -412,7 +400,6 @@ const DATA: Record<Lang, Tree> = {
       suggestions: [
         'Hidráulica',
         'Vazamento',
-        'Pia entupida',
         'Chuveiro / torneira',
         'Pintura',
         'Telhado',
@@ -424,47 +411,34 @@ const DATA: Record<Lang, Tree> = {
       exampleHint: 'Pequeno reparo hidráulico e pintura.',
     }),
     outdoor: uniform(catKeys('outdoor'), {
-      suggestions: ['Remoção de neve', 'Gramado', 'Jardim', 'Folhas', 'Cerca', 'Limpeza externa'],
-      placeholder: 'Ex.: Remoção de neve na entrada e calçada.',
-      tags: ['área-externa', 'jardim', 'neve'],
-      exampleHint: 'Corte de grama e limpeza de folhas.',
+      suggestions: ['Remocao de neve', 'Jardim', 'Cerca', 'Limpeza externa', 'Limpeza de piscina'],
+      placeholder: 'Ex.: Remocao de neve na entrada e calcada.',
+      tags: ['area-externa', 'jardim', 'neve'],
+      exampleHint: 'Preciso de ajuda na area externa da casa.',
     }),
-    pet: {
-      ...uniform(
-        catKeys('pet').filter((k) => k !== 'travel_care'),
-        {
-          suggestions: ['Passeio', 'Banho / tosa', 'Cuidador', 'Hospedagem', 'Visita diária', 'Alimentação / remédios'],
-          placeholder: 'Ex.: Passear com o cachorro 2x esta semana.',
-          tags: ['pets', 'cão', 'cuidado'],
-          exampleHint: 'Pet sitter no fim de semana.',
-        },
-      ),
-      travel_care: {
-        suggestions: [
-          'Cuidado durante viagem',
-          'Visitas diárias + ração',
-          'Areia / quintal',
-          'Horário de remédios',
-          'Preciso de alguém para cuidar do pet durante viagem',
-        ],
-        placeholder: 'Ex.: Cuidar do meu pet enquanto estou viajando.',
-        tags: ['pets', 'viagem', 'cuidador'],
-        exampleHint: 'Preciso de alguém para cuidar do pet durante a viagem.',
-      },
-    },
+    pet: uniform(catKeys('pet'), {
+      suggestions: ['Passeio', 'Banho / tosa', 'Cuidador'],
+      placeholder: 'Ex.: Passear com o cachorro 2x esta semana.',
+      tags: ['pets', 'cao', 'cuidado'],
+      exampleHint: 'Preciso de cuidador para meu pet.',
+    }),
+    other: uniform(catKeys('other'), {
+      suggestions: ['Descreva a tarefa', 'Informe local e acesso', 'Diga quando precisa'],
+      placeholder: 'Ex.: Descreva a ajuda que voce precisa.',
+      tags: ['outros', 'ajuda', 'local'],
+      exampleHint: 'Preciso de ajuda com uma tarefa que nao esta nas categorias.',
+    }),
     tech: uniform(catKeys('tech'), {
       suggestions: [
         'Formatação / Windows',
-        'Impressora',
         'Wi-Fi',
-        'Computador lento',
         'Instalação de programas',
         'TV inteligente',
         'Celular / backup',
       ],
       placeholder: 'Ex.: Wi-Fi não chega no segundo andar.',
       tags: ['TI', 'wifi', 'suporte'],
-      exampleHint: 'Impressora não conecta no Wi-Fi.',
+      exampleHint: 'Preciso configurar Wi-Fi, TV ou celular.',
     }),
   },
   fr: {},

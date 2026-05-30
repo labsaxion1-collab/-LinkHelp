@@ -1333,8 +1333,8 @@ export const en = {
     renovation: 'Renovation & maintenance',
     outdoor: 'Outdoor & yard',
     pet: 'Pets',
-    cooking: 'Kitchen & cooking',
     tech: 'IT support',
+    other: 'Other',
     interpretation: 'Interpretation',
     furniture: 'Furniture assembly',
     snow: 'Snow removal',
@@ -1447,6 +1447,7 @@ export const en = {
       leaves: 'Leaves',
       fence: 'Fence',
       exterior_clean: 'Exterior cleaning',
+      pool_cleaning: 'Pool cleaning',
     },
     pet: {
       walk: 'Dog walking',
@@ -1472,6 +1473,9 @@ export const en = {
       install: 'Install / setup',
       tv: 'TV',
       phone: 'Phone',
+    },
+    other: {
+      other: 'Other',
     },
   },
   ideas: {

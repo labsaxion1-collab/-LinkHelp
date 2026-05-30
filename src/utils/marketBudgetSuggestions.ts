@@ -15,8 +15,9 @@ const SUGGESTIONS: Record<ServiceCategoryId, SuggestionMap> = {
     default: { min: 65, max: 130 },
   },
   moving: {
-    local_move: { min: 120, max: 350 },
     furniture_transport: { min: 150, max: 450 },
+    long_distance: { min: 300, max: 900 },
+    small_moves: { min: 100, max: 260 },
     default: { min: 150, max: 400 },
   },
   assembly: {
@@ -46,8 +47,8 @@ const SUGGESTIONS: Record<ServiceCategoryId, SuggestionMap> = {
     default: { min: 100, max: 280 },
   },
   outdoor: {
-    lawn: { min: 40, max: 90 },
     snow: { min: 80, max: 200 },
+    pool_cleaning: { min: 80, max: 180 },
     default: { min: 55, max: 150 },
   },
   pet: {
@@ -57,6 +58,9 @@ const SUGGESTIONS: Record<ServiceCategoryId, SuggestionMap> = {
   },
   tech: {
     default: { min: 55, max: 140 },
+  },
+  other: {
+    default: { min: 80, max: 180 },
   },
 };
 

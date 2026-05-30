@@ -6,7 +6,7 @@ import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData, type OfficialHirePayload } from '@/context/AppDataContext';
 import { useServiceReview } from '@/context/ServiceReviewContext';
-import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
+import { SERVICE_CATEGORIES, isOfficialServiceCategoryId } from '@/data/serviceCategories';
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { formatJobScheduleDisplay, isBeautyScheduledJob } from '@/utils/jobDisplay';
@@ -194,7 +194,13 @@ export default function ClientDashboard() {
   };
 
   const myOpenJobCategories = useMemo(
-    () => [...new Set(jobs.filter((j) => j.clientId === me.id && j.status === 'open').map((j) => j.category).filter(Boolean))],
+    () => [
+      ...new Set(
+        jobs
+          .filter((j) => j.clientId === me.id && j.status === 'open' && isOfficialServiceCategoryId(j.category))
+          .map((j) => j.category),
+      ),
+    ],
     [jobs, me.id],
   );
   const { helpers: nearbyHelpers, loading: nearbyHelpersLoading } = useNearbyHelpers({
@@ -756,6 +762,7 @@ export default function ClientDashboard() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
                 {jobs
                   .filter((j) => j.clientId === me.id)
+                  .filter((j) => isOfficialServiceCategoryId(j.category))
                   .filter((j) => {
                     const visible = isJobVisibleToClient(j, hiddenJobIds, {
                       includeHistory: jobsListTab === 'history',
@@ -771,6 +778,7 @@ export default function ClientDashboard() {
                   .length > 0 ? (
                   jobs
                     .filter((j) => j.clientId === me.id)
+                    .filter((j) => isOfficialServiceCategoryId(j.category))
                     .filter((j) => {
                       if (jobsListTab === 'history') {
                         return (

@@ -16,24 +16,7 @@ export const SERVICE_CATEGORIES = [
   {
     id: 'moving',
     icon: 'Truck',
-    subKeys: [
-      'houses',
-      'apartments',
-      'condominium',
-      'offices',
-      'office_building',
-      'companies',
-      'furniture_transport',
-      'assembly_disassembly',
-      'packing',
-      'loading',
-      'unloading',
-      'local_move',
-      'long_distance',
-      'small_moves',
-      'express_freight',
-      'appliances_transport',
-    ],
+    subKeys: ['houses', 'apartments', 'offices', 'companies', 'furniture_transport', 'long_distance', 'small_moves'],
   },
   {
     id: 'assembly',
@@ -44,7 +27,7 @@ export const SERVICE_CATEGORIES = [
   {
     id: 'translation',
     icon: 'Languages',
-    subKeys: ['government', 'school', 'college', 'interview', 'document', 'consultation', 'immigration'],
+    subKeys: ['government', 'school', 'college', 'document', 'consultation'],
   },
   {
     id: 'beauty',
@@ -64,23 +47,57 @@ export const SERVICE_CATEGORIES = [
   {
     id: 'renovation',
     icon: 'Wrench',
-    subKeys: ['plumbing', 'leak', 'clogged', 'shower', 'painting', 'roof', 'drywall', 'small_repairs'],
+    subKeys: ['plumbing', 'leak', 'shower', 'painting', 'roof', 'drywall', 'small_repairs'],
   },
   {
     id: 'outdoor',
     icon: 'TreePine',
-    subKeys: ['snow', 'lawn', 'garden', 'leaves', 'fence', 'exterior_clean'],
+    subKeys: ['snow', 'garden', 'fence', 'exterior_clean', 'pool_cleaning'],
   },
   {
     id: 'pet',
     icon: 'Dog',
-    subKeys: ['walk', 'bath', 'sitter', 'boarding', 'daily_visit', 'feeding', 'travel_care'],
+    subKeys: ['walk', 'bath', 'sitter'],
   },
   {
     id: 'tech',
     icon: 'Monitor',
-    subKeys: ['format', 'printer', 'wifi', 'slow_pc', 'install', 'tv', 'phone'],
+    subKeys: ['format', 'wifi', 'install', 'tv', 'phone'],
+  },
+  {
+    id: 'other',
+    icon: 'CircleHelp',
+    subKeys: ['other'],
   },
 ] as const;
 
 export type ServiceCategoryId = (typeof SERVICE_CATEGORIES)[number]['id'];
+
+const OFFICIAL_CATEGORY_IDS = new Set<string>(SERVICE_CATEGORIES.map((c) => c.id));
+const OFFICIAL_SUB_BY_CATEGORY = new Map<string, Set<string>>(
+  SERVICE_CATEGORIES.map((c) => [c.id, new Set<string>([...c.subKeys])]),
+);
+
+export function isOfficialServiceCategoryId(value: unknown): value is ServiceCategoryId {
+  return typeof value === 'string' && OFFICIAL_CATEGORY_IDS.has(value);
+}
+
+export function isOfficialServiceSubcategory(categoryId: unknown, subKey: unknown): boolean {
+  if (typeof categoryId !== 'string' || typeof subKey !== 'string') return false;
+  return Boolean(OFFICIAL_SUB_BY_CATEGORY.get(categoryId)?.has(subKey));
+}
+
+export function sanitizeServiceCategoryKeys(keys: unknown): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of Array.isArray(keys) ? keys : []) {
+    if (typeof raw !== 'string') continue;
+    const [categoryId, subKey] = raw.split(':');
+    if (!isOfficialServiceSubcategory(categoryId, subKey)) continue;
+    const key = `${categoryId}:${subKey}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(key);
+  }
+  return out;
+}

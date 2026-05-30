@@ -5,6 +5,8 @@ import { ROUTES } from '@/utils/constants';
 import Layout from '@/components/layout/Layout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { RoleRoute } from '@/components/auth/RoleRoute';
+import { AdminProtectedRoute } from '@/components/admin/AdminProtectedRoute';
+import { FluxAdminLayout } from '@/components/admin/FluxAdminLayout';
 
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
@@ -79,6 +81,12 @@ export function AppRoutes() {
               path={ROUTES.helperCredits}
               element={UI_VISIBILITY.helperCredits ? <HelperCreditsPage /> : <Navigate to={ROUTES.helperDashboard} replace />}
             />
+          </Route>
+
+          <Route element={<AdminProtectedRoute />}>
+            <Route element={<FluxAdminLayout />}>
+              <Route path={ROUTES.adminDashboard} element={<AdminDashboard />} />
+            </Route>
           </Route>
         </Route>
 

@@ -29,4 +29,6 @@ export const ROUTES = {
   payments: '/payments',
   helperCredits: '/helper/credits',
   settings: '/settings',
+  /** FLUX multi-app admin console */
+  adminDashboard: '/admin/dashboard',
 } as const;

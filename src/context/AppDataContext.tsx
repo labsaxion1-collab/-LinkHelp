@@ -27,7 +27,12 @@ import { buildPendingServiceReviews } from '@/utils/serviceReviewQueue';
 import type { PendingServiceReview, ServiceReview } from '@/types/review';
 import { dispatchPushEvent } from '@/services/push/pushEventDispatcher';
 import { useCredits } from '@/context/CreditContext';
-import { InsufficientCreditsError, leadCostsForJob, remoteChargeHelperOnClientHire } from '@/services/helperLeadCredits';
+import {
+  fetchHelperBaseDistanceKm,
+  InsufficientCreditsError,
+  leadCostsForJob,
+  remoteChargeHelperOnClientHire,
+} from '@/services/helperLeadCredits';
 import { isJobCancelled } from '@/utils/jobVisibility';
 
 export type { Job, JobStatus, JobUrgency, Application, ApplicationStatus, UpcomingJob, UpcomingWorkflowStatus };
@@ -428,7 +433,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       throw new Error('APPLICATION_MISMATCH');
     }
 
-    const selectedCost = leadCostsForJob(jobSnapshot).selectedCost;
+    const selectedDistanceKm = useRemote ? await fetchHelperBaseDistanceKm(helperId, jobSnapshot) : null;
+    const selectedCost = leadCostsForJob(jobSnapshot, { distanceKm: selectedDistanceKm }).selectedCost;
 
     const applyOptimisticHire = () => {
       setApplications((prev) =>

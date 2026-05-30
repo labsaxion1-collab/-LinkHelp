@@ -3,6 +3,7 @@ import type { Job } from '@/types/job';
 import { calculateHelperLeadCreditCost } from '@/utils/calculateHelperLeadCreditCost';
 import type { CreditTransaction } from '@/types/credits';
 import { normalizeLinkCreditsAmount } from '@/utils/formatLinkCredits';
+import { distanceFromHelperBaseToJobKm } from '@/utils/helperBaseLocation';
 
 export class InsufficientCreditsError extends Error {
   readonly code = 'INSUFFICIENT_CREDITS';
@@ -14,8 +15,24 @@ export class InsufficientCreditsError extends Error {
   }
 }
 
-export function leadCostsForJob(job: Job, distanceKm?: number | null) {
+export function leadCostsForJob(job: Job, input?: number | null | { distanceKm?: number | null }) {
+  const distanceKm = typeof input === 'object' && input !== null ? input.distanceKm : input;
   return calculateHelperLeadCreditCost(job, { distanceKm });
+}
+
+export async function fetchHelperBaseDistanceKm(helperId: string, job: Job): Promise<number | null> {
+  const sb = getSupabase();
+  if (!sb) return null;
+  const { data, error } = await sb
+    .from('profiles')
+    .select('helper_base_address, helper_base_city, helper_base_province, helper_base_postal_code, helper_base_lat, helper_base_lng, city, region')
+    .eq('id', helperId)
+    .maybeSingle();
+  if (error) {
+    console.warn('[LinkHelp] Could not load helper base distance', error.message);
+    return null;
+  }
+  return distanceFromHelperBaseToJobKm(data as Parameters<typeof distanceFromHelperBaseToJobKm>[0], job);
 }
 
 export async function remoteDebitApplicationInterest(

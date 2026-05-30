@@ -20,6 +20,12 @@ export type ProfileRow = {
   spoken_languages: string[] | null;
   primary_category: string | null;
   secondary_categories: string[] | null;
+  helper_base_address: string | null;
+  helper_base_city: string | null;
+  helper_base_province: string | null;
+  helper_base_postal_code: string | null;
+  helper_base_lat: number | null;
+  helper_base_lng: number | null;
   /** State / province (e.g. QC). */
   region: string | null;
   country: string | null;

@@ -17,6 +17,8 @@ type Props = {
   translateCategory: (raw: string, tf: (k: string) => string) => string;
   formatJobSchedule: (job: Job, tf: (k: string, vars?: Record<string, string | number>) => string) => string;
   distanceKm?: number | null;
+  distanceFromBase?: boolean;
+  needsBaseAddress?: boolean;
 };
 
 export function HelperOpportunityDetailModal({
@@ -31,15 +33,20 @@ export function HelperOpportunityDetailModal({
   translateCategory,
   formatJobSchedule,
   distanceKm,
+  distanceFromBase = false,
+  needsBaseAddress = false,
 }: Props) {
   if (!open || !job) return null;
 
   const category = translateCategory(job.category, t);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const budget = formatJobBudgetDisplay(job, t);
-  const loc =
-    distanceKm != null
-      ? t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) })
+  const loc = needsBaseAddress
+    ? t('helper_dashboard.base_address_missing_short')
+    : distanceKm != null
+      ? distanceFromBase
+        ? t('helper_dashboard.distance_from_base_km', { km: distanceKm.toFixed(1) })
+        : t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) })
       : job.location?.trim() || t('jobs.remote');
   const schedule = formatJobSchedule(job, t);
 

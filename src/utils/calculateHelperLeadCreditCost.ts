@@ -81,6 +81,7 @@ export function calculateHelperLeadCreditCost(
   const categoryId = resolveCategoryId(job.category) || job.category;
   const serviceValueCad = estimateServiceValueCad(job);
   const remote = isRemoteJob(job);
+  // Use helper base distance, not live GPS distance. Helpers can be temporarily near another job.
   const distanceExtra = remote ? 0 : distanceExtraLc(options?.distanceKm);
   const categoryExtra = categoryExtraLc(categoryId);
   const selectedCost = Math.max(2, Math.min(30, valueTierLc(serviceValueCad) + distanceExtra + categoryExtra));

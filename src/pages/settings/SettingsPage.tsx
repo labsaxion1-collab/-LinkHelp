@@ -93,6 +93,10 @@ export default function SettingsPage() {
   const [spokenLanguages, setSpokenLanguages] = useState<string[]>([]);
   const [primaryCategory, setPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
   const [secondaryCategories, setSecondaryCategories] = useState<ServiceCategoryId[]>([]);
+  const [helperBaseAddress, setHelperBaseAddress] = useState('');
+  const [helperBaseCity, setHelperBaseCity] = useState('');
+  const [helperBaseProvince, setHelperBaseProvince] = useState('');
+  const [helperBasePostalCode, setHelperBasePostalCode] = useState('');
   const [notifOn, setNotifOn] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -118,6 +122,10 @@ export default function SettingsPage() {
           ? [profile.preferred_language]
           : [language],
     );
+    setHelperBaseAddress(profile.helper_base_address ?? '');
+    setHelperBaseCity(profile.helper_base_city ?? '');
+    setHelperBaseProvince(profile.helper_base_province ?? '');
+    setHelperBasePostalCode(profile.helper_base_postal_code ?? '');
   }, [profile, session, language]);
 
   useEffect(() => {
@@ -192,6 +200,10 @@ export default function SettingsPage() {
             spoken_languages: spokenLanguages.length ? spokenLanguages : [language],
             primary_category: primaryCategory,
             secondary_categories: normalizedSecondary,
+            helper_base_address: helperBaseAddress.trim() || null,
+            helper_base_city: helperBaseCity.trim() || null,
+            helper_base_province: helperBaseProvince.trim() || null,
+            helper_base_postal_code: helperBasePostalCode.trim() || null,
           }
         : base,
     );
@@ -455,6 +467,55 @@ export default function SettingsPage() {
                 }}
                 onSaveAsync={persistHelperSkills}
               />
+            </SettingsCard>
+
+            <SettingsCard
+              icon={<Briefcase className="h-5 w-5 text-cyan-600" />}
+              title={t('app_pages.settings_helper_base_title')}
+            >
+              <p className="mb-4 text-xs font-medium leading-relaxed text-slate-500">
+                {t('app_pages.settings_helper_base_hint')}
+              </p>
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-700">
+                  {t('app_pages.settings_helper_base_address')}
+                  <input
+                    value={helperBaseAddress}
+                    onChange={(e) => setHelperBaseAddress(e.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
+                    placeholder={t('app_pages.settings_helper_base_address_placeholder')}
+                  />
+                </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    {t('app_pages.settings_helper_base_city')}
+                    <input
+                      value={helperBaseCity}
+                      onChange={(e) => setHelperBaseCity(e.target.value)}
+                      className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
+                      placeholder="Trois-Rivieres"
+                    />
+                  </label>
+                  <label className="block text-sm font-semibold text-gray-700">
+                    {t('app_pages.settings_helper_base_province')}
+                    <input
+                      value={helperBaseProvince}
+                      onChange={(e) => setHelperBaseProvince(e.target.value)}
+                      className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
+                      placeholder="QC"
+                    />
+                  </label>
+                </div>
+                <label className="block text-sm font-semibold text-gray-700">
+                  {t('app_pages.settings_helper_base_postal_code')}
+                  <input
+                    value={helperBasePostalCode}
+                    onChange={(e) => setHelperBasePostalCode(e.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
+                    placeholder="G9A"
+                  />
+                </label>
+              </div>
             </SettingsCard>
 
             <HelperScorePanel />

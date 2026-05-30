@@ -37,6 +37,8 @@ export type HelperOpportunityCardProps = {
   translateCategory: TranslateFn;
   formatJobSchedule: (job: Job, t: TFn) => string;
   distanceKm?: number | null;
+  distanceFromBase?: boolean;
+  needsBaseAddress?: boolean;
 };
 
 const SWIPE_COMMIT_PX = 90;
@@ -51,8 +53,19 @@ function jobMatchTier(job: Job, activeTab: HelperOpportunityCardTab): 'urgent' |
   return 'normal';
 }
 
-function locationLabel(job: Job, distanceKm: number | null | undefined, t: TFn): string {
-  if (distanceKm != null) return t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) });
+function locationLabel(
+  job: Job,
+  distanceKm: number | null | undefined,
+  t: TFn,
+  distanceFromBase?: boolean,
+  needsBaseAddress?: boolean,
+): string {
+  if (needsBaseAddress) return t('helper_dashboard.base_address_missing_short');
+  if (distanceKm != null) {
+    return distanceFromBase
+      ? t('helper_dashboard.distance_from_base_km', { km: distanceKm.toFixed(1) })
+      : t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) });
+  }
   const loc = job.location?.trim();
   if (!loc || /remot|remote|en ligne|online/i.test(loc)) return t('jobs.remote');
   return loc.length > 28 ? `${loc.slice(0, 26)}…` : loc;
@@ -80,6 +93,8 @@ function HelperOpportunityCardInner({
   translateCategory,
   formatJobSchedule,
   distanceKm,
+  distanceFromBase = false,
+  needsBaseAddress = false,
   applicationsCount = 0,
   clientReviewCount = 0,
 }: HelperOpportunityCardProps) {
@@ -88,7 +103,7 @@ function HelperOpportunityCardInner({
   const helperLimit = tier === 'urgent' ? 5 : 3;
   const schedule = formatJobSchedule(job, t);
   const category = translateCategory(job.category, t);
-  const loc = locationLabel(job, distanceKm, t);
+  const loc = locationLabel(job, distanceKm, t, distanceFromBase, needsBaseAddress);
   const budget = valueLabel(job, t);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -486,6 +501,8 @@ export const HelperOpportunityCard = memo(HelperOpportunityCardInner, (prev, nex
     prev.swipeRateLimited === next.swipeRateLimited &&
     prev.activeTab === next.activeTab &&
     prev.distanceKm === next.distanceKm &&
+    prev.distanceFromBase === next.distanceFromBase &&
+    prev.needsBaseAddress === next.needsBaseAddress &&
     prev.applicationsCount === next.applicationsCount &&
     prev.clientReviewCount === next.clientReviewCount
   );

@@ -59,10 +59,13 @@ import {
 import type { CompletionRowKey } from '@/utils/helperProfileCompletion';
 import { computeHelperProfileCompletion } from '@/utils/helperProfileCompletion';
 import { helperProfileSuggestionKeys } from '@/utils/helperProfileSuggestions';
-import { useUserLocation } from '@/hooks/useUserLocation';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
 import { HelperProfileSkillsSection } from '@/components/helpers/profile/HelperProfileSkillsSection';
 import { distanceToJobKm, sortOpportunitiesForHelper } from '@/utils/locationMatching';
+import {
+  helperBaseCoordinates,
+  helperHasBaseAddress,
+} from '@/utils/helperBaseLocation';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import {
   filterToPreferredCategoriesIfPossible,
@@ -109,7 +112,6 @@ export default function HelperDashboard() {
 
   const { t, language } = useLanguage();
   const me = useSessionViewer();
-  const { coords: helperCoords } = useUserLocation();
   const { session, profile, isConfigured, updateProfile, refreshProfile } = useAuth();
   const [helperPrimaryCategory, setHelperPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
   const [helperSecondaryCategories, setHelperSecondaryCategories] = useState<ServiceCategoryId[]>([]);
@@ -148,13 +150,22 @@ export default function HelperDashboard() {
     () => getHelperCategoryPreferences(profile, profileSettings.skillIds),
     [profile, profileSettings.skillIds],
   );
+  const helperBaseCoords = useMemo(() => helperBaseCoordinates(profile), [profile]);
+  const hasHelperBaseAddress = useMemo(() => helperHasBaseAddress(profile), [profile]);
+  const baseDistanceToJobKm = React.useCallback(
+    (job: Job) => distanceToJobKm(helperBaseCoords, job),
+    [helperBaseCoords],
+  );
 
   useEffect(() => {
     setHelperPrimaryCategory(categoryPrefs.primaryCategory);
     setHelperSecondaryCategories(categoryPrefs.secondaryCategories);
   }, [categoryPrefs.primaryCategory, categoryPrefs.secondaryCategories]);
   const visibleServiceCategories = useMemo(
-    () => SERVICE_CATEGORIES.filter((cat) => categoryPrefs.visibleCategories.includes(cat.id)),
+    () =>
+      categoryPrefs.visibleCategories.length
+        ? SERVICE_CATEGORIES.filter((cat) => categoryPrefs.visibleCategories.includes(cat.id))
+        : SERVICE_CATEGORIES,
     [categoryPrefs],
   );
   useEffect(() => {
@@ -464,18 +475,18 @@ export default function HelperDashboard() {
         province: job.region ?? null,
         budgetMin: job.budgetMin ?? null,
         budgetMax: job.budgetMax ?? null,
-        distanceKm: distanceToJobKm(helperCoords, job),
+        distanceKm: baseDistanceToJobKm(job),
         source,
       });
       logProposalAnalytics('opened', job);
       setProposalJob(job);
     },
-    [appliedJobIds, helperUserId, helperCoords, logProposalAnalytics, pushToast, t],
+    [appliedJobIds, helperUserId, baseDistanceToJobKm, logProposalAnalytics, pushToast, t],
   );
 
   const submitApply = async (job: Job, proposedAmount: number | null, proposalMessage?: string | null) => {
     if (appliedJobIds.has(job.id) || isSubmittingApplyRef.current) return;
-    const distanceKm = distanceToJobKm(helperCoords, job);
+    const distanceKm = baseDistanceToJobKm(job);
     const interestCost = leadCostsForJob(job, { distanceKm }).interestCost;
     if (creditBalance != null && creditBalance < interestCost) {
       setInsufficientCreditsLc(interestCost);
@@ -559,7 +570,7 @@ export default function HelperDashboard() {
       pushToast(t('helper_dashboard.swipe_rate_limit'));
       return;
     }
-    const distanceKm = distanceToJobKm(helperCoords, job);
+    const distanceKm = baseDistanceToJobKm(job);
     recordMarketSignal({
       requestId: job.id,
       helperId: helperUserId,
@@ -587,7 +598,7 @@ export default function HelperDashboard() {
         province: job.region ?? null,
         budgetMin: job.budgetMin ?? null,
         budgetMax: job.budgetMax ?? null,
-        distanceKm: distanceToJobKm(helperCoords, job),
+        distanceKm: baseDistanceToJobKm(job),
         source: 'swipe',
       });
     }
@@ -636,7 +647,7 @@ export default function HelperDashboard() {
       list = [...list].sort((a, b) => b.createdAt - a.createdAt);
     } else if (activeTab === 'match') {
       list = sortOpportunitiesForHelper(list, {
-        origin: helperCoords,
+        origin: helperBaseCoords,
         helperSkillIds: profileSettings.skillIds,
         helperPlanTier: me.subscriptionTier,
       });
@@ -654,7 +665,7 @@ export default function HelperDashboard() {
     jobs,
     selectedCategoryFilter,
     activeTab,
-    helperCoords,
+    helperBaseCoords,
     profileSettings.skillIds,
     me.subscriptionTier,
     categoryPrefs,
@@ -669,7 +680,7 @@ export default function HelperDashboard() {
     jobs.filter((j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== me.id),
     categoryPrefs,
   )
-    .map((job) => ({ job, distanceKm: distanceToJobKm(helperCoords, job) }))
+    .map((job) => ({ job, distanceKm: baseDistanceToJobKm(job) }))
     .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
     .slice(0, 3);
   const isPerformancePage = location.pathname === ROUTES.helperPerformance;
@@ -1077,6 +1088,15 @@ export default function HelperDashboard() {
             </div>
           ) : null}
 
+          {activeTab !== 'candidaturas' && !hasHelperBaseAddress ? (
+            <div className="mb-3 rounded-2xl border border-sky-100 bg-sky-50/80 px-4 py-3 text-xs font-bold text-slate-700 shadow-sm">
+              <div className="flex items-start gap-2">
+                <Icons.MapPinned className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
+                <span>{t('helper_dashboard.base_address_banner')}</span>
+              </div>
+            </div>
+          ) : null}
+
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900">{activeTab === 'candidaturas' ? t('helper_dashboard.feed_title_apps') : t('helper_dashboard.feed_title_jobs')}</h2>
           </div>
@@ -1179,7 +1199,9 @@ export default function HelperDashboard() {
                         interactionLocked={Boolean(applyingJobId) || swipeRateLimited}
                         proposalOpen={proposalJob?.id === job.id}
                         swipeRateLimited={swipeRateLimited}
-                        distanceKm={distanceToJobKm(helperCoords, job)}
+                        distanceKm={baseDistanceToJobKm(job)}
+                        distanceFromBase={hasHelperBaseAddress}
+                        needsBaseAddress={!hasHelperBaseAddress}
                         applicationsCount={applicationCountsByJobId.get(job.id) ?? 0}
                         clientReviewCount={reviewCountByUserId.get(job.clientId) ?? 0}
                         onApply={requestApply}
@@ -1235,7 +1257,11 @@ export default function HelperDashboard() {
                    <span className="min-w-0 flex-1">
                      <span className="block truncate text-sm font-black text-slate-900">{translateJobTitle(job.title, job.category, job.subcategory, t)}</span>
                      <span className="block truncate text-xs font-bold text-slate-500">
-                       {distanceKm != null ? t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) }) : job.city || job.location}
+                       {!hasHelperBaseAddress
+                         ? t('helper_dashboard.base_address_missing_short')
+                         : distanceKm != null
+                           ? t('helper_dashboard.distance_from_base_km', { km: distanceKm.toFixed(1) })
+                           : job.city || job.location}
                      </span>
                    </span>
                    <span className={`rounded-full px-2 py-1 text-[10px] font-black ${job.urgency === 'high' ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'}`}>
@@ -1305,7 +1331,7 @@ export default function HelperDashboard() {
         onSubmit={(amount, message) => proposalJob && void submitApply(proposalJob, amount, message)}
         t={t}
         language={language}
-        distanceKm={proposalJob ? distanceToJobKm(helperCoords, proposalJob) : null}
+        distanceKm={proposalJob ? baseDistanceToJobKm(proposalJob) : null}
       />
 
       <HelperInsufficientCreditsModal
@@ -1329,7 +1355,9 @@ export default function HelperDashboard() {
         t={t}
         translateCategory={translateCategory}
         formatJobSchedule={formatJobScheduleDisplay}
-        distanceKm={detailOpportunity ? distanceToJobKm(helperCoords, detailOpportunity) : null}
+        distanceKm={detailOpportunity ? baseDistanceToJobKm(detailOpportunity) : null}
+        distanceFromBase={hasHelperBaseAddress}
+        needsBaseAddress={!hasHelperBaseAddress}
       />
 
       {clientProfileJob ? (

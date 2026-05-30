@@ -82,8 +82,9 @@ export function HelperCategoriesManager({
     const next = [...withoutCategory, ...added];
     const preferredPrimary =
       grouped.size === 0 && !editCategory ? categoryId : primaryCategory;
-    syncCategoriesFromSkills(next, preferredPrimary);
-    await persistSkills(next);
+    const { primary, secondary } = deriveHelperCategoriesFromSkillKeys(next, preferredPrimary);
+    onCategoriesChange(primary, secondary);
+    await persistSkills(next, { primary, secondary });
     setEditCategory(null);
   };
 

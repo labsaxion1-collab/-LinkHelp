@@ -1702,7 +1702,13 @@ export const pt = {
     coming_soon_cta: 'Em breve',
     insufficient_title: 'Creditos insuficientes',
     insufficient_body: 'Voce precisa de {{amount}} para continuar.',
+    insufficient_interest_body:
+      'Voce precisa de {{required}} LC para demonstrar interesse neste chamado.',
+    insufficient_balance_label: 'Saldo atual',
+    insufficient_required_label: 'Necessario',
+    insufficient_balance_unknown: 'Carregando saldo de creditos. Tente novamente em instantes.',
     insufficient_buy: 'Comprar creditos',
+    insufficient_buy_linkcredits: 'Comprar LinkCredits',
     insufficient_back: 'Voltar',
   },
   credits: {
@@ -1869,7 +1875,9 @@ export const pt = {
   job_actions: {
     cancel: 'Cancelar',
     cancel_modal_title: 'Cancelar este chamado?',
-    cancel_modal_body: 'Este anúncio será removido e os helpers interessados serão avisados.',
+    cancel_modal_body:
+      'Este anúncio será removido dos pedidos ativos e os helpers interessados serão avisados.',
+    cancel_modal_warning: 'Essa ação não pode ser desfeita.',
     cancel_modal_back: 'Voltar',
     cancel_modal_confirm: 'Sim, cancelar chamado',
     remove: 'Remover',

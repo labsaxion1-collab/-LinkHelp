@@ -246,6 +246,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const interestCost = leadCostsForJob(job, { distanceKm: options?.distanceKm ?? null }).interestCost;
 
     if (useRemote) {
+      if (helperId === profile?.id) {
+        await chargeApplicationInterest(jobId, interestCost);
+      }
       const applyResult = await remoteApply({
         requestId: jobId,
         helperId,
@@ -255,9 +258,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       });
       if (applyResult.outcome === 'already_exists') {
         throw new Error('ALREADY_APPLIED');
-      }
-      if (helperId === profile?.id) {
-        await chargeApplicationInterest(jobId, interestCost);
       }
       const helperName = profile?.name?.trim() || 'Helper';
       const title = 'Nova candidatura recebida';

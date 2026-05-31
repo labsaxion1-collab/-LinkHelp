@@ -1690,7 +1690,13 @@ export const fr = {
     coming_soon_cta: 'Bientot',
     insufficient_title: 'Crédits insuffisants',
     insufficient_body: 'Il vous faut {{amount}} pour continuer.',
+    insufficient_interest_body:
+      'Il vous faut {{required}} LC pour manifester votre intérêt pour cette demande.',
+    insufficient_balance_label: 'Solde actuel',
+    insufficient_required_label: 'Requis',
+    insufficient_balance_unknown: 'Chargement du solde. Réessayez dans un instant.',
     insufficient_buy: 'Acheter des crédits',
+    insufficient_buy_linkcredits: 'Acheter des LinkCredits',
     insufficient_back: 'Retour',
   },
   credits: {
@@ -1857,7 +1863,9 @@ export const fr = {
   job_actions: {
     cancel: 'Annuler',
     cancel_modal_title: 'Annuler cette demande ?',
-    cancel_modal_body: 'Cette annonce sera retirée et les helpers intéressés seront avertis.',
+    cancel_modal_body:
+      'Cette annonce sera retirée des demandes actives et les helpers intéressés seront avertis.',
+    cancel_modal_warning: 'Cette action est irréversible.',
     cancel_modal_back: 'Retour',
     cancel_modal_confirm: 'Oui, annuler la demande',
     remove: 'Retirer',

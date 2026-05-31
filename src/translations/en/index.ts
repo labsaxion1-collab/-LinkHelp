@@ -1689,7 +1689,12 @@ export const en = {
     coming_soon_cta: 'Coming soon',
     insufficient_title: 'Not enough credits',
     insufficient_body: 'You need {{amount}} to continue.',
+    insufficient_interest_body: 'You need {{required}} LC to show interest in this request.',
+    insufficient_balance_label: 'Current balance',
+    insufficient_required_label: 'Required',
+    insufficient_balance_unknown: 'Loading credit balance. Please try again in a moment.',
     insufficient_buy: 'Buy credits',
+    insufficient_buy_linkcredits: 'Buy LinkCredits',
     insufficient_back: 'Back',
   },
   credits: {
@@ -1856,7 +1861,9 @@ export const en = {
   job_actions: {
     cancel: 'Cancel',
     cancel_modal_title: 'Cancel this request?',
-    cancel_modal_body: 'This listing will be removed and interested helpers will be notified.',
+    cancel_modal_body:
+      'This listing will be removed from active requests and interested helpers will be notified.',
+    cancel_modal_warning: 'This action cannot be undone.',
     cancel_modal_back: 'Go back',
     cancel_modal_confirm: 'Yes, cancel request',
     remove: 'Remove',

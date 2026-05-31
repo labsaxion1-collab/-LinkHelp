@@ -131,8 +131,6 @@ export default function HelperDashboard() {
   const reviewCountByUserId = useMemo(() => buildReviewCountByUserId(reviews), [reviews]);
   const {
     wallet,
-    displayBalance,
-    applyOptimisticDebit,
     refreshCredits,
     transactions: creditTransactions,
     unlocks,
@@ -379,7 +377,38 @@ export default function HelperDashboard() {
   const appliedJobIds = new Set(
     helperApplications.filter((a) => a.status !== 'cancelled').map((a) => a.jobId),
   );
-  const creditBalance = displayBalance ?? wallet?.balance ?? null;
+  const walletBalance = wallet?.balance ?? null;
+
+  const interestCostForJob = React.useCallback(
+    (job: Job) => leadCostsForJob(job, { distanceKm: baseDistanceToJobKm(job) }).interestCost,
+    [baseDistanceToJobKm],
+  );
+
+  const openInsufficientCreditsModal = React.useCallback((job: Job) => {
+    setProposalJob(null);
+    proposalOpenedAtRef.current = null;
+    setInsufficientCreditsLc(interestCostForJob(job));
+  }, [interestCostForJob]);
+
+  const hasInterestCredits = React.useCallback(
+    (job: Job): boolean => {
+      if (creditsLoading && walletBalance == null) {
+        pushToast(t('common.loading'));
+        return false;
+      }
+      const required = interestCostForJob(job);
+      if (walletBalance == null) {
+        pushToast(t('helper_credits.insufficient_balance_unknown'));
+        return false;
+      }
+      if (walletBalance < required) {
+        openInsufficientCreditsModal(job);
+        return false;
+      }
+      return true;
+    },
+    [creditsLoading, walletBalance, interestCostForJob, openInsufficientCreditsModal, pushToast, t],
+  );
   const [swipeCooldownUntil, setSwipeCooldownUntil] = useState(0);
   const proposalOpenedAtRef = React.useRef<number | null>(null);
   const proposalSourceRef = React.useRef<ProposalAnalyticsSource>('modal');
@@ -490,6 +519,7 @@ export default function HelperDashboard() {
         pushToast(t('helper_dashboard.already_interested'));
         return;
       }
+      if (!hasInterestCredits(job)) return;
       proposalSourceRef.current = source;
       proposalOpenedAtRef.current = Date.now();
       recordMarketSignal({
@@ -507,20 +537,16 @@ export default function HelperDashboard() {
       logProposalAnalytics('opened', job);
       setProposalJob(job);
     },
-    [appliedJobIds, helperUserId, baseDistanceToJobKm, logProposalAnalytics, pushToast, t],
+    [appliedJobIds, helperUserId, baseDistanceToJobKm, hasInterestCredits, logProposalAnalytics, pushToast, t],
   );
 
   const submitApply = async (job: Job, proposedAmount: number | null, proposalMessage?: string | null) => {
     if (appliedJobIds.has(job.id) || isSubmittingApplyRef.current) return;
     const distanceKm = baseDistanceToJobKm(job);
-    const interestCost = leadCostsForJob(job, { distanceKm }).interestCost;
-    if (creditBalance != null && creditBalance < interestCost) {
-      setInsufficientCreditsLc(interestCost);
-      return;
-    }
+    if (!hasInterestCredits(job)) return;
+
     isSubmittingApplyRef.current = true;
     setApplyingJobId(job.id);
-    const rollbackOptimistic = applyOptimisticDebit(interestCost);
     try {
       await applyForJob(job.id, helperUserId, proposedAmount, {
         distanceKm,
@@ -547,9 +573,8 @@ export default function HelperDashboard() {
       setToastNotification({ message: t('helper_dashboard.toast_apply_success'), show: true });
       setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
     } catch (err: unknown) {
-      rollbackOptimistic();
       if (err instanceof InsufficientCreditsError) {
-        setInsufficientCreditsLc(err.requiredLc);
+        openInsufficientCreditsModal(job);
         return;
       }
       const msg =
@@ -574,6 +599,7 @@ export default function HelperDashboard() {
 
   const requestApply = (job: Job) => {
     if (isSubmittingApplyRef.current) return;
+    if (!hasInterestCredits(job)) return;
     openProposalForJob(job, 'modal');
   };
 
@@ -586,6 +612,7 @@ export default function HelperDashboard() {
 
   const handleSwipeInterest = (job: Job) => {
     if (appliedJobIds.has(job.id) || isSubmittingApplyRef.current) return;
+    if (!hasInterestCredits(job)) return;
     if (Date.now() < swipeCooldownUntil) {
       pushToast(t('helper_dashboard.swipe_rate_limit'));
       return;
@@ -1070,10 +1097,10 @@ export default function HelperDashboard() {
             )}
             {!isPerformancePage && UI_VISIBILITY.helperCredits ? (
               <HelperCreditsWalletCard
-                balance={creditBalance}
+                balance={walletBalance}
                 usedThisMonth={creditsUsedThisMonth}
                 unlocksCount={unlocks.length}
-                loading={creditsLoading && creditBalance == null}
+                loading={creditsLoading && walletBalance == null}
                 compact
                 t={t}
                 onBuyCredits={goToCredits}
@@ -1365,7 +1392,7 @@ export default function HelperDashboard() {
         open={Boolean(proposalJob)}
         job={proposalJob}
         submitting={proposalJob ? applyingJobId === proposalJob.id : false}
-        creditBalance={creditBalance}
+        creditBalance={walletBalance}
         onClose={handleProposalClose}
         onSubmit={(amount, message) => proposalJob && void submitApply(proposalJob, amount, message)}
         t={t}
@@ -1376,6 +1403,7 @@ export default function HelperDashboard() {
       <HelperInsufficientCreditsModal
         open={insufficientCreditsLc != null}
         requiredLc={insufficientCreditsLc ?? 0}
+        currentBalance={walletBalance}
         onClose={() => setInsufficientCreditsLc(null)}
         t={t}
         language={language}

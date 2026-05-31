@@ -46,17 +46,21 @@ security definer
 set search_path = public
 as $$
 declare
-  w public.credit_wallets;
+  v_event_id uuid;
+  v_event_status text;
+  v_balance int;
   new_balance int;
-  existing public.payment_events;
 begin
-  select * into existing from public.payment_events where stripe_session_id = p_stripe_session_id;
+  select id, status
+  into v_event_id, v_event_status
+  from public.payment_events
+  where stripe_session_id = p_stripe_session_id;
 
-  if existing.id is not null and existing.status = 'paid' then
+  if v_event_id is not null and v_event_status = 'paid' then
     return jsonb_build_object('alreadyProcessed', true);
   end if;
 
-  if existing.id is null then
+  if v_event_id is null then
     insert into public.payment_events (
       user_id,
       stripe_session_id,
@@ -86,7 +90,7 @@ begin
       status = p_status,
       stripe_payment_intent = coalesce(p_stripe_payment_intent, stripe_payment_intent),
       raw_event = coalesce(p_raw_event, raw_event)
-    where id = existing.id;
+    where id = v_event_id;
   end if;
 
   if p_status is distinct from 'paid' then
@@ -100,8 +104,25 @@ begin
     return jsonb_build_object('alreadyCredited', true);
   end if;
 
-  w := public.ensure_helper_credit_wallet(p_user_id);
-  new_balance := w.balance + p_credits;
+  if to_regprocedure('public.ensure_helper_credit_wallet(uuid)') is not null then
+    perform public.ensure_helper_credit_wallet(p_user_id);
+  else
+    insert into public.credit_wallets (helper_id)
+    values (p_user_id)
+    on conflict (helper_id) do nothing;
+  end if;
+
+  select balance
+  into v_balance
+  from public.credit_wallets
+  where helper_id = p_user_id
+  for update;
+
+  if v_balance is null then
+    raise exception 'WALLET_NOT_FOUND';
+  end if;
+
+  new_balance := v_balance + p_credits;
 
   update public.credit_wallets
   set balance = new_balance, total_purchased = total_purchased + p_credits

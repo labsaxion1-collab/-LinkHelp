@@ -28,6 +28,8 @@ export const ROUTES = {
   map: '/map',
   payments: '/payments',
   helperCredits: '/helper/credits',
+  helperLinkCredits: '/helper/linkcredits',
+  helperCreditsSuccess: '/helper/credits/success',
   settings: '/settings',
   /** FLUX multi-app admin console */
   adminDashboard: '/admin/dashboard',

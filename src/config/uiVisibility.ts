@@ -7,8 +7,10 @@ export const UI_VISIBILITY = {
   clientCredits: CLIENT_LINKCREDITS_ENABLED,
   /** Helper wallet + history page (Phase 1 foundation). */
   helperCredits: true,
-  /** Real Stripe checkout for helper packages — off until Phase 2. */
-  helperCreditPurchase: false,
+  /** Real Stripe checkout for helper LinkCredits packages. */
+  helperCreditPurchase: true,
+  /** Monthly Elite / Pro Help subscription UI — hidden; credits-only model. */
+  helperSubscriptionPlans: false,
   /** Spend credits to unlock opportunities — off until Phase 2. */
   helperCreditUnlock: false,
   /** Training center — hidden until relaunch. */

@@ -24,6 +24,8 @@ const NotificationsPage = lazy(() => import('@/pages/notifications/Notifications
 const LiveMapPage = lazy(() => import('@/pages/map/LiveMapPage'));
 const PaymentsPage = lazy(() => import('@/pages/payments/PaymentsPage'));
 const HelperCreditsPage = lazy(() => import('@/pages/helper/HelperCreditsPage'));
+const HelperLinkCreditsPage = lazy(() => import('@/pages/helper/HelperLinkCreditsPage'));
+const HelperCreditsSuccessPage = lazy(() => import('@/pages/helper/HelperCreditsSuccessPage'));
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 
 function AdminDashboardLoadError() {
@@ -99,6 +101,17 @@ export function AppRoutes() {
               path={ROUTES.helperCredits}
               element={UI_VISIBILITY.helperCredits ? <HelperCreditsPage /> : <Navigate to={ROUTES.helperDashboard} replace />}
             />
+            <Route
+              path={ROUTES.helperLinkCredits}
+              element={
+                UI_VISIBILITY.helperCreditPurchase ? (
+                  <HelperLinkCreditsPage />
+                ) : (
+                  <Navigate to={ROUTES.helperCredits} replace />
+                )
+              }
+            />
+            <Route path={ROUTES.helperCreditsSuccess} element={<HelperCreditsSuccessPage />} />
           </Route>
 
           <Route element={<AdminProtectedRoute />}>

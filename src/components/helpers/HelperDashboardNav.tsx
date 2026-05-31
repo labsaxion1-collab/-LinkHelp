@@ -22,7 +22,7 @@ export function resolveHelperNavSection(
   pathname: string,
   activeTab: Props['activeTab'],
 ): HelperNavSection {
-  if (pathname === ROUTES.helperCredits) return 'credits';
+  if (pathname === ROUTES.helperCredits || pathname === ROUTES.helperLinkCredits) return 'credits';
   if (pathname === ROUTES.helperJobs) return 'jobs';
   if (pathname === ROUTES.helperPerformance) return 'performance';
   if (pathname === ROUTES.settings) return 'availability';

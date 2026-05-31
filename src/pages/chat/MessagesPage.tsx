@@ -519,12 +519,14 @@ export default function MessagesPage() {
                   className="flex-1 min-h-[48px] rounded-xl border border-slate-200 bg-white text-slate-800 font-bold hover:bg-slate-50 transition-colors"
                   onClick={() => {
                     setShowLimitModal(false);
-                    navigate(effectiveClientMode ? ROUTES.clientDashboard : ROUTES.helperDashboard, {
-                      state: { openUpgrade: true },
-                    });
+                    navigate(
+                      effectiveClientMode ? ROUTES.clientDashboard : ROUTES.helperLinkCredits,
+                    );
                   }}
                 >
-                  {t('messages_page.prematch_limit_plans_cta')}
+                  {effectiveClientMode
+                    ? t('messages_page.prematch_limit_plans_cta')
+                    : t('messages_page.prematch_limit_linkcredits_cta')}
                 </button>
               </div>
             </div>

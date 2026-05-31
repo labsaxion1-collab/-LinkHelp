@@ -24,13 +24,8 @@ import { SERVICE_CATEGORIES, type ServiceCategoryId } from '@/data/serviceCatego
 import { resolveCategoryId, translateCategory, translateJobTitle } from '@/utils/translateCategory';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
-import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import type { Application } from '@/types/application';
 import type { Job } from '@/types/job';
-import {
-  HelperSubscriptionPlanModal,
-  type HelperPlanModalView,
-} from '@/components/helpers/HelperSubscriptionPlanModal';
 import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/HelperProfileCompletionBar';
 import { HelperCreditsWalletCard } from '@/components/helpers/HelperCreditsWalletCard';
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
@@ -78,15 +73,9 @@ import {
 } from '@/utils/helperCategoryPreferences';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { HelperScorePanel } from '@/components/features/HelperScorePanel';
+import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboard';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { LhCard } from '@/components/design-system/LhCard';
-
-function formatSubscriptionBillingDate(iso: string | undefined, language: string): string {
-  if (!iso) return '';
-  const d = new Date(`${iso}T12:00:00`);
-  const loc = language === 'fr' ? 'fr-CA' : language === 'pt' ? 'pt-BR' : 'en-CA';
-  return d.toLocaleDateString(loc, { month: 'long', day: 'numeric', year: 'numeric' });
-}
 
 export default function HelperDashboard() {
   const location = useLocation();
@@ -106,7 +95,6 @@ export default function HelperDashboard() {
   const [insufficientCreditsLc, setInsufficientCreditsLc] = useState<number | null>(null);
 
   // Modals state
-  const [planModal, setPlanModal] = useState<HelperPlanModalView | null>(null);
   const [profileSettings, setProfileSettings] = useState<HelperProfileSettings>(() => loadHelperProfileSettings());
   type ProfileSetupModal = null | 'avatar' | 'skills';
   const [profileSetupModal, setProfileSetupModal] = useState<ProfileSetupModal>(null);
@@ -142,10 +130,9 @@ export default function HelperDashboard() {
   useEffect(() => {
     const st = location.state as { openUpgrade?: boolean } | null;
     if (st?.openUpgrade) {
-      setPlanModal('choose');
-      navigate(location.pathname, { replace: true, state: {} });
+      navigate(ROUTES.helperLinkCredits, { replace: true, state: {} });
     }
-  }, [location.state, location.pathname, navigate]);
+  }, [location.state, navigate]);
 
   useEffect(() => {
     const st = location.state as { openTab?: string } | null;
@@ -306,12 +293,6 @@ export default function HelperDashboard() {
 
   const [showIdeaModal, setShowIdeaModal] = useState(false);
 
-  const helperTier: HelperSubscriptionTier = me.subscriptionTier ?? 'BASIC';
-  const planNextBillingLabel =
-    helperTier === 'BASIC'
-      ? null
-      : formatSubscriptionBillingDate(me.nextBillingDate, language);
-
   const sidebarSkillLines = React.useMemo(
     () =>
       profileSettings.skillIds
@@ -412,7 +393,7 @@ export default function HelperDashboard() {
   const [swipeCooldownUntil, setSwipeCooldownUntil] = useState(0);
   const proposalOpenedAtRef = React.useRef<number | null>(null);
   const proposalSourceRef = React.useRef<ProposalAnalyticsSource>('modal');
-  const goToCredits = React.useCallback(() => navigate(ROUTES.helperCredits), [navigate]);
+  const goToCredits = React.useCallback(() => navigate(ROUTES.helperLinkCredits), [navigate]);
   const creditsUsedThisMonth = React.useMemo(() => {
     const now = new Date();
     return creditTransactions
@@ -809,17 +790,6 @@ export default function HelperDashboard() {
           </div>
         </div>
       )}
-
-
-      {planModal ? (
-        <HelperSubscriptionPlanModal
-          view={planModal}
-          currentTier={helperTier}
-          nextBillingLabel={planNextBillingLabel}
-          onClose={() => setPlanModal(null)}
-          onComparePlans={() => setPlanModal('choose')}
-        />
-      ) : null}
 
       <UserProfileModal
         open={showProfileModal}

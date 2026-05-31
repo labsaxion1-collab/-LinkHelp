@@ -12,6 +12,7 @@ export async function createDemoPaymentIntent(amountCents: number): Promise<Paym
   };
 }
 
+/** Legacy client checkout via Supabase Edge Function */
 export async function createCheckoutSession(input: {
   packageId: string;
   successUrl: string;
@@ -26,4 +27,32 @@ export async function createCheckoutSession(input: {
   const url = (data as { url?: string } | null)?.url;
   if (!url) throw new Error('STRIPE_NOT_CONFIGURED');
   return { url };
+}
+
+/** Helper LinkCredits checkout via Vercel API route */
+export async function startLinkCreditCheckout(input: {
+  packageId: string;
+  priceId: string;
+}): Promise<{ url: string }> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('STRIPE_NOT_CONFIGURED');
+
+  const {
+    data: { session },
+  } = await sb.auth.getSession();
+  if (!session?.access_token) throw new Error('AUTH_REQUIRED');
+
+  const res = await fetch('/api/stripe/create-checkout-session', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(input),
+  });
+
+  const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+  if (!res.ok) throw new Error(data.error ?? 'CHECKOUT_FAILED');
+  if (!data.url) throw new Error('STRIPE_NOT_CONFIGURED');
+  return { url: data.url };
 }

@@ -17,6 +17,7 @@ export function isPathAllowedForRole(pathname: string, role: ProfileRole): boole
   if (pathname === ROUTES.payments || pathname.startsWith(`${ROUTES.payments}/`)) return role === 'client';
   if (pathname === ROUTES.ideas || pathname.startsWith(`${ROUTES.ideas}/`)) return role === 'client';
   if (pathname === ROUTES.helperCredits || pathname.startsWith(`${ROUTES.helperCredits}/`)) return role === 'helper';
+  if (pathname === ROUTES.helperLinkCredits || pathname.startsWith(`${ROUTES.helperLinkCredits}/`)) return role === 'helper';
   if (pathname === ROUTES.helperTraining || pathname.startsWith(`${ROUTES.helperTraining}/`)) return role === 'helper';
   return true;
 }

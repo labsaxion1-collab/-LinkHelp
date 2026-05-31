@@ -1,5 +1,5 @@
 import * as Icons from 'lucide-react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCredits } from '@/context/CreditContext';
@@ -14,7 +14,7 @@ import { formatLinkCredits } from '@/utils/formatLinkCredits';
 export default function HelperCreditsPage() {
   const { t, language } = useLanguage();
   const { profile } = useAuth();
-  const { wallet, transactions, packages, unlocks, loading } = useCredits();
+  const { wallet, transactions, unlocks, loading } = useCredits();
   const balanceLabel = formatLinkCredits(wallet?.balance ?? 0, language);
 
   const helperWorkspace = profile?.role === 'helper';
@@ -58,38 +58,28 @@ export default function HelperCreditsPage() {
           </div>
         </div>
 
-        {!UI_VISIBILITY.helperCreditPurchase ? (
+        {UI_VISIBILITY.helperCreditPurchase ? (
+          <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-indigo-50/40 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-black text-slate-950">{t('link_credits_store.buy_banner_title')}</p>
+              <p className="mt-1 text-sm font-medium text-slate-600">{t('link_credits_store.no_subscription')}</p>
+            </div>
+            <Link
+              to={ROUTES.helperLinkCredits}
+              className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-sm font-black text-white hover:bg-blue-700"
+            >
+              <Icons.CreditCard className="h-4 w-4" />
+              {t('helper_credits.insufficient_buy_linkcredits')}
+            </Link>
+          </div>
+        ) : (
           <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-900">
             {t('helper_credits.purchase_coming_soon')}
           </div>
-        ) : null}
+        )}
 
         <CreditsUsageDashboard className="mb-5" />
         <CreditRefundStatusCard className="mb-5" />
-
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {packages.map((pkg) => (
-            <div key={pkg.id} className="relative rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              {pkg.highlightLabel ? (
-                <span className="absolute right-4 top-4 rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
-                  {pkg.highlightLabel}
-                </span>
-              ) : null}
-              <h2 className="text-lg font-black text-slate-950">{pkg.name}</h2>
-              <p className="mt-3 text-3xl font-black text-slate-950">{pkg.credits}</p>
-              <p className="text-sm font-bold text-slate-500">{t('credits.credits_unit')}</p>
-              <p className="mt-4 text-xl font-black text-blue-700">CAD ${pkg.priceCad}</p>
-              <button
-                type="button"
-                disabled={!UI_VISIBILITY.helperCreditPurchase}
-                className="mt-5 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Icons.CreditCard className="h-4 w-4" />
-                {UI_VISIBILITY.helperCreditPurchase ? t('credits.buy_package') : t('helper_credits.coming_soon_cta')}
-              </button>
-            </div>
-          ))}
-        </div>
 
         <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-lg font-black text-slate-950">{t('credits.history_title')}</h2>

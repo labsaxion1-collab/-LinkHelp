@@ -37,7 +37,7 @@ export function HelperInsufficientCreditsModal({
             type="button"
             onClick={() => {
               onClose();
-              navigate(ROUTES.helperCredits);
+              navigate(ROUTES.helperLinkCredits);
             }}
             className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-black text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700"
           >

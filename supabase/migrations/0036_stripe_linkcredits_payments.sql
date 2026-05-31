@@ -146,17 +146,3 @@ $$;
 grant execute on function public.confirm_stripe_linkcredit_purchase(
   uuid, text, text, text, text, int, int, text, text, jsonb
 ) to service_role;
-
--- Sync credit_packages with Stripe catalog (display + legacy confirm_credit_purchase)
-insert into public.credit_packages (id, name, credits, price_cad, active, highlight_label)
-values
-  ('starter', 'Starter', 35, 14.99, true, null),
-  ('popular', 'Popular', 80, 29.99, true, 'Mais popular'),
-  ('pro', 'Pro', 180, 59.99, true, null),
-  ('power', 'Power', 400, 119.99, true, 'Melhor valor')
-on conflict (id) do update set
-  name = excluded.name,
-  credits = excluded.credits,
-  price_cad = excluded.price_cad,
-  active = excluded.active,
-  highlight_label = excluded.highlight_label;

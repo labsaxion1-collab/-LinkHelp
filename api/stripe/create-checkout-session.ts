@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
-import { getLinkCreditPackage } from '../_lib/packages';
-import { getServerSiteUrl } from '../_lib/siteUrl';
-import { getAuthedUserId, getSupabaseAdmin } from '../_lib/supabaseAdmin';
+import { getLinkCreditPackage } from './packages.js';
+import { getServerSiteUrl } from './siteUrl.js';
+import { getAuthedUserId, getSupabaseAdmin } from './supabaseAdmin.js';
 
 type Body = {
   packageId?: string;

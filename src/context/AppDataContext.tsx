@@ -31,7 +31,6 @@ import { useCredits } from '@/context/CreditContext';
 import {
   fetchHelperBaseDistanceKm,
   leadCostsForJob,
-  remoteChargeHelperOnClientHire,
 } from '@/services/helperLeadCredits';
 import { isJobCancelled } from '@/utils/jobVisibility';
 
@@ -534,13 +533,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     if (useRemote) {
       applyOptimisticHire();
       try {
-        const conversationId = await remoteOfficiallyHireHelper(payload, jobSnapshot, initialMessage);
-
-        try {
-          await remoteChargeHelperOnClientHire(applicationId, selectedCost);
-        } catch (chargeErr) {
-          console.warn('[LinkHelp] Helper LC charge after hire failed (hire succeeded)', chargeErr);
-        }
+        const conversationId = await remoteOfficiallyHireHelper(payload, jobSnapshot, initialMessage, {
+          chargeAmount: selectedCost,
+        });
 
         const hireHelperTitle = 'Contratação oficial';
         const hireHelperMessage = `O cliente aceitou sua proposta para "${jobSnapshot.title}". O chat está liberado.`;

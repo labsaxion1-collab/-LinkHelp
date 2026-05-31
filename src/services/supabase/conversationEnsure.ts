@@ -14,6 +14,21 @@ export async function ensureConversation(input: EnsureConversationInput): Promis
 
   const unlock = input.contactUnlocked ?? false;
 
+  const { data: rpcId, error: rpcErr } = await sb.rpc('ensure_conversation', {
+    p_request_id: input.requestId,
+    p_client_id: input.clientId,
+    p_helper_id: input.helperId,
+    p_contact_unlocked: unlock,
+  });
+
+  if (!rpcErr && rpcId) {
+    return rpcId as string;
+  }
+
+  if (rpcErr && rpcErr.code !== 'PGRST202' && !rpcErr.message?.includes('ensure_conversation')) {
+    console.warn('[LinkHelp] ensure_conversation RPC failed, falling back', rpcErr.message);
+  }
+
   const { data: existing, error: fetchErr } = await sb
     .from('conversations')
     .select('id, contact_unlocked')

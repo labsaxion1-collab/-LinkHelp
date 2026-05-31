@@ -4,7 +4,7 @@ import type { Application } from '@/types/application';
 import type { Job, JobStatus, JobUrgency } from '@/types/job';
 import type { AppNotification } from '@/types/notification';
 import type { UpcomingJob, UpcomingWorkflowStatus } from '@/types/upcoming';
-import type { ApplicationRow, MapperProfile, NotificationRow, RequestRow, UpcomingJobRow } from '@/types/database';
+import { normalizeApplicationStatus, normalizeRequestStatus } from '@/utils/statusNormalize';
 
 export function tsFromIso(iso: string): number {
   return new Date(iso).getTime();
@@ -49,7 +49,7 @@ export function requestRowToJob(row: RequestRow, client: MapperProfile): Job {
     acceptedAmount: row.accepted_amount,
     value: budgetValue || '---',
     urgency: (row.urgency === 'high' ? 'high' : 'normal') as JobUrgency,
-    status: row.status as JobStatus,
+    status: normalizeRequestStatus(row.status),
     createdAt: tsFromIso(row.created_at),
   };
 }
@@ -68,7 +68,7 @@ export function applicationRowToApp(row: ApplicationRow, helper: MapperProfile):
     helperRating: helper.rating ?? 5,
     helperJobs: helper.jobs_completed ?? 0,
     helperPlan: (helper.plan_type as HelperSubscriptionTier | undefined) ?? 'BASIC',
-    status: row.status,
+    status: normalizeApplicationStatus(row.status),
     createdAt: tsFromIso(row.created_at),
   };
 }

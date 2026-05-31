@@ -369,6 +369,11 @@ export const en = {
     success_toast_proposal: 'Proposal sent! You can keep the conversation in LinkHelp.',
     success_hired_toast: 'Helper hired! Chat is now open.',
     error_toast: 'Could not complete the hire. Please try again.',
+    helper_insufficient_credits: 'The helper does not have enough LinkCredits to be hired.',
+    not_allowed: 'You are not allowed to hire this helper.',
+    application_not_found: 'Application not found. Refresh the page and try again.',
+    application_mismatch: 'Application data does not match. Refresh the page.',
+    application_not_active: 'This application is no longer active.',
   },
   helper_badges: {
     pro_helper: 'Pro Helper',

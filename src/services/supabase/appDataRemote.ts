@@ -462,18 +462,92 @@ export async function remoteUpdateApplicationStatus(
   }
 }
 
-/** Creates/unlocks chat — only after client clicks “Contratar oficialmente”. */
+/** Creates/unlocks chat — only after client clicks “Aceitar proposta”. */
 export async function remoteOfficiallyHireHelper(
   payload: { requestId: string; applicationId: string; helperId: string },
   jobSnapshot: Job,
   initialMessage?: string,
+  options?: { chargeAmount?: number | null },
 ): Promise<string | null> {
   const { requestId, applicationId, helperId } = payload;
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
 
+  const chargeAmount =
+    options?.chargeAmount != null && options.chargeAmount > 0 ? Math.round(options.chargeAmount) : null;
+
+  const { data, error } = await sb.rpc('client_accept_proposal', {
+    p_application_id: applicationId,
+    p_charge_amount: chargeAmount,
+  });
+
+  if (error) {
+    const isMissingRpc =
+      error.code === 'PGRST202' ||
+      error.message?.includes('client_accept_proposal') ||
+      error.message?.includes('Could not find the function');
+    if (isMissingRpc) {
+      return remoteOfficiallyHireHelperLegacy(payload, jobSnapshot, initialMessage, chargeAmount);
+    }
+    console.error('[Accept proposal] supabase error', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
+    throw new Error(error.message || 'HIRE_FAILED');
+  }
+
+  const row = (data ?? {}) as { conversationId?: string };
+  const conversationId = row.conversationId ?? null;
+  if (!conversationId) {
+    throw new Error('HIRE_MISSING_CONVERSATION');
+  }
+
+  const cleanInitialMessage = initialMessage?.trim();
+  if (cleanInitialMessage) {
+    const { data: appRow } = await sb.from('applications').select('client_id').eq('id', applicationId).maybeSingle();
+    const clientId = (appRow as { client_id?: string } | null)?.client_id;
+    if (clientId) {
+      const { error: msgErr } = await sb.from('messages').insert({
+        conversation_id: conversationId,
+        sender_id: clientId,
+        content: cleanInitialMessage,
+        read: false,
+      });
+      if (msgErr) console.warn('[LinkHelp] Could not save hire intro message', msgErr.message);
+    }
+  }
+
+  return conversationId;
+}
+
+async function remoteOfficiallyHireHelperLegacy(
+  payload: { requestId: string; applicationId: string; helperId: string },
+  jobSnapshot: Job,
+  initialMessage?: string,
+  chargeAmount?: number | null,
+): Promise<string | null> {
+  const { requestId, applicationId, helperId } = payload;
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+
+  if (chargeAmount != null && chargeAmount > 0) {
+    const { error: chargeErr } = await sb.rpc('charge_helper_on_client_hire', {
+      p_application_id: applicationId,
+      p_amount: chargeAmount,
+    });
+    if (chargeErr) {
+      console.error('[Accept proposal] supabase error (charge)', chargeErr);
+      throw new Error(chargeErr.message || 'CHARGE_FAILED');
+    }
+  }
+
   const { data: appRow, error: fetchErr } = await sb.from('applications').select('*').eq('id', applicationId).single();
-  if (fetchErr || !appRow) throw fetchErr ?? new Error('NOT_FOUND');
+  if (fetchErr || !appRow) {
+    console.error('[Accept proposal] supabase error (fetch application)', fetchErr);
+    throw new Error(fetchErr?.message || 'NOT_FOUND');
+  }
 
   const app = appRow as ApplicationRow;
   if (app.request_id !== requestId || app.helper_id !== helperId) {
@@ -488,7 +562,8 @@ export async function remoteOfficiallyHireHelper(
   if (app.status !== 'accepted') {
     const { error: upErr } = await sb.from('applications').update({ status: 'accepted' }).eq('id', applicationId);
     if (upErr) throw new Error(upErr.message || 'APPLICATION_UPDATE_FAILED');
-    await sb.from('requests').update({ status: 'in_progress' }).eq('id', app.request_id);
+    const { error: reqErr } = await sb.from('requests').update({ status: 'in_progress' }).eq('id', app.request_id);
+    if (reqErr) throw new Error(reqErr.message || 'REQUEST_UPDATE_FAILED');
     if (acceptedAmount != null) {
       const reqUpdate: Record<string, unknown> = {
         accepted_amount: acceptedAmount,
@@ -509,7 +584,7 @@ export async function remoteOfficiallyHireHelper(
 
     if (!existingUpcoming) {
       const scheduledAt = new Date(Date.now() + 48 * 3600000).toISOString();
-      await sb.from('upcoming_jobs').insert({
+      const { error: upJobErr } = await sb.from('upcoming_jobs').insert({
         request_id: app.request_id,
         helper_id: app.helper_id,
         client_name: jobSnapshot.clientName,
@@ -523,14 +598,16 @@ export async function remoteOfficiallyHireHelper(
         scheduled_at: scheduledAt,
         workflow_status: 'scheduled',
       });
+      if (upJobErr) console.warn('[LinkHelp] upcoming_jobs insert', upJobErr.message);
     }
 
-    await sb
+    const { error: rejectErr } = await sb
       .from('applications')
       .update({ status: 'rejected' })
       .eq('request_id', app.request_id)
       .neq('id', applicationId)
       .in('status', ['pending', 'viewed']);
+    if (rejectErr) console.warn('[LinkHelp] reject other applications', rejectErr.message);
   }
 
   const conversationId = await ensureConversation({
@@ -551,7 +628,16 @@ export async function remoteOfficiallyHireHelper(
     if (msgErr) console.warn('[LinkHelp] Could not save hire intro message', msgErr);
   }
 
-  await sb.from('notifications').insert({
+  const notifySafe = async (row: Record<string, unknown>) => {
+    try {
+      const { error: notifErr } = await sb.from('notifications').insert(row);
+      if (notifErr) console.warn('[LinkHelp] hire notification insert', notifErr.message);
+    } catch (e) {
+      console.warn('[LinkHelp] hire notification insert', e);
+    }
+  };
+
+  await notifySafe({
     user_id: app.helper_id,
     type: 'application',
     title: 'Official hire',
@@ -563,7 +649,7 @@ export async function remoteOfficiallyHireHelper(
     read: false,
   });
 
-  await sb.from('notifications').insert({
+  await notifySafe({
     user_id: app.client_id,
     type: 'application',
     title: 'Helper hired',

@@ -43,6 +43,7 @@ import {
 import { CancelRequestModal } from '@/components/client/CancelRequestModal';
 import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
 import { extractErrorMessage } from '@/utils/errorMessage';
+import { formatHireError, logAcceptProposalError } from '@/utils/formatHireError';
 import { translateJobTitle } from '@/utils/translateCategory';
 import type { Job } from '@/types/job';
 import type { Application } from '@/types/application';
@@ -252,6 +253,18 @@ export default function ClientDashboard() {
 
   const handleAcceptProposal = async (job: Job, app: Application) => {
     if (acceptingApplicationId) return;
+
+    const logContext = {
+      requestId: job.id,
+      applicationId: app.id,
+      helperId: app.helperId,
+      proposedAmount: app.proposedAmount ?? null,
+    };
+    console.log('[Accept proposal] requestId', logContext.requestId);
+    console.log('[Accept proposal] applicationId', logContext.applicationId);
+    console.log('[Accept proposal] helperId', logContext.helperId);
+    console.log('[Accept proposal] proposedAmount', logContext.proposedAmount);
+
     setAcceptingApplicationId(app.id);
 
     const payload: OfficialHirePayload = {
@@ -268,8 +281,8 @@ export default function ClientDashboard() {
         navigate(`${ROUTES.messages}?c=${conversationId}`);
       }
     } catch (error) {
-      console.error(error);
-      showToast(extractErrorMessage(error, t('hire_modal.error_toast')), 'error');
+      logAcceptProposalError(logContext, error);
+      showToast(formatHireError(error, t), 'error');
     } finally {
       setAcceptingApplicationId(null);
     }
@@ -305,8 +318,16 @@ export default function ClientDashboard() {
         navigate(ROUTES.messages);
       }
     } catch (error) {
-      console.error(error);
-      showToast(extractErrorMessage(error, t('hire_modal.error_toast')), 'error');
+      logAcceptProposalError(
+        {
+          requestId: targetApp.jobId,
+          applicationId: targetApp.id,
+          helperId: targetApp.helperId,
+          proposedAmount: targetApp.proposedAmount ?? null,
+        },
+        error,
+      );
+      showToast(formatHireError(error, t), 'error');
     }
   };
 
@@ -816,6 +837,11 @@ export default function ClientDashboard() {
                     .map((job) => {
                     const jobApps = applications
                       .filter((a) => a.jobId === job.id && a.status !== 'cancelled')
+                      .filter((a) =>
+                        job.status === 'in_progress'
+                          ? a.status === 'accepted'
+                          : a.status !== 'rejected',
+                      )
                       .sort((a, b) => a.createdAt - b.createdAt);
                     const clientBudgetRange = formatClientBudgetRangeLabel(job, t);
                     const canCancelJob = job.status === 'open' || job.status === 'in_progress';

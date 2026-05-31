@@ -16,6 +16,8 @@ import type {
   UpcomingJobRow,
 } from '@/types/database';
 
+type Json = Record<string, unknown> | string | number | boolean | null;
+
 /** Narrow Database typing for createClient<Database> — extend as needed. */
 export type Database = {
   public: {
@@ -158,6 +160,32 @@ export type Database = {
           p_spoken_languages?: string[] | null;
         };
         Returns: ProfileRow;
+      };
+      ensure_conversation: {
+        Args: {
+          p_request_id: string;
+          p_client_id: string;
+          p_helper_id: string;
+          p_contact_unlocked?: boolean;
+        };
+        Returns: string;
+      };
+      client_accept_proposal: {
+        Args: { p_application_id: string; p_charge_amount?: number | null };
+        Returns: Json;
+      };
+      charge_helper_on_client_hire: {
+        Args: { p_application_id: string; p_amount: number };
+        Returns: Json;
+      };
+      helper_debit_application_selected: {
+        Args: {
+          p_helper_id: string;
+          p_request_id: string;
+          p_application_id: string;
+          p_amount: number;
+        };
+        Returns: Json;
       };
     };
     Enums: Record<string, never>;

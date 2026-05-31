@@ -371,6 +371,11 @@ export const fr = {
     success_toast_proposal: 'Proposition envoyée ! Continuez la conversation sur LinkHelp.',
     success_hired_toast: 'Helper engagé ! Le chat est ouvert.',
     error_toast: 'Impossible de finaliser l’engagement. Réessayez.',
+    helper_insufficient_credits: 'Le helper n’a pas assez de LinkCredits pour être embauché.',
+    not_allowed: 'Vous n’êtes pas autorisé à embaucher ce helper.',
+    application_not_found: 'Candidature introuvable. Actualisez la page et réessayez.',
+    application_mismatch: 'Les données de candidature ne correspondent pas. Actualisez la page.',
+    application_not_active: 'Cette candidature n’est plus active.',
   },
   helper_badges: {
     pro_helper: 'Pro Helper',

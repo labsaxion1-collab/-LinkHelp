@@ -52,13 +52,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const siteUrl = getServerSiteUrl();
+  const successUrl = `${siteUrl}/helper/credits/success?session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl = `${siteUrl}/helper/linkcredits?cancelled=true`;
+
+  console.error('[stripe/create-checkout-session] siteUrl:', siteUrl);
+
   const stripe = new Stripe(stripeSecret, { apiVersion: '2025-02-24.acacia' });
 
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      success_url: `${siteUrl}/helper/credits/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/helper/linkcredits?cancelled=true`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       client_reference_id: userId,
       metadata: {
         user_id: userId,
@@ -77,7 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ url: session.url });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'CHECKOUT_FAILED';
-    console.error('[stripe/create-checkout-session]', message);
+    console.error('[stripe/create-checkout-session]', message, 'siteUrl:', siteUrl);
     return res.status(500).json({ error: message });
   }
 }

@@ -17,7 +17,7 @@ export const LINK_CREDIT_PACKAGES: LinkCreditPackage[] = [
     credits: 35,
     price: 14.99,
     currency: 'CAD',
-    priceId: 'price_1TcyvbFZU1PZrMJuh6RjBRe',
+    priceId: 'price_1TcyvbFZU1PZrMJuh6RjBReM',
   },
   {
     id: 'popular',
@@ -25,7 +25,7 @@ export const LINK_CREDIT_PACKAGES: LinkCreditPackage[] = [
     credits: 80,
     price: 29.99,
     currency: 'CAD',
-    priceId: 'price_1TcywIFZU1PZrMJuJRkyrNS',
+    priceId: 'price_1TcywIFZU1PZrMJuJRkyrNS7',
     badge: 'Mais popular',
   },
   {

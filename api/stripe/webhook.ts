@@ -74,16 +74,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         : session.payment_intent?.id ?? null;
 
     const { error } = await admin.rpc('confirm_stripe_linkcredit_purchase', {
-      p_user_id: userId,
-      p_stripe_session_id: session.id,
-      p_stripe_payment_intent: paymentIntent,
-      p_package_id: packageId,
-      p_price_id: priceId,
-      p_credits: credits,
-      p_amount_cents: amountCents,
-      p_currency: currency,
-      p_status: 'paid',
-      p_raw_event: event as unknown as Record<string, unknown>,
+      payload: {
+        user_id: userId,
+        stripe_session_id: session.id,
+        stripe_payment_intent_id: paymentIntent,
+        package_id: packageId,
+        price_id: priceId,
+        credits,
+        amount_total: amountCents,
+        currency,
+        status: 'paid',
+        metadata: meta,
+        raw_event: event,
+      },
     });
 
     if (error) {

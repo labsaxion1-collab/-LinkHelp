@@ -6,7 +6,7 @@
 -- Does NOT use credit_packages.
 --
 -- Success: notice "confirm_stripe_linkcredit_purchase installed successfully"
--- Verify:  select proname from pg_proc where proname = 'confirm_stripe_linkcredit_purchase';
+-- Verify:  select proname, pg_get_function_identity_arguments(oid) from pg_proc where proname = 'confirm_stripe_linkcredit_purchase';
 
 -- ---------------------------------------------------------------------------
 -- payment_events
@@ -38,32 +38,46 @@ create policy payment_events_select_own on public.payment_events
   using (auth.uid() = user_id);
 
 -- ---------------------------------------------------------------------------
--- RPC: idempotent Stripe purchase → wallet credit
+-- RPC: idempotent Stripe purchase → wallet credit (PostgREST jsonb payload)
 -- ---------------------------------------------------------------------------
-create or replace function public.confirm_stripe_linkcredit_purchase(
-  p_user_id uuid,
-  p_stripe_session_id text,
-  p_stripe_payment_intent text,
-  p_package_id text,
-  p_price_id text,
-  p_credits int,
-  p_amount_cents int,
-  p_currency text,
-  p_status text,
-  p_raw_event jsonb default null
-)
+drop function if exists public.confirm_stripe_linkcredit_purchase(
+  uuid, text, text, text, text, integer, integer, text, text, jsonb
+);
+
+create or replace function public.confirm_stripe_linkcredit_purchase(payload jsonb)
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
+  p_user_id uuid;
+  p_stripe_session_id text;
+  p_stripe_payment_intent text;
+  p_package_id text;
+  p_price_id text;
+  p_credits int;
+  p_amount_cents int;
+  p_currency text;
+  p_status text;
+  p_raw_event jsonb;
   v_event_id uuid;
   v_event_status text;
   v_balance int;
   new_balance int;
 begin
-  if p_stripe_session_id is null or btrim(p_stripe_session_id) = '' then
+  p_user_id := nullif(btrim(payload->>'user_id'), '')::uuid;
+  p_stripe_session_id := nullif(btrim(payload->>'stripe_session_id'), '');
+  p_stripe_payment_intent := nullif(btrim(payload->>'stripe_payment_intent_id'), '');
+  p_package_id := nullif(btrim(payload->>'package_id'), '');
+  p_price_id := nullif(btrim(payload->>'price_id'), '');
+  p_credits := nullif(btrim(payload->>'credits'), '')::int;
+  p_amount_cents := nullif(btrim(payload->>'amount_total'), '')::int;
+  p_currency := upper(coalesce(nullif(btrim(payload->>'currency'), ''), 'CAD'));
+  p_status := coalesce(nullif(btrim(payload->>'status'), ''), 'paid');
+  p_raw_event := coalesce(payload->'raw_event', payload->'metadata', payload);
+
+  if p_stripe_session_id is null then
     raise exception 'STRIPE_SESSION_ID_REQUIRED';
   end if;
 
@@ -100,24 +114,24 @@ begin
       p_user_id,
       p_stripe_session_id,
       p_stripe_payment_intent,
-      p_package_id,
+      coalesce(p_package_id, 'unknown'),
       p_price_id,
       p_credits,
       p_amount_cents,
-      upper(coalesce(p_currency, 'CAD')),
-      coalesce(p_status, 'pending'),
+      p_currency,
+      p_status,
       p_raw_event
     );
   else
     update public.payment_events
     set
-      status = coalesce(p_status, status),
+      status = p_status,
       stripe_payment_intent = coalesce(p_stripe_payment_intent, stripe_payment_intent),
       raw_event = coalesce(p_raw_event, raw_event)
     where id = v_event_id;
   end if;
 
-  if coalesce(p_status, '') is distinct from 'paid' then
+  if p_status is distinct from 'paid' then
     return jsonb_build_object('ok', true, 'skipped', true, 'status', p_status);
   end if;
 
@@ -181,24 +195,18 @@ begin
 end;
 $$;
 
-revoke all on function public.confirm_stripe_linkcredit_purchase(
-  uuid, text, text, text, text, int, int, text, text, jsonb
-) from public;
+revoke all on function public.confirm_stripe_linkcredit_purchase(jsonb) from public;
 
-grant execute on function public.confirm_stripe_linkcredit_purchase(
-  uuid, text, text, text, text, int, int, text, text, jsonb
-) to service_role;
+grant execute on function public.confirm_stripe_linkcredit_purchase(jsonb) to service_role;
 
 -- Refresh PostgREST schema cache so /rest/v1/rpc/confirm_stripe_linkcredit_purchase resolves
 notify pgrst, 'reload schema';
 
 do $$
 begin
-  if to_regprocedure(
-    'public.confirm_stripe_linkcredit_purchase(uuid,text,text,text,text,integer,integer,text,text,jsonb)'
-  ) is null then
+  if to_regprocedure('public.confirm_stripe_linkcredit_purchase(jsonb)') is null then
     raise exception 'confirm_stripe_linkcredit_purchase was not created';
   end if;
 
-  raise notice 'confirm_stripe_linkcredit_purchase installed successfully';
+  raise notice 'confirm_stripe_linkcredit_purchase(jsonb) installed successfully';
 end $$;

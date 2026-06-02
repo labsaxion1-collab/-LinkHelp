@@ -1,12 +1,97 @@
 -- RUN THIS IN SUPABASE SQL EDITOR
 --
--- Installs payment_events + confirm_stripe_linkcredit_purchase for Stripe webhooks.
--- Safe to run multiple times (IF NOT EXISTS / CREATE OR REPLACE / DROP POLICY IF EXISTS).
--- Requires existing tables: public.credit_wallets, public.credit_transactions.
+-- Installs credit_wallets, credit_transactions (if missing), payment_events,
+-- and confirm_stripe_linkcredit_purchase(payload jsonb) for Stripe webhooks.
+-- Safe to run multiple times (IF NOT EXISTS / CREATE OR REPLACE / ADD COLUMN IF NOT EXISTS).
 -- Does NOT use credit_packages.
 --
--- Success: notice "confirm_stripe_linkcredit_purchase installed successfully"
--- Verify:  select proname, pg_get_function_identity_arguments(oid) from pg_proc where proname = 'confirm_stripe_linkcredit_purchase';
+-- Success: NOTICE confirm_stripe_linkcredit_purchase(jsonb) installed successfully
+-- Verify:
+--   select to_regclass('public.credit_transactions');
+--   select to_regclass('public.credit_wallets');
+
+-- ---------------------------------------------------------------------------
+-- credit_wallets (0012-compatible)
+-- ---------------------------------------------------------------------------
+create table if not exists public.credit_wallets (
+  id uuid primary key default gen_random_uuid(),
+  helper_id uuid not null unique references public.profiles (id) on delete cascade,
+  balance int not null default 0 check (balance >= 0),
+  total_purchased int not null default 0 check (total_purchased >= 0),
+  total_bonus int not null default 0 check (total_bonus >= 0),
+  total_spent int not null default 0 check (total_spent >= 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.credit_wallets add column if not exists balance int not null default 0;
+alter table public.credit_wallets add column if not exists total_purchased int not null default 0;
+alter table public.credit_wallets add column if not exists total_bonus int not null default 0;
+alter table public.credit_wallets add column if not exists total_spent int not null default 0;
+alter table public.credit_wallets add column if not exists created_at timestamptz not null default now();
+alter table public.credit_wallets add column if not exists updated_at timestamptz not null default now();
+
+create unique index if not exists credit_wallets_helper_id_key on public.credit_wallets (helper_id);
+
+alter table public.credit_wallets enable row level security;
+
+drop policy if exists credit_wallets_select_own on public.credit_wallets;
+create policy credit_wallets_select_own on public.credit_wallets
+  for select to authenticated
+  using (auth.uid() = helper_id);
+
+-- ---------------------------------------------------------------------------
+-- credit_transactions (0012 + metadata for Stripe idempotency)
+-- ---------------------------------------------------------------------------
+create table if not exists public.credit_transactions (
+  id uuid primary key default gen_random_uuid(),
+  helper_id uuid not null references public.profiles (id) on delete cascade,
+  type text not null,
+  amount int not null,
+  balance_after int not null default 0,
+  related_opportunity_id uuid null,
+  related_payment_id text null,
+  description text null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table public.credit_transactions add column if not exists helper_id uuid references public.profiles (id) on delete cascade;
+alter table public.credit_transactions add column if not exists type text;
+alter table public.credit_transactions add column if not exists amount int;
+alter table public.credit_transactions add column if not exists balance_after int;
+alter table public.credit_transactions add column if not exists related_opportunity_id uuid;
+alter table public.credit_transactions add column if not exists related_payment_id text;
+alter table public.credit_transactions add column if not exists description text;
+alter table public.credit_transactions add column if not exists metadata jsonb not null default '{}'::jsonb;
+alter table public.credit_transactions add column if not exists created_at timestamptz not null default now();
+alter table public.credit_transactions add column if not exists request_id uuid;
+alter table public.credit_transactions add column if not exists application_id uuid;
+alter table public.credit_transactions add column if not exists balance_before int;
+
+create index if not exists credit_transactions_helper_created_idx
+  on public.credit_transactions (helper_id, created_at desc);
+
+create index if not exists credit_transactions_type_idx
+  on public.credit_transactions (type);
+
+create index if not exists credit_transactions_created_at_idx
+  on public.credit_transactions (created_at desc);
+
+create index if not exists credit_transactions_related_payment_idx
+  on public.credit_transactions (related_payment_id)
+  where related_payment_id is not null;
+
+create index if not exists credit_transactions_metadata_stripe_session_idx
+  on public.credit_transactions ((metadata->>'stripe_session_id'))
+  where metadata ? 'stripe_session_id';
+
+alter table public.credit_transactions enable row level security;
+
+drop policy if exists credit_transactions_select_own on public.credit_transactions;
+create policy credit_transactions_select_own on public.credit_transactions
+  for select to authenticated
+  using (auth.uid() = helper_id);
 
 -- ---------------------------------------------------------------------------
 -- payment_events
@@ -65,6 +150,7 @@ declare
   v_event_status text;
   v_balance int;
   new_balance int;
+  v_tx_metadata jsonb;
 begin
   p_user_id := nullif(btrim(payload->>'user_id'), '')::uuid;
   p_stripe_session_id := nullif(btrim(payload->>'stripe_session_id'), '');
@@ -138,8 +224,11 @@ begin
   if exists (
     select 1
     from public.credit_transactions
-    where related_payment_id = p_stripe_session_id
-      and type = 'CREDIT_PURCHASE'
+    where type = 'CREDIT_PURCHASE'
+      and (
+        related_payment_id = p_stripe_session_id
+        or metadata->>'stripe_session_id' = p_stripe_session_id
+      )
   ) then
     return jsonb_build_object('ok', true, 'alreadyCredited', true);
   end if;
@@ -171,20 +260,32 @@ begin
     updated_at = now()
   where helper_id = p_user_id;
 
+  v_tx_metadata := jsonb_build_object(
+    'stripe_session_id', p_stripe_session_id,
+    'stripe_payment_intent_id', p_stripe_payment_intent,
+    'package_id', p_package_id,
+    'price_id', p_price_id,
+    'currency', p_currency,
+    'amount_total', p_amount_cents,
+    'source', 'stripe'
+  );
+
   insert into public.credit_transactions (
     helper_id,
     type,
     amount,
     balance_after,
     related_payment_id,
-    description
+    description,
+    metadata
   ) values (
     p_user_id,
     'CREDIT_PURCHASE',
     p_credits,
     new_balance,
     p_stripe_session_id,
-    'LinkCredits purchase via Stripe · ' || coalesce(p_package_id, 'unknown')
+    'LinkCredits purchase via Stripe · ' || coalesce(p_package_id, 'unknown'),
+    v_tx_metadata
   );
 
   return jsonb_build_object(
@@ -199,11 +300,18 @@ revoke all on function public.confirm_stripe_linkcredit_purchase(jsonb) from pub
 
 grant execute on function public.confirm_stripe_linkcredit_purchase(jsonb) to service_role;
 
--- Refresh PostgREST schema cache so /rest/v1/rpc/confirm_stripe_linkcredit_purchase resolves
 notify pgrst, 'reload schema';
 
 do $$
 begin
+  if to_regclass('public.credit_transactions') is null then
+    raise exception 'credit_transactions was not created';
+  end if;
+
+  if to_regclass('public.credit_wallets') is null then
+    raise exception 'credit_wallets was not created';
+  end if;
+
   if to_regprocedure('public.confirm_stripe_linkcredit_purchase(jsonb)') is null then
     raise exception 'confirm_stripe_linkcredit_purchase was not created';
   end if;

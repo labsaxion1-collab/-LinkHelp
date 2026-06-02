@@ -1124,12 +1124,12 @@ export default function HelperDashboard() {
           ) : null}
 
           {activeTab !== 'candidaturas' ? (
-            <section className="mb-5 overflow-hidden rounded-[1.75rem] border border-white bg-[#F7F8FC] px-4 pb-4 pt-4 shadow-[0_18px_45px_rgba(15,23,42,0.07)] sm:px-5">
-              <header className="mb-5 flex items-center justify-between gap-3">
+            <section className="mb-7 overflow-hidden rounded-[2rem] border border-white/90 bg-[#F9FBFF] px-6 pb-6 pt-5 shadow-[0_24px_60px_rgba(15,23,42,0.075)] sm:px-7">
+              <header className="mb-6 flex items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => setCategoryFilterOpen((v) => !v)}
-                  className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white bg-white text-[#0B1220] shadow-[0_8px_22px_rgba(15,23,42,0.08)]"
+                  className="flex h-[52px] w-[52px] items-center justify-center rounded-[1.25rem] border border-white bg-white text-[#0B1220] shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
                   aria-label="Filtros"
                 >
                   <Icons.SlidersHorizontal className="h-5 w-5" />
@@ -1143,7 +1143,7 @@ export default function HelperDashboard() {
                 <button
                   type="button"
                   onClick={() => navigate(ROUTES.map)}
-                  className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-white bg-white text-[#0B1220] shadow-[0_8px_22px_rgba(15,23,42,0.08)]"
+                  className="relative flex h-[52px] w-[52px] items-center justify-center rounded-[1.25rem] border border-white bg-white text-[#0B1220] shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
                   aria-label="Mapa"
                 >
                   <Icons.MapPinned className="h-5 w-5" />
@@ -1155,36 +1155,38 @@ export default function HelperDashboard() {
                 </button>
               </header>
 
-              <div className="relative overflow-hidden rounded-[1.65rem] bg-gradient-to-br from-white via-[#F7F8FC] to-[#EAF1FF] p-4">
-                <div className="pointer-events-none absolute -right-12 top-3 h-36 w-56 rounded-full border border-white/80 bg-white/40 blur-sm" />
+              <div className="relative overflow-hidden rounded-[1.85rem] bg-gradient-to-br from-white via-[#F9FBFF] to-[#EAF1FF] p-5">
+                <div className="pointer-events-none absolute -right-14 top-2 h-40 w-60 rounded-full border border-white/80 bg-white/45 blur-sm" />
+                <div className="pointer-events-none absolute right-6 top-9 h-24 w-52 rotate-[-12deg] rounded-full border border-white/60 bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.10),transparent)]" />
                 <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF]">
                   <span className="text-base" aria-hidden>Olá</span>
                   {helperFirstName}
                 </p>
-                <h1 className="relative mt-2 max-w-sm text-3xl font-black leading-[1.05] tracking-tight text-[#0B1220] sm:text-4xl">
+                <h1 className="relative mt-2 max-w-sm text-[2rem] font-black leading-[1.03] tracking-tight text-[#0B1220] sm:text-4xl">
                   Encontre oportunidades <span className="text-[#2563FF]">perto de você.</span>
                 </h1>
+                <span className="relative mt-2 block h-1.5 w-28 rounded-full bg-[#2563FF]" aria-hidden />
 
                 <button
                   type="button"
                   onClick={() => setCategoryFilterOpen(true)}
-                  className="relative mt-5 flex min-h-[58px] w-full items-center gap-3 rounded-2xl bg-white px-4 text-left shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
+                  className="relative mt-6 flex min-h-[64px] w-full items-center gap-3 rounded-[1.25rem] bg-white px-4 text-left shadow-[0_16px_34px_rgba(15,23,42,0.09)]"
                 >
                   <Icons.Search className="h-5 w-5 shrink-0 text-[#0B1220]/60" />
                   <span className="min-w-0 flex-1 truncate text-sm font-bold text-[#6B7280]">Buscar por categoria ou serviço</span>
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#2563FF] text-white shadow-[0_10px_24px_rgba(37,99,255,0.28)]">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.15rem] bg-[#2563FF] text-white shadow-[0_12px_28px_rgba(37,99,255,0.30)]">
                     <Icons.Search className="h-5 w-5" />
                   </span>
                 </button>
               </div>
 
-              <div className="mt-5 flex items-center justify-between">
+              <div className="mt-6 flex items-center justify-between">
                 <h2 className="text-base font-black text-[#0B1220]">Categorias populares</h2>
                 <button type="button" onClick={() => setCategoryFilterOpen(true)} className="text-xs font-black text-[#2563FF]">
                   Ver todas
                 </button>
               </div>
-              <div className="mt-3 grid grid-cols-4 gap-3">
+              <div className="mt-4 grid grid-cols-4 gap-3">
                 {homeCategoryChips.map((cat) => (
                   <button
                     key={cat.id}
@@ -1194,11 +1196,11 @@ export default function HelperDashboard() {
                       setActiveTab('match');
                     }}
                     className={clsx(
-                      'flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-[1.25rem] border bg-white px-2 text-center shadow-[0_8px_22px_rgba(15,23,42,0.05)] transition-all active:scale-[0.98]',
-                      selectedCategoryFilter === cat.id ? 'border-[#2563FF] text-[#2563FF]' : 'border-white text-[#0B1220]',
+                      'flex min-h-[96px] flex-col items-center justify-center gap-2 rounded-[1.35rem] border bg-white px-2 text-center shadow-[0_12px_28px_rgba(15,23,42,0.055)] transition-all active:scale-[0.98]',
+                      selectedCategoryFilter === cat.id ? 'border-[#2563FF] text-[#2563FF] ring-2 ring-[#2563FF]/10' : 'border-white text-[#0B1220]',
                     )}
                   >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#EEF4FF] text-[#2563FF]">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-[1.15rem] bg-[#EEF4FF] text-[#2563FF]">
                       <HelperDashboardCategoryIcon icon={cat.icon} className="h-5 w-5" />
                     </span>
                     <span className="max-w-full truncate text-[11px] font-black">{t(`categories.${cat.id}`)}</span>
@@ -1206,7 +1208,7 @@ export default function HelperDashboard() {
                 ))}
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-[1.25rem] bg-white px-4 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)]">
                   <p className="text-[10px] font-black uppercase tracking-wide text-[#6B7280]">Oportunidades</p>
                   <p className="mt-1 text-2xl font-black text-[#0B1220]">{displayedJobs.length}</p>
@@ -1284,7 +1286,7 @@ export default function HelperDashboard() {
             </section>
           ) : null}
 
-          <div className="mb-3 flex items-start justify-between gap-2">
+          <div className="mb-4 flex items-start justify-between gap-3">
             {activeTab === 'candidaturas' ? (
               <h3 className="flex items-center gap-2 text-sm font-black text-slate-950">
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white">
@@ -1316,25 +1318,25 @@ export default function HelperDashboard() {
           </div>
 
           {activeTab !== 'candidaturas' ? (
-            <div className="mb-3 flex gap-2">
+            <div className="mb-5 grid grid-cols-3 gap-2 rounded-[1.35rem] bg-white p-1.5 shadow-[0_10px_28px_rgba(15,23,42,0.055)]">
               <button
                 type="button"
                 onClick={() => setActiveTab('match')}
-                className={`min-h-[34px] flex-1 rounded-xl px-2 text-[11px] font-black ${activeTab === 'match' ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}
+                className={`min-h-[44px] rounded-[1.05rem] px-2 text-[11px] font-black transition-all ${activeTab === 'match' ? 'bg-white text-[#2563FF] shadow-[0_6px_16px_rgba(37,99,255,0.12)] ring-1 ring-[#2563FF]/10' : 'text-[#0B1220]/70'}`}
               >
                 {t('helper_dashboard.tab_match')}
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('recentes')}
-                className={`min-h-[34px] flex-1 rounded-xl px-2 text-[11px] font-black ${activeTab === 'recentes' ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}
+                className={`min-h-[44px] rounded-[1.05rem] px-2 text-[11px] font-black transition-all ${activeTab === 'recentes' ? 'bg-white text-[#2563FF] shadow-[0_6px_16px_rgba(37,99,255,0.12)] ring-1 ring-[#2563FF]/10' : 'text-[#0B1220]/70'}`}
               >
                 {t('helper_dashboard.tab_recent')}
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('candidaturas')}
-                className="min-h-[34px] shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-[11px] font-black text-slate-600"
+                className="min-h-[44px] rounded-[1.05rem] px-2 text-[11px] font-black text-[#0B1220]/70 transition-all"
               >
                 {t('helper_dashboard.nav_applications')}
               </button>
@@ -1355,7 +1357,7 @@ export default function HelperDashboard() {
             return (
               <section
                 className={clsx(
-                  'mb-3 overflow-hidden rounded-2xl border px-4 py-3 text-xs font-bold transition-all duration-300',
+                  'mb-5 overflow-hidden rounded-[1.35rem] border px-4 py-3.5 text-xs font-bold transition-all duration-300',
                   slide.className,
                 )}
                 aria-live="polite"

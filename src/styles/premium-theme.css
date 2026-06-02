@@ -29,9 +29,9 @@
     inset: 0;
     z-index: 0;
     background:
-      radial-gradient(circle at 12% 4%, rgb(37 99 255 / 0.06), transparent 30%),
-      radial-gradient(circle at 88% 18%, rgb(56 189 248 / 0.08), transparent 34%),
-      linear-gradient(180deg, #f7f8fc 0%, #f3f5fa 48%, #eef2f8 100%);
+      radial-gradient(circle at 18% 0%, rgb(37 99 255 / 0.085), transparent 34%),
+      radial-gradient(circle at 92% 12%, rgb(56 189 248 / 0.075), transparent 30%),
+      linear-gradient(180deg, #f9fbff 0%, #f4f7fc 100%);
   }
 
   .lh-app-page {

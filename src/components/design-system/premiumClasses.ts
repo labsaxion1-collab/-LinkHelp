@@ -1,6 +1,6 @@
 /** Tailwind / CSS class bundles for LinkHelp premium app theme */
 export const premium = {
-  appPage: 'lh-app-page px-5 py-5 sm:px-6 sm:py-6',
+  appPage: 'lh-app-page px-6 py-6 sm:px-7 sm:py-7',
   glassCard: 'lh-glass-card',
   glassCardSolid: 'lh-glass-card-solid',
   glassCardPadded: 'lh-glass-card p-4 sm:p-5',

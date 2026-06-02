@@ -185,7 +185,7 @@ function HelperOpportunityCardInner({
     'inline-flex min-h-[40px] flex-1 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2.5 text-sm font-bold transition-all duration-200';
 
   const cardShell = clsx(
-    'group/card h-full w-full max-w-full overflow-hidden rounded-[1.45rem] border bg-white transition-all duration-300 shadow-[0_10px_28px_rgba(15,23,42,0.06)]',
+    'group/card h-full w-full max-w-full overflow-hidden rounded-[1.65rem] border bg-white transition-all duration-300 shadow-[0_14px_34px_rgba(15,23,42,0.065)]',
     'md:hover:-translate-y-0.5 md:hover:shadow-xl md:hover:shadow-slate-900/10 motion-reduce:transform-none',
     'md:hover:ring-2 md:hover:ring-blue-500/15',
     (isExiting || passExiting) &&
@@ -284,7 +284,7 @@ function HelperOpportunityCardInner({
 
         <div
           className={clsx(
-            'relative z-20 bg-white p-3 will-change-transform',
+            'relative z-20 bg-white p-4 will-change-transform',
             !dragging && 'transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.2,0.64,1)]',
           )}
           style={{
@@ -292,7 +292,7 @@ function HelperOpportunityCardInner({
             opacity: 1 - Math.min(0.12, Math.abs(dragX) / 400),
           }}
         >
-          <div className="relative mb-3 flex min-h-36 overflow-hidden rounded-[1.35rem] bg-gradient-to-br from-blue-100 via-white to-sky-100">
+          <div className="relative mb-4 flex min-h-40 overflow-hidden rounded-[1.45rem] bg-gradient-to-br from-blue-100 via-white to-sky-100">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_18%,rgba(37,99,255,0.32),transparent_34%),radial-gradient(circle_at_78%_84%,rgba(11,18,32,0.10),transparent_38%)]" />
             <div className="absolute inset-x-4 bottom-4 top-4 rounded-[2rem] border border-white/60 bg-white/20" />
             <Icons.BriefcaseBusiness className="relative m-auto h-14 w-14 text-blue-600 drop-shadow-sm" strokeWidth={1.8} />
@@ -306,10 +306,10 @@ function HelperOpportunityCardInner({
             </span>
           </div>
 
-          <div className="mb-2 flex items-start justify-between gap-3">
+          <div className="mb-3 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate text-[10px] font-black uppercase tracking-wide text-blue-600">{category}</p>
-              <p className="mt-0.5 line-clamp-2 text-lg font-black leading-tight text-slate-950">
+              <p className="mt-0.5 line-clamp-2 text-xl font-black leading-tight text-slate-950">
                 {translateJobTitle(job.title, job.category, job.subcategory, t)}
               </p>
             </div>
@@ -323,7 +323,7 @@ function HelperOpportunityCardInner({
             </button>
           </div>
 
-          <div className="mt-2 mb-2 flex items-center gap-2">
+          <div className="mt-2 mb-3 flex items-center gap-2">
             <div className="min-w-0 flex-1">
               <p className="truncate text-[11px] font-bold text-slate-800">{job.clientName}</p>
               {job.clientRating != null && job.clientRating > 0 ? (
@@ -344,14 +344,14 @@ function HelperOpportunityCardInner({
             </span>
           </div>
 
-          <div className="mb-2 grid grid-cols-2 gap-2 text-[11px] font-bold">
+          <div className="mb-3 grid grid-cols-2 gap-2 text-[11px] font-bold">
             {schedule ? (
-              <span className="inline-flex items-center gap-1 rounded-xl bg-slate-50 px-3 py-2 text-slate-600">
+              <span className="inline-flex items-center gap-1 rounded-xl bg-[#F7F8FC] px-3 py-2.5 text-slate-600">
                 <Clock className="h-3.5 w-3.5 text-blue-500" />
                 <span className="truncate">{schedule}</span>
               </span>
             ) : null}
-            <span className="inline-flex items-center gap-1 rounded-xl bg-slate-50 px-3 py-2 text-slate-600">
+            <span className="inline-flex items-center gap-1 rounded-xl bg-[#F7F8FC] px-3 py-2.5 text-slate-600">
               <MapPin className="h-3 w-3 shrink-0" />
               <span className="truncate">{loc}</span>
             </span>
@@ -387,7 +387,7 @@ function HelperOpportunityCardInner({
                   onSwipeInterest?.(job);
                 }}
                 disabled={swipeRateLimited}
-                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-black text-white shadow-[0_12px_26px_rgba(37,99,255,0.24)] active:scale-[0.99] disabled:opacity-60"
+                className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-[1.15rem] bg-[#2563FF] px-4 text-sm font-black text-white shadow-[0_14px_30px_rgba(37,99,255,0.28)] active:scale-[0.99] disabled:opacity-60"
               >
                 <Icons.Check className="h-4 w-4" />
                 Quero fazer

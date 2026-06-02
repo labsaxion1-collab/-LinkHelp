@@ -151,6 +151,10 @@ export function HelperProposalModal({
                 <span className="tabular-nums text-blue-900">{creditDisplay.applyCost} LC</span>
               </li>
               <li className="flex justify-between gap-2">
+                <span className="text-slate-600">{t('helper_proposal.job_cost_line')}</span>
+                <span className="tabular-nums text-blue-800">{creditDisplay.jobCost} LC</span>
+              </li>
+              <li className="flex justify-between gap-2">
                 <span className="text-slate-600">{t('helper_proposal.selected_line')}</span>
                 <span className="tabular-nums text-blue-800">+{creditDisplay.hireEstimate} LC</span>
               </li>

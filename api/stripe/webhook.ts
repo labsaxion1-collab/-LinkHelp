@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
-import { getSupabaseAdmin } from './supabaseAdmin.js';
 
 export const config = {
   api: {
@@ -14,6 +13,59 @@ async function readRawBody(req: VercelRequest): Promise<Buffer> {
     chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
   }
   return Buffer.concat(chunks);
+}
+
+function getSupabaseRpcConfig(): { url: string; serviceKey: string } | null {
+  const base = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!base || !serviceKey) return null;
+  return { url: base, serviceKey };
+}
+
+async function callConfirmStripeLinkCreditPurchase(
+  payload: Record<string, unknown>,
+): Promise<{ ok: true; data: unknown } | { ok: false; status: number; body: string }> {
+  const cfg = getSupabaseRpcConfig();
+  if (!cfg) {
+    return { ok: false, status: 503, body: 'Supabase not configured' };
+  }
+
+  const rpcUrl = `${cfg.url}/rest/v1/rpc/confirm_stripe_linkcredit_purchase`;
+  const body = JSON.stringify({ payload });
+
+  const response = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: {
+      apikey: cfg.serviceKey,
+      Authorization: `Bearer ${cfg.serviceKey}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    },
+    body,
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.error('[stripe/webhook] RPC fetch failed', {
+      status: response.status,
+      responseText: text,
+      payloadKeys: Object.keys(payload),
+      rpcPath: '/rest/v1/rpc/confirm_stripe_linkcredit_purchase',
+    });
+    return { ok: false, status: response.status, body: text };
+  }
+
+  let data: unknown = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+  }
+
+  return { ok: true, data };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -62,8 +114,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).send('missing metadata');
     }
 
-    const admin = getSupabaseAdmin();
-    if (!admin) {
+    if (!getSupabaseRpcConfig()) {
       return res.status(503).send('Supabase not configured');
     }
 
@@ -73,25 +124,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ? session.payment_intent
         : session.payment_intent?.id ?? null;
 
-    const { error } = await admin.rpc('confirm_stripe_linkcredit_purchase', {
-      payload: {
-        user_id: userId,
-        stripe_session_id: session.id,
-        stripe_payment_intent_id: paymentIntent,
-        package_id: packageId,
-        price_id: priceId,
-        credits,
-        amount_total: amountCents,
-        currency,
-        status: 'paid',
-        metadata: meta,
-        raw_event: event,
-      },
-    });
+    const rpcPayload = {
+      user_id: userId,
+      stripe_session_id: session.id,
+      stripe_payment_intent_id: paymentIntent,
+      package_id: packageId,
+      price_id: priceId,
+      credits,
+      amount_total: amountCents,
+      currency,
+      status: 'paid',
+      metadata: meta,
+      raw_event: event,
+    };
 
-    if (error) {
-      console.error('[stripe/webhook] confirm_stripe_linkcredit_purchase', error.message);
-      return res.status(500).send(error.message);
+    const result = await callConfirmStripeLinkCreditPurchase(rpcPayload);
+
+    if (!result.ok) {
+      return res.status(result.status >= 400 ? result.status : 500).send(result.body);
     }
   }
 

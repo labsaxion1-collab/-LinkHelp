@@ -118,7 +118,7 @@ export default function HelperDashboard() {
   const [dismissedJobIds, setDismissedJobIds] = useState<Set<string>>(() => new Set());
   const [exitingJobIds, setExitingJobIds] = useState<Set<string>>(() => new Set());
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
+  const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
   const [categoryFilterOpen, setCategoryFilterOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<Application | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
@@ -374,10 +374,10 @@ export default function HelperDashboard() {
   useEffect(() => {
     if (location.pathname === ROUTES.helperOpportunities) {
       setActiveTab('match');
-      setSelectedCategoryFilter('');
+      setSelectedCategoryFilters([]);
     } else if (location.pathname === ROUTES.helperDashboard) {
       setActiveTab('match');
-      setSelectedCategoryFilter('');
+      setSelectedCategoryFilters([]);
     }
   }, [location.pathname]);
 
@@ -745,10 +745,10 @@ export default function HelperDashboard() {
     let list = jobs.filter(
       (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== viewerId && getJobServiceCategoryId(j),
     );
-    if (selectedCategoryFilter) {
+    if (selectedCategoryFilters.length) {
       list = list.filter((j) => {
         const id = resolveCategoryId(j.category) || j.category;
-        return id === selectedCategoryFilter;
+        return selectedCategoryFilters.includes(id);
       });
     }
     if (activeTab === 'emergencia') {
@@ -764,7 +764,7 @@ export default function HelperDashboard() {
     } else if (activeTab === 'candidaturas') {
       list = [];
     }
-    if (!selectedCategoryFilter && activeTab !== 'candidaturas') {
+    if (!selectedCategoryFilters.length && activeTab !== 'candidaturas') {
       list = filterToPreferredCategoriesIfPossible(
         sortJobsByHelperCategoryPreference(list, categoryPrefs),
         categoryPrefs,
@@ -773,7 +773,7 @@ export default function HelperDashboard() {
     return list.filter((j) => !dismissedJobIds.has(j.id));
   }, [
     jobs,
-    selectedCategoryFilter,
+    selectedCategoryFilters,
     activeTab,
     helperBaseCoords,
     profileSettings.skillIds,
@@ -1169,12 +1169,14 @@ export default function HelperDashboard() {
                     key={cat.id}
                     type="button"
                     onClick={() => {
-                      setSelectedCategoryFilter(cat.id);
+                      setSelectedCategoryFilters((current) =>
+                        current.includes(cat.id) ? current.filter((id) => id !== cat.id) : [...current, cat.id],
+                      );
                       setActiveTab('match');
                     }}
                     className={clsx(
                       'flex min-h-[96px] flex-col items-center justify-center gap-2 rounded-[1.35rem] border bg-white px-2 text-center shadow-[0_12px_28px_rgba(15,23,42,0.055)] transition-all active:scale-[0.98]',
-                      selectedCategoryFilter === cat.id ? 'border-[#2563FF] text-[#2563FF] ring-2 ring-[#2563FF]/10' : 'border-white text-[#0B1220]',
+                      selectedCategoryFilters.includes(cat.id) ? 'border-[#2563FF] text-[#2563FF] ring-2 ring-[#2563FF]/10' : 'border-white text-[#0B1220]',
                     )}
                   >
                     <span className="flex h-11 w-11 items-center justify-center rounded-[1.15rem] bg-[#EEF4FF] text-[#2563FF]">
@@ -1198,7 +1200,7 @@ export default function HelperDashboard() {
             </section>
           ) : null}
 
-          <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="mb-4 flex flex-col items-center gap-3 sm:relative sm:min-h-[54px]">
             {activeTab === 'candidaturas' ? (
               <h3 className="flex items-center gap-2 text-sm font-black text-slate-950">
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white">
@@ -1210,22 +1212,32 @@ export default function HelperDashboard() {
               <HelperCategoryDropdown
                 open={categoryFilterOpen}
                 onToggle={() => setCategoryFilterOpen((v) => !v)}
-                selectedId={selectedCategoryFilter}
-                onSelect={setSelectedCategoryFilter}
+                selectedIds={selectedCategoryFilters}
+                onToggleCategory={(categoryId) => {
+                  setSelectedCategoryFilters((current) =>
+                    current.includes(categoryId)
+                      ? current.filter((id) => id !== categoryId)
+                      : [...current, categoryId],
+                  );
+                  setActiveTab('match');
+                }}
+                onClear={() => setSelectedCategoryFilters([])}
                 t={t}
-                className="lg:ml-1"
+                className="sm:absolute sm:left-1/2 sm:top-0 sm:-translate-x-1/2"
               />
             )}
             {!isPerformancePage && UI_VISIBILITY.helperCredits ? (
-              <HelperCreditsWalletCard
-                balance={walletBalance}
-                usedThisMonth={creditsUsedThisMonth}
-                unlocksCount={unlocks.length}
-                loading={walletLoading && walletBalance == null}
-                compact
-                t={t}
-                onBuyCredits={goToCredits}
-              />
+              <div className="sm:absolute sm:right-0 sm:top-0">
+                <HelperCreditsWalletCard
+                  balance={walletBalance}
+                  usedThisMonth={creditsUsedThisMonth}
+                  unlocksCount={unlocks.length}
+                  loading={walletLoading && walletBalance == null}
+                  compact
+                  t={t}
+                  onBuyCredits={goToCredits}
+                />
+              </div>
             ) : null}
           </div>
 
@@ -1446,7 +1458,7 @@ export default function HelperDashboard() {
                    key={job.id}
                    type="button"
                    onClick={() => {
-                     setSelectedCategoryFilter(resolveCategoryId(job.category) || job.category);
+                     setSelectedCategoryFilters([resolveCategoryId(job.category) || job.category]);
                      setActiveTab(job.urgency === 'high' ? 'emergencia' : 'match');
                      navigate(ROUTES.helperOpportunities);
                    }}

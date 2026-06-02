@@ -1,39 +1,36 @@
-import { memo, useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import * as Icons from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
-import type { ServiceCategoryId } from '@/data/serviceCategories';
-
-/** Curated helper opportunity filters (order + labels). */
-export const HELPER_OPPORTUNITY_FILTER_IDS: ServiceCategoryId[] = [
-  'cleaning',
-  'assembly',
-  'moving',
-  'translation',
-  'outdoor',
-  'beauty',
-];
-
-const CATEGORY_EMOJI: Partial<Record<ServiceCategoryId, string>> = {
-  cleaning: '🧹',
-  assembly: '🔨',
-  moving: '🚚',
-  translation: '🌎',
-  outdoor: '🚚',
-  beauty: '💅',
-};
+import { SERVICE_CATEGORIES, type ServiceCategoryId } from '@/data/serviceCategories';
 
 type Props = {
   open: boolean;
   onToggle: () => void;
-  selectedId: string;
-  onSelect: (categoryId: string) => void;
+  selectedIds: string[];
+  onToggleCategory: (categoryId: string) => void;
+  onClear: () => void;
   t: (key: string) => string;
   className?: string;
 };
 
-function HelperCategoryDropdownInner({ open, onToggle, selectedId, onSelect, t, className }: Props) {
+function CategoryIcon({ icon, className }: { icon: string; className?: string }) {
+  const Icon = Icons[icon as keyof typeof Icons] as React.ComponentType<{ className?: string; strokeWidth?: number }> | undefined;
+  const Component = Icon ?? Icons.CircleHelp;
+  return <Component className={className} strokeWidth={2.2} />;
+}
+
+function HelperCategoryDropdownInner({
+  open,
+  onToggle,
+  selectedIds,
+  onToggleCategory,
+  onClear,
+  t,
+  className,
+}: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   const handleOutside = useCallback(
     (e: MouseEvent | TouchEvent) => {
@@ -62,99 +59,98 @@ function HelperCategoryDropdownInner({ open, onToggle, selectedId, onSelect, t, 
     <div
       ref={rootRef}
       className={clsx(
-        'relative z-30 mb-2 transition-[margin] duration-200',
-        open && 'mb-[min(15rem,38vh)]',
+        'relative z-30 mx-auto mb-2 w-full max-w-[28rem] transition-[margin] duration-200',
+        open && 'mb-[min(11rem,30vh)]',
         className,
       )}
     >
-      <div className="flex min-h-[52px] items-start gap-2.5">
+      <div className="flex min-h-[52px] items-center justify-center">
         <button
           type="button"
           aria-expanded={open}
-          aria-haspopup="listbox"
+          aria-haspopup="dialog"
           aria-label={t('helper_dashboard.category_filter_open')}
           onClick={onToggle}
           className={clsx(
-            'flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 shadow-lg transition-colors',
+            'inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full border-2 px-5 text-sm font-black shadow-lg transition-colors',
             open
               ? 'border-blue-400 bg-blue-600 text-white shadow-blue-500/25'
               : 'border-blue-200 bg-white text-blue-700 shadow-slate-900/8 hover:bg-blue-50',
           )}
         >
           <Icons.LayoutGrid className="h-5 w-5" />
+          <span>{t('helper_dashboard.filter_find_title')}</span>
+          {selectedIds.length > 0 ? (
+            <span
+              className={clsx(
+                'flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[11px] font-black',
+                open ? 'bg-white text-blue-700' : 'bg-blue-600 text-white',
+              )}
+            >
+              {selectedIds.length}
+            </span>
+          ) : null}
         </button>
-
-        <div className="min-w-0 flex-1 pt-1">
-          <p className="text-sm font-black text-slate-950">{t('helper_dashboard.filter_find_title')}</p>
-          <p className="truncate text-[11px] font-semibold text-slate-500">
-            {selectedId
-              ? categoryLabel(selectedId as ServiceCategoryId)
-              : t('helper_dashboard.all_categories')}
-          </p>
-        </div>
       </div>
 
       <AnimatePresence>
         {open ? (
           <motion.div
-            role="listbox"
+            role="dialog"
             aria-label={t('helper_dashboard.category_filter_open')}
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute left-0 top-[calc(100%+0.5rem)] z-50 w-[min(100%,280px)] max-w-[280px] overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_16px_48px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5"
+            className="absolute left-1/2 top-[calc(100%+0.65rem)] z-50 w-[min(92vw,28rem)] -translate-x-1/2 overflow-hidden rounded-[1.45rem] border border-slate-200/90 bg-white p-3 shadow-[0_18px_54px_rgba(15,23,42,0.14)] ring-1 ring-slate-900/5"
           >
-            <ul className="max-h-[min(22rem,60dvh)] overflow-y-auto overscroll-contain py-1.5">
-              <li>
+            <div className="mb-3 flex items-center justify-between gap-3 px-1">
+              <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                {selectedIds.length ? `${selectedIds.length} filtros ativos` : t('helper_dashboard.all_categories')}
+              </span>
+              {selectedIds.length ? (
                 <button
                   type="button"
-                  role="option"
-                  aria-selected={!selectedId}
-                  onClick={() => {
-                    onSelect('');
-                    onToggle();
-                  }}
-                  className={clsx(
-                    'flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold transition-colors',
-                    !selectedId ? 'bg-blue-50 text-blue-900' : 'text-slate-800 hover:bg-slate-50',
-                  )}
+                  onClick={onClear}
+                  className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-black text-slate-600 transition-colors hover:bg-slate-200"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-base">
-                    ✨
-                  </span>
-                  <span>{t('helper_dashboard.all_categories')}</span>
-                  {!selectedId ? <Icons.Check className="ml-auto h-4 w-4 text-blue-600" /> : null}
+                  Limpar
                 </button>
-              </li>
-              {HELPER_OPPORTUNITY_FILTER_IDS.map((id) => {
-                const active = selectedId === id;
-                const emoji = CATEGORY_EMOJI[id] ?? '•';
-                return (
-                  <li key={id}>
+              ) : null}
+            </div>
+
+            <div className="overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="grid auto-cols-[8.6rem] grid-flow-col grid-rows-2 gap-2">
+                {SERVICE_CATEGORIES.map((category) => {
+                  const id = category.id as ServiceCategoryId;
+                  const active = selectedSet.has(id);
+                  return (
                     <button
+                      key={id}
                       type="button"
-                      role="option"
-                      aria-selected={active}
-                      onClick={() => {
-                        onSelect(id);
-                        onToggle();
-                      }}
+                      aria-pressed={active}
+                      onClick={() => onToggleCategory(id)}
                       className={clsx(
-                        'flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold transition-colors',
-                        active ? 'bg-blue-50 text-blue-900' : 'text-slate-800 hover:bg-slate-50',
+                        'flex min-h-[4.9rem] flex-col items-center justify-center gap-1.5 rounded-[1.15rem] border px-2 text-center text-[11px] font-black transition-all active:scale-[0.98]',
+                        active
+                          ? 'border-blue-400 bg-blue-600 text-white shadow-[0_10px_22px_rgba(37,99,255,0.24)]'
+                          : 'border-slate-200 bg-slate-50/80 text-slate-800 hover:border-blue-200 hover:bg-blue-50',
                       )}
                     >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-lg leading-none">
-                        {emoji}
+                      <span
+                        className={clsx(
+                          'flex h-8 w-8 items-center justify-center rounded-full',
+                          active ? 'bg-white/18 text-white' : 'bg-white text-blue-600',
+                        )}
+                      >
+                        <CategoryIcon icon={category.icon} className="h-[18px] w-[18px]" />
                       </span>
-                      <span className="min-w-0 flex-1 leading-snug">{categoryLabel(id)}</span>
-                      {active ? <Icons.Check className="ml-auto h-4 w-4 shrink-0 text-blue-600" /> : null}
+                      <span className="line-clamp-2 leading-tight">{categoryLabel(id)}</span>
                     </button>
-                  </li>
-                );
-              })}
-            </ul>
+                  );
+                })}
+              </div>
+            </div>
           </motion.div>
         ) : null}
       </AnimatePresence>

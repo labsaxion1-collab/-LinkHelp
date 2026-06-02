@@ -1109,13 +1109,26 @@ export default function HelperDashboard() {
 
           {activeTab !== 'candidaturas' ? (
             <section className="mb-8">
-              <header className="mb-7 flex items-center justify-center">
+              <header className="relative mb-7 flex min-h-[38px] items-start justify-center">
                 <div className="text-center">
                   <p className="text-xl font-black tracking-tight text-[#0B1220]">
                     Link<span className="text-[#2563FF]">Help</span>
                   </p>
                   <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6B7280]">Helper</p>
                 </div>
+                {!isPerformancePage && UI_VISIBILITY.helperCredits ? (
+                  <div className="absolute right-0 top-0">
+                    <HelperCreditsWalletCard
+                      balance={walletBalance}
+                      usedThisMonth={creditsUsedThisMonth}
+                      unlocksCount={unlocks.length}
+                      loading={walletLoading && walletBalance == null}
+                      compact
+                      t={t}
+                      onBuyCredits={goToCredits}
+                    />
+                  </div>
+                ) : null}
               </header>
 
               <div className="relative">
@@ -1183,7 +1196,7 @@ export default function HelperDashboard() {
                 {t('helper_dashboard.filter_apps_title')}
               </h3>
             ) : null}
-            {!isPerformancePage && UI_VISIBILITY.helperCredits ? (
+            {activeTab === 'candidaturas' && !isPerformancePage && UI_VISIBILITY.helperCredits ? (
               <div className="sm:absolute sm:right-0 sm:top-0">
                 <HelperCreditsWalletCard
                   balance={walletBalance}

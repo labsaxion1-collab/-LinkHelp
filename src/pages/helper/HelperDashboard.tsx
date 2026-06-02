@@ -1109,12 +1109,12 @@ export default function HelperDashboard() {
 
           {activeTab !== 'candidaturas' ? (
             <section className="mb-8">
-              <header className="relative mb-7 flex min-h-[38px] items-start justify-center">
-                <div className="text-center">
-                  <p className="text-xl font-black tracking-tight text-[#0B1220]">
-                    Link<span className="text-[#2563FF]">Help</span>
+              <header className="relative mb-7 flex min-h-[40px] items-start justify-between gap-3 pr-[9.75rem]">
+                <div className="min-w-0">
+                  <p className="bg-gradient-to-r from-[#0B1220] via-[#123D85] to-[#2563FF] bg-clip-text text-2xl font-black leading-none tracking-tight text-transparent">
+                    Helper
                   </p>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6B7280]">Helper</p>
+                  <span className="mt-2 block h-1 w-14 rounded-full bg-gradient-to-r from-[#2563FF] to-[#33B6FF] shadow-[0_8px_18px_rgba(37,99,255,0.24)]" />
                 </div>
                 {!isPerformancePage && UI_VISIBILITY.helperCredits ? (
                   <div className="absolute right-0 top-0">

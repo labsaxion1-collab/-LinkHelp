@@ -3,20 +3,20 @@ import { Link, Navigate } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { useCredits } from '@/context/CreditContext';
+import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { ROUTES } from '@/utils/constants';
 
 export default function HelperCreditsSuccessPage() {
   const { t } = useLanguage();
   const { profile } = useAuth();
-  const { refreshCredits } = useCredits();
+  const { refresh } = useWalletBalance();
 
   useEffect(() => {
-    void refreshCredits();
-    const timer = window.setInterval(() => void refreshCredits(), 4000);
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 4000);
     return () => window.clearInterval(timer);
-  }, [refreshCredits]);
+  }, [refresh]);
 
   if (profile?.role !== 'helper') {
     return <Navigate to={ROUTES.clientDashboard} replace />;

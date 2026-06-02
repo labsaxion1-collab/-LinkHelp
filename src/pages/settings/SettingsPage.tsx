@@ -27,7 +27,7 @@ import { parseStoredPhone, validatePhoneNumber } from '@/utils/phoneFormat';
 import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { Star } from 'lucide-react';
 import { useOnboardingRewards } from '@/hooks/useOnboardingRewards';
-import { useCredits } from '@/context/CreditContext';
+import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { SIGNUP_BONUS_LC } from '@/config/onboardingRewards';
@@ -87,7 +87,7 @@ export default function SettingsPage() {
   const { profile, updateProfile, signOut, session, isConfigured, refreshProfile } = useAuth();
   const { showToast } = useToast();
   useOnboardingRewards();
-  const { wallet: helperWallet, loading: creditsLoading } = useCredits();
+  const { balance: helperWalletBalance, loading: creditsLoading } = useWalletBalance();
   const [helperSkillCount, setHelperSkillCount] = useState(0);
   const [helperSkillIds, setHelperSkillIds] = useState<string[]>([]);
   const navigate = useNavigate();
@@ -408,7 +408,7 @@ export default function SettingsPage() {
               {creditsLoading
                 ? t('common.loading')
                 : t('rewards.welcome_signup_balance', {
-                    amount: formatLinkCredits(helperWallet?.balance ?? signupBonusLc, language),
+                    amount: formatLinkCredits(helperWalletBalance ?? 0, language),
                   })}
             </p>
           </section>

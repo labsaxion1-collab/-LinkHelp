@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCredits } from '@/context/CreditContext';
+import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { HelperDashboardNav } from '@/components/helpers/HelperDashboardNav';
 import { ROUTES } from '@/utils/constants';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
@@ -14,8 +15,9 @@ import { formatLinkCredits } from '@/utils/formatLinkCredits';
 export default function HelperCreditsPage() {
   const { t, language } = useLanguage();
   const { profile } = useAuth();
-  const { wallet, transactions, unlocks, loading } = useCredits();
-  const balanceLabel = formatLinkCredits(wallet?.balance ?? 0, language);
+  const { transactions, unlocks } = useCredits();
+  const { balance, wallet, loading } = useWalletBalance();
+  const balanceLabel = formatLinkCredits(balance ?? 0, language);
 
   const helperWorkspace = profile?.role === 'helper';
   if (!helperWorkspace) {

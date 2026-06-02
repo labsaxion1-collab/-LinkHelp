@@ -50,26 +50,95 @@ function unlockFromRow(row: Record<string, unknown>): OpportunityUnlock {
   };
 }
 
-/** Ensures wallet exists server-side and returns current balance. */
-export async function getWalletBalance(helperId: string): Promise<number> {
+/** Try RPC ensure; never block wallet reads if RPC is missing. */
+async function ensureHelperWalletRow(helperId: string): Promise<void> {
   const sb = getSupabase();
-  if (!sb) return 0;
-  try {
-    const { error: ensureErr } = await sb.rpc('ensure_helper_credit_wallet', { p_helper_id: helperId });
-    if (ensureErr) {
-      console.warn('[LinkHelp] ensure_helper_credit_wallet', ensureErr.message);
-      return 0;
-    }
-    const { data, error } = await sb.rpc('get_wallet_balance', { p_helper_id: helperId });
-    if (error) {
-      console.warn('[LinkHelp] get_wallet_balance', error.message);
-      return 0;
-    }
-    return typeof data === 'number' ? normalizeLinkCreditsAmount(data) : 0;
-  } catch (e) {
-    console.warn('[LinkHelp] getWalletBalance', e);
+  if (!sb || !helperId) return;
+
+  const { error: ensureErr } = await sb.rpc('ensure_helper_credit_wallet', { p_helper_id: helperId });
+  if (!ensureErr) return;
+
+  console.warn('[LinkHelp] ensure_helper_credit_wallet', ensureErr.message);
+
+  const { error: insertErr } = await sb.from('credit_wallets').upsert(
+    { helper_id: helperId, balance: 0 },
+    { onConflict: 'helper_id', ignoreDuplicates: true },
+  );
+  if (insertErr) {
+    console.warn('[LinkHelp] credit_wallets upsert', insertErr.message);
+  }
+}
+
+/**
+ * Loads balance for the authenticated helper from credit_wallets.
+ * Creates a zero-balance row when missing (when RLS/RPC allows).
+ */
+export async function loadHelperWalletBalance(helperId: string): Promise<number> {
+  const sb = getSupabase();
+  if (!sb || !helperId) return 0;
+
+  console.log('[wallet] currentUserId', helperId);
+
+  await ensureHelperWalletRow(helperId);
+
+  const { data, error } = await sb
+    .from('credit_wallets')
+    .select('balance')
+    .eq('helper_id', helperId)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('[LinkHelp] credit_wallets balance select', error.message);
     return 0;
   }
+
+  if (!data) {
+    console.log('[wallet] loaded balance', 0);
+    return 0;
+  }
+
+  const balance = normalizeLinkCreditsAmount(Number(data.balance ?? 0));
+  console.log('[wallet] loaded balance', balance);
+  return balance;
+}
+
+/** Full wallet row for the logged-in helper. */
+export async function fetchHelperWallet(helperId: string): Promise<CreditWallet | null> {
+  const sb = getSupabase();
+  if (!sb || !helperId) return null;
+
+  await ensureHelperWalletRow(helperId);
+
+  const { data, error } = await sb.from('credit_wallets').select('*').eq('helper_id', helperId).maybeSingle();
+
+  if (error) {
+    console.warn('[LinkHelp] credit_wallets select', error.message);
+    return null;
+  }
+
+  if (!data) {
+    const balance = await loadHelperWalletBalance(helperId);
+    const now = Date.now();
+    return {
+      id: `wallet_${helperId}`,
+      helperId,
+      balance,
+      totalPurchased: 0,
+      totalBonus: 0,
+      totalSpent: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  const wallet = walletFromRow(data as Record<string, unknown>);
+  console.log('[wallet] loaded balance', wallet.balance);
+  return wallet;
+}
+
+/** @deprecated Prefer loadHelperWalletBalance / fetchHelperWallet */
+export async function getWalletBalance(helperId: string): Promise<number> {
+  return loadHelperWalletBalance(helperId);
 }
 
 export async function fetchRemoteCreditState(helperId: string): Promise<{
@@ -79,40 +148,44 @@ export async function fetchRemoteCreditState(helperId: string): Promise<{
   packages: CreditPackage[];
 }> {
   const sb = getSupabase();
-  if (!sb) return { wallet: null, transactions: [], unlocks: [], packages: CREDIT_PACKAGES };
-
-  try {
-    const { error: ensureErr } = await sb.rpc('ensure_helper_credit_wallet', { p_helper_id: helperId });
-    if (ensureErr) {
-      console.warn('[LinkHelp] ensure_helper_credit_wallet', ensureErr.message);
-      return { wallet: null, transactions: [], unlocks: [], packages: CREDIT_PACKAGES };
-    }
-
-    const [{ data: wallet }, { data: transactions }, { data: unlocks }, { data: packages }] = await Promise.all([
-      sb.from('credit_wallets').select('*').eq('helper_id', helperId).maybeSingle(),
-      sb.from('credit_transactions').select('*').eq('helper_id', helperId).order('created_at', { ascending: false }),
-      sb.from('opportunity_unlocks').select('*').eq('helper_id', helperId).order('created_at', { ascending: false }),
-      sb.from('credit_packages').select('*').eq('active', true).order('credits', { ascending: true }),
-    ]);
-
-    return {
-      wallet: wallet ? walletFromRow(wallet as Record<string, unknown>) : null,
-      transactions: (transactions ?? []).map((row) => txFromRow(row as Record<string, unknown>)),
-      unlocks: (unlocks ?? []).map((row) => unlockFromRow(row as Record<string, unknown>)),
-      packages: packages?.length
-        ? (packages as Record<string, unknown>[]).map((p) => ({
-            id: String(p.id),
-            name: String(p.name),
-            credits: Number(p.credits),
-            priceCad: Number(p.price_cad),
-            active: Boolean(p.active),
-            highlightLabel: (p.highlight_label as string | null) ?? null,
-            createdAt: toMs(p.created_at as string),
-          }))
-        : CREDIT_PACKAGES,
-    };
-  } catch (e) {
-    console.warn('[LinkHelp] fetchRemoteCreditState', e);
+  if (!sb || !helperId) {
     return { wallet: null, transactions: [], unlocks: [], packages: CREDIT_PACKAGES };
   }
+
+  const wallet = await fetchHelperWallet(helperId);
+
+  const [transactionsRes, unlocksRes, packagesRes] = await Promise.all([
+    sb.from('credit_transactions').select('*').eq('helper_id', helperId).order('created_at', { ascending: false }),
+    sb.from('opportunity_unlocks').select('*').eq('helper_id', helperId).order('created_at', { ascending: false }),
+    sb.from('credit_packages').select('*').eq('active', true).order('credits', { ascending: true }),
+  ]);
+
+  if (transactionsRes.error) {
+    console.warn('[LinkHelp] credit_transactions select', transactionsRes.error.message);
+  }
+  if (unlocksRes.error) {
+    console.warn('[LinkHelp] opportunity_unlocks select', unlocksRes.error.message);
+  }
+  if (packagesRes.error) {
+    console.warn('[LinkHelp] credit_packages select', packagesRes.error.message);
+  }
+
+  const packages = packagesRes.data?.length
+    ? (packagesRes.data as Record<string, unknown>[]).map((p) => ({
+        id: String(p.id),
+        name: String(p.name),
+        credits: Number(p.credits),
+        priceCad: Number(p.price_cad),
+        active: Boolean(p.active),
+        highlightLabel: (p.highlight_label as string | null) ?? null,
+        createdAt: toMs(p.created_at as string),
+      }))
+    : CREDIT_PACKAGES;
+
+  return {
+    wallet,
+    transactions: (transactionsRes.data ?? []).map((row) => txFromRow(row as Record<string, unknown>)),
+    unlocks: (unlocksRes.data ?? []).map((row) => unlockFromRow(row as Record<string, unknown>)),
+    packages,
+  };
 }

@@ -17,6 +17,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppData, type UpcomingJob } from '@/context/AppDataContext';
 import { useToast } from '@/context/ToastContext';
 import { useCredits } from '@/context/CreditContext';
+import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { UpcomingJobsSidebar } from '@/components/helpers/UpcomingJobsSidebar';
 import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailModal';
@@ -117,13 +118,8 @@ export default function HelperDashboard() {
     reviews,
   } = useAppData();
   const reviewCountByUserId = useMemo(() => buildReviewCountByUserId(reviews), [reviews]);
-  const {
-    wallet,
-    refreshCredits,
-    transactions: creditTransactions,
-    unlocks,
-    loading: creditsLoading,
-  } = useCredits();
+  const { refreshCredits, transactions: creditTransactions, unlocks } = useCredits();
+  const { balance: walletBalance, loading: walletLoading } = useWalletBalance();
   const [helperPrimaryCategory, setHelperPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
   const [helperSecondaryCategories, setHelperSecondaryCategories] = useState<ServiceCategoryId[]>([]);
 
@@ -358,8 +354,6 @@ export default function HelperDashboard() {
   const appliedJobIds = new Set(
     helperApplications.filter((a) => a.status !== 'cancelled').map((a) => a.jobId),
   );
-  const walletBalance = wallet?.balance ?? null;
-
   const interestCostForJob = React.useCallback(
     (job: Job) => leadCostsForJob(job, { distanceKm: baseDistanceToJobKm(job) }).interestCost,
     [baseDistanceToJobKm],
@@ -373,7 +367,7 @@ export default function HelperDashboard() {
 
   const hasInterestCredits = React.useCallback(
     (job: Job): boolean => {
-      if (creditsLoading && walletBalance == null) {
+      if (walletLoading && walletBalance == null) {
         pushToast(t('common.loading'));
         return false;
       }
@@ -388,7 +382,7 @@ export default function HelperDashboard() {
       }
       return true;
     },
-    [creditsLoading, walletBalance, interestCostForJob, openInsufficientCreditsModal, pushToast, t],
+    [walletLoading, walletBalance, interestCostForJob, openInsufficientCreditsModal, pushToast, t],
   );
   const [swipeCooldownUntil, setSwipeCooldownUntil] = useState(0);
   const proposalOpenedAtRef = React.useRef<number | null>(null);
@@ -1070,7 +1064,7 @@ export default function HelperDashboard() {
                 balance={walletBalance}
                 usedThisMonth={creditsUsedThisMonth}
                 unlocksCount={unlocks.length}
-                loading={creditsLoading && walletBalance == null}
+                loading={walletLoading && walletBalance == null}
                 compact
                 t={t}
                 onBuyCredits={goToCredits}

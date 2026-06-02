@@ -11,18 +11,21 @@ type Props = {
 
 type State = {
   hasError: boolean;
+  errorDetail?: string;
 };
 
 export class AppErrorBoundary extends React.Component<Props, State> {
   state: State = { hasError: false };
 
-  static getDerivedStateFromError(): State {
-    return { hasError: true };
+  static getDerivedStateFromError(error: unknown): State {
+    const errorDetail =
+      error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    return { hasError: true, errorDetail };
   }
 
   componentDidUpdate(prevProps: Props) {
     if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
-      this.setState({ hasError: false });
+      this.setState({ hasError: false, errorDetail: undefined });
     }
   }
 
@@ -43,6 +46,11 @@ export class AppErrorBoundary extends React.Component<Props, State> {
           <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">
             {this.props.body ?? 'Tente abrir novamente. Se continuar, volte para o inicio e tente outra acao.'}
           </p>
+          {this.state.errorDetail ? (
+            <p className="mt-3 break-all rounded-lg bg-rose-50 px-3 py-2 text-left text-xs font-mono text-rose-800">
+              {this.state.errorDetail}
+            </p>
+          ) : null}
           <button
             type="button"
             onClick={() => window.location.reload()}

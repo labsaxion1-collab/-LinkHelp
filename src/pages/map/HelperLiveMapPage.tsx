@@ -17,9 +17,8 @@ import {
   sortOpportunitiesForHelper,
 } from '@/utils/locationMatching';
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
+import { isJobCancelled } from '@/utils/jobVisibility';
 import type { Job } from '@/types/job';
-
-import { MAP_STYLES } from '@/components/map/mapStyles';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { MapCameraFocus } from '@/components/map/MapCameraFocus';
 import { MarkerWithInfoWindow } from '@/components/map/MarkerWithInfoWindow';
@@ -72,7 +71,9 @@ export default function HelperLiveMapPage() {
   }, [locationReady, center]);
 
   const jobPoints = useMemo((): JobMapPoint[] => {
-    const openJobs = jobs.filter((j) => j.status === 'open' && j.clientId !== me.id);
+    const openJobs = jobs.filter(
+      (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== me.id,
+    );
     const inRadius = filterJobsForHelperRadar(openJobs, userCoords);
     const sorted = sortOpportunitiesForHelper(inRadius, { origin: userCoords, helperSkillIds: [] });
 
@@ -82,7 +83,7 @@ export default function HelperLiveMapPage() {
         const coords = jobCoordinates(job);
         if (!coords && !remote) return null;
         const dist = remote ? null : distanceToJobKm(userCoords, job);
-        if (!coords) return null;
+        if (!coords || !Number.isFinite(coords.lat) || !Number.isFinite(coords.lng)) return null;
         return {
           id: job.id,
           data: job,
@@ -100,7 +101,8 @@ export default function HelperLiveMapPage() {
       list = [...list].sort((a, b) => (a.dist ?? 999) - (b.dist ?? 999));
     } else if (activeFilter === 'highest_value') {
       list = [...list].sort((a, b) => {
-        const parseVal = (v: string) => Number.parseFloat(v.replace(/[^\d.]/g, '')) || 0;
+        const parseVal = (v: string | null | undefined) =>
+          Number.parseFloat(String(v ?? '').replace(/[^\d.]/g, '')) || 0;
         return parseVal(b.data.value) - parseVal(a.data.value);
       });
     }
@@ -156,7 +158,7 @@ export default function HelperLiveMapPage() {
     <div className="h-[calc(100dvh-80px)] w-full relative flex bg-[#EAF7FF] overflow-hidden lh-app-page">
       <section className="relative flex-1 min-h-0 min-w-0">
         {mapsReady ? (
-          <APIProvider apiKey={mapsApiKey} version="weekly">
+          <APIProvider apiKey={mapsApiKey} version="weekly" libraries={['marker']}>
             <Map
               defaultCenter={center}
               defaultZoom={13}
@@ -165,7 +167,6 @@ export default function HelperLiveMapPage() {
               internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
               style={{ width: '100%', height: '100%' }}
               disableDefaultUI
-              styles={MAP_STYLES}
             >
               <MapCameraFocus position={cameraFocus?.position ?? null} zoom={cameraFocus?.zoom} />
               <AdvancedMarker position={center}>

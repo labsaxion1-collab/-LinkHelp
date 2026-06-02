@@ -28,6 +28,7 @@ describe('getHelperCreditPublicDisplay', () => {
     const display = getHelperCreditPublicDisplay(costs);
 
     expect(display.applyCost).toBe(4);
+    expect(display.applyCost).not.toBe(costs.estimatedTotal);
     expect(display.jobCost).toBe(costs.serviceCost + costs.distanceCost);
     expect(display.hireEstimate).toBe(costs.selectedCost);
     expect(display.totalEstimate).toBe(display.applyCost + display.jobCost + display.hireEstimate);

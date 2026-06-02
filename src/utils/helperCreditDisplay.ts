@@ -21,14 +21,16 @@ export function getHelperLeadCreditSummary(job: Job, distanceKm?: number | null)
 
 /** Helper-facing credit lines (no service/distance breakdown). */
 export function getHelperCreditPublicDisplay(costs: HelperLeadCreditBreakdown): HelperCreditPublicDisplay {
+  // Public UI: apply line is always the candidatura debit (4 LC), never service+distance (estimatedTotal).
   const applyCost = costs.applicationCost;
   const jobCost = costs.serviceCost + costs.distanceCost;
   const hireEstimate = costs.selectedCost;
+  const totalEstimate = applyCost + jobCost + hireEstimate;
   return {
     applyCost,
     jobCost,
     hireEstimate,
-    totalEstimate: applyCost + jobCost + hireEstimate,
+    totalEstimate,
     chargeOnApply: getApplicationChargeLc(costs),
   };
 }

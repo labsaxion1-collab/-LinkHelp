@@ -19,7 +19,7 @@ const CATEGORY_EMOJI: Partial<Record<ServiceCategoryId, string>> = {
   assembly: '🔨',
   moving: '🚚',
   translation: '🌎',
-  outdoor: '📦',
+  outdoor: '🚚',
   beauty: '💅',
 };
 
@@ -59,7 +59,14 @@ function HelperCategoryDropdownInner({ open, onToggle, selectedId, onSelect, t, 
   };
 
   return (
-    <div ref={rootRef} className={clsx('relative z-30 mb-2', className)}>
+    <div
+      ref={rootRef}
+      className={clsx(
+        'relative z-30 mb-2 transition-[margin] duration-200',
+        open && 'mb-[min(15rem,38vh)]',
+        className,
+      )}
+    >
       <div className="flex min-h-[52px] items-start gap-2.5">
         <button
           type="button"
@@ -96,7 +103,7 @@ function HelperCategoryDropdownInner({ open, onToggle, selectedId, onSelect, t, 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute left-0 top-[calc(100%+0.35rem)] z-50 w-full max-w-[280px] overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_16px_48px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5"
+            className="absolute left-0 top-[calc(100%+0.5rem)] z-50 w-[min(100%,280px)] max-w-[280px] overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_16px_48px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5"
           >
             <ul className="max-h-[min(22rem,60dvh)] overflow-y-auto overscroll-contain py-1.5">
               <li>

@@ -8,7 +8,6 @@ import { MapCameraFocus } from '@/components/map/MapCameraFocus';
 import { MarkerWithInfoWindow } from '@/components/map/MarkerWithInfoWindow';
 import { AvatarMapPin } from '@/components/map/AvatarMapPin';
 import { NearbyHelperListItem } from '@/components/map/NearbyHelperListItem';
-import { MAP_STYLES } from '@/components/map/mapStyles';
 import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
 import { parseSkillKey, skillSubLabelKey } from '@/data/helperSkillsCatalog';
 import { getGoogleMapsApiKey, isGoogleMapsConfigured } from '@/utils/googleMapsConfig';
@@ -109,14 +108,14 @@ export default function ClientNearbyMapPage() {
         className="flex-1 relative h-[60vh] sm:h-full order-1 sm:order-2 min-h-[240px]"
       >
         {mapsReady ? (
-          <APIProvider apiKey={mapsApiKey} version="weekly">
+          <APIProvider apiKey={mapsApiKey} version="weekly" libraries={['marker']}>
             <Map
               defaultCenter={clientCenter}
               defaultZoom={12}
               mapId="CLIENT_NEARBY_HELPERS_MAP"
+              gestureHandling="greedy"
               style={{ width: '100%', height: '100%' }}
               disableDefaultUI
-              styles={MAP_STYLES}
             >
               <MapCameraFocus position={cameraFocus?.position ?? null} zoom={cameraFocus?.zoom} />
               <AdvancedMarker position={clientCenter} title={t('live_map.you_are_here')}>

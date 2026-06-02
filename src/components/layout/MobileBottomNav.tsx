@@ -13,14 +13,16 @@ function navClass(active: boolean, isHome = false) {
     'mx-auto flex w-full max-w-full flex-col items-center justify-center touch-manipulation transition-all',
     isHome
       ? [
-          '-mt-3 h-14 w-14 rounded-[1.35rem] border shadow-[0_-4px_18px_rgba(21,101,255,0.4)]',
+          '-mt-3 h-14 w-14 rounded-[1.35rem] border transition-transform active:scale-95',
           active
-            ? 'border-[#33B6FF]/50 bg-[#1565FF] text-white ring-2 ring-[#33B6FF]/30'
-            : 'border-[#1565FF]/15 bg-white/85 text-[#52677E] active:text-[#1565FF]',
+            ? 'border-[#2563FF]/30 bg-[#2563FF] text-white shadow-[0_10px_28px_rgba(37,99,255,0.28)] ring-2 ring-[#2563FF]/10'
+            : 'border-[#EDEFF5] bg-white text-[#6B7280] shadow-[0_4px_20px_rgba(15,23,42,0.06)] active:text-[#2563FF]',
         ]
       : [
-          'min-h-[48px] max-w-full rounded-xl px-0.5 py-1.5',
-          active ? 'text-[#1565FF] bg-[#EAF7FF]' : 'text-[#52677E] hover:text-[#1565FF] active:bg-[#EAF7FF]',
+          'min-h-[48px] max-w-full rounded-2xl px-0.5 py-1.5 transition-transform active:scale-95',
+          active
+            ? 'bg-white text-[#2563FF] shadow-[0_4px_18px_rgba(37,99,255,0.10)]'
+            : 'text-[#6B7280] hover:text-[#2563FF] active:bg-[#F7F8FC]',
         ],
   );
 }

@@ -8,10 +8,10 @@ type Props = {
   wide?: boolean;
 };
 
-/** Standard page wrapper for authenticated app areas (premium dark). */
+/** Standard page wrapper for authenticated app areas. */
 export function AppPageShell({ children, className, wide }: Props) {
   return (
-    <div className={clsx(premium.appPage, '-mt-2 sm:-mt-4 w-full max-w-full min-w-0', wide ? 'mx-auto max-w-[1600px]' : 'mx-auto max-w-6xl', className)}>
+    <div className={clsx(premium.appPage, 'w-full max-w-full min-w-0', wide ? 'mx-auto max-w-[1600px]' : 'mx-auto max-w-6xl', className)}>
       {children}
     </div>
   );

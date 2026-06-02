@@ -1,18 +1,18 @@
-/* LinkHelp Premium Dark — global design tokens & utilities */
+/* LinkHelp premium app theme — global design tokens & utilities */
 
 :root {
-  --lh-premium-bg: #f4fbff;
-  --lh-premium-bg-2: #eaf7ff;
-  --lh-premium-blue: #1565ff;
-  --lh-premium-cyan: #33b6ff;
-  --lh-premium-text: #0d1b2a;
-  --lh-premium-muted: #52677e;
+  --lh-premium-bg: #f7f8fc;
+  --lh-premium-bg-2: #edeff5;
+  --lh-premium-blue: #2563ff;
+  --lh-premium-cyan: #38bdf8;
+  --lh-premium-text: #0b1220;
+  --lh-premium-muted: #6b7280;
   --lh-premium-white: #ffffff;
-  --lh-premium-border: rgb(21 101 255 / 0.14);
-  --lh-premium-glass: rgb(255 255 255 / 0.72);
-  --lh-premium-glass-hover: rgb(255 255 255 / 0.9);
-  --lh-shadow-premium: 0 22px 70px rgb(21 101 255 / 0.12);
-  --lh-shadow-glow: 0 18px 44px rgb(21 101 255 / 0.16);
+  --lh-premium-border: rgb(11 18 32 / 0.08);
+  --lh-premium-glass: rgb(255 255 255 / 0.96);
+  --lh-premium-glass-hover: rgb(255 255 255 / 1);
+  --lh-shadow-premium: 0 4px 20px rgb(15 23 42 / 0.04);
+  --lh-shadow-glow: 0 12px 30px rgb(37 99 255 / 0.18);
 }
 
 @layer components {
@@ -29,9 +29,9 @@
     inset: 0;
     z-index: 0;
     background:
-      radial-gradient(circle at 12% 8%, rgb(51 182 255 / 0.28), transparent 42%),
-      radial-gradient(circle at 88% 18%, rgb(21 101 255 / 0.16), transparent 38%),
-      linear-gradient(180deg, #f4fbff 0%, #eaf7ff 48%, #dff4ff 100%);
+      radial-gradient(circle at 12% 4%, rgb(37 99 255 / 0.06), transparent 30%),
+      radial-gradient(circle at 88% 18%, rgb(56 189 248 / 0.08), transparent 34%),
+      linear-gradient(180deg, #f7f8fc 0%, #f3f5fa 48%, #eef2f8 100%);
   }
 
   .lh-app-page {
@@ -51,21 +51,21 @@
   }
 
   .lh-glass-card {
-    border-radius: 1.25rem;
+    border-radius: 1.375rem;
     border: 1px solid var(--lh-premium-border);
-    background: linear-gradient(145deg, rgb(255 255 255 / 0.82), rgb(255 255 255 / 0.58));
+    background: linear-gradient(145deg, rgb(255 255 255 / 0.98), rgb(255 255 255 / 0.9));
     box-shadow: var(--lh-shadow-premium);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .lh-glass-card-solid {
-    border-radius: 1.25rem;
+    border-radius: 1.375rem;
     border: 1px solid var(--lh-premium-border);
     background: var(--lh-premium-glass);
     box-shadow: var(--lh-shadow-premium);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .lh-btn-primary {
@@ -75,19 +75,19 @@
     justify-content: center;
     gap: 0.5rem;
     border-radius: 9999px;
-    border: 1px solid rgb(51 182 255 / 0.35);
-    background: linear-gradient(135deg, var(--lh-premium-blue) 0%, #1677ff 100%);
+    border: 1px solid rgb(37 99 255 / 0.18);
+    background: linear-gradient(135deg, var(--lh-premium-blue) 0%, #0f6fff 100%);
     padding: 0.625rem 1.25rem;
     font-size: 0.875rem;
     font-weight: 700;
     color: var(--lh-premium-white);
     box-shadow: var(--lh-shadow-glow);
-    transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
   }
 
   .lh-btn-primary:hover:not(:disabled) {
     filter: brightness(1.06);
-    box-shadow: 0 0 48px rgb(21 101 255 / 0.35);
+    box-shadow: 0 14px 34px rgb(37 99 255 / 0.24);
   }
 
   .lh-btn-primary:disabled {
@@ -102,18 +102,20 @@
     justify-content: center;
     gap: 0.5rem;
     border-radius: 9999px;
-    border: 1px solid var(--lh-premium-border);
-    background: rgb(255 255 255 / 0.68);
+    border: 1px solid rgb(237 239 245 / 1);
+    background: rgb(255 255 255 / 0.96);
     padding: 0.625rem 1.25rem;
     font-size: 0.875rem;
     font-weight: 700;
     color: var(--lh-premium-text);
-    transition: background 0.15s ease, border-color 0.15s ease;
+    box-shadow: 0 4px 18px rgb(15 23 42 / 0.03);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .lh-btn-secondary:hover:not(:disabled) {
-    background: rgb(255 255 255 / 0.92);
-    border-color: rgb(51 182 255 / 0.35);
+    background: #ffffff;
+    border-color: rgb(37 99 255 / 0.2);
+    box-shadow: 0 8px 24px rgb(15 23 42 / 0.06);
   }
 
   .lh-badge {
@@ -121,21 +123,21 @@
     align-items: center;
     gap: 0.25rem;
     border-radius: 9999px;
-    border: 1px solid rgb(51 182 255 / 0.28);
-    background: rgb(21 101 255 / 0.12);
+    border: 1px solid rgb(37 99 255 / 0.14);
+    background: rgb(37 99 255 / 0.09);
     padding: 0.2rem 0.625rem;
     font-size: 0.625rem;
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--lh-premium-blue);
   }
 
   .lh-section-title {
     font-family: var(--font-display);
-    font-size: 1.5rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
+    font-size: 1.625rem;
+    font-weight: 750;
+    letter-spacing: 0;
     color: var(--lh-premium-text);
   }
 
@@ -151,23 +153,23 @@
     width: 100%;
     min-height: 44px;
     border-radius: 0.875rem;
-    border: 1px solid rgb(51 182 255 / 0.22);
-    background: rgb(255 255 255 / 0.76);
+    border: 1px solid rgb(237 239 245 / 1);
+    background: rgb(255 255 255 / 0.98);
     padding: 0.625rem 0.875rem;
     font-size: 0.875rem;
     font-weight: 500;
     color: var(--lh-premium-text);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .lh-input::placeholder {
-    color: rgb(82 103 126 / 0.7);
+    color: rgb(107 114 128 / 0.74);
   }
 
   .lh-input:focus {
     outline: none;
-    border-color: rgb(51 182 255 / 0.55);
-    box-shadow: 0 0 0 3px rgb(21 101 255 / 0.18);
+    border-color: rgb(37 99 255 / 0.55);
+    box-shadow: 0 0 0 3px rgb(37 99 255 / 0.12);
   }
 
   .lh-modal-overlay {
@@ -196,8 +198,8 @@
     overflow: hidden;
     border-radius: 1.5rem;
     border: 1px solid var(--lh-premium-border);
-    background: linear-gradient(160deg, rgb(255 255 255 / 0.92) 0%, rgb(234 247 255 / 0.94) 100%);
-    box-shadow: var(--lh-shadow-premium), var(--lh-shadow-glow);
+    background: linear-gradient(160deg, rgb(255 255 255 / 0.98) 0%, rgb(247 248 252 / 0.96) 100%);
+    box-shadow: 0 24px 70px rgb(15 23 42 / 0.12);
     color: var(--lh-premium-text);
   }
 
@@ -207,7 +209,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    border-bottom: 1px solid rgb(51 182 255 / 0.12);
+    border-bottom: 1px solid rgb(237 239 245 / 1);
     padding: 1rem 1.25rem;
   }
 
@@ -224,20 +226,21 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    border-top: 1px solid rgb(51 182 255 / 0.12);
+    border-top: 1px solid rgb(237 239 245 / 1);
     padding: 1rem 1.25rem;
-    background: rgb(234 247 255 / 0.62);
+    background: rgb(247 248 252 / 0.86);
   }
 
   .lh-bottom-nav {
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
-    border-top: 1px solid rgb(21 101 255 / 0.12);
-    background: rgb(255 255 255 / 0.82);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 -12px 40px rgb(21 101 255 / 0.12);
+    min-height: 72px;
+    border-top: 1px solid #edeff5;
+    background: rgb(255 255 255 / 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 -10px 30px rgb(15 23 42 / 0.06);
   }
 
   .lh-bottom-nav-list {
@@ -247,8 +250,8 @@
     align-items: flex-end;
     justify-content: space-between;
     gap: 0.125rem;
-    padding-left: max(0.25rem, env(safe-area-inset-left));
-    padding-right: max(0.25rem, env(safe-area-inset-right));
+    padding-left: max(0.875rem, env(safe-area-inset-left));
+    padding-right: max(0.875rem, env(safe-area-inset-right));
   }
 
   .lh-bottom-nav-item {
@@ -264,10 +267,11 @@
   }
 
   .lh-sidebar {
-    border-right: 1px solid rgb(21 101 255 / 0.12);
-    background: rgb(255 255 255 / 0.74);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    border-right: 1px solid #edeff5;
+    background: rgb(255 255 255 / 0.96);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 8px 0 30px rgb(15 23 42 / 0.04);
     color: var(--lh-premium-text);
   }
 
@@ -479,19 +483,63 @@
 
   .lh-app-page .bg-white {
     background: var(--lh-premium-glass);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .lh-app-page .border-slate-200,
   .lh-app-page .border-gray-100,
   .lh-app-page .border-gray-200 {
-    border-color: rgb(51 182 255 / 0.16);
+    border-color: rgb(237 239 245 / 1);
   }
 
   .lh-app-page .bg-slate-50,
   .lh-app-page .bg-gray-50 {
-    background: rgb(255 255 255 / 0.46);
+    background: rgb(247 248 252 / 0.96);
+  }
+
+  .lh-app-page .bg-blue-600 {
+    background: #2563ff;
+  }
+
+  .lh-app-page .hover\:bg-blue-700:hover {
+    background: #1557f0;
+  }
+
+  .lh-app-page button.bg-blue-600,
+  .lh-app-page a.bg-blue-600,
+  .lh-app-page [class*='bg-blue-600'][role='button'] {
+    box-shadow: 0 10px 24px rgb(37 99 255 / 0.18);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .lh-app-page button.bg-blue-600:hover,
+  .lh-app-page a.bg-blue-600:hover,
+  .lh-app-page [class*='bg-blue-600'][role='button']:hover {
+    box-shadow: 0 14px 30px rgb(37 99 255 / 0.24);
+  }
+
+  .lh-app-page .shadow-sm {
+    box-shadow: 0 4px 20px rgb(15 23 42 / 0.04);
+  }
+
+  .lh-app-page .shadow-md {
+    box-shadow: 0 10px 28px rgb(15 23 42 / 0.08);
+  }
+
+  .lh-app-page input,
+  .lh-app-page select,
+  .lh-app-page textarea {
+    border-color: #edeff5;
+    background-color: rgb(255 255 255 / 0.98);
+  }
+
+  .lh-app-page input:focus,
+  .lh-app-page select:focus,
+  .lh-app-page textarea:focus {
+    border-color: rgb(37 99 255 / 0.55);
+    box-shadow: 0 0 0 3px rgb(37 99 255 / 0.12);
+    outline: none;
   }
 
   .lh-icon-chip {
@@ -500,9 +548,9 @@
     width: 2.75rem;
     align-items: center;
     justify-content: center;
-    border-radius: 0.875rem;
-    border: 1px solid rgb(51 182 255 / 0.25);
-    background: rgb(21 101 255 / 0.14);
+    border-radius: 1rem;
+    border: 1px solid rgb(37 99 255 / 0.12);
+    background: rgb(37 99 255 / 0.08);
     color: var(--lh-premium-cyan);
   }
 }

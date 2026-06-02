@@ -86,6 +86,27 @@ type HelperHomeInfoSlide = {
   className: string;
 };
 
+const CATEGORY_THUMBNAILS: Record<string, string> = {
+  cleaning: 'from-sky-100 via-white to-blue-100',
+  sanitization: 'from-cyan-100 via-white to-emerald-100',
+  moving: 'from-indigo-100 via-white to-sky-100',
+  assembly: 'from-amber-100 via-white to-blue-100',
+  automotive: 'from-slate-100 via-white to-blue-100',
+  translation: 'from-violet-100 via-white to-blue-100',
+  beauty: 'from-pink-100 via-white to-blue-100',
+  renovation: 'from-orange-100 via-white to-blue-100',
+  outdoor: 'from-emerald-100 via-white to-blue-100',
+  pet: 'from-lime-100 via-white to-blue-100',
+  tech: 'from-blue-100 via-white to-indigo-100',
+  other: 'from-slate-100 via-white to-blue-100',
+};
+
+function HelperDashboardCategoryIcon({ icon, className }: { icon: string; className?: string }) {
+  const Icon = Icons[icon as keyof typeof Icons] as React.ComponentType<{ className?: string; strokeWidth?: number }> | undefined;
+  const Component = Icon ?? Icons.CircleHelp;
+  return <Component className={className} strokeWidth={2.2} />;
+}
+
 export default function HelperDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -779,6 +800,10 @@ export default function HelperDashboard() {
     .map((job) => ({ job, distanceKm: baseDistanceToJobKm(job) }))
     .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
     .slice(0, 3);
+  const homeCategoryChips = visibleServiceCategories.slice(0, 4);
+  const homeFeaturedJobs = displayedJobs.slice(0, 3);
+  const urgentJobsCount = displayedJobs.filter((job) => job.urgency === 'high').length;
+  const helperFirstName = (me?.name || 'Helper').split(' ')[0] || 'Helper';
   const isPerformancePage = location.pathname === ROUTES.helperPerformance;
   const showDesktopBack =
     location.pathname === ROUTES.helperPerformance ||
@@ -1098,6 +1123,167 @@ export default function HelperDashboard() {
             </div>
           ) : null}
 
+          {activeTab !== 'candidaturas' ? (
+            <section className="mb-5 overflow-hidden rounded-[1.75rem] border border-white bg-[#F7F8FC] px-4 pb-4 pt-4 shadow-[0_18px_45px_rgba(15,23,42,0.07)] sm:px-5">
+              <header className="mb-5 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilterOpen((v) => !v)}
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white bg-white text-[#0B1220] shadow-[0_8px_22px_rgba(15,23,42,0.08)]"
+                  aria-label="Filtros"
+                >
+                  <Icons.SlidersHorizontal className="h-5 w-5" />
+                </button>
+                <div className="text-center">
+                  <p className="text-xl font-black tracking-tight text-[#0B1220]">
+                    Link<span className="text-[#2563FF]">Help</span>
+                  </p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6B7280]">Helper</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate(ROUTES.map)}
+                  className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-white bg-white text-[#0B1220] shadow-[0_8px_22px_rgba(15,23,42,0.08)]"
+                  aria-label="Mapa"
+                >
+                  <Icons.MapPinned className="h-5 w-5" />
+                  {urgentJobsCount > 0 ? (
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-black text-white">
+                      {urgentJobsCount}
+                    </span>
+                  ) : null}
+                </button>
+              </header>
+
+              <div className="relative overflow-hidden rounded-[1.65rem] bg-gradient-to-br from-white via-[#F7F8FC] to-[#EAF1FF] p-4">
+                <div className="pointer-events-none absolute -right-12 top-3 h-36 w-56 rounded-full border border-white/80 bg-white/40 blur-sm" />
+                <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF]">
+                  <span className="text-base" aria-hidden>Olá</span>
+                  {helperFirstName}
+                </p>
+                <h1 className="relative mt-2 max-w-sm text-3xl font-black leading-[1.05] tracking-tight text-[#0B1220] sm:text-4xl">
+                  Encontre oportunidades <span className="text-[#2563FF]">perto de você.</span>
+                </h1>
+
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilterOpen(true)}
+                  className="relative mt-5 flex min-h-[58px] w-full items-center gap-3 rounded-2xl bg-white px-4 text-left shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
+                >
+                  <Icons.Search className="h-5 w-5 shrink-0 text-[#0B1220]/60" />
+                  <span className="min-w-0 flex-1 truncate text-sm font-bold text-[#6B7280]">Buscar por categoria ou serviço</span>
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#2563FF] text-white shadow-[0_10px_24px_rgba(37,99,255,0.28)]">
+                    <Icons.Search className="h-5 w-5" />
+                  </span>
+                </button>
+              </div>
+
+              <div className="mt-5 flex items-center justify-between">
+                <h2 className="text-base font-black text-[#0B1220]">Categorias populares</h2>
+                <button type="button" onClick={() => setCategoryFilterOpen(true)} className="text-xs font-black text-[#2563FF]">
+                  Ver todas
+                </button>
+              </div>
+              <div className="mt-3 grid grid-cols-4 gap-3">
+                {homeCategoryChips.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategoryFilter(cat.id);
+                      setActiveTab('match');
+                    }}
+                    className={clsx(
+                      'flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-[1.25rem] border bg-white px-2 text-center shadow-[0_8px_22px_rgba(15,23,42,0.05)] transition-all active:scale-[0.98]',
+                      selectedCategoryFilter === cat.id ? 'border-[#2563FF] text-[#2563FF]' : 'border-white text-[#0B1220]',
+                    )}
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#EEF4FF] text-[#2563FF]">
+                      <HelperDashboardCategoryIcon icon={cat.icon} className="h-5 w-5" />
+                    </span>
+                    <span className="max-w-full truncate text-[11px] font-black">{t(`categories.${cat.id}`)}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-[1.25rem] bg-white px-4 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)]">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-[#6B7280]">Oportunidades</p>
+                  <p className="mt-1 text-2xl font-black text-[#0B1220]">{displayedJobs.length}</p>
+                </div>
+                <div className="rounded-[1.25rem] bg-white px-4 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)]">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-[#6B7280]">Urgentes</p>
+                  <p className="mt-1 text-2xl font-black text-[#0B1220]">{urgentJobsCount}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('candidaturas')}
+                  className="rounded-[1.25rem] bg-[#2563FF] px-4 py-3 text-left text-white shadow-[0_14px_30px_rgba(37,99,255,0.24)]"
+                >
+                  <p className="text-[10px] font-black uppercase tracking-wide text-white/80">Minhas</p>
+                  <p className="mt-1 text-lg font-black">Candidaturas</p>
+                </button>
+              </div>
+            </section>
+          ) : null}
+
+          {activeTab !== 'candidaturas' && homeFeaturedJobs.length > 0 ? (
+            <section className="mb-5">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-base font-black text-[#0B1220]">Trabalhos em alta</h2>
+                <button type="button" onClick={() => setActiveTab('recentes')} className="text-xs font-black text-[#2563FF]">
+                  Ver todos
+                </button>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {homeFeaturedJobs.map((job) => {
+                  const categoryId = resolveCategoryId(job.category) || 'other';
+                  const category = SERVICE_CATEGORIES.find((cat) => cat.id === categoryId);
+                  const distance = baseDistanceToJobKm(job);
+                  return (
+                    <button
+                      key={job.id}
+                      type="button"
+                      onClick={() => setDetailOpportunity(job)}
+                      className="min-w-[17rem] max-w-[17rem] rounded-[1.35rem] border border-white bg-white p-3 text-left shadow-[0_10px_28px_rgba(15,23,42,0.06)]"
+                    >
+                      <div className="flex gap-3">
+                        <span className={clsx('relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.15rem] bg-gradient-to-br', CATEGORY_THUMBNAILS[categoryId] ?? CATEGORY_THUMBNAILS.other)}>
+                          <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(37,99,255,0.22),transparent_34%),radial-gradient(circle_at_70%_80%,rgba(15,23,42,0.08),transparent_36%)]" />
+                          {category ? <HelperDashboardCategoryIcon icon={category.icon} className="relative h-9 w-9 text-[#2563FF]" /> : <Icons.Briefcase className="relative h-9 w-9 text-[#2563FF]" />}
+                          {job.urgency === 'high' ? (
+                            <span className="absolute left-2 top-2 rounded-full bg-[#2563FF] px-2 py-1 text-[9px] font-black text-white">Urgente</span>
+                          ) : null}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block line-clamp-2 text-sm font-black leading-tight text-[#0B1220]">
+                            {translateJobTitle(job.title, job.category, job.subcategory, t)}
+                          </span>
+                          <span className="mt-2 flex items-center gap-1 text-[11px] font-bold text-[#6B7280]">
+                            <Clock className="h-3.5 w-3.5" />
+                            <span className="truncate">{formatJobScheduleDisplay(job, t)}</span>
+                          </span>
+                          <span className="mt-1 flex items-center gap-1 text-[11px] font-bold text-[#6B7280]">
+                            <MapPin className="h-3.5 w-3.5" />
+                            <span className="truncate">
+                              {distance != null ? t('helper_dashboard.distance_km', { km: distance.toFixed(1) }) : job.city || job.location}
+                            </span>
+                          </span>
+                          <span className="mt-2 flex items-center justify-between gap-2">
+                            <span className="text-lg font-black text-[#2563FF]">{job.value}</span>
+                            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F7F8FC] text-[#0B1220]">
+                              <Icons.ChevronRight className="h-4 w-4" />
+                            </span>
+                          </span>
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
           <div className="mb-3 flex items-start justify-between gap-2">
             {activeTab === 'candidaturas' ? (
               <h3 className="flex items-center gap-2 text-sm font-black text-slate-950">
@@ -1277,7 +1463,7 @@ export default function HelperDashboard() {
             ) : displayedJobs.length > 0 ? (
               <div
                 className={clsx(
-                  'grid w-full max-w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 transition-[filter,opacity] duration-300',
+                  'grid w-full max-w-full min-w-0 grid-cols-1 gap-4 xl:grid-cols-2 transition-[filter,opacity] duration-300',
                   proposalJob && 'pointer-events-none brightness-[0.92] md:brightness-[0.88]',
                 )}
               >

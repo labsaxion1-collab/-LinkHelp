@@ -185,7 +185,7 @@ function HelperOpportunityCardInner({
     'inline-flex min-h-[40px] flex-1 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2.5 text-sm font-bold transition-all duration-200';
 
   const cardShell = clsx(
-    'group/card h-full w-full max-w-full overflow-hidden border bg-white/95 transition-all duration-300',
+    'group/card h-full w-full max-w-full overflow-hidden rounded-[1.45rem] border bg-white transition-all duration-300 shadow-[0_10px_28px_rgba(15,23,42,0.06)]',
     'md:hover:-translate-y-0.5 md:hover:shadow-xl md:hover:shadow-slate-900/10 motion-reduce:transform-none',
     'md:hover:ring-2 md:hover:ring-blue-500/15',
     (isExiting || passExiting) &&
@@ -194,7 +194,7 @@ function HelperOpportunityCardInner({
     tier === 'urgent' &&
       'border-rose-200/90 ring-1 ring-rose-200/50 shadow-md shadow-rose-500/10 motion-reduce:animate-none md:animate-pulse',
     tier === 'best' && 'border-emerald-200/80 ring-1 ring-emerald-100/60 shadow-sm shadow-emerald-500/10',
-    tier === 'normal' && 'border-slate-200/80',
+    tier === 'normal' && 'border-white',
   );
 
   const header =
@@ -284,7 +284,7 @@ function HelperOpportunityCardInner({
 
         <div
           className={clsx(
-            'relative z-20 bg-white p-2.5 will-change-transform',
+            'relative z-20 bg-white p-3 will-change-transform',
             !dragging && 'transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.2,0.64,1)]',
           )}
           style={{
@@ -292,17 +292,38 @@ function HelperOpportunityCardInner({
             opacity: 1 - Math.min(0.12, Math.abs(dragX) / 400),
           }}
         >
-          <p className="truncate text-[10px] font-black uppercase tracking-wide text-blue-600">{category}</p>
-          <p className="line-clamp-1 text-xs font-bold text-slate-900">{subLabel}</p>
+          <div className="relative mb-3 flex min-h-36 overflow-hidden rounded-[1.35rem] bg-gradient-to-br from-blue-100 via-white to-sky-100">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_18%,rgba(37,99,255,0.32),transparent_34%),radial-gradient(circle_at_78%_84%,rgba(11,18,32,0.10),transparent_38%)]" />
+            <div className="absolute inset-x-4 bottom-4 top-4 rounded-[2rem] border border-white/60 bg-white/20" />
+            <Icons.BriefcaseBusiness className="relative m-auto h-14 w-14 text-blue-600 drop-shadow-sm" strokeWidth={1.8} />
+            {job.urgency === 'high' ? (
+              <span className="absolute left-3 top-3 rounded-full bg-rose-50 px-3 py-1 text-[10px] font-black text-rose-700 shadow-sm">
+                {t('helper_dashboard.job_card_urgent')}
+              </span>
+            ) : null}
+            <span className="absolute bottom-3 right-3 rounded-2xl bg-white px-3 py-1.5 text-lg font-black text-blue-700 shadow-[0_8px_20px_rgba(15,23,42,0.10)]">
+              {budget}
+            </span>
+          </div>
 
-          <div className="mt-1.5 mb-1.5 flex items-center gap-2">
-            <img
-              src={job.clientAvatar}
-              alt=""
-              className="h-9 w-9 shrink-0 rounded-full border border-slate-100 object-cover shadow-sm"
-              loading="lazy"
-              decoding="async"
-            />
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-[10px] font-black uppercase tracking-wide text-blue-600">{category}</p>
+              <p className="mt-0.5 line-clamp-2 text-lg font-black leading-tight text-slate-950">
+                {translateJobTitle(job.title, job.category, job.subcategory, t)}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onViewClientProfile?.(job)}
+              className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white bg-slate-50 shadow-sm"
+              aria-label={t('helper_public.view_profile')}
+            >
+              <img src={job.clientAvatar} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
+            </button>
+          </div>
+
+          <div className="mt-2 mb-2 flex items-center gap-2">
             <div className="min-w-0 flex-1">
               <p className="truncate text-[11px] font-bold text-slate-800">{job.clientName}</p>
               {job.clientRating != null && job.clientRating > 0 ? (
@@ -317,19 +338,22 @@ function HelperOpportunityCardInner({
                 </p>
               ) : null}
             </div>
-            {schedule ? (
-              <span className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-bold text-slate-600">
-                <Clock className="h-3 w-3 text-blue-500" />
-                <span className="max-w-[5.5rem] truncate">{schedule}</span>
-              </span>
-            ) : null}
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-700">
+              <CheckCircle2 className="h-3 w-3" />
+              Verificado
+            </span>
           </div>
 
-          <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-bold">
-            <span className="text-blue-700">{budget}</span>
-            <span className="inline-flex items-center gap-0.5 text-slate-600">
+          <div className="mb-2 grid grid-cols-2 gap-2 text-[11px] font-bold">
+            {schedule ? (
+              <span className="inline-flex items-center gap-1 rounded-xl bg-slate-50 px-3 py-2 text-slate-600">
+                <Clock className="h-3.5 w-3.5 text-blue-500" />
+                <span className="truncate">{schedule}</span>
+              </span>
+            ) : null}
+            <span className="inline-flex items-center gap-1 rounded-xl bg-slate-50 px-3 py-2 text-slate-600">
               <MapPin className="h-3 w-3 shrink-0" />
-              {loc}
+              <span className="truncate">{loc}</span>
             </span>
           </div>
           <div className="mb-2">
@@ -355,20 +379,24 @@ function HelperOpportunityCardInner({
               {t('helper_dashboard.apply_sending')}
             </p>
           ) : (
-            <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-gradient-to-r from-slate-50 to-white px-3 py-2.5 shadow-sm">
-              <span className="flex items-center gap-1.5 text-[10px] font-bold text-rose-700">
-                <span className="text-sm leading-none" aria-hidden>
-                  ❌
-                </span>
-                {t('helper_dashboard.swipe_not_interested')}
-              </span>
-              <span className="h-4 w-px bg-slate-200" aria-hidden />
-              <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700">
-                <span className="text-sm leading-none" aria-hidden>
-                  ✓
-                </span>
-                {t('helper_dashboard.swipe_interest')}
-              </span>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  hapticSuccess();
+                  onSwipeInterest?.(job);
+                }}
+                disabled={swipeRateLimited}
+                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-black text-white shadow-[0_12px_26px_rgba(37,99,255,0.24)] active:scale-[0.99] disabled:opacity-60"
+              >
+                <Icons.Check className="h-4 w-4" />
+                Quero fazer
+              </button>
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-gradient-to-r from-slate-50 to-white px-3 py-2 shadow-sm">
+                <span className="text-[10px] font-bold text-rose-700">{t('helper_dashboard.swipe_not_interested')}</span>
+                <span className="h-4 w-px bg-slate-200" aria-hidden />
+                <span className="text-[10px] font-bold text-emerald-700">{t('helper_dashboard.swipe_interest')}</span>
+              </div>
             </div>
           )}
         </div>

@@ -21,7 +21,7 @@ import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { UpcomingJobsSidebar } from '@/components/helpers/UpcomingJobsSidebar';
 import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailModal';
-import { SERVICE_CATEGORIES, type ServiceCategoryId } from '@/data/serviceCategories';
+import type { ServiceCategoryId } from '@/data/serviceCategories';
 import { resolveCategoryId, translateCategory, translateJobTitle } from '@/utils/translateCategory';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
@@ -100,12 +100,6 @@ const CATEGORY_THUMBNAILS: Record<string, string> = {
   tech: 'from-blue-100 via-white to-indigo-100',
   other: 'from-slate-100 via-white to-blue-100',
 };
-
-function HelperDashboardCategoryIcon({ icon, className }: { icon: string; className?: string }) {
-  const Icon = Icons[icon as keyof typeof Icons] as React.ComponentType<{ className?: string; strokeWidth?: number }> | undefined;
-  const Component = Icon ?? Icons.CircleHelp;
-  return <Component className={className} strokeWidth={2.2} />;
-}
 
 export default function HelperDashboard() {
   const location = useLocation();
@@ -239,13 +233,6 @@ export default function HelperDashboard() {
     setHelperPrimaryCategory(categoryPrefs.primaryCategory);
     setHelperSecondaryCategories(categoryPrefs.secondaryCategories);
   }, [categoryPrefs.primaryCategory, categoryPrefs.secondaryCategories]);
-  const visibleServiceCategories = useMemo(
-    () =>
-      categoryPrefs.visibleCategories.length
-        ? SERVICE_CATEGORIES.filter((cat) => categoryPrefs.visibleCategories.includes(cat.id))
-        : SERVICE_CATEGORIES,
-    [categoryPrefs],
-  );
   useEffect(() => {
     if (!isConfigured || !storageUserId) return;
     let cancelled = false;
@@ -800,7 +787,6 @@ export default function HelperDashboard() {
     .map((job) => ({ job, distanceKm: baseDistanceToJobKm(job) }))
     .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
     .slice(0, 3);
-  const homeCategoryChips = visibleServiceCategories.slice(0, 4);
   const helperFirstName = (me?.name || 'Helper').split(' ')[0] || 'Helper';
   const isPerformancePage = location.pathname === ROUTES.helperPerformance;
   const showDesktopBack =
@@ -1157,35 +1143,23 @@ export default function HelperDashboard() {
                 </button>
               </div>
 
-              <div className="mt-7 flex items-center justify-between">
-                <h2 className="text-base font-black text-[#0B1220]">Categorias populares</h2>
-                <button type="button" onClick={() => setCategoryFilterOpen(true)} className="text-xs font-black text-[#2563FF]">
-                  Ver todas
-                </button>
-              </div>
-              <div className="mt-4 grid grid-cols-4 gap-3">
-                {homeCategoryChips.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedCategoryFilters((current) =>
-                        current.includes(cat.id) ? current.filter((id) => id !== cat.id) : [...current, cat.id],
-                      );
-                      setActiveTab('match');
-                    }}
-                    className={clsx(
-                      'flex min-h-[96px] flex-col items-center justify-center gap-2 rounded-[1.35rem] border bg-white px-2 text-center shadow-[0_12px_28px_rgba(15,23,42,0.055)] transition-all active:scale-[0.98]',
-                      selectedCategoryFilters.includes(cat.id) ? 'border-[#2563FF] text-[#2563FF] ring-2 ring-[#2563FF]/10' : 'border-white text-[#0B1220]',
-                    )}
-                  >
-                    <span className="flex h-11 w-11 items-center justify-center rounded-[1.15rem] bg-[#EEF4FF] text-[#2563FF]">
-                      <HelperDashboardCategoryIcon icon={cat.icon} className="h-5 w-5" />
-                    </span>
-                    <span className="max-w-full truncate text-[11px] font-black">{t(`categories.${cat.id}`)}</span>
-                  </button>
-                ))}
-              </div>
+              <HelperCategoryDropdown
+                open={categoryFilterOpen}
+                onToggle={() => setCategoryFilterOpen((v) => !v)}
+                selectedIds={selectedCategoryFilters}
+                onToggleCategory={(categoryId) => {
+                  setSelectedCategoryFilters((current) =>
+                    current.includes(categoryId)
+                      ? current.filter((id) => id !== categoryId)
+                      : [...current, categoryId],
+                  );
+                  setActiveTab('match');
+                }}
+                onClear={() => setSelectedCategoryFilters([])}
+                t={t}
+                buttonLabel="Categorias"
+                className="mt-7"
+              />
 
               <div className="mt-6 grid gap-3">
                 <button
@@ -1208,24 +1182,7 @@ export default function HelperDashboard() {
                 </span>
                 {t('helper_dashboard.filter_apps_title')}
               </h3>
-            ) : (
-              <HelperCategoryDropdown
-                open={categoryFilterOpen}
-                onToggle={() => setCategoryFilterOpen((v) => !v)}
-                selectedIds={selectedCategoryFilters}
-                onToggleCategory={(categoryId) => {
-                  setSelectedCategoryFilters((current) =>
-                    current.includes(categoryId)
-                      ? current.filter((id) => id !== categoryId)
-                      : [...current, categoryId],
-                  );
-                  setActiveTab('match');
-                }}
-                onClear={() => setSelectedCategoryFilters([])}
-                t={t}
-                className="sm:absolute sm:left-1/2 sm:top-0 sm:-translate-x-1/2"
-              />
-            )}
+            ) : null}
             {!isPerformancePage && UI_VISIBILITY.helperCredits ? (
               <div className="sm:absolute sm:right-0 sm:top-0">
                 <HelperCreditsWalletCard

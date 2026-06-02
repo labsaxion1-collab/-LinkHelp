@@ -12,6 +12,7 @@ type Props = {
   onClear: () => void;
   t: (key: string) => string;
   className?: string;
+  buttonLabel?: string;
 };
 
 function CategoryIcon({ icon, className }: { icon: string; className?: string }) {
@@ -28,8 +29,10 @@ function HelperCategoryDropdownInner({
   onClear,
   t,
   className,
+  buttonLabel,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   const handleOutside = useCallback(
@@ -49,6 +52,16 @@ function HelperCategoryDropdownInner({
       document.removeEventListener('touchstart', handleOutside);
     };
   }, [open, handleOutside]);
+
+  useEffect(() => {
+    if (!open || !scrollRef.current) return;
+    const frame = window.requestAnimationFrame(() => {
+      const el = scrollRef.current;
+      if (!el) return;
+      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open]);
 
   const categoryLabel = (id: ServiceCategoryId) => {
     if (id === 'outdoor') return t('helper_dashboard.filter_category_entregas');
@@ -79,7 +92,7 @@ function HelperCategoryDropdownInner({
           )}
         >
           <Icons.LayoutGrid className="h-5 w-5" />
-          <span>{t('helper_dashboard.filter_find_title')}</span>
+          <span>{buttonLabel ?? t('helper_dashboard.filter_find_title')}</span>
           {selectedIds.length > 0 ? (
             <span
               className={clsx(
@@ -119,8 +132,11 @@ function HelperCategoryDropdownInner({
               ) : null}
             </div>
 
-            <div className="overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <div className="grid auto-cols-[8.6rem] grid-flow-col grid-rows-2 gap-2">
+            <div
+              ref={scrollRef}
+              className="overflow-x-auto overscroll-x-contain scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              <div className="grid w-max auto-cols-[8.6rem] grid-flow-col grid-rows-2 gap-2 px-[calc(50%_-_4.3rem)]">
                 {SERVICE_CATEGORIES.map((category) => {
                   const id = category.id as ServiceCategoryId;
                   const active = selectedSet.has(id);

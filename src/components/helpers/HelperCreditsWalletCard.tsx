@@ -37,9 +37,9 @@ export function HelperCreditsWalletCard({
         className="inline-flex min-h-[34px] max-w-[9.5rem] shrink-0 items-center gap-1.5 rounded-full border border-blue-200/80 bg-white/95 px-2.5 py-1 text-left text-[11px] font-bold text-slate-700 shadow-sm hover:border-blue-300 hover:bg-blue-50"
       >
         <img
-          src="/brand/linkcredit-coin.jpg"
+          src="/brand/linkcredit-coin-icon.png"
           alt=""
-          className="h-4 w-4 shrink-0 rounded-full object-cover ring-1 ring-amber-200"
+          className="h-6 w-6 shrink-0 rounded-full object-cover"
           loading="lazy"
           decoding="async"
         />
@@ -63,14 +63,14 @@ export function HelperCreditsWalletCard({
       <div className="flex items-start gap-2.5">
         <span
           className={clsx(
-            'flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-amber-50 shadow-sm ring-1 ring-amber-200',
+            'flex shrink-0 items-center justify-center overflow-hidden rounded-full shadow-sm',
             'h-10 w-10',
           )}
         >
           <img
-            src="/brand/linkcredit-coin.jpg"
+            src="/brand/linkcredit-coin-icon.png"
             alt=""
-            className="h-8 w-8 rounded-full object-cover"
+            className="h-full w-full rounded-full object-cover"
             loading="lazy"
             decoding="async"
           />

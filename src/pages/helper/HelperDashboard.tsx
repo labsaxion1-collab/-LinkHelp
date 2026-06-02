@@ -35,6 +35,7 @@ import { HelperRadialCategoryMenu } from '@/components/helper/HelperRadialCatego
 import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
 import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
 import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
+import { getApplicationChargeLc } from '@/config/helperCreditCharge';
 import { InsufficientCreditsError, leadCostsForJob } from '@/services/helperLeadCredits';
 import { recordMarketSignal } from '@/services/marketSignals';
 import { recordProposalAnalytics, type ProposalAnalyticsSource } from '@/services/proposalAnalytics';
@@ -315,6 +316,14 @@ export default function HelperDashboard() {
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
   const [clientProfileJob, setClientProfileJob] = useState<Job | null>(null);
   const [detailOpportunity, setDetailOpportunity] = useState<Job | null>(null);
+
+  useEffect(() => {
+    const openJobId = (location.state as { openJobId?: string } | null)?.openJobId;
+    if (!openJobId) return;
+    const job = jobs.find((j) => j.id === openJobId);
+    if (job) setDetailOpportunity(job);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.state, jobs, navigate, location.pathname]);
   const helperUserId = session?.user?.id ?? profile?.id ?? (me?.id && me.id !== 'guest' && me.id !== '…' ? me.id : null);
 
   const helperUpcomingList = React.useMemo(
@@ -355,7 +364,8 @@ export default function HelperDashboard() {
     helperApplications.filter((a) => a.status !== 'cancelled').map((a) => a.jobId),
   );
   const interestCostForJob = React.useCallback(
-    (job: Job) => leadCostsForJob(job, { distanceKm: baseDistanceToJobKm(job) }).interestCost,
+    (job: Job) =>
+      getApplicationChargeLc(leadCostsForJob(job, { distanceKm: baseDistanceToJobKm(job) })),
     [baseDistanceToJobKm],
   );
 
@@ -1204,7 +1214,7 @@ export default function HelperDashboard() {
             ) : displayedJobs.length > 0 ? (
               <div
                 className={clsx(
-                  'grid w-full max-w-full min-w-0 grid-cols-1 gap-3 md:gap-4 md:grid-cols-2 2xl:grid-cols-3 transition-[filter,opacity] duration-300',
+                  'grid w-full max-w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 transition-[filter,opacity] duration-300',
                   proposalJob && 'pointer-events-none brightness-[0.92] md:brightness-[0.88]',
                 )}
               >

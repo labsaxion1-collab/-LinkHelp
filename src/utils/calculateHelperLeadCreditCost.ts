@@ -3,6 +3,20 @@ import { resolveCategoryId } from '@/utils/translateCategory';
 
 const INTEREST_COST_LC = 4;
 
+const SERVICE_COST_LC: Record<string, number> = {
+  cleaning: 7,
+  sanitization: 6,
+  beauty: 5,
+  outdoor: 5,
+  tech: 6,
+  translation: 3,
+  pet: 3,
+  moving: 8,
+  assembly: 7,
+  automotive: 8,
+  renovation: 9,
+};
+
 const LOW_COMPLEXITY_CATEGORIES = new Set(['translation', 'pet']);
 const MEDIUM_COMPLEXITY_CATEGORIES = new Set(['cleaning', 'sanitization', 'beauty', 'outdoor', 'tech']);
 const HIGH_COMPLEXITY_CATEGORIES = new Set(['moving', 'assembly', 'automotive', 'renovation']);
@@ -36,9 +50,9 @@ function estimateServiceValueCad(job: Job): number {
   return parseValueHintCad(job.value);
 }
 
-function isRemoteJob(job: Job): boolean {
-  const loc = `${job.location ?? ''} ${job.address ?? ''}`.toLowerCase();
-  return /remot|remote|en ligne|online|à distance|a distancia/i.test(loc);
+export function isRemoteJob(job: Job): boolean {
+  const loc = `${job.location ?? ''} ${job.address ?? ''} ${job.description ?? ''}`.toLowerCase();
+  return /remot|remote|en ligne|online|à distance|a distancia|tipo de atendimento:\s*online/i.test(loc);
 }
 
 function distanceExtraLc(distanceKm: number | null | undefined): number {
@@ -49,6 +63,14 @@ function distanceExtraLc(distanceKm: number | null | undefined): number {
   if (distanceKm <= 35) return 4;
   if (distanceKm <= 50) return 7;
   return 12;
+}
+
+function categoryServiceCostLc(categoryId: string): number {
+  if (SERVICE_COST_LC[categoryId] != null) return SERVICE_COST_LC[categoryId];
+  if (LOW_COMPLEXITY_CATEGORIES.has(categoryId)) return 3;
+  if (MEDIUM_COMPLEXITY_CATEGORIES.has(categoryId)) return 5;
+  if (HIGH_COMPLEXITY_CATEGORIES.has(categoryId)) return 8;
+  return 5;
 }
 
 function categoryExtraLc(categoryId: string): number {
@@ -68,8 +90,16 @@ function valueTierLc(serviceValueCad: number): number {
 }
 
 export type HelperLeadCreditBreakdown = {
+  /** Charged on candidatura when full charge flag is off. */
   interestCost: number;
+  applicationCost: number;
+  serviceCost: number;
+  distanceCost: number;
+  /** interest + service + distance — shown as "Custo estimado". */
+  estimatedTotal: number;
+  /** Extra if hired (value tier + legacy surcharges). */
   selectedCost: number;
+  /** @deprecated Use estimatedTotal for display; kept for hire-flow totals. */
   total: number;
   serviceValueCad: number;
 };
@@ -81,13 +111,23 @@ export function calculateHelperLeadCreditCost(
   const categoryId = resolveCategoryId(job.category) || job.category;
   const serviceValueCad = estimateServiceValueCad(job);
   const remote = isRemoteJob(job);
-  // Use helper base distance, not live GPS distance. Helpers can be temporarily near another job.
-  const distanceExtra = remote ? 0 : distanceExtraLc(options?.distanceKm);
+  const distanceCost = remote ? 0 : distanceExtraLc(options?.distanceKm);
+  const serviceCost = categoryServiceCostLc(categoryId);
+  const applicationCost = INTEREST_COST_LC;
+  const estimatedTotal = applicationCost + serviceCost + distanceCost;
+
   const categoryExtra = categoryExtraLc(categoryId);
-  const selectedCost = Math.max(2, Math.min(30, valueTierLc(serviceValueCad) + distanceExtra + categoryExtra));
+  const selectedCost = Math.max(
+    2,
+    Math.min(30, valueTierLc(serviceValueCad) + (remote ? 0 : distanceExtraLc(options?.distanceKm)) + categoryExtra),
+  );
 
   return {
     interestCost: INTEREST_COST_LC,
+    applicationCost,
+    serviceCost,
+    distanceCost,
+    estimatedTotal,
     selectedCost,
     total: INTEREST_COST_LC + selectedCost,
     serviceValueCad,

@@ -28,6 +28,7 @@ import { buildPendingServiceReviews } from '@/utils/serviceReviewQueue';
 import type { PendingServiceReview, ServiceReview } from '@/types/review';
 import { dispatchPushEvent } from '@/services/push/pushEventDispatcher';
 import { useCredits } from '@/context/CreditContext';
+import { getApplicationChargeLc } from '@/config/helperCreditCharge';
 import {
   fetchHelperBaseDistanceKm,
   leadCostsForJob,
@@ -243,7 +244,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       throw new Error('SELF_REQUEST');
     }
 
-    const interestCost = leadCostsForJob(job, { distanceKm: options?.distanceKm ?? null }).interestCost;
+    const interestCost = getApplicationChargeLc(
+      leadCostsForJob(job, { distanceKm: options?.distanceKm ?? null }),
+    );
 
     if (useRemote) {
       if (helperId === profile?.id) {

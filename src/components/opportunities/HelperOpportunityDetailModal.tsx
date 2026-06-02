@@ -4,6 +4,7 @@ import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { translateJobTitle } from '@/utils/translateCategory';
 import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
 import { HelperCreditCostBlock } from '@/components/helpers/HelperCreditCostBlock';
+import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
 
 type Props = {
   job: Job | null;
@@ -43,15 +44,17 @@ export function HelperOpportunityDetailModal({
   const category = translateCategory(job.category, t);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const budget = formatJobBudgetDisplay(job, t);
-  const loc = needsBaseAddress
-    ? t('helper_dashboard.base_address_missing_short')
-    : baseAddressPendingCoords
-      ? t('helper_dashboard.base_address_saved_pending_coords')
-      : distanceKm != null
-      ? distanceFromBase
-        ? t('helper_dashboard.distance_from_base_km', { km: distanceKm.toFixed(1) })
-        : t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) })
-      : job.location?.trim() || t('jobs.remote');
+  const loc = isRemoteJob(job)
+    ? t('jobs.remote')
+    : needsBaseAddress
+      ? t('helper_dashboard.base_address_missing_short')
+      : baseAddressPendingCoords
+        ? t('helper_dashboard.base_address_saved_pending_coords')
+        : distanceKm != null
+          ? distanceFromBase
+            ? t('helper_dashboard.distance_from_base_km', { km: distanceKm.toFixed(1) })
+            : t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) })
+          : job.location?.trim() || t('jobs.remote');
   const schedule = formatJobSchedule(job, t);
 
   return (
@@ -146,7 +149,7 @@ export function HelperOpportunityDetailModal({
           ) : null}
 
           <div className="mt-4">
-            <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="detail" />
+            <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="detail" showHireEstimate />
           </div>
 
           {job.address || job.city ? (

@@ -1,6 +1,5 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { hapticLight, hapticSuccess } from '@/utils/haptic';
-import { computeLeadQualityScore } from '@/utils/leadQualityScore';
 import * as Icons from 'lucide-react';
 import { CheckCircle2, Clock, MapPin } from 'lucide-react';
 import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
@@ -11,6 +10,7 @@ import { isBeautyScheduledJob } from '@/utils/jobDisplay';
 import { translateJobTitle } from '@/utils/translateCategory';
 import { LhCard } from '@/components/design-system/LhCard';
 import { HelperCreditCostBlock } from '@/components/helpers/HelperCreditCostBlock';
+import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
 
 export type HelperOpportunityCardTab = 'match' | 'recentes' | 'emergencia';
 
@@ -62,6 +62,7 @@ function locationLabel(
   needsBaseAddress?: boolean,
   baseAddressPendingCoords?: boolean,
 ): string {
+  if (isRemoteJob(job)) return t('jobs.remote');
   if (needsBaseAddress) return t('helper_dashboard.base_address_missing_short');
   if (baseAddressPendingCoords) return t('helper_dashboard.base_address_saved_pending_coords');
   if (distanceKm != null) {
@@ -103,8 +104,6 @@ function HelperOpportunityCardInner({
   clientReviewCount = 0,
 }: HelperOpportunityCardProps) {
   const tier = jobMatchTier(job, activeTab);
-  const qualityScore = computeLeadQualityScore({ job, distanceKm });
-  const helperLimit = tier === 'urgent' ? 5 : 3;
   const schedule = formatJobSchedule(job, t);
   const category = translateCategory(job.category, t);
   const loc = locationLabel(job, distanceKm, t, distanceFromBase, needsBaseAddress, baseAddressPendingCoords);
@@ -365,8 +364,8 @@ function HelperOpportunityCardInner({
 
       {/* Desktop full */}
       <div className="hidden w-full max-w-full md:block">
-        <div className="p-4">
-          <div className="mb-3 flex items-center gap-3">
+        <div className="p-3.5">
+          <div className="mb-2.5 flex items-center gap-2.5">
             <img
               src={job.clientAvatar}
               alt=""
@@ -393,56 +392,41 @@ function HelperOpportunityCardInner({
           <button
             type="button"
             onClick={() => onViewDetails?.(job)}
-            className="mb-2 line-clamp-2 text-left text-base font-bold leading-snug text-slate-900 hover:text-blue-700"
+            className="mb-1 line-clamp-2 text-left text-sm font-bold leading-snug text-slate-900 hover:text-blue-700"
           >
             {translateJobTitle(job.title, job.category, job.subcategory, t)}
           </button>
-          <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-slate-600">{job.description}</p>
-          <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800">
-              <Icons.BadgeCheck className="h-3.5 w-3.5 shrink-0 text-emerald-600" />{' '}
-              {t('helper_dashboard.lead_quality', { pct: qualityScore })}
+          <p className="mb-2.5 line-clamp-2 text-xs leading-relaxed text-slate-600">{job.description}</p>
+          <div className="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-slate-700">
+            <span className="text-emerald-700">{budget}</span>
+            <span className="inline-flex items-center gap-0.5">
+              <MapPin className="h-3 w-3 shrink-0 text-slate-400" />
+              {loc}
             </span>
-            <span className="inline-flex max-w-full flex-col gap-0.5 rounded-[var(--lh-radius-sm)] border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-800">
-              <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" />
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-900">
-              <Icons.Users className="h-3.5 w-3.5 shrink-0 text-amber-600" />{' '}
-              {t('helper_dashboard.lead_competition', { count: helperLimit })}
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-bold text-blue-800">
-              <Icons.UserCheck className="h-3.5 w-3.5 shrink-0 text-blue-600" />{' '}
-              {t('helper_dashboard.applications_count', { count: applicationsCount })}
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-slate-50/80 px-2.5 py-1.5 text-xs font-medium text-slate-700">
-              <Clock className="h-3.5 w-3.5 shrink-0 text-slate-400" /> {schedule}
-            </span>
-            {isBeautyScheduledJob(job) ? (
-              <span className="inline-flex items-center gap-1 rounded-[var(--lh-radius-sm)] border border-violet-100 bg-violet-50 px-2.5 py-1.5 text-xs font-bold text-violet-800">
-                <span aria-hidden>🕒</span>
-                {job.preferredTime}
-                <span className="font-semibold text-violet-600/90">· {t('jobs.scheduled_time_badge')}</span>
+            {schedule ? (
+              <span className="inline-flex items-center gap-0.5 text-slate-600">
+                <Clock className="h-3 w-3 shrink-0 text-blue-500" />
+                {schedule}
               </span>
             ) : null}
-            <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800">
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" /> {loc}
+            <span className="inline-flex items-center gap-0.5 text-blue-800">
+              <Icons.UserCheck className="h-3 w-3 shrink-0" />
+              {t('helper_dashboard.applications_count', { count: applicationsCount })}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-[var(--lh-radius-sm)] border border-slate-200/90 bg-slate-50/90 px-2.5 py-1.5 text-xs font-semibold text-slate-700">
-              <Icons.Handshake className="h-3.5 w-3.5 shrink-0 text-slate-500" /> {budget}
-            </span>
+            {job.urgency === 'high' ? (
+              <span className="rounded-md bg-rose-100 px-1.5 py-0.5 text-[10px] font-black uppercase text-rose-800">
+                {t('helper_dashboard.job_card_high_priority')}
+              </span>
+            ) : null}
           </div>
+          <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" />
         </div>
-        <div className="mx-4 mb-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
-          <p className="line-clamp-2 text-xs font-semibold leading-relaxed text-slate-600">
-            {t('helper_dashboard.lead_unlock_note')}
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3">
+        <div className="flex flex-col gap-1.5 border-t border-slate-100 bg-slate-50/60 px-3.5 py-2.5">
           {onViewDetails ? (
             <button
               type="button"
               onClick={() => onViewDetails(job)}
-              className="inline-flex min-h-[38px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+              className="inline-flex min-h-[36px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
             >
               <Icons.FileText className="h-4 w-4" />
               {t('notifications.view_details')}

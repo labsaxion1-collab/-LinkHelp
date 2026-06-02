@@ -16,9 +16,11 @@ import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import { clsx } from 'clsx';
 import { sanitizePreMatchMessage } from '@/utils/preMatchChatFilter';
 import { isUnlimitedPreMatch, preMatchOutgoingLimit } from '@/utils/preMatchLimits';
-import { translateJobTitle } from '@/utils/translateCategory';
+import { translateCategory, translateJobTitle } from '@/utils/translateCategory';
+import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 import { dedupeConversationSummaries } from '@/services/supabase/chatRemote';
+import type { Job } from '@/types/job';
 
 type ChatRow =
   | { id: string | number; kind: 'system'; text: string; time: string; variant?: 'info' | 'warn' }
@@ -73,6 +75,7 @@ export default function MessagesPage() {
   const [showScrollTopFab, setShowScrollTopFab] = useState(false);
   const [showScrollBottomFab, setShowScrollBottomFab] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
+  const [chatDetailJob, setChatDetailJob] = useState<Job | null>(null);
 
   const serviceConfirmed = useRemoteChat ? remote.contactUnlocked : false;
 
@@ -228,14 +231,17 @@ export default function MessagesPage() {
     ? translateJobTitle(remote.requestTitle || t('messages_page.thread_title'), '', null, t)
     : t('messages_page.thread_title');
 
-  const activeJobSchedule = useMemo(() => {
+  const activeJob = useMemo(() => {
     if (!useRemoteChat || !remote.selectedId) return null;
     const summary = remote.summaries.find((s) => s.id === remote.selectedId);
-    if (!summary) return null;
-    const job = jobs.find((j) => j.id === summary.requestId);
-    if (!job) return null;
-    return formatJobScheduleDisplay(job, t);
-  }, [useRemoteChat, remote.selectedId, remote.summaries, jobs, t]);
+    if (!summary?.requestId) return null;
+    return jobs.find((j) => j.id === summary.requestId) ?? null;
+  }, [useRemoteChat, remote.selectedId, remote.summaries, jobs]);
+
+  const activeJobSchedule = useMemo(() => {
+    if (!activeJob) return null;
+    return formatJobScheduleDisplay(activeJob, t);
+  }, [activeJob, t]);
 
   const chatHeader = (
     <div className="p-3 sm:p-4 border-b border-gray-100/90 flex justify-between items-center bg-white/95 backdrop-blur-sm shrink-0 gap-2">
@@ -311,7 +317,16 @@ export default function MessagesPage() {
       </div>
       <button
         type="button"
-        className="text-sm font-bold text-white bg-[#1565FF] px-4 py-2.5 rounded-xl min-h-[44px] shrink-0 self-start sm:self-auto hover:bg-[#0F55D9] transition-colors"
+        disabled={!activeJob}
+        onClick={() => {
+          if (!activeJob) return;
+          if (effectiveClientMode) {
+            navigate(ROUTES.clientDashboard);
+            return;
+          }
+          setChatDetailJob(activeJob);
+        }}
+        className="text-sm font-bold text-white bg-[#1565FF] px-4 py-2.5 rounded-xl min-h-[44px] shrink-0 self-start sm:self-auto hover:bg-[#0F55D9] transition-colors disabled:opacity-50"
       >
         {t('messages_page.view_details')}
       </button>
@@ -657,6 +672,19 @@ export default function MessagesPage() {
           )}
         </div>
       </div>
+
+      <HelperOpportunityDetailModal
+        job={chatDetailJob}
+        open={Boolean(chatDetailJob)}
+        onClose={() => setChatDetailJob(null)}
+        onApply={(job) => {
+          setChatDetailJob(null);
+          navigate(ROUTES.helperOpportunities, { state: { openJobId: job.id } });
+        }}
+        t={t}
+        translateCategory={translateCategory}
+        formatJobSchedule={formatJobScheduleDisplay}
+      />
     </AppPageShell>
   );
 }

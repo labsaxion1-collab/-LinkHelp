@@ -9,22 +9,24 @@ type Props = {
   t: TFn;
   distanceKm?: number | null;
   variant?: 'compact' | 'detail';
+  showHireEstimate?: boolean;
 };
 
-export function HelperCreditCostBlock({ job, t, distanceKm, variant = 'detail' }: Props) {
+export function HelperCreditCostBlock({
+  job,
+  t,
+  distanceKm,
+  variant = 'detail',
+  showHireEstimate = false,
+}: Props) {
   const costs = getHelperLeadCreditSummary(job, distanceKm);
 
   if (variant === 'compact') {
     return (
-      <div className="space-y-0.5 text-[10px] font-semibold leading-snug text-blue-800">
-        <p className="flex items-center gap-1">
-          <Icons.Coins className="h-3 w-3 shrink-0 text-blue-600" />
-          {t('helper_dashboard.credit_cost_interest', { count: costs.interestCost })}
-        </p>
-        <p className="pl-4 text-blue-700/90">
-          {t('helper_dashboard.credit_cost_if_selected', { count: costs.selectedCost })}
-        </p>
-      </div>
+      <p className="flex items-center gap-1 text-[10px] font-bold leading-snug text-blue-800">
+        <Icons.Coins className="h-3 w-3 shrink-0 text-blue-600" />
+        {t('helper_dashboard.credit_estimated_total', { count: costs.estimatedTotal })}
+      </p>
     );
   }
 
@@ -34,9 +36,27 @@ export function HelperCreditCostBlock({ job, t, distanceKm, variant = 'detail' }
         {t('helper_dashboard.credit_block_title')}
       </p>
       <ul className="mt-2 space-y-1.5 text-sm font-bold text-slate-800">
-        <li>{t('helper_dashboard.credit_interest_line', { count: costs.interestCost })}</li>
-        <li>{t('helper_dashboard.credit_selected_line', { count: costs.selectedCost })}</li>
-        <li className="text-blue-900">{t('helper_dashboard.credit_total_line', { count: costs.total })}</li>
+        <li className="flex justify-between gap-2">
+          <span className="text-slate-600">{t('helper_dashboard.credit_interest_label')}</span>
+          <span className="tabular-nums">{costs.applicationCost} LC</span>
+        </li>
+        <li className="flex justify-between gap-2">
+          <span className="text-slate-600">{t('helper_dashboard.credit_service_label')}</span>
+          <span className="tabular-nums">{costs.serviceCost} LC</span>
+        </li>
+        <li className="flex justify-between gap-2">
+          <span className="text-slate-600">{t('helper_dashboard.credit_distance_label')}</span>
+          <span className="tabular-nums">{costs.distanceCost} LC</span>
+        </li>
+        <li className="flex justify-between gap-2 border-t border-blue-100/80 pt-2 text-blue-900">
+          <span>{t('helper_dashboard.credit_total_label')}</span>
+          <span className="tabular-nums">{costs.estimatedTotal} LC</span>
+        </li>
+        {showHireEstimate ? (
+          <li className="text-xs font-semibold text-blue-700/90">
+            {t('helper_dashboard.credit_cost_if_selected', { count: costs.selectedCost })}
+          </li>
+        ) : null}
       </ul>
     </div>
   );

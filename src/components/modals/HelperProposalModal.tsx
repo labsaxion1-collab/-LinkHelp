@@ -145,11 +145,23 @@ export function HelperProposalModal({
             <ul className="mt-2 space-y-1.5 text-sm font-bold text-slate-800">
               <li className="flex justify-between gap-2">
                 <span className="text-slate-600">{t('helper_proposal.interest_line')}</span>
-                <span className="tabular-nums text-blue-800">{costs.interestCost} LC</span>
+                <span className="tabular-nums text-blue-800">{costs.applicationCost} LC</span>
               </li>
               <li className="flex justify-between gap-2">
-                <span className="text-slate-600">{t('helper_proposal.selected_line')}</span>
-                <span className="tabular-nums text-blue-800">+{costs.selectedCost} LC</span>
+                <span className="text-slate-600">{t('helper_proposal.service_line')}</span>
+                <span className="tabular-nums text-blue-800">{costs.serviceCost} LC</span>
+              </li>
+              <li className="flex justify-between gap-2">
+                <span className="text-slate-600">{t('helper_proposal.distance_line')}</span>
+                <span className="tabular-nums text-blue-800">{costs.distanceCost} LC</span>
+              </li>
+              <li className="flex justify-between gap-2 border-t border-sky-100/80 pt-2">
+                <span className="text-slate-600">{t('helper_proposal.total_line')}</span>
+                <span className="tabular-nums text-blue-900">{costs.estimatedTotal} LC</span>
+              </li>
+              <li className="flex justify-between gap-2 text-xs font-semibold text-blue-700/90">
+                <span>{t('helper_proposal.selected_line')}</span>
+                <span className="tabular-nums">+{costs.selectedCost} LC</span>
               </li>
               <li className="flex justify-between gap-2 border-t border-sky-100/80 pt-2">
                 <span className="text-slate-600">{t('helper_proposal.balance_line')}</span>

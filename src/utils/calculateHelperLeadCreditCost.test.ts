@@ -20,13 +20,23 @@ const baseJob = (overrides: Partial<Job> = {}): Job => ({
 });
 
 describe('calculateHelperLeadCreditCost', () => {
-  it('charges 4 LC interest and clamps selected cost', () => {
+  it('charges 4 LC interest and builds estimated total from service + distance', () => {
     const costs = calculateHelperLeadCreditCost(baseJob({ budgetMin: 60, budgetMax: 80, budgetType: 'fixed' }), {
       distanceKm: 3,
     });
     expect(costs.interestCost).toBe(4);
+    expect(costs.serviceCost).toBe(7);
+    expect(costs.distanceCost).toBe(0);
+    expect(costs.estimatedTotal).toBe(11);
     expect(costs.selectedCost).toBeGreaterThanOrEqual(2);
     expect(costs.selectedCost).toBeLessThanOrEqual(30);
+  });
+
+  it('adds distance cost to estimated total beyond 5km', () => {
+    const near = calculateHelperLeadCreditCost(baseJob(), { distanceKm: 4 });
+    const far = calculateHelperLeadCreditCost(baseJob(), { distanceKm: 12 });
+    expect(far.distanceCost).toBeGreaterThan(near.distanceCost);
+    expect(far.estimatedTotal).toBeGreaterThan(near.estimatedTotal);
   });
 
   it('adds distance surcharge beyond 5km', () => {

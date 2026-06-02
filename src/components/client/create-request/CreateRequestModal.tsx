@@ -14,6 +14,7 @@ import {
   isConfirmStepComplete,
 } from '@/components/client/create-request/CreateRequestConfirmStep';
 import { emptyRequestAddress, type RequestAddressValue } from '@/components/client/create-request/RequestAddressInput';
+import { isValidRequestAddress } from '@/utils/requestAddressValidation';
 import { descriptionContainsContactInfo } from '@/utils/descriptionContactGuard';
 import {
   buildBudgetLabelFromRange,
@@ -114,7 +115,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
 
   const detailsComplete = useMemo(() => {
     if (selectedCategory === 'moving') {
-      if (!movePickupAddress.display.trim() || !moveDeliveryAddress.display.trim()) return false;
+      if (!isValidRequestAddress(movePickupAddress) || !isValidRequestAddress(moveDeliveryAddress)) return false;
       if (needsBuildingForMoving(selectedSubcategory)) {
         return Boolean(movePickupFloor.trim() && movePickupElevator && moveDeliveryFloor.trim() && moveDeliveryElevator);
       }
@@ -126,13 +127,13 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     }
     if (selectedCategory === 'translation') {
       if (!translationServiceMode) return false;
-      return translationServiceMode === 'online' || Boolean(requestAddress.display.trim());
+      return translationServiceMode === 'online' || isValidRequestAddress(requestAddress);
     }
-    return Boolean(requestAddress.display.trim());
+    return isValidRequestAddress(requestAddress);
   }, [
-    selectedCategory, selectedSubcategory, movePropertyType, movePickupAddress.display, moveDeliveryAddress.display,
+    selectedCategory, selectedSubcategory, movePropertyType, movePickupAddress, moveDeliveryAddress,
     movePickupFloor, movePickupElevator, moveDeliveryFloor, moveDeliveryElevator,
-    cleaningHouseFloors, cleaningAptFloor, cleaningHasElevator, translationServiceMode, requestAddress.display,
+    cleaningHouseFloors, cleaningAptFloor, cleaningHasElevator, translationServiceMode, requestAddress,
   ]);
 
   const descriptionBlocked = descriptionContainsContactInfo(postText);
@@ -220,6 +221,16 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
 
   const handlePublish = async () => {
     if (publishing) return;
+    const needsAddress =
+      selectedCategory === 'moving'
+        ? !isValidRequestAddress(movePickupAddress) || !isValidRequestAddress(moveDeliveryAddress)
+        : selectedCategory === 'translation' && translationServiceMode === 'online'
+          ? false
+          : !isValidRequestAddress(requestAddress);
+    if (needsAddress) {
+      showToast(t('create_modal.address_required'), 'error');
+      return;
+    }
     setPublishing(true);
     const yn = (v: string) => (v === 'yes' ? t('create_modal.moving_yes') : v === 'no' ? t('create_modal.moving_no') : '—');
     let extra = '';

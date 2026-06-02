@@ -801,7 +801,6 @@ export default function HelperDashboard() {
     .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
     .slice(0, 3);
   const homeCategoryChips = visibleServiceCategories.slice(0, 4);
-  const urgentJobsCount = displayedJobs.filter((job) => job.urgency === 'high').length;
   const helperFirstName = (me?.name || 'Helper').split(' ')[0] || 'Helper';
   const isPerformancePage = location.pathname === ROUTES.helperPerformance;
   const showDesktopBack =
@@ -1186,15 +1185,7 @@ export default function HelperDashboard() {
                 ))}
               </div>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-[1.25rem] bg-white px-4 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)]">
-                  <p className="text-[10px] font-black uppercase tracking-wide text-[#6B7280]">Oportunidades</p>
-                  <p className="mt-1 text-2xl font-black text-[#0B1220]">{displayedJobs.length}</p>
-                </div>
-                <div className="rounded-[1.25rem] bg-white px-4 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)]">
-                  <p className="text-[10px] font-black uppercase tracking-wide text-[#6B7280]">Urgentes</p>
-                  <p className="mt-1 text-2xl font-black text-[#0B1220]">{urgentJobsCount}</p>
-                </div>
+              <div className="mt-6 grid gap-3">
                 <button
                   type="button"
                   onClick={() => setActiveTab('candidaturas')}

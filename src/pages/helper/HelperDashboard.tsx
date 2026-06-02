@@ -1124,34 +1124,13 @@ export default function HelperDashboard() {
 
           {activeTab !== 'candidaturas' ? (
             <section className="mb-8">
-              <header className="mb-7 flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() => setCategoryFilterOpen((v) => !v)}
-                  className="flex h-[52px] w-[52px] items-center justify-center rounded-[1.25rem] border border-white bg-white text-[#0B1220] shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
-                  aria-label="Filtros"
-                >
-                  <Icons.SlidersHorizontal className="h-5 w-5" />
-                </button>
+              <header className="mb-7 flex items-center justify-center">
                 <div className="text-center">
                   <p className="text-xl font-black tracking-tight text-[#0B1220]">
                     Link<span className="text-[#2563FF]">Help</span>
                   </p>
                   <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6B7280]">Helper</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => navigate(ROUTES.map)}
-                  className="relative flex h-[52px] w-[52px] items-center justify-center rounded-[1.25rem] border border-white bg-white text-[#0B1220] shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
-                  aria-label="Mapa"
-                >
-                  <Icons.MapPinned className="h-5 w-5" />
-                  {urgentJobsCount > 0 ? (
-                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-black text-white">
-                      {urgentJobsCount}
-                    </span>
-                  ) : null}
-                </button>
               </header>
 
               <div className="relative">

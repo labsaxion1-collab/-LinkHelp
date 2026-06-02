@@ -9,12 +9,36 @@ function isNegotiableLabel(value: string): boolean {
   return /negotiable|combinar|agree|convenir|combin|à combinar|to be agreed/i.test(value);
 }
 
-/** Display budget on cards — range, single amount, or negotiable. */
-export function formatJobBudgetDisplay(job: BudgetFields, t: (key: string) => string): string {
+/** Whether the job has a concrete budget amount/range stored. */
+export function jobHasInformableBudget(job: BudgetFields): boolean {
+  if (job.budgetType === 'negotiable') return false;
+
+  const min = job.budgetMin ?? null;
+  const max = job.budgetMax ?? null;
+  const single = job.budgetAmount ?? null;
+
+  if (min != null && min > 0) return true;
+  if (max != null && max > 0) return true;
+  if (single != null && single > 0) return true;
+
+  if (job.value?.trim() && !isNegotiableLabel(job.value)) {
+    const nums = job.value.match(/\d+(?:[.,]\d+)?/g);
+    if (nums?.length) return true;
+  }
+
+  return false;
+}
+
+/** Core budget amount text without label prefix. */
+export function formatJobBudgetAmount(job: BudgetFields, t: (key: string) => string): string {
+  if (!jobHasInformableBudget(job)) {
+    return t('jobs.budget_not_informed');
+  }
+
   const currency = job.currency?.trim() || 'CAD';
 
   if (job.budgetType === 'negotiable') {
-    return t('jobs.value_negotiable');
+    return t('jobs.budget_not_informed');
   }
 
   const min = job.budgetMin ?? null;
@@ -33,7 +57,16 @@ export function formatJobBudgetDisplay(job: BudgetFields, t: (key: string) => st
     return job.value.trim();
   }
 
-  return t('jobs.value_negotiable');
+  return t('jobs.budget_not_informed');
+}
+
+/** Display budget on cards — always prefixed with "Orçamento:" when informed. */
+export function formatJobBudgetDisplay(job: BudgetFields, t: (key: string) => string): string {
+  const amount = formatJobBudgetAmount(job, t);
+  if (amount === t('jobs.budget_not_informed')) {
+    return amount;
+  }
+  return t('jobs.budget_with_amount', { amount });
 }
 
 export type BudgetMode = 'unset' | 'fixed' | 'negotiable';
@@ -53,7 +86,7 @@ export function buildBudgetLabelFromRange(
   }
   if (min != null && min > 0) return `${currency} $${min}+`;
   if (max != null && max > 0) return `${currency} $${max}`;
-  return t('jobs.value_negotiable');
+  return '';
 }
 
 export function parseBudgetInput(raw: string): string {

@@ -140,22 +140,22 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const translationLanguagesComplete =
     selectedCategory !== 'translation' || Boolean(translationFromLanguage && translationToLanguage);
   const descriptionComplete = detailsComplete && !descriptionBlocked && translationLanguagesComplete;
-  const parsedBudgetMin = budgetType === 'fixed' && selectedCategory !== 'translation' ? parseBudgetInt(budgetMin) : null;
-  const parsedBudgetMax = budgetType === 'fixed' && selectedCategory !== 'translation' ? parseBudgetInt(budgetMax) : null;
+  const parsedBudgetMin = budgetType === 'fixed' ? parseBudgetInt(budgetMin) : null;
+  const parsedBudgetMax = budgetType === 'fixed' ? parseBudgetInt(budgetMax) : null;
   const rangeBudgetIsValid =
     budgetType === 'fixed' &&
     parsedBudgetMin != null &&
+    parsedBudgetMin > 0 &&
     parsedBudgetMax != null &&
-    parsedBudgetMin <= parsedBudgetMax;
-  const budgetStepComplete =
-    selectedCategory === 'translation' || budgetType === 'negotiable' || rangeBudgetIsValid;
+    parsedBudgetMax >= parsedBudgetMin;
+  const budgetStepComplete = rangeBudgetIsValid;
   const rangeBudgetIsInvalid =
     budgetType === 'fixed' &&
     parsedBudgetMin != null &&
     parsedBudgetMax != null &&
     parsedBudgetMin > parsedBudgetMax;
   const budgetLabel = buildBudgetLabelFromRange(budgetType, parsedBudgetMin, parsedBudgetMax, t);
-  const budgetStorageType: 'fixed' | 'negotiable' = rangeBudgetIsValid ? 'fixed' : 'negotiable';
+  const budgetStorageType: 'fixed' | 'negotiable' = 'fixed';
   const marketSuggestion = useMemo(() => {
     if (!selectedCategory || selectedCategory === 'translation') return null;
     return getMarketBudgetSuggestion(selectedCategory, selectedSubcategory || null);
@@ -229,6 +229,10 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
           : !isValidRequestAddress(requestAddress);
     if (needsAddress) {
       showToast(t('create_modal.address_required'), 'error');
+      return;
+    }
+    if (!rangeBudgetIsValid) {
+      showToast(t('create_modal.budget_required'), 'error');
       return;
     }
     setPublishing(true);
@@ -494,7 +498,6 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                 translationServiceMode={translationServiceMode}
                 setTranslationServiceMode={setTranslationServiceMode}
               />
-              {selectedCategory !== 'translation' ? (
               <div>
                 <label className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.budget_hint_label')}</label>
                 {marketSuggestion ? (
@@ -594,39 +597,19 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                       {t('create_modal.budget_range_invalid')}
                     </p>
                   ) : null}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (budgetType === 'negotiable') {
-                        setBudgetType('unset');
-                        return;
-                      }
-                      setBudgetType('negotiable');
-                      setBudgetMin('');
-                      setBudgetMax('');
-                    }}
-                    className={`relative z-[1] mt-3 flex min-h-[44px] w-full items-center justify-center rounded-xl border px-4 text-sm font-black transition-colors ${
-                      budgetType === 'negotiable'
-                        ? 'border-[#1565FF] bg-[#1565FF] text-white'
-                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    {budgetType === 'negotiable' ? <Icons.Check className="mr-2 h-4 w-4" /> : null}
-                    {t('create_modal.budget_negotiate')}
-                  </button>
-                  {budgetType !== 'unset' ? (
+                  {!budgetStepComplete && budgetType === 'fixed' && (budgetMin || budgetMax) ? (
+                    <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900">
+                      {t('create_modal.budget_required')}
+                    </p>
+                  ) : null}
+                  {rangeBudgetIsValid ? (
                     <div className="mt-3 rounded-xl bg-blue-50 px-3 py-2 text-sm font-bold text-blue-950">
-                      {budgetType === 'negotiable'
-                        ? t('create_modal.budget_selected_negotiable')
-                        : budgetStorageType === 'fixed'
-                          ? budgetLabel
-                          : t('create_modal.budget_pick_range')}
+                      {budgetLabel}
                     </div>
                   ) : null}
                 </div>
                 <p className="mt-1.5 text-xs font-medium text-gray-500">{t('create_modal.budget_hint_help')}</p>
               </div>
-              ) : null}
               {selectedCategory === 'translation' ? (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="block">

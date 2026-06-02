@@ -5,7 +5,8 @@ import { clsx } from 'clsx';
 import type { Job } from '@/types/job';
 import type { AppLanguage } from '@/services/translationService';
 import { formatBudgetRange, jobHasBoundedBudget, jobIsNegotiableBudget, validateHelperProposal } from '@/utils/jobProposal';
-import { getHelperLeadCreditSummary } from '@/utils/helperCreditDisplay';
+import { getHelperLeadCreditSummary, getHelperCreditPublicDisplay } from '@/utils/helperCreditDisplay';
+import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
 
 type Props = {
@@ -90,6 +91,8 @@ export function HelperProposalModal({
 
   const currency = job.currency?.trim() || 'CAD';
   const costs = getHelperLeadCreditSummary(job, distanceKm);
+  const creditDisplay = getHelperCreditPublicDisplay(costs);
+  const clientBudget = formatJobBudgetDisplay(job, t);
   const balanceLabel =
     creditBalance == null ? '…' : formatLinkCredits(creditBalance, language);
 
@@ -144,30 +147,29 @@ export function HelperProposalModal({
             </p>
             <ul className="mt-2 space-y-1.5 text-sm font-bold text-slate-800">
               <li className="flex justify-between gap-2">
-                <span className="text-slate-600">{t('helper_proposal.interest_line')}</span>
-                <span className="tabular-nums text-blue-800">{costs.applicationCost} LC</span>
+                <span className="text-slate-600">{t('helper_proposal.apply_cost_line')}</span>
+                <span className="tabular-nums text-blue-900">{creditDisplay.applyCost} LC</span>
               </li>
               <li className="flex justify-between gap-2">
-                <span className="text-slate-600">{t('helper_proposal.service_line')}</span>
-                <span className="tabular-nums text-blue-800">{costs.serviceCost} LC</span>
+                <span className="text-slate-600">{t('helper_proposal.selected_line')}</span>
+                <span className="tabular-nums text-blue-800">+{creditDisplay.hireEstimate} LC</span>
               </li>
-              <li className="flex justify-between gap-2">
-                <span className="text-slate-600">{t('helper_proposal.distance_line')}</span>
-                <span className="tabular-nums text-blue-800">{costs.distanceCost} LC</span>
-              </li>
-              <li className="flex justify-between gap-2 border-t border-sky-100/80 pt-2">
-                <span className="text-slate-600">{t('helper_proposal.total_line')}</span>
-                <span className="tabular-nums text-blue-900">{costs.estimatedTotal} LC</span>
-              </li>
-              <li className="flex justify-between gap-2 text-xs font-semibold text-blue-700/90">
-                <span>{t('helper_proposal.selected_line')}</span>
-                <span className="tabular-nums">+{costs.selectedCost} LC</span>
+              <li className="flex justify-between gap-2 border-t border-sky-100/80 pt-2 text-blue-900">
+                <span>{t('helper_proposal.total_estimate_line')}</span>
+                <span className="tabular-nums">{creditDisplay.totalEstimate} LC</span>
               </li>
               <li className="flex justify-between gap-2 border-t border-sky-100/80 pt-2">
                 <span className="text-slate-600">{t('helper_proposal.balance_line')}</span>
                 <span className="tabular-nums text-slate-950">{balanceLabel}</span>
               </li>
             </ul>
+          </div>
+
+          <div className="mb-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/90 to-white px-4 py-3.5 backdrop-blur-sm">
+            <p className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
+              {t('helper_proposal.client_budget')}
+            </p>
+            <p className="mt-1 text-lg font-black text-slate-900">{clientBudget}</p>
           </div>
 
           {bounded ? (

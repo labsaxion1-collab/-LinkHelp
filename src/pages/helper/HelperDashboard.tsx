@@ -950,7 +950,7 @@ export default function HelperDashboard() {
         </div>
       )}
 
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 w-full max-w-full px-0 sm:px-4 md:px-0">
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 w-full max-w-full px-3 sm:px-4 md:px-5 lg:px-6">
         <aside className="hidden">
           <div className="sticky top-24 space-y-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
             <button onClick={() => setShowProfileModal(true)} className="flex w-full items-center gap-3 rounded-2xl p-2 text-left hover:bg-slate-50">
@@ -1067,6 +1067,7 @@ export default function HelperDashboard() {
                 selectedId={selectedCategoryFilter}
                 onSelect={setSelectedCategoryFilter}
                 t={t}
+                className="lg:ml-2 xl:ml-4"
               />
             )}
             {!isPerformancePage && UI_VISIBILITY.helperCredits ? (

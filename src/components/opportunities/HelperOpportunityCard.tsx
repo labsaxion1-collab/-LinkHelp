@@ -333,7 +333,7 @@ function HelperOpportunityCardInner({
             </span>
           </div>
           <div className="mb-2">
-            <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" />
+            <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" showHireEstimate />
           </div>
 
           {onViewDetails ? (
@@ -419,7 +419,7 @@ function HelperOpportunityCardInner({
               </span>
             ) : null}
           </div>
-          <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" />
+          <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" showHireEstimate />
         </div>
         <div className="flex flex-col gap-1.5 border-t border-slate-100 bg-slate-50/60 px-3.5 py-2.5">
           {onViewDetails ? (

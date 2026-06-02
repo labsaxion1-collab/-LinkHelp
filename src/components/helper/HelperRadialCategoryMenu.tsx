@@ -16,11 +16,13 @@ type Props = {
   selectedId: string;
   onSelect: (categoryId: string) => void;
   t: (key: string) => string;
+  className?: string;
 };
 
+/** Positions icons in a downward fan (inside the viewport, away from the left edge). */
 function polarPosition(index: number, total: number, radius: number) {
-  const start = 28;
-  const end = 152;
+  const start = 58;
+  const end = 122;
   const angle = total <= 1 ? 90 : start + ((end - start) * index) / (total - 1);
   const rad = (angle * Math.PI) / 180;
   return { x: Math.cos(rad) * radius, y: Math.sin(rad) * radius };
@@ -34,6 +36,7 @@ function HelperRadialCategoryMenuInner({
   selectedId,
   onSelect,
   t,
+  className,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -63,7 +66,10 @@ function HelperRadialCategoryMenuInner({
   return (
     <div
       ref={rootRef}
-      className={clsx('relative z-20 mb-2 flex min-h-[52px] items-start gap-2')}
+      className={clsx(
+        'relative z-20 mb-2 flex min-h-[52px] items-start gap-2 pl-1 sm:pl-2 lg:pl-0',
+        className,
+      )}
     >
       <motion.button
         type="button"
@@ -84,9 +90,7 @@ function HelperRadialCategoryMenuInner({
       <div className="min-w-0 flex-1 pt-1">
         <p className="text-sm font-black text-slate-950">{t('helper_dashboard.filter_find_title')}</p>
         <p className="truncate text-[11px] font-semibold text-slate-500">
-          {selectedId
-            ? t(`categories.${selectedId}`)
-            : t('helper_dashboard.all_categories')}
+          {selectedId ? t(`categories.${selectedId}`) : t('helper_dashboard.all_categories')}
         </p>
       </div>
 
@@ -96,7 +100,7 @@ function HelperRadialCategoryMenuInner({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="pointer-events-none absolute left-0 top-10 z-40 h-52 w-56"
+            className="pointer-events-none absolute left-6 top-11 z-40 h-56 w-[min(100%,16rem)] sm:left-8 sm:top-12"
           >
             <motion.button
               type="button"
@@ -104,7 +108,7 @@ function HelperRadialCategoryMenuInner({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 420, damping: 26, delay: 0.02 }}
-              style={{ left: 24, top: 12 }}
+              style={{ left: 32, top: 8 }}
               className="pointer-events-auto absolute flex h-11 min-w-[4.5rem] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white px-2 text-[10px] font-black text-slate-700 shadow-md"
               onClick={() => {
                 onSelect('');
@@ -115,7 +119,7 @@ function HelperRadialCategoryMenuInner({
             </motion.button>
 
             {ordered.map((cat, i) => {
-              const pos = polarPosition(i, ordered.length, 78);
+              const pos = polarPosition(i, ordered.length, 72);
               const accent = HELPER_CATEGORY_ACCENTS[cat.id];
               const Icon = getCategoryLucideIcon(cat.icon);
               const active = selectedId === cat.id;
@@ -123,9 +127,9 @@ function HelperRadialCategoryMenuInner({
                 <motion.button
                   key={cat.id}
                   type="button"
-                  initial={{ scale: 0, opacity: 0, x: 24, y: 16 }}
-                  animate={{ scale: 1, opacity: 1, x: 24 + pos.x, y: 16 + pos.y }}
-                  exit={{ scale: 0, opacity: 0, x: 24, y: 16 }}
+                  initial={{ scale: 0, opacity: 0, x: 32, y: 8 }}
+                  animate={{ scale: 1, opacity: 1, x: 32 + pos.x, y: 8 + pos.y }}
+                  exit={{ scale: 0, opacity: 0, x: 32, y: 8 }}
                   transition={{ type: 'spring', stiffness: 380, damping: 24, delay: 0.04 + i * 0.03 }}
                   className={clsx(
                     'pointer-events-auto absolute flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border text-[9px] font-black leading-none shadow-md',

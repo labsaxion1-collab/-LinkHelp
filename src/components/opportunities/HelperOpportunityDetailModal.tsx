@@ -132,8 +132,8 @@ export function HelperOpportunityDetailModal({
 
           <div className="mt-4 grid grid-cols-2 gap-2">
             <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-              <p className="text-[10px] font-bold uppercase text-slate-400">{t('create_modal.budget_hint_label')}</p>
-              <p className="mt-1 text-sm font-black text-blue-800">{budget}</p>
+              <p className="text-[10px] font-bold uppercase text-slate-400">{t('jobs.budget_label')}</p>
+              <p className="mt-1 text-sm font-black text-emerald-800">{budget}</p>
             </div>
             <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
               <p className="text-[10px] font-bold uppercase text-slate-400">{t('jobs.location_label')}</p>

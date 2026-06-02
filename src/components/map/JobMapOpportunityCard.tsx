@@ -2,7 +2,7 @@ import * as Icons from 'lucide-react';
 import type { Job } from '@/types/job';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { translateCategory, translateJobTitle } from '@/utils/translateCategory';
-import { getHelperLeadCreditSummary } from '@/utils/helperCreditDisplay';
+import { getHelperLeadCreditSummary, getHelperCreditPublicDisplay } from '@/utils/helperCreditDisplay';
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
 
 type Props = {
@@ -22,7 +22,9 @@ export function JobMapOpportunityCard({
 }: Props) {
   const clientName = job.clientName?.trim() || t('live_map.client_fallback');
   const remote = isRemoteJob(job);
-  const costs = getHelperLeadCreditSummary(job, remote ? null : distanceKm);
+  const creditDisplay = getHelperCreditPublicDisplay(
+    getHelperLeadCreditSummary(job, remote ? null : distanceKm),
+  );
   const distanceLabel = remote
     ? t('jobs.remote')
     : distanceKm != null
@@ -51,7 +53,7 @@ export function JobMapOpportunityCard({
         </span>
         <span className="inline-flex items-center gap-1 text-blue-800">
           <Icons.Coins className="h-3.5 w-3.5" />
-          {t('helper_dashboard.credit_estimated_total', { count: costs.estimatedTotal })}
+          {t('helper_dashboard.credit_apply_cost', { count: creditDisplay.applyCost })}
         </span>
         <span className="inline-flex items-center gap-1 text-slate-600">
           <Icons.Users className="h-3.5 w-3.5" />

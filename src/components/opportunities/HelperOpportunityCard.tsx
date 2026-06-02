@@ -355,9 +355,21 @@ function HelperOpportunityCardInner({
               {t('helper_dashboard.apply_sending')}
             </p>
           ) : (
-            <p className="text-center text-[10px] font-semibold text-slate-500">
-              {t('helper_dashboard.swipe_apply_hint')}
-            </p>
+            <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-gradient-to-r from-slate-50 to-white px-3 py-2.5 shadow-sm">
+              <span className="flex items-center gap-1.5 text-[10px] font-bold text-rose-700">
+                <span className="text-sm leading-none" aria-hidden>
+                  ❌
+                </span>
+                {t('helper_dashboard.swipe_not_interested')}
+              </span>
+              <span className="h-4 w-px bg-slate-200" aria-hidden />
+              <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700">
+                <span className="text-sm leading-none" aria-hidden>
+                  ✓
+                </span>
+                {t('helper_dashboard.swipe_interest')}
+              </span>
+            </div>
           )}
         </div>
       </div>

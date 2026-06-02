@@ -669,6 +669,8 @@ export const pt = {
     trend_3: 'Pedidos urgentes',
     all_categories: 'Todas',
     radial_filter_open: 'Filtrar categorias',
+    category_filter_open: 'Filtrar por categoria',
+    filter_category_entregas: 'Entregas',
     swipe_apply_hint: 'Deslize → interesse · ← não interessado',
     swipe_interest: 'Tenho interesse',
     swipe_not_interested: 'Não interessado',

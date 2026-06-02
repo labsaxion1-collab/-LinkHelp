@@ -661,6 +661,8 @@ export const fr = {
     trend_3: 'Demandes urgentes',
     all_categories: 'Toutes',
     radial_filter_open: 'Filtrer les catégories',
+    category_filter_open: 'Filtrer par catégorie',
+    filter_category_entregas: 'Livraisons',
     swipe_apply_hint: 'Glisser → intérêt · ← pas intéressé',
     swipe_interest: 'Je suis intéressé',
     swipe_not_interested: 'Pas intéressé',

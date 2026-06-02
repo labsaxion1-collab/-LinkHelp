@@ -51,9 +51,14 @@ export function JobMapOpportunityCard({
           <Icons.DollarSign className="h-3.5 w-3.5" />
           {formatJobBudgetDisplay(job, t)}
         </span>
-        <span className="inline-flex items-center gap-1 text-blue-800">
-          <Icons.Coins className="h-3.5 w-3.5" />
-          {t('helper_dashboard.credit_apply_cost', { count: creditDisplay.applyCost })}
+        <span className="inline-flex flex-col gap-0.5 text-blue-800">
+          <span className="inline-flex items-center gap-1">
+            <Icons.Coins className="h-3.5 w-3.5 shrink-0" />
+            {t('helper_dashboard.credit_apply_cost', { count: creditDisplay.applyCost })}
+          </span>
+          <span className="pl-5 text-[10px] font-semibold text-blue-700/90">
+            {t('helper_dashboard.credit_job_cost', { count: creditDisplay.jobCost })}
+          </span>
         </span>
         <span className="inline-flex items-center gap-1 text-slate-600">
           <Icons.Users className="h-3.5 w-3.5" />

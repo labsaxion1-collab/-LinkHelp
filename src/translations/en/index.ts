@@ -659,6 +659,8 @@ export const en = {
     trend_3: 'Urgent requests',
     all_categories: 'All',
     radial_filter_open: 'Filter categories',
+    category_filter_open: 'Filter by category',
+    filter_category_entregas: 'Deliveries',
     swipe_apply_hint: 'Swipe → interest · ← not interested',
     swipe_interest: 'I\'m interested',
     swipe_not_interested: 'Not interested',

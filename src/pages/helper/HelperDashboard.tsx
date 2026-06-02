@@ -31,7 +31,7 @@ import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/Helpe
 import { HelperCreditsWalletCard } from '@/components/helpers/HelperCreditsWalletCard';
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
-import { HelperRadialCategoryMenu } from '@/components/helper/HelperRadialCategoryMenu';
+import { HelperCategoryDropdown } from '@/components/helper/HelperCategoryDropdown';
 import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
 import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
 import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
@@ -91,7 +91,7 @@ export default function HelperDashboard() {
   const [exitingJobIds, setExitingJobIds] = useState<Set<string>>(() => new Set());
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
-  const [radialFilterOpen, setRadialFilterOpen] = useState(false);
+  const [categoryFilterOpen, setCategoryFilterOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<Application | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [insufficientCreditsLc, setInsufficientCreditsLc] = useState<number | null>(null);
@@ -1059,15 +1059,13 @@ export default function HelperDashboard() {
                 {t('helper_dashboard.filter_apps_title')}
               </h3>
             ) : (
-              <HelperRadialCategoryMenu
-                open={radialFilterOpen}
-                onToggle={() => setRadialFilterOpen((v) => !v)}
-                categories={visibleServiceCategories}
-                primaryCategoryId={categoryPrefs.primaryCategory}
+              <HelperCategoryDropdown
+                open={categoryFilterOpen}
+                onToggle={() => setCategoryFilterOpen((v) => !v)}
                 selectedId={selectedCategoryFilter}
                 onSelect={setSelectedCategoryFilter}
                 t={t}
-                className="lg:ml-2 xl:ml-4"
+                className="lg:ml-1"
               />
             )}
             {!isPerformancePage && UI_VISIBILITY.helperCredits ? (

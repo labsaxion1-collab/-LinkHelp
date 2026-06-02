@@ -1124,8 +1124,8 @@ export default function HelperDashboard() {
           ) : null}
 
           {activeTab !== 'candidaturas' ? (
-            <section className="mb-7 overflow-hidden rounded-[2rem] border border-white/90 bg-[#F9FBFF] px-6 pb-6 pt-5 shadow-[0_24px_60px_rgba(15,23,42,0.075)] sm:px-7">
-              <header className="mb-6 flex items-center justify-between gap-3">
+            <section className="mb-8">
+              <header className="mb-7 flex items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => setCategoryFilterOpen((v) => !v)}
@@ -1155,9 +1155,9 @@ export default function HelperDashboard() {
                 </button>
               </header>
 
-              <div className="relative overflow-hidden rounded-[1.85rem] bg-gradient-to-br from-white via-[#F9FBFF] to-[#EAF1FF] p-5">
-                <div className="pointer-events-none absolute -right-14 top-2 h-40 w-60 rounded-full border border-white/80 bg-white/45 blur-sm" />
-                <div className="pointer-events-none absolute right-6 top-9 h-24 w-52 rotate-[-12deg] rounded-full border border-white/60 bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.10),transparent)]" />
+              <div className="relative">
+                <div className="pointer-events-none absolute -right-16 -top-10 h-40 w-64 rounded-full bg-white/45 blur-2xl" />
+                <div className="pointer-events-none absolute right-0 top-7 h-20 w-56 rotate-[-12deg] rounded-full bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.10),transparent)] blur-[1px]" />
                 <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF]">
                   <span className="text-base" aria-hidden>Olá</span>
                   {helperFirstName}
@@ -1180,7 +1180,7 @@ export default function HelperDashboard() {
                 </button>
               </div>
 
-              <div className="mt-6 flex items-center justify-between">
+              <div className="mt-7 flex items-center justify-between">
                 <h2 className="text-base font-black text-[#0B1220]">Categorias populares</h2>
                 <button type="button" onClick={() => setCategoryFilterOpen(true)} className="text-xs font-black text-[#2563FF]">
                   Ver todas

@@ -801,7 +801,6 @@ export default function HelperDashboard() {
     .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
     .slice(0, 3);
   const homeCategoryChips = visibleServiceCategories.slice(0, 4);
-  const homeFeaturedJobs = displayedJobs.slice(0, 3);
   const urgentJobsCount = displayedJobs.filter((job) => job.urgency === 'high').length;
   const helperFirstName = (me?.name || 'Helper').split(' ')[0] || 'Helper';
   const isPerformancePage = location.pathname === ROUTES.helperPerformance;
@@ -1225,63 +1224,6 @@ export default function HelperDashboard() {
                   <p className="text-[10px] font-black uppercase tracking-wide text-white/80">Minhas</p>
                   <p className="mt-1 text-lg font-black">Candidaturas</p>
                 </button>
-              </div>
-            </section>
-          ) : null}
-
-          {activeTab !== 'candidaturas' && homeFeaturedJobs.length > 0 ? (
-            <section className="mb-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-base font-black text-[#0B1220]">Trabalhos em alta</h2>
-                <button type="button" onClick={() => setActiveTab('recentes')} className="text-xs font-black text-[#2563FF]">
-                  Ver todos
-                </button>
-              </div>
-              <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {homeFeaturedJobs.map((job) => {
-                  const categoryId = resolveCategoryId(job.category) || 'other';
-                  const category = SERVICE_CATEGORIES.find((cat) => cat.id === categoryId);
-                  const distance = baseDistanceToJobKm(job);
-                  return (
-                    <button
-                      key={job.id}
-                      type="button"
-                      onClick={() => setDetailOpportunity(job)}
-                      className="min-w-[17rem] max-w-[17rem] rounded-[1.35rem] border border-white bg-white p-3 text-left shadow-[0_10px_28px_rgba(15,23,42,0.06)]"
-                    >
-                      <div className="flex gap-3">
-                        <span className={clsx('relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.15rem] bg-gradient-to-br', CATEGORY_THUMBNAILS[categoryId] ?? CATEGORY_THUMBNAILS.other)}>
-                          <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(37,99,255,0.22),transparent_34%),radial-gradient(circle_at_70%_80%,rgba(15,23,42,0.08),transparent_36%)]" />
-                          {category ? <HelperDashboardCategoryIcon icon={category.icon} className="relative h-9 w-9 text-[#2563FF]" /> : <Icons.Briefcase className="relative h-9 w-9 text-[#2563FF]" />}
-                          {job.urgency === 'high' ? (
-                            <span className="absolute left-2 top-2 rounded-full bg-[#2563FF] px-2 py-1 text-[9px] font-black text-white">Urgente</span>
-                          ) : null}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block line-clamp-2 text-sm font-black leading-tight text-[#0B1220]">
-                            {translateJobTitle(job.title, job.category, job.subcategory, t)}
-                          </span>
-                          <span className="mt-2 flex items-center gap-1 text-[11px] font-bold text-[#6B7280]">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span className="truncate">{formatJobScheduleDisplay(job, t)}</span>
-                          </span>
-                          <span className="mt-1 flex items-center gap-1 text-[11px] font-bold text-[#6B7280]">
-                            <MapPin className="h-3.5 w-3.5" />
-                            <span className="truncate">
-                              {distance != null ? t('helper_dashboard.distance_km', { km: distance.toFixed(1) }) : job.city || job.location}
-                            </span>
-                          </span>
-                          <span className="mt-2 flex items-center justify-between gap-2">
-                            <span className="text-lg font-black text-[#2563FF]">{job.value}</span>
-                            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F7F8FC] text-[#0B1220]">
-                              <Icons.ChevronRight className="h-4 w-4" />
-                            </span>
-                          </span>
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
               </div>
             </section>
           ) : null}

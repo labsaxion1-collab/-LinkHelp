@@ -79,6 +79,13 @@ import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboa
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { LhCard } from '@/components/design-system/LhCard';
 
+type HelperHomeInfoSlide = {
+  id: string;
+  icon: React.ReactNode;
+  message: string;
+  className: string;
+};
+
 export default function HelperDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -95,6 +102,7 @@ export default function HelperDashboard() {
   const [cancelTarget, setCancelTarget] = useState<Application | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [insufficientCreditsLc, setInsufficientCreditsLc] = useState<number | null>(null);
+  const [activeInfoSlide, setActiveInfoSlide] = useState(0);
 
   // Modals state
   const [profileSettings, setProfileSettings] = useState<HelperProfileSettings>(() => loadHelperProfileSettings());
@@ -165,6 +173,46 @@ export default function HelperDashboard() {
     (job: Job) => distanceFromExactHelperBaseToJobKm(profile, job),
     [profile],
   );
+  const homeInfoSlides = useMemo<HelperHomeInfoSlide[]>(() => {
+    const slides: HelperHomeInfoSlide[] = [];
+
+    // Add future home notices here to keep this area extensible.
+    if (!categoryPrefs.hasExplicitPreference) {
+      slides.push({
+        id: 'category-preferences',
+        icon: <Icons.Sparkles className="h-4 w-4" />,
+        message: t('helper_categories.feed_no_categories_hint'),
+        className: 'border-blue-100 bg-white text-slate-700 shadow-sm',
+      });
+    }
+
+    if (!hasHelperBaseAddress) {
+      slides.push({
+        id: 'base-address',
+        icon: <Icons.MapPinned className="h-4 w-4" />,
+        message: t('helper_dashboard.base_address_banner'),
+        className: 'border-sky-100 bg-sky-50/80 text-slate-700 shadow-sm',
+      });
+    }
+
+    return slides;
+  }, [categoryPrefs.hasExplicitPreference, hasHelperBaseAddress, t]);
+
+  useEffect(() => {
+    if (activeInfoSlide >= homeInfoSlides.length) {
+      setActiveInfoSlide(0);
+    }
+  }, [activeInfoSlide, homeInfoSlides.length]);
+
+  useEffect(() => {
+    if (homeInfoSlides.length <= 1) return;
+
+    const timer = window.setInterval(() => {
+      setActiveInfoSlide((current) => (current + 1) % homeInfoSlides.length);
+    }, 10000);
+
+    return () => window.clearInterval(timer);
+  }, [homeInfoSlides.length]);
 
   useEffect(() => {
     setHelperPrimaryCategory(categoryPrefs.primaryCategory);
@@ -1115,23 +1163,39 @@ export default function HelperDashboard() {
             </button>
           )}
 
-          {activeTab !== 'candidaturas' && !categoryPrefs.hasExplicitPreference ? (
-            <div className="mb-3 rounded-2xl border border-blue-100 bg-white/80 px-4 py-3 text-xs font-bold text-slate-600 shadow-sm">
-              <div className="flex items-start gap-2">
-                <Icons.Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-                <span>{t('helper_categories.feed_no_categories_hint')}</span>
-              </div>
-            </div>
-          ) : null}
+          {activeTab !== 'candidaturas' && homeInfoSlides.length > 0 ? (() => {
+            const slide = homeInfoSlides[activeInfoSlide] ?? homeInfoSlides[0];
 
-          {activeTab !== 'candidaturas' && !hasHelperBaseAddress ? (
-            <div className="mb-3 rounded-2xl border border-sky-100 bg-sky-50/80 px-4 py-3 text-xs font-bold text-slate-700 shadow-sm">
-              <div className="flex items-start gap-2">
-                <Icons.MapPinned className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
-                <span>{t('helper_dashboard.base_address_banner')}</span>
-              </div>
-            </div>
-          ) : null}
+            return (
+              <section
+                className={clsx(
+                  'mb-3 overflow-hidden rounded-2xl border px-4 py-3 text-xs font-bold transition-all duration-300',
+                  slide.className,
+                )}
+                aria-live="polite"
+              >
+                <div key={slide.id} className="flex min-h-[2.25rem] items-start gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-[0_8px_18px_rgba(37,99,255,0.18)]">
+                    {slide.icon}
+                  </span>
+                  <span className="min-w-0 flex-1 leading-relaxed">{slide.message}</span>
+                  {homeInfoSlides.length > 1 ? (
+                    <span className="ml-2 mt-1 flex shrink-0 items-center gap-1" aria-hidden>
+                      {homeInfoSlides.map((item, index) => (
+                        <span
+                          key={item.id}
+                          className={clsx(
+                            'h-1.5 rounded-full transition-all duration-300',
+                            index === activeInfoSlide ? 'w-4 bg-blue-600' : 'w-1.5 bg-slate-300',
+                          )}
+                        />
+                      ))}
+                    </span>
+                  ) : null}
+                </div>
+              </section>
+            );
+          })() : null}
 
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900">{activeTab === 'candidaturas' ? t('helper_dashboard.feed_title_apps') : t('helper_dashboard.feed_title_jobs')}</h2>

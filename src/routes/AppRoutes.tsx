@@ -5,6 +5,7 @@ import { ROUTES } from '@/utils/constants';
 import Layout from '@/components/layout/Layout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PublicOnlyRoute } from '@/components/auth/PublicOnlyRoute';
+import { LoginSplashGate } from '@/components/auth/LoginSplashGate';
 import { RoleRoute } from '@/components/auth/RoleRoute';
 import { AdminProtectedRoute } from '@/components/admin/AdminProtectedRoute';
 import { FluxAdminLayout } from '@/components/admin/FluxAdminLayout';
@@ -56,7 +57,14 @@ export function AppRoutes() {
 
           <Route path="/login" element={<Navigate to={ROUTES.login} replace />} />
           <Route path="/signup" element={<Navigate to={ROUTES.signup} replace />} />
-          <Route path={ROUTES.login} element={<LoginPage />} />
+          <Route
+            path={ROUTES.login}
+            element={
+              <LoginSplashGate>
+                <LoginPage />
+              </LoginSplashGate>
+            }
+          />
           <Route path={ROUTES.signup} element={<RegisterPage />} />
         </Route>
         <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />

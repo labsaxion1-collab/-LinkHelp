@@ -4,6 +4,7 @@ import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
 import Layout from '@/components/layout/Layout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { PublicOnlyRoute } from '@/components/auth/PublicOnlyRoute';
 import { RoleRoute } from '@/components/auth/RoleRoute';
 import { AdminProtectedRoute } from '@/components/admin/AdminProtectedRoute';
 import { FluxAdminLayout } from '@/components/admin/FluxAdminLayout';
@@ -50,12 +51,14 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route path={ROUTES.home} element={<LandingPage />} />
+        <Route element={<PublicOnlyRoute />}>
+          <Route path={ROUTES.home} element={<LandingPage />} />
 
-        <Route path="/login" element={<Navigate to={ROUTES.login} replace />} />
-        <Route path="/signup" element={<Navigate to={ROUTES.signup} replace />} />
-        <Route path={ROUTES.login} element={<LoginPage />} />
-        <Route path={ROUTES.signup} element={<RegisterPage />} />
+          <Route path="/login" element={<Navigate to={ROUTES.login} replace />} />
+          <Route path="/signup" element={<Navigate to={ROUTES.signup} replace />} />
+          <Route path={ROUTES.login} element={<LoginPage />} />
+          <Route path={ROUTES.signup} element={<RegisterPage />} />
+        </Route>
         <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />
         <Route path={ROUTES.authCallback} element={<AuthCallbackPage />} />
         <Route path={ROUTES.dashboard} element={<DashboardEntryPage />} />

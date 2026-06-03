@@ -83,7 +83,6 @@ type HelperHomeInfoSlide = {
   id: string;
   icon: React.ReactNode;
   message: string;
-  className: string;
 };
 
 const CATEGORY_THUMBNAILS: Record<string, string> = {
@@ -188,26 +187,30 @@ export default function HelperDashboard() {
     [profile],
   );
   const homeInfoSlides = useMemo<HelperHomeInfoSlide[]>(() => {
-    const slides: HelperHomeInfoSlide[] = [];
+    const slides: HelperHomeInfoSlide[] = [
+      {
+        id: 'nearby-opportunities',
+        icon: <Icons.Sparkles className="h-4 w-4" />,
+        message: 'Novas oportunidades aparecem aqui conforme sua região, categorias e candidaturas.',
+      },
+    ];
 
     // Add future home notices here to keep this area extensible.
-    if (!categoryPrefs.hasExplicitPreference) {
-      slides.push({
-        id: 'category-preferences',
-        icon: <Icons.Sparkles className="h-4 w-4" />,
-        message: t('helper_categories.feed_no_categories_hint'),
-        className: 'border-blue-100 bg-white text-slate-700 shadow-sm',
-      });
-    }
+    slides.push({
+      id: 'category-preferences',
+      icon: <Icons.Sparkles className="h-4 w-4" />,
+      message: categoryPrefs.hasExplicitPreference
+        ? 'Use as categorias para focar nos serviços que combinam melhor com seu perfil.'
+        : t('helper_categories.feed_no_categories_hint'),
+    });
 
-    if (!hasHelperBaseAddress) {
-      slides.push({
-        id: 'base-address',
-        icon: <Icons.MapPinned className="h-4 w-4" />,
-        message: t('helper_dashboard.base_address_banner'),
-        className: 'border-sky-100 bg-sky-50/80 text-slate-700 shadow-sm',
-      });
-    }
+    slides.push({
+      id: 'base-address',
+      icon: <Icons.MapPinned className="h-4 w-4" />,
+      message: hasHelperBaseAddress
+        ? 'Sua base ajuda o LinkHelp a priorizar trabalhos mais próximos e relevantes.'
+        : t('helper_dashboard.base_address_banner'),
+    });
 
     return slides;
   }, [categoryPrefs.hasExplicitPreference, hasHelperBaseAddress, t]);
@@ -1142,6 +1145,32 @@ export default function HelperDashboard() {
                 </h1>
                 <span className="relative mt-2 block h-1.5 w-28 rounded-full bg-[#2563FF]" aria-hidden />
 
+                {homeInfoSlides.length > 0 ? (() => {
+                  const slide = homeInfoSlides[activeInfoSlide] ?? homeInfoSlides[0];
+
+                  return (
+                    <div className="relative mt-4 max-w-md overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/72 px-3.5 py-3 text-xs font-bold text-slate-700 shadow-[0_16px_38px_rgba(37,99,255,0.10)] backdrop-blur-md" aria-live="polite">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-[#2563FF] via-[#33B6FF] to-[#2563FF]" />
+                      <div key={slide.id} className="flex min-h-[2.35rem] items-start gap-2.5 animate-in fade-in slide-in-from-right-2 duration-300">
+                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[#2563FF] text-white shadow-[0_10px_22px_rgba(37,99,255,0.22)]">
+                          {slide.icon}
+                        </span>
+                        <span className="min-w-0 flex-1 leading-relaxed">{slide.message}</span>
+                      </div>
+                      <div className="mt-2.5 flex items-center gap-1.5 pl-10" aria-hidden>
+                        {homeInfoSlides.map((item, index) => (
+                          <span
+                            key={item.id}
+                            className={clsx(
+                              'h-1.5 rounded-full transition-all duration-300',
+                              index === activeInfoSlide ? 'w-5 bg-[#2563FF]' : 'w-1.5 bg-slate-300/80',
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })() : null}
               </div>
 
               <div className="mt-7 mb-3 flex items-center justify-between">
@@ -1230,40 +1259,6 @@ export default function HelperDashboard() {
               {t('helper_dashboard.back_to_feed')}
             </button>
           )}
-
-          {activeTab !== 'candidaturas' && homeInfoSlides.length > 0 ? (() => {
-            const slide = homeInfoSlides[activeInfoSlide] ?? homeInfoSlides[0];
-
-            return (
-              <section
-                className={clsx(
-                  'mb-5 overflow-hidden rounded-[1.35rem] border px-4 py-3.5 text-xs font-bold transition-all duration-300',
-                  slide.className,
-                )}
-                aria-live="polite"
-              >
-                <div key={slide.id} className="flex min-h-[2.25rem] items-start gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-[0_8px_18px_rgba(37,99,255,0.18)]">
-                    {slide.icon}
-                  </span>
-                  <span className="min-w-0 flex-1 leading-relaxed">{slide.message}</span>
-                  {homeInfoSlides.length > 1 ? (
-                    <span className="ml-2 mt-1 flex shrink-0 items-center gap-1" aria-hidden>
-                      {homeInfoSlides.map((item, index) => (
-                        <span
-                          key={item.id}
-                          className={clsx(
-                            'h-1.5 rounded-full transition-all duration-300',
-                            index === activeInfoSlide ? 'w-4 bg-blue-600' : 'w-1.5 bg-slate-300',
-                          )}
-                        />
-                      ))}
-                    </span>
-                  ) : null}
-                </div>
-              </section>
-            );
-          })() : null}
 
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900">{activeTab === 'candidaturas' ? t('helper_dashboard.feed_title_apps') : t('helper_dashboard.feed_title_jobs')}</h2>

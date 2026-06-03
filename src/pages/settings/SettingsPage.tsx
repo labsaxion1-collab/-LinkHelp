@@ -11,6 +11,10 @@ import {
   LogOut,
   Languages,
   Briefcase,
+  Coins,
+  TrendingUp,
+  BarChart3,
+  ArrowUpRight,
 } from 'lucide-react';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useLanguage } from '@/context/LanguageContext';
@@ -113,6 +117,7 @@ export default function SettingsPage() {
   const [baseAddressSaving, setBaseAddressSaving] = useState(false);
   const [notifOn, setNotifOn] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [creditProjectionOpen, setCreditProjectionOpen] = useState(false);
 
   const isHelper = profile?.role === 'helper';
 
@@ -374,6 +379,12 @@ export default function SettingsPage() {
     }
   };
 
+  const helperCreditBalance = helperWalletBalance ?? 0;
+  const helperCreditBalanceLabel = creditsLoading ? t('common.loading') : formatLinkCredits(helperCreditBalance, language);
+  const helperCreditGraphBars = [32, 46, 38, 58, 52, 72, 64];
+  const helperProjectedJobs = Math.max(1, Math.round(helperCreditBalance / 6));
+  const helperProjectedRevenue = helperProjectedJobs * 85;
+
   return (
     <AppPageShell className="min-h-[calc(100dvh-64px)]">
       <div className="mx-auto max-w-lg space-y-4">
@@ -401,16 +412,91 @@ export default function SettingsPage() {
         </header>
 
         {isConfigured && profile && isHelper ? (
-          <section className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-white p-4 shadow-sm">
-            <p className="text-sm font-bold text-blue-900">{t('rewards.welcome_signup_credits')}</p>
-            <p className="mt-1 text-xs font-medium text-slate-600">{t('rewards.welcome_signup_purchase_note')}</p>
-            <p className="mt-2 text-xs font-bold text-blue-800">
-              {creditsLoading
-                ? t('common.loading')
-                : t('rewards.welcome_signup_balance', {
-                    amount: formatLinkCredits(helperWalletBalance ?? 0, language),
-                  })}
-            </p>
+          <section className="relative overflow-hidden rounded-[1.75rem] border border-blue-200/50 bg-[#071D48] p-4 text-white shadow-[0_22px_54px_rgba(8,31,84,0.22)]">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(51,182,255,0.34),transparent_34%),linear-gradient(135deg,rgba(37,99,255,0.42),transparent_58%)]" />
+            <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-sky-300/20 blur-2xl" />
+
+            <div className="relative flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-100/85">LinkCredit</p>
+                <h2 className="mt-1 text-2xl font-black tracking-tight">{helperCreditBalanceLabel}</h2>
+                <p className="mt-1 text-xs font-semibold leading-relaxed text-sky-50/78">{t('rewards.welcome_signup_purchase_note')}</p>
+              </div>
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/12 ring-1 ring-white/18">
+                <Coins className="h-6 w-6 text-amber-300" />
+              </div>
+            </div>
+
+            <div className="relative mt-4 grid grid-cols-3 gap-2">
+              <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/12">
+                <p className="text-[10px] font-bold uppercase text-sky-100/70">Bônus</p>
+                <p className="mt-1 text-lg font-black">+{SIGNUP_BONUS_LC.helper} LC</p>
+              </div>
+              <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/12">
+                <p className="text-[10px] font-bold uppercase text-sky-100/70">Potencial</p>
+                <p className="mt-1 text-lg font-black">{helperProjectedJobs}</p>
+              </div>
+              <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/12">
+                <p className="text-[10px] font-bold uppercase text-sky-100/70">Média</p>
+                <p className="mt-1 text-lg font-black">$85</p>
+              </div>
+            </div>
+
+            <div className="relative mt-4 rounded-[1.35rem] bg-white/10 p-3 ring-1 ring-white/12">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="flex items-center gap-1.5 text-xs font-black">
+                    <BarChart3 className="h-4 w-4 text-sky-200" />
+                    Lucratividade ilustrativa
+                  </p>
+                  <p className="mt-0.5 text-[11px] font-semibold text-sky-50/68">Estimativa visual para futura integração com trabalhos concluídos.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCreditProjectionOpen((open) => !open)}
+                  className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-white px-3 text-[11px] font-black text-blue-700 shadow-[0_10px_20px_rgba(37,99,255,0.18)]"
+                  aria-expanded={creditProjectionOpen}
+                >
+                  {creditProjectionOpen ? 'Menos' : 'Expandir'}
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              <div className={`flex items-end gap-2 transition-all duration-300 ${creditProjectionOpen ? 'h-36' : 'h-24'}`}>
+                {helperCreditGraphBars.map((height, index) => (
+                  <div key={index} className="flex flex-1 items-end rounded-full bg-white/8">
+                    <div
+                      className="w-full rounded-full bg-gradient-to-t from-[#2563FF] to-[#33B6FF] shadow-[0_0_18px_rgba(51,182,255,0.28)]"
+                      style={{ height: `${height}%` }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {creditProjectionOpen ? (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div className="rounded-2xl bg-white/10 px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase text-sky-100/65">Trabalhos estimados</p>
+                    <p className="mt-1 text-lg font-black">{helperProjectedJobs}</p>
+                  </div>
+                  <Link
+                    to={ROUTES.helperCredits}
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2 text-xs font-black text-blue-700"
+                  >
+                    Ver créditos
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              ) : null}
+
+              <div className="mt-3 flex items-center justify-between rounded-2xl bg-white/10 px-3 py-2">
+                <span className="flex items-center gap-1.5 text-[11px] font-bold text-sky-50/80">
+                  <TrendingUp className="h-3.5 w-3.5 text-emerald-300" />
+                  Projeção acumulada
+                </span>
+                <span className="text-sm font-black">${helperProjectedRevenue}</span>
+              </div>
+            </div>
           </section>
         ) : null}
 

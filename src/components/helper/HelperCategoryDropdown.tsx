@@ -103,16 +103,16 @@ function HelperCategoryDropdownInner({
 
   if (inline) {
     return (
-      <section className={clsx('relative z-20 w-full', className)} aria-label={t('helper_dashboard.category_filter_open')}>
+      <section className={clsx('relative z-20 -mx-5 w-[calc(100%+2.5rem)] sm:-mx-6 sm:w-[calc(100%+3rem)]', className)} aria-label={t('helper_dashboard.category_filter_open')}>
         <div
           ref={scrollRef}
           onPointerDown={handleScrollPointerDown}
           onPointerMove={handleScrollPointerMove}
           onPointerUp={handleScrollPointerEnd}
           onPointerCancel={handleScrollPointerEnd}
-          className="cursor-grab touch-pan-x select-none overflow-x-auto overscroll-x-contain scroll-smooth pb-1 active:cursor-grabbing [-webkit-overflow-scrolling:touch] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="cursor-grab touch-pan-x select-none overflow-x-auto overscroll-x-contain scroll-smooth px-5 pb-1 active:cursor-grabbing sm:px-6 [-webkit-overflow-scrolling:touch] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          <div className="grid w-max auto-cols-[8.6rem] grid-flow-col grid-rows-2 gap-2 px-[calc(50%_-_4.3rem)]">
+          <div className="grid w-max auto-cols-[8.6rem] grid-flow-col grid-rows-2 gap-2 px-[calc(50vw_-_4.3rem)]">
             {SERVICE_CATEGORIES.map((category) => {
               const id = category.id as ServiceCategoryId;
               const active = selectedSet.has(id);

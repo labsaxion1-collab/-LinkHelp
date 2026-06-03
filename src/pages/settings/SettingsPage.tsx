@@ -11,7 +11,6 @@ import {
   LogOut,
   Languages,
   Briefcase,
-  Coins,
   TrendingUp,
   BarChart3,
   ArrowUpRight,
@@ -419,11 +418,11 @@ export default function SettingsPage() {
             <div className="relative flex items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-100/85">LinkCredit</p>
-                <h2 className="mt-1 text-2xl font-black tracking-tight">{helperCreditBalanceLabel}</h2>
+                <h2 className="mt-1 text-2xl font-black tracking-tight text-amber-300 drop-shadow-[0_0_18px_rgba(251,191,36,0.22)]">{helperCreditBalanceLabel}</h2>
                 <p className="mt-1 text-xs font-semibold leading-relaxed text-sky-50/78">{t('rewards.welcome_signup_purchase_note')}</p>
               </div>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/12 ring-1 ring-white/18">
-                <Coins className="h-6 w-6 text-amber-300" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-black/20 ring-1 ring-white/18">
+                <img src="/brand/linkcredit-coin-icon.png" alt="" className="h-11 w-11 object-cover" />
               </div>
             </div>
 

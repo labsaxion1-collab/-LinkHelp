@@ -1115,7 +1115,7 @@ export default function HelperDashboard() {
                 src="/brand/helper-hero-bg.jpg"
                 alt=""
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover object-center opacity-95"
+                className="pointer-events-none absolute inset-0 h-full w-full scale-[1.18] object-cover object-[center_10%] opacity-95"
               />
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(249,251,255,0.36)_0%,rgba(249,251,255,0.50)_40%,rgba(249,251,255,0.74)_72%,#F7F8FC_100%)]" />
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(249,251,255,0.82)_0%,rgba(249,251,255,0.52)_48%,rgba(249,251,255,0.16)_100%)]" />
@@ -1142,7 +1142,7 @@ export default function HelperDashboard() {
                 ) : null}
               </header>
 
-              <div className="relative min-h-[18.5rem] py-6">
+              <div className="relative min-h-[21.5rem] py-6">
                 <div className="pointer-events-none absolute right-0 top-7 h-20 w-56 rotate-[-12deg] rounded-full bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.10),transparent)] blur-[1px]" />
                 <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF]">
                   <span className="text-base" aria-hidden>Olá</span>
@@ -1157,7 +1157,7 @@ export default function HelperDashboard() {
                   const slide = homeInfoSlides[activeInfoSlide] ?? homeInfoSlides[0];
 
                   return (
-                    <div className="relative mt-4 flex h-[7.2rem] max-w-md flex-col items-center justify-center overflow-hidden rounded-[1.55rem] border border-white/45 bg-[#071D48]/92 px-4 py-3 text-center text-xs font-bold text-white shadow-[0_18px_42px_rgba(8,31,84,0.18)] backdrop-blur-xl" aria-live="polite">
+                    <div className="relative mt-[7.5rem] flex h-[7.2rem] max-w-md flex-col items-center justify-center overflow-hidden rounded-[1.55rem] border border-white/45 bg-[#071D48]/92 px-4 py-3 text-center text-xs font-bold text-white shadow-[0_18px_42px_rgba(8,31,84,0.18)] backdrop-blur-xl" aria-live="polite">
                       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_0%,rgba(51,182,255,0.32),transparent_36%),linear-gradient(135deg,rgba(37,99,255,0.32),transparent_52%)]" />
                       <div className="pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full bg-sky-300/20 blur-2xl" />
                       <div key={slide.id} className="relative flex w-full flex-col items-center justify-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
@@ -1182,7 +1182,7 @@ export default function HelperDashboard() {
                 })() : null}
               </div>
 
-              <div className="relative mt-7 mb-3 flex items-center justify-between">
+              <div className="relative mt-2 mb-3 flex items-center justify-between">
                 <h2 className="text-base font-black tracking-tight text-[#0B1220]">Categorias</h2>
                 {selectedCategoryFilters.length ? (
                   <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black text-[#2563FF]">

@@ -43,6 +43,8 @@ function packageTitleClass(packageId: string): string {
 
 function packageArtwork(packageId: string): string | null {
   switch (packageId) {
+    case 'popular':
+      return '/brand/linkcredit-popular-stack.jpg';
     case 'pro':
       return '/brand/linkcredit-pro-stack.jpg';
     case 'power':

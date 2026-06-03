@@ -786,7 +786,7 @@ export default function HelperDashboard() {
     .map((job) => ({ job, distanceKm: baseDistanceToJobKm(job) }))
     .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
     .slice(0, 3);
-  const helperFirstName = (me?.name || 'Helper').split(' ')[0] || 'Helper';
+  const helperFirstName = (me?.name || profile?.full_name || profile?.name || 'Helper').split(' ')[0] || 'Helper';
   const isPerformancePage = location.pathname === ROUTES.helperPerformance;
   const showDesktopBack =
     location.pathname === ROUTES.helperPerformance ||
@@ -797,7 +797,7 @@ export default function HelperDashboard() {
       {/* Toast Notification */}
       {toastNotification.show && (
         <div className="fixed top-20 right-4 z-[100] animate-in slide-in-from-right-8 fade-in duration-300">
-          <div className="bg-gray-900 text-white px-4 py-3 rounded-xl shadow-lg border border-gray-800 flex items-center gap-3 w-80">
+          <div className="w-[calc(100vw-2rem)] max-w-80 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-lg border border-gray-800 flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
               <CheckCircle2 className="w-4 h-4 text-green-400" />
             </div>
@@ -965,9 +965,9 @@ export default function HelperDashboard() {
               <div className="absolute top-0 right-0 w-48 h-48 bg-yellow-500/10 rounded-full blur-[60px] pointer-events-none"></div>
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none"></div>
               
-              <div className="p-6 border-b border-gray-800 flex justify-between items-center relative z-10">
+              <div className="p-4 sm:p-6 border-b border-gray-800 flex items-start justify-between gap-3 relative z-10">
                  <div>
-                   <h3 className="text-xl font-black text-white flex items-center gap-2"><Icons.Lightbulb className="w-5 h-5 text-yellow-400" /> {t('helper_dashboard.idea_modal_title')}</h3>
+                   <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2"><Icons.Lightbulb className="w-5 h-5 shrink-0 text-yellow-400" /> {t('helper_dashboard.idea_modal_title')}</h3>
                    <p className="text-sm text-gray-400 font-medium tracking-tight">{t('helper_dashboard.idea_modal_subtitle')}</p>
                  </div>
                  <button onClick={() => setShowIdeaModal(false)} className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-full transition-colors">
@@ -1082,11 +1082,11 @@ export default function HelperDashboard() {
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                     <p className="text-xs font-black uppercase tracking-wide text-slate-400">{t('helper_dashboard.nav_applications')}</p>
-                    <p className="mt-1 text-2xl font-black text-slate-950">{helperMvpStats.sent}</p>
+                    <p className="mt-1 text-xl sm:text-2xl font-black text-slate-950">{helperMvpStats.sent}</p>
                   </div>
                   <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                     <p className="text-xs font-black uppercase tracking-wide text-slate-400">{t('helper_dashboard.score_metric_response_rate')}</p>
-                    <p className="mt-1 text-2xl font-black text-slate-950">
+                    <p className="mt-1 text-xl sm:text-2xl font-black text-slate-950">
                       {helperMvpStats.responseRatePct == null ? '—' : `${helperMvpStats.responseRatePct}%`}
                     </p>
                   </div>
@@ -1295,7 +1295,7 @@ export default function HelperDashboard() {
 
                   return (
                     <LhCard key={app.id} padding="none" className="overflow-hidden transition-shadow duration-200 hover:shadow-md">
-                      <div className="p-4 flex items-center justify-between border-b border-gray-50 bg-gray-50/50">
+                      <div className="p-4 flex flex-wrap items-center justify-between gap-2 border-b border-gray-50 bg-gray-50/50">
                         <div className="flex items-center gap-2">
                            <Icons.Clock className="w-4 h-4 text-gray-500" />
                            <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wider">{new Date(app.createdAt).toLocaleDateString()}</span>

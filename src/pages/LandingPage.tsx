@@ -89,10 +89,10 @@ function SectionHeading({ eyebrow, title, body }: { eyebrow: string; title: stri
       whileInView="visible"
       viewport={{ once: true, margin: '-80px' }}
       transition={{ duration: 0.7, ease: 'easeOut' }}
-      className="mx-auto mb-12 max-w-3xl text-center"
+      className="mx-auto mb-10 max-w-3xl text-center sm:mb-12"
     >
       <p className="mb-4 text-xs font-bold uppercase tracking-[0.32em] text-[#33B6FF]">{eyebrow}</p>
-      <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-5xl">{title}</h2>
+      <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-5xl">{title}</h2>
       <p className="mx-auto mt-4 max-w-2xl text-base font-medium leading-8 text-[#C7D2FE]/80 sm:text-lg">{body}</p>
     </motion.div>
   );
@@ -139,7 +139,7 @@ export default function LandingPage() {
       <FuturisticBackground />
 
       <main className="relative z-10">
-        <section className="relative flex min-h-[calc(100vh-64px)] items-center px-4 pb-20 pt-16 sm:px-6 lg:px-8">
+        <section className="relative flex min-h-[calc(100vh-64px)] items-center px-4 pb-16 pt-10 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8">
           <div className="pointer-events-none absolute left-1/2 top-14 h-72 w-[44rem] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(226,246,255,0.28)_0%,rgba(51,182,255,0.18)_28%,rgba(22,119,255,0.08)_52%,transparent_76%)] blur-2xl" />
           <motion.div
             aria-hidden
@@ -174,7 +174,7 @@ export default function LandingPage() {
                   <div className="absolute -inset-9 rounded-[2.5rem] bg-[radial-gradient(circle_at_23%_48%,rgba(255,255,255,0.40),rgba(155,231,255,0.24)_30%,rgba(51,182,255,0.12)_50%,transparent_74%)] blur-xl" />
                   <LogoIcon className="relative h-16 w-16 opacity-90 sm:h-20 sm:w-20" />
                   <div>
-                    <p className="text-4xl font-extrabold tracking-tight sm:text-6xl">
+                    <p className="text-3xl font-extrabold tracking-tight sm:text-6xl">
                       Link<span className="bg-gradient-to-r from-[#33B6FF] to-[#1677FF] bg-clip-text text-transparent">Help</span>
                     </p>
                     <p className="mt-2 text-xs font-bold uppercase tracking-[0.28em] text-[#33B6FF]">{t('landing.brand_tagline')}</p>
@@ -187,7 +187,7 @@ export default function LandingPage() {
 
               <motion.h1
                 variants={fadeUp}
-                className="text-balance text-5xl font-extrabold leading-[0.98] tracking-tight text-white sm:text-7xl lg:text-8xl"
+                className="text-balance text-[2.65rem] font-extrabold leading-[1.02] tracking-tight text-white sm:text-7xl lg:text-8xl"
               >
                 {t('landing.premium_hero_title')}
               </motion.h1>
@@ -198,27 +198,27 @@ export default function LandingPage() {
               <motion.div variants={fadeUp} className="mt-10 flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
                 <Link
                   to={clientSignup}
-                  className="group inline-flex min-h-[56px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#1677FF] to-[#00D4FF] px-7 text-base font-extrabold text-white shadow-[0_18px_55px_rgba(22,119,255,0.42)] transition-all hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(0,212,255,0.36)]"
+                className="group inline-flex min-h-[56px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#1677FF] to-[#00D4FF] px-5 text-center text-base font-extrabold text-white shadow-[0_18px_55px_rgba(22,119,255,0.42)] transition-all hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(0,212,255,0.36)] sm:px-7"
                 >
                   {t('landing.premium_cta_start')}
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Link>
                 <a
                   href="#services"
-                  className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-white/14 bg-white/[0.055] px-7 text-base font-extrabold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-xl transition-all hover:-translate-y-1 hover:border-[#33B6FF]/50 hover:bg-white/[0.09]"
+                  className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-white/14 bg-white/[0.055] px-5 text-center text-base font-extrabold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-xl transition-all hover:-translate-y-1 hover:border-[#33B6FF]/50 hover:bg-white/[0.09] sm:px-7"
                 >
                   {t('landing.premium_cta_explore')}
                 </a>
               </motion.div>
 
-              <motion.div variants={fadeUp} className="mt-10 grid grid-cols-3 gap-3 text-left sm:max-w-xl">
+              <motion.div variants={fadeUp} className="mt-10 grid grid-cols-1 gap-3 text-left sm:max-w-xl sm:grid-cols-3">
                 {[
                   ['50k+', t('landing.stat_connected_users')],
                   [t('landing.reviews_score'), t('landing.stat_average_rating')],
                   ['24/7', t('landing.stat_live_requests')],
                 ].map(([value, label]) => (
                   <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 backdrop-blur-xl">
-                    <p className="text-2xl font-extrabold text-white">{value}</p>
+                    <p className="text-xl font-extrabold text-white sm:text-2xl">{value}</p>
                     <p className="mt-1 text-xs font-semibold text-[#C7D2FE]/70">{label}</p>
                   </div>
                 ))}
@@ -235,7 +235,7 @@ export default function LandingPage() {
               <motion.div
                 animate={{ y: [0, -16, 0], rotate: [0, 0.8, 0] }}
                 transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-                className="relative min-h-[520px] overflow-hidden rounded-[2rem] border border-white/12 bg-[#071120]/70 p-6 shadow-[0_34px_120px_rgba(0,0,0,0.45)] backdrop-blur-2xl"
+                className="relative min-h-[500px] overflow-hidden rounded-[1.5rem] border border-white/12 bg-[#071120]/70 p-4 shadow-[0_34px_120px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:min-h-[520px] sm:rounded-[2rem] sm:p-6"
               >
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(51,182,255,0.22),transparent_32%),linear-gradient(135deg,rgba(22,119,255,0.14),transparent_44%)]" />
                 <div className="absolute left-8 top-8 h-40 w-40 rounded-full border border-[#33B6FF]/30 shadow-[0_0_60px_rgba(51,182,255,0.2)]" />
@@ -252,7 +252,7 @@ export default function LandingPage() {
 
                   <div className="rounded-3xl border border-[#33B6FF]/25 bg-gradient-to-br from-[#1677FF]/26 to-white/[0.035] p-5 shadow-[0_0_50px_rgba(22,119,255,0.18)]">
                     <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#33B6FF]">{t('landing.demo_balance')}</p>
-                    <p className="mt-3 text-4xl font-extrabold text-white">$2,540</p>
+                    <p className="mt-3 text-3xl font-extrabold text-white sm:text-4xl">$2,540</p>
                     <div className="mt-5 h-2 rounded-full bg-white/10">
                       <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-[#1677FF] to-[#00D4FF]" />
                     </div>
@@ -266,7 +266,7 @@ export default function LandingPage() {
                     ))}
                   </div>
 
-                  <div className="mt-5 space-y-3">
+                    <div className="mt-5 space-y-2 sm:space-y-3">
                     {[
                       [t('landing.demo_delivery_request'), '+ $45.00'],
                       [t('landing.demo_cleaning_service'), '+ $120.00'],
@@ -283,11 +283,11 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="absolute bottom-7 left-7 right-7 rounded-3xl border border-white/12 bg-[#050816]/72 p-5 backdrop-blur-xl">
+                <div className="absolute bottom-4 left-4 right-4 rounded-3xl border border-white/12 bg-[#050816]/72 p-4 backdrop-blur-xl sm:bottom-7 sm:left-7 sm:right-7 sm:p-5">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#33B6FF]">{t('landing.demo_marketplace')}</p>
-                      <p className="mt-1 text-xl font-extrabold text-white">{t('landing.demo_near_you')}</p>
+                        <p className="mt-1 text-lg font-extrabold text-white sm:text-xl">{t('landing.demo_near_you')}</p>
                     </div>
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1677FF] shadow-[0_0_30px_rgba(22,119,255,0.55)]">
                       <Sparkles className="h-6 w-6" />
@@ -324,7 +324,7 @@ export default function LandingPage() {
                       </div>
                       <span className="text-sm font-extrabold text-white/20">0{index + 1}</span>
                     </div>
-                    <h3 className="text-2xl font-extrabold text-white">{item.title}</h3>
+                    <h3 className="text-xl font-extrabold text-white sm:text-2xl">{item.title}</h3>
                     <p className="mt-4 text-sm font-medium leading-7 text-[#C7D2FE]/76">{item.body}</p>
                   </GlassCard>
                 );
@@ -361,7 +361,7 @@ export default function LandingPage() {
                         <ArrowRight className="h-5 w-5 text-white/24 transition-all group-hover:translate-x-1 group-hover:text-[#33B6FF]" />
                       </div>
                       <div>
-                        <h3 className="text-2xl font-extrabold text-white">{service.title}</h3>
+                        <h3 className="text-xl font-extrabold text-white sm:text-2xl">{service.title}</h3>
                         <p className="mt-2 text-sm font-semibold text-[#C7D2FE]/70">{service.meta}</p>
                       </div>
                     </div>
@@ -396,7 +396,7 @@ export default function LandingPage() {
                         <Icon className="h-6 w-6" />
                       </div>
                       <div>
-                        <p className="text-2xl font-extrabold text-white">{benefit.value}</p>
+                        <p className="text-xl font-extrabold text-white sm:text-2xl">{benefit.value}</p>
                         <p className="text-sm font-semibold text-[#C7D2FE]/72">{benefit.title}</p>
                       </div>
                     </div>
@@ -413,28 +413,28 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-80px' }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
-            className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.25rem] border border-[#33B6FF]/20 bg-[#071120]/78 px-6 py-16 text-center shadow-[0_0_120px_rgba(22,119,255,0.22)] backdrop-blur-2xl sm:px-12"
+            className="relative mx-auto max-w-6xl overflow-hidden rounded-[1.5rem] border border-[#33B6FF]/20 bg-[#071120]/78 px-4 py-12 text-center shadow-[0_0_120px_rgba(22,119,255,0.22)] backdrop-blur-2xl sm:rounded-[2.25rem] sm:px-12 sm:py-16"
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(226,246,255,0.18),transparent_22%),radial-gradient(circle_at_50%_18%,rgba(0,212,255,0.20),transparent_36%),linear-gradient(180deg,rgba(7,17,32,0.58),rgba(5,8,22,0.94))]" />
             <div className="relative mx-auto max-w-3xl">
               <div className="mx-auto mb-7 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[#1677FF] to-[#00D4FF] shadow-[0_0_50px_rgba(0,212,255,0.45)]">
                 <BadgeCheck className="h-8 w-8" />
               </div>
-              <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-6xl">{t('landing.premium_final_title')}</h2>
+              <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-6xl">{t('landing.premium_final_title')}</h2>
               <p className="mx-auto mt-6 max-w-2xl text-lg font-medium leading-8 text-[#C7D2FE]/82">
                 {t('landing.premium_final_body')}
               </p>
               <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
                 <Link
                   to={helperSignup}
-                  className="inline-flex min-h-[56px] items-center justify-center gap-3 rounded-2xl bg-white px-7 text-base font-extrabold text-[#071120] shadow-[0_18px_60px_rgba(255,255,255,0.2)] transition-all hover:-translate-y-1"
+                  className="inline-flex min-h-[56px] items-center justify-center gap-3 rounded-2xl bg-white px-5 text-center text-base font-extrabold text-[#071120] shadow-[0_18px_60px_rgba(255,255,255,0.2)] transition-all hover:-translate-y-1 sm:px-7"
                 >
                   {t('landing.premium_cta_start')}
                   <ArrowRight className="h-5 w-5" />
                 </Link>
                 <Link
                   to={ROUTES.login}
-                  className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-white/18 bg-white/[0.06] px-7 text-base font-extrabold text-white backdrop-blur-xl transition-all hover:-translate-y-1 hover:bg-white/[0.1]"
+                  className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-white/18 bg-white/[0.06] px-5 text-center text-base font-extrabold text-white backdrop-blur-xl transition-all hover:-translate-y-1 hover:bg-white/[0.1] sm:px-7"
                 >
                   {t('login_page.submit')}
                 </Link>

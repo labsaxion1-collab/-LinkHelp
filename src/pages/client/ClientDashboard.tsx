@@ -342,7 +342,7 @@ export default function ClientDashboard() {
       {/* Toast Notification */}
       {toastNotification.show && (
         <div className="fixed top-20 right-4 z-[100] animate-in slide-in-from-right-8 fade-in duration-300">
-          <div className="bg-gray-900 text-white px-4 py-3 rounded-xl shadow-lg border border-gray-800 flex items-center gap-3 w-80">
+          <div className="w-[calc(100vw-2rem)] max-w-80 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-lg border border-gray-800 flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
               <Bell className="w-4 h-4 text-blue-400" />
             </div>
@@ -374,7 +374,7 @@ export default function ClientDashboard() {
                <div className="w-16 h-16 bg-blue-100/60 rounded-2xl flex items-center justify-center mb-6">
                  <Icons.Zap className="w-8 h-8 text-blue-600" />
                </div>
-               <h3 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">{t('link_credits.client_intro_title')}</h3>
+               <h3 className="text-xl sm:text-2xl font-black text-slate-900 mb-2 tracking-tight">{t('link_credits.client_intro_title')}</h3>
                <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">{t('link_credits.client_intro_sub')}</p>
                <div className="space-y-4 mb-6">
                  <div className="flex items-center gap-3">
@@ -408,11 +408,11 @@ export default function ClientDashboard() {
                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{t('link_credits.welcome_bonus_client')}</p>
              </div>
 
-             <div className="w-full lg:w-[58%] p-6 sm:p-10 bg-white relative overflow-y-auto">
+             <div className="w-full lg:w-[58%] p-4 sm:p-10 bg-white relative overflow-y-auto">
                <button onClick={() => !isProcessingPayment && setShowCreditModal(false)} className="absolute top-6 right-6 p-2 bg-slate-50 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-900 transition-colors z-10" disabled={isProcessingPayment}>
                  <Icons.X className="w-5 h-5" />
                </button>
-               <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-6 pr-10">{t('link_credits.choose_package')}</h2>
+               <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mb-6 pr-10">{t('link_credits.choose_package')}</h2>
                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                  <div onClick={() => !isProcessingPayment && setSelectedCreditPackage(1)} className={`relative rounded-2xl border-2 p-5 cursor-pointer transition-all ${selectedCreditPackage === 1 ? 'border-blue-500 bg-blue-50/30 shadow-md' : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'}`}>
                    <div className="flex justify-between items-start mb-3">
@@ -420,7 +420,7 @@ export default function ClientDashboard() {
                      {selectedCreditPackage === 1 && <Icons.CheckCircle2 className="w-6 h-6 text-blue-500" />}
                    </div>
                    <div className="text-slate-500 font-bold text-sm mb-1">{t('link_credits.credits_count', { count: 10 })}</div>
-                   <div className="text-2xl font-black text-slate-900">{t('link_credits.package_10_price')}</div>
+                   <div className="text-xl sm:text-2xl font-black text-slate-900">{t('link_credits.package_10_price')}</div>
                  </div>
                  <div onClick={() => !isProcessingPayment && setSelectedCreditPackage(2)} className={`relative rounded-2xl border-2 p-5 cursor-pointer transition-all ${selectedCreditPackage === 2 ? 'border-blue-600 bg-blue-50/40 shadow-md' : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'}`}>
                    <div className="absolute top-0 right-3 rounded-b-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-wide px-3 py-1 shadow-sm">{t('link_credits.popular_badge')}</div>
@@ -429,7 +429,7 @@ export default function ClientDashboard() {
                      {selectedCreditPackage === 2 && <Icons.CheckCircle2 className="w-6 h-6 text-blue-600" />}
                    </div>
                    <div className="text-slate-600 font-bold text-sm mb-1">{t('link_credits.credits_count', { count: 50 })}</div>
-                   <div className="text-2xl font-black text-slate-900">{t('link_credits.package_50_price')}</div>
+                   <div className="text-xl sm:text-2xl font-black text-slate-900">{t('link_credits.package_50_price')}</div>
                  </div>
                  <div onClick={() => !isProcessingPayment && setSelectedCreditPackage(3)} className={`relative rounded-2xl border-2 p-5 cursor-pointer transition-all ${selectedCreditPackage === 3 ? 'border-violet-500 bg-violet-50/40 shadow-md' : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'}`}>
                    <div className="absolute top-0 right-3 rounded-b-lg bg-violet-600 text-white text-[10px] font-black uppercase tracking-wide px-3 py-1 shadow-sm">{t('link_credits.best_value_badge')}</div>
@@ -438,7 +438,7 @@ export default function ClientDashboard() {
                      {selectedCreditPackage === 3 && <Icons.CheckCircle2 className="w-6 h-6 text-violet-600" />}
                    </div>
                    <div className="text-slate-600 font-bold text-sm mb-1">{t('link_credits.credits_count', { count: 120 })}</div>
-                   <div className="text-2xl font-black text-slate-900">{t('link_credits.package_120_price')}</div>
+                   <div className="text-xl sm:text-2xl font-black text-slate-900">{t('link_credits.package_120_price')}</div>
                  </div>
                </div>
                <div className="mt-8">
@@ -597,7 +597,7 @@ export default function ClientDashboard() {
           <LhCard className="mb-6 w-full max-w-full min-w-0">
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h2 className="text-2xl font-black tracking-tight text-slate-950">{t('client_dashboard.category_hub_title')}</h2>
+                <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950">{t('client_dashboard.category_hub_title')}</h2>
                 <p className="mt-1 text-sm font-medium text-slate-500">{t('client_dashboard.category_hub_sub')}</p>
               </div>
               <button
@@ -753,7 +753,7 @@ export default function ClientDashboard() {
             {isClientJobsPage ? <DesktopBackButton className="mb-4" /> : null}
             <LhCard className="mb-6 overflow-hidden">
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">{t('sidebar.active_services')}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">{t('sidebar.active_services')}</h2>
                 <p className="text-gray-500 text-sm">{t('client_dashboard.active_services_intro')}</p>
               </div>
               <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50/80 p-4">
@@ -785,7 +785,7 @@ export default function ClientDashboard() {
                 </div>
               ) : null}
               
-              <div className="mb-4 flex gap-2">
+              <div className="mb-4 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => setJobsListTab('active')}
@@ -1201,7 +1201,7 @@ export default function ClientDashboard() {
                   alt=""
                   className="w-20 h-20 rounded-full border-4 border-white shadow-lg ring-1 ring-black/5 bg-white object-cover mb-4"
                 />
-                <h2 className="text-2xl font-black text-gray-900">
+                <h2 className="text-xl sm:text-2xl font-black text-gray-900">
                   {hireModalKind === 'proposal'
                     ? t('hire_modal.title_proposal', { name: selectedHelper.name.split(' ')[0] })
                     : t('hire_modal.title', { name: selectedHelper.name.split(' ')[0] })}

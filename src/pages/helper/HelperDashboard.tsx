@@ -816,7 +816,7 @@ export default function HelperDashboard() {
     location.pathname === ROUTES.helperOpportunities;
 
   return (
-    <AppPageShell wide className="min-w-0 overflow-x-visible px-0 py-6 sm:px-7 sm:py-7">
+    <AppPageShell wide className="min-w-0 overflow-x-visible px-0 pb-6 pt-0 sm:px-7 sm:pb-7 sm:pt-3">
       {/* Toast Notification */}
       {toastNotification.show && (
         <div className="fixed top-20 right-4 z-[100] animate-in slide-in-from-right-8 fade-in duration-300">

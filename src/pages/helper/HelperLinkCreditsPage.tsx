@@ -126,6 +126,17 @@ export default function HelperLinkCreditsPage() {
               <p className="mt-2 text-xl font-black text-blue-700">
                 {pkg.currency} ${pkg.price.toFixed(2)}
               </p>
+              {pkg.id === 'power' ? (
+                <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-amber-200/70 bg-amber-50 shadow-[0_18px_34px_rgba(180,83,9,0.14)]">
+                  <img
+                    src="/brand/linkcredit-power-stack.jpg"
+                    alt="Pacote Power LinkCredit"
+                    className="h-36 w-full object-cover object-center"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+              ) : null}
               <button
                 type="button"
                 disabled={busyId != null}

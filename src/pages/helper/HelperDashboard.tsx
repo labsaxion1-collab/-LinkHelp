@@ -1144,6 +1144,15 @@ export default function HelperDashboard() {
 
               </div>
 
+              <div className="mt-7 mb-3 flex items-center justify-between">
+                <h2 className="text-base font-black tracking-tight text-[#0B1220]">Categorias</h2>
+                {selectedCategoryFilters.length ? (
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black text-[#2563FF]">
+                    {selectedCategoryFilters.length} selecionada{selectedCategoryFilters.length > 1 ? 's' : ''}
+                  </span>
+                ) : null}
+              </div>
+
               <HelperCategoryDropdown
                 open
                 onToggle={() => undefined}
@@ -1159,19 +1168,8 @@ export default function HelperDashboard() {
                 onClear={() => setSelectedCategoryFilters([])}
                 t={t}
                 inline
-                className="mt-6"
+                className="mt-0"
               />
-
-              <div className="mt-6 grid gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('candidaturas')}
-                  className="rounded-[1.25rem] bg-[#2563FF] px-4 py-3 text-left text-white shadow-[0_14px_30px_rgba(37,99,255,0.24)]"
-                >
-                  <p className="text-[10px] font-black uppercase tracking-wide text-white/80">Minhas</p>
-                  <p className="mt-1 text-lg font-black">Candidaturas</p>
-                </button>
-              </div>
             </section>
           ) : null}
 

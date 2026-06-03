@@ -1115,7 +1115,7 @@ export default function HelperDashboard() {
                 src="/brand/helper-hero-bg.jpg"
                 alt=""
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 h-full w-full scale-105 object-cover object-[center_8%] opacity-95"
+                className="pointer-events-none absolute inset-x-0 -top-28 h-[calc(100%+7rem)] w-full object-cover object-top opacity-95"
               />
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(249,251,255,0.36)_0%,rgba(249,251,255,0.50)_40%,rgba(249,251,255,0.74)_72%,#F7F8FC_100%)]" />
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(249,251,255,0.82)_0%,rgba(249,251,255,0.52)_48%,rgba(249,251,255,0.16)_100%)]" />

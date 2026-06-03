@@ -24,6 +24,23 @@ function highlightLinkCreditText(text: string): ReactNode {
   );
 }
 
+function packageTitleClass(packageId: string): string {
+  const titleBase = 'bg-clip-text text-transparent drop-shadow-[0_0_14px_rgba(37,99,255,0.18)]';
+
+  switch (packageId) {
+    case 'starter':
+      return `${titleBase} bg-gradient-to-r from-sky-500 via-blue-600 to-cyan-400`;
+    case 'popular':
+      return `${titleBase} bg-gradient-to-r from-emerald-500 via-green-600 to-lime-400 drop-shadow-[0_0_14px_rgba(34,197,94,0.22)]`;
+    case 'pro':
+      return `${titleBase} bg-gradient-to-r from-violet-500 via-purple-600 to-fuchsia-500 drop-shadow-[0_0_14px_rgba(168,85,247,0.24)]`;
+    case 'power':
+      return `${titleBase} bg-gradient-to-r from-rose-500 via-red-600 to-orange-500 drop-shadow-[0_0_14px_rgba(239,68,68,0.24)]`;
+    default:
+      return 'text-slate-950';
+  }
+}
+
 export default function HelperLinkCreditsPage() {
   const { t } = useLanguage();
   const { profile } = useAuth();
@@ -95,7 +112,7 @@ export default function HelperLinkCreditsPage() {
                   {pkg.badge}
                 </span>
               ) : null}
-              <h2 className="text-lg font-black text-slate-950">{pkg.label}</h2>
+              <h2 className={`text-lg font-black ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
               <p className="mt-3 text-4xl font-black tabular-nums text-slate-950">
                 {pkg.credits}
                 <span className="ml-1 text-base font-bold text-slate-500">LC</span>

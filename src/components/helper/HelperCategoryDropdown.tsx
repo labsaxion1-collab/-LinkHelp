@@ -35,6 +35,10 @@ function HelperCategoryDropdownInner({
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const dragStartXRef = useRef(0);
+  const dragStartScrollLeftRef = useRef(0);
+  const draggingRef = useRef(false);
+  const suppressClickRef = useRef(false);
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   const handleOutside = useCallback(
@@ -70,12 +74,43 @@ function HelperCategoryDropdownInner({
     return t(`categories.${id}`);
   };
 
+  const handleScrollPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!scrollRef.current) return;
+    draggingRef.current = true;
+    suppressClickRef.current = false;
+    dragStartXRef.current = event.clientX;
+    dragStartScrollLeftRef.current = scrollRef.current.scrollLeft;
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleScrollPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current || !scrollRef.current) return;
+    const deltaX = event.clientX - dragStartXRef.current;
+    if (Math.abs(deltaX) > 4) suppressClickRef.current = true;
+    scrollRef.current.scrollLeft = dragStartScrollLeftRef.current - deltaX;
+    if (suppressClickRef.current) event.preventDefault();
+  };
+
+  const handleScrollPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    draggingRef.current = false;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    window.setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 0);
+  };
+
   if (inline) {
     return (
       <section className={clsx('relative z-20 w-full', className)} aria-label={t('helper_dashboard.category_filter_open')}>
         <div
           ref={scrollRef}
-          className="overflow-x-auto overscroll-x-contain scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          onPointerDown={handleScrollPointerDown}
+          onPointerMove={handleScrollPointerMove}
+          onPointerUp={handleScrollPointerEnd}
+          onPointerCancel={handleScrollPointerEnd}
+          className="cursor-grab touch-pan-x select-none overflow-x-auto overscroll-x-contain scroll-smooth pb-1 active:cursor-grabbing [-webkit-overflow-scrolling:touch] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           <div className="grid w-max auto-cols-[8.6rem] grid-flow-col grid-rows-2 gap-2 px-[calc(50%_-_4.3rem)]">
             {SERVICE_CATEGORIES.map((category) => {
@@ -86,7 +121,10 @@ function HelperCategoryDropdownInner({
                   key={id}
                   type="button"
                   aria-pressed={active}
-                  onClick={() => onToggleCategory(id)}
+                  onClick={() => {
+                    if (suppressClickRef.current) return;
+                    onToggleCategory(id);
+                  }}
                   className={clsx(
                     'flex min-h-[4.9rem] flex-col items-center justify-center gap-1.5 rounded-[1.15rem] border px-2 text-center text-[11px] font-black transition-all active:scale-[0.98]',
                     active

@@ -113,30 +113,32 @@ export default function HelperLinkCreditsPage() {
                 </span>
               ) : null}
               <h2 className={`text-lg font-black ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
-              <p className="mt-3 flex items-center gap-2 text-4xl font-black tabular-nums text-amber-300 drop-shadow-[0_0_18px_rgba(251,191,36,0.42)]">
-                {pkg.credits}
-                <img
-                  src="/brand/linkcredit-coin-icon.png"
-                  alt="LinkCredit"
-                  className="h-8 w-8 rounded-full object-cover drop-shadow-[0_0_12px_rgba(251,191,36,0.35)]"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </p>
-              <p className="mt-2 text-xl font-black text-blue-700">
-                {pkg.currency} ${pkg.price.toFixed(2)}
-              </p>
-              {pkg.id === 'power' ? (
-                <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-amber-200/70 bg-amber-50 shadow-[0_18px_34px_rgba(180,83,9,0.14)]">
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-2 text-4xl font-black tabular-nums text-amber-300 drop-shadow-[0_0_18px_rgba(251,191,36,0.42)]">
+                    {pkg.credits}
+                    <img
+                      src="/brand/linkcredit-coin-icon.png"
+                      alt="LinkCredit"
+                      className="h-8 w-8 rounded-full object-cover drop-shadow-[0_0_12px_rgba(251,191,36,0.35)]"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </p>
+                  <p className="mt-2 text-xl font-black text-blue-700">
+                    {pkg.currency} ${pkg.price.toFixed(2)}
+                  </p>
+                </div>
+                {pkg.id === 'power' ? (
                   <img
                     src="/brand/linkcredit-power-stack.jpg"
                     alt="Pacote Power LinkCredit"
-                    className="h-36 w-full object-cover object-center"
+                    className="-mr-4 h-28 w-32 shrink-0 object-contain object-right drop-shadow-[0_18px_24px_rgba(180,83,9,0.22)]"
                     loading="lazy"
                     decoding="async"
                   />
-                </div>
-              ) : null}
+                ) : null}
+              </div>
               <button
                 type="button"
                 disabled={busyId != null}

@@ -113,9 +113,15 @@ export default function HelperLinkCreditsPage() {
                 </span>
               ) : null}
               <h2 className={`text-lg font-black ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
-              <p className="mt-3 text-4xl font-black tabular-nums text-slate-950">
+              <p className="mt-3 flex items-center gap-2 text-4xl font-black tabular-nums text-amber-300 drop-shadow-[0_0_18px_rgba(251,191,36,0.42)]">
                 {pkg.credits}
-                <span className="ml-1 text-base font-bold text-slate-500">LC</span>
+                <img
+                  src="/brand/linkcredit-coin-icon.png"
+                  alt="LinkCredit"
+                  className="h-8 w-8 rounded-full object-cover drop-shadow-[0_0_12px_rgba(251,191,36,0.35)]"
+                  loading="lazy"
+                  decoding="async"
+                />
               </p>
               <p className="mt-2 text-xl font-black text-blue-700">
                 {pkg.currency} ${pkg.price.toFixed(2)}

@@ -103,7 +103,7 @@ function HelperCategoryDropdownInner({
 
   if (inline) {
     return (
-      <section className={clsx('relative z-20 -mx-5 w-[calc(100%+2.5rem)] sm:-mx-6 sm:w-[calc(100%+3rem)]', className)} aria-label={t('helper_dashboard.category_filter_open')}>
+      <section className={clsx('relative left-1/2 z-20 w-screen -translate-x-1/2', className)} aria-label={t('helper_dashboard.category_filter_open')}>
         <div
           ref={scrollRef}
           onPointerDown={handleScrollPointerDown}

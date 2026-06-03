@@ -1110,12 +1110,12 @@ export default function HelperDashboard() {
           ) : null}
 
           {activeTab !== 'candidaturas' ? (
-            <section className="relative -mx-5 mb-8 overflow-hidden px-5 pb-8 pt-1 sm:-mx-6 sm:px-6">
+            <section className="relative left-1/2 mb-8 w-screen -translate-x-1/2 overflow-hidden px-5 pb-8 pt-1 sm:px-6">
               <img
                 src="/brand/helper-hero-bg.jpg"
                 alt=""
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 h-full w-full scale-[1.18] object-cover object-[center_10%] opacity-95"
+                className="pointer-events-none absolute inset-0 h-full w-full scale-105 object-cover object-[center_8%] opacity-95"
               />
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(249,251,255,0.36)_0%,rgba(249,251,255,0.50)_40%,rgba(249,251,255,0.74)_72%,#F7F8FC_100%)]" />
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(249,251,255,0.82)_0%,rgba(249,251,255,0.52)_48%,rgba(249,251,255,0.16)_100%)]" />

@@ -1133,15 +1133,16 @@ export default function HelperDashboard() {
                 ) : null}
               </header>
 
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/60 px-4 py-5 shadow-[0_20px_48px_rgba(15,23,42,0.08)]">
+              <div className="relative -mx-5 min-h-[21rem] overflow-hidden px-5 py-6 sm:-mx-6 sm:px-6">
                 <img
                   src="/brand/helper-hero-bg.jpg"
                   alt=""
                   aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-65"
+                  className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-90"
                 />
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(249,251,255,0.94)_0%,rgba(249,251,255,0.84)_48%,rgba(249,251,255,0.48)_100%)]" />
-                <div className="pointer-events-none absolute -right-16 -top-10 h-40 w-64 rounded-full bg-white/45 blur-2xl" />
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(249,251,255,0.78)_0%,rgba(249,251,255,0.58)_48%,rgba(249,251,255,0.16)_100%)]" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#F7F8FC] to-transparent" />
+                <div className="pointer-events-none absolute -left-16 -top-12 h-48 w-72 rounded-full bg-white/30 blur-2xl" />
                 <div className="pointer-events-none absolute right-0 top-7 h-20 w-56 rotate-[-12deg] rounded-full bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.10),transparent)] blur-[1px]" />
                 <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF]">
                   <span className="text-base" aria-hidden>Olá</span>

@@ -1,6 +1,7 @@
 import * as Icons from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { clsx } from 'clsx';
+import type { ReactNode } from 'react';
 import { ROUTES } from '@/utils/constants';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatLinkCredits, normalizeLinkCreditsAmount } from '@/utils/formatLinkCredits';
@@ -14,6 +15,20 @@ type Props = {
   t: (key: string, options?: Record<string, string | number>) => string;
   onBuyCredits: () => void;
 };
+
+const linkCreditGlowClass = 'text-amber-300 drop-shadow-[0_0_14px_rgba(251,191,36,0.55)]';
+
+function highlightLinkCreditText(text: string): ReactNode {
+  return text.split(/(LinkCredits?)/g).map((part, index) =>
+    /^LinkCredits?$/.test(part) ? (
+      <span key={`${part}-${index}`} className={linkCreditGlowClass}>
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  );
+}
 
 export function HelperCreditsWalletCard({
   balance,
@@ -76,7 +91,7 @@ export function HelperCreditsWalletCard({
           />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-600/90">
+          <p className={`text-[10px] font-black uppercase tracking-[0.12em] ${linkCreditGlowClass}`}>
             {t('helper_dashboard.credits_wallet_title')}
           </p>
           <p
@@ -88,7 +103,7 @@ export function HelperCreditsWalletCard({
             {balanceLabel}
           </p>
           <p className="mt-1.5 text-[11px] font-medium leading-snug text-slate-600">
-            {t('helper_dashboard.credits_wallet_sub')}
+            {highlightLinkCreditText(t('helper_dashboard.credits_wallet_sub'))}
           </p>
         </div>
       </div>
@@ -117,7 +132,7 @@ export function HelperCreditsWalletCard({
           className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white transition-colors hover:bg-black"
         >
           <Icons.CreditCard className="h-4 w-4 shrink-0" />
-          {t('helper_dashboard.buy_credits')}
+          {highlightLinkCreditText(t('helper_dashboard.buy_credits'))}
         </button>
         <Link
           to={ROUTES.helperCredits}

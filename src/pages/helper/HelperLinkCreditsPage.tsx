@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -9,6 +9,20 @@ import { LINK_CREDIT_PACKAGES } from '@/config/linkCreditPackages';
 import { startLinkCreditCheckout } from '@/services/paymentService';
 import { ROUTES } from '@/utils/constants';
 import { Navigate } from 'react-router-dom';
+
+const linkCreditGlowClass = 'text-amber-300 drop-shadow-[0_0_14px_rgba(251,191,36,0.55)]';
+
+function highlightLinkCreditText(text: string): ReactNode {
+  return text.split(/(LinkCredits?)/g).map((part, index) =>
+    /^LinkCredits?$/.test(part) ? (
+      <span key={`${part}-${index}`} className={linkCreditGlowClass}>
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  );
+}
 
 export default function HelperLinkCreditsPage() {
   const { t } = useLanguage();
@@ -42,14 +56,14 @@ export default function HelperLinkCreditsPage() {
         <HelperDashboardNav activeTab="match" onSelectFeedTab={() => {}} t={t} />
 
         <div className="mb-6 text-center md:text-left">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
+          <p className={`text-xs font-black uppercase tracking-[0.2em] ${linkCreditGlowClass}`}>
             LinkCredits
           </p>
           <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
-            {t('link_credits_store.title')}
+            {highlightLinkCreditText(t('link_credits_store.title'))}
           </h1>
           <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">
-            {t('link_credits_store.subtitle')}
+            {highlightLinkCreditText(t('link_credits_store.subtitle'))}
           </p>
           <p className="mt-1 text-sm font-bold text-slate-500">{t('link_credits_store.no_subscription')}</p>
         </div>
@@ -68,7 +82,6 @@ export default function HelperLinkCreditsPage() {
 
         <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-4 text-sm leading-relaxed text-blue-950">
           <p>{t('link_credits_store.interest_cost_hint')}</p>
-          <p className="mt-2 text-blue-900/80">{t('link_credits_store.selected_cost_hint')}</p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">

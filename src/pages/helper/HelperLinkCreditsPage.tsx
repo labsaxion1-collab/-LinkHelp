@@ -41,6 +41,17 @@ function packageTitleClass(packageId: string): string {
   }
 }
 
+function packageArtwork(packageId: string): string | null {
+  switch (packageId) {
+    case 'pro':
+      return '/brand/linkcredit-pro-stack.jpg';
+    case 'power':
+      return '/brand/linkcredit-power-stack.jpg';
+    default:
+      return null;
+  }
+}
+
 export default function HelperLinkCreditsPage() {
   const { t } = useLanguage();
   const { profile } = useAuth();
@@ -102,58 +113,62 @@ export default function HelperLinkCreditsPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          {LINK_CREDIT_PACKAGES.map((pkg) => (
-            <article
-              key={pkg.id}
-              className="relative overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5"
-            >
-              {pkg.badge ? (
-                <span className="absolute right-4 top-4 rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
-                  {pkg.badge}
-                </span>
-              ) : null}
-              <h2 className={`text-lg font-black ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="flex items-center gap-2 text-4xl font-black tabular-nums text-amber-300 drop-shadow-[0_0_18px_rgba(251,191,36,0.42)]">
-                    {pkg.credits}
+          {LINK_CREDIT_PACKAGES.map((pkg) => {
+            const artwork = packageArtwork(pkg.id);
+
+            return (
+              <article
+                key={pkg.id}
+                className="relative overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5"
+              >
+                {pkg.badge ? (
+                  <span className="absolute right-4 top-4 rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+                    {pkg.badge}
+                  </span>
+                ) : null}
+                <h2 className={`text-lg font-black ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-2 text-4xl font-black tabular-nums text-amber-300 drop-shadow-[0_0_18px_rgba(251,191,36,0.42)]">
+                      {pkg.credits}
+                      <img
+                        src="/brand/linkcredit-coin-icon.png"
+                        alt="LinkCredit"
+                        className="h-8 w-8 rounded-full object-cover drop-shadow-[0_0_12px_rgba(251,191,36,0.35)]"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </p>
+                    <p className="mt-2 text-xl font-black text-blue-700">
+                      {pkg.currency} ${pkg.price.toFixed(2)}
+                    </p>
+                  </div>
+                  {artwork ? (
                     <img
-                      src="/brand/linkcredit-coin-icon.png"
-                      alt="LinkCredit"
-                      className="h-8 w-8 rounded-full object-cover drop-shadow-[0_0_12px_rgba(251,191,36,0.35)]"
+                      src={artwork}
+                      alt={`Pacote ${pkg.label} LinkCredit`}
+                      className="-mr-4 h-28 w-32 shrink-0 object-contain object-right drop-shadow-[0_18px_24px_rgba(180,83,9,0.22)]"
                       loading="lazy"
                       decoding="async"
                     />
-                  </p>
-                  <p className="mt-2 text-xl font-black text-blue-700">
-                    {pkg.currency} ${pkg.price.toFixed(2)}
-                  </p>
+                  ) : null}
                 </div>
-                {pkg.id === 'power' ? (
-                  <img
-                    src="/brand/linkcredit-power-stack.jpg"
-                    alt="Pacote Power LinkCredit"
-                    className="-mr-4 h-28 w-32 shrink-0 object-contain object-right drop-shadow-[0_18px_24px_rgba(180,83,9,0.22)]"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : null}
-              </div>
-              <button
-                type="button"
-                disabled={busyId != null}
-                onClick={() => void handleBuy(pkg.id, pkg.priceId)}
-                className="mt-5 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 text-sm font-black text-white hover:bg-black disabled:opacity-60"
-              >
-                {busyId === pkg.id ? (
-                  <Icons.Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Icons.CreditCard className="h-4 w-4" />
-                )}
-                {t('link_credits_store.buy_now')}
-              </button>
-            </article>
-          ))}
+                <button
+                  type="button"
+                  disabled={busyId != null}
+                  onClick={() => void handleBuy(pkg.id, pkg.priceId)}
+                  className="mt-5 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 text-sm font-black text-white hover:bg-black disabled:opacity-60"
+                >
+                  {busyId === pkg.id ? (
+                    <Icons.Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Icons.CreditCard className="h-4 w-4" />
+                  )}
+                  {t('link_credits_store.buy_now')}
+                </button>
+              </article>
+            );
+          })}
         </div>
       </div>
     </AppPageShell>

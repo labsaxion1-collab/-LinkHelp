@@ -31,6 +31,7 @@ import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/Helpe
 import { HelperCreditsWalletCard } from '@/components/helpers/HelperCreditsWalletCard';
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
+import { HelperCategoryDropdown } from '@/components/helper/HelperCategoryDropdown';
 import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
 import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
 import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
@@ -112,6 +113,7 @@ export default function HelperDashboard() {
   const [exitingJobIds, setExitingJobIds] = useState<Set<string>>(() => new Set());
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
+  const [categoryFilterOpen, setCategoryFilterOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<Application | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [insufficientCreditsLc, setInsufficientCreditsLc] = useState<number | null>(null);
@@ -1142,6 +1144,24 @@ export default function HelperDashboard() {
                 <span className="relative mt-2 block h-1.5 w-28 rounded-full bg-[#2563FF]" aria-hidden />
 
               </div>
+
+              <HelperCategoryDropdown
+                open={categoryFilterOpen}
+                onToggle={() => setCategoryFilterOpen((v) => !v)}
+                selectedIds={selectedCategoryFilters}
+                onToggleCategory={(categoryId) => {
+                  setSelectedCategoryFilters((current) =>
+                    current.includes(categoryId)
+                      ? current.filter((id) => id !== categoryId)
+                      : [...current, categoryId],
+                  );
+                  setActiveTab('match');
+                }}
+                onClear={() => setSelectedCategoryFilters([])}
+                t={t}
+                buttonLabel="Categorias"
+                className="mt-7"
+              />
 
               <div className="mt-6 grid gap-3">
                 <button

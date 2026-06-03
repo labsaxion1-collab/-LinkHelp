@@ -1226,39 +1226,41 @@ export default function HelperDashboard() {
             ) : null}
           </div>
 
-          {activeTab !== 'candidaturas' ? (
-            <div className="mb-5 grid grid-cols-3 gap-2 rounded-[1.35rem] bg-white p-1.5 shadow-[0_10px_28px_rgba(15,23,42,0.055)]">
+          <div className="relative mb-5 overflow-hidden rounded-[1.55rem] border border-white/45 bg-[#071D48]/92 p-1.5 shadow-[0_18px_42px_rgba(8,31,84,0.18)] backdrop-blur-xl">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(51,182,255,0.26),transparent_34%),linear-gradient(135deg,rgba(37,99,255,0.22),transparent_48%)]" />
+            <div className="relative grid grid-cols-3 gap-1.5">
               <button
                 type="button"
                 onClick={() => setActiveTab('match')}
-                className={`min-h-[44px] rounded-[1.05rem] px-2 text-[11px] font-black transition-all ${activeTab === 'match' ? 'bg-white text-[#2563FF] shadow-[0_6px_16px_rgba(37,99,255,0.12)] ring-1 ring-[#2563FF]/10' : 'text-[#0B1220]/70'}`}
+                className={`min-h-[46px] rounded-[1.15rem] px-2 text-[10px] font-black leading-tight transition-all duration-300 sm:text-[11px] ${activeTab === 'match' ? 'bg-white text-[#2563FF] shadow-[0_10px_22px_rgba(37,99,255,0.22)]' : 'text-white/78 hover:bg-white/10 hover:text-white'}`}
               >
-                {t('helper_dashboard.tab_match')}
+                <span className="mx-auto flex w-fit flex-col items-center gap-1">
+                  {t('helper_dashboard.tab_match')}
+                  <span className={`h-1 rounded-full transition-all duration-300 ${activeTab === 'match' ? 'w-5 bg-[#2563FF]' : 'w-1 bg-white/35'}`} />
+                </span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('recentes')}
-                className={`min-h-[44px] rounded-[1.05rem] px-2 text-[11px] font-black transition-all ${activeTab === 'recentes' ? 'bg-white text-[#2563FF] shadow-[0_6px_16px_rgba(37,99,255,0.12)] ring-1 ring-[#2563FF]/10' : 'text-[#0B1220]/70'}`}
+                className={`min-h-[46px] rounded-[1.15rem] px-2 text-[10px] font-black leading-tight transition-all duration-300 sm:text-[11px] ${activeTab === 'recentes' ? 'bg-white text-[#2563FF] shadow-[0_10px_22px_rgba(37,99,255,0.22)]' : 'text-white/78 hover:bg-white/10 hover:text-white'}`}
               >
-                {t('helper_dashboard.tab_recent')}
+                <span className="mx-auto flex w-fit flex-col items-center gap-1">
+                  {t('helper_dashboard.tab_recent')}
+                  <span className={`h-1 rounded-full transition-all duration-300 ${activeTab === 'recentes' ? 'w-5 bg-[#2563FF]' : 'w-1 bg-white/35'}`} />
+                </span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('candidaturas')}
-                className="min-h-[44px] rounded-[1.05rem] px-2 text-[11px] font-black text-[#0B1220]/70 transition-all"
+                className={`min-h-[46px] rounded-[1.15rem] px-2 text-[10px] font-black leading-tight transition-all duration-300 sm:text-[11px] ${activeTab === 'candidaturas' ? 'bg-white text-[#2563FF] shadow-[0_10px_22px_rgba(37,99,255,0.22)]' : 'text-white/78 hover:bg-white/10 hover:text-white'}`}
               >
-                {t('helper_dashboard.nav_applications')}
+                <span className="mx-auto flex w-fit flex-col items-center gap-1">
+                  {t('helper_dashboard.nav_applications')}
+                  <span className={`h-1 rounded-full transition-all duration-300 ${activeTab === 'candidaturas' ? 'w-5 bg-[#2563FF]' : 'w-1 bg-white/35'}`} />
+                </span>
               </button>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setActiveTab('match')}
-              className="mb-3 text-xs font-bold text-blue-700"
-            >
-              {t('helper_dashboard.back_to_feed')}
-            </button>
-          )}
+          </div>
 
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900">{activeTab === 'candidaturas' ? t('helper_dashboard.feed_title_apps') : t('helper_dashboard.feed_title_jobs')}</h2>

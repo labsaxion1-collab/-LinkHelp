@@ -1133,7 +1133,14 @@ export default function HelperDashboard() {
                 ) : null}
               </header>
 
-              <div className="relative">
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/60 px-4 py-5 shadow-[0_20px_48px_rgba(15,23,42,0.08)]">
+                <img
+                  src="/brand/helper-hero-bg.jpg"
+                  alt=""
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-65"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(249,251,255,0.94)_0%,rgba(249,251,255,0.84)_48%,rgba(249,251,255,0.48)_100%)]" />
                 <div className="pointer-events-none absolute -right-16 -top-10 h-40 w-64 rounded-full bg-white/45 blur-2xl" />
                 <div className="pointer-events-none absolute right-0 top-7 h-20 w-56 rotate-[-12deg] rounded-full bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.10),transparent)] blur-[1px]" />
                 <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF]">

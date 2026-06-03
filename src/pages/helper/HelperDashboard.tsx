@@ -796,7 +796,7 @@ export default function HelperDashboard() {
     location.pathname === ROUTES.helperOpportunities;
 
   return (
-    <AppPageShell wide className="min-w-0 overflow-x-hidden">
+    <AppPageShell wide className="min-w-0 overflow-x-visible px-0 py-6 sm:px-7 sm:py-7">
       {/* Toast Notification */}
       {toastNotification.show && (
         <div className="fixed top-20 right-4 z-[100] animate-in slide-in-from-right-8 fade-in duration-300">
@@ -1009,7 +1009,7 @@ export default function HelperDashboard() {
         </div>
       )}
 
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 w-full max-w-full px-3 sm:px-4 md:px-5 lg:px-6">
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 w-full max-w-full px-0 sm:px-4 md:px-5 lg:px-6">
         <aside className="hidden">
           <div className="sticky top-24 space-y-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
             <button onClick={() => setShowProfileModal(true)} className="flex w-full items-center gap-3 rounded-2xl p-2 text-left hover:bg-slate-50">
@@ -1110,7 +1110,7 @@ export default function HelperDashboard() {
           ) : null}
 
           {activeTab !== 'candidaturas' ? (
-            <section className="relative left-1/2 mb-8 w-screen -translate-x-1/2 overflow-hidden px-5 pb-8 pt-1 sm:px-6">
+            <section className="relative mb-8 ml-[calc(50%-50vw)] w-screen overflow-hidden px-5 pb-8 pt-1 sm:px-6">
               <img
                 src="/brand/helper-hero-bg.jpg"
                 alt=""

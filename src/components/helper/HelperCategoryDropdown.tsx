@@ -13,6 +13,7 @@ type Props = {
   t: (key: string) => string;
   className?: string;
   buttonLabel?: string;
+  inline?: boolean;
 };
 
 function CategoryIcon({ icon, className }: { icon: string; className?: string }) {
@@ -30,6 +31,7 @@ function HelperCategoryDropdownInner({
   t,
   className,
   buttonLabel,
+  inline = false,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -54,19 +56,61 @@ function HelperCategoryDropdownInner({
   }, [open, handleOutside]);
 
   useEffect(() => {
-    if (!open || !scrollRef.current) return;
+    if ((!open && !inline) || !scrollRef.current) return;
     const frame = window.requestAnimationFrame(() => {
       const el = scrollRef.current;
       if (!el) return;
       el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [open]);
+  }, [open, inline]);
 
   const categoryLabel = (id: ServiceCategoryId) => {
     if (id === 'outdoor') return t('helper_dashboard.filter_category_entregas');
     return t(`categories.${id}`);
   };
+
+  if (inline) {
+    return (
+      <section className={clsx('relative z-20 w-full', className)} aria-label={t('helper_dashboard.category_filter_open')}>
+        <div
+          ref={scrollRef}
+          className="overflow-x-auto overscroll-x-contain scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <div className="grid w-max auto-cols-[8.6rem] grid-flow-col grid-rows-2 gap-2 px-[calc(50%_-_4.3rem)]">
+            {SERVICE_CATEGORIES.map((category) => {
+              const id = category.id as ServiceCategoryId;
+              const active = selectedSet.has(id);
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => onToggleCategory(id)}
+                  className={clsx(
+                    'flex min-h-[4.9rem] flex-col items-center justify-center gap-1.5 rounded-[1.15rem] border px-2 text-center text-[11px] font-black transition-all active:scale-[0.98]',
+                    active
+                      ? 'border-blue-400 bg-blue-600 text-white shadow-[0_10px_22px_rgba(37,99,255,0.24)]'
+                      : 'border-white bg-white/88 text-slate-800 shadow-[0_12px_28px_rgba(15,23,42,0.055)] hover:border-blue-200 hover:bg-blue-50',
+                  )}
+                >
+                  <span
+                    className={clsx(
+                      'flex h-8 w-8 items-center justify-center rounded-full',
+                      active ? 'bg-white/18 text-white' : 'bg-[#EEF4FF] text-blue-600',
+                    )}
+                  >
+                    <CategoryIcon icon={category.icon} className="h-[18px] w-[18px]" />
+                  </span>
+                  <span className="line-clamp-2 leading-tight">{categoryLabel(id)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <div

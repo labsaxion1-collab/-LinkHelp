@@ -113,7 +113,6 @@ export default function HelperDashboard() {
   const [exitingJobIds, setExitingJobIds] = useState<Set<string>>(() => new Set());
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
-  const [categoryFilterOpen, setCategoryFilterOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<Application | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [insufficientCreditsLc, setInsufficientCreditsLc] = useState<number | null>(null);
@@ -1146,8 +1145,8 @@ export default function HelperDashboard() {
               </div>
 
               <HelperCategoryDropdown
-                open={categoryFilterOpen}
-                onToggle={() => setCategoryFilterOpen((v) => !v)}
+                open
+                onToggle={() => undefined}
                 selectedIds={selectedCategoryFilters}
                 onToggleCategory={(categoryId) => {
                   setSelectedCategoryFilters((current) =>
@@ -1159,8 +1158,8 @@ export default function HelperDashboard() {
                 }}
                 onClear={() => setSelectedCategoryFilters([])}
                 t={t}
-                buttonLabel="Categorias"
-                className="mt-7"
+                inline
+                className="mt-6"
               />
 
               <div className="mt-6 grid gap-3">

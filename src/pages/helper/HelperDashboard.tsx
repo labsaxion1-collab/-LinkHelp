@@ -116,6 +116,7 @@ export default function HelperDashboard() {
   const [cancelBusy, setCancelBusy] = useState(false);
   const [insufficientCreditsLc, setInsufficientCreditsLc] = useState<number | null>(null);
   const [activeInfoSlide, setActiveInfoSlide] = useState(0);
+  const [heroParallaxOffset, setHeroParallaxOffset] = useState(0);
 
   // Modals state
   const [profileSettings, setProfileSettings] = useState<HelperProfileSettings>(() => loadHelperProfileSettings());
@@ -230,6 +231,25 @@ export default function HelperDashboard() {
 
     return () => window.clearInterval(timer);
   }, [homeInfoSlides.length]);
+
+  useEffect(() => {
+    let frameId = 0;
+
+    const updateHeroParallax = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(() => {
+        setHeroParallaxOffset(Math.min(window.scrollY * 0.18, 42));
+      });
+    };
+
+    updateHeroParallax();
+    window.addEventListener('scroll', updateHeroParallax, { passive: true });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener('scroll', updateHeroParallax);
+    };
+  }, []);
 
   useEffect(() => {
     setHelperPrimaryCategory(categoryPrefs.primaryCategory);
@@ -1110,17 +1130,18 @@ export default function HelperDashboard() {
           ) : null}
 
           {activeTab !== 'candidaturas' ? (
-            <section className="relative mb-8 ml-[calc(50%-50vw)] w-screen overflow-hidden px-5 pb-8 pt-1 sm:px-6">
+            <section className="relative mb-8 ml-[calc(50%-50vw)] w-screen overflow-hidden px-5 pb-8 pt-0 sm:px-6">
               <img
                 src="/brand/helper-hero-bg.jpg"
                 alt=""
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 -top-44 h-[calc(100%+11rem)] w-full object-cover object-top opacity-95"
+                className="pointer-events-none absolute inset-x-0 -top-[19.5rem] h-[calc(100%+20rem)] w-full object-cover object-top opacity-95 transition-transform duration-200 ease-out"
+                style={{ transform: `translate3d(0, ${-heroParallaxOffset}px, 0)` }}
               />
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(249,251,255,0.30)_0%,rgba(249,251,255,0.48)_32%,rgba(249,251,255,0.78)_61%,#F7F8FC_86%)]" />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(249,251,255,0.20)_0%,rgba(249,251,255,0.38)_27%,rgba(249,251,255,0.76)_58%,#F7F8FC_82%)]" />
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(249,251,255,0.82)_0%,rgba(249,251,255,0.52)_48%,rgba(249,251,255,0.16)_100%)]" />
               <div className="pointer-events-none absolute -left-16 -top-12 h-52 w-72 rounded-full bg-white/28 blur-2xl" />
-              <header className="relative mb-7 flex min-h-[40px] items-start justify-between gap-3 pr-[9.75rem]">
+              <header className="relative mb-3 flex min-h-[40px] items-start justify-between gap-3 pr-[9.75rem]">
                 <div className="min-w-0">
                   <p className="bg-gradient-to-r from-[#0B1220] via-[#123D85] to-[#2563FF] bg-clip-text text-2xl font-black leading-none tracking-tight text-transparent">
                     Helper
@@ -1142,8 +1163,8 @@ export default function HelperDashboard() {
                 ) : null}
               </header>
 
-              <div className="relative min-h-[21.5rem] py-6">
-                <div className="pointer-events-none absolute right-0 top-7 h-20 w-56 rotate-[-12deg] rounded-full bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.10),transparent)] blur-[1px]" />
+              <div className="relative min-h-[20rem] py-2">
+                <div className="pointer-events-none absolute right-0 top-1 h-20 w-56 rotate-[-12deg] rounded-full bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.10),transparent)] blur-[1px]" />
                 <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF]">
                   <span className="text-base" aria-hidden>Olá</span>
                   {helperFirstName}
@@ -1157,7 +1178,7 @@ export default function HelperDashboard() {
                   const slide = homeInfoSlides[activeInfoSlide] ?? homeInfoSlides[0];
 
                   return (
-                    <div className="relative mt-[7.5rem] flex h-[7.2rem] max-w-md flex-col items-center justify-center overflow-hidden rounded-[1.55rem] border border-white/45 bg-[#071D48]/92 px-4 py-3 text-center text-xs font-bold text-white shadow-[0_18px_42px_rgba(8,31,84,0.18)] backdrop-blur-xl" aria-live="polite">
+                    <div className="relative mt-[7rem] flex h-[7.2rem] max-w-md flex-col items-center justify-center overflow-hidden rounded-[1.55rem] border border-white/45 bg-[#071D48]/92 px-4 py-3 text-center text-xs font-bold text-white shadow-[0_18px_42px_rgba(8,31,84,0.18)] backdrop-blur-xl" aria-live="polite">
                       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_0%,rgba(51,182,255,0.32),transparent_36%),linear-gradient(135deg,rgba(37,99,255,0.32),transparent_52%)]" />
                       <div className="pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full bg-sky-300/20 blur-2xl" />
                       <div key={slide.id} className="relative flex w-full flex-col items-center justify-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">

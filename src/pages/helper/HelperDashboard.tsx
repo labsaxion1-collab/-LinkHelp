@@ -1149,21 +1149,22 @@ export default function HelperDashboard() {
                   const slide = homeInfoSlides[activeInfoSlide] ?? homeInfoSlides[0];
 
                   return (
-                    <div className="relative mt-4 max-w-md overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/72 px-3.5 py-3 text-xs font-bold text-slate-700 shadow-[0_16px_38px_rgba(37,99,255,0.10)] backdrop-blur-md" aria-live="polite">
-                      <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-[#2563FF] via-[#33B6FF] to-[#2563FF]" />
-                      <div key={slide.id} className="flex min-h-[2.35rem] items-start gap-2.5 animate-in fade-in slide-in-from-right-2 duration-300">
-                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[#2563FF] text-white shadow-[0_10px_22px_rgba(37,99,255,0.22)]">
+                    <div className="relative mt-4 flex h-[7.2rem] max-w-md flex-col items-center justify-center overflow-hidden rounded-[1.55rem] border border-white/45 bg-[#071D48]/92 px-4 py-3 text-center text-xs font-bold text-white shadow-[0_18px_42px_rgba(8,31,84,0.18)] backdrop-blur-xl" aria-live="polite">
+                      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_0%,rgba(51,182,255,0.32),transparent_36%),linear-gradient(135deg,rgba(37,99,255,0.32),transparent_52%)]" />
+                      <div className="pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full bg-sky-300/20 blur-2xl" />
+                      <div key={slide.id} className="relative flex w-full flex-col items-center justify-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/14 text-white shadow-[0_10px_22px_rgba(37,99,255,0.22)] ring-1 ring-white/18">
                           {slide.icon}
                         </span>
-                        <span className="min-w-0 flex-1 leading-relaxed">{slide.message}</span>
+                        <span className="mx-auto line-clamp-2 max-w-[19rem] leading-relaxed text-white/95">{slide.message}</span>
                       </div>
-                      <div className="mt-2.5 flex items-center gap-1.5 pl-10" aria-hidden>
+                      <div className="relative mt-2.5 flex items-center justify-center gap-1.5" aria-hidden>
                         {homeInfoSlides.map((item, index) => (
                           <span
                             key={item.id}
                             className={clsx(
                               'h-1.5 rounded-full transition-all duration-300',
-                              index === activeInfoSlide ? 'w-5 bg-[#2563FF]' : 'w-1.5 bg-slate-300/80',
+                              index === activeInfoSlide ? 'w-5 bg-white' : 'w-1.5 bg-white/35',
                             )}
                           />
                         ))}

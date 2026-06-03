@@ -1110,7 +1110,16 @@ export default function HelperDashboard() {
           ) : null}
 
           {activeTab !== 'candidaturas' ? (
-            <section className="mb-8">
+            <section className="relative -mx-5 mb-8 overflow-hidden px-5 pb-8 pt-1 sm:-mx-6 sm:px-6">
+              <img
+                src="/brand/helper-hero-bg.jpg"
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover object-center opacity-95"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(249,251,255,0.36)_0%,rgba(249,251,255,0.50)_40%,rgba(249,251,255,0.74)_72%,#F7F8FC_100%)]" />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(249,251,255,0.82)_0%,rgba(249,251,255,0.52)_48%,rgba(249,251,255,0.16)_100%)]" />
+              <div className="pointer-events-none absolute -left-16 -top-12 h-52 w-72 rounded-full bg-white/28 blur-2xl" />
               <header className="relative mb-7 flex min-h-[40px] items-start justify-between gap-3 pr-[9.75rem]">
                 <div className="min-w-0">
                   <p className="bg-gradient-to-r from-[#0B1220] via-[#123D85] to-[#2563FF] bg-clip-text text-2xl font-black leading-none tracking-tight text-transparent">
@@ -1133,16 +1142,7 @@ export default function HelperDashboard() {
                 ) : null}
               </header>
 
-              <div className="relative -mx-5 min-h-[21rem] overflow-hidden px-5 py-6 sm:-mx-6 sm:px-6">
-                <img
-                  src="/brand/helper-hero-bg.jpg"
-                  alt=""
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-90"
-                />
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(249,251,255,0.78)_0%,rgba(249,251,255,0.58)_48%,rgba(249,251,255,0.16)_100%)]" />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#F7F8FC] to-transparent" />
-                <div className="pointer-events-none absolute -left-16 -top-12 h-48 w-72 rounded-full bg-white/30 blur-2xl" />
+              <div className="relative min-h-[18.5rem] py-6">
                 <div className="pointer-events-none absolute right-0 top-7 h-20 w-56 rotate-[-12deg] rounded-full bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.10),transparent)] blur-[1px]" />
                 <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF]">
                   <span className="text-base" aria-hidden>Olá</span>
@@ -1182,7 +1182,7 @@ export default function HelperDashboard() {
                 })() : null}
               </div>
 
-              <div className="mt-7 mb-3 flex items-center justify-between">
+              <div className="relative mt-7 mb-3 flex items-center justify-between">
                 <h2 className="text-base font-black tracking-tight text-[#0B1220]">Categorias</h2>
                 {selectedCategoryFilters.length ? (
                   <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black text-[#2563FF]">
@@ -1206,7 +1206,7 @@ export default function HelperDashboard() {
                 onClear={() => setSelectedCategoryFilters([])}
                 t={t}
                 inline
-                className="mt-0"
+                className="relative mt-0"
               />
             </section>
           ) : null}

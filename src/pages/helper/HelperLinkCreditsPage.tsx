@@ -58,19 +58,19 @@ function packageArtwork(packageId: string): string | null {
 
 function packageArtworkClass(packageId: string): string {
   const base =
-    'w-full object-contain object-center drop-shadow-[0_18px_22px_rgba(180,83,9,0.24)] transition duration-500 group-hover:-translate-y-1';
+    'h-24 w-full object-contain object-center drop-shadow-[0_14px_18px_rgba(180,83,9,0.22)] transition duration-500 group-hover:-translate-y-0.5';
 
   switch (packageId) {
     case 'starter':
-      return `${base} h-16 group-hover:scale-[1.04] sm:h-24`;
+      return `${base} scale-[0.82] group-hover:scale-[0.86]`;
     case 'popular':
-      return `${base} h-40 scale-[1.42] group-hover:scale-[1.48] sm:h-52`;
+      return `${base} scale-[1.16] group-hover:scale-[1.20]`;
     case 'pro':
-      return `${base} h-32 scale-[1.22] group-hover:scale-[1.28] sm:h-44`;
+      return `${base} scale-[1.08] group-hover:scale-[1.12]`;
     case 'power':
-      return `${base} h-28 scale-[1.18] group-hover:scale-[1.24] sm:h-40`;
+      return `${base} scale-[1.08] group-hover:scale-[1.12]`;
     default:
-      return `${base} h-24 group-hover:scale-[1.04] sm:h-36`;
+      return `${base} group-hover:scale-[1.04]`;
   }
 }
 
@@ -165,37 +165,34 @@ export default function HelperLinkCreditsPage() {
             return (
               <article
                 key={pkg.id}
-                className="group relative min-h-[13rem] overflow-hidden rounded-[1.35rem] border border-white/85 bg-white/88 p-5 shadow-[0_14px_38px_rgba(92,67,16,0.10)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(92,67,16,0.15)] sm:min-h-[14rem] sm:p-6"
+                className="group relative overflow-hidden rounded-[1.35rem] border border-white/85 bg-white/88 px-4 py-4 shadow-[0_14px_38px_rgba(92,67,16,0.10)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(92,67,16,0.15)] sm:px-5 sm:py-5"
               >
                 <div className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${packageAccent(pkg.id)} opacity-80`} />
                 <div className="pointer-events-none absolute right-[22%] top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-amber-300/10 blur-2xl transition group-hover:bg-amber-300/20" />
-                {pkg.badge ? (
-                  <span className="absolute left-5 top-5 z-10 translate-x-[5.5rem] rounded-full bg-[#2563FF] px-2.5 py-1 text-[9px] font-black uppercase tracking-wide text-white shadow-[0_7px_16px_rgba(37,99,255,0.22)] sm:left-6 sm:translate-x-[6.5rem] sm:text-[10px]">
-                    {pkg.badge}
-                  </span>
-                ) : null}
 
-                <div className="relative grid min-h-[10.5rem] grid-cols-[minmax(0,0.88fr)_minmax(5.5rem,0.8fr)_minmax(0,1fr)] items-center gap-2.5 sm:min-h-[11rem] sm:grid-cols-[minmax(0,1fr)_minmax(8rem,0.85fr)_minmax(0,1fr)] sm:gap-6">
-                  <div className="min-w-0 self-stretch">
+                <div className="relative grid grid-cols-[minmax(0,0.9fr)_minmax(5.8rem,0.82fr)_minmax(0,1fr)] items-center gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(8rem,0.9fr)_minmax(0,1fr)] sm:gap-5">
+                  <div className="flex min-w-0 flex-col justify-center">
                     <h2 className={`text-lg font-black sm:text-xl ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
-                    <p className="mt-4 whitespace-nowrap bg-gradient-to-b from-[#FFE36A] via-[#F3B51B] to-[#C98508] bg-clip-text text-5xl font-black leading-[0.86] tracking-tight text-transparent drop-shadow-[0_0_16px_rgba(217,169,40,0.28)] sm:text-7xl">
+                    <p className="mt-2 whitespace-nowrap bg-gradient-to-b from-[#FFE36A] via-[#F3B51B] to-[#C98508] bg-clip-text text-[2.65rem] font-black leading-none tracking-tight text-transparent drop-shadow-[0_0_16px_rgba(217,169,40,0.28)] sm:text-6xl">
                       {pkg.credits}
                     </p>
-                    <p className="mt-2 text-xs font-black text-black sm:text-base">LinkCredits</p>
+                    <p className="mt-1.5 whitespace-nowrap text-[11px] font-black text-black sm:text-sm">LinkCredits</p>
                   </div>
 
-                  {artwork ? (
-                    <img
-                      src={artwork}
-                      alt={`Pacote ${pkg.label} LinkCredit`}
-                      className={packageArtworkClass(pkg.id)}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : null}
+                  <div className="flex h-24 min-w-0 items-center justify-center">
+                    {artwork ? (
+                      <img
+                        src={artwork}
+                        alt={`Pacote ${pkg.label} LinkCredit`}
+                        className={packageArtworkClass(pkg.id)}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : null}
+                  </div>
 
                   <div className="min-w-0 border-l border-slate-200/80 pl-3 sm:pl-6">
-                    <p className="break-words text-base font-black leading-tight text-[#245BFF] sm:text-2xl">
+                    <p className="break-words text-[15px] font-black leading-tight text-[#245BFF] sm:text-xl">
                       {pkg.currency} ${pkg.price.toFixed(2)}
                     </p>
                     <button

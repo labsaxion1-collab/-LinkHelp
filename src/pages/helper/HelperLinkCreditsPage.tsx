@@ -44,7 +44,7 @@ function packageTitleClass(packageId: string): string {
 function packageArtwork(packageId: string): string | null {
   switch (packageId) {
     case 'starter':
-      return '/brand/linkcredit-starter-stack.jpg';
+      return '/brand/linkcredit-coin-icon.png';
     case 'popular':
       return '/brand/linkcredit-popular-stack.jpg';
     case 'pro':
@@ -140,7 +140,7 @@ export default function HelperLinkCreditsPage() {
           <p>{t('link_credits_store.interest_cost_hint')}</p>
         </div>
 
-        <div className="grid gap-5">
+        <div className="mx-auto grid max-w-3xl gap-5">
           {LINK_CREDIT_PACKAGES.map((pkg) => {
             const artwork = packageArtwork(pkg.id);
 
@@ -160,7 +160,7 @@ export default function HelperLinkCreditsPage() {
                 <div className="relative grid min-h-[10.5rem] grid-cols-[minmax(0,0.88fr)_minmax(5.5rem,0.8fr)_minmax(0,1fr)] items-center gap-2.5 sm:min-h-[11rem] sm:grid-cols-[minmax(0,1fr)_minmax(8rem,0.85fr)_minmax(0,1fr)] sm:gap-6">
                   <div className="min-w-0 self-stretch">
                     <h2 className={`text-lg font-black sm:text-xl ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
-                    <p className="mt-4 bg-gradient-to-b from-[#FFE36A] via-[#F3B51B] to-[#C98508] bg-clip-text text-5xl font-black leading-[0.86] tracking-tight text-transparent drop-shadow-[0_0_16px_rgba(217,169,40,0.28)] sm:text-7xl">
+                    <p className="mt-4 whitespace-nowrap bg-gradient-to-b from-[#FFE36A] via-[#F3B51B] to-[#C98508] bg-clip-text text-5xl font-black leading-[0.86] tracking-tight text-transparent drop-shadow-[0_0_16px_rgba(217,169,40,0.28)] sm:text-7xl">
                       {pkg.credits}
                     </p>
                     <p className="mt-2 text-xs font-black text-black sm:text-base">LinkCredits</p>
@@ -200,7 +200,7 @@ export default function HelperLinkCreditsPage() {
           })}
         </div>
 
-        <section className="mt-7 grid grid-cols-3 divide-x divide-slate-100 rounded-[1.75rem] border border-black/[0.04] bg-white px-2 py-6 shadow-[0_12px_34px_rgba(15,23,42,0.05)] sm:px-5">
+        <section className="mx-auto mt-7 grid max-w-3xl grid-cols-3 divide-x divide-slate-100 rounded-[1.75rem] border border-black/[0.04] bg-white px-2 py-6 shadow-[0_12px_34px_rgba(15,23,42,0.05)] sm:px-5">
           {[
             { label: 'Seguro e confiável', icon: Icons.ShieldCheck },
             { label: 'Transações rápidas', icon: Icons.Zap },

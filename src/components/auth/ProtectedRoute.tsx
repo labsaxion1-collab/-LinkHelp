@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { PageLoader } from '@/components/common/PageLoader';
 import { useAuth } from '@/context/AuthContext';
-import { authFlowLog } from '@/lib/authDebug';
+import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
 import { ROUTES } from '@/utils/constants';
 import { isAuthCallbackPath } from '@/utils/authStorage';
 
@@ -98,6 +98,14 @@ export function ProtectedRoute() {
   }
 
   if (!profile) {
+    roleRoutingLog('ProtectedRoute:profile_missing', {
+      userId: session.user.id,
+      email: session.user.email ?? null,
+      role_from_profile: null,
+      role_from_auth: roleFromAuthMetadata(session.user),
+      redirect_destination: null,
+      path: location.pathname,
+    });
     authFlowLog('ProtectedRoute blocked — profile missing', {
       path: location.pathname,
       userId: session.user.id,

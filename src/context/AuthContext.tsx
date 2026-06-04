@@ -10,10 +10,10 @@ import {
   isOAuthCallbackActive,
   isPublicAuthPath,
   markOAuthCallbackActive,
-  navigateToOAuthProvider,
+  markOAuthRedirectPending,
   readStoredRefreshToken,
 } from '@/utils/authStorage';
-import { authDevLog, authFlowLog } from '@/lib/authDebug';
+import { authDevLog, authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
 import type { Database } from '@/types/supabase.database';
 import type { ProfileRow, UserType } from '@/types/database';
 import type { AuthFlowError } from '@/types/authFlowError';
@@ -359,6 +359,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               role: p.role,
               email: p.email ?? undefined,
             });
+            roleRoutingLog('AuthContext:profile_loaded', {
+              userId: targetId,
+              email: p.email ?? next.user.email ?? null,
+              role_from_profile: p.role,
+              role_from_auth: roleFromAuthMetadata(next.user),
+            });
           }
         } finally {
           if (!cancelled && profileSyncTargetRef.current === targetId) {
@@ -590,6 +596,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     markOAuthCallbackActive();
+    markOAuthRedirectPending();
     const redirectTo = getOAuthRedirectToUrl();
     authFlowLog('OAuth redirectTo', {
       redirectTo,
@@ -599,24 +606,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('[Google OAuth] Before signInWithOAuth', { redirectTo });
 
     try {
-      const oauthCall = sb.auth.signInWithOAuth({
+      const { data, error } = await sb.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo,
-          queryParams: { prompt: 'select_account' },
-          skipBrowserRedirect: true,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
         },
       });
 
-      const OAUTH_TIMEOUT_MS = 12_000;
-      const result = await Promise.race([
-        oauthCall,
-        new Promise<never>((_, reject) => {
-          window.setTimeout(() => reject(new Error('OAUTH_TIMEOUT')), OAUTH_TIMEOUT_MS);
-        }),
-      ]);
-
-      const { data, error } = result;
       const status = error && 'status' in error ? (error as { status?: number }).status : undefined;
 
       console.log('[Google OAuth] Response:', data);
@@ -641,7 +641,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      if (!data?.url) {
+      if (data?.url) {
+        authFlowLog('signInWithOAuth:redirecting', {
+          urlHost: (() => {
+            try {
+              return new URL(data.url).host;
+            } catch {
+              return '(invalid url)';
+            }
+          })(),
+        });
+      } else {
         clearOAuthCallbackActive();
         clearOAuthRedirectPending();
         authFlowLog('signInWithOAuth:missing_url', {});
@@ -652,19 +662,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      authFlowLog('signInWithOAuth:redirecting', {
-        urlHost: (() => {
-          try {
-            return new URL(data.url).host;
-          } catch {
-            return '(invalid url)';
-          }
-        })(),
-      });
-
-      navigateToOAuthProvider(data.url);
-      // Block caller finally-blocks (React state) from racing this hard navigation.
-      await new Promise<never>(() => {});
+      // Supabase performs window navigation when skipBrowserRedirect is false (default).
       return null;
     } catch (e) {
       clearOAuthCallbackActive();

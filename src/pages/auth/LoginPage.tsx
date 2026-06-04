@@ -20,7 +20,7 @@ import {
 import { getSupabase } from '@/lib/supabase';
 import { resolvePostLoginPath, resolveEffectiveRole } from '@/utils/userRole';
 import { writeStoredAppMode } from '@/utils/appModeStorage';
-import { authFlowLog } from '@/lib/authDebug';
+import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -60,9 +60,18 @@ export default function LoginPage() {
   }, [location.state, location.pathname, navigate, from, t]);
 
   const goAfterLogin = (userId?: string, profileOverride?: typeof profile) => {
-    const role = resolveEffectiveRole(profileOverride ?? profile, session?.user);
+    const p = profileOverride ?? profile;
+    const role = resolveEffectiveRole(p, session?.user);
     writeStoredAppMode(role, userId ?? session?.user?.id);
     const dest = resolvePostLoginPath(role, from);
+    roleRoutingLog('LoginPage:redirect', {
+      userId: userId ?? session?.user?.id ?? null,
+      email: session?.user?.email ?? p?.email ?? null,
+      role_from_profile: p?.role ?? null,
+      role_from_auth: roleFromAuthMetadata(session?.user),
+      redirect_destination: dest,
+      from_path: from ?? null,
+    });
     authFlowLog('Login redirect', {
       userId: userId ?? session?.user?.id,
       role,
@@ -125,6 +134,8 @@ export default function LoginPage() {
         setError(msg);
         showToast(err.devRaw ? `${msg} (${err.devRaw})` : msg, 'error');
         if (err.devRaw) console.info('[LinkHelp] Google OAuth raw:', err.devRaw);
+        setGoogleLoading(false);
+        return;
       }
     } finally {
       window.clearTimeout(loadingGuard);

@@ -157,6 +157,8 @@ export default function RegisterPage() {
         setError(msg);
         showToast(err.devRaw ? `${msg} (${err.devRaw})` : msg, 'error');
         if (err.devRaw) console.info('[LinkHelp] Google OAuth raw:', err.devRaw);
+        setGoogleLoading(false);
+        return;
       }
     } finally {
       window.clearTimeout(loadingGuard);

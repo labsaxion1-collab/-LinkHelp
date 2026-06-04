@@ -1,3 +1,4 @@
+import { roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
 import { ROUTES } from '@/utils/constants';
 import { isClientArea, isHelperArea } from '@/utils/navigation';
 import type { ProfileRole } from '@/types/database';
@@ -10,18 +11,32 @@ export function normalizeProfileRole(raw: unknown): ProfileRole {
   return 'client';
 }
 
-/** Resolve the active workspace mode — stored preference wins, then profile, then metadata, default client. */
+/** Resolve workspace role — profile row wins when present; stored mode only before profile loads. */
 export function resolveEffectiveRole(
   profile: { role?: unknown } | null | undefined,
   user?: User | null,
   storedMode?: AppMode | null,
 ): ProfileRole {
-  if (storedMode === 'client' || storedMode === 'helper') return storedMode;
+  const roleFromAuth = roleFromAuthMetadata(user);
+
   if (profile?.role === 'helper' || profile?.role === 'client') {
-    return normalizeProfileRole(profile.role);
+    const profileRole = normalizeProfileRole(profile.role);
+    if (storedMode && storedMode !== profileRole) {
+      roleRoutingLog('resolveEffectiveRole:stored_mode_overridden_by_profile', {
+        userId: user?.id ?? null,
+        email: user?.email ?? null,
+        role_from_profile: profile.role,
+        role_from_auth: roleFromAuth,
+        stored_mode: storedMode,
+        effective_role: profileRole,
+      });
+    }
+    return profileRole;
   }
-  const metaType = user?.user_metadata?.user_type;
-  if (metaType === 'helper' || metaType === 'client') return normalizeProfileRole(metaType);
+
+  if (storedMode === 'client' || storedMode === 'helper') return storedMode;
+
+  if (roleFromAuth === 'helper' || roleFromAuth === 'client') return normalizeProfileRole(roleFromAuth);
   return 'client';
 }
 

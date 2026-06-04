@@ -4,7 +4,7 @@ import { PageLoader } from '@/components/common/PageLoader';
 import { OAuthRolePicker } from '@/components/auth/OAuthRolePicker';
 import { useAuth } from '@/context/AuthContext';
 import { ROUTES } from '@/utils/constants';
-import { authFlowLog } from '@/lib/authDebug';
+import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
 import { getSupabase } from '@/lib/supabase';
 import { userNeedsOAuthRoleSelection } from '@/utils/parseOAuthCallbackError';
 import { confirmInitialProfileRole } from '@/services/supabase/profileRoleRemote';
@@ -41,6 +41,13 @@ export default function DashboardEntryPage() {
     const role = normalizeProfileRole(profile.role);
     writeStoredAppMode(role, session.user.id);
     const dest = dashboardPathForRole(role);
+    roleRoutingLog('DashboardEntry:redirect', {
+      userId: session.user.id,
+      email: session.user.email ?? profile.email ?? null,
+      role_from_profile: profile.role,
+      role_from_auth: roleFromAuthMetadata(session.user),
+      redirect_destination: dest,
+    });
     authFlowLog('Redirecting to dashboard', { path: dest, role, profileRole: profile.role });
     navigate(dest, { replace: true });
   }, [isConfigured, authBootstrapped, session, profile, navigate, needsRole]);

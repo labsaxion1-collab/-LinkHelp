@@ -1,8 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { PageLoader } from '@/components/common/PageLoader';
 import { useAuth } from '@/context/AuthContext';
-import { useAppMode } from '@/context/AppModeContext';
-import { authFlowLog } from '@/lib/authDebug';
+import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
 import { ROUTES } from '@/utils/constants';
 import { isOAuthRedirectPending } from '@/utils/authStorage';
 import { dashboardPathForRole, normalizeProfileRole } from '@/utils/userRole';
@@ -10,7 +9,6 @@ import { dashboardPathForRole, normalizeProfileRole } from '@/utils/userRole';
 /** Keep authenticated users inside the app when browser back reaches public auth/landing routes. */
 export function PublicOnlyRoute() {
   const { session, profile, authBootstrapped, authLoading, isConfigured } = useAuth();
-  const { mode } = useAppMode();
 
   if (isConfigured && (!authBootstrapped || authLoading)) {
     return <PageLoader />;
@@ -19,11 +17,17 @@ export function PublicOnlyRoute() {
   if (isConfigured && session?.user && !isOAuthRedirectPending()) {
     if (profile) {
       const role = normalizeProfileRole(profile.role);
-      const dest = dashboardPathForRole(mode ?? role);
+      const dest = dashboardPathForRole(role);
+      roleRoutingLog('PublicOnlyRoute:redirect', {
+        userId: session.user.id,
+        email: session.user.email ?? profile.email ?? null,
+        role_from_profile: profile.role,
+        role_from_auth: roleFromAuthMetadata(session.user),
+        redirect_destination: dest,
+      });
       authFlowLog('PublicOnlyRoute redirect — user already authenticated', {
         userId: session.user.id,
         profileRole: role,
-        activeMode: mode,
         redirectTo: dest,
       });
       return <Navigate to={dest} replace />;

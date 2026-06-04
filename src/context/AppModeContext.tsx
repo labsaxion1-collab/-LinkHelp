@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { authFlowLog } from '@/lib/authDebug';
+import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
 import {
   type AppMode,
   modeSwitchLog,
@@ -44,6 +44,22 @@ export function AppModeProvider({ children }: { children: React.ReactNode }) {
 
     const pathMode = pathImpliesAppMode(location.pathname);
     if (pathMode) {
+      if (profile && profileRole !== pathMode) {
+        roleRoutingLog('AppModeContext:route_profile_mismatch', {
+          userId,
+          email: user?.email ?? session?.user?.email ?? null,
+          role_from_profile: profile.role,
+          role_from_auth: roleFromAuthMetadata(user ?? session?.user),
+          path_mode: pathMode,
+          profile_role: profileRole,
+          redirect_destination: dashboardPathForRole(profileRole),
+          path: location.pathname,
+        });
+        setModeState(profileRole);
+        writeStoredAppMode(profileRole, userId);
+        return;
+      }
+
       setModeState((prev) => {
         if (prev !== pathMode) {
           authFlowLog('App mode synced from route', {
@@ -51,6 +67,14 @@ export function AppModeProvider({ children }: { children: React.ReactNode }) {
             path: location.pathname,
             mode: pathMode,
             profileRole,
+          });
+          roleRoutingLog('AppModeContext:synced_from_route', {
+            userId,
+            email: user?.email ?? session?.user?.email ?? null,
+            role_from_profile: profile?.role ?? null,
+            role_from_auth: roleFromAuthMetadata(user ?? session?.user),
+            path_mode: pathMode,
+            path: location.pathname,
           });
         }
         return pathMode;
@@ -70,10 +94,19 @@ export function AppModeProvider({ children }: { children: React.ReactNode }) {
           stored,
           profileRole,
         });
+        roleRoutingLog('AppModeContext:resolved_effective', {
+          userId,
+          email: user?.email ?? session?.user?.email ?? null,
+          role_from_profile: profile?.role ?? null,
+          role_from_auth: roleFromAuthMetadata(user ?? session?.user),
+          stored_mode: stored,
+          effective_role: effective,
+          previous_mode: prev,
+        });
       }
       return effective;
     });
-    if (!stored) writeStoredAppMode(effective, userId);
+    if (!stored || stored !== effective) writeStoredAppMode(effective, userId);
   }, [userId, profile?.role, location.pathname, profile, user, session?.user, profileRole]);
 
   const setMode = useCallback(

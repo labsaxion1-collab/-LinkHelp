@@ -46,7 +46,7 @@ function packageArtwork(packageId: string): string | null {
     case 'starter':
       return '/brand/linkcredit-coin-icon.png';
     case 'popular':
-      return '/brand/linkcredit-popular-stack.jpg';
+      return '/brand/linkcredit-popular-stack.png';
     case 'pro':
       return '/brand/linkcredit-pro-stack.jpg';
     case 'power':

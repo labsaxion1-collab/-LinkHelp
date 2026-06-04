@@ -26,6 +26,27 @@ export type AuthError = AuthFlowError;
 
 type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 
+const AUTH_BOOTSTRAP_TIMEOUT_MS = 10_000;
+
+function withAuthBootstrapTimeout<T>(promise: Promise<T>, operation: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error(`${operation} timed out after ${AUTH_BOOTSTRAP_TIMEOUT_MS}ms`));
+    }, AUTH_BOOTSTRAP_TIMEOUT_MS);
+
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        window.clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
@@ -432,7 +453,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     void (async () => {
       try {
-        await sb.auth.initialize();
+        await withAuthBootstrapTimeout(sb.auth.initialize(), 'auth.initialize');
       } catch (e) {
         authFlowLog('auth.initialize warning', {
           message: e instanceof Error ? e.message : String(e),
@@ -440,7 +461,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       if (cancelled) return;
 
-      const { data, error } = await sb.auth.getSession();
+      let sessionResult: Awaited<ReturnType<typeof sb.auth.getSession>>;
+      try {
+        sessionResult = await withAuthBootstrapTimeout(sb.auth.getSession(), 'auth.getSession');
+      } catch (e) {
+        authFlowLog('getSession:initial warning', {
+          message: e instanceof Error ? e.message : String(e),
+        });
+        if (!cancelled) {
+          syncSession(null);
+          setAuthBootstrapped(true);
+        }
+        return;
+      }
+
+      const { data, error } = sessionResult;
       authFlowLog('getSession:initial', {
         hasSession: !!data.session,
         userId: data.session?.user?.id,
@@ -471,15 +506,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const refreshToken = readStoredRefreshToken();
           if (refreshToken) {
             authFlowLog('bootstrap: trying refreshSession with stored refresh_token', {});
-            const { data: refData, error: refErr } = await sb.auth.refreshSession();
-            authFlowLog('bootstrap: refreshSession result', {
-              hasSession: !!refData.session,
-              err: refErr?.message,
-            });
-            if (refErr) {
+            try {
+              const { data: refData, error: refErr } = await withAuthBootstrapTimeout(
+                sb.auth.refreshSession(),
+                'auth.refreshSession',
+              );
+              authFlowLog('bootstrap: refreshSession result', {
+                hasSession: !!refData.session,
+                err: refErr?.message,
+              });
+              if (refErr) {
+                clearLinkHelpAuthStorage();
+              } else {
+                effectiveSession = refData.session ?? null;
+              }
+            } catch (e) {
+              authFlowLog('bootstrap: refreshSession warning', {
+                message: e instanceof Error ? e.message : String(e),
+              });
               clearLinkHelpAuthStorage();
-            } else {
-              effectiveSession = refData.session ?? null;
             }
           }
         }

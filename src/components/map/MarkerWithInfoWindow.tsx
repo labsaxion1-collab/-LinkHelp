@@ -1,20 +1,29 @@
 import React, { memo, useEffect, useState } from 'react';
 import { clsx } from 'clsx';
-import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps';
+import {
+  AdvancedMarker,
+  InfoWindow,
+  Marker,
+  useAdvancedMarkerRef,
+  useMarkerRef,
+} from '@vis.gl/react-google-maps';
+import type { MapMarkerMode } from '@/hooks/useMapMarkerMode';
+import { circleMarkerIcon, sanitizeMapPosition } from '@/utils/mapMarkerIcons';
+import { MapMarkerCrashBoundary } from '@/components/map/MapMarkerCrashBoundary';
 
 type Props = {
   key?: string;
   position: google.maps.LatLngLiteral;
   title: string;
-  /** Pin content (avatar, icon, etc.) */
-  marker: React.ReactNode;
-  /** Info window body — omit for title-only */
+  /** Pin content (avatar, icon, etc.) — advanced mode only */
+  marker?: React.ReactNode;
   children?: React.ReactNode;
-  /** Controlled open state (e.g. “Ver no mapa”) */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** Highlight pin when focused from sidebar */
   highlighted?: boolean;
+  mode?: MapMarkerMode;
+  /** Classic marker dot color when `mode` is classic */
+  classicColor?: string;
 };
 
 function MarkerWithInfoWindowInner({
@@ -25,8 +34,43 @@ function MarkerWithInfoWindowInner({
   open: openControlled,
   onOpenChange,
   highlighted = false,
+  mode = 'advanced',
+  classicColor = '#2563eb',
 }: Props) {
-  const [markerRef, markerInstance] = useAdvancedMarkerRef();
+  const safePosition = sanitizeMapPosition(position);
+  if (!safePosition) return null;
+
+  return (
+    <MapMarkerCrashBoundary fallback={null}>
+      <MarkerWithInfoWindowBody
+        position={safePosition}
+        title={title}
+        marker={marker}
+        open={openControlled}
+        onOpenChange={onOpenChange}
+        highlighted={highlighted}
+        mode={mode}
+        classicColor={classicColor}
+      >
+        {children}
+      </MarkerWithInfoWindowBody>
+    </MapMarkerCrashBoundary>
+  );
+}
+
+function MarkerWithInfoWindowBody({
+  position,
+  title,
+  marker,
+  children,
+  open: openControlled,
+  onOpenChange,
+  highlighted,
+  mode,
+  classicColor,
+}: Props & { position: google.maps.LatLngLiteral }) {
+  const [advancedRef, advancedInstance] = useAdvancedMarkerRef();
+  const [classicRef, classicInstance] = useMarkerRef();
   const [openInternal, setOpenInternal] = useState(false);
   const isControlled = openControlled !== undefined;
   const isOpen = isControlled ? openControlled : openInternal;
@@ -41,9 +85,33 @@ function MarkerWithInfoWindowInner({
     if (openControlled === false) setOpenInternal(false);
   }, [openControlled]);
 
+  const anchor = mode === 'advanced' ? advancedInstance : classicInstance;
+
+  if (mode === 'classic') {
+    return (
+      <>
+        <Marker
+          ref={classicRef}
+          position={position}
+          title={title}
+          icon={circleMarkerIcon(highlighted ? '#1d4ed8' : classicColor, highlighted ? 32 : 28)}
+          zIndex={highlighted ? 200 : 100}
+          onClick={() => setOpen(true)}
+        />
+        {isOpen && anchor ? (
+          <InfoWindow anchor={anchor} onCloseClick={() => setOpen(false)} maxWidth={300}>
+            <div className="p-1">
+              {children ? children : <div className="font-bold text-gray-900 text-sm">{title}</div>}
+            </div>
+          </InfoWindow>
+        ) : null}
+      </>
+    );
+  }
+
   return (
     <>
-      <AdvancedMarker ref={markerRef} position={position} onClick={() => setOpen(true)} title={title}>
+      <AdvancedMarker ref={advancedRef} position={position} onClick={() => setOpen(true)} title={title}>
         <div
           className={clsx(
             'relative flex items-center justify-center transition-transform',
@@ -59,17 +127,13 @@ function MarkerWithInfoWindowInner({
           </div>
         </div>
       </AdvancedMarker>
-      {isOpen && (
-        <InfoWindow anchor={markerInstance} onCloseClick={() => setOpen(false)} maxWidth={300}>
+      {isOpen && anchor ? (
+        <InfoWindow anchor={anchor} onCloseClick={() => setOpen(false)} maxWidth={300}>
           <div className="p-1">
-            {children ? (
-              children
-            ) : (
-              <div className="font-bold text-gray-900 text-sm">{title}</div>
-            )}
+            {children ? children : <div className="font-bold text-gray-900 text-sm">{title}</div>}
           </div>
         </InfoWindow>
-      )}
+      ) : null}
     </>
   );
 }

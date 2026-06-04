@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
+import { APIProvider } from '@vis.gl/react-google-maps';
 import { useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
@@ -20,10 +20,7 @@ import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import type { Job } from '@/types/job';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
-import { MapCameraFocus } from '@/components/map/MapCameraFocus';
-import { MarkerWithInfoWindow } from '@/components/map/MarkerWithInfoWindow';
-import { ClientJobMapPin } from '@/components/map/ClientJobMapPin';
-import { JobMapOpportunityCard } from '@/components/map/JobMapOpportunityCard';
+import { HelperMapCanvas } from '@/components/map/HelperMapCanvas';
 
 type JobMapPoint = {
   id: string;
@@ -159,52 +156,16 @@ export default function HelperLiveMapPage() {
       <section className="relative flex-1 min-h-0 min-w-0">
         {mapsReady ? (
           <APIProvider apiKey={mapsApiKey} version="weekly" libraries={['marker']}>
-            <Map
-              defaultCenter={center}
-              defaultZoom={13}
-              mapId="LIVE_RADAR_MAP_ID"
-              gestureHandling="greedy"
-              internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
-              style={{ width: '100%', height: '100%' }}
-              disableDefaultUI
-            >
-              <MapCameraFocus position={cameraFocus?.position ?? null} zoom={cameraFocus?.zoom} />
-              <AdvancedMarker position={center}>
-                <div className="relative flex justify-center items-center">
-                  <div className="absolute inset-0 rounded-full border-4 border-blue-500 animate-ping opacity-50 z-0" />
-                  <div className="w-5 h-5 bg-blue-600 rounded-full border-2 border-white shadow-lg z-10 relative" />
-                </div>
-              </AdvancedMarker>
-
-              {mapMarkerPoints.map((point) => (
-                <MarkerWithInfoWindow
-                  key={point.id}
-                  position={point.position}
-                  title={point.data.clientName}
-                  open={focusedMarkerId === point.id}
-                  highlighted={focusedMarkerId === point.id}
-                  onOpenChange={(open) => {
-                    if (open) setFocusedMarkerId(point.id);
-                    else if (focusedMarkerId === point.id) setFocusedMarkerId(null);
-                  }}
-                  marker={
-                    <ClientJobMapPin
-                      clientName={point.data.clientName}
-                      clientAvatar={point.data.clientAvatar}
-                      urgent={point.urgency}
-                    />
-                  }
-                >
-                  <JobMapOpportunityCard
-                    job={point.data}
-                    distanceKm={point.dist}
-                    applicationsCount={applicationCountByJobId.get(point.data.id) ?? 0}
-                    t={t}
-                    onViewOpportunity={() => openOpportunity(point.data.id)}
-                  />
-                </MarkerWithInfoWindow>
-              ))}
-            </Map>
+            <HelperMapCanvas
+              center={center}
+              mapMarkerPoints={mapMarkerPoints}
+              cameraFocus={cameraFocus}
+              focusedMarkerId={focusedMarkerId}
+              onFocusMarker={setFocusedMarkerId}
+              applicationCountByJobId={applicationCountByJobId}
+              onViewOpportunity={openOpportunity}
+              t={t}
+            />
           </APIProvider>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 p-8 text-center">
@@ -234,6 +195,14 @@ export default function HelperLiveMapPage() {
           </div>
           <div className="pointer-events-auto max-w-full">{filterChips}</div>
         </div>
+
+        {mapsReady && mapMarkerPoints.length === 0 ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-[max(5rem,env(safe-area-inset-bottom))] z-10 flex justify-center px-4">
+            <p className="rounded-xl border border-slate-200/90 bg-white/90 px-4 py-2.5 text-center text-xs font-semibold text-slate-600 shadow-md backdrop-blur-sm">
+              {t('live_map.empty_no_results')}
+            </p>
+          </div>
+        ) : null}
 
         {focusedPoint ? (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">

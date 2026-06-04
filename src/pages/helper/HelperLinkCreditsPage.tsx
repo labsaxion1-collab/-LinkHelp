@@ -98,7 +98,8 @@ export default function HelperLinkCreditsPage() {
   };
 
   return (
-    <AppPageShell wide className="relative min-w-0 overflow-x-hidden bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.98),rgba(245,247,251,0.88)_38%,#F5F7FB_78%)] px-5 pb-28 pt-5 md:px-7 md:pb-10">
+    <AppPageShell wide className="relative min-w-0 overflow-x-hidden bg-[#F8F5EE] bg-[url('/brand/linkcredits-store-background.jpg')] bg-cover bg-fixed bg-center px-5 pb-28 pt-5 md:px-7 md:pb-10">
+      <div className="pointer-events-none absolute inset-0 bg-white/58 backdrop-blur-[1px]" />
       <div className="pointer-events-none absolute -left-24 top-36 h-64 w-64 rounded-full bg-blue-200/25 blur-3xl" />
       <div className="pointer-events-none absolute -right-24 top-[32rem] h-72 w-72 rounded-full bg-amber-200/20 blur-3xl" />
 
@@ -146,7 +147,7 @@ export default function HelperLinkCreditsPage() {
             return (
               <article
                 key={pkg.id}
-                className="group relative overflow-hidden rounded-[1.75rem] border border-black/[0.04] bg-white p-5 shadow-[0_12px_34px_rgba(15,23,42,0.055)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_44px_rgba(15,23,42,0.09)] sm:p-6"
+                className="group relative min-h-[13rem] overflow-hidden rounded-[1.35rem] border border-white/85 bg-white/88 p-5 shadow-[0_14px_38px_rgba(92,67,16,0.10)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(92,67,16,0.15)] sm:min-h-[14rem] sm:p-6"
               >
                 <div className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${packageAccent(pkg.id)} opacity-80`} />
                 <div className="pointer-events-none absolute right-[22%] top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-amber-300/10 blur-2xl transition group-hover:bg-amber-300/20" />
@@ -156,7 +157,7 @@ export default function HelperLinkCreditsPage() {
                   </span>
                 ) : null}
 
-                <div className="relative grid grid-cols-[minmax(0,0.9fr)_minmax(5.5rem,0.8fr)_minmax(0,1fr)] items-center gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(8rem,0.85fr)_minmax(0,1fr)] sm:gap-6">
+                <div className="relative grid min-h-[10.5rem] grid-cols-[minmax(0,0.88fr)_minmax(5.5rem,0.8fr)_minmax(0,1fr)] items-center gap-2.5 sm:min-h-[11rem] sm:grid-cols-[minmax(0,1fr)_minmax(8rem,0.85fr)_minmax(0,1fr)] sm:gap-6">
                   <div className="min-w-0 self-stretch">
                     <h2 className={`text-lg font-black sm:text-xl ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
                     <p className="mt-4 bg-gradient-to-b from-[#FFE36A] via-[#F3B51B] to-[#C98508] bg-clip-text text-5xl font-black leading-[0.86] tracking-tight text-transparent drop-shadow-[0_0_16px_rgba(217,169,40,0.28)] sm:text-7xl">
@@ -175,7 +176,7 @@ export default function HelperLinkCreditsPage() {
                     />
                   ) : null}
 
-                  <div className="min-w-0">
+                  <div className="min-w-0 border-l border-slate-200/80 pl-3 sm:pl-6">
                     <p className="break-words text-base font-black leading-tight text-[#245BFF] sm:text-2xl">
                       {pkg.currency} ${pkg.price.toFixed(2)}
                     </p>

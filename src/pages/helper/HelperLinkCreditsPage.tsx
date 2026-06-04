@@ -50,7 +50,7 @@ function packageArtwork(packageId: string): string | null {
     case 'pro':
       return '/brand/linkcredit-pro-stack.png';
     case 'power':
-      return '/brand/linkcredit-power-stack.jpg';
+      return '/brand/linkcredit-power-stack.png';
     default:
       return null;
   }
@@ -64,9 +64,11 @@ function packageArtworkClass(packageId: string): string {
     case 'starter':
       return `${base} h-16 group-hover:scale-[1.04] sm:h-24`;
     case 'popular':
-      return `${base} h-36 scale-[1.34] group-hover:scale-[1.40] sm:h-48`;
+      return `${base} h-40 scale-[1.42] group-hover:scale-[1.48] sm:h-52`;
     case 'pro':
-      return `${base} h-28 scale-[1.12] group-hover:scale-[1.17] sm:h-40`;
+      return `${base} h-32 scale-[1.22] group-hover:scale-[1.28] sm:h-44`;
+    case 'power':
+      return `${base} h-28 scale-[1.18] group-hover:scale-[1.24] sm:h-40`;
     default:
       return `${base} h-24 group-hover:scale-[1.04] sm:h-36`;
   }

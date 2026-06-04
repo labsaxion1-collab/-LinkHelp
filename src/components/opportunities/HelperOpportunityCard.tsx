@@ -6,7 +6,7 @@ import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
 import { clsx } from 'clsx';
 import type { Job } from '@/types/job';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
-import { isBeautyScheduledJob } from '@/utils/jobDisplay';
+import { formatJobScheduleDisplay, formatJobOpenedAt } from '@/utils/jobDisplay';
 import { translateJobTitle } from '@/utils/translateCategory';
 import { LhCard } from '@/components/design-system/LhCard';
 import { HelperCreditCostBlock } from '@/components/helpers/HelperCreditCostBlock';
@@ -382,20 +382,46 @@ function HelperOpportunityCardInner({
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   hapticSuccess();
-                  onSwipeInterest?.(job);
+                  onApply(job);
                 }}
-                disabled={swipeRateLimited}
+                onTouchEnd={(e) => e.stopPropagation()}
+                disabled={swipeRateLimited || interactionLocked}
                 className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-[1.15rem] bg-[#2563FF] px-4 text-sm font-black text-white shadow-[0_14px_30px_rgba(37,99,255,0.28)] active:scale-[0.99] disabled:opacity-60"
               >
                 <Icons.Check className="h-4 w-4" />
-                Quero fazer
+                {t('helper_dashboard.apply_now')}
               </button>
-              <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-gradient-to-r from-slate-50 to-white px-3 py-2 shadow-sm">
-                <span className="text-[10px] font-bold text-rose-700">{t('helper_dashboard.swipe_not_interested')}</span>
-                <span className="h-4 w-px bg-slate-200" aria-hidden />
-                <span className="text-[10px] font-bold text-emerald-700">{t('helper_dashboard.swipe_interest')}</span>
+              <div className="flex items-stretch gap-2 rounded-xl border border-slate-100 bg-gradient-to-r from-slate-50 to-white shadow-sm overflow-hidden">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    hapticLight();
+                    onDismiss?.(job.id);
+                  }}
+                  onTouchEnd={(e) => e.stopPropagation()}
+                  disabled={swipeRateLimited || interactionLocked}
+                  className="flex flex-1 items-center justify-center px-2 py-2.5 text-[11px] font-bold text-rose-700 active:bg-rose-50 disabled:opacity-60"
+                >
+                  {t('helper_dashboard.swipe_not_interested')}
+                </button>
+                <span className="w-px self-stretch bg-slate-200" aria-hidden />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    hapticLight();
+                    onSwipeInterest?.(job);
+                  }}
+                  onTouchEnd={(e) => e.stopPropagation()}
+                  disabled={swipeRateLimited || interactionLocked}
+                  className="flex flex-1 items-center justify-center px-2 py-2.5 text-[11px] font-bold text-emerald-700 active:bg-emerald-50 disabled:opacity-60"
+                >
+                  {t('helper_dashboard.swipe_interest')}
+                </button>
               </div>
             </div>
           )}
@@ -448,6 +474,9 @@ function HelperOpportunityCardInner({
                 <Clock className="h-3 w-3 shrink-0 text-blue-500" />
                 {schedule}
               </span>
+            ) : null}
+            {openedLabel ? (
+              <span className="inline-flex items-center gap-0.5 text-slate-500">{openedLabel}</span>
             ) : null}
             <span className="inline-flex items-center gap-0.5 text-blue-800">
               <Icons.UserCheck className="h-3 w-3 shrink-0" />

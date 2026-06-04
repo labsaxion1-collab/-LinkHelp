@@ -3,7 +3,7 @@ import { Home, MessageCircle, ClipboardList, MapPin, UserRound } from 'lucide-re
 import { ROUTES } from '@/utils/constants';
 import { isAppShellPath } from '@/utils/navigation';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAuth } from '@/context/AuthContext';
+import { useAppMode } from '@/context/AppModeContext';
 import { clsx } from 'clsx';
 
 type Item = { to: string; end?: boolean; labelKey: string; icon: typeof Home };
@@ -30,11 +30,11 @@ function navClass(active: boolean, isHome = false) {
 export function MobileBottomNav() {
   const { pathname } = useLocation();
   const { t } = useLanguage();
-  const { profile } = useAuth();
+  const { isHelperMode } = useAppMode();
 
   if (!isAppShellPath(pathname)) return null;
 
-  const useHelperNav = profile?.role === 'helper';
+  const useHelperNav = isHelperMode;
 
   const items: Item[] = useHelperNav
     ? [

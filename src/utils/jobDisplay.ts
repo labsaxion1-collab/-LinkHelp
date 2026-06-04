@@ -61,3 +61,42 @@ export function formatJobScheduleDisplay(
 export function isBeautyScheduledJob(job: Pick<Job, 'category' | 'preferredTime'>): boolean {
   return job.category === 'beauty' && Boolean(job.preferredTime?.trim());
 }
+
+const OPEN_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** When the request was opened (system `created_at`) — not the client's desired service time. */
+export function formatJobOpenedAt(
+  createdAtMs: number,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  locale = 'pt-BR',
+): string {
+  if (!Number.isFinite(createdAtMs) || createdAtMs <= 0) return '';
+
+  const ageMs = Math.max(0, Date.now() - createdAtMs);
+  const opened = new Date(createdAtMs);
+  const now = new Date();
+
+  if (ageMs >= OPEN_WINDOW_MS) {
+    const date = opened.toLocaleDateString(locale, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    return t('jobs.opened_on_date', { date });
+  }
+
+  const ageHours = Math.floor(ageMs / (60 * 60 * 1000));
+  const ageMinutes = Math.max(1, Math.floor(ageMs / (60 * 1000)));
+  const sameDay = opened.toDateString() === now.toDateString();
+
+  if (sameDay && ageHours >= 1) {
+    const time = opened.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    return t('jobs.opened_today_at', { time });
+  }
+
+  if (ageHours >= 1) {
+    return t('jobs.opened_ago_hours', { count: ageHours });
+  }
+
+  return t('jobs.opened_ago_minutes', { count: ageMinutes });
+}

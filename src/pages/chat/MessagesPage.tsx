@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import * as Icons from 'lucide-react';
-import { Search, Send, ChevronLeft, ShieldCheck, Lock, ChevronUp, ChevronDown } from 'lucide-react';
+import { Search, Send, ChevronLeft, ShieldCheck, ChevronUp, ChevronDown } from 'lucide-react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppData } from '@/context/AppDataContext';
 import { useAppMode } from '@/context/AppModeContext';
@@ -17,10 +17,9 @@ import { clsx } from 'clsx';
 import { sanitizePreMatchMessage } from '@/utils/preMatchChatFilter';
 import { isUnlimitedPreMatch, preMatchOutgoingLimit } from '@/utils/preMatchLimits';
 import { translateCategory, translateJobTitle } from '@/utils/translateCategory';
-import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
-import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
+import { ChatPreMatchInfoSheet } from '@/components/chat/ChatPreMatchInfoSheet';
+import { ChatJobDetailSheet } from '@/components/chat/ChatJobDetailSheet';
 import { dedupeConversationSummaries } from '@/services/supabase/chatRemote';
-import type { Job } from '@/types/job';
 
 type ChatRow =
   | { id: string | number; kind: 'system'; text: string; time: string; variant?: 'info' | 'warn' }
@@ -75,7 +74,8 @@ export default function MessagesPage() {
   const [showScrollTopFab, setShowScrollTopFab] = useState(false);
   const [showScrollBottomFab, setShowScrollBottomFab] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
-  const [chatDetailJob, setChatDetailJob] = useState<Job | null>(null);
+  const [showPreMatchInfo, setShowPreMatchInfo] = useState(false);
+  const [showJobDetail, setShowJobDetail] = useState(false);
 
   const serviceConfirmed = useRemoteChat ? remote.contactUnlocked : false;
 
@@ -224,7 +224,8 @@ export default function MessagesPage() {
   const counterLabel = useMemo(() => {
     if (serviceConfirmed) return null;
     if (unlimited) return t('messages_page.pre_match_counter_unlimited');
-    return t('messages_page.pre_match_counter', { used: usedPreMatch, total: limit });
+    const remaining = Math.max(0, limit - usedPreMatch);
+    return t('messages_page.pre_match_counter', { remaining, total: limit });
   }, [serviceConfirmed, unlimited, usedPreMatch, limit, t]);
 
   const threadTitle = useRemoteChat
@@ -238,10 +239,14 @@ export default function MessagesPage() {
     return jobs.find((j) => j.id === summary.requestId) ?? null;
   }, [useRemoteChat, remote.selectedId, remote.summaries, jobs]);
 
-  const activeJobSchedule = useMemo(() => {
-    if (!activeJob) return null;
-    return formatJobScheduleDisplay(activeJob, t);
-  }, [activeJob, t]);
+  const compactJobLabel = useMemo(() => {
+    if (activeJob) {
+      const category = translateCategory(activeJob.category, t);
+      const title = translateJobTitle(activeJob.title, activeJob.category, activeJob.subcategory, t);
+      return `${category}: ${title}`;
+    }
+    return threadTitle;
+  }, [activeJob, threadTitle, t]);
 
   const chatHeader = (
     <div className="p-3 sm:p-4 border-b border-gray-100/90 flex justify-between items-center bg-white/95 backdrop-blur-sm shrink-0 gap-2">
@@ -282,53 +287,38 @@ export default function MessagesPage() {
     </div>
   );
 
-  const preMatchBanner = !serviceConfirmed && (
-    <div className="bg-gradient-to-r from-slate-50 via-indigo-50/40 to-slate-50 px-3 sm:px-4 py-3 border-b border-indigo-100/80 shrink-0">
-      <div className="flex gap-3 items-start max-w-3xl mx-auto">
-        <div className="mt-0.5 rounded-xl bg-white p-2 shadow-sm border border-indigo-100 text-indigo-600 shrink-0">
-          <Lock className="w-4 h-4" />
+  const compactContextCards = (
+    <div className="shrink-0 space-y-1.5 border-b border-gray-100/90 bg-white/95 px-3 py-2">
+      {!serviceConfirmed ? (
+        <div className="flex items-center gap-2 rounded-xl border border-indigo-100/80 bg-gradient-to-r from-slate-50 via-indigo-50/30 to-slate-50 px-3 py-2">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-bold text-indigo-900/90">
+              🔒 {t('messages_page.pre_match_compact_title')}
+            </p>
+            <p className="truncate text-[11px] font-medium text-slate-600">
+              {t('messages_page.pre_match_compact_body')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowPreMatchInfo(true)}
+            className="shrink-0 rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-[11px] font-bold text-indigo-700 hover:bg-indigo-50 transition-colors min-h-[36px]"
+          >
+            {t('messages_page.learn_more')}
+          </button>
         </div>
-        <div className="min-w-0 space-y-1">
-          <p className="text-[11px] font-black uppercase tracking-wider text-indigo-900/80">
-            {t('messages_page.pre_match_banner_title')}
-          </p>
-          <p className="text-sm text-slate-700 font-medium leading-relaxed">{t('messages_page.pre_match_banner_body')}</p>
-          <p className="text-xs text-slate-500 font-medium">{t('messages_page.pre_match_hint_footer')}</p>
-        </div>
-      </div>
-    </div>
-  );
+      ) : null}
 
-  const postMatchBanner = serviceConfirmed && (
-    <div className="bg-emerald-50/90 px-3 sm:px-4 py-2.5 border-b border-emerald-100 shrink-0 flex items-center gap-2">
-      <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-      <p className="text-sm font-semibold text-emerald-900">{t('messages_page.post_match_banner')}</p>
-    </div>
-  );
-
-  const jobBanner = (
-    <div className="border-b border-blue-100 bg-gradient-to-r from-[#EAF7FF] via-white to-[#DFF4FF] px-3 sm:px-4 py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shrink-0 text-[#0D1B2A]">
-      <div className="min-w-0">
-        <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-0.5">{t('messages_page.current_service')}</p>
-        <p className="text-sm font-semibold text-[#0D1B2A] break-words">{threadTitle}</p>
-        {activeJobSchedule ? (
-          <p className="mt-0.5 text-xs font-bold text-blue-700">{activeJobSchedule}</p>
-        ) : null}
-      </div>
       <button
         type="button"
-        disabled={!activeJob}
         onClick={() => {
-          if (!activeJob) return;
-          if (effectiveClientMode) {
-            navigate(ROUTES.clientDashboard);
-            return;
-          }
-          setChatDetailJob(activeJob);
+          if (activeJob) setShowJobDetail(true);
         }}
-        className="text-sm font-bold text-white bg-[#1565FF] px-4 py-2.5 rounded-xl min-h-[44px] shrink-0 self-start sm:self-auto hover:bg-[#0F55D9] transition-colors disabled:opacity-50"
+        disabled={!activeJob}
+        className="flex w-full items-center justify-between gap-2 rounded-xl border border-blue-100 bg-gradient-to-r from-[#EAF7FF] via-white to-[#DFF4FF] px-3 py-2 text-left transition-colors hover:border-blue-200 disabled:cursor-default disabled:opacity-70 min-h-[44px]"
       >
-        {t('messages_page.view_details')}
+        <span className="min-w-0 truncate text-sm font-semibold text-[#0D1B2A]">📋 {compactJobLabel}</span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-blue-600" aria-hidden />
       </button>
     </div>
   );
@@ -442,12 +432,9 @@ export default function MessagesPage() {
       className="p-3 sm:p-4 bg-white/95 backdrop-blur-md border-t border-gray-100 shrink-0 pb-[max(env(safe-area-inset-bottom),0.75rem)] md:pb-4 space-y-2"
       style={keyboardInset > 0 ? { paddingBottom: `max(${keyboardInset}px, env(safe-area-inset-bottom))` } : undefined}
     >
-      {counterLabel && (
-        <div className="flex items-center justify-between px-1 gap-2">
-          <span className="text-[11px] font-semibold text-slate-500 tabular-nums">{counterLabel}</span>
-          {!serviceConfirmed && <Lock className="w-3.5 h-3.5 text-slate-300 shrink-0" aria-hidden />}
-        </div>
-      )}
+      {counterLabel ? (
+        <p className="px-1 text-center text-[10px] font-medium text-slate-400 tabular-nums">{counterLabel}</p>
+      ) : null}
       <form
         onSubmit={(ev) => {
           void handleSendMessage(ev);
@@ -663,9 +650,7 @@ export default function MessagesPage() {
           ) : (
             <>
               {chatHeader}
-              {preMatchBanner}
-              {postMatchBanner}
-              {jobBanner}
+              {compactContextCards}
               {messageList}
               {inputBar}
             </>
@@ -673,18 +658,8 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      <HelperOpportunityDetailModal
-        job={chatDetailJob}
-        open={Boolean(chatDetailJob)}
-        onClose={() => setChatDetailJob(null)}
-        onApply={(job) => {
-          setChatDetailJob(null);
-          navigate(ROUTES.helperOpportunities, { state: { openJobId: job.id } });
-        }}
-        t={t}
-        translateCategory={translateCategory}
-        formatJobSchedule={formatJobScheduleDisplay}
-      />
+      <ChatPreMatchInfoSheet open={showPreMatchInfo} onClose={() => setShowPreMatchInfo(false)} />
+      <ChatJobDetailSheet job={activeJob} open={showJobDetail} onClose={() => setShowJobDetail(false)} />
     </AppPageShell>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback, type CSSProperties } from 're
 import { createPortal } from 'react-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
+import { useAppMode } from '@/context/AppModeContext';
 import { useAuth } from '@/context/AuthContext';
 import { ROUTES } from '@/utils/constants';
 import { useToast } from '@/context/ToastContext';
@@ -33,8 +34,9 @@ export default function Navbar() {
   const userAvatar = me.avatar;
   const userId = me.id;
   const { signOut, isConfigured, session, profile, updateProfile } = useAuth();
+  const { isHelperMode, setMode } = useAppMode();
 
-  const isHelperNav = profile?.role === 'helper';
+  const isHelperNav = isHelperMode;
   const isHome = location.pathname === ROUTES.home;
   const usePremiumNav = isHome || location.pathname === ROUTES.login || location.pathname === ROUTES.signup || isConnected;
   const logoTarget = isConnected
@@ -391,6 +393,18 @@ export default function Navbar() {
                 className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
               >
                 <User className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_profile')}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  closeProfile();
+                  setMode(isHelperNav ? 'client' : 'helper');
+                }}
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
+              >
+                <Briefcase className="w-4 h-4 text-gray-400" />{' '}
+                {t(isHelperNav ? 'nav.switch_to_client' : 'nav.switch_to_helper')}
               </button>
               <div className="my-1 border-t border-gray-100" />
               <button

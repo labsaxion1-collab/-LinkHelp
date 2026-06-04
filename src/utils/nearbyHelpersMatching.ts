@@ -7,12 +7,22 @@ import {
   type Coordinates,
 } from '@/utils/geocodeLocation';
 
+/** Default search radius when the client origin is known (GPS or profile geocode). */
+export const CLIENT_NEARBY_HELPER_RADIUS_KM = 50;
+
 export type NearbyHelperSortContext = {
   origin: Coordinates | null;
   clientCity?: string | null;
   clientRegion?: string | null;
   clientCountry?: string | null;
   relatedCategoryIds?: string[];
+  /** True when origin comes from browser GPS (tighter radius semantics). */
+  hasGpsOrigin?: boolean;
+};
+
+export type NearbyHelperFilterContext = NearbyHelperSortContext & {
+  /** When false, only city/region/country overlap counts as "nearby". */
+  hasKnownOrigin?: boolean;
 };
 
 function normalizeCity(value: string | null | undefined): string {
@@ -77,6 +87,36 @@ export function distanceToHelperKm(origin: Coordinates | null, helper: NearbyHel
   const coords = helperCoordinates(helper);
   if (!coords) return null;
   return Number(distanceKm(origin.lat, origin.lng, coords.lat, coords.lng).toFixed(1));
+}
+
+export function helperHasLocationData(helper: NearbyHelper): boolean {
+  if (helper.latitude != null && helper.longitude != null) return true;
+  if (helper.city?.trim()) return true;
+  if (helper.region?.trim()) return true;
+  if (helper.country?.trim()) return true;
+  return false;
+}
+
+/** Helpers without any locatable profile data are excluded from client radar. */
+export function filterNearbyHelpers(helpers: NearbyHelper[], ctx: NearbyHelperFilterContext): NearbyHelper[] {
+  const withLocation = helpers.filter(helperHasLocationData);
+  if (!ctx.hasKnownOrigin) {
+    if (!ctx.clientCity?.trim() && !ctx.clientRegion?.trim() && !ctx.clientCountry?.trim()) {
+      return [];
+    }
+    return withLocation.filter((helper) => cityRegionScore(helper, ctx) >= 1);
+  }
+
+  return withLocation.filter((helper) => {
+    const dist = distanceToHelperKm(ctx.origin, helper);
+    if (dist != null) {
+      return dist <= CLIENT_NEARBY_HELPER_RADIUS_KM;
+    }
+    if (ctx.clientCity?.trim() || ctx.clientRegion?.trim()) {
+      return cityRegionScore(helper, ctx) >= 2;
+    }
+    return cityRegionScore(helper, ctx) >= 1;
+  });
 }
 
 export function sortNearbyHelpers(helpers: NearbyHelper[], ctx: NearbyHelperSortContext): NearbyHelper[] {

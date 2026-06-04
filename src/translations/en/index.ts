@@ -679,6 +679,7 @@ export const en = {
     app_rejected: 'Rejected',
     app_completed: 'Completed',
     toast_apply_success: 'Your application was sent successfully ✓',
+    toast_apply_error: 'Could not submit your application. Please try again in a moment.',
     apply_chat_unlock_hint: 'Chat opens in Messages after the client accepts your application.',
     toast_check_applications: 'Check My Applications',
     trend_0: 'High demand now',

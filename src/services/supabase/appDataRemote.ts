@@ -303,6 +303,8 @@ export async function remoteApply(input: {
     clientId: input.clientId,
     helperId: input.helperId,
     contactUnlocked: false,
+  }).catch((e) => {
+    console.warn('[LinkHelp] ensureConversation after apply (non-fatal)', e);
   });
 
   return { outcome: 'created' };

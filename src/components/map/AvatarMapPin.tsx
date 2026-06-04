@@ -8,7 +8,15 @@ type Props = {
   variant?: 'helper' | 'client';
 };
 
-export function AvatarMapPin({ name, avatarUrl, urgent = false, variant = 'helper' }: Props) {
+const PIN_SIZE_NORMAL = 40;
+const PIN_SIZE_HIGHLIGHT = 48;
+export function AvatarMapPin({
+  name,
+  avatarUrl,
+  urgent = false,
+  variant = 'helper',
+  highlighted = false,
+}: Props & { highlighted?: boolean }) {
   const displayName = name.trim() || '?';
   const avatar = avatarUrl?.trim();
   const initials = initialsForName(displayName);
@@ -16,13 +24,24 @@ export function AvatarMapPin({ name, avatarUrl, urgent = false, variant = 'helpe
     variant === 'client' && urgent
       ? 'border-red-500 ring-red-300/60'
       : 'border-blue-600 ring-blue-200/80';
+  const size = highlighted || urgent ? PIN_SIZE_HIGHLIGHT : PIN_SIZE_NORMAL;
 
   return (
     <div
       className={clsx(
-        'relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 bg-white shadow-md ring-2',
+        'relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 bg-white shadow-md ring-2',
         borderClass,
       )}
+      style={{
+        width: size,
+        height: size,
+        minWidth: size,
+        minHeight: size,
+        maxWidth: size,
+        maxHeight: size,
+        boxSizing: 'border-box',
+        transform: 'none',
+      }}
     >
       {avatar ? (
         <img

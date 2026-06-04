@@ -1,6 +1,7 @@
 import * as Icons from 'lucide-react';
 import type { Job } from '@/types/job';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
+import { formatJobScheduleDisplay, formatJobOpenedAt } from '@/utils/jobDisplay';
 import { translateJobTitle } from '@/utils/translateCategory';
 import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
 import { HelperCreditCostBlock } from '@/components/helpers/HelperCreditCostBlock';
@@ -21,6 +22,7 @@ type Props = {
   distanceFromBase?: boolean;
   needsBaseAddress?: boolean;
   baseAddressPendingCoords?: boolean;
+  locale?: string;
 };
 
 export function HelperOpportunityDetailModal({
@@ -38,12 +40,14 @@ export function HelperOpportunityDetailModal({
   distanceFromBase = false,
   needsBaseAddress = false,
   baseAddressPendingCoords = false,
+  locale = 'pt-BR',
 }: Props) {
   if (!open || !job) return null;
 
   const category = translateCategory(job.category, t);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const budget = formatJobBudgetDisplay(job, t);
+  const openedLabel = formatJobOpenedAt(job.createdAt, t, locale);
   const loc = isRemoteJob(job)
     ? t('jobs.remote')
     : needsBaseAddress
@@ -141,10 +145,14 @@ export function HelperOpportunityDetailModal({
             </div>
           </div>
 
+          {openedLabel ? (
+            <p className="mt-3 text-xs font-semibold text-slate-500">{openedLabel}</p>
+          ) : null}
+
           {schedule ? (
             <p className="mt-3 flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700">
               <Icons.Clock className="h-4 w-4 shrink-0 text-blue-500" />
-              {schedule}
+              {t('jobs.client_desired_schedule', { schedule })}
             </p>
           ) : null}
 

@@ -21,9 +21,18 @@ export function UserLocationMapMarker({ position, mode }: Props) {
 
   return (
     <AdvancedMarker position={position} zIndex={1000}>
-      <div className="relative flex justify-center items-center">
-        <div className="absolute inset-0 rounded-full border-4 border-blue-500 animate-ping opacity-50 z-0 motion-reduce:animate-none" />
-        <div className="w-5 h-5 bg-blue-600 rounded-full border-2 border-white shadow-lg z-10 relative" />
+      <div
+        className="relative flex items-center justify-center"
+        style={{ width: 22, height: 22, transform: 'none' }}
+      >
+        <div
+          className="absolute rounded-full border-4 border-blue-500 animate-ping opacity-50 motion-reduce:animate-none"
+          style={{ width: 22, height: 22 }}
+        />
+        <div
+          className="relative z-10 rounded-full border-2 border-white bg-blue-600 shadow-lg"
+          style={{ width: 20, height: 20 }}
+        />
       </div>
     </AdvancedMarker>
   );

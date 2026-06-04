@@ -1,6 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { readStoredAppMode } from '@/utils/appModeStorage';
+import { resolveEffectiveRole } from '@/utils/userRole';
 import { fetchRemoteCreditState } from '@/services/supabase/creditsRemote';
 import {
   InsufficientCreditsError,
@@ -30,8 +32,10 @@ const CreditContext = createContext<CreditContextValue | null>(null);
 export function CreditProvider({ children }: { children: React.ReactNode }) {
   const { session, profile } = useAuth();
 
-  const isHelper = profile?.role === 'helper';
   const currentUserId = session?.user?.id ?? null;
+  const storedMode = readStoredAppMode(currentUserId);
+  const effectiveRole = resolveEffectiveRole(profile, session?.user, storedMode);
+  const isHelper = effectiveRole === 'helper';
   const helperId = isHelper ? (currentUserId ?? profile?.id ?? '') : '';
   const remote = isSupabaseConfigured() && Boolean(session);
 

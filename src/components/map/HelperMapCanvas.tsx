@@ -74,6 +74,7 @@ export function HelperMapCanvas({
                 clientName={point.data.clientName}
                 clientAvatar={point.data.clientAvatar}
                 urgent={point.urgency}
+                highlighted={focusedMarkerId === point.id}
               />
             }
           >

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { useNavigate } from 'react-router-dom';
+import { clsx } from 'clsx';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
@@ -23,13 +24,22 @@ export default function ClientNearbyMapPage() {
     return [...new Set(open.map((j) => j.category).filter(Boolean))];
   }, [jobs]);
 
-  const { helpers, helpersWithMapPosition, loading, clientCenter, locationReady } = useNearbyHelpers({
+  const {
+    helpers,
+    helpersWithMapPosition,
+    nearbyCount,
+    loading,
+    clientCenter,
+    locationReady,
+    locationSource,
+  } = useNearbyHelpers({
     relatedCategoryIds: relatedCategories,
   });
 
   const initialCameraDone = useRef(false);
   const mapSectionRef = useRef<HTMLElement>(null);
   const [focusedMarkerId, setFocusedMarkerId] = useState<string | null>(null);
+  const [desktopListOpen, setDesktopListOpen] = useState(true);
   const [cameraFocus, setCameraFocus] = useState<{ position: google.maps.LatLngLiteral; zoom: number } | null>(
     null,
   );
@@ -61,51 +71,35 @@ export default function ClientNearbyMapPage() {
     return parsed.primary === 'support' ? t('skills.support') : t(`categories.${parsed.primary}`);
   };
 
+  const emptyMessage =
+    locationSource === 'default'
+      ? t('live_map.empty_no_client_location')
+      : t('live_map.empty_no_nearby_helpers');
+
+  const listContent = loading ? (
+    <p className="text-center p-8 text-gray-500 font-medium">{t('common.loading')}</p>
+  ) : helpers.length === 0 ? (
+    <p className="text-center p-8 text-gray-500 font-medium">{emptyMessage}</p>
+  ) : (
+    helpers.map((helper) => (
+      <NearbyHelperListItem
+        key={helper.id}
+        helper={helper}
+        t={t}
+        skillLabel={skillLabel}
+        highlighted={focusedMarkerId === helper.id}
+        onViewOnMap={
+          helper.mapPosition ? () => focusHelperOnMap(helper.id, helper.mapPosition!) : undefined
+        }
+      />
+    ))
+  );
+
   return (
-    <div className="h-[calc(100vh-80px)] w-full relative flex flex-col sm:flex-row bg-[#EAF7FF] overflow-hidden lh-app-page">
-      <aside className="lh-sidebar w-full sm:w-[400px] h-[40vh] sm:h-full shadow-2xl z-10 flex flex-col overflow-hidden relative order-2 sm:order-1">
-        <header className="p-6 border-b border-gray-100 shrink-0">
-          <DesktopBackButton className="mb-4" />
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="lg:hidden mb-4 text-gray-500 hover:text-gray-900 flex items-center gap-2 font-bold text-sm transition-colors"
-          >
-            <Icons.ArrowLeft className="w-4 h-4" /> {t('nav.back')}
-          </button>
-          <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-            <Icons.MapPin className="w-6 h-6 text-blue-600" /> {t('live_map.title_client_nearby')}
-          </h1>
-          <p className="text-sm text-gray-500 mt-2 font-medium">{t('live_map.subtitle_client_nearby')}</p>
-        </header>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/50">
-          {loading ? (
-            <p className="text-center p-8 text-gray-500 font-medium">{t('common.loading')}</p>
-          ) : helpers.length === 0 ? (
-            <p className="text-center p-8 text-gray-500 font-medium">{t('live_map.empty_no_nearby_helpers')}</p>
-          ) : (
-            helpers.map((helper) => (
-              <NearbyHelperListItem
-                key={helper.id}
-                helper={helper}
-                t={t}
-                skillLabel={skillLabel}
-                highlighted={focusedMarkerId === helper.id}
-                onViewOnMap={
-                  helper.mapPosition
-                    ? () => focusHelperOnMap(helper.id, helper.mapPosition!)
-                    : undefined
-                }
-              />
-            ))
-          )}
-        </div>
-      </aside>
-
+    <div className="h-[calc(100dvh-80px)] w-full relative flex flex-col lg:flex-row bg-[#EAF7FF] overflow-hidden lh-app-page">
       <section
         ref={mapSectionRef}
-        className="flex-1 relative h-[60vh] sm:h-full order-1 sm:order-2 min-h-[240px]"
+        className="relative flex-1 min-h-0 min-w-0 h-[58vh] lg:h-full shrink-0"
       >
         {mapsReady ? (
           <APIProvider apiKey={mapsApiKey} version="weekly" libraries={['marker']}>
@@ -136,12 +130,24 @@ export default function ClientNearbyMapPage() {
                     onOpenChange={(open) => {
                       if (!open && focusedMarkerId === helper.id) setFocusedMarkerId(null);
                     }}
-                    marker={<AvatarMapPin name={helper.name} avatarUrl={helper.avatarUrl} variant="helper" />}
+                    marker={
+                      <AvatarMapPin
+                        name={helper.name}
+                        avatarUrl={helper.avatarUrl}
+                        variant="helper"
+                        highlighted={focusedMarkerId === helper.id}
+                      />
+                    }
                   >
                     <div>
                       <p className="text-sm font-black text-gray-900">{helper.name}</p>
                       {helper.regionLabel ? (
                         <p className="text-xs text-gray-600 mt-1">{helper.regionLabel}</p>
+                      ) : null}
+                      {helper.distanceKm != null ? (
+                        <p className="text-xs font-semibold text-blue-700 mt-1">
+                          {t('live_map.distance_km', { km: helper.distanceKm })}
+                        </p>
                       ) : null}
                     </div>
                   </MarkerWithInfoWindow>
@@ -157,16 +163,70 @@ export default function ClientNearbyMapPage() {
           </div>
         )}
 
-        {mapsReady && helpers.length > 0 ? (
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 border border-blue-100 bg-white/90 backdrop-blur-sm text-[#0D1B2A] px-5 py-3 rounded-2xl shadow-2xl shadow-blue-500/10 flex items-center gap-3 z-20 whitespace-nowrap">
-            <span className="flex h-3 w-3 relative">
-              <span className="animate-ping absolute inset-0 rounded-full bg-green-400 opacity-75 motion-reduce:animate-none" />
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
-            </span>
-            <span className="font-bold text-sm tracking-wide">{t('live_map.floating_client', { count: helpers.length })}</span>
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-2 p-3 pt-4 safe-top">
+          <div className="pointer-events-auto flex items-center justify-between gap-2">
+            <DesktopBackButton className="shrink-0 shadow-md" />
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="lg:hidden shrink-0 rounded-xl border border-gray-200 bg-white/95 px-3 py-2 text-xs font-bold text-gray-700 shadow-md"
+            >
+              <Icons.ArrowLeft className="inline h-4 w-4 -mt-0.5 mr-1" />
+              {t('nav.back')}
+            </button>
+            {!loading && nearbyCount > 0 ? (
+              <div className="flex items-center gap-2 rounded-2xl border border-blue-100 bg-white/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
+                <span className="flex h-2.5 w-2.5 relative">
+                  <span className="animate-ping absolute inset-0 rounded-full bg-green-400 opacity-75 motion-reduce:animate-none" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                </span>
+                <span className="font-bold text-sm text-[#0D1B2A] whitespace-nowrap">
+                  {t('live_map.floating_client', { count: nearbyCount })}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 rounded-2xl border border-blue-100 bg-white/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
+                <Icons.MapPin className="h-4 w-4 text-blue-600" />
+                <span className="font-bold text-sm text-[#0D1B2A]">{t('live_map.title_client_nearby')}</span>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setDesktopListOpen((v) => !v)}
+              className="hidden lg:flex pointer-events-auto items-center gap-1 rounded-xl border border-gray-200 bg-white/95 px-3 py-2 text-xs font-bold text-gray-700 shadow-md"
+            >
+              <Icons.List className="h-4 w-4" />
+              {nearbyCount}
+            </button>
+          </div>
+        </div>
+
+        {mapsReady && !loading && helpers.length === 0 ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-[max(5rem,env(safe-area-inset-bottom))] z-10 flex justify-center px-4 lg:bottom-8">
+            <p className="rounded-xl border border-slate-200/90 bg-white/90 px-4 py-2.5 text-center text-xs font-semibold text-slate-600 shadow-md backdrop-blur-sm max-w-sm">
+              {emptyMessage}
+            </p>
           </div>
         ) : null}
       </section>
+
+      <aside
+        className={clsx(
+          'lh-sidebar w-full lg:w-[400px] shrink-0 shadow-2xl z-10 flex flex-col overflow-hidden relative border-t lg:border-t-0 lg:border-l border-gray-100 bg-white',
+          'h-[42vh] lg:h-full',
+          'lg:transition-transform lg:duration-300',
+          desktopListOpen ? 'lg:translate-x-0' : 'lg:translate-x-full lg:absolute lg:right-0 lg:top-0 lg:bottom-0',
+        )}
+      >
+        <header className="p-4 lg:p-6 border-b border-gray-100 shrink-0">
+          <h1 className="text-lg lg:text-2xl font-black text-gray-900 flex items-center gap-2">
+            <Icons.MapPin className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600" /> {t('live_map.title_client_nearby')}
+          </h1>
+          <p className="text-xs lg:text-sm text-gray-500 mt-1 lg:mt-2 font-medium">{t('live_map.subtitle_client_nearby')}</p>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-3 bg-gray-50/50">{listContent}</div>
+      </aside>
     </div>
   );
 }

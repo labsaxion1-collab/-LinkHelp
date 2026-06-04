@@ -115,14 +115,14 @@ export function HelperProposalModal({
           'border border-sky-100/80 bg-gradient-to-b from-white/95 via-[#F4FAFF]/95 to-[#E8F4FF]/95',
           'shadow-[0_-12px_48px_rgba(21,101,255,0.18),0_28px_72px_rgba(13,27,42,0.22)]',
           'backdrop-blur-xl sm:ring-1 sm:ring-blue-400/20',
-          'max-h-[min(92dvh,680px)]',
+          'max-h-[min(86dvh,680px)]',
           'animate-[helperProposalIn_0.45s_cubic-bezier(0.34,1.45,0.64,1)]',
         )}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mx-auto mt-2.5 h-1 w-11 shrink-0 rounded-full bg-sky-200/90 sm:hidden" aria-hidden />
 
-        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-sky-100/70 px-5 pb-4 pt-4 sm:pt-5">
+        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-sky-100/70 px-5 pb-4 pt-3 sm:pt-5">
           <div className="min-w-0">
             <h2 id="helper-proposal-title" className="text-xl font-black tracking-tight text-slate-950">
               {t('helper_proposal.title')}
@@ -140,7 +140,7 @@ export function HelperProposalModal({
           </button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-2 pb-4">
           <div className="mb-4 rounded-2xl border border-blue-200/70 bg-white/70 px-4 py-3.5 shadow-sm shadow-blue-500/5 backdrop-blur-sm">
             <p className="text-[10px] font-black uppercase tracking-wider text-blue-700">
               {t('helper_proposal.job_section')}

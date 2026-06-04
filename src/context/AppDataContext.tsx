@@ -231,7 +231,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     proposedAmount?: number | null,
     options?: { distanceKm?: number | null; message?: string | null },
   ) => {
-    const existing = applicationsRef.current.find((a) => a.jobId === jobId && a.helperId === helperId);
+    const existing = applicationsRef.current.find(
+      (a) => a.jobId === jobId && a.helperId === helperId && a.status !== 'cancelled',
+    );
     if (existing) {
       throw new Error('ALREADY_APPLIED');
     }
@@ -248,10 +250,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       leadCostsForJob(job, { distanceKm: options?.distanceKm ?? null }),
     );
 
+    const sessionUserId = session?.user?.id ?? profile?.id ?? null;
+
     if (useRemote) {
-      if (helperId === profile?.id) {
-        await chargeApplicationInterest(jobId, interestCost);
-      }
       const applyResult = await remoteApply({
         requestId: jobId,
         helperId,
@@ -261,6 +262,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       });
       if (applyResult.outcome === 'already_exists') {
         throw new Error('ALREADY_APPLIED');
+      }
+      if (sessionUserId && helperId === sessionUserId) {
+        await chargeApplicationInterest(jobId, interestCost);
       }
       const helperName = profile?.name?.trim() || 'Helper';
       const title = 'Nova candidatura recebida';
@@ -277,10 +281,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       });
       await refreshRemote();
       return;
-    }
-
-    if (helperId === profile?.id) {
-      await chargeApplicationInterest(jobId, interestCost);
     }
 
     const helperName = profile?.name?.trim() || 'Helper';
@@ -305,6 +305,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       createdAt: Date.now(),
     };
     setApplications((prev) => [newApp, ...prev]);
+
+    if (sessionUserId && helperId === sessionUserId) {
+      await chargeApplicationInterest(jobId, interestCost);
+    }
 
     if (job.clientId) {
       const title = 'Nova Candidatura Recebida';

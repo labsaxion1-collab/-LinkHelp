@@ -19,6 +19,7 @@ import {
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import type { Job } from '@/types/job';
+import { useHelperDismissedRequests } from '@/hooks/useHelperDismissedRequests';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { HelperMapCanvas } from '@/components/map/HelperMapCanvas';
 
@@ -35,6 +36,7 @@ export default function HelperLiveMapPage() {
   const { jobs, applications } = useAppData();
   const { t } = useLanguage();
   const me = useSessionViewer();
+  const { dismissedIds } = useHelperDismissedRequests(me.id !== 'guest' && me.id !== '…' ? me.id : undefined);
   const { coords: userCoords, ready: locationReady } = useUserLocation();
   const initialCameraDone = useRef(false);
   const [focusedMarkerId, setFocusedMarkerId] = useState<string | null>(null);
@@ -69,7 +71,11 @@ export default function HelperLiveMapPage() {
 
   const jobPoints = useMemo((): JobMapPoint[] => {
     const openJobs = jobs.filter(
-      (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== me.id,
+      (j) =>
+        j.status === 'open' &&
+        !isJobCancelled(j) &&
+        j.clientId !== me.id &&
+        !dismissedIds.has(j.id),
     );
     const inRadius = filterJobsForHelperRadar(openJobs, userCoords);
     const sorted = sortOpportunitiesForHelper(inRadius, { origin: userCoords, helperSkillIds: [] });
@@ -90,7 +96,7 @@ export default function HelperLiveMapPage() {
         };
       })
       .filter((p): p is JobMapPoint => p != null);
-  }, [jobs, userCoords, me.id]);
+  }, [jobs, userCoords, me.id, dismissedIds]);
 
   const filteredPoints = useMemo(() => {
     let list = jobPoints.filter((p) => (activeFilter === 'urgent' ? p.urgency : true));

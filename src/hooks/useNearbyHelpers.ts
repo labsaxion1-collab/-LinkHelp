@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useUserLocation } from '@/hooks/useUserLocation';
+import { useUserLocation, type UserLocationSource } from '@/hooks/useUserLocation';
 import { fetchNearbyHelpers } from '@/services/supabase/nearbyHelpersRemote';
 import type { NearbyHelperMapPoint } from '@/types/nearbyHelper';
-import { enrichNearbyHelpersForMap, sortNearbyHelpers } from '@/utils/nearbyHelpersMatching';
+import {
+  enrichNearbyHelpersForMap,
+  filterNearbyHelpers,
+  sortNearbyHelpers,
+} from '@/utils/nearbyHelpersMatching';
 import { profileRegionFromRow } from '@/utils/profileLocation';
 
 type Options = {
@@ -12,7 +16,7 @@ type Options = {
 
 export function useNearbyHelpers(options: Options = {}) {
   const { profile, session } = useAuth();
-  const { coords, ready: locationReady } = useUserLocation();
+  const { coords, ready: locationReady, source: locationSource } = useUserLocation();
   const [helpers, setHelpers] = useState<NearbyHelperMapPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,13 +30,18 @@ export function useNearbyHelpers(options: Options = {}) {
       const rows = await fetchNearbyHelpers(session?.user?.id);
       if (cancelled) return;
 
-      const sorted = sortNearbyHelpers(rows, {
+      const hasKnownOrigin = locationSource === 'gps' || locationSource === 'profile';
+      const sortCtx = {
         origin: coords,
         clientCity: profile?.city,
         clientRegion: profileRegionFromRow(profile),
         clientCountry: profile?.country,
         relatedCategoryIds: options.relatedCategoryIds,
-      });
+        hasGpsOrigin: locationSource === 'gps',
+      };
+
+      const nearby = filterNearbyHelpers(rows, { ...sortCtx, hasKnownOrigin });
+      const sorted = sortNearbyHelpers(nearby, sortCtx);
 
       setHelpers(enrichNearbyHelpersForMap(sorted, coords));
       setLoading(false);
@@ -45,6 +54,7 @@ export function useNearbyHelpers(options: Options = {}) {
     session?.user?.id,
     coords.lat,
     coords.lng,
+    locationSource,
     profile?.city,
     profile?.region,
     profile?.country,
@@ -57,8 +67,10 @@ export function useNearbyHelpers(options: Options = {}) {
   return {
     helpers,
     helpersWithMapPosition: withCoords,
+    nearbyCount: helpers.length,
     loading,
     locationReady,
+    locationSource: locationSource as UserLocationSource,
     clientCenter: coords,
   };
 }

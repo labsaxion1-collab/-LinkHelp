@@ -25,7 +25,7 @@ function ClientNearbyHelpersListInner({ helpers, loading, t, onViewProfile }: Pr
       <div className="mb-3 flex items-center justify-between gap-2">
         <h3 className="text-sm font-black text-slate-950">{t('client_dashboard.nearby_helpers_title')}</h3>
         <span className="text-[10px] font-bold text-slate-500">
-          {loading ? t('common.loading') : t('client_dashboard.nearby_helpers_count', { count: top.length })}
+          {loading ? t('common.loading') : t('client_dashboard.nearby_helpers_count', { count: helpers.length })}
         </span>
       </div>
 

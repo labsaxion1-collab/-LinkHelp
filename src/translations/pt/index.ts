@@ -689,6 +689,7 @@ export const pt = {
     app_rejected: 'Recusado',
     app_completed: 'Concluído',
     toast_apply_success: 'Sua candidatura foi enviada com sucesso ✓',
+    toast_apply_error: 'Não foi possível enviar sua candidatura. Tente novamente em instantes.',
     apply_chat_unlock_hint: 'O chat em Mensagens abre depois que o cliente aceitar sua candidatura.',
     toast_check_applications: 'Verifique em "Minhas Candidaturas"',
     trend_0: 'Alta demanda agora',

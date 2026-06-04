@@ -681,6 +681,7 @@ export const fr = {
     app_rejected: 'Refusé',
     app_completed: 'Terminé',
     toast_apply_success: 'Votre candidature a bien été envoyée ✓',
+    toast_apply_error: 'Impossible d’envoyer votre candidature. Réessayez dans un instant.',
     apply_chat_unlock_hint: 'Le chat s’ouvre dans Messages une fois le client accepté.',
     toast_check_applications: 'Voir Mes candidatures',
     trend_0: 'Forte demande maintenant',

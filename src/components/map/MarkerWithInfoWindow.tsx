@@ -94,7 +94,7 @@ function MarkerWithInfoWindowBody({
           ref={classicRef}
           position={position}
           title={title}
-          icon={circleMarkerIcon(highlighted ? '#1d4ed8' : classicColor, highlighted ? 32 : 28)}
+          icon={circleMarkerIcon(highlighted ? '#1d4ed8' : classicColor, highlighted ? 48 : 40)}
           zIndex={highlighted ? 200 : 100}
           onClick={() => setOpen(true)}
         />
@@ -113,16 +113,19 @@ function MarkerWithInfoWindowBody({
     <>
       <AdvancedMarker ref={advancedRef} position={position} onClick={() => setOpen(true)} title={title}>
         <div
-          className={clsx(
-            'relative flex items-center justify-center transition-transform',
-            highlighted && 'scale-110',
-          )}
+          className="relative flex items-center justify-center"
+          style={{
+            width: highlighted ? 48 : 40,
+            height: highlighted ? 48 : 40,
+            minWidth: highlighted ? 48 : 40,
+            minHeight: highlighted ? 48 : 40,
+            maxWidth: highlighted ? 48 : 40,
+            maxHeight: highlighted ? 48 : 40,
+            transform: 'none',
+            boxSizing: 'border-box',
+          }}
         >
-          <div
-            className={clsx(
-              highlighted && 'rounded-full ring-4 ring-blue-400/70 ring-offset-2 ring-offset-white',
-            )}
-          >
+          <div className={clsx(highlighted && 'rounded-full ring-4 ring-blue-400/70 ring-offset-2 ring-offset-white')}>
             {marker}
           </div>
         </div>

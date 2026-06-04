@@ -43,6 +43,8 @@ function packageTitleClass(packageId: string): string {
 
 function packageArtwork(packageId: string): string | null {
   switch (packageId) {
+    case 'starter':
+      return '/brand/linkcredit-starter-stack.jpg';
     case 'popular':
       return '/brand/linkcredit-popular-stack.jpg';
     case 'pro':
@@ -51,6 +53,21 @@ function packageArtwork(packageId: string): string | null {
       return '/brand/linkcredit-power-stack.jpg';
     default:
       return null;
+  }
+}
+
+function packageAccent(packageId: string): string {
+  switch (packageId) {
+    case 'starter':
+      return 'from-blue-500/14 via-sky-400/5 to-transparent';
+    case 'popular':
+      return 'from-emerald-500/14 via-green-400/5 to-transparent';
+    case 'pro':
+      return 'from-violet-500/14 via-fuchsia-400/5 to-transparent';
+    case 'power':
+      return 'from-rose-500/14 via-red-400/5 to-transparent';
+    default:
+      return 'from-slate-500/10 to-transparent';
   }
 }
 
@@ -81,21 +98,26 @@ export default function HelperLinkCreditsPage() {
   };
 
   return (
-    <AppPageShell wide className="min-w-0 overflow-x-hidden pb-24 md:pb-8">
-      <div className="mx-auto max-w-lg md:max-w-3xl">
+    <AppPageShell wide className="relative min-w-0 overflow-x-hidden bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.98),rgba(245,247,251,0.88)_38%,#F5F7FB_78%)] px-5 pb-28 pt-5 md:px-7 md:pb-10">
+      <div className="pointer-events-none absolute -left-24 top-36 h-64 w-64 rounded-full bg-blue-200/25 blur-3xl" />
+      <div className="pointer-events-none absolute -right-24 top-[32rem] h-72 w-72 rounded-full bg-amber-200/20 blur-3xl" />
+
+      <div className="relative mx-auto max-w-5xl">
         <HelperDashboardNav activeTab="match" onSelectFeedTab={() => {}} t={t} />
 
-        <div className="mb-6 text-center md:text-left">
-          <p className={`text-xs font-black uppercase tracking-[0.2em] ${linkCreditGlowClass}`}>
-            LinkCredits
+        <div className="mx-auto mb-7 max-w-2xl text-center">
+          <p className={`inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.28em] ${linkCreditGlowClass}`}>
+            <Icons.Sparkles className="h-3.5 w-3.5" />
+            LINKCREDITS
+            <Icons.Sparkles className="h-3.5 w-3.5" />
           </p>
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
+          <h1 className="mt-3 text-4xl font-black leading-[1.02] tracking-tight text-black sm:text-5xl">
             {highlightLinkCreditText(t('link_credits_store.title'))}
           </h1>
-          <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">
+          <p className="mx-auto mt-5 max-w-xl text-base font-medium leading-relaxed text-slate-600 sm:text-[17px]">
             {highlightLinkCreditText(t('link_credits_store.subtitle'))}
+            <span className="mt-1 block font-semibold text-slate-500">{t('link_credits_store.no_subscription')}</span>
           </p>
-          <p className="mt-1 text-sm font-bold text-slate-500">{t('link_credits_store.no_subscription')}</p>
         </div>
 
         {cancelled ? (
@@ -110,68 +132,88 @@ export default function HelperLinkCreditsPage() {
           </div>
         ) : null}
 
-        <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-4 text-sm leading-relaxed text-blue-950">
+        <div className="mx-auto mb-7 flex max-w-2xl items-center gap-3 rounded-[1.15rem] border border-blue-600/10 bg-[#F7FAFF]/95 px-4 py-4 text-sm font-bold leading-relaxed text-blue-950 shadow-[0_12px_30px_rgba(37,99,255,0.05)]">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#245BFF] text-white shadow-[0_8px_18px_rgba(36,91,255,0.22)]">
+            <Icons.Info className="h-5 w-5" />
+          </span>
           <p>{t('link_credits_store.interest_cost_hint')}</p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-5">
           {LINK_CREDIT_PACKAGES.map((pkg) => {
             const artwork = packageArtwork(pkg.id);
 
             return (
               <article
                 key={pkg.id}
-                className="relative overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5"
+                className="group relative overflow-hidden rounded-[1.75rem] border border-black/[0.04] bg-white p-5 shadow-[0_12px_34px_rgba(15,23,42,0.055)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_44px_rgba(15,23,42,0.09)] sm:p-6"
               >
+                <div className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${packageAccent(pkg.id)} opacity-80`} />
+                <div className="pointer-events-none absolute right-[22%] top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-amber-300/10 blur-2xl transition group-hover:bg-amber-300/20" />
                 {pkg.badge ? (
-                  <span className="absolute right-4 top-4 rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+                  <span className="absolute left-5 top-5 z-10 translate-x-[5.5rem] rounded-full bg-[#2563FF] px-2.5 py-1 text-[9px] font-black uppercase tracking-wide text-white shadow-[0_7px_16px_rgba(37,99,255,0.22)] sm:left-6 sm:translate-x-[6.5rem] sm:text-[10px]">
                     {pkg.badge}
                   </span>
                 ) : null}
-                <h2 className={`text-lg font-black ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="flex items-center gap-2 text-4xl font-black tabular-nums text-amber-300 drop-shadow-[0_0_18px_rgba(251,191,36,0.42)]">
+
+                <div className="relative grid grid-cols-[minmax(0,0.9fr)_minmax(5.5rem,0.8fr)_minmax(0,1fr)] items-center gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(8rem,0.85fr)_minmax(0,1fr)] sm:gap-6">
+                  <div className="min-w-0 self-stretch">
+                    <h2 className={`text-lg font-black sm:text-xl ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
+                    <p className="mt-4 bg-gradient-to-b from-[#FFE36A] via-[#F3B51B] to-[#C98508] bg-clip-text text-5xl font-black leading-[0.86] tracking-tight text-transparent drop-shadow-[0_0_16px_rgba(217,169,40,0.28)] sm:text-7xl">
                       {pkg.credits}
-                      <img
-                        src="/brand/linkcredit-coin-icon.png"
-                        alt="LinkCredit"
-                        className="h-8 w-8 rounded-full object-cover drop-shadow-[0_0_12px_rgba(251,191,36,0.35)]"
-                        loading="lazy"
-                        decoding="async"
-                      />
                     </p>
-                    <p className="mt-2 text-xl font-black text-blue-700">
-                      {pkg.currency} ${pkg.price.toFixed(2)}
-                    </p>
+                    <p className="mt-2 text-xs font-black text-black sm:text-base">LinkCredits</p>
                   </div>
+
                   {artwork ? (
                     <img
                       src={artwork}
                       alt={`Pacote ${pkg.label} LinkCredit`}
-                      className="-mr-4 h-28 w-32 shrink-0 object-contain object-right drop-shadow-[0_18px_24px_rgba(180,83,9,0.22)]"
+                      className="h-24 w-full object-contain object-center drop-shadow-[0_18px_22px_rgba(180,83,9,0.24)] transition duration-500 group-hover:-translate-y-1 group-hover:scale-[1.04] sm:h-36"
                       loading="lazy"
                       decoding="async"
                     />
                   ) : null}
+
+                  <div className="min-w-0">
+                    <p className="break-words text-base font-black leading-tight text-[#245BFF] sm:text-2xl">
+                      {pkg.currency} ${pkg.price.toFixed(2)}
+                    </p>
+                    <button
+                      type="button"
+                      disabled={busyId != null}
+                      onClick={() => void handleBuy(pkg.id, pkg.priceId)}
+                      className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-[1rem] bg-gradient-to-r from-[#071238] to-[#02102D] px-2.5 text-[10px] font-black text-white shadow-[0_10px_22px_rgba(7,18,56,0.20)] transition hover:scale-[1.02] hover:brightness-125 disabled:opacity-60 sm:min-h-[50px] sm:gap-2 sm:px-4 sm:text-sm"
+                    >
+                      {busyId === pkg.id ? (
+                        <Icons.Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Icons.ShoppingCart className="h-4 w-4 shrink-0" />
+                      )}
+                      <span>{t('link_credits_store.buy_now')}</span>
+                    </button>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  disabled={busyId != null}
-                  onClick={() => void handleBuy(pkg.id, pkg.priceId)}
-                  className="mt-5 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 text-sm font-black text-white hover:bg-black disabled:opacity-60"
-                >
-                  {busyId === pkg.id ? (
-                    <Icons.Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Icons.CreditCard className="h-4 w-4" />
-                  )}
-                  {t('link_credits_store.buy_now')}
-                </button>
               </article>
             );
           })}
         </div>
+
+        <section className="mt-7 grid grid-cols-3 divide-x divide-slate-100 rounded-[1.75rem] border border-black/[0.04] bg-white px-2 py-6 shadow-[0_12px_34px_rgba(15,23,42,0.05)] sm:px-5">
+          {[
+            { label: 'Seguro e confiável', icon: Icons.ShieldCheck },
+            { label: 'Transações rápidas', icon: Icons.Zap },
+            { label: 'Qualidade premium', icon: Icons.Medal },
+          ].map((benefit) => {
+            const Icon = benefit.icon;
+            return (
+              <div key={benefit.label} className="flex min-w-0 flex-col items-center px-2 text-center sm:px-5">
+                <Icon className="h-7 w-7 text-[#D9A928] drop-shadow-[0_0_10px_rgba(217,169,40,0.28)] sm:h-9 sm:w-9" />
+                <p className="mt-3 text-[9px] font-black uppercase leading-tight text-black sm:text-xs">{benefit.label}</p>
+              </div>
+            );
+          })}
+        </section>
       </div>
     </AppPageShell>
   );

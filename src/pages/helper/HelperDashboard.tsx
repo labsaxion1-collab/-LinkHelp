@@ -109,8 +109,6 @@ export default function HelperDashboard() {
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const isSubmittingApplyRef = React.useRef(false);
   const [proposalJob, setProposalJob] = useState<Job | null>(null);
-  const { dismissedIds: dismissedJobIds, dismissJob: persistDismissJob, markDismissedInState } =
-    useHelperDismissedRequests(session?.user?.id);
   const [exitingJobIds, setExitingJobIds] = useState<Set<string>>(() => new Set());
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
@@ -130,6 +128,8 @@ export default function HelperDashboard() {
   const { t, language } = useLanguage();
   const me = useSessionViewer();
   const { session, profile, isConfigured, updateProfile, refreshProfile } = useAuth();
+  const { dismissedIds: dismissedJobIds, dismissJob: persistDismissJob, markDismissedInState } =
+    useHelperDismissedRequests(session?.user?.id);
   const { showToast } = useToast();
   const {
     jobs,

@@ -1,6 +1,29 @@
 import { ROUTES } from '@/utils/constants';
 import { isClientArea, isHelperArea } from '@/utils/navigation';
 import type { ProfileRole } from '@/types/database';
+import type { AppMode } from '@/utils/appModeStorage';
+import type { User } from '@supabase/supabase-js';
+
+/** Canonical role values used across auth metadata (`user_type`) and `profiles.role`. */
+export function normalizeProfileRole(raw: unknown): ProfileRole {
+  if (raw === 'helper') return 'helper';
+  return 'client';
+}
+
+/** Resolve the active workspace mode — stored preference wins, then profile, then metadata, default client. */
+export function resolveEffectiveRole(
+  profile: { role?: unknown } | null | undefined,
+  user?: User | null,
+  storedMode?: AppMode | null,
+): ProfileRole {
+  if (storedMode === 'client' || storedMode === 'helper') return storedMode;
+  if (profile?.role === 'helper' || profile?.role === 'client') {
+    return normalizeProfileRole(profile.role);
+  }
+  const metaType = user?.user_metadata?.user_type;
+  if (metaType === 'helper' || metaType === 'client') return normalizeProfileRole(metaType);
+  return 'client';
+}
 
 export function dashboardPathForRole(role: ProfileRole | string | undefined | null): string {
   return role === 'helper' ? ROUTES.helperDashboard : ROUTES.clientDashboard;

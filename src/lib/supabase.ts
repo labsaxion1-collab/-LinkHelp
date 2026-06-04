@@ -5,6 +5,11 @@ import { authDevLog } from '@/lib/authDebug';
 let browserClient: SupabaseClient<Database> | null = null;
 let envLogged = false;
 
+/** Avoid orphaned `navigator.locks` deadlocks that hang signInWithOAuth on web. */
+async function browserAuthLock<R>(_name: string, _acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
+  return fn();
+}
+
 /**
  * Single stable auth namespace for localStorage (session + PKCE `code_verifier`).
  * Must match every call to `getSupabase()` — do not create other Supabase clients in the browser.
@@ -116,12 +121,13 @@ export function getSupabase(): SupabaseClient<Database> | null {
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
       /** PKCE (default). Set `VITE_SUPABASE_AUTH_FLOW=implicit` if PKCE storage cannot be stabilized (tokens in URL hash). */
       flowType: getAuthFlowType(),
+      lock: browserAuthLock,
     },
   });
   return browserClient;
 }
 
-/** Drop singleton so the next `getSupabase()` builds a fresh client (e.g. after sign-out). */
+/** @deprecated Avoid resetting the singleton in the browser — causes duplicate GoTrueClient instances. */
 export function resetSupabaseBrowserClient(): void {
   browserClient = null;
 }

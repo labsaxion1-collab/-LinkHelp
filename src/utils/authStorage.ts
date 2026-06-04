@@ -1,0 +1,93 @@
+import { LINKHELP_AUTH_STORAGE_KEY } from '@/lib/supabase';
+import { ROUTES } from '@/utils/constants';
+
+export const OAUTH_CALLBACK_ACTIVE_KEY = 'linkhelp_oauth_callback_active';
+
+export function markOAuthCallbackActive(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(OAUTH_CALLBACK_ACTIVE_KEY, '1');
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearOAuthCallbackActive(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(OAUTH_CALLBACK_ACTIVE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isOAuthCallbackActive(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return sessionStorage.getItem(OAUTH_CALLBACK_ACTIVE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function isAuthCallbackPath(pathname?: string): boolean {
+  const path =
+    pathname ?? (typeof window !== 'undefined' ? window.location.pathname : '');
+  return path === ROUTES.authCallback || path.startsWith(`${ROUTES.authCallback}?`);
+}
+
+/** Login/register/reset — do not run refreshSession here (avoids GoTrue lock contention with OAuth). */
+export function isPublicAuthPath(pathname?: string): boolean {
+  const path =
+    pathname ?? (typeof window !== 'undefined' ? window.location.pathname : '');
+  return (
+    path === ROUTES.login ||
+    path === ROUTES.signup ||
+    path === ROUTES.authCallback ||
+    path.startsWith(`${ROUTES.authCallback}?`) ||
+    path === ROUTES.resetPassword ||
+    path.startsWith(`${ROUTES.resetPassword}?`)
+  );
+}
+
+export function clearLinkHelpAuthStorage(): void {
+  if (typeof window === 'undefined') return;
+  for (const k of Object.keys(localStorage)) {
+    if (
+      k === LINKHELP_AUTH_STORAGE_KEY ||
+      k.startsWith(`${LINKHELP_AUTH_STORAGE_KEY}-`) ||
+      (k.startsWith('sb-') && k.includes('-auth-token'))
+    ) {
+      try {
+        localStorage.removeItem(k);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+}
+
+export function readStoredRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(LINKHELP_AUTH_STORAGE_KEY);
+    if (!raw || raw === 'null') return null;
+    const parsed = JSON.parse(raw) as { refresh_token?: unknown };
+    const token = parsed?.refresh_token;
+    return typeof token === 'string' && token.length > 0 ? token : null;
+  } catch {
+    return null;
+  }
+}
+
+export function hasCorruptAuthStorage(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const raw = localStorage.getItem(LINKHELP_AUTH_STORAGE_KEY);
+    if (!raw || raw === 'null') return false;
+    JSON.parse(raw);
+    return false;
+  } catch {
+    return true;
+  }
+}

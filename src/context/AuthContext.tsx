@@ -1,6 +1,16 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { getSupabase, isSupabaseConfigured, resetSupabaseBrowserClient, LINKHELP_AUTH_STORAGE_KEY } from '@/lib/supabase';
+import { getSupabase, isSupabaseConfigured, LINKHELP_AUTH_STORAGE_KEY } from '@/lib/supabase';
+import {
+  clearLinkHelpAuthStorage,
+  clearOAuthCallbackActive,
+  hasCorruptAuthStorage,
+  isAuthCallbackPath,
+  isOAuthCallbackActive,
+  isPublicAuthPath,
+  markOAuthCallbackActive,
+  readStoredRefreshToken,
+} from '@/utils/authStorage';
 import { authDevLog, authFlowLog } from '@/lib/authDebug';
 import type { Database } from '@/types/supabase.database';
 import type { ProfileRow, UserType } from '@/types/database';
@@ -273,9 +283,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     authFlowLog('attemptSessionRecovery: calling refreshSession', {});
+    if (hasCorruptAuthStorage()) {
+      clearLinkHelpAuthStorage();
+      return false;
+    }
+    if (!readStoredRefreshToken()) {
+      authFlowLog('attemptSessionRecovery: no refresh_token in storage — skip refresh', {});
+      return false;
+    }
     const { data: d2, error } = await sb.auth.refreshSession();
     if (error) {
-      authFlowLog('attemptSessionRecovery: refreshSession error', { message: error.message });
+      authFlowLog('attemptSessionRecovery: refreshSession error — clearing storage', {
+        message: error.message,
+      });
+      clearLinkHelpAuthStorage();
+      return false;
     }
     if (d2.session) {
       authFlowLog('attemptSessionRecovery: refreshSession restored session', { userId: d2.session.user.id });
@@ -329,6 +351,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (!p) p = await ensureProfileFromUser(next.user);
           if (cancelled || profileSyncTargetRef.current !== targetId) return;
           setProfile(p);
+          if (p) {
+            authFlowLog('Profile loaded', {
+              userId: targetId,
+              role: p.role,
+              email: p.email ?? undefined,
+            });
+          }
         } finally {
           if (!cancelled && profileSyncTargetRef.current === targetId) {
             setAuthLoading(false);
@@ -365,6 +394,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (event === 'SIGNED_OUT') {
+        if (isAuthCallbackPath() || isOAuthCallbackActive()) {
+          authFlowLog('onAuthStateChange: ignoring SIGNED_OUT during OAuth callback', {});
+          return;
+        }
         authFlowLog('onAuthStateChange: SIGNED_OUT — clearing session', {});
         syncSession(null);
         return;
@@ -421,23 +454,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       let effectiveSession = data.session ?? null;
       if (!effectiveSession && typeof window !== 'undefined') {
-        try {
-          const stored = window.localStorage.getItem(LINKHELP_AUTH_STORAGE_KEY);
-          if (stored && stored.length > 4 && stored !== 'null') {
-            authFlowLog('bootstrap: empty getSession but persisted key present — trying refreshSession', {
-              keyLength: stored.length,
-            });
+        if (isAuthCallbackPath()) {
+          authFlowLog('bootstrap: on /auth/callback — defer session to AuthCallbackPage', {});
+        } else if (hasCorruptAuthStorage()) {
+          authFlowLog('bootstrap: corrupt auth storage — clearing', {});
+          clearLinkHelpAuthStorage();
+        } else {
+          const refreshToken = readStoredRefreshToken();
+          if (refreshToken) {
+            authFlowLog('bootstrap: trying refreshSession with stored refresh_token', {});
             const { data: refData, error: refErr } = await sb.auth.refreshSession();
-            authFlowLog('bootstrap: refreshSession after storage hint', {
+            authFlowLog('bootstrap: refreshSession result', {
               hasSession: !!refData.session,
               err: refErr?.message,
             });
-            effectiveSession = refData.session ?? null;
+            if (refErr) {
+              clearLinkHelpAuthStorage();
+            } else {
+              effectiveSession = refData.session ?? null;
+            }
           }
-        } catch (e) {
-          authFlowLog('bootstrap: refreshSession threw', {
-            message: e instanceof Error ? e.message : String(e),
-          });
         }
       }
 
@@ -550,42 +586,92 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authDevLog('signInWithOAuth:aborted', { reason: 'supabase_client_null' });
       return { code: 'unavailable', messageKey: 'auth.errors.env_not_ready' };
     }
+
+    markOAuthCallbackActive();
     const redirectTo = getOAuthRedirectToUrl();
     authFlowLog('OAuth redirectTo', {
       redirectTo,
       origin: typeof window !== 'undefined' ? window.location.origin : '',
       storageKey: LINKHELP_AUTH_STORAGE_KEY,
     });
-    if (import.meta.env.DEV) {
-      console.log('OAuth redirectTo', redirectTo);
-      console.log('Current origin', window.location.origin);
-    }
-    const { data, error } = await sb.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo,
-        queryParams: { prompt: 'select_account' },
-        scopes: 'email profile',
-        skipBrowserRedirect: false,
-      },
-    });
-    const status = error && 'status' in error ? (error as { status?: number }).status : undefined;
-    authDevLog('signInWithOAuth:result', {
-      errorMessage: error?.message,
-      status,
-      oauthUrl: data?.url ? '(redirect URL generated)' : null,
-      provider: 'google',
-    });
-    if (error) {
-      const mapped = mapSupabaseAuthError({ message: error.message, status });
+    console.log('[Google OAuth] Before signInWithOAuth', { redirectTo });
+
+    try {
+      const oauthCall = sb.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: { prompt: 'select_account' },
+          skipBrowserRedirect: true,
+        },
+      });
+
+      const OAUTH_TIMEOUT_MS = 12_000;
+      const result = await Promise.race([
+        oauthCall,
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error('OAUTH_TIMEOUT')), OAUTH_TIMEOUT_MS);
+        }),
+      ]);
+
+      const { data, error } = result;
+      const status = error && 'status' in error ? (error as { status?: number }).status : undefined;
+
+      console.log('[Google OAuth] Response:', data);
+      console.log('[Google OAuth] Error:', error);
+
+      authFlowLog('signInWithOAuth:result', {
+        errorMessage: error?.message,
+        status,
+        hasUrl: Boolean(data?.url),
+        provider: 'google',
+      });
+
+      if (error) {
+        clearOAuthCallbackActive();
+        const mapped = mapSupabaseAuthError({ message: error.message, status });
+        return {
+          code: 'auth_failed',
+          messageKey: mapped.messageKey,
+          vars: mapped.vars,
+          devRaw: error.message,
+        };
+      }
+
+      if (!data?.url) {
+        clearOAuthCallbackActive();
+        authFlowLog('signInWithOAuth:missing_url', {});
+        return {
+          code: 'auth_failed',
+          messageKey: 'auth.errors.oauth_google_short',
+          devRaw: 'NO_OAUTH_URL',
+        };
+      }
+
+      authFlowLog('signInWithOAuth:redirecting', {
+        urlHost: (() => {
+          try {
+            return new URL(data.url).host;
+          } catch {
+            return '(invalid url)';
+          }
+        })(),
+      });
+
+      window.location.assign(data.url);
+      return null;
+    } catch (e) {
+      clearOAuthCallbackActive();
+      const message = e instanceof Error ? e.message : String(e);
+      console.log('[Google OAuth] Error:', message);
+      authFlowLog('signInWithOAuth:exception', { message });
       return {
         code: 'auth_failed',
-        messageKey: mapped.messageKey,
-        vars: mapped.vars,
-        devRaw: import.meta.env.DEV ? error.message : undefined,
+        messageKey:
+          message === 'OAUTH_TIMEOUT' ? 'auth.errors.oauth_timeout' : 'auth.errors.oauth_google_short',
+        devRaw: message,
       };
     }
-    return null;
   }, []);
 
   const signOut = useCallback(async () => {
@@ -594,26 +680,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
     setProfile(null);
     setAuthLoading(false);
-    if (typeof window !== 'undefined') {
-      for (const k of Object.keys(localStorage)) {
-        if (k.startsWith(LINKHELP_AUTH_STORAGE_KEY) || (k.startsWith('sb-') && k.includes('-auth-token'))) {
-          try {
-            localStorage.removeItem(k);
-          } catch {
-            /* ignore */
-          }
-        }
+    clearLinkHelpAuthStorage();
+    if (sb) {
+      try {
+        await sb.auth.signOut({ scope: 'local' });
+      } catch {
+        /* ignore — storage already cleared */
       }
     }
-    if (sb) {
-      await sb.auth.signOut();
-    }
-    resetSupabaseBrowserClient();
   }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onLeave = () => {
+      if (isOAuthCallbackActive()) return;
       if (!readKeepSignedIn() && sessionRef.current) {
         void signOut();
       }

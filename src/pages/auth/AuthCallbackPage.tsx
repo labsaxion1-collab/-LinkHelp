@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { OAuthConnectingLoader } from '@/components/auth/OAuthConnectingLoader';
@@ -7,35 +7,25 @@ import { ROUTES } from '@/utils/constants';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { authFlowLog } from '@/lib/authDebug';
 import { resolvePostOAuthPath } from '@/utils/postOAuthRedirect';
+import { writeStoredAppMode } from '@/utils/appModeStorage';
+import { dashboardPathForRole, normalizeProfileRole } from '@/utils/userRole';
+import {
+  clearOAuthCallbackActive,
+  markOAuthCallbackActive,
+} from '@/utils/authStorage';
 import { parseOAuthCallbackError, userNeedsOAuthRoleSelection } from '@/utils/parseOAuthCallbackError';
 
-function waitForAuthSessionSignal(sb: SupabaseClient, maxMs: number): Promise<void> {
-  return new Promise((resolve) => {
-    let finished = false;
-    let timer = 0;
-    function done() {
-      if (finished) return;
-      finished = true;
-      window.clearTimeout(timer);
-      subscription.unsubscribe();
-      resolve();
-    }
-    const {
-      data: { subscription },
-    } = sb.auth.onAuthStateChange((_event, session) => {
-      if (session) done();
-    });
-    timer = window.setTimeout(() => done(), maxMs);
-    void sb.auth.getSession().then(({ data }) => {
-      if (data.session) queueMicrotask(done);
-    });
-  });
+async function waitForSessionFromClient(sb: SupabaseClient, maxMs: number): Promise<import('@supabase/supabase-js').Session | null> {
+  const deadline = Date.now() + maxMs;
+  while (Date.now() < deadline) {
+    const { data } = await sb.auth.getSession();
+    if (data.session?.user) return data.session;
+    await new Promise((r) => window.setTimeout(r, 120));
+  }
+  return (await sb.auth.getSession()).data.session ?? null;
 }
 
-async function waitForAuthBootstrapped(
-  getBootstrapped: () => boolean,
-  maxMs = 8000,
-): Promise<void> {
+async function waitForAuthBootstrapped(getBootstrapped: () => boolean, maxMs = 8000): Promise<void> {
   const until = Date.now() + maxMs;
   while (Date.now() < until) {
     if (getBootstrapped()) return;
@@ -43,18 +33,18 @@ async function waitForAuthBootstrapped(
   }
 }
 
-async function safeNavigateAwayFromLogin(
-  sb: SupabaseClient | null,
-  navigate: ReturnType<typeof useNavigate>,
-): Promise<boolean> {
-  if (!sb) return false;
-  const s = (await sb.auth.getSession()).data.session;
-  if (s?.user) {
-    authFlowLog('Session still valid — skipping redirect to login', { userId: s.user.id });
-    navigate(ROUTES.dashboard, { replace: true });
-    return true;
+function stripAuthParamsFromUrl(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('code') && !url.hash.includes('access_token')) return;
+    url.searchParams.delete('code');
+    url.searchParams.delete('state');
+    const clean = `${url.pathname}${url.search}${url.hash.replace(/access_token=[^&]+&?|refresh_token=[^&]+&?|token_type=[^&]+&?|expires_in=[^&]+&?|provider_token=[^&]+&?|type=[^&]+&?/g, '').replace(/[#&]$/, '')}`;
+    window.history.replaceState({}, document.title, clean || url.pathname);
+  } catch {
+    /* ignore */
   }
-  return false;
 }
 
 /**
@@ -65,20 +55,27 @@ export default function AuthCallbackPage() {
   const [params] = useSearchParams();
   const { refreshProfile, authBootstrapped } = useAuth();
   const next = params.get('next');
-  const bootstrappedRef = { current: authBootstrapped };
+  const bootstrappedRef = useRef(authBootstrapped);
   bootstrappedRef.current = authBootstrapped;
+  const ranRef = useRef(false);
 
   useEffect(() => {
+    if (ranRef.current) return;
+    ranRef.current = true;
+
     let cancelled = false;
 
     (async () => {
       const goToLogin = (oauthCode?: string) => {
         if (cancelled) return;
+        clearOAuthCallbackActive();
         navigate(ROUTES.login, {
           replace: true,
           state: oauthCode ? { oauthError: oauthCode } : { oauthError: 'invalid_session' },
         });
       };
+
+      markOAuthCallbackActive();
 
       if (!isSupabaseConfigured()) {
         goToLogin('invalid_session');
@@ -93,11 +90,7 @@ export default function AuthCallbackPage() {
         return;
       }
 
-      let sb = getSupabase();
-      if (!sb) {
-        await new Promise((r) => window.setTimeout(r, 150));
-        sb = getSupabase();
-      }
+      const sb = getSupabase();
       if (!sb) {
         goToLogin('invalid_session');
         return;
@@ -106,52 +99,45 @@ export default function AuthCallbackPage() {
       try {
         const callbackUrl = typeof window !== 'undefined' ? window.location.href : '';
         const code = callbackUrl ? new URL(callbackUrl).searchParams.get('code') : null;
-        const implicitHash =
-          typeof window !== 'undefined' &&
-          window.location.hash &&
-          /access_token|refresh_token|error/.test(window.location.hash);
+
+        authFlowLog('AuthCallback: processing', {
+          hasCode: !!code,
+          origin: typeof window !== 'undefined' ? window.location.origin : '',
+        });
 
         await sb.auth.initialize();
 
-        let session = (await sb.auth.getSession()).data.session;
+        // detectSessionInUrl (PKCE) exchanges the code on initialize/getSession — poll first.
+        let session = await waitForSessionFromClient(sb, code ? 6000 : 2500);
 
-        if (!session && code) {
+        if (!session?.user && code) {
+          authFlowLog('AuthCallback: auto-detect missed — trying exchangeCodeForSession', {});
           const { data: exchangeData, error: exchangeErr } = await sb.auth.exchangeCodeForSession(code);
           if (exchangeErr) {
-            authFlowLog('exchangeCodeForSession', { message: exchangeErr.message });
-            goToLogin('invalid_session');
-            return;
+            authFlowLog('exchangeCodeForSession failed', { message: exchangeErr.message });
+            session = await waitForSessionFromClient(sb, 2000);
+          } else if (exchangeData?.session) {
+            authFlowLog('Session created via exchangeCodeForSession', {
+              userId: exchangeData.session.user.id,
+            });
+            session = exchangeData.session;
           }
-          if (exchangeData?.session) {
-            authFlowLog('Session created', { userId: exchangeData.session.user.id });
-          }
-          session = (await sb.auth.getSession()).data.session;
-        }
-
-        const pollUntil = Date.now() + (implicitHash ? 12000 : 8000);
-        while (!session && Date.now() < pollUntil) {
-          await new Promise((r) => window.setTimeout(r, 280));
-          session = (await sb.auth.getSession()).data.session;
-          if (session) break;
-        }
-
-        if (session) {
-          await waitForAuthSessionSignal(sb, 1000);
-          session = (await sb.auth.getSession()).data.session;
-        } else if (code || implicitHash) {
-          await waitForAuthSessionSignal(sb, 4000);
-          session = (await sb.auth.getSession()).data.session;
         }
 
         if (cancelled) return;
 
         if (!session?.user) {
-          if (!(await safeNavigateAwayFromLogin(sb, navigate))) {
-            goToLogin('invalid_session');
-          }
+          authFlowLog('AuthCallback: no session after PKCE', {});
+          goToLogin('invalid_session');
           return;
         }
 
+        authFlowLog('AuthCallback: session OK', {
+          userId: session.user.id,
+          email: session.user.email ?? undefined,
+        });
+
+        stripAuthParamsFromUrl();
         await waitForAuthBootstrapped(() => bootstrappedRef.current);
 
         let profileRow: AuthProfile | null = null;
@@ -166,25 +152,29 @@ export default function AuthCallbackPage() {
 
         if (userNeedsOAuthRoleSelection(session.user)) {
           authFlowLog('OAuth user needs role selection', { userId: session.user.id });
+          clearOAuthCallbackActive();
           navigate(ROUTES.dashboard, { replace: true });
           return;
         }
 
         const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : null;
-        if (safeNext) {
-          navigate(safeNext, { replace: true });
-          return;
-        }
+        const role = normalizeProfileRole(profileRow?.role ?? session.user.user_metadata?.user_type);
+        writeStoredAppMode(role, session.user.id);
 
-        const dest = resolvePostOAuthPath(profileRow, session.user);
+        const dest = safeNext ?? resolvePostOAuthPath(profileRow, session.user);
+        authFlowLog('AuthCallback redirect', {
+          dest,
+          role,
+          dashboard: dashboardPathForRole(role),
+          userId: session.user.id,
+        });
+
+        clearOAuthCallbackActive();
         navigate(dest, { replace: true });
       } catch (e) {
         console.error('[LinkHelp AuthCallback] error', e);
         if (!cancelled) {
-          const sb2 = getSupabase();
-          if (!(await safeNavigateAwayFromLogin(sb2, navigate))) {
-            goToLogin('invalid_session');
-          }
+          goToLogin('invalid_session');
         }
       }
     })();
@@ -192,7 +182,7 @@ export default function AuthCallbackPage() {
     return () => {
       cancelled = true;
     };
-  }, [navigate, next, refreshProfile, authBootstrapped]);
+  }, [navigate, next, refreshProfile]);
 
   return <OAuthConnectingLoader />;
 }

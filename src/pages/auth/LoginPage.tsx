@@ -11,8 +11,11 @@ import { useToast } from '@/context/ToastContext';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { oauthErrorMessageKey, type OAuthCallbackErrorCode } from '@/utils/parseOAuthCallbackError';
 import { readKeepSignedIn, writeKeepSignedIn } from '@/utils/rememberSession';
+import { clearOAuthCallbackActive } from '@/utils/authStorage';
 import { getSupabase } from '@/lib/supabase';
-import { resolvePostLoginPath } from '@/utils/userRole';
+import { resolvePostLoginPath, resolveEffectiveRole } from '@/utils/userRole';
+import { writeStoredAppMode } from '@/utils/appModeStorage';
+import { authFlowLog } from '@/lib/authDebug';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -34,6 +37,10 @@ export default function LoginPage() {
   const from = (location.state as { from?: string } | null)?.from;
 
   useEffect(() => {
+    clearOAuthCallbackActive();
+  }, []);
+
+  useEffect(() => {
     const st = location.state as { oauthError?: OAuthCallbackErrorCode | boolean; registered?: boolean } | null;
     if (st?.oauthError && typeof st.oauthError === 'string') {
       setError(t(oauthErrorMessageKey(st.oauthError)));
@@ -44,8 +51,17 @@ export default function LoginPage() {
     }
   }, [location.state, location.pathname, navigate, from, t]);
 
-  const goAfterLogin = (role: 'client' | 'helper') => {
-    navigate(resolvePostLoginPath(role, from), { replace: true });
+  const goAfterLogin = (userId?: string, profileOverride?: typeof profile) => {
+    const role = resolveEffectiveRole(profileOverride ?? profile, session?.user);
+    writeStoredAppMode(role, userId ?? session?.user?.id);
+    const dest = resolvePostLoginPath(role, from);
+    authFlowLog('Login redirect', {
+      userId: userId ?? session?.user?.id,
+      role,
+      dest,
+      from,
+    });
+    navigate(dest, { replace: true });
   };
 
   useEffect(() => {
@@ -55,7 +71,7 @@ export default function LoginPage() {
       void refreshProfile(session.user);
       return;
     }
-    navigate(resolvePostLoginPath(profile.role, from), { replace: true });
+    goAfterLogin(session.user.id);
   }, [isConfigured, authBootstrapped, authLoading, session, profile, from, navigate, refreshProfile]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -75,10 +91,11 @@ export default function LoginPage() {
       return;
     }
     const recovered = await refreshProfile();
-    goAfterLogin(recovered?.role === 'helper' ? 'helper' : 'client');
+    goAfterLogin(recovered?.id ?? session?.user?.id, recovered);
   };
 
   const handleGoogle = async () => {
+    console.log('[Google OAuth] Button clicked');
     setError(null);
     if (!isConfigured) {
       showToast(t('auth.errors.env_not_ready'), 'info');
@@ -86,16 +103,18 @@ export default function LoginPage() {
     }
     writeKeepSignedIn(keepSignedIn);
     setGoogleLoading(true);
+    const loadingGuard = window.setTimeout(() => setGoogleLoading(false), 15_000);
     try {
       const err = await signInWithGoogle();
       if (err?.code === 'unavailable') showToast(t('auth.errors.env_not_ready'), 'info');
       else if (err) {
         const msg = t(err.messageKey, err.vars);
         setError(msg);
-        showToast(msg, 'error');
-        if (import.meta.env.DEV && err.devRaw) console.info('[LinkHelp] Google OAuth raw:', err.devRaw);
+        showToast(err.devRaw ? `${msg} (${err.devRaw})` : msg, 'error');
+        if (err.devRaw) console.info('[LinkHelp] Google OAuth raw:', err.devRaw);
       }
     } finally {
+      window.clearTimeout(loadingGuard);
       setGoogleLoading(false);
     }
   };

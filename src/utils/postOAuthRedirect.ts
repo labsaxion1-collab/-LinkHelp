@@ -1,6 +1,7 @@
 import type { User } from '@supabase/supabase-js';
 import type { AuthProfile } from '@/context/AuthContext';
 import { ROUTES } from '@/utils/constants';
+import { dashboardPathForRole, normalizeProfileRole } from '@/utils/userRole';
 
 /**
  * After Google OAuth + PKCE, pick workspace entry.
@@ -20,5 +21,5 @@ export function resolvePostOAuthPath(profile: AuthProfile | null, user: User): s
 
   if (!profile) return ROUTES.dashboard;
 
-  return ROUTES.clientHome;
+  return dashboardPathForRole(normalizeProfileRole(profile.role));
 }

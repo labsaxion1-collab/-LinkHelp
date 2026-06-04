@@ -1,12 +1,16 @@
 import { ROUTES } from '@/utils/constants';
 
+const PRODUCTION_ORIGIN = 'https://www.linkhelp.app';
+
 /**
- * Must match the browser tab origin exactly so PKCE `code_verifier` in localStorage
- * (under `linkhelp-auth-code-verifier` via `storageKey` in `supabase.ts`) matches this redirect.
+ * OAuth redirect must match the tab origin exactly so PKCE `code_verifier` in localStorage
+ * (via `linkhelp-auth-code-verifier`) matches this redirect URL.
+ *
+ * Production canonical site: https://www.linkhelp.app/auth/callback
  */
 export function getOAuthRedirectToUrl(): string {
   if (typeof window === 'undefined') {
-    return ROUTES.authCallback;
+    return `${PRODUCTION_ORIGIN}${ROUTES.authCallback}`;
   }
-  return `${window.location.origin}/auth/callback`;
+  return `${window.location.origin}${ROUTES.authCallback}`;
 }

@@ -4,6 +4,7 @@ import { PageLoader } from '@/components/common/PageLoader';
 import { useAuth } from '@/context/AuthContext';
 import { authFlowLog } from '@/lib/authDebug';
 import { ROUTES } from '@/utils/constants';
+import { isAuthCallbackPath } from '@/utils/authStorage';
 
 /** Require Supabase env, real session, and a `profiles` row for workspace routes. */
 export function ProtectedRoute() {
@@ -47,6 +48,7 @@ export function ProtectedRoute() {
 
   useEffect(() => {
     if (!isConfigured || !authBootstrapped || authLoading || session) return;
+    if (isAuthCallbackPath(location.pathname) || location.pathname === ROUTES.login) return;
 
     let cancelled = false;
     setSessionRecoveryBusy(true);
@@ -96,6 +98,11 @@ export function ProtectedRoute() {
   }
 
   if (!profile) {
+    authFlowLog('ProtectedRoute blocked — profile missing', {
+      path: location.pathname,
+      userId: session.user.id,
+      reason: 'profile_not_loaded',
+    });
     return (
       <div className="min-h-[40vh] flex flex-col items-center justify-center gap-4 px-4 text-center">
         <p className="text-sm font-semibold text-slate-700">Não foi possível carregar o seu perfil.</p>

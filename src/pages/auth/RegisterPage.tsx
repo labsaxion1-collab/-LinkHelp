@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, ArrowLeft, Globe, Briefcase, Search, CheckCircle2 } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { ROUTES } from '@/utils/constants';
+import { writeStoredAppMode } from '@/utils/appModeStorage';
+import { dashboardPathForRole, normalizeProfileRole, resolveEffectiveRole } from '@/utils/userRole';
 import { useAuth } from '@/context/AuthContext';
 import { CityRegionAutocomplete } from '@/components/common/CityRegionAutocomplete';
 import type { QuebecPlace } from '@/data/quebecRegions';
@@ -46,8 +48,9 @@ export default function RegisterPage() {
       void refreshProfile(session.user);
       return;
     }
-    const dest = profile.role === 'helper' ? ROUTES.helperHome : ROUTES.clientHome;
-    navigate(dest, { replace: true });
+    const role = resolveEffectiveRole(profile, session.user);
+    writeStoredAppMode(role, session.user.id);
+    navigate(dashboardPathForRole(role), { replace: true });
   }, [isConfigured, authBootstrapped, authLoading, session, profile, navigate, refreshProfile]);
 
   const selectClientMode = () => {
@@ -105,10 +108,9 @@ export default function RegisterPage() {
         const loginErr = await signInWithEmail(email, password);
         if (!loginErr) {
           const recovered = await refreshProfile();
-          navigate(
-            recovered?.role === 'helper' || ut === 'helper' ? ROUTES.helperDashboard : ROUTES.clientDashboard,
-            { replace: true },
-          );
+          const role = normalizeProfileRole(recovered?.role ?? ut);
+          writeStoredAppMode(role, recovered?.id ?? session?.user?.id);
+          navigate(dashboardPathForRole(role), { replace: true });
           showToast(t('register_page.welcome'), 'success');
           return;
         }
@@ -124,7 +126,8 @@ export default function RegisterPage() {
         data: { session },
       } = await sb.auth.getSession();
       if (session) {
-        navigate(ut === 'helper' ? ROUTES.helperDashboard : ROUTES.clientDashboard, { replace: true });
+        writeStoredAppMode(ut, session.user.id);
+        navigate(dashboardPathForRole(ut), { replace: true });
         showToast(t('register_page.welcome'), 'success');
         return;
       }
@@ -133,22 +136,25 @@ export default function RegisterPage() {
   };
 
   const handleGoogle = async () => {
+    console.log('[Google OAuth] Button clicked');
     setError(null);
     if (!isConfigured) {
       showToast(t('auth.errors.env_not_ready'), 'info');
       return;
     }
     setGoogleLoading(true);
+    const loadingGuard = window.setTimeout(() => setGoogleLoading(false), 15_000);
     try {
       const err = await signInWithGoogle();
       if (err?.code === 'unavailable') showToast(t('auth.errors.env_not_ready'), 'info');
       else if (err) {
         const msg = t(err.messageKey, err.vars);
         setError(msg);
-        showToast(msg, 'error');
-        if (import.meta.env.DEV && err.devRaw) console.info('[LinkHelp] Google OAuth raw:', err.devRaw);
+        showToast(err.devRaw ? `${msg} (${err.devRaw})` : msg, 'error');
+        if (err.devRaw) console.info('[LinkHelp] Google OAuth raw:', err.devRaw);
       }
     } finally {
+      window.clearTimeout(loadingGuard);
       setGoogleLoading(false);
     }
   };

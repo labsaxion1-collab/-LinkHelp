@@ -4,25 +4,35 @@ export const STORAGE_APP_MODE = 'linkhelp_app_mode';
 export const STORAGE_LAST_CLIENT = 'linkhelp_last_path_client';
 export const STORAGE_LAST_HELPER = 'linkhelp_last_path_helper';
 
-export function modeSwitchLog(label: string, payload: Record<string, unknown>): void {
-  if (import.meta.env.DEV) {
-    console.info(`[mode-switch] ${label}`, payload);
-  }
+function storageKeyForUser(userId?: string | null): string {
+  return userId ? `${STORAGE_APP_MODE}:${userId}` : STORAGE_APP_MODE;
 }
 
-export function readStoredAppMode(): AppMode {
+export function modeSwitchLog(label: string, payload: Record<string, unknown>): void {
+  console.info(`[LinkHelp Role] ${label}`, payload);
+}
+
+export function readStoredAppMode(userId?: string | null): AppMode | null {
   try {
-    const v = localStorage.getItem(STORAGE_APP_MODE);
+    const v = localStorage.getItem(storageKeyForUser(userId));
     if (v === 'helper' || v === 'client') return v;
   } catch {
     /* ignore */
   }
-  return 'client';
+  return null;
 }
 
-export function writeStoredAppMode(mode: AppMode): void {
+export function writeStoredAppMode(mode: AppMode, userId?: string | null): void {
   try {
-    localStorage.setItem(STORAGE_APP_MODE, mode);
+    localStorage.setItem(storageKeyForUser(userId), mode);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearStoredAppMode(userId?: string | null): void {
+  try {
+    localStorage.removeItem(storageKeyForUser(userId));
   } catch {
     /* ignore */
   }

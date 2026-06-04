@@ -8,7 +8,8 @@ import { authFlowLog } from '@/lib/authDebug';
 import { getSupabase } from '@/lib/supabase';
 import { userNeedsOAuthRoleSelection } from '@/utils/parseOAuthCallbackError';
 import { confirmInitialProfileRole } from '@/services/supabase/profileRoleRemote';
-import { dashboardPathForRole } from '@/utils/userRole';
+import { dashboardPathForRole, normalizeProfileRole } from '@/utils/userRole';
+import { writeStoredAppMode } from '@/utils/appModeStorage';
 
 /**
  * Post-OAuth gate: create/load profile, ask Client vs Helper once, then redirect.
@@ -37,8 +38,10 @@ export default function DashboardEntryPage() {
   useEffect(() => {
     if (!isConfigured || !authBootstrapped || !session?.user || !profile || redirected.current || needsRole) return;
     redirected.current = true;
-    const dest = dashboardPathForRole(profile.role);
-    authFlowLog('Redirecting to dashboard', { path: dest, role: profile.role });
+    const role = normalizeProfileRole(profile.role);
+    writeStoredAppMode(role, session.user.id);
+    const dest = dashboardPathForRole(role);
+    authFlowLog('Redirecting to dashboard', { path: dest, role, profileRole: profile.role });
     navigate(dest, { replace: true });
   }, [isConfigured, authBootstrapped, session, profile, navigate, needsRole]);
 
@@ -47,6 +50,14 @@ export default function DashboardEntryPage() {
     setRoleBusy(true);
     const now = new Date().toISOString();
     try {
+      authFlowLog('OAuth role picker confirmed', { role, userId: session.user.id });
+
+      const result = await confirmInitialProfileRole(role);
+      if (!result.ok) {
+        authFlowLog('confirmInitialProfileRole failed', { role, message: result.message });
+        console.warn('[LinkHelp] confirmInitialProfileRole', result.message);
+      }
+
       const sb = getSupabase();
       if (sb) {
         await sb.auth.updateUser({
@@ -60,14 +71,12 @@ export default function DashboardEntryPage() {
         });
       }
 
-      const result = await confirmInitialProfileRole(role);
-      if (!result.ok) {
-        console.warn('[LinkHelp] confirmInitialProfileRole', result.message);
-      }
-
       await refreshProfile(session.user);
+      writeStoredAppMode(role, session.user.id);
       redirected.current = true;
-      navigate(dashboardPathForRole(role), { replace: true });
+      const dest = dashboardPathForRole(role);
+      authFlowLog('OAuth role confirmed — navigating', { role, dest });
+      navigate(dest, { replace: true });
     } finally {
       setRoleBusy(false);
     }

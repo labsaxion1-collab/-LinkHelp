@@ -11,7 +11,12 @@ import { useToast } from '@/context/ToastContext';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { oauthErrorMessageKey, type OAuthCallbackErrorCode } from '@/utils/parseOAuthCallbackError';
 import { readKeepSignedIn, writeKeepSignedIn } from '@/utils/rememberSession';
-import { clearOAuthCallbackActive } from '@/utils/authStorage';
+import {
+  clearOAuthCallbackActive,
+  clearOAuthRedirectPending,
+  isOAuthCallbackActive,
+  isOAuthRedirectPending,
+} from '@/utils/authStorage';
 import { getSupabase } from '@/lib/supabase';
 import { resolvePostLoginPath, resolveEffectiveRole } from '@/utils/userRole';
 import { writeStoredAppMode } from '@/utils/appModeStorage';
@@ -37,7 +42,10 @@ export default function LoginPage() {
   const from = (location.state as { from?: string } | null)?.from;
 
   useEffect(() => {
-    clearOAuthCallbackActive();
+    if (!isOAuthRedirectPending()) {
+      clearOAuthCallbackActive();
+      clearOAuthRedirectPending();
+    }
   }, []);
 
   useEffect(() => {
@@ -66,6 +74,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isConfigured || !authBootstrapped || authLoading) return;
+    if (isOAuthCallbackActive() || isOAuthRedirectPending()) return;
     if (!session?.user) return;
     if (!profile) {
       void refreshProfile(session.user);
@@ -103,11 +112,15 @@ export default function LoginPage() {
     }
     writeKeepSignedIn(keepSignedIn);
     setGoogleLoading(true);
-    const loadingGuard = window.setTimeout(() => setGoogleLoading(false), 15_000);
+    const loadingGuard = window.setTimeout(() => {
+      if (!isOAuthRedirectPending()) setGoogleLoading(false);
+    }, 15_000);
     try {
       const err = await signInWithGoogle();
+      if (isOAuthRedirectPending()) return;
       if (err?.code === 'unavailable') showToast(t('auth.errors.env_not_ready'), 'info');
       else if (err) {
+        clearOAuthRedirectPending();
         const msg = t(err.messageKey, err.vars);
         setError(msg);
         showToast(err.devRaw ? `${msg} (${err.devRaw})` : msg, 'error');
@@ -115,7 +128,7 @@ export default function LoginPage() {
       }
     } finally {
       window.clearTimeout(loadingGuard);
-      setGoogleLoading(false);
+      if (!isOAuthRedirectPending()) setGoogleLoading(false);
     }
   };
 

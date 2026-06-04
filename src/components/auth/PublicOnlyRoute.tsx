@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { authFlowLog } from '@/lib/authDebug';
 import { ROUTES } from '@/utils/constants';
+import { isOAuthRedirectPending } from '@/utils/authStorage';
 import { dashboardPathForRole, normalizeProfileRole } from '@/utils/userRole';
 
 /** Keep authenticated users inside the app when browser back reaches public auth/landing routes. */
@@ -15,7 +16,7 @@ export function PublicOnlyRoute() {
     return <PageLoader />;
   }
 
-  if (isConfigured && session?.user) {
+  if (isConfigured && session?.user && !isOAuthRedirectPending()) {
     if (profile) {
       const role = normalizeProfileRole(profile.role);
       const dest = dashboardPathForRole(mode ?? role);

@@ -11,6 +11,7 @@ import { writeStoredAppMode } from '@/utils/appModeStorage';
 import { dashboardPathForRole, normalizeProfileRole } from '@/utils/userRole';
 import {
   clearOAuthCallbackActive,
+  clearOAuthRedirectPending,
   markOAuthCallbackActive,
 } from '@/utils/authStorage';
 import { parseOAuthCallbackError, userNeedsOAuthRoleSelection } from '@/utils/parseOAuthCallbackError';
@@ -53,7 +54,7 @@ function stripAuthParamsFromUrl(): void {
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { refreshProfile, authBootstrapped } = useAuth();
+  const { refreshProfile, authBootstrapped, attemptSessionRecovery } = useAuth();
   const next = params.get('next');
   const bootstrappedRef = useRef(authBootstrapped);
   bootstrappedRef.current = authBootstrapped;
@@ -66,9 +67,12 @@ export default function AuthCallbackPage() {
     let cancelled = false;
 
     (async () => {
+      clearOAuthRedirectPending();
+
       const goToLogin = (oauthCode?: string) => {
         if (cancelled) return;
         clearOAuthCallbackActive();
+        clearOAuthRedirectPending();
         navigate(ROUTES.login, {
           replace: true,
           state: oauthCode ? { oauthError: oauthCode } : { oauthError: 'invalid_session' },
@@ -138,6 +142,14 @@ export default function AuthCallbackPage() {
         });
 
         stripAuthParamsFromUrl();
+
+        const synced = await attemptSessionRecovery();
+        if (!synced) {
+          authFlowLog('AuthCallback: session not synced to app context', {});
+          goToLogin('invalid_session');
+          return;
+        }
+
         await waitForAuthBootstrapped(() => bootstrappedRef.current);
 
         let profileRow: AuthProfile | null = null;
@@ -153,6 +165,7 @@ export default function AuthCallbackPage() {
         if (userNeedsOAuthRoleSelection(session.user)) {
           authFlowLog('OAuth user needs role selection', { userId: session.user.id });
           clearOAuthCallbackActive();
+          clearOAuthRedirectPending();
           navigate(ROUTES.dashboard, { replace: true });
           return;
         }
@@ -170,6 +183,7 @@ export default function AuthCallbackPage() {
         });
 
         clearOAuthCallbackActive();
+        clearOAuthRedirectPending();
         navigate(dest, { replace: true });
       } catch (e) {
         console.error('[LinkHelp AuthCallback] error', e);

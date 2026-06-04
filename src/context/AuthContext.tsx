@@ -4,11 +4,13 @@ import { getSupabase, isSupabaseConfigured, LINKHELP_AUTH_STORAGE_KEY } from '@/
 import {
   clearLinkHelpAuthStorage,
   clearOAuthCallbackActive,
+  clearOAuthRedirectPending,
   hasCorruptAuthStorage,
   isAuthCallbackPath,
   isOAuthCallbackActive,
   isPublicAuthPath,
   markOAuthCallbackActive,
+  navigateToOAuthProvider,
   readStoredRefreshToken,
 } from '@/utils/authStorage';
 import { authDevLog, authFlowLog } from '@/lib/authDebug';
@@ -629,6 +631,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         clearOAuthCallbackActive();
+        clearOAuthRedirectPending();
         const mapped = mapSupabaseAuthError({ message: error.message, status });
         return {
           code: 'auth_failed',
@@ -640,6 +643,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!data?.url) {
         clearOAuthCallbackActive();
+        clearOAuthRedirectPending();
         authFlowLog('signInWithOAuth:missing_url', {});
         return {
           code: 'auth_failed',
@@ -658,10 +662,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })(),
       });
 
-      window.location.assign(data.url);
+      navigateToOAuthProvider(data.url);
+      // Block caller finally-blocks (React state) from racing this hard navigation.
+      await new Promise<never>(() => {});
       return null;
     } catch (e) {
       clearOAuthCallbackActive();
+      clearOAuthRedirectPending();
       const message = e instanceof Error ? e.message : String(e);
       console.log('[Google OAuth] Error:', message);
       authFlowLog('signInWithOAuth:exception', { message });

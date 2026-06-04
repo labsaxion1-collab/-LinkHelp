@@ -13,6 +13,7 @@ import { useToast } from '@/context/ToastContext';
 import { getSupabase } from '@/lib/supabase';
 import { HelperTermsGateModal } from '@/components/auth/HelperTermsGateModal';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import { clearOAuthRedirectPending, isOAuthRedirectPending } from '@/utils/authStorage';
 import type { AppLanguage } from '@/services/translationService';
 
 export default function RegisterPage() {
@@ -143,11 +144,15 @@ export default function RegisterPage() {
       return;
     }
     setGoogleLoading(true);
-    const loadingGuard = window.setTimeout(() => setGoogleLoading(false), 15_000);
+    const loadingGuard = window.setTimeout(() => {
+      if (!isOAuthRedirectPending()) setGoogleLoading(false);
+    }, 15_000);
     try {
       const err = await signInWithGoogle();
+      if (isOAuthRedirectPending()) return;
       if (err?.code === 'unavailable') showToast(t('auth.errors.env_not_ready'), 'info');
       else if (err) {
+        clearOAuthRedirectPending();
         const msg = t(err.messageKey, err.vars);
         setError(msg);
         showToast(err.devRaw ? `${msg} (${err.devRaw})` : msg, 'error');
@@ -155,7 +160,7 @@ export default function RegisterPage() {
       }
     } finally {
       window.clearTimeout(loadingGuard);
-      setGoogleLoading(false);
+      if (!isOAuthRedirectPending()) setGoogleLoading(false);
     }
   };
 

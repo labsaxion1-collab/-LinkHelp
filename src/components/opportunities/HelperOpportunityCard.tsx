@@ -108,6 +108,7 @@ function HelperOpportunityCardInner({
   const category = translateCategory(job.category, t);
   const loc = locationLabel(job, distanceKm, t, distanceFromBase, needsBaseAddress, baseAddressPendingCoords);
   const budget = valueLabel(job, t);
+  const openedLabel = formatJobOpenedAt(job.createdAt, t);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [swipeOverlay, setSwipeOverlay] = useState<'none' | 'accept' | 'pass'>('none');

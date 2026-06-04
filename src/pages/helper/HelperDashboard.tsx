@@ -554,7 +554,7 @@ export default function HelperDashboard() {
           job,
           {
             distanceKm: baseDistanceToJobKm(job),
-            source: 'feed',
+            source: 'recommendation',
           },
           { updateState: false },
         );
@@ -565,7 +565,7 @@ export default function HelperDashboard() {
             found,
             {
               distanceKm: baseDistanceToJobKm(found),
-              source: 'feed',
+              source: 'recommendation',
             },
             { updateState: false },
           );
@@ -805,7 +805,7 @@ export default function HelperDashboard() {
   const feedActiveTab =
     activeTab === 'match' || activeTab === 'recentes' || activeTab === 'emergencia' ? activeTab : 'match';
 
-  const radarJobs = filterToPreferredCategoriesIfPossible(
+  const radarJobs = filterToPreferredCategoriesIfPossible<Job>(
     jobs.filter(
       (j) =>
         j.status === 'open' &&
@@ -818,7 +818,7 @@ export default function HelperDashboard() {
     .map((job) => ({ job, distanceKm: baseDistanceToJobKm(job) }))
     .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
     .slice(0, 3);
-  const helperFirstName = (me?.name || profile?.full_name || profile?.name || 'Helper').split(' ')[0] || 'Helper';
+  const helperFirstName = (me?.name || profile?.name || 'Helper').split(' ')[0] || 'Helper';
   const isPerformancePage = location.pathname === ROUTES.helperPerformance;
   const showDesktopBack =
     location.pathname === ROUTES.helperPerformance ||

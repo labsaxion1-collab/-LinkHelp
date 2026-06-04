@@ -4,6 +4,7 @@ import {
   persistLocalDismissedRequest,
 } from '@/services/supabase/helperDismissedRemote';
 import { recordNotInterestedSignal } from '@/services/marketSignals';
+import type { MarketSignalSource } from '@/services/marketSignals';
 import type { Job } from '@/types/job';
 
 type DismissMeta = {
@@ -13,7 +14,7 @@ type DismissMeta = {
   budgetMin?: number | null;
   budgetMax?: number | null;
   distanceKm?: number | null;
-  source?: 'swipe' | 'modal' | 'details' | 'feed';
+  source?: MarketSignalSource;
 };
 
 export function useHelperDismissedRequests(helperId: string | undefined) {
@@ -51,7 +52,7 @@ export function useHelperDismissedRequests(helperId: string | undefined) {
         budgetMin: meta?.budgetMin ?? null,
         budgetMax: meta?.budgetMax ?? null,
         distanceKm: meta?.distanceKm ?? null,
-        source: meta?.source ?? 'feed',
+        source: meta?.source ?? 'recommendation',
       });
       if (options?.updateState !== false) {
         setDismissedIds((prev) => {
@@ -80,7 +81,7 @@ export function useHelperDismissedRequests(helperId: string | undefined) {
           budgetMin: job.budgetMin ?? null,
           budgetMax: job.budgetMax ?? null,
           distanceKm: meta?.distanceKm ?? null,
-          source: meta?.source ?? 'feed',
+          source: meta?.source ?? 'recommendation',
         },
         options,
       );

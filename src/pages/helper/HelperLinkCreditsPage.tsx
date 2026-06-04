@@ -56,6 +56,20 @@ function packageArtwork(packageId: string): string | null {
   }
 }
 
+function packageArtworkClass(packageId: string): string {
+  const base =
+    'w-full object-contain object-center drop-shadow-[0_18px_22px_rgba(180,83,9,0.24)] transition duration-500 group-hover:-translate-y-1';
+
+  switch (packageId) {
+    case 'starter':
+      return `${base} h-16 group-hover:scale-[1.04] sm:h-24`;
+    case 'popular':
+      return `${base} h-32 scale-[1.22] group-hover:scale-[1.28] sm:h-44`;
+    default:
+      return `${base} h-24 group-hover:scale-[1.04] sm:h-36`;
+  }
+}
+
 function packageAccent(packageId: string): string {
   switch (packageId) {
     case 'starter':
@@ -170,7 +184,7 @@ export default function HelperLinkCreditsPage() {
                     <img
                       src={artwork}
                       alt={`Pacote ${pkg.label} LinkCredit`}
-                      className="h-24 w-full object-contain object-center drop-shadow-[0_18px_22px_rgba(180,83,9,0.24)] transition duration-500 group-hover:-translate-y-1 group-hover:scale-[1.04] sm:h-36"
+                      className={packageArtworkClass(pkg.id)}
                       loading="lazy"
                       decoding="async"
                     />

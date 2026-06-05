@@ -1,7 +1,7 @@
 import * as Icons from 'lucide-react';
 import type { RequestAddressValue } from '@/components/client/create-request/RequestAddressInput';
 import type { MovePropertyType } from '@/components/client/create-request/CreateRequestScheduleStep';
-import type { PreferredDateMode, RequestPriority, TimeWindow } from '@/utils/requestSchedule';
+import type { RequestPriority, TimeWindow } from '@/utils/requestSchedule';
 import { formatPreferredDateTimeLabel } from '@/utils/requestSchedule';
 
 type Props = {
@@ -19,7 +19,6 @@ type Props = {
   priority: RequestPriority;
   preferredTimeWindow: TimeWindow;
   preferredTimeSpecific: string;
-  preferredDateMode: PreferredDateMode;
   preferredDateIso: string;
 };
 
@@ -33,12 +32,12 @@ export function CreateRequestReviewStep({
   translationToLanguage,
   requestAddress,
   movePickupAddress,
-  preferredDateMode,
   preferredDateIso,
   preferredTimeSpecific,
+  preferredTimeWindow,
 }: Props) {
   const scheduleLabel = formatPreferredDateTimeLabel(
-    { preferredDateMode, preferredDateIso, preferredTimeSpecific },
+    { preferredDateIso, preferredTimeSpecific, preferredTimeWindow },
     t,
   );
   const locationDisplay =

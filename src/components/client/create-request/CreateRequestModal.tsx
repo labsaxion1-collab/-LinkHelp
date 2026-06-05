@@ -376,7 +376,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     }
     if (step === 'confirm') {
       if (!preferredDateIso) return t('create_modal.confirm_date_required');
-      if (!preferredTimeSpecific.trim()) return t('create_modal.preferred_time_required');
+      if (!preferredTimeSpecific.trim()) return t('create_modal.confirm_time_required');
     }
     return '';
   }, [

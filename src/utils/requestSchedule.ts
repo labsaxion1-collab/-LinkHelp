@@ -1,6 +1,8 @@
 export type RequestPriority = 'emergency' | 'urgent' | 'today' | 'flexible';
+/** @deprecated Legacy quick-pick modes; new requests use preferredDateIso only */
 export type PreferredDateMode = 'today' | 'tomorrow' | 'pick';
 export type TimeWindow = 'morning' | 'afternoon' | 'evening' | '';
+/** @deprecated Legacy period pick; new requests use preferredTimeSpecific only */
 export type PreferredTimeChoice = TimeWindow | 'pick' | '';
 
 /** Quick slots for beauty / aesthetics appointments */
@@ -8,7 +10,7 @@ export const BEAUTY_PREFERRED_TIME_SLOTS = ['09:00', '10:00', '11:00', '14:00', 
 
 export type RequestScheduleInput = {
   priority: RequestPriority;
-  preferredDateMode: PreferredDateMode;
+  preferredDateMode?: PreferredDateMode;
   preferredDateIso: string;
   preferredTimeWindow: TimeWindow;
   preferredTimeSpecific: string;
@@ -29,6 +31,7 @@ export function resolvePreferredDateIso(input: RequestScheduleInput): string | n
   if (input.priority === 'emergency' || input.priority === 'urgent') {
     return todayIso();
   }
+  if (input.preferredDateIso) return input.preferredDateIso;
   if (input.preferredDateMode === 'today') return todayIso();
   if (input.preferredDateMode === 'tomorrow') return tomorrowIso();
   if (input.preferredDateMode === 'pick' && input.preferredDateIso) return input.preferredDateIso;
@@ -48,10 +51,19 @@ export function jobUrgencyFromPriority(priority: RequestPriority): 'high' | 'nor
   return priority === 'emergency' || priority === 'urgent' ? 'high' : 'normal';
 }
 
+export function isPreferredDateComplete(preferredDateIso: string): boolean {
+  return Boolean(preferredDateIso.trim());
+}
+
+export function isPreferredTimeComplete(preferredTimeSpecific: string): boolean {
+  return Boolean(preferredTimeSpecific.trim());
+}
+
 export function isScheduleStepComplete(input: RequestScheduleInput): boolean {
   if (input.priority === 'emergency') return true;
   const dateOk =
     input.priority === 'urgent' ||
+    Boolean(input.preferredDateIso) ||
     input.preferredDateMode === 'today' ||
     input.preferredDateMode === 'tomorrow' ||
     (input.preferredDateMode === 'pick' && Boolean(input.preferredDateIso));
@@ -62,9 +74,7 @@ export function formatPreferredDateLabel(
   input: Pick<RequestScheduleInput, 'preferredDateMode' | 'preferredDateIso'>,
   t: (key: string) => string,
 ): string {
-  if (input.preferredDateMode === 'today') return t('create_modal.date_today');
-  if (input.preferredDateMode === 'tomorrow') return t('create_modal.date_tomorrow');
-  if (input.preferredDateMode === 'pick' && input.preferredDateIso) {
+  if (input.preferredDateIso) {
     try {
       const d = new Date(`${input.preferredDateIso}T12:00:00`);
       return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
@@ -72,6 +82,8 @@ export function formatPreferredDateLabel(
       return input.preferredDateIso;
     }
   }
+  if (input.preferredDateMode === 'today') return t('create_modal.date_today');
+  if (input.preferredDateMode === 'tomorrow') return t('create_modal.date_tomorrow');
   return '—';
 }
 
@@ -99,13 +111,4 @@ export function formatPreferredDateTimeLabel(
     return t('jobs.schedule_date_with_period', { date: datePart, period: periodLabel });
   }
   return datePart;
-}
-
-export function isPreferredTimeComplete(
-  choice: PreferredTimeChoice,
-  preferredTimeSpecific: string,
-): boolean {
-  if (!choice) return false;
-  if (choice === 'pick') return Boolean(preferredTimeSpecific.trim());
-  return choice === 'morning' || choice === 'afternoon' || choice === 'evening';
 }

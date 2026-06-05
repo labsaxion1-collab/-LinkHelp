@@ -1,6 +1,19 @@
 -- Atomic helper application: debit interest (idempotent), insert application, ensure conversation.
 -- Idempotent re-run for production when PostgREST returns 404 on applications / RPCs.
 
+alter table public.credit_transactions
+  add column if not exists request_id uuid references public.requests(id) on delete set null,
+  add column if not exists application_id uuid references public.applications(id) on delete set null,
+  add column if not exists balance_before int;
+
+alter table public.credit_transactions drop constraint if exists credit_transactions_type_check;
+alter table public.credit_transactions add constraint credit_transactions_type_check check (
+  type in (
+    'CREDIT_PURCHASE', 'FREE_BONUS', 'OPPORTUNITY_UNLOCK', 'REFUND', 'ADMIN_ADJUSTMENT',
+    'APPLICATION_INTEREST', 'APPLICATION_SELECTED'
+  )
+);
+
 create table if not exists public.applications (
   id uuid primary key default gen_random_uuid(),
   request_id uuid not null references public.requests (id) on delete cascade,

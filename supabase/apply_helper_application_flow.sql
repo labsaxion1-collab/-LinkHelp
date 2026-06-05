@@ -5,6 +5,20 @@
 -- (Same as supabase/migrations/0039_helper_submit_application.sql)
 
 -- Atomic helper application: debit interest (idempotent), insert application, ensure conversation.
+-- Prerequisite for helper_debit_application_interest (from 0038; safe to re-run).
+
+alter table public.credit_transactions
+  add column if not exists request_id uuid references public.requests(id) on delete set null,
+  add column if not exists application_id uuid references public.applications(id) on delete set null,
+  add column if not exists balance_before int;
+
+alter table public.credit_transactions drop constraint if exists credit_transactions_type_check;
+alter table public.credit_transactions add constraint credit_transactions_type_check check (
+  type in (
+    'CREDIT_PURCHASE', 'FREE_BONUS', 'OPPORTUNITY_UNLOCK', 'REFUND', 'ADMIN_ADJUSTMENT',
+    'APPLICATION_INTEREST', 'APPLICATION_SELECTED'
+  )
+);
 
 create table if not exists public.applications (
   id uuid primary key default gen_random_uuid(),

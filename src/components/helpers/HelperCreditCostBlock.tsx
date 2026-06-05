@@ -8,7 +8,7 @@ type Props = {
   job: Job;
   t: TFn;
   distanceKm?: number | null;
-  variant?: 'compact' | 'detail';
+  variant?: 'compact' | 'detail' | 'feed';
   showHireEstimate?: boolean;
 };
 
@@ -77,6 +77,23 @@ export function HelperCreditCostBlock({
   showHireEstimate = false,
 }: Props) {
   const display = getHelperCreditPublicDisplay(getHelperLeadCreditSummary(job, distanceKm));
+
+  if (variant === 'feed') {
+    return (
+      <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] font-bold leading-snug text-blue-800">
+        <Icons.Coins className="h-3 w-3 shrink-0 text-blue-600" aria-hidden />
+        <span>{t('helper_dashboard.credit_apply_cost', { count: display.applyCost })}</span>
+        {showHireEstimate ? (
+          <>
+            <span className="text-slate-300" aria-hidden>
+              ·
+            </span>
+            <span>{t('helper_dashboard.credit_total_estimated', { count: display.totalEstimate })}</span>
+          </>
+        ) : null}
+      </p>
+    );
+  }
 
   if (variant === 'compact') {
     return (

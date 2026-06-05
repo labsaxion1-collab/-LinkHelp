@@ -1,7 +1,8 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { hapticLight, hapticSuccess } from '@/utils/haptic';
 import * as Icons from 'lucide-react';
-import { CheckCircle2, Clock, MapPin } from 'lucide-react';
+import { CheckCircle2, Clock, MapPin, History } from 'lucide-react';
+import { getCategoryIconById } from '@/utils/categoryIcons';
 import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
 import { clsx } from 'clsx';
 import type { Job } from '@/types/job';
@@ -186,7 +187,7 @@ function HelperOpportunityCardInner({
     'inline-flex min-h-[40px] flex-1 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2.5 text-sm font-bold transition-all duration-200';
 
   const cardShell = clsx(
-    'group/card h-full w-full max-w-full overflow-hidden rounded-[1.65rem] border bg-white transition-all duration-300 shadow-[0_14px_34px_rgba(15,23,42,0.065)]',
+    'group/card h-full w-full max-w-full overflow-hidden rounded-2xl border bg-white transition-all duration-300 shadow-[0_8px_22px_rgba(15,23,42,0.06)]',
     'md:hover:-translate-y-0.5 md:hover:shadow-xl md:hover:shadow-slate-900/10 motion-reduce:transform-none',
     'md:hover:ring-2 md:hover:ring-blue-500/15',
     (isExiting || passExiting) &&
@@ -285,7 +286,7 @@ function HelperOpportunityCardInner({
 
         <div
           className={clsx(
-            'relative z-20 bg-white p-4 will-change-transform',
+            'relative z-20 bg-white p-3 will-change-transform',
             !dragging && 'transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.2,0.64,1)]',
           )}
           style={{
@@ -293,44 +294,65 @@ function HelperOpportunityCardInner({
             opacity: 1 - Math.min(0.12, Math.abs(dragX) / 400),
           }}
         >
-          <div className="relative mb-4 flex min-h-40 overflow-hidden rounded-[1.45rem] bg-gradient-to-br from-blue-100 via-white to-sky-100">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_18%,rgba(37,99,255,0.32),transparent_34%),radial-gradient(circle_at_78%_84%,rgba(11,18,32,0.10),transparent_38%)]" />
-            <div className="absolute inset-x-4 bottom-4 top-4 rounded-[2rem] border border-white/60 bg-white/20" />
-            <Icons.BriefcaseBusiness className="relative m-auto h-14 w-14 text-blue-600 drop-shadow-sm" strokeWidth={1.8} />
-            {job.urgency === 'high' ? (
-              <span className="absolute left-3 top-3 rounded-full bg-rose-50 px-3 py-1 text-[10px] font-black text-rose-700 shadow-sm">
-                {t('helper_dashboard.job_card_urgent')}
-              </span>
-            ) : null}
-            <span className="absolute bottom-3 right-3 rounded-2xl bg-white px-3 py-1.5 text-lg font-black text-blue-700 shadow-[0_8px_20px_rgba(15,23,42,0.10)]">
-              {budget}
-            </span>
+          <div className="flex gap-3">
+            <div className="relative flex h-[4.25rem] w-[4.25rem] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-sky-100 ring-1 ring-blue-100/80">
+              <CategoryIcon className="h-7 w-7 text-blue-600" strokeWidth={1.75} aria-hidden />
+              {job.urgency === 'high' ? (
+                <span className="absolute left-1 top-1 rounded-md bg-rose-500 px-1 py-0.5 text-[8px] font-black uppercase leading-none text-white">
+                  !
+                </span>
+              ) : null}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 text-[15px] font-black leading-snug text-slate-950">{title}</p>
+                  <p className="mt-0.5 truncate text-[10px] font-bold uppercase tracking-wide text-blue-600">{category}</p>
+                </div>
+                <span className="shrink-0 text-right text-sm font-black leading-tight text-blue-700">{budget}</span>
+              </div>
+
+              <ul className="mt-1.5 space-y-0.5 text-[11px] font-semibold text-slate-600">
+                {schedule ? (
+                  <li className="flex items-center gap-1.5 min-w-0">
+                    <Clock className="h-3.5 w-3.5 shrink-0 text-blue-500" aria-hidden />
+                    <span className="truncate">{schedule}</span>
+                  </li>
+                ) : null}
+                <li className="flex items-center gap-1.5 min-w-0">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                  <span className="truncate">{loc}</span>
+                </li>
+                {openedLabel ? (
+                  <li className="flex items-center gap-1.5 min-w-0 text-slate-500">
+                    <History className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    <span className="truncate">{openedLabel}</span>
+                  </li>
+                ) : null}
+                <li className="flex items-center gap-1.5 text-emerald-700">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span>{t('helper_dashboard.client_verified_short')}</span>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-[10px] font-black uppercase tracking-wide text-blue-600">{category}</p>
-              <p className="mt-0.5 line-clamp-2 text-xl font-black leading-tight text-slate-950">
-                {translateJobTitle(job.title, job.category, job.subcategory, t)}
-              </p>
-            </div>
+          <div className="mt-2 flex items-center gap-2 border-t border-slate-100/90 pt-2">
             <button
               type="button"
               onClick={() => onViewClientProfile?.(job)}
-              className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white bg-slate-50 shadow-sm"
+              className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50"
               aria-label={t('helper_public.view_profile')}
             >
               <img src={job.clientAvatar} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
             </button>
-          </div>
-
-          <div className="mt-2 mb-3 flex items-center gap-2">
             <div className="min-w-0 flex-1">
               <p className="truncate text-[11px] font-bold text-slate-800">{job.clientName}</p>
               {job.clientRating != null && job.clientRating > 0 ? (
-                <p className="mt-0.5 flex flex-wrap items-center gap-1 text-[10px] font-bold text-amber-700">
+                <p className="flex items-center gap-1 text-[10px] font-bold text-amber-700">
                   <StarRatingDisplay rating={job.clientRating} />
-                  <span>
+                  <span className="truncate">
                     {t('helper_dashboard.client_rating_short', {
                       rating: job.clientRating.toFixed(1),
                       count: clientReviewCount,
@@ -339,48 +361,32 @@ function HelperOpportunityCardInner({
                 </p>
               ) : null}
             </div>
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-700">
-              <CheckCircle2 className="h-3 w-3" />
-              Verificado
-            </span>
           </div>
 
-          <div className="mb-3 grid grid-cols-2 gap-2 text-[11px] font-bold">
-            {schedule ? (
-              <span className="inline-flex items-center gap-1 rounded-xl bg-[#F7F8FC] px-3 py-2.5 text-slate-600">
-                <Clock className="h-3.5 w-3.5 text-blue-500" />
-                <span className="truncate">{schedule}</span>
-              </span>
-            ) : null}
-            <span className="inline-flex items-center gap-1 rounded-xl bg-[#F7F8FC] px-3 py-2.5 text-slate-600">
-              <MapPin className="h-3 w-3 shrink-0" />
-              <span className="truncate">{loc}</span>
-            </span>
-          </div>
-          <div className="mb-2">
-            <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" showHireEstimate />
+          <div className="mt-2">
+            <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="feed" showHireEstimate />
           </div>
 
           {onViewDetails ? (
             <button
               type="button"
               onClick={() => onViewDetails(job)}
-              className={`${ctaBase} mb-1.5 w-full border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50`}
+              className={`${ctaBase} mt-2 min-h-[36px] w-full border border-slate-200 bg-white text-xs text-slate-700 hover:border-blue-200 hover:bg-blue-50`}
             >
-              <Icons.FileText className="h-4 w-4 shrink-0" />
+              <Icons.FileText className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">{t('notifications.view_details')}</span>
             </button>
           ) : null}
 
           {hasApplied ? (
-            <p className="text-center text-[10px] font-bold text-emerald-700">{t('helper_dashboard.applied_sent')}</p>
+            <p className="mt-2 text-center text-[10px] font-bold text-emerald-700">{t('helper_dashboard.applied_sent')}</p>
           ) : isApplying ? (
-            <p className="flex items-center justify-center gap-1 text-center text-[10px] font-bold text-blue-700">
+            <p className="mt-2 flex items-center justify-center gap-1 text-center text-[10px] font-bold text-blue-700">
               <Icons.Loader2 className="h-3.5 w-3.5 animate-spin" />
               {t('helper_dashboard.apply_sending')}
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="mt-2 space-y-1.5">
               <button
                 type="button"
                 onClick={(e) => {
@@ -390,12 +396,12 @@ function HelperOpportunityCardInner({
                 }}
                 onTouchEnd={(e) => e.stopPropagation()}
                 disabled={swipeRateLimited || interactionLocked}
-                className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-[1.15rem] bg-[#2563FF] px-4 text-sm font-black text-white shadow-[0_14px_30px_rgba(37,99,255,0.28)] active:scale-[0.99] disabled:opacity-60"
+                className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[#2563FF] px-3 text-sm font-black text-white shadow-[0_10px_22px_rgba(37,99,255,0.22)] active:scale-[0.99] disabled:opacity-60"
               >
                 <Icons.Check className="h-4 w-4" />
                 {t('helper_dashboard.apply_now')}
               </button>
-              <div className="flex items-stretch gap-2 rounded-xl border border-slate-100 bg-gradient-to-r from-slate-50 to-white shadow-sm overflow-hidden">
+              <div className="flex items-stretch overflow-hidden rounded-lg border border-slate-100 bg-slate-50/80">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -405,7 +411,7 @@ function HelperOpportunityCardInner({
                   }}
                   onTouchEnd={(e) => e.stopPropagation()}
                   disabled={swipeRateLimited || interactionLocked}
-                  className="flex flex-1 items-center justify-center px-2 py-2.5 text-[11px] font-bold text-rose-700 active:bg-rose-50 disabled:opacity-60"
+                  className="flex flex-1 items-center justify-center px-2 py-2 text-[10px] font-bold text-rose-700 active:bg-rose-50 disabled:opacity-60"
                 >
                   {t('helper_dashboard.swipe_not_interested')}
                 </button>
@@ -419,7 +425,7 @@ function HelperOpportunityCardInner({
                   }}
                   onTouchEnd={(e) => e.stopPropagation()}
                   disabled={swipeRateLimited || interactionLocked}
-                  className="flex flex-1 items-center justify-center px-2 py-2.5 text-[11px] font-bold text-emerald-700 active:bg-emerald-50 disabled:opacity-60"
+                  className="flex flex-1 items-center justify-center px-2 py-2 text-[10px] font-bold text-emerald-700 active:bg-emerald-50 disabled:opacity-60"
                 >
                   {t('helper_dashboard.swipe_interest')}
                 </button>
@@ -429,69 +435,101 @@ function HelperOpportunityCardInner({
         </div>
       </div>
 
-      {/* Desktop full */}
+      {/* Desktop — mesmo layout compacto do feed mobile */}
       <div className="hidden w-full max-w-full md:block">
-        <div className="p-3.5">
-          <div className="mb-2.5 flex items-center gap-2.5">
-            <img
-              src={job.clientAvatar}
-              alt=""
-            className="h-10 w-10 rounded-full border border-slate-100 object-cover shadow-sm"
-            loading="lazy"
-            decoding="async"
-          />
-            <div className="min-w-0">
+        <div className="p-3">
+          <div className="flex gap-3">
+            <div className="relative flex h-[4.25rem] w-[4.25rem] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-sky-100 ring-1 ring-blue-100/80">
+              <CategoryIcon className="h-7 w-7 text-blue-600" strokeWidth={1.75} aria-hidden />
+              {job.urgency === 'high' ? (
+                <span className="absolute left-1 top-1 rounded-md bg-rose-500 px-1 py-0.5 text-[8px] font-black uppercase leading-none text-white">
+                  !
+                </span>
+              ) : null}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => onViewDetails?.(job)}
+                    className="line-clamp-2 text-left text-[15px] font-black leading-snug text-slate-950 hover:text-blue-700"
+                  >
+                    {title}
+                  </button>
+                  <p className="mt-0.5 truncate text-[10px] font-bold uppercase tracking-wide text-blue-600">{category}</p>
+                </div>
+                <span className="shrink-0 text-sm font-black text-blue-700">{budget}</span>
+              </div>
+              <ul className="mt-1.5 space-y-0.5 text-[11px] font-semibold text-slate-600">
+                {schedule ? (
+                  <li className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 shrink-0 text-blue-500" aria-hidden />
+                    <span className="truncate">{schedule}</span>
+                  </li>
+                ) : null}
+                <li className="flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                  <span className="truncate">{loc}</span>
+                </li>
+                {openedLabel ? (
+                  <li className="flex items-center gap-1.5 text-slate-500">
+                    <History className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    <span className="truncate">{openedLabel}</span>
+                  </li>
+                ) : null}
+                <li className="flex items-center gap-1.5 text-emerald-700">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span>{t('helper_dashboard.client_verified_short')}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-2 flex items-center gap-2 border-t border-slate-100/90 pt-2">
+            <button
+              type="button"
+              onClick={() => onViewClientProfile?.(job)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50"
+              aria-label={t('helper_public.view_profile')}
+            >
+              <img
+                src={job.clientAvatar}
+                alt=""
+                className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            </button>
+            <div className="min-w-0 flex-1">
               <button
                 type="button"
                 onClick={() => onViewClientProfile?.(job)}
-                className="flex max-w-full items-center gap-1.5 truncate text-left font-bold leading-tight text-slate-900 transition-colors hover:text-blue-700"
+                className="truncate text-left text-[11px] font-bold text-slate-800 hover:text-blue-700"
               >
-                <span className="truncate">{job.clientName}</span>
-                {job.clientRating != null && job.clientRating > 0 ? (
-                  <StarRatingDisplay rating={job.clientRating} />
-                ) : null}
+                {job.clientName}
               </button>
-              <p className="flex items-center gap-1 truncate text-xs font-medium text-slate-500">
-                {category}
-              </p>
+              {job.clientRating != null && job.clientRating > 0 ? (
+                <p className="flex items-center gap-1 text-[10px] font-bold text-amber-700">
+                  <StarRatingDisplay rating={job.clientRating} />
+                  <span>
+                    {t('helper_dashboard.client_rating_short', {
+                      rating: job.clientRating.toFixed(1),
+                      count: clientReviewCount,
+                    })}
+                  </span>
+                </p>
+              ) : null}
             </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => onViewDetails?.(job)}
-            className="mb-1 line-clamp-2 text-left text-sm font-bold leading-snug text-slate-900 hover:text-blue-700"
-          >
-            {translateJobTitle(job.title, job.category, job.subcategory, t)}
-          </button>
-          <p className="mb-2.5 line-clamp-2 text-xs leading-relaxed text-slate-600">{job.description}</p>
-          <div className="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-slate-700">
-            <span className="text-emerald-700">{budget}</span>
-            <span className="inline-flex items-center gap-0.5">
-              <MapPin className="h-3 w-3 shrink-0 text-slate-400" />
-              {loc}
-            </span>
-            {schedule ? (
-              <span className="inline-flex items-center gap-0.5 text-slate-600">
-                <Clock className="h-3 w-3 shrink-0 text-blue-500" />
-                {schedule}
-              </span>
-            ) : null}
-            {openedLabel ? (
-              <span className="inline-flex items-center gap-0.5 text-slate-500">{openedLabel}</span>
-            ) : null}
-            <span className="inline-flex items-center gap-0.5 text-blue-800">
+            <span className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-bold text-blue-800">
               <Icons.UserCheck className="h-3 w-3 shrink-0" />
               {t('helper_dashboard.applications_count', { count: applicationsCount })}
             </span>
-            {job.urgency === 'high' ? (
-              <span className="rounded-md bg-rose-100 px-1.5 py-0.5 text-[10px] font-black uppercase text-rose-800">
-                {t('helper_dashboard.job_card_high_priority')}
-              </span>
-            ) : null}
           </div>
-          <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" showHireEstimate />
+          <div className="mt-2">
+            <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="feed" showHireEstimate />
+          </div>
         </div>
-        <div className="flex flex-col gap-1.5 border-t border-slate-100 bg-slate-50/60 px-3.5 py-2.5">
+        <div className="flex flex-col gap-1.5 border-t border-slate-100 bg-slate-50/60 px-3 py-2">
           {onViewDetails ? (
             <button
               type="button"

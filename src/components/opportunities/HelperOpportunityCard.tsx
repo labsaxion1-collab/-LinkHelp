@@ -387,7 +387,7 @@ function HelperOpportunityCardInner({
 
               <div className="sr-only">
                 <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" showHireEstimate />
-                {schedule} {loc} {openedLabel} {subLabel} {applicationsCount} {clientReviewCount}
+                {schedule} {loc} {openedLabel} {title} {applicationsCount} {clientReviewCount}
               </div>
             </div>
           </div>

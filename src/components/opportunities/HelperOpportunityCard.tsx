@@ -116,10 +116,7 @@ function HelperOpportunityCardInner({
   const [passExiting, setPassExiting] = useState(false);
   const swipeStartX = useRef(0);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
-  const subLabel =
-    job.subcategory && job.category
-      ? t(`service_subs.${job.category}.${job.subcategory}`)
-      : title;
+  const CategoryIcon = getCategoryIconById(job.category);
 
   const acceptOpacity = Math.min(0.42, Math.max(0, dragX / 140));
   const passOpacity = Math.min(0.42, Math.max(0, -dragX / 140));

@@ -178,12 +178,27 @@ export type Database = {
         Args: { p_application_id: string; p_amount: number };
         Returns: Json;
       };
+      helper_debit_application_interest: {
+        Args: { p_helper_id: string; p_request_id: string; p_amount?: number };
+        Returns: Json;
+      };
       helper_debit_application_selected: {
         Args: {
           p_helper_id: string;
           p_request_id: string;
           p_application_id: string;
           p_amount: number;
+        };
+        Returns: Json;
+      };
+      helper_submit_application: {
+        Args: {
+          p_request_id: string;
+          p_helper_id: string;
+          p_client_id: string;
+          p_message?: string | null;
+          p_proposed_amount?: number | null;
+          p_interest_amount?: number;
         };
         Returns: Json;
       };

@@ -11,7 +11,6 @@ import type { UpcomingJob, UpcomingWorkflowStatus } from '@/types/upcoming';
 import type { AppNotification, NotificationType } from '@/types/notification';
 import {
   fetchRemoteJobsAndApps,
-  remoteApply,
   remoteCreateRequest,
   remoteInsertNotification,
   remoteMarkAllNotificationsRead,
@@ -23,6 +22,7 @@ import {
   remoteUpdateUpcomingWorkflow,
   subscribeRemoteData,
 } from '@/services/supabase/appDataRemote';
+import { submitHelperApplication } from '@/services/supabase/helperApplicationService';
 import { fetchRemoteReviews, remoteSubmitReview } from '@/services/supabase/reviewsRemote';
 import { buildPendingServiceReviews } from '@/utils/serviceReviewQueue';
 import type { PendingServiceReview, ServiceReview } from '@/types/review';
@@ -253,19 +253,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const sessionUserId = session?.user?.id ?? profile?.id ?? null;
 
     if (useRemote) {
-      const applyResult = await remoteApply({
+      await submitHelperApplication({
         requestId: jobId,
         helperId,
         clientId: job.clientId,
         proposedAmount: proposedAmount ?? null,
         message: options?.message?.trim() || null,
+        interestCost:
+          sessionUserId && helperId === sessionUserId ? interestCost : 0,
       });
-      if (applyResult.outcome === 'already_exists') {
-        throw new Error('ALREADY_APPLIED');
-      }
-      if (sessionUserId && helperId === sessionUserId) {
-        await chargeApplicationInterest(jobId, interestCost);
-      }
       const helperName = profile?.name?.trim() || 'Helper';
       const title = 'Nova candidatura recebida';
       const proposalText =

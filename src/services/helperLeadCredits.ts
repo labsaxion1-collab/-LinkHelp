@@ -1,4 +1,5 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
+import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
 import type { Job } from '@/types/job';
 import { calculateHelperLeadCreditCost } from '@/utils/calculateHelperLeadCreditCost';
 import type { CreditTransaction } from '@/types/credits';
@@ -50,6 +51,9 @@ export async function remoteDebitApplicationInterest(
   if (error) {
     if (error.message?.includes('INSUFFICIENT_CREDITS')) {
       throw new InsufficientCreditsError(amount);
+    }
+    if (isPostgrestMissingResource(error)) {
+      throw new Error('APPLICATION_BACKEND_NOT_READY');
     }
     throw error;
   }

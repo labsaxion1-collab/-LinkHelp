@@ -694,7 +694,10 @@ export default function HelperDashboard() {
         return;
       }
       const friendlyMsg =
-        msg.includes('helper_debit_application_interest') || msg.includes('schema cache')
+        msg === 'APPLICATION_BACKEND_NOT_READY' ||
+        msg.includes('helper_debit_application_interest') ||
+        msg.includes('schema cache') ||
+        msg.includes('APPLICATION_INSERT_FAILED')
           ? t('helper_dashboard.toast_apply_error')
           : msg || t('helper_dashboard.toast_apply_error');
       showToast(friendlyMsg, 'error');
@@ -825,7 +828,7 @@ export default function HelperDashboard() {
     location.pathname === ROUTES.helperOpportunities;
 
   return (
-    <AppPageShell wide className="min-w-0 overflow-x-visible px-0 pb-6 pt-0 sm:px-7 sm:pb-7 sm:pt-3">
+    <AppPageShell wide className="min-w-0 overflow-x-hidden">
       {/* Toast Notification */}
       {toastNotification.show && (
         <div className="fixed top-20 right-4 z-[100] animate-in slide-in-from-right-8 fade-in duration-300">
@@ -1038,7 +1041,7 @@ export default function HelperDashboard() {
         </div>
       )}
 
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 w-full max-w-full px-0 sm:px-4 md:px-5 lg:px-6">
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-[var(--lh-gutter)] justify-center min-w-0 w-full max-w-full px-0 sm:px-4 md:px-0">
         <aside className="hidden">
           <div className="sticky top-24 space-y-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
             <button onClick={() => setShowProfileModal(true)} className="flex w-full items-center gap-3 rounded-2xl p-2 text-left hover:bg-slate-50">
@@ -1100,7 +1103,7 @@ export default function HelperDashboard() {
             </nav>
           </div>
         </aside>
-        <main className="w-full min-w-0 pb-2">
+        <main className="min-w-0 w-full max-w-full pb-2">
           {showDesktopBack ? <DesktopBackButton className="mb-4" /> : null}
 
           {isPerformancePage ? (
@@ -1139,7 +1142,7 @@ export default function HelperDashboard() {
           ) : null}
 
           {activeTab !== 'candidaturas' ? (
-            <section className="relative mb-8 ml-[calc(50%-50vw)] w-screen overflow-hidden px-5 pb-8 pt-0 sm:px-6">
+            <section className="relative mb-8 w-full min-w-0 max-w-full overflow-hidden pb-8 pt-0">
               <img
                 src="/brand/helper-hero-bg.jpg"
                 alt=""

@@ -64,7 +64,12 @@ function HelperCategoryDropdownInner({
     const frame = window.requestAnimationFrame(() => {
       const el = scrollRef.current;
       if (!el) return;
-      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+      const overflow = el.scrollWidth - el.clientWidth;
+      if (overflow <= 8) {
+        el.scrollLeft = 0;
+        return;
+      }
+      el.scrollLeft = overflow / 2;
     });
     return () => window.cancelAnimationFrame(frame);
   }, [open, inline]);
@@ -103,16 +108,16 @@ function HelperCategoryDropdownInner({
 
   if (inline) {
     return (
-      <section className={clsx('relative z-20 ml-[calc(50%-50vw)] w-screen', className)} aria-label={t('helper_dashboard.category_filter_open')}>
+      <section className={clsx('relative z-20 w-full min-w-0 max-w-full', className)} aria-label={t('helper_dashboard.category_filter_open')}>
         <div
           ref={scrollRef}
           onPointerDown={handleScrollPointerDown}
           onPointerMove={handleScrollPointerMove}
           onPointerUp={handleScrollPointerEnd}
           onPointerCancel={handleScrollPointerEnd}
-          className="cursor-grab touch-pan-x select-none overflow-x-auto overscroll-x-contain scroll-smooth px-5 pb-1 active:cursor-grabbing sm:px-6 [-webkit-overflow-scrolling:touch] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="cursor-grab touch-pan-x select-none overflow-x-auto overscroll-x-contain scroll-smooth px-1 pb-1 active:cursor-grabbing sm:px-0 [-webkit-overflow-scrolling:touch] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          <div className="grid w-max auto-cols-[8.6rem] grid-flow-col grid-rows-2 gap-2 px-[calc(50vw_-_4.3rem)]">
+          <div className="mx-auto grid w-max auto-cols-[8.6rem] grid-flow-col grid-rows-2 gap-2 pr-1">
             {SERVICE_CATEGORIES.map((category) => {
               const id = category.id as ServiceCategoryId;
               const active = selectedSet.has(id);

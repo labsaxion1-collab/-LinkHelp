@@ -9,3 +9,4 @@ coverage/
 !.env.example
 supabase/.temp/
 public/brand/*.before-*.png
+.vercel

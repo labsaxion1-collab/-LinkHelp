@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/supabase';
+import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
 
 export type EnsureConversationInput = {
   requestId: string;
@@ -25,7 +26,7 @@ export async function ensureConversation(input: EnsureConversationInput): Promis
     return rpcId as string;
   }
 
-  if (rpcErr && rpcErr.code !== 'PGRST202' && !rpcErr.message?.includes('ensure_conversation')) {
+  if (rpcErr && !isPostgrestMissingResource(rpcErr)) {
     console.warn('[LinkHelp] ensure_conversation RPC failed, falling back', rpcErr.message);
   }
 

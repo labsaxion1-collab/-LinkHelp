@@ -160,7 +160,7 @@ export default function Navbar() {
           />
         </>
       ) : null}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="lh-nav-inner relative w-full max-w-none px-4 sm:mx-auto sm:max-w-7xl sm:px-6 lg:px-8">
         <div className="flex justify-between h-[60px] md:h-[72px]">
           <div className="flex items-center">
             <button

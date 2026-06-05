@@ -58,19 +58,19 @@ function packageArtwork(packageId: string): string | null {
 
 function packageArtworkClass(packageId: string): string {
   const base =
-    'h-24 w-full object-contain object-center drop-shadow-[0_14px_18px_rgba(180,83,9,0.22)] transition duration-500 group-hover:-translate-y-0.5';
+    'h-24 max-w-none object-contain object-center drop-shadow-[0_14px_18px_rgba(180,83,9,0.22)] transition duration-500 group-hover:-translate-y-0.5';
 
   switch (packageId) {
     case 'starter':
-      return `${base} scale-[0.82] group-hover:scale-[0.86]`;
+      return `${base} w-[5.25rem] scale-[0.68] group-hover:scale-[0.72]`;
     case 'popular':
-      return `${base} scale-[1.16] group-hover:scale-[1.20]`;
+      return `${base} w-[9.8rem] scale-[1.28] group-hover:scale-[1.32]`;
     case 'pro':
-      return `${base} scale-[1.08] group-hover:scale-[1.12]`;
+      return `${base} w-[10.4rem] scale-[1.18] group-hover:scale-[1.22]`;
     case 'power':
-      return `${base} scale-[1.08] group-hover:scale-[1.12]`;
+      return `${base} w-[10.8rem] scale-[1.20] group-hover:scale-[1.24]`;
     default:
-      return `${base} group-hover:scale-[1.04]`;
+      return `${base} w-full group-hover:scale-[1.04]`;
   }
 }
 
@@ -116,7 +116,7 @@ export default function HelperLinkCreditsPage() {
   };
 
   return (
-    <AppPageShell wide className="relative min-w-0 overflow-x-hidden bg-[#F8F5EE] bg-[url('/brand/linkcredits-store-background.jpg')] bg-cover bg-fixed bg-center px-5 pb-28 pt-5 md:px-7 md:pb-10">
+    <AppPageShell wide className="relative min-w-0 overflow-x-hidden bg-[#F8F5EE] bg-[url('/brand/linkcredits-store-background.jpg')] bg-cover bg-fixed bg-center px-0 pb-28 pt-5 md:px-7 md:pb-10">
       <div className="pointer-events-none absolute inset-0 bg-white/58 backdrop-blur-[1px]" />
       <div className="pointer-events-none absolute -left-24 top-36 h-64 w-64 rounded-full bg-blue-200/25 blur-3xl" />
       <div className="pointer-events-none absolute -right-24 top-[32rem] h-72 w-72 rounded-full bg-amber-200/20 blur-3xl" />
@@ -124,7 +124,7 @@ export default function HelperLinkCreditsPage() {
       <div className="relative mx-auto max-w-5xl">
         <HelperDashboardNav activeTab="match" onSelectFeedTab={() => {}} t={t} />
 
-        <div className="mx-auto mb-7 max-w-2xl text-center">
+        <div className="mx-auto mb-7 max-w-2xl px-5 text-center md:px-0">
           <p className={`inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.28em] ${linkCreditGlowClass}`}>
             <Icons.Sparkles className="h-3.5 w-3.5" />
             LINKCREDITS
@@ -140,18 +140,18 @@ export default function HelperLinkCreditsPage() {
         </div>
 
         {cancelled ? (
-          <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+          <div className="mx-5 mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 md:mx-0">
             {t('link_credits_store.cancelled_banner')}
           </div>
         ) : null}
 
         {error ? (
-          <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+          <div className="mx-5 mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800 md:mx-0">
             {error}
           </div>
         ) : null}
 
-        <div className="mx-auto mb-7 flex max-w-2xl items-center gap-3 rounded-[1.15rem] border border-blue-600/10 bg-[#F7FAFF]/95 px-4 py-4 text-sm font-bold leading-relaxed text-blue-950 shadow-[0_12px_30px_rgba(37,99,255,0.05)]">
+        <div className="mx-5 mb-7 flex max-w-2xl items-center gap-3 rounded-[1.15rem] border border-blue-600/10 bg-[#F7FAFF]/95 px-4 py-4 text-sm font-bold leading-relaxed text-blue-950 shadow-[0_12px_30px_rgba(37,99,255,0.05)] md:mx-auto">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#245BFF] text-white shadow-[0_8px_18px_rgba(36,91,255,0.22)]">
             <Icons.Info className="h-5 w-5" />
           </span>
@@ -170,8 +170,8 @@ export default function HelperLinkCreditsPage() {
                 <div className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${packageAccent(pkg.id)} opacity-80`} />
                 <div className="pointer-events-none absolute right-[22%] top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-amber-300/10 blur-2xl transition group-hover:bg-amber-300/20" />
 
-                <div className="relative grid grid-cols-[minmax(0,0.9fr)_minmax(5.8rem,0.82fr)_minmax(0,1fr)] items-center gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(8rem,0.9fr)_minmax(0,1fr)] sm:gap-5">
-                  <div className="flex min-w-0 flex-col justify-center">
+                <div className="relative grid grid-cols-[minmax(0,0.88fr)_minmax(5.9rem,0.9fr)_minmax(0,0.94fr)] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(8.4rem,0.95fr)_minmax(0,1fr)] sm:gap-5">
+                  <div className="relative z-10 flex min-w-0 flex-col justify-center">
                     <h2 className={`text-lg font-black sm:text-xl ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
                     <p className="mt-2 whitespace-nowrap bg-gradient-to-b from-[#FFE36A] via-[#F3B51B] to-[#C98508] bg-clip-text text-[2.65rem] font-black leading-none tracking-tight text-transparent drop-shadow-[0_0_16px_rgba(217,169,40,0.28)] sm:text-6xl">
                       {pkg.credits}
@@ -179,7 +179,7 @@ export default function HelperLinkCreditsPage() {
                     <p className="mt-1.5 whitespace-nowrap text-[11px] font-black text-black sm:text-sm">LinkCredits</p>
                   </div>
 
-                  <div className="flex h-24 min-w-0 items-center justify-center">
+                  <div className="relative z-0 flex h-24 min-w-0 items-center justify-center overflow-visible">
                     {artwork ? (
                       <img
                         src={artwork}
@@ -191,8 +191,8 @@ export default function HelperLinkCreditsPage() {
                     ) : null}
                   </div>
 
-                  <div className="min-w-0 border-l border-slate-200/80 pl-3 sm:pl-6">
-                    <p className="break-words text-[15px] font-black leading-tight text-[#245BFF] sm:text-xl">
+                  <div className="relative z-10 min-w-0 border-l border-slate-200/80 bg-white/20 pl-3 sm:pl-6">
+                    <p className="whitespace-nowrap text-[13px] font-black leading-tight text-[#071238] drop-shadow-[0_8px_18px_rgba(7,18,56,0.10)] min-[390px]:text-[14px] sm:text-xl">
                       {pkg.currency} ${pkg.price.toFixed(2)}
                     </p>
                     <button

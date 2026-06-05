@@ -34,6 +34,17 @@ import {
   movingNeedsBuildingDetails,
   movingPropertyTypeFromSubKey,
 } from '@/data/movingRequestConfig';
+import {
+  CreateRequestResumeDraftDialog,
+  CreateRequestSaveDraftDialog,
+} from '@/components/client/create-request/CreateRequestDraftDialogs';
+import {
+  clearCreateRequestDraft,
+  hasMeaningfulCreateRequestDraft,
+  loadCreateRequestDraft,
+  saveCreateRequestDraft,
+  type CreateRequestDraft,
+} from '@/utils/createRequestDraft';
 
 type ModalStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
 const STEPS: ModalStep[] = ['category', 'subcategory', 'description', 'confirm', 'review'];
@@ -82,8 +93,11 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const [cleaningAptFloor, setCleaningAptFloor] = useState('');
   const [cleaningHasElevator, setCleaningHasElevator] = useState('');
   const [publishing, setPublishing] = useState(false);
+  const [draftDialog, setDraftDialog] = useState<'resume' | 'close' | null>(null);
   const scrollBodyRef = useRef<HTMLDivElement>(null);
   const lastBudgetSuggestionKey = useRef('');
+  const skipAutoSaveRef = useRef(false);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scrollModalToTop = useCallback((behavior: ScrollBehavior = 'instant') => {
     const el = scrollBodyRef.current;
@@ -154,16 +168,16 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   }, [selectedCategory, selectedSubcategory, translationServiceMode]);
 
   useEffect(() => {
-    if (!open || !selectedCategory || !marketSuggestion) return;
+    if (!open || draftDialog || !selectedCategory || !marketSuggestion) return;
     const key = `${selectedCategory}|${selectedSubcategory}|${translationServiceMode}`;
     if (lastBudgetSuggestionKey.current === key) return;
     lastBudgetSuggestionKey.current = key;
     setBudgetType('fixed');
     setBudgetMin(String(marketSuggestion.min));
     setBudgetMax(String(marketSuggestion.max));
-  }, [open, selectedCategory, selectedSubcategory, translationServiceMode, marketSuggestion]);
+  }, [open, draftDialog, selectedCategory, selectedSubcategory, translationServiceMode, marketSuggestion]);
 
-  const reset = () => {
+  const applyFreshStart = useCallback(() => {
     setStep(initialCategory && initialSubcategory ? 'description' : initialCategory ? 'subcategory' : 'category');
     setSelectedCategory(initialCategory);
     setSelectedSubcategory(initialSubcategory);
@@ -178,7 +192,11 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setPriority('flexible');
     setPreferredDateIso('');
     setPreferredTimeSpecific('');
-    setMovePropertyType('');
+    setMovePropertyType(
+      initialCategory === 'moving' && initialSubcategory
+        ? movingPropertyTypeFromSubKey(initialSubcategory)
+        : '',
+    );
     setMovePickupAddress(emptyRequestAddress());
     setMoveDeliveryAddress(emptyRequestAddress());
     setMovePickupFloor('');
@@ -190,20 +208,197 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setCleaningHasElevator('');
     setPublishing(false);
     lastBudgetSuggestionKey.current = '';
-  };
+  }, [initialCategory, initialSubcategory]);
 
-  const handleClose = () => {
-    reset();
+  const applyDraft = useCallback((draft: CreateRequestDraft) => {
+    setStep(draft.step);
+    setSelectedCategory(draft.selectedCategory);
+    setSelectedSubcategory(draft.selectedSubcategory);
+    setPostText(draft.postText);
+    setBudgetType(draft.budgetType);
+    setBudgetMin(draft.budgetMin);
+    setBudgetMax(draft.budgetMax);
+    setTranslationFromLanguage(draft.translationFromLanguage);
+    setTranslationToLanguage(draft.translationToLanguage);
+    setTranslationServiceMode(draft.translationServiceMode);
+    setRequestAddress(draft.requestAddress);
+    setPriority(draft.priority);
+    setPreferredDateIso(draft.preferredDateIso);
+    setPreferredTimeSpecific(draft.preferredTimeSpecific);
+    setMovePropertyType(draft.movePropertyType);
+    setMovePickupAddress(draft.movePickupAddress);
+    setMoveDeliveryAddress(draft.moveDeliveryAddress);
+    setMovePickupFloor(draft.movePickupFloor);
+    setMovePickupElevator(draft.movePickupElevator);
+    setMoveDeliveryFloor(draft.moveDeliveryFloor);
+    setMoveDeliveryElevator(draft.moveDeliveryElevator);
+    setCleaningHouseFloors(draft.cleaningHouseFloors);
+    setCleaningAptFloor(draft.cleaningAptFloor);
+    setCleaningHasElevator(draft.cleaningHasElevator);
+    setPublishing(false);
+    lastBudgetSuggestionKey.current = draft.lastBudgetSuggestionKey;
+  }, []);
+
+  const buildDraftSnapshot = useCallback((): CreateRequestDraft => {
+    return {
+      version: 1,
+      updatedAt: Date.now(),
+      step,
+      selectedCategory,
+      selectedSubcategory,
+      postText,
+      budgetType,
+      budgetMin,
+      budgetMax,
+      translationFromLanguage,
+      translationToLanguage,
+      translationServiceMode,
+      requestAddress,
+      priority,
+      preferredDateIso,
+      preferredTimeSpecific,
+      movePropertyType,
+      movePickupAddress,
+      moveDeliveryAddress,
+      movePickupFloor,
+      movePickupElevator,
+      moveDeliveryFloor,
+      moveDeliveryElevator,
+      cleaningHouseFloors,
+      cleaningAptFloor,
+      cleaningHasElevator,
+      lastBudgetSuggestionKey: lastBudgetSuggestionKey.current,
+    };
+  }, [
+    step,
+    selectedCategory,
+    selectedSubcategory,
+    postText,
+    budgetType,
+    budgetMin,
+    budgetMax,
+    translationFromLanguage,
+    translationToLanguage,
+    translationServiceMode,
+    requestAddress,
+    priority,
+    preferredDateIso,
+    preferredTimeSpecific,
+    movePropertyType,
+    movePickupAddress,
+    moveDeliveryAddress,
+    movePickupFloor,
+    movePickupElevator,
+    moveDeliveryFloor,
+    moveDeliveryElevator,
+    cleaningHouseFloors,
+    cleaningAptFloor,
+    cleaningHasElevator,
+  ]);
+
+  const performClose = useCallback(() => {
+    skipAutoSaveRef.current = false;
+    setDraftDialog(null);
+    setPublishing(false);
     onClose();
-  };
+  }, [onClose]);
+
+  const requestClose = useCallback(() => {
+    if (publishing) return;
+    const draft = buildDraftSnapshot();
+    if (hasMeaningfulCreateRequestDraft(draft)) {
+      skipAutoSaveRef.current = true;
+      setDraftDialog('close');
+      return;
+    }
+    performClose();
+  }, [publishing, buildDraftSnapshot, performClose]);
+
+  const handleResumeContinue = useCallback(() => {
+    const draft = me.id ? loadCreateRequestDraft(me.id) : null;
+    if (draft) applyDraft(draft);
+    setDraftDialog(null);
+    skipAutoSaveRef.current = false;
+  }, [me.id, applyDraft]);
+
+  const handleResumeDiscard = useCallback(() => {
+    if (me.id) clearCreateRequestDraft(me.id);
+    applyFreshStart();
+    setDraftDialog(null);
+    skipAutoSaveRef.current = false;
+  }, [me.id, applyFreshStart]);
+
+  const handleCloseSaveDraft = useCallback(() => {
+    const draft = buildDraftSnapshot();
+    if (me.id && hasMeaningfulCreateRequestDraft(draft)) {
+      saveCreateRequestDraft(me.id, draft);
+    }
+    applyFreshStart();
+    performClose();
+  }, [me.id, buildDraftSnapshot, applyFreshStart, performClose]);
+
+  const handleCloseDiscard = useCallback(() => {
+    if (me.id) clearCreateRequestDraft(me.id);
+    applyFreshStart();
+    performClose();
+  }, [me.id, applyFreshStart, performClose]);
 
   useEffect(() => {
     if (!open) return;
-    reset();
-    if (initialCategory === 'moving' && initialSubcategory) {
-      setMovePropertyType(movingPropertyTypeFromSubKey(initialSubcategory));
+    skipAutoSaveRef.current = true;
+    const draft = me.id ? loadCreateRequestDraft(me.id) : null;
+    if (draft && hasMeaningfulCreateRequestDraft(draft)) {
+      setDraftDialog('resume');
+      return;
     }
-  }, [open, initialCategory, initialSubcategory]);
+    applyFreshStart();
+    skipAutoSaveRef.current = false;
+  }, [open, me.id, applyFreshStart]);
+
+  useEffect(() => {
+    if (!open || !me.id || skipAutoSaveRef.current || draftDialog || publishing) return;
+    const draft = buildDraftSnapshot();
+    if (!hasMeaningfulCreateRequestDraft(draft)) return;
+
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      saveCreateRequestDraft(me.id, draft);
+    }, 400);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [
+    open,
+    me.id,
+    draftDialog,
+    publishing,
+    buildDraftSnapshot,
+    step,
+    selectedCategory,
+    selectedSubcategory,
+    postText,
+    budgetType,
+    budgetMin,
+    budgetMax,
+    translationFromLanguage,
+    translationToLanguage,
+    translationServiceMode,
+    requestAddress,
+    priority,
+    preferredDateIso,
+    preferredTimeSpecific,
+    movePropertyType,
+    movePickupAddress,
+    moveDeliveryAddress,
+    movePickupFloor,
+    movePickupElevator,
+    moveDeliveryFloor,
+    moveDeliveryElevator,
+    cleaningHouseFloors,
+    cleaningAptFloor,
+    cleaningHasElevator,
+  ]);
 
   useEffect(() => {
     if (!open) return;
@@ -308,7 +503,10 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
         timezone: getBrowserTimezone(),
         createdTimezone: getBrowserTimezone(),
       });
-      handleClose();
+      if (me.id) clearCreateRequestDraft(me.id);
+      skipAutoSaveRef.current = true;
+      applyFreshStart();
+      performClose();
       onPublished?.();
     } catch (error) {
       const technical =
@@ -420,18 +618,18 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center lh-modal-overlay animate-in fade-in duration-200" onClick={handleClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center lh-modal-overlay animate-in fade-in duration-200" onClick={requestClose}>
       <div
         className="lh-modal-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[min(92dvh,900px)] min-w-0"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2 sm:gap-3 bg-gray-50/50 shrink-0 min-w-0">
-          <DesktopBackButton alwaysVisible onClose={handleClose} className="shrink-0" />
+          <DesktopBackButton alwaysVisible onClose={requestClose} className="shrink-0" />
           <h3 className="min-w-0 flex-1 text-xl font-bold text-gray-900 font-display flex items-center gap-2">
             <Icons.PlusCircle className="w-5 h-5 text-blue-600 shrink-0" />
             <span className="truncate">{t('client_dashboard.create_order_title')}</span>
           </h3>
-          <button type="button" onClick={handleClose} className="shrink-0 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500">
+          <button type="button" onClick={requestClose} className="shrink-0 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500">
             <Icons.X className="w-5 h-5" />
           </button>
         </div>
@@ -787,6 +985,20 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
           )}
         </div>
       </div>
+      {draftDialog === 'resume' ? (
+        <CreateRequestResumeDraftDialog
+          t={t}
+          onContinue={handleResumeContinue}
+          onDiscard={handleResumeDiscard}
+        />
+      ) : null}
+      {draftDialog === 'close' ? (
+        <CreateRequestSaveDraftDialog
+          t={t}
+          onSave={handleCloseSaveDraft}
+          onDiscard={handleCloseDiscard}
+        />
+      ) : null}
     </div>
   );
 }

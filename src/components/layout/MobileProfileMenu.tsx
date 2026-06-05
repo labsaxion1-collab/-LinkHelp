@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Bookmark, Settings, Globe, LogOut, X, Home, MessageCircle, Briefcase } from 'lucide-react';
+import { User, Bookmark, Settings, Globe, LogOut, X, Home, MessageCircle, Briefcase, Package } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useAppMode } from '@/context/AppModeContext';
@@ -131,6 +131,17 @@ export function MobileProfileMenu({
                   {t('sidebar.active_services')}
                 </button>
               )}
+              {isHelperNav ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => go(ROUTES.helperLinkCredits)}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                >
+                  <Package className="h-4 w-4 text-slate-400" />
+                  Pacotes
+                </button>
+              ) : null}
               {isHelperNav ? (
                 <button
                   type="button"

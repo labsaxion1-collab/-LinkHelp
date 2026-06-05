@@ -249,60 +249,81 @@ export default function MessagesPage() {
   }, [activeJob, threadTitle, t]);
 
   const chatHeader = (
-    <div className="p-3 sm:p-4 border-b border-gray-100/90 flex justify-between items-center bg-white/95 backdrop-blur-sm shrink-0 gap-2">
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-        {!isMd && (
+    <div className="shrink-0 bg-gradient-to-b from-white to-[#F7F8FC]/80 px-4 pb-4 pt-3 sm:px-6 sm:pt-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          {!isMd && (
+            <button
+              type="button"
+              onClick={() => setMobilePanel('list')}
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-white text-[#0B1220] shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition active:scale-95"
+              aria-label={t('messages_page.back')}
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+          <img
+            src={peerAvatar}
+            alt=""
+            className="h-16 w-16 shrink-0 rounded-full bg-[#EEF3FF] object-cover ring-4 ring-white shadow-[0_8px_24px_rgba(15,23,42,0.06)]"
+            loading="lazy"
+          />
+          <div className="min-w-0">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h3 className="truncate text-xl font-bold leading-tight text-[#0B1220]">{peerNameShort}</h3>
+              <HelperPlanBadge tier={peerTier} className="shrink-0 !rounded-full !border-[#E9EDF5] !bg-[#F1F5FF] !px-2.5 !py-1 !text-[#0B4A6F]" />
+              {serviceConfirmed && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-700">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  {t('messages_page.service_confirmed_badge')}
+                </span>
+              )}
+            </div>
+            <div className="mt-1 flex items-center text-xs font-semibold text-[#22C55E]">
+              <span className="mr-1.5 inline-block h-2 w-2 shrink-0 rounded-full bg-[#22C55E] shadow-[0_0_0_4px_rgba(34,197,94,0.12)]" />
+              {t('messages_page.status_online')}
+            </div>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            onClick={() => setMobilePanel('list')}
-            className="p-2.5 -ml-1 rounded-xl text-gray-600 hover:bg-gray-100 shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
-            aria-label={t('messages_page.back')}
+            className="hidden h-14 w-14 items-center justify-center rounded-[18px] bg-white text-[#0B1220] shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition active:scale-95 sm:flex"
+            aria-label="Telefone"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <Icons.Phone className="h-5 w-5" />
           </button>
-        )}
-        <img
-          src={peerAvatar}
-          alt=""
-          className="w-10 h-10 rounded-full object-cover shrink-0 ring-2 ring-white shadow-md"
-          loading="lazy"
-        />
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-bold text-gray-900 leading-tight truncate">{peerNameShort}</h3>
-            <HelperPlanBadge tier={peerTier} className="shrink-0" />
-            {serviceConfirmed && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                {t('messages_page.service_confirmed_badge')}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center text-xs text-emerald-600 font-semibold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 inline-block shrink-0" />
-            {t('messages_page.status_online')}
-          </div>
+          <button
+            type="button"
+            className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-white text-[#0B1220] shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition active:scale-95"
+            aria-label="Opções"
+          >
+            <Icons.MoreVertical className="h-5 w-5" />
+          </button>
         </div>
       </div>
     </div>
   );
 
   const compactContextCards = (
-    <div className="shrink-0 space-y-1.5 border-b border-gray-100/90 bg-white/95 px-3 py-2">
+    <div className="shrink-0 space-y-4 bg-[#F7F8FC] px-4 pb-5 sm:px-6">
       {!serviceConfirmed ? (
-        <div className="flex items-center gap-2 rounded-xl border border-indigo-100/80 bg-gradient-to-r from-slate-50 via-indigo-50/30 to-slate-50 px-3 py-2">
+        <div className="flex items-center gap-4 rounded-[24px] border border-[#E9EDF5] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.035)] sm:p-5">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#EEF3FF] text-[#2563FF]">
+            <Icons.Lock className="h-6 w-6" />
+          </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-bold text-indigo-900/90">
-              🔒 {t('messages_page.pre_match_compact_title')}
+            <p className="text-sm font-black text-[#0B1220] sm:text-base">
+              {t('messages_page.pre_match_compact_title')}
             </p>
-            <p className="truncate text-[11px] font-medium text-slate-600">
+            <p className="mt-1 line-clamp-2 text-xs font-medium leading-relaxed text-[#6B7280] sm:text-sm">
               {t('messages_page.pre_match_compact_body')}
             </p>
           </div>
           <button
             type="button"
             onClick={() => setShowPreMatchInfo(true)}
-            className="shrink-0 rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-[11px] font-bold text-indigo-700 hover:bg-indigo-50 transition-colors min-h-[36px]"
+            className="shrink-0 rounded-full bg-[#EEF3FF] px-3 py-2 text-[11px] font-black text-[#2563FF] transition hover:bg-blue-100"
           >
             {t('messages_page.learn_more')}
           </button>
@@ -315,10 +336,28 @@ export default function MessagesPage() {
           if (activeJob) setShowJobDetail(true);
         }}
         disabled={!activeJob}
-        className="flex w-full items-center justify-between gap-2 rounded-xl border border-blue-100 bg-gradient-to-r from-[#EAF7FF] via-white to-[#DFF4FF] px-3 py-2 text-left transition-colors hover:border-blue-200 disabled:cursor-default disabled:opacity-70 min-h-[44px]"
+        className="group flex w-full items-stretch gap-4 rounded-[28px] border border-white bg-white p-4 text-left shadow-[0_12px_40px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(15,23,42,0.08)] disabled:cursor-default disabled:opacity-80 sm:p-5"
       >
-        <span className="min-w-0 truncate text-sm font-semibold text-[#0D1B2A]">📋 {compactJobLabel}</span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-blue-600" aria-hidden />
+        <span className="w-1 shrink-0 rounded-full bg-[#2563FF]" aria-hidden />
+        <span className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-[22px] bg-[#EEF3FF] text-[#2563FF]">
+          <Icons.BriefcaseBusiness className="h-8 w-8" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="inline-flex rounded-full bg-[#EEF3FF] px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-[#2563FF]">
+            Serviço
+          </span>
+          <span className="mt-2 block line-clamp-2 text-[18px] font-bold leading-tight text-[#0B1220]">{compactJobLabel}</span>
+          <span className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[13px] font-semibold text-[#6B7280]">
+            <span className="inline-flex items-center gap-1"><Icons.CalendarDays className="h-3.5 w-3.5" />{activeJob?.desiredDate || t('messages_page.today')}</span>
+            <span className="inline-flex items-center gap-1"><Icons.MapPin className="h-3.5 w-3.5" />{activeJob?.location || 'LinkHelp'}</span>
+          </span>
+        </span>
+        <span className="flex shrink-0 items-center">
+          <span className="hidden rounded-full bg-[#F7F8FC] px-4 py-2 text-xs font-black text-[#2563FF] sm:inline-flex">
+            Ver detalhes
+          </span>
+          <ChevronDown className="ml-2 h-5 w-5 text-[#2563FF]" aria-hidden />
+        </span>
       </button>
     </div>
   );
@@ -326,17 +365,19 @@ export default function MessagesPage() {
   const messageList = (
     <div
       ref={messagesScrollRef}
-      className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6 space-y-4 sm:space-y-5 bg-[#f4f6f8] ios-scroll min-h-0 relative"
+      className="ios-scroll relative min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain bg-[linear-gradient(180deg,#FFFFFF_0%,#F7F8FC_100%)] px-4 py-5 sm:px-6 sm:py-7"
     >
       {useRemoteChat && remote.threadLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
           <Icons.Loader2 className="w-8 h-8 text-blue-600 animate-spin" aria-hidden />
         </div>
       )}
-      <div className="flex justify-center">
-        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100">
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-[#E9EDF5]" />
+        <span className="rounded-full border border-[#E9EDF5] bg-white px-4 py-2 text-[13px] font-bold uppercase tracking-wide text-[#6B7280] shadow-[0_8px_24px_rgba(15,23,42,0.035)]">
           {t('messages_page.today')}
         </span>
+        <span className="h-px flex-1 bg-[#E9EDF5]" />
       </div>
 
       {filterBanner && (
@@ -368,34 +409,34 @@ export default function MessagesPage() {
         ) : (
           <div
             key={String(msg.id)}
-            className={clsx('flex gap-2 sm:gap-3 max-w-[min(92%,28rem)] group', msg.sender === 'me' ? 'ml-auto justify-end' : '')}
+            className={clsx('group flex max-w-[min(88%,34rem)] gap-2 sm:gap-3', msg.sender === 'me' ? 'ml-auto justify-end' : '')}
           >
             {msg.sender === 'other' && (
               <img
                 src={peerAvatar}
                 alt=""
-                className="w-8 h-8 rounded-full object-cover mt-auto mb-5 shadow-sm ring-2 ring-white shrink-0"
+                className="mb-6 mt-auto h-9 w-9 shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white"
                 loading="lazy"
               />
             )}
             <div className={msg.sender === 'me' ? 'flex flex-col items-end min-w-0' : 'min-w-0'}>
               <div
                 className={clsx(
-                  'p-3.5 sm:p-4 shadow-md relative rounded-2xl break-words',
+                  'relative break-words px-5 py-4 text-[15px] leading-relaxed shadow-[0_8px_24px_rgba(15,23,42,0.04)]',
                   msg.sender === 'me'
-                    ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-md'
-                    : 'bg-white border border-gray-100 rounded-bl-md',
+                    ? 'rounded-[24px] rounded-br-lg bg-[#EEF3FF] text-[#0B1220]'
+                    : 'rounded-[24px] rounded-bl-lg border border-[#E9EDF5]/70 bg-white text-[#0B1220]',
                 )}
               >
-                <p className={clsx('text-sm leading-relaxed', msg.sender === 'me' ? '' : 'text-gray-800')}>{msg.text}</p>
+                <p>{msg.text}</p>
               </div>
               <span
                 className={clsx(
-                  'text-[10px] font-medium text-gray-400 mt-1 flex items-center gap-1',
+                  'mt-1.5 flex items-center gap-1 text-xs font-medium text-[#6B7280]',
                   msg.sender === 'me' ? 'mr-1' : 'ml-1',
                 )}
               >
-                {msg.time} {msg.sender === 'me' && <Icons.CheckCheck className="w-3.5 h-3.5 text-blue-300" />}
+                {msg.time} {msg.sender === 'me' && <Icons.CheckCheck className="h-3.5 w-3.5 text-[#2563FF]" />}
               </span>
             </div>
           </div>
@@ -429,18 +470,28 @@ export default function MessagesPage() {
 
   const inputBar = (
     <div
-      className="p-3 sm:p-4 bg-white/95 backdrop-blur-md border-t border-gray-100 shrink-0 pb-[max(env(safe-area-inset-bottom),0.75rem)] md:pb-4 space-y-2"
+      className="shrink-0 space-y-2 bg-[#F7F8FC]/95 px-4 pb-[max(env(safe-area-inset-bottom),0.85rem)] pt-3 backdrop-blur-md md:pb-4 sm:px-6"
       style={keyboardInset > 0 ? { paddingBottom: `max(${keyboardInset}px, env(safe-area-inset-bottom))` } : undefined}
     >
       {counterLabel ? (
-        <p className="px-1 text-center text-[10px] font-medium text-slate-400 tabular-nums">{counterLabel}</p>
+        <p className="px-1 text-center text-sm font-semibold text-[#6B7280] tabular-nums">
+          {counterLabel.replace(/(\d+\s*\/\s*\d+|\d+)/, '').trim()}{' '}
+          <span className="font-black text-[#2563FF]">{counterLabel.match(/(\d+\s*\/\s*\d+|\d+)/)?.[0] ?? ''}</span>
+        </p>
       ) : null}
       <form
         onSubmit={(ev) => {
           void handleSendMessage(ev);
         }}
-        className="flex items-end gap-2"
+        className="flex min-h-[72px] items-center gap-2 rounded-[28px] bg-white p-2 shadow-[0_12px_35px_rgba(15,23,42,0.06)]"
       >
+        <button
+          type="button"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] text-[#6B7280] transition hover:bg-[#F7F8FC] hover:text-[#2563FF]"
+          aria-label="Anexar"
+        >
+          <Icons.Paperclip className="h-5 w-5" />
+        </button>
         <div className="flex-1 relative min-w-0">
           <textarea
             rows={1}
@@ -453,15 +504,17 @@ export default function MessagesPage() {
               }
             }}
             placeholder={serviceConfirmed ? t('messages_page.input_placeholder') : t('messages_page.input_placeholder_limited')}
-            className="w-full bg-slate-100 border border-transparent rounded-2xl px-4 py-3 text-base sm:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/80 focus:outline-none transition-all shadow-inner resize-none max-h-32 min-h-[48px]"
+            className="max-h-32 min-h-[48px] w-full resize-none border-none bg-transparent px-1 py-3 text-base text-[#0B1220] outline-none placeholder:text-[#9CA3AF] focus:outline-none sm:text-base"
           />
         </div>
         <button
           type="submit"
           disabled={sendDisabled || !message.trim()}
           className={clsx(
-            'p-3.5 rounded-2xl flex items-center justify-center transition-all flex-shrink-0 min-w-[52px] min-h-[52px] shadow-sm',
-            message.trim() && !sendDisabled ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-100 text-slate-300',
+            'flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-[20px] transition-all',
+            message.trim() && !sendDisabled
+              ? 'bg-[#2563FF] text-white shadow-[0_12px_30px_rgba(37,99,255,0.28)] hover:bg-blue-700 active:scale-95'
+              : 'bg-[#EEF3FF] text-[#9CA3AF]',
           )}
         >
           <Send className="w-5 h-5" />
@@ -485,7 +538,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <AppPageShell className="flex flex-1 flex-col min-h-0 w-full max-w-7xl overflow-hidden">
+    <AppPageShell className="flex min-h-0 w-full max-w-7xl flex-1 flex-col overflow-hidden bg-[linear-gradient(180deg,#FFFFFF_0%,#F7F8FC_100%)]">
       <DesktopBackButton className="mb-3" />
       {showLimitModal && (
         <div
@@ -536,25 +589,25 @@ export default function MessagesPage() {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row flex-1 min-h-0 max-h-[calc(100dvh-4rem-5rem)] md:max-h-[calc(100dvh-5rem)] lh-glass-card-solid md:rounded-3xl overflow-hidden max-md:rounded-none">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[32px] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.06)] md:max-h-[calc(100dvh-5rem)] md:flex-row md:border md:border-[#E9EDF5] max-md:min-h-[calc(100dvh-8rem)] max-md:rounded-none max-md:shadow-none">
         <div
           className={clsx(
-            'w-full md:w-80 md:max-w-[40%] border-r border-gray-100 flex flex-col min-h-0 bg-slate-50/60',
+            'flex min-h-0 w-full flex-col bg-[#F7F8FC] md:w-80 md:max-w-[40%] md:border-r md:border-[#E9EDF5]',
             !showList && 'hidden',
             'md:flex',
           )}
         >
-          <div className="p-4 border-b border-gray-100 bg-white shrink-0">
-            <h2 className="text-lg font-black text-gray-900 mb-3">{t('messages_page.title')}</h2>
+          <div className="shrink-0 border-b border-[#E9EDF5] bg-white p-4">
+            <h2 className="mb-3 text-xl font-black tracking-tight text-[#0B1220]">{t('messages_page.title')}</h2>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B7280]" />
               <input
                 type="search"
                 enterKeyHint="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('messages_page.search_placeholder')}
-                className="w-full pl-9 pr-4 py-3 min-h-[48px] bg-slate-100 border-transparent rounded-xl text-base sm:text-sm focus:bg-white focus:ring-2 focus:ring-primary-500 focus:outline-none transition-all"
+                className="min-h-[52px] w-full rounded-[18px] border border-transparent bg-[#F7F8FC] py-3 pl-11 pr-4 text-base text-[#0B1220] transition-all placeholder:text-[#9CA3AF] focus:border-[#D7E2FF] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563FF]/20 sm:text-sm"
               />
             </div>
           </div>
@@ -573,8 +626,8 @@ export default function MessagesPage() {
                 <div
                   key={s.id}
                   className={clsx(
-                    'w-full border-b border-gray-100 bg-white border-l-4 relative overflow-hidden transition-colors',
-                    remote.selectedId === s.id ? 'border-l-blue-600 bg-blue-50/40' : 'border-l-transparent hover:bg-slate-50/80',
+                    'relative w-full overflow-hidden border-b border-[#E9EDF5] border-l-4 bg-white transition-colors',
+                    remote.selectedId === s.id ? 'border-l-[#2563FF] bg-[#EEF3FF]/55' : 'border-l-transparent hover:bg-white/80',
                   )}
                 >
                   <div className="flex items-center gap-2 p-4">
@@ -619,7 +672,7 @@ export default function MessagesPage() {
 
         <div
           className={clsx(
-            'flex flex-col flex-1 bg-white min-h-0 min-w-0 overflow-hidden max-h-full',
+            'flex max-h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#F7F8FC]',
             !showThread && 'hidden',
             'md:flex',
           )}

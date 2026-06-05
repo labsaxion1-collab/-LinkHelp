@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Activity, Briefcase, Globe, ChevronDown, Home, MessageCircle, User, LogOut, Package } from 'lucide-react';
+import { Activity, Briefcase, Globe, ChevronDown, Home, MessageCircle, User, LogOut, Package, Settings } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -397,10 +397,18 @@ export default function Navbar() {
               <button
                 type="button"
                 role="menuitem"
-                onClick={() => goProfileRoute(ROUTES.settings)}
+                onClick={() => goProfileRoute(ROUTES.profile)}
                 className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
               >
                 <User className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_profile')}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => goProfileRoute(ROUTES.settings)}
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
+              >
+                <Settings className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_settings')}
               </button>
               <button
                 type="button"

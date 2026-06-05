@@ -42,14 +42,14 @@ export function MobileBottomNav() {
         { to: ROUTES.helperJobs, labelKey: 'mobile_nav.activities', icon: ClipboardList },
         { to: ROUTES.helperDashboard, end: true, labelKey: 'mobile_nav.home', icon: Home },
         { to: ROUTES.map, labelKey: 'mobile_nav.map', icon: MapPin },
-        { to: ROUTES.settings, labelKey: 'mobile_nav.profile_menu', icon: UserRound },
+        { to: ROUTES.profile, labelKey: 'mobile_nav.profile_menu', icon: UserRound },
       ]
     : [
         { to: ROUTES.messages, labelKey: 'mobile_nav.messages', icon: MessageCircle },
         { to: ROUTES.clientJobs, labelKey: 'mobile_nav.activities', icon: ClipboardList },
         { to: ROUTES.clientDashboard, end: true, labelKey: 'mobile_nav.home', icon: Home },
         { to: ROUTES.map, labelKey: 'mobile_nav.map', icon: MapPin },
-        { to: ROUTES.settings, labelKey: 'mobile_nav.profile_menu', icon: UserRound },
+        { to: ROUTES.profile, labelKey: 'mobile_nav.profile_menu', icon: UserRound },
       ];
 
   return (

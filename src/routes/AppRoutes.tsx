@@ -29,6 +29,7 @@ const HelperCreditsPage = lazy(() => import('@/pages/helper/HelperCreditsPage'))
 const HelperLinkCreditsPage = lazy(() => import('@/pages/helper/HelperLinkCreditsPage'));
 const HelperCreditsSuccessPage = lazy(() => import('@/pages/helper/HelperCreditsSuccessPage'));
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
+const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'));
 
 function AdminDashboardLoadError() {
   return (
@@ -74,6 +75,7 @@ export function AppRoutes() {
         <Route element={<ProtectedRoute />}>
           <Route path={ROUTES.messages} element={<MessagesPage />} />
           <Route path={ROUTES.notifications} element={<NotificationsPage />} />
+          <Route path={ROUTES.profile} element={<ProfilePage />} />
           <Route path={ROUTES.settings} element={<SettingsPage />} />
           <Route path={ROUTES.map} element={<LiveMapPage />} />
 

@@ -249,28 +249,28 @@ export default function MessagesPage() {
   }, [activeJob, threadTitle, t]);
 
   const chatHeader = (
-    <div className="shrink-0 bg-gradient-to-b from-white to-[#F7F8FC]/80 px-4 pb-4 pt-3 sm:px-6 sm:pt-5">
+    <div className="shrink-0 bg-white px-4 pb-3 pt-3 sm:px-6 sm:pt-5">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           {!isMd && (
             <button
               type="button"
               onClick={() => setMobilePanel('list')}
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-white text-[#0B1220] shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition active:scale-95"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-white text-[#0B1220] shadow-[0_8px_22px_rgba(15,23,42,0.06)] transition active:scale-95"
               aria-label={t('messages_page.back')}
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-5 w-5" />
             </button>
           )}
           <img
             src={peerAvatar}
             alt=""
-            className="h-16 w-16 shrink-0 rounded-full bg-[#EEF3FF] object-cover ring-4 ring-white shadow-[0_8px_24px_rgba(15,23,42,0.06)]"
+            className="h-[52px] w-[52px] shrink-0 rounded-full bg-[#EEF3FF] object-cover ring-4 ring-white shadow-[0_8px_22px_rgba(15,23,42,0.06)]"
             loading="lazy"
           />
           <div className="min-w-0">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <h3 className="truncate text-xl font-bold leading-tight text-[#0B1220]">{peerNameShort}</h3>
+              <h3 className="truncate text-lg font-black leading-tight text-[#0B1220] sm:text-xl">{peerNameShort}</h3>
               <HelperPlanBadge tier={peerTier} className="shrink-0 !rounded-full !border-[#E9EDF5] !bg-[#F1F5FF] !px-2.5 !py-1 !text-[#0B4A6F]" />
               {serviceConfirmed && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-700">
@@ -288,14 +288,14 @@ export default function MessagesPage() {
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            className="hidden h-14 w-14 items-center justify-center rounded-[18px] bg-white text-[#0B1220] shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition active:scale-95 sm:flex"
+            className="hidden h-12 w-12 items-center justify-center rounded-[16px] bg-white text-[#0B1220] shadow-[0_8px_22px_rgba(15,23,42,0.06)] transition active:scale-95 sm:flex"
             aria-label="Telefone"
           >
             <Icons.Phone className="h-5 w-5" />
           </button>
           <button
             type="button"
-            className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-white text-[#0B1220] shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition active:scale-95"
+            className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-white text-[#0B1220] shadow-[0_8px_22px_rgba(15,23,42,0.06)] transition active:scale-95"
             aria-label="Opções"
           >
             <Icons.MoreVertical className="h-5 w-5" />
@@ -306,17 +306,17 @@ export default function MessagesPage() {
   );
 
   const compactContextCards = (
-    <div className="shrink-0 space-y-4 bg-[#F7F8FC] px-4 pb-5 sm:px-6">
+    <div className="shrink-0 space-y-3 bg-white px-4 pb-4 sm:px-6">
       {!serviceConfirmed ? (
-        <div className="flex items-center gap-4 rounded-[24px] border border-[#E9EDF5] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.035)] sm:p-5">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#EEF3FF] text-[#2563FF]">
-            <Icons.Lock className="h-6 w-6" />
+        <div className="flex items-center gap-3 rounded-[22px] border border-[#E9EDF5] bg-white px-3 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.035)] sm:px-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] bg-[#EEF3FF] text-[#2563FF]">
+            <Icons.Lock className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-black text-[#0B1220] sm:text-base">
+            <p className="truncate text-[15px] font-black leading-tight text-[#0B1220]">
               {t('messages_page.pre_match_compact_title')}
             </p>
-            <p className="mt-1 line-clamp-2 text-xs font-medium leading-relaxed text-[#6B7280] sm:text-sm">
+            <p className="mt-0.5 line-clamp-1 text-[12px] font-medium leading-relaxed text-[#6B7280] sm:text-sm">
               {t('messages_page.pre_match_compact_body')}
             </p>
           </div>
@@ -336,27 +336,27 @@ export default function MessagesPage() {
           if (activeJob) setShowJobDetail(true);
         }}
         disabled={!activeJob}
-        className="group flex w-full items-stretch gap-4 rounded-[28px] border border-white bg-white p-4 text-left shadow-[0_12px_40px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(15,23,42,0.08)] disabled:cursor-default disabled:opacity-80 sm:p-5"
+        className="group grid w-full grid-cols-[4px_58px_minmax(0,1fr)] items-center gap-3 rounded-[22px] border border-[#E9EDF5] bg-white px-3 py-3 text-left shadow-[0_10px_30px_rgba(15,23,42,0.055)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(15,23,42,0.08)] disabled:cursor-default disabled:opacity-80 sm:grid-cols-[4px_68px_minmax(0,1fr)_auto] sm:gap-4 sm:px-4"
       >
-        <span className="w-1 shrink-0 rounded-full bg-[#2563FF]" aria-hidden />
-        <span className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-[22px] bg-[#EEF3FF] text-[#2563FF]">
-          <Icons.BriefcaseBusiness className="h-8 w-8" />
+        <span className="h-full min-h-[76px] w-1 rounded-full bg-[#2563FF]" aria-hidden />
+        <span className="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-[18px] bg-[#EEF3FF] text-[#2563FF] sm:h-[68px] sm:w-[68px] sm:rounded-[20px]">
+          <Icons.BriefcaseBusiness className="h-7 w-7" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="inline-flex rounded-full bg-[#EEF3FF] px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-[#2563FF]">
+          <span className="inline-flex rounded-full bg-[#EEF3FF] px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-[#2563FF]">
             Serviço
           </span>
-          <span className="mt-2 block line-clamp-2 text-[18px] font-bold leading-tight text-[#0B1220]">{compactJobLabel}</span>
-          <span className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[13px] font-semibold text-[#6B7280]">
-            <span className="inline-flex items-center gap-1"><Icons.CalendarDays className="h-3.5 w-3.5" />{activeJob?.desiredDate || t('messages_page.today')}</span>
-            <span className="inline-flex items-center gap-1"><Icons.MapPin className="h-3.5 w-3.5" />{activeJob?.location || 'LinkHelp'}</span>
+          <span className="mt-1 block truncate text-[16px] font-black leading-tight text-[#0B1220] sm:text-[17px]">{compactJobLabel}</span>
+          <span className="mt-2 flex min-w-0 flex-wrap gap-x-3 gap-y-1 text-[12px] font-semibold text-[#6B7280] sm:text-[13px]">
+            <span className="inline-flex min-w-0 items-center gap-1"><Icons.CalendarDays className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{activeJob?.desiredDate || t('messages_page.today')}</span></span>
+            <span className="inline-flex min-w-0 items-center gap-1"><Icons.MapPin className="h-3.5 w-3.5 shrink-0" /><span className="max-w-[150px] truncate sm:max-w-[260px]">{activeJob?.location || 'LinkHelp'}</span></span>
           </span>
         </span>
-        <span className="flex shrink-0 items-center">
-          <span className="hidden rounded-full bg-[#F7F8FC] px-4 py-2 text-xs font-black text-[#2563FF] sm:inline-flex">
+        <span className="col-span-3 flex shrink-0 items-center justify-end sm:col-span-1">
+          <span className="rounded-full border border-[#E9EDF5] bg-white px-3 py-2 text-xs font-black text-[#2563FF] shadow-[0_6px_18px_rgba(15,23,42,0.04)]">
             Ver detalhes
           </span>
-          <ChevronDown className="ml-2 h-5 w-5 text-[#2563FF]" aria-hidden />
+          <ChevronDown className="ml-1.5 h-4 w-4 text-[#2563FF]" aria-hidden />
         </span>
       </button>
     </div>
@@ -365,7 +365,7 @@ export default function MessagesPage() {
   const messageList = (
     <div
       ref={messagesScrollRef}
-      className="ios-scroll relative min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain bg-[linear-gradient(180deg,#FFFFFF_0%,#F7F8FC_100%)] px-4 py-5 sm:px-6 sm:py-7"
+      className="ios-scroll relative min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain bg-[linear-gradient(180deg,#FFFFFF_0%,#F7F8FC_100%)] px-4 py-4 sm:px-6 sm:py-6"
     >
       {useRemoteChat && remote.threadLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
@@ -397,7 +397,7 @@ export default function MessagesPage() {
           <div key={String(msg.id)} className="flex justify-center px-2">
             <div
               className={clsx(
-                'max-w-[95%] sm:max-w-xl rounded-2xl px-4 py-3 text-sm font-medium leading-relaxed text-center border shadow-sm',
+                'max-w-[88%] rounded-[20px] border px-4 py-3 text-center text-[14px] font-medium leading-relaxed shadow-sm sm:max-w-xl',
                 msg.variant === 'warn'
                   ? 'bg-amber-50 text-amber-950 border-amber-100'
                   : 'bg-white text-slate-700 border-slate-200/80',
@@ -409,23 +409,23 @@ export default function MessagesPage() {
         ) : (
           <div
             key={String(msg.id)}
-            className={clsx('group flex max-w-[min(88%,34rem)] gap-2 sm:gap-3', msg.sender === 'me' ? 'ml-auto justify-end' : '')}
+            className={clsx('group flex max-w-[min(86%,34rem)] gap-2 sm:gap-3', msg.sender === 'me' ? 'ml-auto justify-end' : '')}
           >
             {msg.sender === 'other' && (
               <img
                 src={peerAvatar}
                 alt=""
-                className="mb-6 mt-auto h-9 w-9 shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white"
+                className="mb-5 mt-auto h-8 w-8 shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white"
                 loading="lazy"
               />
             )}
             <div className={msg.sender === 'me' ? 'flex flex-col items-end min-w-0' : 'min-w-0'}>
               <div
                 className={clsx(
-                  'relative break-words px-5 py-4 text-[15px] leading-relaxed shadow-[0_8px_24px_rgba(15,23,42,0.04)]',
+                  'relative break-words px-4 py-3 text-[15px] leading-[1.55] shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:px-5 sm:py-3.5',
                   msg.sender === 'me'
-                    ? 'rounded-[24px] rounded-br-lg bg-[#EEF3FF] text-[#0B1220]'
-                    : 'rounded-[24px] rounded-bl-lg border border-[#E9EDF5]/70 bg-white text-[#0B1220]',
+                    ? 'rounded-[22px] rounded-br-md bg-[#E9EEFF] text-[#0B1220]'
+                    : 'rounded-[22px] rounded-bl-md border border-[#E9EDF5]/70 bg-white text-[#0B1220]',
                 )}
               >
                 <p>{msg.text}</p>

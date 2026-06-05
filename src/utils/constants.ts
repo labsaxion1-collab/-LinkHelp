@@ -30,6 +30,7 @@ export const ROUTES = {
   helperCredits: '/helper/credits',
   helperLinkCredits: '/helper/linkcredits',
   helperCreditsSuccess: '/helper/credits/success',
+  profile: '/profile',
   settings: '/settings',
   /** FLUX multi-app admin console */
   adminDashboard: '/admin/dashboard',

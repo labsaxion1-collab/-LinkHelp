@@ -146,10 +146,7 @@ export function MobileProfileMenu({
                 <button
                   type="button"
                   role="menuitem"
-                  onClick={() => {
-                    onClose();
-                    navigate(ROUTES.helperDashboard, { state: { openProfile: true } });
-                  }}
+                  onClick={() => go(ROUTES.profile)}
                   className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
                 >
                   <User className="h-4 w-4 text-slate-400" />
@@ -157,7 +154,7 @@ export function MobileProfileMenu({
                 </button>
               ) : (
                 <Link
-                  to={ROUTES.settings}
+                  to={ROUTES.profile}
                   role="menuitem"
                   onClick={onClose}
                   className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"

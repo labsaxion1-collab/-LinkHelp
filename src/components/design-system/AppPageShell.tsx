@@ -11,7 +11,7 @@ type Props = {
 /** Standard page wrapper for authenticated app areas. */
 export function AppPageShell({ children, className, wide }: Props) {
   return (
-    <div className={clsx(premium.appPage, 'w-full max-w-full min-w-0', wide ? 'mx-auto max-w-[1600px]' : 'mx-auto max-w-6xl', className)}>
+    <div className={clsx(premium.appPage, 'w-full min-w-0', wide ? 'max-w-none' : 'mx-auto max-w-6xl', className)}>
       {children}
     </div>
   );

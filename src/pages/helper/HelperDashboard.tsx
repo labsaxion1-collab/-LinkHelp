@@ -117,6 +117,7 @@ export default function HelperDashboard() {
   const [insufficientCreditsLc, setInsufficientCreditsLc] = useState<number | null>(null);
   const [activeInfoSlide, setActiveInfoSlide] = useState(0);
   const [heroParallaxOffset, setHeroParallaxOffset] = useState(0);
+  const feedTabsRef = React.useRef<HTMLDivElement | null>(null);
 
   // Modals state
   const [profileSettings, setProfileSettings] = useState<HelperProfileSettings>(() => loadHelperProfileSettings());
@@ -147,6 +148,24 @@ export default function HelperDashboard() {
   const { balance: walletBalance, loading: walletLoading } = useWalletBalance();
   const [helperPrimaryCategory, setHelperPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
   const [helperSecondaryCategories, setHelperSecondaryCategories] = useState<ServiceCategoryId[]>([]);
+
+  const selectFeedTab = React.useCallback(
+    (tab: 'match' | 'recentes' | 'emergencia' | 'candidaturas') => {
+      const previousTop = feedTabsRef.current?.getBoundingClientRect().top;
+      setActiveTab(tab);
+
+      if (previousTop == null) return;
+
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          const nextTop = feedTabsRef.current?.getBoundingClientRect().top;
+          if (nextTop == null) return;
+          window.scrollBy({ top: nextTop - previousTop, left: 0, behavior: 'auto' });
+        });
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     const st = location.state as { openUpgrade?: boolean } | null;
@@ -1268,12 +1287,12 @@ export default function HelperDashboard() {
             ) : null}
           </div>
 
-          <div className="relative mb-5 overflow-hidden rounded-[1.55rem] border border-white/45 bg-[#071D48]/92 p-1.5 shadow-[0_18px_42px_rgba(8,31,84,0.18)] backdrop-blur-xl">
+          <div ref={feedTabsRef} className="relative mb-5 overflow-hidden rounded-[1.55rem] border border-white/45 bg-[#071D48]/92 p-1.5 shadow-[0_18px_42px_rgba(8,31,84,0.18)] backdrop-blur-xl">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(51,182,255,0.26),transparent_34%),linear-gradient(135deg,rgba(37,99,255,0.22),transparent_48%)]" />
             <div className="relative grid grid-cols-3 gap-1.5">
               <button
                 type="button"
-                onClick={() => setActiveTab('match')}
+                onClick={() => selectFeedTab('match')}
                 className={`min-h-[46px] rounded-[1.15rem] px-2 text-[10px] font-black leading-tight transition-all duration-300 sm:text-[11px] ${activeTab === 'match' ? 'bg-white text-[#2563FF] shadow-[0_10px_22px_rgba(37,99,255,0.22)]' : 'text-white/78 hover:bg-white/10 hover:text-white'}`}
               >
                 <span className="mx-auto flex w-fit flex-col items-center gap-1">
@@ -1283,7 +1302,7 @@ export default function HelperDashboard() {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('recentes')}
+                onClick={() => selectFeedTab('recentes')}
                 className={`min-h-[46px] rounded-[1.15rem] px-2 text-[10px] font-black leading-tight transition-all duration-300 sm:text-[11px] ${activeTab === 'recentes' ? 'bg-white text-[#2563FF] shadow-[0_10px_22px_rgba(37,99,255,0.22)]' : 'text-white/78 hover:bg-white/10 hover:text-white'}`}
               >
                 <span className="mx-auto flex w-fit flex-col items-center gap-1">
@@ -1293,7 +1312,7 @@ export default function HelperDashboard() {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('candidaturas')}
+                onClick={() => selectFeedTab('candidaturas')}
                 className={`min-h-[46px] rounded-[1.15rem] px-2 text-[10px] font-black leading-tight transition-all duration-300 sm:text-[11px] ${activeTab === 'candidaturas' ? 'bg-white text-[#2563FF] shadow-[0_10px_22px_rgba(37,99,255,0.22)]' : 'text-white/78 hover:bg-white/10 hover:text-white'}`}
               >
                 <span className="mx-auto flex w-fit flex-col items-center gap-1">

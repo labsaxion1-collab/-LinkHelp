@@ -46,6 +46,9 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
+          clientsClaim: true,
+          cleanupOutdatedCaches: true,
+          skipWaiting: true,
           importScripts: ['push-sw.js'],
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
           navigateFallback: '/index.html',

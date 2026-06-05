@@ -57,17 +57,11 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       if (remote) {
-        console.log('[wallet] currentUserId', helperId);
-        if (profile?.id && currentUserId && profile.id !== currentUserId) {
-          console.warn('[wallet] profile.id differs from session.user.id', profile.id, currentUserId);
-        }
-
         const state = await fetchRemoteCreditState(helperId);
         setWallet(state.wallet);
         setTransactions(state.transactions);
         setUnlocks(state.unlocks);
         setPackages(state.packages);
-        console.log('[wallet] loaded balance', state.wallet?.balance ?? 0);
         return;
       }
 

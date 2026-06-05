@@ -2,6 +2,12 @@ import { getSupabase } from '@/lib/supabase';
 import type { CreditPackage, CreditTransaction, CreditWallet, OpportunityUnlock } from '@/types/credits';
 import { CREDIT_PACKAGES } from '@/utils/credits';
 import { normalizeLinkCreditsAmount } from '@/utils/formatLinkCredits';
+import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
+
+function warnUnlessMissing(label: string, error: { message?: string; code?: string; status?: number } | null): void {
+  if (!error || isPostgrestMissingResource(error)) return;
+  console.warn(`[LinkHelp] ${label}`, error.message);
+}
 
 const toMs = (iso: string | null | undefined) => (iso ? new Date(iso).getTime() : Date.now());
 
@@ -50,23 +56,13 @@ function unlockFromRow(row: Record<string, unknown>): OpportunityUnlock {
   };
 }
 
-/** Try RPC ensure; never block wallet reads if RPC is missing. */
+/** Bootstrap wallet via SECURITY DEFINER RPC only (client upsert violates RLS). */
 async function ensureHelperWalletRow(helperId: string): Promise<void> {
   const sb = getSupabase();
   if (!sb || !helperId) return;
 
   const { error: ensureErr } = await sb.rpc('ensure_helper_credit_wallet', { p_helper_id: helperId });
-  if (!ensureErr) return;
-
-  console.warn('[LinkHelp] ensure_helper_credit_wallet', ensureErr.message);
-
-  const { error: insertErr } = await sb.from('credit_wallets').upsert(
-    { helper_id: helperId, balance: 0 },
-    { onConflict: 'helper_id', ignoreDuplicates: true },
-  );
-  if (insertErr) {
-    console.warn('[LinkHelp] credit_wallets upsert', insertErr.message);
-  }
+  warnUnlessMissing('ensure_helper_credit_wallet', ensureErr);
 }
 
 /**
@@ -92,14 +88,9 @@ export async function loadHelperWalletBalance(helperId: string): Promise<number>
     return 0;
   }
 
-  if (!data) {
-    console.log('[wallet] loaded balance', 0);
-    return 0;
-  }
+  if (!data) return 0;
 
-  const balance = normalizeLinkCreditsAmount(Number(data.balance ?? 0));
-  console.log('[wallet] loaded balance', balance);
-  return balance;
+  return normalizeLinkCreditsAmount(Number(data.balance ?? 0));
 }
 
 /** Full wallet row for the logged-in helper. */
@@ -112,8 +103,19 @@ export async function fetchHelperWallet(helperId: string): Promise<CreditWallet 
   const { data, error } = await sb.from('credit_wallets').select('*').eq('helper_id', helperId).maybeSingle();
 
   if (error) {
-    console.warn('[LinkHelp] credit_wallets select', error.message);
-    return null;
+    warnUnlessMissing('credit_wallets select', error);
+    const balance = await loadHelperWalletBalance(helperId);
+    const now = Date.now();
+    return {
+      id: `wallet_${helperId}`,
+      helperId,
+      balance,
+      totalPurchased: 0,
+      totalBonus: 0,
+      totalSpent: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
   }
 
   if (!data) {
@@ -160,15 +162,9 @@ export async function fetchRemoteCreditState(helperId: string): Promise<{
     sb.from('credit_packages').select('*').eq('active', true).order('credits', { ascending: true }),
   ]);
 
-  if (transactionsRes.error) {
-    console.warn('[LinkHelp] credit_transactions select', transactionsRes.error.message);
-  }
-  if (unlocksRes.error) {
-    console.warn('[LinkHelp] opportunity_unlocks select', unlocksRes.error.message);
-  }
-  if (packagesRes.error) {
-    console.warn('[LinkHelp] credit_packages select', packagesRes.error.message);
-  }
+  warnUnlessMissing('credit_transactions select', transactionsRes.error);
+  warnUnlessMissing('opportunity_unlocks select', unlocksRes.error);
+  warnUnlessMissing('credit_packages select', packagesRes.error);
 
   const packages = packagesRes.data?.length
     ? (packagesRes.data as Record<string, unknown>[]).map((p) => ({

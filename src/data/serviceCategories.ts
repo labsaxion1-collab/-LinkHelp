@@ -27,7 +27,7 @@ export const SERVICE_CATEGORIES = [
   {
     id: 'translation',
     icon: 'Languages',
-    subKeys: ['government', 'school', 'college', 'document', 'consultation'],
+    subKeys: ['government', 'immigration', 'school', 'college', 'document', 'consultation', 'interview'],
   },
   {
     id: 'beauty',

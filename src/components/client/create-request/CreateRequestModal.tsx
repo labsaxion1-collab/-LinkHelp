@@ -26,8 +26,6 @@ import {
   buildJobDateLabel,
   jobUrgencyFromPriority,
   resolvePreferredDateIso,
-  type PreferredDateMode,
-  type PreferredTimeChoice,
   type RequestPriority,
 } from '@/utils/requestSchedule';
 import { getMarketBudgetSuggestion } from '@/utils/marketBudgetSuggestions';
@@ -71,9 +69,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const [translationServiceMode, setTranslationServiceMode] = useState<'online' | 'in_person' | ''>('');
   const [requestAddress, setRequestAddress] = useState<RequestAddressValue>(() => emptyRequestAddress());
   const [priority, setPriority] = useState<RequestPriority>('flexible');
-  const [preferredDateMode, setPreferredDateMode] = useState<PreferredDateMode>('today');
   const [preferredDateIso, setPreferredDateIso] = useState('');
-  const [preferredTimeChoice, setPreferredTimeChoice] = useState<PreferredTimeChoice>('');
   const [preferredTimeSpecific, setPreferredTimeSpecific] = useState('');
   const [movePropertyType, setMovePropertyType] = useState<MovePropertyType>('');
   const [movePickupAddress, setMovePickupAddress] = useState<RequestAddressValue>(() => emptyRequestAddress());
@@ -87,6 +83,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const [cleaningHasElevator, setCleaningHasElevator] = useState('');
   const [publishing, setPublishing] = useState(false);
   const scrollBodyRef = useRef<HTMLDivElement>(null);
+  const lastBudgetSuggestionKey = useRef('');
 
   const scrollModalToTop = useCallback((behavior: ScrollBehavior = 'instant') => {
     const el = scrollBodyRef.current;
@@ -94,23 +91,16 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     el.scrollTo({ top: 0, behavior });
   }, []);
 
-  const preferredPeriod =
-    preferredTimeChoice === 'morning' ||
-    preferredTimeChoice === 'afternoon' ||
-    preferredTimeChoice === 'evening'
-      ? preferredTimeChoice
-      : null;
-  const preferredExactTime = preferredTimeChoice === 'pick' ? preferredTimeSpecific.trim() || null : null;
+  const preferredExactTime = preferredTimeSpecific.trim() || null;
 
   const scheduleInput = useMemo(
     () => ({
       priority,
-      preferredDateMode,
       preferredDateIso,
-      preferredTimeWindow: preferredPeriod ?? '',
+      preferredTimeWindow: '' as const,
       preferredTimeSpecific: preferredExactTime ?? '',
     }),
-    [priority, preferredDateMode, preferredDateIso, preferredPeriod, preferredExactTime],
+    [priority, preferredDateIso, preferredExactTime],
   );
 
   const detailsComplete = useMemo(() => {
@@ -127,7 +117,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     }
     if (selectedCategory === 'translation') {
       if (!translationServiceMode) return false;
-      return translationServiceMode === 'online' || isValidRequestAddress(requestAddress);
+      return isValidRequestAddress(requestAddress);
     }
     return isValidRequestAddress(requestAddress);
   }, [
@@ -157,9 +147,21 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const budgetLabel = buildBudgetLabelFromRange(budgetType, parsedBudgetMin, parsedBudgetMax, t);
   const budgetStorageType: 'fixed' | 'negotiable' = 'fixed';
   const marketSuggestion = useMemo(() => {
-    if (!selectedCategory || selectedCategory === 'translation') return null;
-    return getMarketBudgetSuggestion(selectedCategory, selectedSubcategory || null);
-  }, [selectedCategory, selectedSubcategory]);
+    if (!selectedCategory) return null;
+    return getMarketBudgetSuggestion(selectedCategory, selectedSubcategory || null, {
+      translationServiceMode: selectedCategory === 'translation' ? translationServiceMode : undefined,
+    });
+  }, [selectedCategory, selectedSubcategory, translationServiceMode]);
+
+  useEffect(() => {
+    if (!open || !selectedCategory || !marketSuggestion) return;
+    const key = `${selectedCategory}|${selectedSubcategory}|${translationServiceMode}`;
+    if (lastBudgetSuggestionKey.current === key) return;
+    lastBudgetSuggestionKey.current = key;
+    setBudgetType('fixed');
+    setBudgetMin(String(marketSuggestion.min));
+    setBudgetMax(String(marketSuggestion.max));
+  }, [open, selectedCategory, selectedSubcategory, translationServiceMode, marketSuggestion]);
 
   const reset = () => {
     setStep(initialCategory && initialSubcategory ? 'description' : initialCategory ? 'subcategory' : 'category');
@@ -174,9 +176,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setTranslationServiceMode('');
     setRequestAddress(emptyRequestAddress());
     setPriority('flexible');
-    setPreferredDateMode('today');
     setPreferredDateIso('');
-    setPreferredTimeChoice('');
     setPreferredTimeSpecific('');
     setMovePropertyType('');
     setMovePickupAddress(emptyRequestAddress());
@@ -189,6 +189,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setCleaningAptFloor('');
     setCleaningHasElevator('');
     setPublishing(false);
+    lastBudgetSuggestionKey.current = '';
   };
 
   const handleClose = () => {
@@ -224,9 +225,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     const needsAddress =
       selectedCategory === 'moving'
         ? !isValidRequestAddress(movePickupAddress) || !isValidRequestAddress(moveDeliveryAddress)
-        : selectedCategory === 'translation' && translationServiceMode === 'online'
-          ? false
-          : !isValidRequestAddress(requestAddress);
+        : !isValidRequestAddress(requestAddress);
     if (needsAddress) {
       showToast(t('create_modal.address_required'), 'error');
       return;
@@ -271,12 +270,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       extra = '\n\n---\n' + lines.join('\n');
     }
     const fullDescription = postText.trim() + extra;
-    const addr =
-      selectedCategory === 'moving'
-        ? movePickupAddress
-        : selectedCategory === 'translation' && translationServiceMode === 'online'
-          ? emptyRequestAddress()
-          : requestAddress;
+    const addr = selectedCategory === 'moving' ? movePickupAddress : requestAddress;
     const locationParts = [addr.display.trim(), addr.city, addr.region].filter(Boolean);
     const locationLabel = locationParts.join(', ') || t('jobs.remote');
     const categoryLabel = selectedCategory ? t(`categories.${selectedCategory}`) : t('client_dashboard.create_order_title');
@@ -300,8 +294,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
         latitude: addr.latitude,
         longitude: addr.longitude,
         preferredDate: resolvePreferredDateIso(scheduleInput),
-        preferredPeriod,
-        preferredTimeWindow: preferredPeriod,
+        preferredPeriod: null,
+        preferredTimeWindow: null,
         preferredTime: preferredExactTime,
         date: buildJobDateLabel(scheduleInput),
         value: budgetLabel,
@@ -332,6 +326,77 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     }
   };
 
+  const addressStepComplete = useMemo(() => {
+    if (selectedCategory === 'moving') {
+      return isValidRequestAddress(movePickupAddress) && isValidRequestAddress(moveDeliveryAddress);
+    }
+    if (selectedCategory === 'translation') {
+      return Boolean(translationServiceMode) && isValidRequestAddress(requestAddress);
+    }
+    return isValidRequestAddress(requestAddress);
+  }, [
+    selectedCategory,
+    movePickupAddress,
+    moveDeliveryAddress,
+    translationServiceMode,
+    requestAddress,
+  ]);
+
+  const categoryFieldsComplete = useMemo(() => {
+    if (selectedCategory === 'moving' && needsBuildingForMoving(selectedSubcategory)) {
+      return Boolean(movePickupFloor.trim() && movePickupElevator && moveDeliveryFloor.trim() && moveDeliveryElevator);
+    }
+    if (selectedCategory === 'cleaning' && selectedSubcategory === 'house') return Boolean(cleaningHouseFloors);
+    if (selectedCategory === 'cleaning' && selectedSubcategory === 'apartment') {
+      return Boolean(cleaningAptFloor && cleaningHasElevator);
+    }
+    return true;
+  }, [
+    selectedCategory,
+    selectedSubcategory,
+    movePickupFloor,
+    movePickupElevator,
+    moveDeliveryFloor,
+    moveDeliveryElevator,
+    cleaningHouseFloors,
+    cleaningAptFloor,
+    cleaningHasElevator,
+  ]);
+
+  const continueBlockedMessage = useMemo(() => {
+    if (step === 'description') {
+      if (descriptionBlocked) return t('create_modal.description_contact_warning');
+      if (selectedCategory === 'translation' && !translationLanguagesComplete) {
+        return t('create_modal.translation_languages_required');
+      }
+      if (!addressStepComplete) return t('create_modal.address_required_continue');
+      if (!categoryFieldsComplete) return t('create_modal.category_fields_required');
+      if (!budgetStepComplete) return t('create_modal.budget_required_continue');
+      if (rangeBudgetIsInvalid) return t('create_modal.budget_range_invalid');
+    }
+    if (step === 'confirm') {
+      if (!preferredDateIso) return t('create_modal.confirm_date_required');
+      if (!preferredTimeSpecific.trim()) return t('create_modal.preferred_time_required');
+    }
+    return '';
+  }, [
+    step,
+    descriptionBlocked,
+    selectedCategory,
+    translationLanguagesComplete,
+    addressStepComplete,
+    categoryFieldsComplete,
+    budgetStepComplete,
+    rangeBudgetIsInvalid,
+    preferredDateIso,
+    preferredTimeSpecific,
+    t,
+  ]);
+
+  const continueDisabled =
+    (step === 'description' && (!descriptionComplete || !budgetStepComplete || rangeBudgetIsInvalid)) ||
+    (step === 'confirm' && !isConfirmStepComplete(preferredDateIso, preferredTimeSpecific));
+
   if (!open) return null;
 
   const stepIndex = STEPS.indexOf(step);
@@ -353,11 +418,6 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     const idx = stepIndex;
     if (idx < STEPS.length - 1) setStep(STEPS[idx + 1]);
   };
-
-  const continueDisabled =
-    (step === 'description' && (!descriptionComplete || !budgetStepComplete || rangeBudgetIsInvalid)) ||
-    (step === 'confirm' &&
-      !isConfirmStepComplete(preferredDateMode, preferredDateIso, preferredTimeChoice, preferredTimeSpecific));
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center lh-modal-overlay animate-in fade-in duration-200" onClick={handleClose}>
@@ -662,12 +722,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
           {step === 'confirm' && (
             <CreateRequestConfirmStep
               t={t}
-              preferredDateMode={preferredDateMode}
-              setPreferredDateMode={setPreferredDateMode}
               preferredDateIso={preferredDateIso}
               setPreferredDateIso={setPreferredDateIso}
-              preferredTimeChoice={preferredTimeChoice}
-              setPreferredTimeChoice={setPreferredTimeChoice}
               preferredTimeSpecific={preferredTimeSpecific}
               setPreferredTimeSpecific={setPreferredTimeSpecific}
             />
@@ -686,9 +742,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               moveDeliveryAddress={moveDeliveryAddress}
               movePropertyType={movePropertyType}
               priority={priority}
-              preferredTimeWindow={preferredPeriod ?? ''}
+              preferredTimeWindow=""
               preferredTimeSpecific={preferredExactTime ?? ''}
-              preferredDateMode={preferredDateMode}
               preferredDateIso={preferredDateIso}
             />
           )}
@@ -714,14 +769,21 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
           ) : step === 'category' || step === 'subcategory' ? (
             <span />
           ) : (
-            <button
-              type="button"
-              disabled={continueDisabled}
-              onClick={goNext}
-              className="bg-[#1565FF] hover:bg-[#0F55D9] disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 px-8 rounded-xl ml-auto flex items-center gap-2"
-            >
-              {t('common.continue')} <Icons.ArrowRight className="w-5 h-5" />
-            </button>
+            <div className="ml-auto flex min-w-0 max-w-full flex-col items-end gap-2">
+              {continueDisabled && continueBlockedMessage ? (
+                <p className="max-w-full text-right text-xs font-semibold text-amber-800 sm:text-sm">
+                  {continueBlockedMessage}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                disabled={continueDisabled}
+                onClick={goNext}
+                className="bg-[#1565FF] hover:bg-[#0F55D9] disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3.5 px-8 rounded-xl flex items-center gap-2"
+              >
+                {t('common.continue')} <Icons.ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
           )}
         </div>
       </div>

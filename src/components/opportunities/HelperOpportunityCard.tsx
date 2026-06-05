@@ -6,7 +6,7 @@ import { getCategoryIconById } from '@/utils/categoryIcons';
 import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
 import { clsx } from 'clsx';
 import type { Job } from '@/types/job';
-import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
+import { formatJobBudgetAmount } from '@/utils/formatJobBudget';
 import { formatJobScheduleDisplay, formatJobOpenedAt } from '@/utils/jobDisplay';
 import { translateJobTitle } from '@/utils/translateCategory';
 import { LhCard } from '@/components/design-system/LhCard';
@@ -77,7 +77,7 @@ function locationLabel(
 }
 
 function valueLabel(job: Job, t: TFn): string {
-  return formatJobBudgetDisplay(job, t);
+  return formatJobBudgetAmount(job, t);
 }
 
 function HelperOpportunityCardInner({

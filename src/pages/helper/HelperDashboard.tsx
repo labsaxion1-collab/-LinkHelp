@@ -1161,7 +1161,10 @@ export default function HelperDashboard() {
           ) : null}
 
           {activeTab !== 'candidaturas' ? (
-            <section className="relative mb-8 w-full min-w-0 max-w-full overflow-hidden pb-8 pt-0">
+            <section
+              className="relative mb-8 w-screen min-w-[100vw] max-w-none overflow-visible pb-8 pt-0"
+              style={{ marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)' }}
+            >
               <img
                 src="/brand/helper-hero-bg.jpg"
                 alt=""
@@ -1172,7 +1175,7 @@ export default function HelperDashboard() {
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(249,251,255,0.20)_0%,rgba(249,251,255,0.38)_27%,rgba(249,251,255,0.76)_58%,#F7F8FC_82%)]" />
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(249,251,255,0.82)_0%,rgba(249,251,255,0.52)_48%,rgba(249,251,255,0.16)_100%)]" />
               <div className="pointer-events-none absolute -left-16 -top-12 h-52 w-72 rounded-full bg-white/28 blur-2xl" />
-              <header className="relative mb-3 flex min-h-[40px] items-start justify-between gap-3 pr-[9.75rem]">
+              <header className="relative mb-3 flex min-h-[40px] items-start justify-between gap-3 px-6 pr-[calc(9.75rem+1.5rem)] sm:px-7 sm:pr-[calc(9.75rem+1.75rem)]">
                 <div className="min-w-0">
                   <p className="bg-gradient-to-r from-[#0B1220] via-[#123D85] to-[#2563FF] bg-clip-text text-2xl font-black leading-none tracking-tight text-transparent">
                     Helper
@@ -1180,7 +1183,7 @@ export default function HelperDashboard() {
                   <span className="mt-2 block h-1 w-14 rounded-full bg-gradient-to-r from-[#2563FF] to-[#33B6FF] shadow-[0_8px_18px_rgba(37,99,255,0.24)]" />
                 </div>
                 {!isPerformancePage && UI_VISIBILITY.helperCredits ? (
-                  <div className="absolute right-0 top-0">
+                  <div className="absolute right-6 top-0 sm:right-7">
                     <HelperCreditsWalletCard
                       balance={walletBalance}
                       usedThisMonth={creditsUsedThisMonth}
@@ -1194,7 +1197,7 @@ export default function HelperDashboard() {
                 ) : null}
               </header>
 
-              <div className="relative min-h-[20rem] py-2">
+              <div className="relative min-h-[20rem] px-6 py-2 sm:px-7">
                 <div className="pointer-events-none absolute right-0 top-1 h-20 w-56 rotate-[-12deg] rounded-full bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.10),transparent)] blur-[1px]" />
                 <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF]">
                   <span className="text-base" aria-hidden>Olá</span>
@@ -1234,7 +1237,7 @@ export default function HelperDashboard() {
                 })() : null}
               </div>
 
-              <div className="relative mt-2 mb-3 flex items-center justify-between">
+              <div className="relative mt-2 mb-3 flex items-center justify-between px-6 sm:px-7">
                 <h2 className="text-base font-black tracking-tight text-[#0B1220]">Categorias</h2>
                 {selectedCategoryFilters.length ? (
                   <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black text-[#2563FF]">

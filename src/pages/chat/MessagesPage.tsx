@@ -20,6 +20,7 @@ import { translateCategory, translateJobTitle } from '@/utils/translateCategory'
 import { ChatPreMatchInfoSheet } from '@/components/chat/ChatPreMatchInfoSheet';
 import { ChatJobDetailSheet } from '@/components/chat/ChatJobDetailSheet';
 import { dedupeConversationSummaries } from '@/services/supabase/chatRemote';
+import { groupConversationsByPeer } from '@/utils/groupConversationsByPeer';
 
 type ChatRow =
   | { id: string | number; kind: 'system'; text: string; time: string; variant?: 'info' | 'warn' }
@@ -76,6 +77,8 @@ export default function MessagesPage() {
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [showPreMatchInfo, setShowPreMatchInfo] = useState(false);
   const [showJobDetail, setShowJobDetail] = useState(false);
+  const [listLevel, setListLevel] = useState<'peers' | 'jobs'>('peers');
+  const [selectedPeerId, setSelectedPeerId] = useState<string | null>(null);
 
   const serviceConfirmed = useRemoteChat ? remote.contactUnlocked : false;
 
@@ -119,6 +122,31 @@ export default function MessagesPage() {
       (s) => s.peerName.toLowerCase().includes(q) || s.requestTitle.toLowerCase().includes(q),
     );
   }, [useRemoteChat, remote.summaries, searchQuery, hiddenConversationIds]);
+
+  const peerGroups = useMemo(() => groupConversationsByPeer(filteredSummaries), [filteredSummaries]);
+
+  const selectedPeerGroup = useMemo(
+    () => peerGroups.find((g) => g.peerId === selectedPeerId) ?? null,
+    [peerGroups, selectedPeerId],
+  );
+
+  useEffect(() => {
+    if (selectedPeerId && !selectedPeerGroup) {
+      setSelectedPeerId(null);
+      setListLevel('peers');
+    }
+  }, [selectedPeerId, selectedPeerGroup]);
+
+  const openPeerJobs = (peerId: string) => {
+    setSelectedPeerId(peerId);
+    setListLevel('jobs');
+  };
+
+  const backToPeerList = () => {
+    setListLevel('peers');
+    setSelectedPeerId(null);
+    remote.setSelectedId(null);
+  };
 
   const hideConversation = (conversationId: string) => {
     if (!window.confirm(t('messages_page.remove_conversation_confirm'))) return;
@@ -598,7 +626,28 @@ export default function MessagesPage() {
           )}
         >
           <div className="shrink-0 border-b border-[#E9EDF5] bg-white p-4">
-            <h2 className="mb-3 text-xl font-black tracking-tight text-[#0B1220]">{t('messages_page.title')}</h2>
+            {listLevel === 'jobs' && selectedPeerGroup ? (
+              <div className="mb-3 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={backToPeerList}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100"
+                  aria-label={t('messages_page.back_to_clients')}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <div className="min-w-0">
+                  <h2 className="truncate text-xl font-black tracking-tight text-[#0B1220]">
+                    {selectedPeerGroup.peerName.split(' ')[0] || selectedPeerGroup.peerName}
+                  </h2>
+                  <p className="text-xs font-semibold text-slate-500">
+                    {t('messages_page.peer_jobs_count', { count: selectedPeerGroup.conversations.length })}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <h2 className="mb-3 text-xl font-black tracking-tight text-[#0B1220]">{t('messages_page.title')}</h2>
+            )}
             <div className="relative">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B7280]" />
               <input
@@ -622,7 +671,52 @@ export default function MessagesPage() {
               <p className="p-4 text-sm text-gray-600 font-medium leading-relaxed">{t('messages_page.no_conversations')}</p>
             )}
             {useRemoteChat &&
-              filteredSummaries.map((s) => (
+              listLevel === 'peers' &&
+              peerGroups.map((group) => (
+                <div
+                  key={group.peerId}
+                  className="relative w-full overflow-hidden border-b border-[#E9EDF5] border-l-4 border-l-transparent bg-white transition-colors hover:bg-white/80"
+                >
+                  <button
+                    type="button"
+                    onClick={() => openPeerJobs(group.peerId)}
+                    className="flex w-full items-center gap-3 p-4 text-left"
+                  >
+                    <div className="relative shrink-0">
+                      <img
+                        src={group.peerAvatar}
+                        alt=""
+                        className="h-12 w-12 rounded-full border-2 border-white object-cover shadow-md"
+                        loading="lazy"
+                      />
+                      <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex items-baseline justify-between gap-2">
+                        <h3 className="truncate text-sm font-bold text-gray-900">
+                          {group.peerName.split(' ')[0] || group.peerName}
+                        </h3>
+                        <span className="shrink-0 text-[10px] font-bold text-slate-500">
+                          {t('messages_page.peer_jobs_count', { count: group.conversations.length })}
+                        </span>
+                      </div>
+                      {group.conversations.length === 1 ? (
+                        <p className="truncate text-sm font-medium text-gray-600">
+                          {translateJobTitle(group.conversations[0]!.requestTitle, '', null, t)}
+                        </p>
+                      ) : (
+                        <p className="truncate text-sm font-medium text-gray-600">
+                          {t('messages_page.peer_multiple_jobs')}
+                        </p>
+                      )}
+                    </div>
+                    <Icons.ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+                  </button>
+                </div>
+              ))}
+            {useRemoteChat &&
+              listLevel === 'jobs' &&
+              selectedPeerGroup?.conversations.map((s) => (
                 <div
                   key={s.id}
                   className={clsx(
@@ -639,21 +733,10 @@ export default function MessagesPage() {
                       }}
                       className="flex min-w-0 flex-1 items-center gap-3 text-left"
                     >
-                      <div className="relative shrink-0">
-                        <img
-                          src={s.peerAvatar}
-                          alt=""
-                          className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
-                          loading="lazy"
-                        />
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
-                      </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-baseline gap-2 mb-1">
-                          <h3 className="text-sm font-bold text-gray-900 truncate">{s.peerName.split(' ')[0] || s.peerName}</h3>
-                          <span className="text-[10px] font-bold text-blue-600 shrink-0">{t('notifications.time_now')}</span>
-                        </div>
-                        <p className="text-sm text-gray-600 truncate font-medium">{translateJobTitle(s.requestTitle, '', null, t)}</p>
+                        <p className="truncate text-sm font-bold text-gray-900">
+                          {translateJobTitle(s.requestTitle, '', null, t)}
+                        </p>
                       </div>
                     </button>
                     <button

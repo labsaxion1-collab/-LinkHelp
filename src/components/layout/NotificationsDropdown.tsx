@@ -6,6 +6,8 @@ import { useAppData } from '@/context/AppDataContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { ROUTES } from '@/utils/constants';
 import { getLocalizedNotificationText, getNotificationActionUrl } from '@/utils/notificationText';
+import { useUserNotifications } from '@/hooks/useUserNotifications';
+import { ClearNotificationsButton } from '@/components/notifications/ClearNotificationsButton';
 
 interface NotificationsDropdownProps {
   userId: string;
@@ -21,13 +23,10 @@ function NotificationsDropdownInner({ userId, compact = false }: NotificationsDr
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
   const navigate = useNavigate();
   const location = useLocation();
-  const { notifications, markNotificationAsRead, markAllAsRead } = useAppData();
+  const { markNotificationAsRead, markAllAsRead } = useAppData();
   const { t } = useLanguage();
 
-  const userNotifications = useMemo(
-    () => notifications.filter((n) => n.userId === userId).sort((a, b) => b.createdAt - a.createdAt),
-    [notifications, userId],
-  );
+  const userNotifications = useUserNotifications(userId);
   const unreadCount = useMemo(() => userNotifications.filter((n) => !n.read).length, [userNotifications]);
   const previewNotifications = useMemo(() => userNotifications.slice(0, 10), [userNotifications]);
 
@@ -154,6 +153,9 @@ function NotificationsDropdownInner({ userId, compact = false }: NotificationsDr
               {t('notifications.mark_all_read')}
             </button>
           )}
+          {userNotifications.length > 0 ? (
+            <ClearNotificationsButton userId={userId} variant="dropdown" onCleared={close} />
+          ) : null}
           {compact ? (
             <button
               type="button"
@@ -171,8 +173,8 @@ function NotificationsDropdownInner({ userId, compact = false }: NotificationsDr
         {userNotifications.length === 0 ? (
           <div className="p-8 text-center flex flex-col items-center justify-center text-gray-500">
             <Bell className="w-8 h-8 text-gray-300 mb-3" />
-            <p className="text-sm font-medium text-gray-600">{t('notifications.empty_title')}</p>
-            <p className="text-xs mt-1">{t('notifications.empty_sub')}</p>
+            <p className="text-sm font-medium text-gray-600">{t('notifications.empty_now_title')}</p>
+            <p className="mt-1 text-xs">{t('notifications.empty_now_sub')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">

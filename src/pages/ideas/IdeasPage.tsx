@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAppData } from '@/context/AppDataContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { ROUTES } from '@/utils/constants';
 
@@ -46,7 +45,6 @@ const STATUS_CONFIG = {
 
 export default function IdeasPage() {
   const { t } = useLanguage();
-  const { addNotification } = useAppData();
   const me = useSessionViewer();
   const [ideas, setIdeas] = useState<IdeaRow[]>([]);
   const [activeTab, setActiveTab] = useState<'feed' | 'roadmap'>('feed');
@@ -180,14 +178,6 @@ export default function IdeasPage() {
                       <button 
                         onClick={() => {
                            setIdeas(prev => prev.map(i => i.id === idea.id ? { ...i, voted: !i.voted, votes: i.voted ? i.votes - 1 : i.votes + 1 } : i));
-                           if (!idea.voted) {
-                             addNotification({
-                               userId: me.id,
-                               type: 'system',
-                               title: 'Você curtiu uma ideia',
-                               message: `Sua curtida em "${idea.title}" gerou votos para o autor!`,
-                             });
-                           }
                         }}
                         className={`p-2 rounded-xl border ${idea.voted ? 'bg-blue-50 border-blue-200 text-blue-600 flex-col flex items-center justify-center w-12 h-14' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-colors flex-col flex items-center justify-center w-12 h-14'}`}
                       >
@@ -450,14 +440,6 @@ export default function IdeasPage() {
                   };
                   setIdeas(prev => [newIdea, ...prev]);
                   setShowCreateModal(false);
-                  
-                  addNotification({
-                    userId: me.id,
-                    type: 'system',
-                    title: 'Ideia enviada com sucesso! 🚀',
-                    message: `Sua ideia "${newTitle}" entrou em fase de revisão. Você ganhará LinkCredits se aprovada!`,
-                    actionUrl: '/ideas',
-                  });
 
                   setNewTitle('');
                   setNewDesc('');

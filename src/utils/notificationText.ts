@@ -105,6 +105,14 @@ export function getLocalizedNotificationText(notification: AppNotification, t: T
     };
   }
 
+  if (normalizedTitle.includes('official hire') || normalizedTitle.includes('contratação oficial')) {
+    const job = localizedQuotedJob(message, t);
+    return {
+      title: t('notifications.event_official_hire_title'),
+      message: t('notifications.event_official_hire_body', { job }),
+    };
+  }
+
   if (normalizedTitle.includes('helper hired')) {
     const job = localizedQuotedJob(message, t);
     return {

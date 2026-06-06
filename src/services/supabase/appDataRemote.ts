@@ -352,10 +352,10 @@ export async function remoteCancelClientRequest(requestId: string): Promise<void
     for (const app of apps as { id: string; helper_id: string }[]) {
       await sb.from('notifications').insert({
         user_id: app.helper_id,
-        type: 'job_update',
+        type: 'application',
         title: 'Request cancelled',
         description: `The client cancelled the request "${title}".`,
-        action_url: '/helper/dashboard',
+        action_url: '/helper/jobs',
         read: false,
       });
     }
@@ -368,7 +368,7 @@ export async function remoteCancelClientRequest(requestId: string): Promise<void
 
   await sb.from('notifications').insert({
     user_id: clientId,
-    type: 'job_update',
+    type: 'application',
     title: 'Request cancelled',
     description: `Your request "${title}" was cancelled.`,
     action_url: '/client/dashboard',
@@ -391,23 +391,6 @@ export async function remoteUpdateApplicationStatus(
 
   const { error: upErr } = await sb.from('applications').update({ status }).eq('id', applicationId);
   if (upErr) throw new Error(upErr.message || 'APPLICATION_UPDATE_FAILED');
-
-  const notifyClient = async (payload: { title: string; description: string; action_url: string }) => {
-    if (!app.client_id) return;
-    try {
-      const { error: notifErr } = await sb.from('notifications').insert({
-        user_id: app.client_id,
-        type: 'application',
-        title: payload.title,
-        description: payload.description,
-        action_url: payload.action_url,
-        read: false,
-      });
-      if (notifErr) console.warn('[LinkHelp] cancel notification insert', notifErr.message);
-    } catch (e) {
-      console.warn('[LinkHelp] cancel notification insert', e);
-    }
-  };
 
   const notifyHelper = async (payload: { title: string; description: string; action_url: string }) => {
     try {
@@ -448,18 +431,6 @@ export async function remoteUpdateApplicationStatus(
       title: 'Application accepted',
       description: `The client accepted your application for "${jobSnapshot.title}".`,
       action_url: '/helper/jobs',
-    });
-  } else if (status === 'rejected') {
-    await notifyHelper({
-      title: 'Application update',
-      description: 'The client chose another helper this time.',
-      action_url: '/helper/opportunities',
-    });
-  } else if (status === 'cancelled') {
-    await notifyClient({
-      title: 'Application withdrawn',
-      description: 'A helper cancelled their application for your request.',
-      action_url: '/client/dashboard',
     });
   }
 }
@@ -674,6 +645,13 @@ export async function remoteInsertNotification(n: Omit<AppNotification, 'id' | '
     action_url: n.actionUrl ?? null,
     read: false,
   });
+}
+
+export async function remoteClearAllNotifications(userId: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) return;
+  const { error } = await sb.from('notifications').delete().eq('user_id', userId);
+  if (error) console.warn('[LinkHelp] remoteClearAllNotifications', error.message);
 }
 
 export async function remoteMarkNotificationRead(id: string, read: boolean): Promise<void> {

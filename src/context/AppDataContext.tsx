@@ -14,6 +14,7 @@ import {
   remoteCreateRequest,
   remoteInsertNotification,
   remoteMarkAllNotificationsRead,
+  remoteClearAllNotifications,
   remoteMarkNotificationRead,
   remoteUpdateRequestStatus,
   remoteCancelClientRequest,
@@ -34,6 +35,7 @@ import {
   leadCostsForJob,
 } from '@/services/helperLeadCredits';
 import { isJobCancelled } from '@/utils/jobVisibility';
+import { markNotificationsCleared } from '@/utils/notificationVisibility';
 
 export type { Job, JobStatus, JobUrgency, Application, ApplicationStatus, UpcomingJob, UpcomingWorkflowStatus };
 export type { AppNotification, NotificationType };
@@ -69,6 +71,7 @@ interface AppDataContextData {
   addNotification: (notification: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => void;
   markNotificationAsRead: (id: string) => void;
   markAllAsRead: () => void;
+  clearAllNotifications: (userId: string) => Promise<void>;
   reviews: ServiceReview[];
   pendingServiceReviews: PendingServiceReview[];
   submitServiceReview: (input: {
@@ -179,6 +182,16 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         console.warn('[LinkHelp] markAllAsRead', e);
       });
       return;
+    }
+  };
+
+  const clearAllNotifications = async (targetUserId: string) => {
+    markNotificationsCleared(targetUserId);
+    setNotifications((prev) => prev.filter((n) => n.userId !== targetUserId));
+    if (useRemote) {
+      await remoteClearAllNotifications(targetUserId).catch((e) => {
+        console.warn('[LinkHelp] clearAllNotifications', e);
+      });
     }
   };
 
@@ -341,14 +354,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         await remoteCancelClientRequest(jobId);
         if (jobSnapshot) {
           for (const app of relatedApps) {
-            const cancelTitle = 'Chamado cancelado';
-            const cancelMessage = `O cliente cancelou o chamado "${jobSnapshot.title}".`;
             dispatchPushEvent({
               kind: 'request_cancelled',
               userId: app.helperId,
-              title: cancelTitle,
-              body: cancelMessage,
-              url: ROUTES.helperDashboard,
+              title: 'Chamado cancelado',
+              body: `O cliente cancelou o chamado "${jobSnapshot.title}".`,
+              url: ROUTES.helperJobs,
             });
           }
         }
@@ -382,19 +393,26 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           const cancelMessage = `O cliente cancelou o chamado "${jobSnapshot.title}".`;
           addNotification({
             userId: app.helperId,
-            type: 'job_update',
+            type: 'application',
             title: cancelTitle,
             message: cancelMessage,
-            actionUrl: ROUTES.helperDashboard,
+            actionUrl: ROUTES.helperJobs,
           });
           dispatchPushEvent({
             kind: 'request_cancelled',
             userId: app.helperId,
             title: cancelTitle,
             body: cancelMessage,
-            url: ROUTES.helperDashboard,
+            url: ROUTES.helperJobs,
           });
         }
+        addNotification({
+          userId: jobSnapshot.clientId,
+          type: 'application',
+          title: 'Chamado cancelado',
+          message: `Seu pedido "${jobSnapshot.title}" foi cancelado.`,
+          actionUrl: ROUTES.clientDashboard,
+        });
       }
     }
   };
@@ -423,16 +441,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           : app,
       ),
     );
-
-    if (status === 'cancelled' && targetApp) {
-      addNotification({
-        userId: targetApp.clientId ?? jobSnapshot?.clientId ?? '',
-        type: 'application',
-        title: 'Candidatura cancelada',
-        message: 'Um helper retirou a candidatura.',
-        actionUrl: ROUTES.clientDashboard,
-      });
-    }
 
     if (status === 'accepted' && targetApp && jobSnapshot) {
       setJobs((prev) => prev.map((job) => (job.id === targetApp.jobId ? { ...job, status: 'in_progress' as JobStatus } : job)));
@@ -476,23 +484,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         title: acceptTitle,
         body: acceptMessage,
         url: ROUTES.helperJobsUpcoming,
-      });
-    } else if (status === 'rejected' && targetApp) {
-      const rejectTitle = 'Application declined';
-      const rejectMessage = 'The client chose another helper this time.';
-      addNotification({
-        userId: targetApp.helperId,
-        type: 'application',
-        title: rejectTitle,
-        message: rejectMessage,
-        actionUrl: ROUTES.helperOpportunities,
-      });
-      dispatchPushEvent({
-        kind: 'helper_rejected',
-        userId: targetApp.helperId,
-        title: rejectTitle,
-        body: rejectMessage,
-        url: ROUTES.helperOpportunities,
       });
     }
   };
@@ -721,6 +712,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         addNotification,
         markNotificationAsRead,
         markAllAsRead,
+        clearAllNotifications,
         reviews,
         pendingServiceReviews,
         submitServiceReview,

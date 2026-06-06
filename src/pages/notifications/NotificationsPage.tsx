@@ -1,32 +1,32 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Bell, CheckCircle2, MessageSquare, Briefcase, DollarSign, Target, Star, Trash2, ChevronRight } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, CheckCircle2, MessageSquare, Briefcase, DollarSign, Target, Star, ChevronRight } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { NOTIFICATION_PREVIEW_TYPES } from '@/config/notificationPreviewTypes';
 import { useAppData } from '@/context/AppDataContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
+import { useUserNotifications } from '@/hooks/useUserNotifications';
 import { useLanguage } from '@/context/LanguageContext';
 import { getLocalizedNotificationText, getNotificationActionUrl } from '@/utils/notificationText';
+import { ClearNotificationsButton } from '@/components/notifications/ClearNotificationsButton';
 
 export default function NotificationsPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const me = useSessionViewer();
   const userId = me.id;
-  const { notifications, markAllAsRead, markNotificationAsRead } = useAppData();
-  
+  const { markAllAsRead, markNotificationAsRead } = useAppData();
+  const userNotifications = useUserNotifications(userId);
+
   const [filter, setFilter] = useState<'all' | 'unread' | 'message' | 'application' | 'payment'>('all');
 
-  const userNotifications = notifications.filter(n => n.userId === userId).sort((a, b) => b.createdAt - a.createdAt);
-  
-  let displayedNotifications = userNotifications;
-  if (filter === 'unread') {
-    displayedNotifications = userNotifications.filter(n => !n.read);
-  } else if (filter !== 'all') {
-    displayedNotifications = userNotifications.filter(n => n.type === filter);
-  }
+  const displayedNotifications = useMemo(() => {
+    if (filter === 'unread') return userNotifications.filter((n) => !n.read);
+    if (filter === 'all') return userNotifications;
+    return userNotifications.filter((n) => n.type === filter);
+  }, [userNotifications, filter]);
 
-  const unreadCount = userNotifications.filter(n => !n.read).length;
+  const unreadCount = userNotifications.filter((n) => !n.read).length;
 
   const formatTime = (timestamp: number) => {
     const diff = Date.now() - timestamp;
@@ -41,12 +41,18 @@ export default function NotificationsPage() {
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'application': return <Briefcase className="w-6 h-6 text-blue-500" />;
-      case 'message': return <MessageSquare className="w-6 h-6 text-green-500" />;
-      case 'payment': return <DollarSign className="w-6 h-6 text-emerald-500" />;
-      case 'job_update': return <Target className="w-6 h-6 text-purple-500" />;
-      case 'system': return <Star className="w-6 h-6 text-yellow-500" />;
-      default: return <Bell className="w-6 h-6 text-gray-500" />;
+      case 'application':
+        return <Briefcase className="h-6 w-6 text-blue-500" />;
+      case 'message':
+        return <MessageSquare className="h-6 w-6 text-green-500" />;
+      case 'payment':
+        return <DollarSign className="h-6 w-6 text-emerald-500" />;
+      case 'job_update':
+        return <Target className="h-6 w-6 text-purple-500" />;
+      case 'system':
+        return <Star className="h-6 w-6 text-yellow-500" />;
+      default:
+        return <Bell className="h-6 w-6 text-gray-500" />;
     }
   };
 
@@ -57,31 +63,32 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6">
+        <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+            <h1 className="flex items-center gap-3 text-3xl font-black tracking-tight text-gray-900">
               {t('notifications.title')}
               {unreadCount > 0 && (
-                <span className="bg-red-500 text-white text-sm px-2.5 py-0.5 rounded-full font-bold">
+                <span className="rounded-full bg-red-500 px-2.5 py-0.5 text-sm font-bold text-white">
                   {unreadCount}
                 </span>
               )}
             </h1>
-            <p className="text-gray-500 mt-1">{t('notifications.page_subtitle')}</p>
+            <p className="mt-1 text-gray-500">{t('notifications.page_subtitle')}</p>
           </div>
-          
-          {unreadCount > 0 && (
-            <button
-              type="button"
-              onClick={markAllAsRead}
-              className="px-4 py-2 bg-white text-blue-600 font-bold border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-sm text-sm"
-            >
-              <CheckCircle2 className="w-4 h-4" /> {t('notifications.mark_all_read')}
-            </button>
-          )}
+
+          <div className="flex flex-wrap items-center gap-2">
+            {unreadCount > 0 ? (
+              <button
+                type="button"
+                onClick={markAllAsRead}
+                className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-blue-600 shadow-sm transition-colors hover:bg-gray-50"
+              >
+                <CheckCircle2 className="h-4 w-4" /> {t('notifications.mark_all_read')}
+              </button>
+            ) : null}
+            {userNotifications.length > 0 ? <ClearNotificationsButton userId={userId} variant="page" /> : null}
+          </div>
         </div>
 
         <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -105,13 +112,13 @@ export default function NotificationsPage() {
           </div>
         </section>
 
-        {/* Filters */}
-        <div className="flex gap-2 overflow-x-auto pb-4 mb-2 hide-scrollbar">
-          {(['all', 'unread', 'application', 'message', 'payment'] as const).map(f => (
-            <button 
+        <div className="mb-2 flex gap-2 overflow-x-auto pb-4 hide-scrollbar">
+          {(['all', 'unread', 'application', 'message', 'payment'] as const).map((f) => (
+            <button
               key={f}
+              type="button"
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${filter === f ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+              className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-bold transition-all ${filter === f ? 'bg-gray-900 text-white shadow-md' : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
             >
               {f === 'all' && t('notifications.filter_all')}
               {f === 'unread' && t('notifications.filter_unread')}
@@ -122,17 +129,16 @@ export default function NotificationsPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Notifications List - 2 columns on lg */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
               {displayedNotifications.length === 0 ? (
-                <div className="p-16 text-center flex flex-col items-center justify-center">
-                  <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                    <Bell className="w-10 h-10 text-gray-300" />
+                <div className="flex flex-col items-center justify-center p-16 text-center">
+                  <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-50">
+                    <Bell className="h-10 w-10 text-gray-300" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{t('notifications.empty_title')}</h3>
-                  <p className="text-gray-500 max-w-sm">{t('notifications.empty_sub')}</p>
+                  <h3 className="mb-2 text-xl font-bold text-gray-900">{t('notifications.empty_now_title')}</h3>
+                  <p className="max-w-sm text-gray-500">{t('notifications.empty_now_sub')}</p>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100">
@@ -151,46 +157,42 @@ export default function NotificationsPage() {
                             handleNotificationClick(notification.id, notification.read, actionUrl);
                           }
                         }}
-                        className={`p-5 sm:p-6 hover:bg-gray-50 transition-all cursor-pointer relative group flex items-start gap-4 sm:gap-6 ${!notification.read ? 'bg-blue-50/20' : ''}`}
+                        className={`group relative flex cursor-pointer items-start gap-4 p-5 transition-all hover:bg-gray-50 sm:gap-6 sm:p-6 ${!notification.read ? 'bg-blue-50/20' : ''}`}
                       >
-                        {!notification.read && (
-                          <div className="absolute left-0 top-0 w-1 h-full bg-blue-500"></div>
-                        )}
+                        {!notification.read ? <div className="absolute left-0 top-0 h-full w-1 bg-blue-500" /> : null}
 
-                        <div className={`p-3 rounded-2xl shrink-0 ${!notification.read ? 'bg-blue-100 backdrop-blur-sm' : 'bg-gray-100 group-hover:bg-white border border-transparent group-hover:border-gray-200'} transition-all`}>
+                        <div
+                          className={`shrink-0 rounded-2xl p-3 ${!notification.read ? 'bg-blue-100 backdrop-blur-sm' : 'border border-transparent bg-gray-100 group-hover:border-gray-200 group-hover:bg-white'} transition-all`}
+                        >
                           {getIcon(notification.type)}
                         </div>
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-4 mb-1.5">
-                            <h3 className={`text-base font-bold truncate ${!notification.read ? 'text-gray-900' : 'text-gray-800'}`}>
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1.5 flex flex-col justify-between gap-1 sm:flex-row sm:items-start sm:gap-4">
+                            <h3 className={`truncate text-base font-bold ${!notification.read ? 'text-gray-900' : 'text-gray-800'}`}>
                               {localized.title}
                             </h3>
-                            <span className="text-xs font-bold text-gray-400 whitespace-nowrap shrink-0">
+                            <span className="shrink-0 whitespace-nowrap text-xs font-bold text-gray-400">
                               {formatTime(notification.createdAt)}
                             </span>
                           </div>
-                          <p className={`text-sm leading-relaxed mb-3 ${!notification.read ? 'text-gray-700 font-medium' : 'text-gray-600'}`}>
+                          <p className={`mb-3 text-sm leading-relaxed ${!notification.read ? 'font-medium text-gray-700' : 'text-gray-600'}`}>
                             {localized.message}
                           </p>
 
                           {actionUrl ? (
                             <button
                               type="button"
-                              className="inline-flex items-center text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                              className="inline-flex items-center text-sm font-bold text-blue-600 transition-colors hover:text-blue-800"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleNotificationClick(notification.id, notification.read, actionUrl);
                               }}
                             >
-                              {t('notifications.view_details')} <ChevronRight className="w-4 h-4 ml-0.5" />
+                              {t('notifications.view_details')} <ChevronRight className="ml-0.5 h-4 w-4" />
                             </button>
                           ) : null}
                         </div>
-
-                        <button className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0">
-                          <Trash2 className="w-5 h-5" />
-                        </button>
                       </div>
                     );
                   })}
@@ -199,83 +201,70 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          {/* Central Inteligente Side Panel */}
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
-              
-              {/* Central Inteligente Header */}
-              <div className="bg-gradient-to-br from-indigo-900 to-blue-900 rounded-3xl p-6 shadow-md text-white relative overflow-hidden">
-                <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 to-blue-900 p-6 text-white shadow-md">
+                <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
                 <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                    <span className="font-bold text-sm tracking-widest uppercase text-blue-200">{t('notifications.smart_hub_badge')}</span>
+                  <div className="mb-3 flex items-center gap-2">
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <span className="text-sm font-bold uppercase tracking-widest text-blue-200">{t('notifications.smart_hub_badge')}</span>
                   </div>
-                  <h3 className="text-xl font-bold mb-2">{t('notifications.smart_hub_title')}</h3>
-                  <p className="text-sm text-blue-100/90 leading-relaxed">
-                    {t('notifications.smart_hub_sub')}
-                  </p>
+                  <h3 className="mb-2 text-xl font-bold">{t('notifications.smart_hub_title')}</h3>
+                  <p className="text-sm leading-relaxed text-blue-100/90">{t('notifications.smart_hub_sub')}</p>
                 </div>
               </div>
 
-              {/* Suggestions items */}
-              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 space-y-4">
-                
-                {location.pathname.includes('/helper') ? (
+              <div className="space-y-4 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                {me.userType === 'helper' ? (
                   <>
-                    <div className="flex gap-4 items-start">
-                      <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50">
                         <span className="text-xl">🔥</span>
                       </div>
                       <div>
-                        <h4 className="font-bold text-gray-900 text-sm">{t('notifications.helper_insight_cleaning_title')}</h4>
-                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">{t('notifications.helper_insight_cleaning_body')}</p>
+                        <h4 className="text-sm font-bold text-gray-900">{t('notifications.helper_insight_cleaning_title')}</h4>
+                        <p className="mt-1 text-xs leading-relaxed text-gray-500">{t('notifications.helper_insight_cleaning_body')}</p>
                       </div>
                     </div>
-                    
-                    <div className="w-full h-px bg-gray-100"></div>
-
-                    <div className="flex gap-4 items-start">
-                      <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+                    <div className="h-px w-full bg-gray-100" />
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-50">
                         <span className="text-xl">📈</span>
                       </div>
                       <div>
-                        <h4 className="font-bold text-gray-900 text-sm">{t('notifications.helper_insight_rate_title')}</h4>
-                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">{t('notifications.helper_insight_rate_body')}</p>
+                        <h4 className="text-sm font-bold text-gray-900">{t('notifications.helper_insight_rate_title')}</h4>
+                        <p className="mt-1 text-xs leading-relaxed text-gray-500">{t('notifications.helper_insight_rate_body')}</p>
                       </div>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="flex gap-4 items-start">
-                      <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50">
                         <span className="text-xl">🌟</span>
                       </div>
                       <div>
-                        <h4 className="font-bold text-gray-900 text-sm">{t('notifications.client_insight_near_title')}</h4>
-                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">{t('notifications.client_insight_near_body')}</p>
+                        <h4 className="text-sm font-bold text-gray-900">{t('notifications.client_insight_near_title')}</h4>
+                        <p className="mt-1 text-xs leading-relaxed text-gray-500">{t('notifications.client_insight_near_body')}</p>
                       </div>
                     </div>
-                    
-                    <div className="w-full h-px bg-gray-100"></div>
-
-                    <div className="flex gap-4 items-start">
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                    <div className="h-px w-full bg-gray-100" />
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
                         <span className="text-xl">💡</span>
                       </div>
                       <div>
-                        <h4 className="font-bold text-gray-900 text-sm">{t('notifications.client_insight_photo_title')}</h4>
-                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">{t('notifications.client_insight_photo_body')}</p>
+                        <h4 className="text-sm font-bold text-gray-900">{t('notifications.client_insight_photo_title')}</h4>
+                        <p className="mt-1 text-xs leading-relaxed text-gray-500">{t('notifications.client_insight_photo_body')}</p>
                       </div>
                     </div>
                   </>
                 )}
-
               </div>
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { hapticLight, hapticSuccess } from '@/utils/haptic';
 import * as Icons from 'lucide-react';
 import { CheckCircle2, Clock, MapPin, History } from 'lucide-react';
@@ -183,6 +183,15 @@ function HelperOpportunityCardInner({
   const ctaBase =
     'inline-flex min-h-[40px] flex-1 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2.5 text-sm font-bold transition-all duration-200';
 
+  const isInteractiveTarget = (target: EventTarget | null) =>
+    target instanceof HTMLElement && Boolean(target.closest('button, a, [role="button"]'));
+
+  const handleCardSurfaceClick = (e: MouseEvent<HTMLElement>) => {
+    if (!onViewDetails || isInteractiveTarget(e.target)) return;
+    if (Math.abs(dragX) > 8) return;
+    onViewDetails(job);
+  };
+
   const cardShell = clsx(
     'group/card h-full w-full max-w-full overflow-hidden rounded-2xl border bg-white transition-all duration-300 shadow-[0_8px_22px_rgba(15,23,42,0.06)]',
     'md:hover:-translate-y-0.5 md:hover:shadow-xl md:hover:shadow-slate-900/10 motion-reduce:transform-none',
@@ -285,11 +294,22 @@ function HelperOpportunityCardInner({
           className={clsx(
             'relative z-20 bg-white p-3 will-change-transform',
             !dragging && 'transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.2,0.64,1)]',
+            onViewDetails && 'cursor-pointer',
           )}
           style={{
             transform: `translateX(${dragX}px) rotate(${dragRotation}deg)`,
             opacity: 1 - Math.min(0.12, Math.abs(dragX) / 400),
           }}
+          onClick={handleCardSurfaceClick}
+          onKeyDown={(e) => {
+            if (!onViewDetails || isInteractiveTarget(e.target)) return;
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onViewDetails(job);
+            }
+          }}
+          role={onViewDetails ? 'button' : undefined}
+          tabIndex={onViewDetails ? 0 : undefined}
         >
           <div className="flex items-start gap-4">
             <div className="flex h-[4.65rem] w-[4.65rem] shrink-0 items-center justify-center rounded-[1.35rem] bg-[#F2F6FF] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
@@ -300,7 +320,10 @@ function HelperOpportunityCardInner({
               <div className="flex min-w-0 items-start justify-between gap-2">
                 <button
                   type="button"
-                  onClick={() => onViewDetails?.(job)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewDetails?.(job);
+                  }}
                   className="min-w-0 text-left"
                 >
                   <span className="line-clamp-2 text-[1.02rem] font-black leading-tight text-[#0B1220] [overflow-wrap:normal] break-normal">
@@ -334,7 +357,10 @@ function HelperOpportunityCardInner({
               <div className="mt-3 flex min-w-0 items-center justify-between gap-2">
                 <button
                   type="button"
-                  onClick={() => onViewClientProfile?.(job)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewClientProfile?.(job);
+                  }}
                   className="flex min-w-0 items-center gap-2 rounded-full pr-1 text-left"
                   aria-label={t('helper_public.view_profile')}
                 >
@@ -378,7 +404,11 @@ function HelperOpportunityCardInner({
                   {onViewDetails ? (
                     <button
                       type="button"
-                      onClick={() => onViewDetails(job)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDetails(job);
+                      }}
+                      onTouchEnd={(e) => e.stopPropagation()}
                       className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition-colors active:bg-slate-100"
                       aria-label={t('notifications.view_details')}
                     >
@@ -399,7 +429,19 @@ function HelperOpportunityCardInner({
 
       {/* Desktop ? mesmo layout compacto do feed mobile */}
       <div className="hidden w-full max-w-full md:block">
-        <div className="p-3">
+        <div
+          className={clsx('p-3', onViewDetails && 'cursor-pointer')}
+          onClick={handleCardSurfaceClick}
+          onKeyDown={(e) => {
+            if (!onViewDetails || isInteractiveTarget(e.target)) return;
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onViewDetails(job);
+            }
+          }}
+          role={onViewDetails ? 'button' : undefined}
+          tabIndex={onViewDetails ? 0 : undefined}
+        >
           <div className="flex gap-3">
             <div className="relative flex h-[4.25rem] w-[4.25rem] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-sky-100 ring-1 ring-blue-100/80">
               <CategoryIcon className="h-7 w-7 text-blue-600" strokeWidth={1.75} aria-hidden />
@@ -414,7 +456,10 @@ function HelperOpportunityCardInner({
                 <div className="min-w-0 flex-1">
                   <button
                     type="button"
-                    onClick={() => onViewDetails?.(job)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewDetails?.(job);
+                    }}
                     className="line-clamp-2 text-left text-[15px] font-black leading-snug text-slate-950 [overflow-wrap:normal] break-normal hover:text-blue-700"
                   >
                     {title}
@@ -450,7 +495,10 @@ function HelperOpportunityCardInner({
           <div className="mt-2 flex items-center gap-2 border-t border-slate-100/90 pt-2">
             <button
               type="button"
-              onClick={() => onViewClientProfile?.(job)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewClientProfile?.(job);
+              }}
               className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50"
               aria-label={t('helper_public.view_profile')}
             >
@@ -465,7 +513,10 @@ function HelperOpportunityCardInner({
             <div className="min-w-0 flex-1">
               <button
                 type="button"
-                onClick={() => onViewClientProfile?.(job)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewClientProfile?.(job);
+                }}
                 className="truncate text-left text-[11px] font-bold text-slate-800 hover:text-blue-700"
               >
                 {job.clientName}
@@ -495,7 +546,10 @@ function HelperOpportunityCardInner({
           {onViewDetails ? (
             <button
               type="button"
-              onClick={() => onViewDetails(job)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewDetails(job);
+              }}
               className="inline-flex min-h-[36px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
             >
               <Icons.FileText className="h-4 w-4" />
@@ -504,7 +558,10 @@ function HelperOpportunityCardInner({
           ) : null}
           <button
             type="button"
-            onClick={() => onViewClientProfile?.(job)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewClientProfile?.(job);
+            }}
             className="inline-flex min-h-[38px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
           >
             <Icons.Eye className="h-4 w-4" />
@@ -521,7 +578,10 @@ function HelperOpportunityCardInner({
           ) : (
             <button
               type="button"
-              onClick={() => onApply(job)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onApply(job);
+              }}
               disabled={isApplying}
               className={`${ctaBase} w-full border border-blue-600/90 bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md hover:shadow-blue-600/15 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-70`}
             >

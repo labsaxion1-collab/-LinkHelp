@@ -243,6 +243,9 @@ export const en = {
     event_official_hire_body: 'The client officially hired you for "{{job}}". Chat is now open.',
     event_helper_hired_title: 'Helper hired',
     event_helper_hired_body: 'You can now chat with your helper about "{{job}}".',
+    event_request_cancelled_title: 'Request cancelled',
+    event_request_cancelled_client_body: 'Your request "{{job}}" was cancelled.',
+    event_request_cancelled_helper_body: 'The client cancelled the request "{{job}}".',
   },
   messages_page: {
     sign_in_required: 'Sign in to view and send messages.',

@@ -2,6 +2,7 @@ import { lazy, type ComponentType } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
+import { importWithRetry } from '@/utils/lazyWithRetry';
 import Layout from '@/components/layout/Layout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PublicOnlyRoute } from '@/components/auth/PublicOnlyRoute';
@@ -11,8 +12,8 @@ import { AdminProtectedRoute } from '@/components/admin/AdminProtectedRoute';
 import { FluxAdminLayout } from '@/components/admin/FluxAdminLayout';
 
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
-const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
-const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'));
+const LoginPage = lazy(() => importWithRetry(() => import('@/pages/auth/LoginPage')));
+const RegisterPage = lazy(() => importWithRetry(() => import('@/pages/auth/RegisterPage')));
 const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'));
 const AuthCallbackPage = lazy(() => import('@/pages/auth/AuthCallbackPage'));
 const DashboardEntryPage = lazy(() => import('@/pages/app/DashboardEntryPage'));

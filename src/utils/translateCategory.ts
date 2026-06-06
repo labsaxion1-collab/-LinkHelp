@@ -99,8 +99,9 @@ export function translateJobTitle(
   if (!categoryId) return title;
 
   const categoryLabel = t(`categories.${categoryId}`);
-  if (subcategory) {
-    const subKey = `service_subs.${categoryId}.${subcategory}`;
+  const subId = (subcategory || suffix).trim().toLowerCase().replace(/\s+/g, '_');
+  if (subId) {
+    const subKey = `service_subs.${categoryId}.${subId}`;
     const subLabel = t(subKey);
     if (subLabel !== subKey) return `${categoryLabel}: ${subLabel}`;
   }

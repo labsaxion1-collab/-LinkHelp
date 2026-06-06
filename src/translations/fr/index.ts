@@ -244,6 +244,9 @@ export const fr = {
     event_official_hire_body: 'Le client vous a embauche officiellement pour "{{job}}". Le chat est ouvert.',
     event_helper_hired_title: 'Assistant embauche',
     event_helper_hired_body: 'Vous pouvez maintenant discuter avec votre assistant au sujet de "{{job}}".',
+    event_request_cancelled_title: 'Demande annulée',
+    event_request_cancelled_client_body: 'Votre demande « {{job}} » a été annulée.',
+    event_request_cancelled_helper_body: 'Le client a annulé la demande « {{job}} ».',
   },
   messages_page: {
     sign_in_required: 'Connectez-vous pour voir et envoyer des messages.',

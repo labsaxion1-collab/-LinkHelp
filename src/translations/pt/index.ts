@@ -247,6 +247,9 @@ export const pt = {
     event_official_hire_body: 'O cliente contratou voce oficialmente para "{{job}}". O chat esta aberto.',
     event_helper_hired_title: 'Helper contratado',
     event_helper_hired_body: 'Agora voce pode conversar com o helper sobre "{{job}}".',
+    event_request_cancelled_title: 'Chamado cancelado',
+    event_request_cancelled_client_body: 'Seu pedido "{{job}}" foi cancelado.',
+    event_request_cancelled_helper_body: 'O cliente cancelou o chamado "{{job}}".',
   },
   messages_page: {
     sign_in_required: 'Entre na sua conta para ver e enviar mensagens.',

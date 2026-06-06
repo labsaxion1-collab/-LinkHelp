@@ -36,6 +36,8 @@ export default function ClientNearbyMapPage() {
     relatedCategoryIds: relatedCategories,
   });
 
+  const mapMarkerCount = helpersWithMapPosition.length;
+
   const initialCameraDone = useRef(false);
   const mapSectionRef = useRef<HTMLElement>(null);
   const [focusedMarkerId, setFocusedMarkerId] = useState<string | null>(null);
@@ -88,7 +90,7 @@ export default function ClientNearbyMapPage() {
         t={t}
         skillLabel={skillLabel}
         highlighted={focusedMarkerId === helper.id}
-        onViewOnMap={
+        onSelect={
           helper.mapPosition ? () => focusHelperOnMap(helper.id, helper.mapPosition!) : undefined
         }
       />
@@ -174,14 +176,14 @@ export default function ClientNearbyMapPage() {
               <Icons.ArrowLeft className="inline h-4 w-4 -mt-0.5 mr-1" />
               {t('nav.back')}
             </button>
-            {!loading && nearbyCount > 0 ? (
+            {!loading && mapMarkerCount > 0 ? (
               <div className="flex items-center gap-2 rounded-2xl border border-blue-100 bg-white/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
                 <span className="flex h-2.5 w-2.5 relative">
                   <span className="animate-ping absolute inset-0 rounded-full bg-green-400 opacity-75 motion-reduce:animate-none" />
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
                 </span>
                 <span className="font-bold text-sm text-[#0D1B2A] whitespace-nowrap">
-                  {t('live_map.floating_client', { count: nearbyCount })}
+                  {t('live_map.floating_client', { count: mapMarkerCount })}
                 </span>
               </div>
             ) : (
@@ -225,7 +227,7 @@ export default function ClientNearbyMapPage() {
           <p className="text-xs lg:text-sm text-gray-500 mt-1 lg:mt-2 font-medium">{t('live_map.subtitle_client_nearby')}</p>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-3 bg-gray-50/50">{listContent}</div>
+        <div className="flex-1 overflow-y-auto p-3 lg:p-4 pb-[max(5rem,env(safe-area-inset-bottom))] space-y-3 bg-gray-50/50">{listContent}</div>
       </aside>
     </div>
   );

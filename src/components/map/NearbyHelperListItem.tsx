@@ -11,15 +11,30 @@ type Props = {
   t: (key: string, vars?: Record<string, string | number>) => string;
   skillLabel: (skillId: string) => string;
   onViewOnMap?: () => void;
+  onSelect?: () => void;
   highlighted?: boolean;
 };
 
-export function NearbyHelperListItem({ helper, t, skillLabel, onViewOnMap, highlighted = false }: Props) {
+export function NearbyHelperListItem({ helper, t, skillLabel, onViewOnMap, onSelect, highlighted = false }: Props) {
   return (
     <article
+      role={onSelect ? 'button' : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onClick={onSelect}
+      onKeyDown={
+        onSelect
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onSelect();
+              }
+            }
+          : undefined
+      }
       className={clsx(
         'rounded-2xl border border-[#33B6FF]/20 bg-white/[0.04] p-4 shadow-sm backdrop-blur-md transition-all',
         highlighted ? 'border-blue-400 ring-2 ring-blue-200/80 shadow-md' : 'border-gray-100 hover:border-blue-200',
+        onSelect ? 'cursor-pointer' : '',
       )}
     >
       <div className="flex gap-3">

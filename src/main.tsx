@@ -2,8 +2,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { clearChunkReloadFlag } from '@/utils/lazyWithRetry';
 
 if (import.meta.env.PROD) {
+  clearChunkReloadFlag();
   void import('virtual:pwa-register').then(({ registerSW }) => {
     const updateSW = registerSW({
       immediate: true,

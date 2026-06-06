@@ -115,6 +115,7 @@ function HelperOpportunityCardInner({
   const [swipeOverlay, setSwipeOverlay] = useState<'none' | 'accept' | 'pass'>('none');
   const [passExiting, setPassExiting] = useState(false);
   const swipeStartX = useRef(0);
+  const swipeStartTarget = useRef<EventTarget | null>(null);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const CategoryIcon = getCategoryIconById(job.category);
 
@@ -160,14 +161,18 @@ function HelperOpportunityCardInner({
       }, 520);
       return;
     }
-    setDragX(0);
-    setSwipeOverlay('none');
+    const isTap = Math.abs(offset) < 8;
+    resetSwipeVisual();
+    if (isTap && onViewDetails && !isNestedInteractiveTarget(swipeStartTarget.current)) {
+      onViewDetails(job);
+    }
   };
 
-  const onSwipeStart = (clientX: number) => {
+  const onSwipeStart = (clientX: number, target?: EventTarget | null) => {
     if (hasApplied || isExiting || interactionLocked || proposalOpen || swipeRateLimited) return;
     setDragging(true);
     swipeStartX.current = clientX;
+    swipeStartTarget.current = target ?? null;
     setSwipeOverlay('none');
   };
 
@@ -183,13 +188,20 @@ function HelperOpportunityCardInner({
   const ctaBase =
     'inline-flex min-h-[40px] flex-1 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2.5 text-sm font-bold transition-all duration-200';
 
-  const isInteractiveTarget = (target: EventTarget | null) =>
-    target instanceof HTMLElement && Boolean(target.closest('button, a, [role="button"]'));
+  const isNestedInteractiveTarget = (target: EventTarget | null, container?: EventTarget | null) => {
+    if (!(target instanceof HTMLElement)) return false;
+    const interactive = target.closest('button, a');
+    if (!interactive) return false;
+    if (container instanceof HTMLElement && interactive === container) return false;
+    return true;
+  };
+
+  const openDetails = () => onViewDetails?.(job);
 
   const handleCardSurfaceClick = (e: MouseEvent<HTMLElement>) => {
-    if (!onViewDetails || isInteractiveTarget(e.target)) return;
+    if (!onViewDetails || isNestedInteractiveTarget(e.target, e.currentTarget)) return;
     if (Math.abs(dragX) > 8) return;
-    onViewDetails(job);
+    openDetails();
   };
 
   const cardShell = clsx(
@@ -248,7 +260,7 @@ function HelperOpportunityCardInner({
       {/* Mobile compact ? swipe with drag, hints, and overlay intensity */}
       <div
         className="relative w-full max-w-full overflow-hidden touch-pan-y md:hidden"
-        onTouchStart={(e) => onSwipeStart(e.touches[0]?.clientX ?? 0)}
+        onTouchStart={(e) => onSwipeStart(e.touches[0]?.clientX ?? 0, e.target)}
         onTouchMove={(e) => onSwipeMove(e.touches[0]?.clientX ?? 0)}
         onTouchEnd={(e) => finishSwipe((e.changedTouches[0]?.clientX ?? 0) - swipeStartX.current)}
       >
@@ -302,14 +314,12 @@ function HelperOpportunityCardInner({
           }}
           onClick={handleCardSurfaceClick}
           onKeyDown={(e) => {
-            if (!onViewDetails || isInteractiveTarget(e.target)) return;
+            if (!onViewDetails || isNestedInteractiveTarget(e.target, e.currentTarget)) return;
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              onViewDetails(job);
+              openDetails();
             }
           }}
-          role={onViewDetails ? 'button' : undefined}
-          tabIndex={onViewDetails ? 0 : undefined}
         >
           <div className="flex items-start gap-4">
             <div className="flex h-[4.65rem] w-[4.65rem] shrink-0 items-center justify-center rounded-[1.35rem] bg-[#F2F6FF] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
@@ -322,8 +332,9 @@ function HelperOpportunityCardInner({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onViewDetails?.(job);
+                    openDetails();
                   }}
+                  onTouchEnd={(e) => e.stopPropagation()}
                   className="min-w-0 text-left"
                 >
                   <span className="line-clamp-2 text-[1.02rem] font-black leading-tight text-[#0B1220] [overflow-wrap:normal] break-normal">
@@ -406,7 +417,7 @@ function HelperOpportunityCardInner({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onViewDetails(job);
+                        openDetails();
                       }}
                       onTouchEnd={(e) => e.stopPropagation()}
                       className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition-colors active:bg-slate-100"
@@ -433,14 +444,12 @@ function HelperOpportunityCardInner({
           className={clsx('p-3', onViewDetails && 'cursor-pointer')}
           onClick={handleCardSurfaceClick}
           onKeyDown={(e) => {
-            if (!onViewDetails || isInteractiveTarget(e.target)) return;
+            if (!onViewDetails || isNestedInteractiveTarget(e.target, e.currentTarget)) return;
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              onViewDetails(job);
+              openDetails();
             }
           }}
-          role={onViewDetails ? 'button' : undefined}
-          tabIndex={onViewDetails ? 0 : undefined}
         >
           <div className="flex gap-3">
             <div className="relative flex h-[4.25rem] w-[4.25rem] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-sky-100 ring-1 ring-blue-100/80">
@@ -458,7 +467,7 @@ function HelperOpportunityCardInner({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onViewDetails?.(job);
+                      openDetails();
                     }}
                     className="line-clamp-2 text-left text-[15px] font-black leading-snug text-slate-950 [overflow-wrap:normal] break-normal hover:text-blue-700"
                   >
@@ -548,7 +557,7 @@ function HelperOpportunityCardInner({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onViewDetails(job);
+                openDetails();
               }}
               className="inline-flex min-h-[36px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
             >

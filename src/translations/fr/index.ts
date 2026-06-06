@@ -833,6 +833,10 @@ export const fr = {
     lead_cost: '{{count}} credits pour debloquer',
     lead_competition: "Jusqu'a {{count}} helpers",
     applications_count: '{{count}} interesses',
+    interested_ring_label: 'interesses',
+    interested_legend_full: '3 interesses',
+    interested_legend_empty: '0 interesses',
+    interested_limit_reached: 'Limite d’intérêts atteint',
     lead_unlock_note:
       "Postulez gratuitement maintenant. Le modele de credits est en preparation pour l'acces aux contacts verifies, avec une limite juste par lead.",
     payment_est: 'Estim. {{amount}}',

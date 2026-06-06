@@ -1,17 +1,18 @@
 import { memo, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { hapticLight, hapticSuccess } from '@/utils/haptic';
 import * as Icons from 'lucide-react';
-import { CheckCircle2, Clock, MapPin, History } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { getCategoryIconById } from '@/utils/categoryIcons';
-import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
 import { clsx } from 'clsx';
 import type { Job } from '@/types/job';
-import { formatJobBudgetAmount, formatJobBudgetDisplay } from '@/utils/formatJobBudget';
-import { formatJobScheduleDisplay, formatJobOpenedAt } from '@/utils/jobDisplay';
+import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
+import { formatJobOpenedAt } from '@/utils/jobDisplay';
 import { translateJobTitle } from '@/utils/translateCategory';
 import { LhCard } from '@/components/design-system/LhCard';
 import { HelperCreditCostBlock } from '@/components/helpers/HelperCreditCostBlock';
+import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
+import { isJobInterestFull } from '@/utils/applicationInterest';
 
 export type HelperOpportunityCardTab = 'match' | 'recentes' | 'emergencia';
 
@@ -73,11 +74,7 @@ function locationLabel(
   }
   const loc = job.location?.trim();
   if (!loc || /remot|remote|en ligne|online/i.test(loc)) return t('jobs.remote');
-  return loc.length > 28 ? `${loc.slice(0, 26)}?` : loc;
-}
-
-function valueLabel(job: Job, t: TFn): string {
-  return formatJobBudgetAmount(job, t);
+  return loc.length > 28 ? `${loc.slice(0, 26)}…` : loc;
 }
 
 function HelperOpportunityCardInner({
@@ -108,7 +105,6 @@ function HelperOpportunityCardInner({
   const schedule = formatJobSchedule(job, t);
   const category = translateCategory(job.category, t);
   const loc = locationLabel(job, distanceKm, t, distanceFromBase, needsBaseAddress, baseAddressPendingCoords);
-  const budget = valueLabel(job, t);
   const openedLabel = formatJobOpenedAt(job.createdAt, t);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -118,6 +114,9 @@ function HelperOpportunityCardInner({
   const swipeStartTarget = useRef<EventTarget | null>(null);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const CategoryIcon = getCategoryIconById(job.category);
+  const isInterestFull = isJobInterestFull(applicationsCount);
+  const canApply =
+    !hasApplied && !isApplying && !isInterestFull && !swipeRateLimited && !interactionLocked;
 
   const acceptOpacity = Math.min(0.42, Math.max(0, dragX / 140));
   const passOpacity = Math.min(0.42, Math.max(0, -dragX / 140));
@@ -146,7 +145,7 @@ function HelperOpportunityCardInner({
     if (offset > SWIPE_COMMIT_PX) {
       hapticLight();
       resetSwipeVisual();
-      onSwipeInterest?.(job);
+      if (!isInterestFull) onSwipeInterest?.(job);
       return;
     }
     if (offset < -SWIPE_COMMIT_PX) {
@@ -197,6 +196,174 @@ function HelperOpportunityCardInner({
   };
 
   const openDetails = () => onViewDetails?.(job);
+
+  const interestRingLabel = t('helper_dashboard.interested_ring_label');
+
+  const renderApplyControl = (compact: boolean) => {
+    const compactBtn =
+      'inline-flex min-h-[30px] max-w-full items-center justify-center rounded-full px-3 text-[10px] font-black';
+    const fullBtn = `${ctaBase} w-full border border-blue-600/90 bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md hover:shadow-blue-600/15 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-70`;
+
+    if (hasApplied) {
+      return compact ? (
+        <span className={`${compactBtn} gap-1 bg-emerald-50 text-emerald-700`}>
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          {t('helper_dashboard.applied_sent')}
+        </span>
+      ) : (
+        <button type="button" disabled className={`${fullBtn} cursor-not-allowed border-emerald-200/80 bg-emerald-100 text-emerald-800`}>
+          <CheckCircle2 className="h-4 w-4 shrink-0" /> {t('helper_dashboard.applied_sent')}
+        </button>
+      );
+    }
+
+    if (isApplying) {
+      return compact ? (
+        <span className={`${compactBtn} gap-1 bg-blue-50 text-blue-700`}>
+          <Icons.Loader2 className="h-3.5 w-3.5 animate-spin" />
+          {t('helper_dashboard.apply_sending')}
+        </span>
+      ) : (
+        <button type="button" disabled className={fullBtn}>
+          <Icons.Loader2 className="h-4 w-4 shrink-0 animate-spin" /> {t('helper_dashboard.apply_sending')}
+        </button>
+      );
+    }
+
+    if (isInterestFull) {
+      return (
+        <span
+          className={clsx(
+            compact ? `${compactBtn} bg-slate-100 text-slate-600` : `${fullBtn} cursor-not-allowed border-slate-200 bg-slate-100 text-slate-600`,
+            'text-center leading-tight',
+          )}
+        >
+          {t('helper_dashboard.interested_limit_reached')}
+        </span>
+      );
+    }
+
+    return compact ? (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          hapticSuccess();
+          onApply(job);
+        }}
+        onTouchEnd={(e) => e.stopPropagation()}
+        disabled={!canApply}
+        className={`${compactBtn} bg-[#2563FF] text-white shadow-[0_8px_18px_rgba(37,99,255,0.22)] disabled:opacity-60`}
+      >
+        {t('helper_dashboard.apply_now')}
+      </button>
+    ) : (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onApply(job);
+        }}
+        disabled={!canApply}
+        className={fullBtn}
+      >
+        <Icons.Check className="h-4 w-4 shrink-0" /> {t('helper_dashboard.apply_now')}
+      </button>
+    );
+  };
+
+  const feedBody = (
+    <div className="flex items-stretch gap-2 sm:gap-3">
+      <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
+        <div className="flex h-[4.65rem] w-[4.65rem] shrink-0 items-center justify-center rounded-[1.35rem] bg-[#F2F6FF] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] md:h-[4.25rem] md:w-[4.25rem] md:rounded-xl">
+          <CategoryIcon className="h-8 w-8 text-[#2563FF] md:h-7 md:w-7" strokeWidth={1.9} aria-hidden />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              openDetails();
+            }}
+            onTouchEnd={(e) => e.stopPropagation()}
+            className="min-w-0 text-left"
+          >
+            <span className="line-clamp-2 text-[1.02rem] font-black leading-tight text-[#0B1220] md:text-[15px] [overflow-wrap:normal] break-normal">
+              {title}
+            </span>
+          </button>
+
+          <div className="mt-2 flex items-center gap-2 text-[13px] font-semibold text-slate-500">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-[#2563FF]" />
+            <span className="truncate">{category}</span>
+          </div>
+
+          <div className="mt-2 flex min-w-0 items-center gap-2 text-[13px] font-semibold text-slate-600">
+            <Icons.Coins className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+            <span className="truncate font-black text-[#2563FF]">{formatJobBudgetDisplay(job, t)}</span>
+          </div>
+
+          {openedLabel ? (
+            <p className="mt-1.5 truncate text-[11px] font-medium text-slate-500">{openedLabel}</p>
+          ) : schedule ? (
+            <p className="mt-1.5 truncate text-[11px] font-medium text-slate-500">{schedule}</p>
+          ) : null}
+
+          <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewClientProfile?.(job);
+              }}
+              className="flex min-w-0 items-center gap-2 rounded-full pr-1 text-left"
+              aria-label={t('helper_public.view_profile')}
+            >
+              <img
+                src={job.clientAvatar}
+                alt=""
+                className="h-7 w-7 shrink-0 rounded-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+              <span className="truncate text-[12px] font-black text-slate-700">{job.clientName}</span>
+            </button>
+
+            <div className="flex shrink-0 items-center gap-1.5 md:hidden">{renderApplyControl(true)}</div>
+          </div>
+
+          <div className="sr-only">
+            <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" showHireEstimate />
+            {schedule} {loc} {openedLabel} {title} {applicationsCount} {clientReviewCount}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex w-[92px] shrink-0 flex-col items-center justify-center gap-2 md:w-[118px]">
+        <span
+          className={clsx(
+            'rounded-full px-3 py-1 text-[11px] font-black',
+            job.urgency === 'high' ? 'bg-rose-50 text-rose-600' : 'bg-[#F3F6FF] text-[#2563FF]',
+          )}
+        >
+          {job.urgency === 'high' ? t('helper_dashboard.job_card_urgent') : 'Novo'}
+        </span>
+        <InterestedRing
+          interestedCount={applicationsCount}
+          label={interestRingLabel}
+          className="md:hidden"
+          size={90}
+        />
+        <InterestedRing
+          interestedCount={applicationsCount}
+          label={interestRingLabel}
+          className="hidden md:block"
+          size={110}
+        />
+      </div>
+    </div>
+  );
 
   const handleCardSurfaceClick = (e: MouseEvent<HTMLElement>) => {
     if (!onViewDetails || isNestedInteractiveTarget(e.target, e.currentTarget)) return;
@@ -321,124 +488,11 @@ function HelperOpportunityCardInner({
             }
           }}
         >
-          <div className="flex items-start gap-4">
-            <div className="flex h-[4.65rem] w-[4.65rem] shrink-0 items-center justify-center rounded-[1.35rem] bg-[#F2F6FF] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
-              <CategoryIcon className="h-8 w-8 text-[#2563FF]" strokeWidth={1.9} aria-hidden />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 items-start justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openDetails();
-                  }}
-                  onTouchEnd={(e) => e.stopPropagation()}
-                  className="min-w-0 text-left"
-                >
-                  <span className="line-clamp-2 text-[1.02rem] font-black leading-tight text-[#0B1220] [overflow-wrap:normal] break-normal">
-                    {title}
-                  </span>
-                </button>
-                <span
-                  className={clsx(
-                    'shrink-0 rounded-full px-3 py-1 text-[11px] font-black',
-                    job.urgency === 'high' ? 'bg-rose-50 text-rose-600' : 'bg-[#F3F6FF] text-[#2563FF]',
-                  )}
-                >
-                  {job.urgency === 'high' ? t('helper_dashboard.job_card_urgent') : 'Novo'}
-                </span>
-              </div>
-
-              <div className="mt-2 flex items-center gap-2 text-[13px] font-semibold text-slate-500">
-                <span className="h-2 w-2 shrink-0 rounded-full bg-[#2563FF]" />
-                <span className="truncate">{category}</span>
-              </div>
-
-              <div className="mt-2 flex min-w-0 items-center gap-2 text-[13px] font-semibold text-slate-600">
-                <Icons.Coins className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
-                <span className="truncate font-black text-[#2563FF]">{formatJobBudgetDisplay(job, t)}</span>
-              </div>
-
-              {openedLabel ? (
-                <p className="mt-1.5 truncate text-[11px] font-medium text-slate-500">{openedLabel}</p>
-              ) : null}
-
-              <div className="mt-3 flex min-w-0 items-center justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onViewClientProfile?.(job);
-                  }}
-                  className="flex min-w-0 items-center gap-2 rounded-full pr-1 text-left"
-                  aria-label={t('helper_public.view_profile')}
-                >
-                  <img
-                    src={job.clientAvatar}
-                    alt=""
-                    className="h-7 w-7 shrink-0 rounded-full object-cover"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <span className="truncate text-[12px] font-black text-slate-700">{job.clientName}</span>
-                </button>
-
-                <div className="flex shrink-0 items-center gap-1.5">
-                  {hasApplied ? (
-                    <span className="inline-flex min-h-[30px] items-center gap-1 rounded-full bg-emerald-50 px-3 text-[10px] font-black text-emerald-700">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      {t('helper_dashboard.applied_sent')}
-                    </span>
-                  ) : isApplying ? (
-                    <span className="inline-flex min-h-[30px] items-center gap-1 rounded-full bg-blue-50 px-3 text-[10px] font-black text-blue-700">
-                      <Icons.Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      {t('helper_dashboard.apply_sending')}
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        hapticSuccess();
-                        onApply(job);
-                      }}
-                      onTouchEnd={(e) => e.stopPropagation()}
-                      disabled={swipeRateLimited || interactionLocked}
-                      className="inline-flex min-h-[30px] items-center justify-center rounded-full bg-[#2563FF] px-3 text-[10px] font-black text-white shadow-[0_8px_18px_rgba(37,99,255,0.22)] disabled:opacity-60"
-                    >
-                      {t('helper_dashboard.apply_now')}
-                    </button>
-                  )}
-
-                  {onViewDetails ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openDetails();
-                      }}
-                      onTouchEnd={(e) => e.stopPropagation()}
-                      className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition-colors active:bg-slate-100"
-                      aria-label={t('notifications.view_details')}
-                    >
-                      <Icons.ChevronRight className="h-5 w-5" />
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="sr-only">
-                <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" showHireEstimate />
-                {schedule} {loc} {openedLabel} {title} {applicationsCount} {clientReviewCount}
-              </div>
-            </div>
-          </div>
+          {feedBody}
         </div>
       </div>
 
-      {/* Desktop ? mesmo layout compacto do feed mobile */}
+      {/* Desktop — mesmo layout do feed com ações extras abaixo */}
       <div className="hidden w-full max-w-full md:block">
         <div
           className={clsx('p-3', onViewDetails && 'cursor-pointer')}
@@ -451,103 +505,8 @@ function HelperOpportunityCardInner({
             }
           }}
         >
-          <div className="flex gap-3">
-            <div className="relative flex h-[4.25rem] w-[4.25rem] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-sky-100 ring-1 ring-blue-100/80">
-              <CategoryIcon className="h-7 w-7 text-blue-600" strokeWidth={1.75} aria-hidden />
-              {job.urgency === 'high' ? (
-                <span className="absolute left-1 top-1 rounded-md bg-rose-500 px-1 py-0.5 text-[8px] font-black uppercase leading-none text-white">
-                  !
-                </span>
-              ) : null}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openDetails();
-                    }}
-                    className="line-clamp-2 text-left text-[15px] font-black leading-snug text-slate-950 [overflow-wrap:normal] break-normal hover:text-blue-700"
-                  >
-                    {title}
-                  </button>
-                  <p className="mt-0.5 truncate text-[10px] font-bold uppercase tracking-wide text-blue-600">{category}</p>
-                </div>
-                <span className="shrink-0 text-sm font-black text-blue-700">{budget}</span>
-              </div>
-              <ul className="mt-1.5 space-y-0.5 text-[11px] font-semibold text-slate-600">
-                {schedule ? (
-                  <li className="flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5 shrink-0 text-blue-500" aria-hidden />
-                    <span className="truncate">{schedule}</span>
-                  </li>
-                ) : null}
-                <li className="flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
-                  <span className="truncate">{loc}</span>
-                </li>
-                {openedLabel ? (
-                  <li className="flex items-center gap-1.5 text-slate-500">
-                    <History className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                    <span className="truncate">{openedLabel}</span>
-                  </li>
-                ) : null}
-                <li className="flex items-center gap-1.5 text-emerald-700">
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  <span>{t('helper_dashboard.client_verified_short')}</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="mt-2 flex items-center gap-2 border-t border-slate-100/90 pt-2">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewClientProfile?.(job);
-              }}
-              className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50"
-              aria-label={t('helper_public.view_profile')}
-            >
-              <img
-                src={job.clientAvatar}
-                alt=""
-                className="h-full w-full object-cover"
-                loading="lazy"
-                decoding="async"
-              />
-            </button>
-            <div className="min-w-0 flex-1">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewClientProfile?.(job);
-                }}
-                className="truncate text-left text-[11px] font-bold text-slate-800 hover:text-blue-700"
-              >
-                {job.clientName}
-              </button>
-              {job.clientRating != null && job.clientRating > 0 ? (
-                <p className="flex items-center gap-1 text-[10px] font-bold text-amber-700">
-                  <StarRatingDisplay rating={job.clientRating} />
-                  <span>
-                    {t('helper_dashboard.client_rating_short', {
-                      rating: job.clientRating.toFixed(1),
-                      count: clientReviewCount,
-                    })}
-                  </span>
-                </p>
-              ) : null}
-            </div>
-            <span className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-bold text-blue-800">
-              <Icons.UserCheck className="h-3 w-3 shrink-0" />
-              {t('helper_dashboard.applications_count', { count: applicationsCount })}
-            </span>
-          </div>
-          <div className="mt-2">
+          {feedBody}
+          <div className="mt-2 hidden border-t border-slate-100/90 pt-2 md:block">
             <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="feed" showHireEstimate />
           </div>
         </div>
@@ -576,35 +535,7 @@ function HelperOpportunityCardInner({
             <Icons.Eye className="h-4 w-4" />
             {t('helper_public.view_profile')}
           </button>
-          {hasApplied ? (
-            <button
-              type="button"
-              disabled
-              className={`${ctaBase} w-full cursor-not-allowed border border-emerald-200/80 bg-emerald-100 text-emerald-800`}
-            >
-              <CheckCircle2 className="h-4 w-4 shrink-0" /> {t('helper_dashboard.applied_sent')}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onApply(job);
-              }}
-              disabled={isApplying}
-              className={`${ctaBase} w-full border border-blue-600/90 bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md hover:shadow-blue-600/15 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-70`}
-            >
-              {isApplying ? (
-                <>
-                  <Icons.Loader2 className="h-4 w-4 shrink-0 animate-spin" /> {t('helper_dashboard.apply_sending')}
-                </>
-              ) : (
-                <>
-                  <Icons.Check className="h-4 w-4 shrink-0" /> {t('helper_dashboard.apply_now')}
-                </>
-              )}
-            </button>
-          )}
+          {renderApplyControl(false)}
         </div>
       </div>
     </LhCard>

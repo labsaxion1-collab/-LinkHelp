@@ -831,6 +831,10 @@ export const en = {
     lead_cost: '{{count}} credits to unlock',
     lead_competition: 'Up to {{count}} helpers',
     applications_count: '{{count}} interested',
+    interested_ring_label: 'interested',
+    interested_legend_full: '3 interested',
+    interested_legend_empty: '0 interested',
+    interested_limit_reached: 'Interest limit reached',
     lead_unlock_note:
       'Apply free now. The credit unlock model is being prepared for verified contact access, with limits to keep each lead fair.',
     payment_est: 'Est. {{amount}}',

@@ -18,6 +18,7 @@ import {
 } from '@/utils/locationMatching';
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
 import { isJobCancelled } from '@/utils/jobVisibility';
+import { buildActiveApplicationCountsByJobId } from '@/utils/applicationInterest';
 import type { Job } from '@/types/job';
 import { useHelperDismissedRequests } from '@/hooks/useHelperDismissedRequests';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
@@ -49,14 +50,10 @@ export default function HelperLiveMapPage() {
   const mapsApiKey = getGoogleMapsApiKey();
   const mapsReady = isGoogleMapsConfigured();
 
-  const applicationCountByJobId = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const app of applications) {
-      if (app.status === 'cancelled') continue;
-      counts.set(app.jobId, (counts.get(app.jobId) ?? 0) + 1);
-    }
-    return counts;
-  }, [applications]);
+  const applicationCountByJobId = useMemo(
+    () => buildActiveApplicationCountsByJobId(applications),
+    [applications],
+  );
 
   const center = useMemo(
     () => ({ lat: userCoords.lat, lng: userCoords.lng }),

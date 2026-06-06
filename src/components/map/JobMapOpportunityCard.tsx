@@ -1,6 +1,7 @@
 import * as Icons from 'lucide-react';
 import type { Job } from '@/types/job';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
+import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { translateCategory, translateJobTitle } from '@/utils/translateCategory';
 import { getHelperLeadCreditSummary, getHelperCreditPublicDisplay } from '@/utils/helperCreditDisplay';
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
@@ -42,28 +43,31 @@ export function JobMapOpportunityCard({
           {translateJobTitle(job.title, job.category, job.subcategory, t)}
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-gray-600">
-        <span className="inline-flex items-center gap-1">
-          <Icons.MapPin className="h-3.5 w-3.5 text-gray-400" />
-          {distanceLabel}
-        </span>
-        <span className="inline-flex items-center gap-1 text-emerald-700">
-          <Icons.DollarSign className="h-3.5 w-3.5" />
-          {formatJobBudgetDisplay(job, t)}
-        </span>
-        <span className="inline-flex flex-col gap-0.5 text-blue-800">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-gray-600 min-w-0 flex-1">
           <span className="inline-flex items-center gap-1">
-            <Icons.Coins className="h-3.5 w-3.5 shrink-0" />
-            {t('helper_dashboard.credit_apply_cost', { count: creditDisplay.applyCost })}
+            <Icons.MapPin className="h-3.5 w-3.5 text-gray-400" />
+            {distanceLabel}
           </span>
-          <span className="pl-5 text-[10px] font-semibold text-blue-700/90">
-            {t('helper_dashboard.credit_job_cost', { count: creditDisplay.jobCost })}
+          <span className="inline-flex items-center gap-1 text-emerald-700">
+            <Icons.DollarSign className="h-3.5 w-3.5" />
+            {formatJobBudgetDisplay(job, t)}
           </span>
-        </span>
-        <span className="inline-flex items-center gap-1 text-slate-600">
-          <Icons.Users className="h-3.5 w-3.5" />
-          {t('helper_dashboard.applications_count', { count: applicationsCount })}
-        </span>
+          <span className="inline-flex flex-col gap-0.5 text-blue-800">
+            <span className="inline-flex items-center gap-1">
+              <Icons.Coins className="h-3.5 w-3.5 shrink-0" />
+              {t('helper_dashboard.credit_apply_cost', { count: creditDisplay.applyCost })}
+            </span>
+            <span className="pl-5 text-[10px] font-semibold text-blue-700/90">
+              {t('helper_dashboard.credit_job_cost', { count: creditDisplay.jobCost })}
+            </span>
+          </span>
+        </div>
+        <InterestedRing
+          interestedCount={applicationsCount}
+          label={t('helper_dashboard.interested_ring_label')}
+          size={72}
+        />
       </div>
       {job.urgency === 'high' ? (
         <span className="inline-block rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-black uppercase text-rose-800">

@@ -842,6 +842,10 @@ export const pt = {
     lead_cost: '{{count}} creditos para liberar',
     lead_competition: 'Ate {{count}} helpers',
     applications_count: '{{count}} interessados',
+    interested_ring_label: 'interessados',
+    interested_legend_full: '3 interessados',
+    interested_legend_empty: '0 interessados',
+    interested_limit_reached: 'Limite de interessados atingido',
     lead_unlock_note:
       'Candidate-se gratis agora. O modelo de creditos esta sendo preparado para liberar contato verificado com limite justo por lead.',
     payment_est: 'Est. {{amount}}',

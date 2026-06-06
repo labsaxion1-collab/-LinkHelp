@@ -180,7 +180,7 @@ export function CreateRequestScheduleStep(props: Props) {
               </button>
             ))}
           </div>
-          {translationServiceMode === 'in_person'
+          {translationServiceMode
             ? addressFields(t('create_modal.where'), requestAddress, setRequestAddress)
             : null}
         </div>

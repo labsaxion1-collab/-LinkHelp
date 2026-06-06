@@ -6,7 +6,7 @@ import { getCategoryIconById } from '@/utils/categoryIcons';
 import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
 import { clsx } from 'clsx';
 import type { Job } from '@/types/job';
-import { formatJobBudgetAmount } from '@/utils/formatJobBudget';
+import { formatJobBudgetAmount, formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { formatJobScheduleDisplay, formatJobOpenedAt } from '@/utils/jobDisplay';
 import { translateJobTitle } from '@/utils/translateCategory';
 import { LhCard } from '@/components/design-system/LhCard';
@@ -73,7 +73,7 @@ function locationLabel(
   }
   const loc = job.location?.trim();
   if (!loc || /remot|remote|en ligne|online/i.test(loc)) return t('jobs.remote');
-  return loc.length > 28 ? `${loc.slice(0, 26)}…` : loc;
+  return loc.length > 28 ? `${loc.slice(0, 26)}?` : loc;
 }
 
 function valueLabel(job: Job, t: TFn): string {
@@ -236,7 +236,7 @@ function HelperOpportunityCardInner({
     <LhCard padding="none" className={cardShell}>
       {header}
 
-      {/* Mobile compact — swipe with drag, hints, and overlay intensity */}
+      {/* Mobile compact ? swipe with drag, hints, and overlay intensity */}
       <div
         className="relative w-full max-w-full overflow-hidden touch-pan-y md:hidden"
         onTouchStart={(e) => onSwipeStart(e.touches[0]?.clientX ?? 0)}
@@ -248,7 +248,7 @@ function HelperOpportunityCardInner({
           aria-hidden
         >
           <span className="flex max-w-[5.5rem] flex-col items-center gap-0.5 rounded-xl border border-rose-200/60 bg-rose-50/45 px-2 py-1.5 text-center opacity-40">
-            <span className="text-base leading-none">❌</span>
+            <span className="text-base leading-none">?</span>
             <span className="text-[9px] font-black uppercase leading-tight text-rose-800">
               {t('helper_dashboard.swipe_not_interested')}
             </span>
@@ -259,7 +259,7 @@ function HelperOpportunityCardInner({
           aria-hidden
         >
           <span className="flex max-w-[5.5rem] flex-col items-center gap-0.5 rounded-xl border border-emerald-200/60 bg-emerald-50/45 px-2 py-1.5 text-center opacity-40">
-            <span className="text-base leading-none">✅</span>
+            <span className="text-base leading-none">?</span>
             <span className="text-[9px] font-black uppercase leading-tight text-emerald-800">
               {t('helper_dashboard.swipe_interest')}
             </span>
@@ -303,8 +303,8 @@ function HelperOpportunityCardInner({
                   onClick={() => onViewDetails?.(job)}
                   className="min-w-0 text-left"
                 >
-                  <span className="line-clamp-2 text-[1.02rem] font-black leading-tight text-[#0B1220]">
-                    {translateJobTitle(job.title, job.category, job.subcategory, t)}
+                  <span className="line-clamp-2 text-[1.02rem] font-black leading-tight text-[#0B1220] [overflow-wrap:normal] break-normal">
+                    {title}
                   </span>
                 </button>
                 <span
@@ -322,11 +322,14 @@ function HelperOpportunityCardInner({
                 <span className="truncate">{category}</span>
               </div>
 
-              <div className="mt-2 flex items-center gap-2 text-[13px] font-semibold text-slate-600">
+              <div className="mt-2 flex min-w-0 items-center gap-2 text-[13px] font-semibold text-slate-600">
                 <Icons.Coins className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
-                <span className="shrink-0">Orçamento:</span>
-                <span className="truncate font-black text-[#2563FF]">{budget}</span>
+                <span className="truncate font-black text-[#2563FF]">{formatJobBudgetDisplay(job, t)}</span>
               </div>
+
+              {openedLabel ? (
+                <p className="mt-1.5 truncate text-[11px] font-medium text-slate-500">{openedLabel}</p>
+              ) : null}
 
               <div className="mt-3 flex min-w-0 items-center justify-between gap-2">
                 <button
@@ -394,7 +397,7 @@ function HelperOpportunityCardInner({
         </div>
       </div>
 
-      {/* Desktop — mesmo layout compacto do feed mobile */}
+      {/* Desktop ? mesmo layout compacto do feed mobile */}
       <div className="hidden w-full max-w-full md:block">
         <div className="p-3">
           <div className="flex gap-3">
@@ -412,7 +415,7 @@ function HelperOpportunityCardInner({
                   <button
                     type="button"
                     onClick={() => onViewDetails?.(job)}
-                    className="line-clamp-2 text-left text-[15px] font-black leading-snug text-slate-950 hover:text-blue-700"
+                    className="line-clamp-2 text-left text-[15px] font-black leading-snug text-slate-950 [overflow-wrap:normal] break-normal hover:text-blue-700"
                   >
                     {title}
                   </button>

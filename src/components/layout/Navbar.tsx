@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Activity, Briefcase, Globe, ChevronDown, Home, MessageCircle, User, LogOut, Package, Settings } from 'lucide-react';
+import { Activity, Briefcase, Globe, ChevronDown, Home, MessageCircle, User, LogOut, Package } from 'lucide-react';
+import { redirectToLoginAfterSignOut } from '@/utils/authRedirect';
 import { useEffect, useRef, useState, useCallback, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -34,7 +35,7 @@ export default function Navbar() {
   const userAvatar = me.avatar;
   const userId = me.id;
   const { signOut, isConfigured, session, profile, updateProfile } = useAuth();
-  const { isHelperMode, setMode } = useAppMode();
+  const { isHelperMode } = useAppMode();
 
   const isHelperNav = isHelperMode;
   const isHome = location.pathname === ROUTES.home;
@@ -124,8 +125,7 @@ export default function Navbar() {
     closeProfile();
     setMobileProfileOpen(false);
     await signOut();
-    showToast(t('nav.toast_logout'), 'success');
-    navigate(ROUTES.login, { replace: true });
+    redirectToLoginAfterSignOut();
   };
 
   const changeLanguage = (nextLanguage: 'en' | 'pt' | 'fr') => {
@@ -401,26 +401,6 @@ export default function Navbar() {
                 className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
               >
                 <User className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_profile')}
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => goProfileRoute(ROUTES.settings)}
-                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
-              >
-                <Settings className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_settings')}
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  closeProfile();
-                  setMode(isHelperNav ? 'client' : 'helper');
-                }}
-                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
-              >
-                <Briefcase className="w-4 h-4 text-gray-400" />{' '}
-                {t(isHelperNav ? 'nav.switch_to_client' : 'nav.switch_to_helper')}
               </button>
               <div className="my-1 border-t border-gray-100" />
               <button

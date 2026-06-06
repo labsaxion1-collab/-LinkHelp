@@ -47,7 +47,7 @@ export function HelperOpportunityDetailModal({
   const category = translateCategory(job.category, t);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const budget = formatJobBudgetDisplay(job, t);
-  const openedLabel = formatJobOpenedAt(job.createdAt, t, locale);
+  const openedLabel = formatJobOpenedAt(job.createdAt, t);
   const loc = isRemoteJob(job)
     ? t('jobs.remote')
     : needsBaseAddress

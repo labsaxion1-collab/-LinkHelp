@@ -21,7 +21,6 @@ import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { UpcomingJobsSidebar } from '@/components/helpers/UpcomingJobsSidebar';
 import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailModal';
-import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { buildActiveApplicationCountsByJobId } from '@/utils/applicationInterest';
 import type { ServiceCategoryId } from '@/data/serviceCategories';
 import { resolveCategoryId, translateCategory, translateJobTitle } from '@/utils/translateCategory';
@@ -1232,18 +1231,8 @@ export default function HelperDashboard() {
             </div>
           </div>
 
-          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div className="mb-3">
             <h2 className="text-xl font-bold text-gray-900">{t('helper_dashboard.feed_title_jobs')}</h2>
-            <div className="flex flex-wrap items-center gap-4 text-[11px] font-semibold text-slate-500">
-              <span className="inline-flex items-center gap-2">
-                <InterestedRing interestedCount={3} hideLabel size={34} />
-                {t('helper_dashboard.interested_legend_full')}
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <InterestedRing interestedCount={0} hideLabel size={34} />
-                {t('helper_dashboard.interested_legend_empty')}
-              </span>
-            </div>
           </div>
 
           {/* Posts (Feed) */}
@@ -1251,7 +1240,7 @@ export default function HelperDashboard() {
             {displayedJobs.length > 0 ? (
               <div
                 className={clsx(
-                  'grid w-full max-w-full min-w-0 grid-cols-1 gap-4 xl:grid-cols-2 transition-[filter,opacity] duration-300',
+                  'grid w-full max-w-full min-w-0 grid-cols-1 gap-6 transition-[filter,opacity] duration-300',
                   proposalJob && 'pointer-events-none brightness-[0.92] md:brightness-[0.88]',
                 )}
               >

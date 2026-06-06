@@ -5,8 +5,9 @@ import { CheckCircle2 } from 'lucide-react';
 import { getCategoryIconById } from '@/utils/categoryIcons';
 import { clsx } from 'clsx';
 import type { Job } from '@/types/job';
-import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
+import { formatJobBudgetAmount } from '@/utils/formatJobBudget';
 import { formatJobOpenedAt } from '@/utils/jobDisplay';
+import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { translateJobTitle } from '@/utils/translateCategory';
 import { LhCard } from '@/components/design-system/LhCard';
 import { HelperCreditCostBlock } from '@/components/helpers/HelperCreditCostBlock';
@@ -77,6 +78,18 @@ function locationLabel(
   return loc.length > 28 ? `${loc.slice(0, 26)}…` : loc;
 }
 
+function clientInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
+  return (parts[0]?.slice(0, 2) ?? '?').toUpperCase();
+}
+
+function clientLocationDisplay(job: Job, fallback: string): string {
+  const parts = [job.city?.trim(), job.region?.trim()].filter(Boolean);
+  if (parts.length) return parts.join(', ');
+  return fallback;
+}
+
 function HelperOpportunityCardInner({
   job,
   activeTab,
@@ -114,6 +127,12 @@ function HelperOpportunityCardInner({
   const swipeStartTarget = useRef<EventTarget | null>(null);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const CategoryIcon = getCategoryIconById(job.category);
+  const categoryTheme = getCategoryFeedTheme(job.category);
+  const clientLoc = clientLocationDisplay(job, loc);
+  const showCategoryLine = !title.startsWith(`${category}:`);
+  const budgetAmount = formatJobBudgetAmount(job, t);
+  const budgetNotInformed = budgetAmount === t('jobs.budget_not_informed');
+  const dateLabel = openedLabel || schedule;
   const isInterestFull = isJobInterestFull(applicationsCount);
   const canApply =
     !hasApplied && !isApplying && !isInterestFull && !swipeRateLimited && !interactionLocked;
@@ -185,7 +204,7 @@ function HelperOpportunityCardInner({
   };
 
   const ctaBase =
-    'inline-flex min-h-[40px] flex-1 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2.5 text-sm font-bold transition-all duration-200';
+    'inline-flex min-w-0 max-w-full items-center justify-center gap-2 rounded-[14px] px-4 py-2.5 text-[13px] font-semibold leading-tight transition-all duration-200 sm:text-[14px]';
 
   const isNestedInteractiveTarget = (target: EventTarget | null, container?: EventTarget | null) => {
     if (!(target instanceof HTMLElement)) return false;
@@ -199,33 +218,31 @@ function HelperOpportunityCardInner({
 
   const interestRingLabel = t('helper_dashboard.interested_ring_label');
 
-  const renderApplyControl = (compact: boolean) => {
-    const compactBtn =
-      'inline-flex min-h-[30px] max-w-full items-center justify-center rounded-full px-3 text-[10px] font-black';
-    const fullBtn = `${ctaBase} w-full border border-blue-600/90 bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md hover:shadow-blue-600/15 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-70`;
+  const renderApplyControl = () => {
+    const primaryBtn = clsx(
+      ctaBase,
+      'border-2 border-[#2563EB] bg-white text-[#2563EB] shadow-none',
+      'hover:bg-[#EFF6FF] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-55',
+    );
 
     if (hasApplied) {
-      return compact ? (
-        <span className={`${compactBtn} gap-1 bg-emerald-50 text-emerald-700`}>
-          <CheckCircle2 className="h-3.5 w-3.5" />
-          {t('helper_dashboard.applied_sent')}
+      return (
+        <span
+          className={clsx(
+            ctaBase,
+            'cursor-default gap-2 bg-emerald-50 text-emerald-700 shadow-none',
+          )}
+        >
+          <CheckCircle2 className="h-5 w-5 shrink-0" />
+          <span className="max-[380px]:hidden">{t('helper_dashboard.applied_sent')}</span>
         </span>
-      ) : (
-        <button type="button" disabled className={`${fullBtn} cursor-not-allowed border-emerald-200/80 bg-emerald-100 text-emerald-800`}>
-          <CheckCircle2 className="h-4 w-4 shrink-0" /> {t('helper_dashboard.applied_sent')}
-        </button>
       );
     }
 
     if (isApplying) {
-      return compact ? (
-        <span className={`${compactBtn} gap-1 bg-blue-50 text-blue-700`}>
-          <Icons.Loader2 className="h-3.5 w-3.5 animate-spin" />
-          {t('helper_dashboard.apply_sending')}
-        </span>
-      ) : (
-        <button type="button" disabled className={fullBtn}>
-          <Icons.Loader2 className="h-4 w-4 shrink-0 animate-spin" /> {t('helper_dashboard.apply_sending')}
+      return (
+        <button type="button" disabled className={primaryBtn}>
+          <Icons.Loader2 className="h-5 w-5 animate-spin" />
         </button>
       );
     }
@@ -234,8 +251,8 @@ function HelperOpportunityCardInner({
       return (
         <span
           className={clsx(
-            compact ? `${compactBtn} bg-slate-100 text-slate-600` : `${fullBtn} cursor-not-allowed border-slate-200 bg-slate-100 text-slate-600`,
-            'text-center leading-tight',
+            ctaBase,
+            'max-w-[10rem] cursor-default bg-slate-100 px-4 text-center text-[13px] font-semibold leading-tight text-slate-600 shadow-none',
           )}
         >
           {t('helper_dashboard.interested_limit_reached')}
@@ -243,7 +260,7 @@ function HelperOpportunityCardInner({
       );
     }
 
-    return compact ? (
+    return (
       <button
         type="button"
         onClick={(e) => {
@@ -253,114 +270,131 @@ function HelperOpportunityCardInner({
         }}
         onTouchEnd={(e) => e.stopPropagation()}
         disabled={!canApply}
-        className={`${compactBtn} bg-[#2563FF] text-white shadow-[0_8px_18px_rgba(37,99,255,0.22)] disabled:opacity-60`}
+        className={primaryBtn}
       >
-        {t('helper_dashboard.apply_now')}
-      </button>
-    ) : (
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onApply(job);
-        }}
-        disabled={!canApply}
-        className={fullBtn}
-      >
-        <Icons.Check className="h-4 w-4 shrink-0" /> {t('helper_dashboard.apply_now')}
+        <Icons.Send className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
+        <span className="text-center">{t('helper_dashboard.apply_now')}</span>
       </button>
     );
   };
 
   const feedBody = (
-    <div className="flex items-stretch gap-2 sm:gap-3">
-      <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
-        <div className="flex h-[4.65rem] w-[4.65rem] shrink-0 items-center justify-center rounded-[1.35rem] bg-[#F2F6FF] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] md:h-[4.25rem] md:w-[4.25rem] md:rounded-xl">
-          <CategoryIcon className="h-8 w-8 text-[#2563FF] md:h-7 md:w-7" strokeWidth={1.9} aria-hidden />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              openDetails();
-            }}
-            onTouchEnd={(e) => e.stopPropagation()}
-            className="min-w-0 text-left"
-          >
-            <span className="line-clamp-2 text-[1.02rem] font-black leading-tight text-[#0B1220] md:text-[15px] [overflow-wrap:normal] break-normal">
-              {title}
-            </span>
-          </button>
-
-          <div className="mt-2 flex items-center gap-2 text-[13px] font-semibold text-slate-500">
-            <span className="h-2 w-2 shrink-0 rounded-full bg-[#2563FF]" />
-            <span className="truncate">{category}</span>
-          </div>
-
-          <div className="mt-2 flex min-w-0 items-center gap-2 text-[13px] font-semibold text-slate-600">
-            <Icons.Coins className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
-            <span className="truncate font-black text-[#2563FF]">{formatJobBudgetDisplay(job, t)}</span>
-          </div>
-
-          {openedLabel ? (
-            <p className="mt-1.5 truncate text-[11px] font-medium text-slate-500">{openedLabel}</p>
-          ) : schedule ? (
-            <p className="mt-1.5 truncate text-[11px] font-medium text-slate-500">{schedule}</p>
-          ) : null}
-
-          <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewClientProfile?.(job);
-              }}
-              className="flex min-w-0 items-center gap-2 rounded-full pr-1 text-left"
-              aria-label={t('helper_public.view_profile')}
-            >
-              <img
-                src={job.clientAvatar}
-                alt=""
-                className="h-7 w-7 shrink-0 rounded-full object-cover"
-                loading="lazy"
-                decoding="async"
-              />
-              <span className="truncate text-[12px] font-black text-slate-700">{job.clientName}</span>
-            </button>
-
-            <div className="flex shrink-0 items-center gap-1.5 md:hidden">{renderApplyControl(true)}</div>
-          </div>
-
-          <div className="sr-only">
-            <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" showHireEstimate />
-            {schedule} {loc} {openedLabel} {title} {applicationsCount} {clientReviewCount}
-          </div>
-        </div>
+    <div className="grid w-full grid-cols-[76px_1fr_88px] grid-rows-[auto_auto_auto] gap-x-4 gap-y-3">
+      {/* Ícone — ocupa as duas primeiras linhas */}
+      <div
+        className="col-start-1 row-start-1 row-span-2 flex h-[76px] w-[76px] items-center justify-center self-start rounded-[20px] border shadow-[0_8px_22px_rgba(15,23,42,0.06)]"
+        style={{
+          backgroundColor: categoryTheme.iconBg,
+          borderColor: `${categoryTheme.iconColor}22`,
+          boxShadow: `0 8px 22px ${categoryTheme.iconColor}14`,
+        }}
+      >
+        <CategoryIcon
+          className="h-8 w-8"
+          style={{ color: categoryTheme.iconColor }}
+          strokeWidth={2}
+          aria-hidden
+        />
       </div>
 
-      <div className="flex w-[92px] shrink-0 flex-col items-center justify-center gap-2 md:w-[118px]">
+      {/* Título */}
+      <div className="col-start-2 row-start-1 min-w-0 pr-2">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            openDetails();
+          }}
+          onTouchEnd={(e) => e.stopPropagation()}
+          className="block w-full text-left"
+        >
+          <span className="text-[20px] font-bold leading-[1.2] text-[#0F172A] [overflow-wrap:normal] [word-break:normal]">
+            {title}
+          </span>
+        </button>
+      </div>
+
+      {/* Badge — canto superior direito */}
+      <div className="col-start-3 row-start-1 flex justify-end self-start">
         <span
           className={clsx(
-            'rounded-full px-3 py-1 text-[11px] font-black',
-            job.urgency === 'high' ? 'bg-rose-50 text-rose-600' : 'bg-[#F3F6FF] text-[#2563FF]',
+            'rounded-full px-3 py-1 text-[12px] font-semibold',
+            job.urgency === 'high' ? 'bg-rose-50 text-rose-600' : 'bg-[#EEF2FF] text-[#2563EB]',
           )}
         >
           {job.urgency === 'high' ? t('helper_dashboard.job_card_urgent') : 'Novo'}
         </span>
-        <InterestedRing
-          interestedCount={applicationsCount}
-          label={interestRingLabel}
-          className="md:hidden"
-          size={90}
-        />
-        <InterestedRing
-          interestedCount={applicationsCount}
-          label={interestRingLabel}
-          className="hidden md:block"
-          size={110}
-        />
+      </div>
+
+      {/* Meta (categoria, orçamento, data) */}
+      <div className="col-start-2 row-start-2 min-w-0 self-center">
+        {showCategoryLine ? (
+          <div className="mb-2 flex items-center gap-2 text-[15px] font-medium text-[#64748B]">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ backgroundColor: categoryTheme.dotColor }}
+            />
+            <span className="min-w-0 [overflow-wrap:normal] [word-break:normal]">{category}</span>
+          </div>
+        ) : null}
+
+        <div className="mb-2 flex min-w-0 items-center gap-2 text-[15px] font-bold" style={{ color: categoryTheme.budgetColor }}>
+          <Icons.Link2 className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
+          <span className="min-w-0 [overflow-wrap:normal] [word-break:normal]">
+            {budgetNotInformed ? budgetAmount : t('jobs.budget_with_amount', { amount: budgetAmount })}
+          </span>
+        </div>
+
+        {dateLabel ? (
+          <div className="flex min-w-0 items-center gap-2 text-[15px] font-medium text-[#64748B]">
+            <Icons.Calendar className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+            <span className="min-w-0 [overflow-wrap:normal] [word-break:normal]">{dateLabel}</span>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Anel — alinhado às linhas de meta */}
+      <div className="col-start-3 row-start-2 flex items-center justify-center self-center">
+        <InterestedRing interestedCount={applicationsCount} label={interestRingLabel} size={84} />
+      </div>
+
+      {/* Rodapé — avatar + nome + botão com espaço adequado */}
+      <div className="col-span-3 col-start-1 row-start-3 mt-1 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onViewClientProfile?.(job);
+          }}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          aria-label={t('helper_public.view_profile')}
+        >
+          {job.clientAvatar && !job.clientAvatar.includes('pravatar') ? (
+            <img
+              src={job.clientAvatar}
+              alt=""
+              className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white shadow-sm"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600 ring-2 ring-white shadow-sm">
+              {clientInitials(job.clientName)}
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="truncate text-[15px] font-bold leading-tight text-[#0F172A]">
+              {job.clientName}
+            </p>
+            <p className="mt-0.5 truncate text-[13px] font-medium text-[#64748B]">{clientLoc}</p>
+          </div>
+        </button>
+        <div className="shrink-0">{renderApplyControl()}</div>
+      </div>
+
+      <div className="sr-only">
+        <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" showHireEstimate />
+        {schedule} {loc} {openedLabel} {title} {applicationsCount} {clientReviewCount}
       </div>
     </div>
   );
@@ -372,59 +406,21 @@ function HelperOpportunityCardInner({
   };
 
   const cardShell = clsx(
-    'group/card h-full w-full max-w-full overflow-hidden rounded-2xl border bg-white transition-all duration-300 shadow-[0_8px_22px_rgba(15,23,42,0.06)]',
-    'md:hover:-translate-y-0.5 md:hover:shadow-xl md:hover:shadow-slate-900/10 motion-reduce:transform-none',
-    'md:hover:ring-2 md:hover:ring-blue-500/15',
+    'group/card h-full w-full max-w-full overflow-hidden rounded-[24px] border border-slate-200/60 bg-white transition-all duration-200',
+    'shadow-[0_8px_32px_rgba(15,23,42,0.06)]',
+    'md:hover:-translate-y-0.5 md:hover:shadow-[0_14px_48px_rgba(15,23,42,0.07)] motion-reduce:transform-none',
     (isExiting || passExiting) &&
       'pointer-events-none scale-[0.88] opacity-0 -translate-x-8 -rotate-2 duration-[520ms] ease-[cubic-bezier(0.34,1.15,0.64,1)]',
     swipeRateLimited && !isExiting && 'opacity-75',
-    tier === 'urgent' &&
-      'border-rose-200/90 ring-1 ring-rose-200/50 shadow-md shadow-rose-500/10 motion-reduce:animate-none md:animate-pulse',
-    tier === 'best' && 'border-emerald-200/80 ring-1 ring-emerald-100/60 shadow-sm shadow-emerald-500/10',
-    tier === 'normal' && 'border-white',
+    tier === 'urgent' && 'border-rose-200/80 ring-1 ring-rose-100/60',
+    tier === 'best' && 'border-emerald-200/70 ring-1 ring-emerald-100/50',
   );
 
-  const header =
-    tier === 'urgent' ? (
-      <div className="hidden items-center justify-between gap-2 border-b border-rose-200/70 bg-rose-50/90 px-3 py-2 md:flex md:px-4 md:py-2.5">
-        <div className="flex min-w-0 items-center gap-2">
-          <Icons.AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
-          <span className="truncate text-[10px] font-bold uppercase tracking-wide text-rose-900 md:text-[11px]">
-            {t('helper_dashboard.job_card_urgent')}
-          </span>
-        </div>
-        <span className="shrink-0 rounded-md border border-rose-200/90 bg-white/95 px-2 py-0.5 text-[10px] font-bold text-rose-900">
-          {t('helper_dashboard.job_card_high_priority')}
-        </span>
-      </div>
-    ) : tier === 'best' ? (
-      <div className="hidden items-center justify-between gap-2 border-b border-emerald-200/70 bg-emerald-50/85 px-3 py-2 md:flex md:px-4 md:py-2.5">
-        <div className="flex min-w-0 items-center gap-2">
-          <Icons.Sparkles className="h-4 w-4 shrink-0 text-emerald-700" />
-          <span className="truncate text-[10px] font-bold uppercase tracking-wide text-emerald-950 md:text-[11px]">
-            {t('helper_dashboard.job_card_best_match')}
-          </span>
-        </div>
-        <span className="flex shrink-0 items-center gap-1 rounded-md border border-emerald-200/90 bg-white/95 px-2 py-0.5 text-[10px] font-bold tabular-nums text-emerald-900">
-          <Icons.Zap className="h-3 w-3 shrink-0 text-emerald-600" /> {t('helper_dashboard.compatibility', { pct: 95 })}
-        </span>
-      </div>
-    ) : (
-      <div className="hidden border-b border-slate-100/90 bg-slate-50/70 px-4 py-2 md:block">
-        <div className="flex min-w-0 items-center gap-2">
-          <Icons.CircleDot className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
-            {t('helper_dashboard.job_card_standard')}
-          </span>
-        </div>
-      </div>
-    );
+  const cardPadding = 'relative z-20 bg-white p-5 will-change-transform';
 
   return (
     <LhCard padding="none" className={cardShell}>
-      {header}
-
-      {/* Mobile compact ? swipe with drag, hints, and overlay intensity */}
+      {/* Mobile — swipe */}
       <div
         className="relative w-full max-w-full overflow-hidden touch-pan-y md:hidden"
         onTouchStart={(e) => onSwipeStart(e.touches[0]?.clientX ?? 0, e.target)}
@@ -436,7 +432,7 @@ function HelperOpportunityCardInner({
           aria-hidden
         >
           <span className="flex max-w-[5.5rem] flex-col items-center gap-0.5 rounded-xl border border-rose-200/60 bg-rose-50/45 px-2 py-1.5 text-center opacity-40">
-            <span className="text-base leading-none">?</span>
+            <span className="text-base leading-none">←</span>
             <span className="text-[9px] font-black uppercase leading-tight text-rose-800">
               {t('helper_dashboard.swipe_not_interested')}
             </span>
@@ -447,7 +443,7 @@ function HelperOpportunityCardInner({
           aria-hidden
         >
           <span className="flex max-w-[5.5rem] flex-col items-center gap-0.5 rounded-xl border border-emerald-200/60 bg-emerald-50/45 px-2 py-1.5 text-center opacity-40">
-            <span className="text-base leading-none">?</span>
+            <span className="text-base leading-none">→</span>
             <span className="text-[9px] font-black uppercase leading-tight text-emerald-800">
               {t('helper_dashboard.swipe_interest')}
             </span>
@@ -471,7 +467,7 @@ function HelperOpportunityCardInner({
 
         <div
           className={clsx(
-            'relative z-20 bg-white p-3 will-change-transform',
+            cardPadding,
             !dragging && 'transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.2,0.64,1)]',
             onViewDetails && 'cursor-pointer',
           )}
@@ -492,51 +488,19 @@ function HelperOpportunityCardInner({
         </div>
       </div>
 
-      {/* Desktop — mesmo layout do feed com ações extras abaixo */}
-      <div className="hidden w-full max-w-full md:block">
-        <div
-          className={clsx('p-3', onViewDetails && 'cursor-pointer')}
-          onClick={handleCardSurfaceClick}
-          onKeyDown={(e) => {
-            if (!onViewDetails || isNestedInteractiveTarget(e.target, e.currentTarget)) return;
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              openDetails();
-            }
-          }}
-        >
-          {feedBody}
-          <div className="mt-2 hidden border-t border-slate-100/90 pt-2 md:block">
-            <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="feed" showHireEstimate />
-          </div>
-        </div>
-        <div className="flex flex-col gap-1.5 border-t border-slate-100 bg-slate-50/60 px-3 py-2">
-          {onViewDetails ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                openDetails();
-              }}
-              className="inline-flex min-h-[36px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-            >
-              <Icons.FileText className="h-4 w-4" />
-              {t('notifications.view_details')}
-            </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewClientProfile?.(job);
-            }}
-            className="inline-flex min-h-[38px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-          >
-            <Icons.Eye className="h-4 w-4" />
-            {t('helper_public.view_profile')}
-          </button>
-          {renderApplyControl(false)}
-        </div>
+      {/* Desktop */}
+      <div
+        className={clsx('hidden p-5 md:block', onViewDetails && 'cursor-pointer')}
+        onClick={handleCardSurfaceClick}
+        onKeyDown={(e) => {
+          if (!onViewDetails || isNestedInteractiveTarget(e.target, e.currentTarget)) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openDetails();
+          }
+        }}
+      >
+        {feedBody}
       </div>
     </LhCard>
   );

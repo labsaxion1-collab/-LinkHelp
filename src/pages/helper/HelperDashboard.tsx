@@ -25,7 +25,6 @@ import type { ServiceCategoryId } from '@/data/serviceCategories';
 import { resolveCategoryId, translateCategory, translateJobTitle } from '@/utils/translateCategory';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
-import type { Application } from '@/types/application';
 import type { Job } from '@/types/job';
 import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/HelperProfileCompletionBar';
 import { HelperCreditsWalletCard } from '@/components/helpers/HelperCreditsWalletCard';
@@ -105,15 +104,13 @@ export default function HelperDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
   const [postText, setPostText] = useState('');
-  const [activeTab, setActiveTab] = useState<'match' | 'recentes' | 'emergencia' | 'candidaturas'>('match');
+  const [activeTab, setActiveTab] = useState<'match' | 'recentes' | 'emergencia'>('match');
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const isSubmittingApplyRef = React.useRef(false);
   const [proposalJob, setProposalJob] = useState<Job | null>(null);
   const [exitingJobIds, setExitingJobIds] = useState<Set<string>>(() => new Set());
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
-  const [cancelTarget, setCancelTarget] = useState<Application | null>(null);
-  const [cancelBusy, setCancelBusy] = useState(false);
   const [insufficientCreditsLc, setInsufficientCreditsLc] = useState<number | null>(null);
   const [activeInfoSlide, setActiveInfoSlide] = useState(0);
   const [heroParallaxOffset, setHeroParallaxOffset] = useState(0);
@@ -139,7 +136,6 @@ export default function HelperDashboard() {
     getHelperApplications,
     upcomingJobs,
     updateUpcomingWorkflow,
-    updateApplicationStatus,
     dataLoading,
     reviews,
   } = useAppData();
@@ -150,7 +146,7 @@ export default function HelperDashboard() {
   const [helperSecondaryCategories, setHelperSecondaryCategories] = useState<ServiceCategoryId[]>([]);
 
   const selectFeedTab = React.useCallback(
-    (tab: 'match' | 'recentes' | 'emergencia' | 'candidaturas') => {
+    (tab: 'match' | 'recentes' | 'emergencia') => {
       const previousTop = feedTabsRef.current?.getBoundingClientRect().top;
       setActiveTab(tab);
 
@@ -177,10 +173,9 @@ export default function HelperDashboard() {
   useEffect(() => {
     const st = location.state as { openTab?: string } | null;
     if (st?.openTab === 'candidaturas') {
-      setActiveTab('candidaturas');
-      navigate(location.pathname, { replace: true, state: {} });
+      navigate(ROUTES.helperJobs, { replace: true, state: { tasksTab: 'applications' } });
     }
-  }, [location.state, location.pathname, navigate]);
+  }, [location.state, navigate]);
 
   useEffect(() => {
     const st = location.state as { openProfile?: boolean } | null;
@@ -450,15 +445,19 @@ export default function HelperDashboard() {
 
   const upcomingLocale = language === 'fr' ? 'fr-CA' : language === 'pt' ? 'pt-BR' : 'en-CA';
   const helperApplications = getHelperApplications(helperUserId ?? '');
-  const helperApplicationsVisible = React.useMemo(
-    () =>
-      helperApplications.filter((app) => {
-        if (app.status === 'cancelled') return false;
-        const request = jobs.find((j) => j.id === app.jobId);
-        return !request || !isJobCancelled(request);
-      }),
-    [helperApplications, jobs],
-  );
+  const helperEngagedJobIds = React.useMemo(() => {
+    const ids = new Set<string>();
+    for (const app of helperApplications) {
+      if (app.status === 'cancelled') continue;
+      ids.add(app.jobId);
+    }
+    for (const upcoming of upcomingJobs) {
+      if (upcoming.helperId === (helperUserId ?? me?.id ?? '')) {
+        ids.add(upcoming.jobId);
+      }
+    }
+    return ids;
+  }, [helperApplications, upcomingJobs, helperUserId, me?.id]);
   const appliedJobIds = new Set(
     helperApplications.filter((a) => a.status !== 'cancelled').map((a) => a.jobId),
   );
@@ -754,23 +753,6 @@ export default function HelperDashboard() {
 
   const swipeRateLimited = Date.now() < swipeCooldownUntil;
 
-  const confirmCancelApplication = async () => {
-    if (!cancelTarget) return;
-    setCancelBusy(true);
-    try {
-      await updateApplicationStatus(cancelTarget.id, 'cancelled');
-      showToast(t('helper_dashboard.toast_application_cancelled'), 'success');
-      setCancelTarget(null);
-    } catch (e) {
-      console.error('[LinkHelp] cancel application', e);
-      const backendMsg =
-        e instanceof Error && e.message && e.message !== 'NOT_FOUND' ? e.message : null;
-      showToast(backendMsg ?? t('helper_dashboard.toast_application_cancel_err'), 'error');
-    } finally {
-      setCancelBusy(false);
-    }
-  };
-
   const applicationCountsByJobId = useMemo(() => {
     const counts = new Map<string, number>();
     for (const a of applications) {
@@ -801,16 +783,14 @@ export default function HelperDashboard() {
         helperSkillIds: profileSettings.skillIds,
         helperPlanTier: me?.subscriptionTier ?? 'BASIC',
       });
-    } else if (activeTab === 'candidaturas') {
-      list = [];
     }
-    if (!selectedCategoryFilters.length && activeTab !== 'candidaturas') {
+    if (!selectedCategoryFilters.length) {
       list = filterToPreferredCategoriesIfPossible(
         sortJobsByHelperCategoryPreference(list, categoryPrefs),
         categoryPrefs,
       );
     }
-    return list.filter((j) => !dismissedJobIds.has(j.id));
+    return list.filter((j) => !dismissedJobIds.has(j.id) && !helperEngagedJobIds.has(j.id));
   }, [
     jobs,
     selectedCategoryFilters,
@@ -822,6 +802,7 @@ export default function HelperDashboard() {
     categoryPrefs,
     dismissedJobIds,
     me?.id,
+    helperEngagedJobIds,
   ]);
 
   const feedActiveTab =
@@ -833,7 +814,8 @@ export default function HelperDashboard() {
         j.status === 'open' &&
         !isJobCancelled(j) &&
         j.clientId !== (helperUserId ?? me?.id ?? '') &&
-        getJobServiceCategoryId(j),
+        getJobServiceCategoryId(j) &&
+        !helperEngagedJobIds.has(j.id),
     ),
     categoryPrefs,
   )
@@ -866,45 +848,6 @@ export default function HelperDashboard() {
         </div>
       )}
 
-      {cancelTarget && (
-        <div
-          className="fixed inset-0 z-[110] flex items-center justify-center bg-gray-900/50 p-4 backdrop-blur-sm animate-in fade-in duration-200"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="cancel-app-title"
-          onClick={() => !cancelBusy && setCancelTarget(null)}
-        >
-          <div
-            className="w-full max-w-md rounded-3xl border border-gray-100 bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 id="cancel-app-title" className="text-lg font-black text-gray-900">
-              {t('helper_dashboard.cancel_application_title')}
-            </h2>
-            <p className="mt-2 text-sm font-medium leading-relaxed text-gray-600">{t('helper_dashboard.cancel_application_body')}</p>
-            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                disabled={cancelBusy}
-                onClick={() => setCancelTarget(null)}
-                className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                type="button"
-                disabled={cancelBusy}
-                onClick={() => void confirmCancelApplication()}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-60"
-              >
-                {cancelBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icons.XCircle className="h-4 w-4" />}
-                {t('helper_dashboard.cancel_application_confirm')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <UserProfileModal
         open={showProfileModal}
         onClose={() => setShowProfileModal(false)}
@@ -915,7 +858,7 @@ export default function HelperDashboard() {
           setProfileSetupModal('avatar');
         }}
         footer={
-          <div className="space-y-4">
+          <div className="space-y-3">
             {completionBreakdown.percent < 100 ? (
               <HelperProfileCompletionBar
                 breakdown={completionBreakdown}
@@ -1030,7 +973,7 @@ export default function HelperDashboard() {
               </div>
 
               <div className="p-6 relative z-10 flex-1 overflow-y-auto">
-                 <div className="space-y-4">
+                 <div className="space-y-3">
                    <div>
                      <label className="block text-sm font-bold text-gray-300 mb-2 pl-1">{t('helper_dashboard.idea_field_title')}</label>
                      <input type="text" placeholder={t('helper_dashboard.idea_placeholder_title')} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-all font-medium" />
@@ -1097,12 +1040,9 @@ export default function HelperDashboard() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => {
-                    navigate(ROUTES.helperDashboard);
-                    setActiveTab('candidaturas');
-                  }}
+                  onClick={() => navigate(ROUTES.helperJobs, { state: { tasksTab: 'applications' } })}
                   className={`flex min-h-[38px] w-full items-center gap-2 rounded-xl px-2 text-xs font-black ${
-                    activeTab === 'candidaturas' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:bg-white'
+                    location.pathname === ROUTES.helperJobs ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:bg-white'
                   }`}
                 >
                   <Icons.ClipboardList className="h-4 w-4" />
@@ -1126,7 +1066,7 @@ export default function HelperDashboard() {
           {showDesktopBack ? <DesktopBackButton className="mb-4" /> : null}
 
           {isPerformancePage ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <HelperStatsStrip dataLoading={dataLoading} stats={helperMvpStats} t={t} />
               <HelperScorePanel />
               {UI_VISIBILITY.helperCredits ? <CreditsUsageDashboard /> : null}
@@ -1160,8 +1100,7 @@ export default function HelperDashboard() {
             </div>
           ) : null}
 
-          {activeTab !== 'candidaturas' ? (
-            <section
+          <section
               className="relative mb-8 w-screen min-w-[100vw] max-w-none overflow-visible pb-8 pt-0"
               style={{ marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)' }}
             >
@@ -1264,35 +1203,10 @@ export default function HelperDashboard() {
                 className="relative mt-0"
               />
             </section>
-          ) : null}
-
-          <div className="mb-4 flex flex-col items-center gap-3 sm:relative sm:min-h-[54px]">
-            {activeTab === 'candidaturas' ? (
-              <h3 className="flex items-center gap-2 text-sm font-black text-slate-950">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white">
-                  <Icons.ClipboardList className="h-4 w-4" />
-                </span>
-                {t('helper_dashboard.filter_apps_title')}
-              </h3>
-            ) : null}
-            {activeTab === 'candidaturas' && !isPerformancePage && UI_VISIBILITY.helperCredits ? (
-              <div className="sm:absolute sm:right-0 sm:top-0">
-                <HelperCreditsWalletCard
-                  balance={walletBalance}
-                  usedThisMonth={creditsUsedThisMonth}
-                  unlocksCount={unlocks.length}
-                  loading={walletLoading && walletBalance == null}
-                  compact
-                  t={t}
-                  onBuyCredits={goToCredits}
-                />
-              </div>
-            ) : null}
-          </div>
 
           <div ref={feedTabsRef} className="relative mb-5 overflow-hidden rounded-[1.55rem] border border-white/45 bg-[#071D48]/92 p-1.5 shadow-[0_18px_42px_rgba(8,31,84,0.18)] backdrop-blur-xl">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(51,182,255,0.26),transparent_34%),linear-gradient(135deg,rgba(37,99,255,0.22),transparent_48%)]" />
-            <div className="relative grid grid-cols-3 gap-1.5">
+            <div className="relative grid grid-cols-2 gap-1.5">
               <button
                 type="button"
                 onClick={() => selectFeedTab('match')}
@@ -1313,97 +1227,16 @@ export default function HelperDashboard() {
                   <span className={`h-1 rounded-full transition-all duration-300 ${activeTab === 'recentes' ? 'w-5 bg-[#2563FF]' : 'w-1 bg-white/35'}`} />
                 </span>
               </button>
-              <button
-                type="button"
-                onClick={() => selectFeedTab('candidaturas')}
-                className={`min-h-[46px] rounded-[1.15rem] px-2 text-[10px] font-black leading-tight transition-all duration-300 sm:text-[11px] ${activeTab === 'candidaturas' ? 'bg-white text-[#2563FF] shadow-[0_10px_22px_rgba(37,99,255,0.22)]' : 'text-white/78 hover:bg-white/10 hover:text-white'}`}
-              >
-                <span className="mx-auto flex w-fit flex-col items-center gap-1">
-                  {t('helper_dashboard.nav_applications')}
-                  <span className={`h-1 rounded-full transition-all duration-300 ${activeTab === 'candidaturas' ? 'w-5 bg-[#2563FF]' : 'w-1 bg-white/35'}`} />
-                </span>
-              </button>
             </div>
           </div>
 
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-900">{activeTab === 'candidaturas' ? t('helper_dashboard.feed_title_apps') : t('helper_dashboard.feed_title_jobs')}</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t('helper_dashboard.feed_title_jobs')}</h2>
           </div>
 
           {/* Posts (Feed) */}
-          <div className="space-y-4">
-            {activeTab === 'candidaturas' ? (
-              helperApplicationsVisible.length > 0 ? (
-                helperApplicationsVisible.map(app => {
-                  const statusColors: Record<string, string> = {
-                    pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-                    viewed: 'bg-blue-50 text-blue-700 border-blue-200',
-                    accepted: 'bg-green-50 text-green-700 border-green-200',
-                    rejected: 'bg-red-50 text-red-700 border-red-200',
-                    completed: 'bg-purple-50 text-purple-700 border-purple-200',
-                    cancelled: 'bg-slate-100 text-slate-600 border-slate-200',
-                  };
-                  const statusTexts: Record<string, string> = {
-                    pending: t('helper_dashboard.app_pending'),
-                    viewed: t('helper_dashboard.app_viewed'),
-                    accepted: t('helper_dashboard.app_accepted'),
-                    rejected: t('helper_dashboard.app_rejected'),
-                    completed: t('helper_dashboard.app_completed'),
-                    cancelled: t('helper_dashboard.app_cancelled'),
-                  };
-                  const job = jobs.find(j => j.id === app.jobId);
-                  if (!job) return null;
-
-                  return (
-                    <LhCard key={app.id} padding="none" className="overflow-hidden transition-shadow duration-200 hover:shadow-md">
-                      <div className="p-4 flex flex-wrap items-center justify-between gap-2 border-b border-gray-50 bg-gray-50/50">
-                        <div className="flex items-center gap-2">
-                           <Icons.Clock className="w-4 h-4 text-gray-500" />
-                           <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wider">{new Date(app.createdAt).toLocaleDateString()}</span>
-                        </div>
-                        <div className={`text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-lg border ${statusColors[app.status] ?? 'bg-slate-50 text-slate-600 border-slate-200'}`}>
-                           {statusTexts[app.status] ?? app.status}
-                        </div>
-                      </div>
-                      <div className="p-5">
-                        <div className="flex items-center gap-3 mb-4">
-                          <img src={job.clientAvatar} alt="Client" className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm" />
-                          <div>
-                            <h3 className="font-bold text-gray-900 leading-tight">{job.clientName}</h3>
-                            <p className="text-xs text-gray-400 font-medium">{translateCategory(job.category, t)}</p>
-                          </div>
-                        </div>
-                        <h4 className="text-lg font-bold text-gray-900 mb-3 leading-tight">{translateJobTitle(job.title, job.category, job.subcategory, t)}</h4>
-                        <div className="flex flex-wrap gap-2 text-sm text-gray-500 mb-2">
-                          <span className="bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-gray-600"><Clock className="w-3.5 h-3.5 text-gray-400" /> {formatJobScheduleDisplay(job, t)}</span>
-                          <span className="bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-gray-600"><MapPin className="w-3.5 h-3.5 text-gray-400" /> {job.location}</span>
-                          <span className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-slate-700">
-                            <Icons.Handshake className="w-3.5 h-3.5 text-slate-500 shrink-0" /> {t('helper_dashboard.compensation_neutral')}
-                          </span>
-                        </div>
-                        {(app.status === 'pending' || app.status === 'viewed') && (
-                          <div className="mt-4 flex justify-end border-t border-gray-100 pt-4">
-                            <button
-                              type="button"
-                              onClick={() => setCancelTarget(app)}
-                              className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100"
-                            >
-                              <Icons.XCircle className="h-4 w-4" />
-                              {t('helper_dashboard.cancel_application')}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </LhCard>
-                  );
-                })
-              ) : (
-                <LhCard className="text-center py-12 border-dashed" padding="lg">
-                  <Icons.ClipboardList className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 font-medium">{t('helper_dashboard.empty_applications')}</p>
-                </LhCard>
-              )
-            ) : displayedJobs.length > 0 ? (
+          <div className="space-y-3">
+            {displayedJobs.length > 0 ? (
               <div
                 className={clsx(
                   'grid w-full max-w-full min-w-0 grid-cols-1 gap-4 xl:grid-cols-2 transition-[filter,opacity] duration-300',

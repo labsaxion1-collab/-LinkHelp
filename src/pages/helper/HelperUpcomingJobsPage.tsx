@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useLanguage } from '@/context/LanguageContext';
@@ -15,6 +15,13 @@ import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import type { Job } from '@/types/job';
 import { clsx } from 'clsx';
+
+const ACTIVE_WORKFLOW: UpcomingWorkflowStatus[] = [
+  'scheduled',
+  'in_progress',
+  'arriving',
+  'awaiting_client_confirmation',
+];
 
 type TasksTab = 'applications' | 'accepted';
 
@@ -50,9 +57,13 @@ function statusLabel(s: UpcomingWorkflowStatus, t: (k: string) => string) {
 }
 
 export default function HelperUpcomingJobsPage() {
+  const location = useLocation();
   const { t, language } = useLanguage();
   const { jobs, upcomingJobs, updateUpcomingWorkflow, getHelperApplications, updateApplicationStatus } = useAppData();
-  const [activeTab, setActiveTab] = useState<TasksTab>('applications');
+  const [activeTab, setActiveTab] = useState<TasksTab>(() => {
+    const st = location.state as { tasksTab?: TasksTab } | null;
+    return st?.tasksTab === 'accepted' ? 'accepted' : 'applications';
+  });
   const [selectedJob, setSelectedJob] = useState<UpcomingJob | null>(null);
   const [upcomingOpen, setUpcomingOpen] = useState(false);
   const [detailJob, setDetailJob] = useState<Job | null>(null);
@@ -63,6 +74,11 @@ export default function HelperUpcomingJobsPage() {
   const locale = language === 'fr' ? 'fr-CA' : language === 'pt' ? 'pt-BR' : 'en-CA';
 
   const me = useSessionViewer();
+
+  useEffect(() => {
+    const st = location.state as { tasksTab?: TasksTab } | null;
+    if (st?.tasksTab) setActiveTab(st.tasksTab);
+  }, [location.state]);
 
   const applicationList = useMemo(() => {
     const apps = getHelperApplications(me.id).filter((app) => {
@@ -78,7 +94,7 @@ export default function HelperUpcomingJobsPage() {
       upcomingJobs
         .filter((j) => {
           if (j.helperId !== me.id) return false;
-          if (j.workflowStatus !== 'scheduled' && j.workflowStatus !== 'in_progress') return false;
+          if (!ACTIVE_WORKFLOW.includes(j.workflowStatus)) return false;
           const request = jobs.find((r) => r.id === j.jobId);
           return !request || !isJobCancelled(request);
         })

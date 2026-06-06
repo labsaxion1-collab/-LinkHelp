@@ -12,21 +12,24 @@ export type HelperNavSection =
   | 'availability'
   | 'credits';
 
+type FeedTab = 'match' | 'recentes' | 'emergencia';
+
 type Props = {
-  activeTab: 'match' | 'recentes' | 'emergencia' | 'candidaturas';
-  onSelectFeedTab: (tab: 'match' | 'recentes' | 'emergencia' | 'candidaturas') => void;
+  activeTab: FeedTab;
+  onSelectFeedTab: (tab: FeedTab) => void;
   t: (key: string) => string;
 };
 
 export function resolveHelperNavSection(
   pathname: string,
-  activeTab: Props['activeTab'],
+  locationState?: { tasksTab?: 'applications' | 'accepted' } | null,
 ): HelperNavSection {
   if (pathname === ROUTES.helperCredits || pathname === ROUTES.helperLinkCredits) return 'credits';
-  if (pathname === ROUTES.helperJobs) return 'jobs';
+  if (pathname === ROUTES.helperJobs) {
+    return locationState?.tasksTab === 'applications' ? 'applications' : 'jobs';
+  }
   if (pathname === ROUTES.helperPerformance) return 'performance';
   if (pathname === ROUTES.settings) return 'availability';
-  if (activeTab === 'candidaturas') return 'applications';
   if (pathname === ROUTES.helperOpportunities) return 'opportunities';
   if (pathname === ROUTES.helperDashboard) return 'home';
   return 'home';
@@ -34,8 +37,8 @@ export function resolveHelperNavSection(
 
 export function HelperDashboardNav({ activeTab, onSelectFeedTab, t }: Props) {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const section = resolveHelperNavSection(pathname, activeTab);
+  const location = useLocation();
+  const section = resolveHelperNavSection(location.pathname, location.state as { tasksTab?: 'applications' | 'accepted' } | null);
 
   const tabClass = (active: boolean) =>
     `group relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
@@ -80,16 +83,13 @@ export function HelperDashboardNav({ activeTab, onSelectFeedTab, t }: Props) {
       id: 'applications',
       labelKey: 'helper_dashboard.nav_applications',
       icon: Icons.ClipboardList,
-      onClick: () => {
-        navigate(ROUTES.helperDashboard);
-        onSelectFeedTab('candidaturas');
-      },
+      onClick: () => navigate(ROUTES.helperJobs, { state: { tasksTab: 'applications' } }),
     },
     {
       id: 'jobs',
       labelKey: 'helper_dashboard.nav_active_services',
       icon: Icons.Briefcase,
-      onClick: () => navigate(ROUTES.helperJobs),
+      onClick: () => navigate(ROUTES.helperJobs, { state: { tasksTab: 'accepted' } }),
     },
     {
       id: 'availability',

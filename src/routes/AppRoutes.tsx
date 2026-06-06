@@ -12,6 +12,8 @@ import { AdminProtectedRoute } from '@/components/admin/AdminProtectedRoute';
 import { FluxAdminLayout } from '@/components/admin/FluxAdminLayout';
 
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
+const HowItWorksPage = lazy(() => import('@/pages/public/HowItWorksPage'));
+const ContactPage = lazy(() => import('@/pages/public/ContactPage'));
 const LoginPage = lazy(() => importWithRetry(() => import('@/pages/auth/LoginPage')));
 const RegisterPage = lazy(() => importWithRetry(() => import('@/pages/auth/RegisterPage')));
 const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'));
@@ -69,6 +71,8 @@ export function AppRoutes() {
           />
           <Route path={ROUTES.signup} element={<RegisterPage />} />
         </Route>
+        <Route path={ROUTES.howItWorks} element={<HowItWorksPage />} />
+        <Route path={ROUTES.contact} element={<ContactPage />} />
         <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />
         <Route path={ROUTES.authCallback} element={<AuthCallbackPage />} />
         <Route path={ROUTES.dashboard} element={<DashboardEntryPage />} />

@@ -50,6 +50,18 @@ export default function Footer() {
             >
               {t('footer.about')}
             </Link>
+            <Link
+              to={ROUTES.howItWorks}
+              className={clsx('text-xs font-semibold transition-colors min-h-[44px] flex items-center px-1', isHome ? 'text-[#C7D2FE]/70 hover:text-white' : 'text-gray-500 hover:text-blue-600')}
+            >
+              Como funciona
+            </Link>
+            <Link
+              to={ROUTES.contact}
+              className={clsx('text-xs font-semibold transition-colors min-h-[44px] flex items-center px-1', isHome ? 'text-[#C7D2FE]/70 hover:text-white' : 'text-gray-500 hover:text-blue-600')}
+            >
+              Contato
+            </Link>
             {UI_VISIBILITY.ideas ? (
               <Link
                 to={ROUTES.ideas}

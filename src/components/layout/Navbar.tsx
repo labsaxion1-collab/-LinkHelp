@@ -243,6 +243,20 @@ export default function Navbar() {
                 <>
                   <button
                     type="button"
+                    onClick={() => navigate(ROUTES.howItWorks)}
+                    className={`font-semibold text-sm transition-colors ${usePremiumNav ? 'lh-nav-link rounded-full px-4 py-2 text-slate-100/92 hover:text-white' : 'text-gray-900 hover:text-primary-600'}`}
+                  >
+                    Como funciona
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(ROUTES.contact)}
+                    className={`font-semibold text-sm transition-colors ${usePremiumNav ? 'lh-nav-link rounded-full px-4 py-2 text-slate-100/92 hover:text-white' : 'text-gray-900 hover:text-primary-600'}`}
+                  >
+                    Contato
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => navigate(ROUTES.login)}
                     className={`font-semibold text-sm transition-colors ${usePremiumNav ? 'lh-nav-link rounded-full px-4 py-2 text-slate-100/92 hover:text-white' : 'text-gray-900 hover:text-primary-600'}`}
                   >

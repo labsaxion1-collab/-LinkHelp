@@ -1,6 +1,8 @@
 /** App route paths — single source for navigation refactors */
 export const ROUTES = {
   home: '/',
+  howItWorks: '/como-funciona',
+  contact: '/contato',
   login: '/auth/login',
   signup: '/auth/register',
   resetPassword: '/auth/reset-password',

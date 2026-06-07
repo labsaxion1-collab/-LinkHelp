@@ -376,7 +376,7 @@ export default function MessagesPage() {
           </span>
           <span className="mt-1 block truncate text-[16px] font-black leading-tight text-[#0B1220] sm:text-[17px]">{compactJobLabel}</span>
           <span className="mt-2 flex min-w-0 flex-wrap gap-x-3 gap-y-1 text-[12px] font-semibold text-[#6B7280] sm:text-[13px]">
-            <span className="inline-flex min-w-0 items-center gap-1"><Icons.CalendarDays className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{activeJob?.desiredDate || t('messages_page.today')}</span></span>
+            <span className="inline-flex min-w-0 items-center gap-1"><Icons.CalendarDays className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{activeJob?.preferredDate || t('messages_page.today')}</span></span>
             <span className="inline-flex min-w-0 items-center gap-1"><Icons.MapPin className="h-3.5 w-3.5 shrink-0" /><span className="max-w-[150px] truncate sm:max-w-[260px]">{activeJob?.location || 'LinkHelp'}</span></span>
           </span>
         </span>

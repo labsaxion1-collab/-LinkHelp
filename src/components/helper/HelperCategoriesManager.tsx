@@ -44,7 +44,7 @@ export function HelperCategoriesManager({
 
   const grouped = useMemo(() => groupSkillKeysByServiceCategory(skillIds), [skillIds]);
   const categoryOrder = useMemo(() => {
-    const ids = [...grouped.keys()];
+    const ids = [...grouped.keys()] as ServiceCategoryId[];
     const primaryFirst = [primaryCategory, ...secondaryCategories.filter((id) => id !== primaryCategory)];
     const ordered = primaryFirst.filter((id) => ids.includes(id));
     for (const id of ids) {

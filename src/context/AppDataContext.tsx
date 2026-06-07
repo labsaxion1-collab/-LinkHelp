@@ -634,7 +634,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getUpcomingJobsForHelper = (helperId: string) => {
-    const jobStatusById = new Map(jobs.map((j) => [j.id, j.status]));
+    const jobStatusById = new Map<string, JobStatus>(jobs.map((j) => [j.id, j.status]));
     return upcomingJobs
       .filter((u) => {
         if (u.helperId !== helperId) return false;

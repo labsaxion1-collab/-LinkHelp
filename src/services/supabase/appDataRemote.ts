@@ -542,7 +542,7 @@ async function remoteOfficiallyHireHelperLegacy(
         accepted_amount: acceptedAmount,
         budget: valueHint,
       };
-      const { error: amtErr } = await sb.from('requests').update(reqUpdate).eq('id', app.request_id);
+      const { error: amtErr } = await sb.from('requests').update(reqUpdate as Partial<RequestRow>).eq('id', app.request_id);
       if (amtErr && isMissingColumnError(amtErr, 'accepted_amount')) {
         await sb.from('requests').update({ budget: valueHint }).eq('id', app.request_id);
       }

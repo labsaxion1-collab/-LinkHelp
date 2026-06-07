@@ -1,4 +1,5 @@
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import type * as React from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, type ComponentType } from 'react';
 import * as Icons from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
@@ -18,7 +19,7 @@ type Props = {
 };
 
 function CategoryIcon({ icon, className }: { icon: string; className?: string }) {
-  const Icon = Icons[icon as keyof typeof Icons] as React.ComponentType<{ className?: string; strokeWidth?: number }> | undefined;
+  const Icon = Icons[icon as keyof typeof Icons] as ComponentType<{ className?: string; strokeWidth?: number }> | undefined;
   const Component = Icon ?? Icons.CircleHelp;
   return <Component className={className} strokeWidth={2.2} />;
 }

@@ -1426,7 +1426,7 @@ export const en = {
     beauty: 'Aesthetics & beauty',
     moving: 'Moves & deliveries',
     renovation: 'Renovation & maintenance',
-    outdoor: 'Outdoor & yard',
+    outdoor: 'Gardening & Outdoor',
     pet: 'Pets',
     tech: 'IT support',
     design: 'Design',

@@ -8,6 +8,9 @@ import { formatBudgetRange, jobHasBoundedBudget, jobIsNegotiableBudget, validate
 import { getHelperLeadCreditSummary, getHelperCreditPublicDisplay } from '@/utils/helperCreditDisplay';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
+import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
+
+const CHAT_LIMIT = 5;
 
 type Props = {
   open: boolean;
@@ -19,6 +22,8 @@ type Props = {
   t: (key: string, vars?: Record<string, string | number>) => string;
   language?: AppLanguage;
   distanceKm?: number | null;
+  helperMessagesUsed?: number;
+  clientMessagesUsed?: number;
 };
 
 export function HelperProposalModal({
@@ -31,13 +36,14 @@ export function HelperProposalModal({
   t,
   language = 'pt',
   distanceKm,
+  helperMessagesUsed = 0,
+  clientMessagesUsed = 0,
 }: Props) {
   const [amount, setAmount] = useState('');
   const [proposalMessage, setProposalMessage] = useState('');
   const [error, setError] = useState('');
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [costsOpen, setCostsOpen] = useState(false);
-  const [chatInfoOpen, setChatInfoOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const bounded = job ? jobHasBoundedBudget(job) : false;
@@ -83,7 +89,7 @@ export function HelperProposalModal({
   const handleSubmit = () => {
     if (submitting) return;
     const result = validateHelperProposal(amount, job, required);
-    if (!result.ok) {
+    if (result.ok === false) {
       setError(t(result.messageKey, result.messageVars));
       return;
     }
@@ -98,6 +104,10 @@ export function HelperProposalModal({
   const clientBudget = formatJobBudgetDisplay(job, t);
   const balanceLabel =
     creditBalance == null ? '…' : formatLinkCredits(creditBalance, language);
+  const categoryTheme = getCategoryFeedTheme(job.category);
+
+  const helperRemaining = Math.max(0, CHAT_LIMIT - helperMessagesUsed);
+  const clientRemaining = Math.max(0, CHAT_LIMIT - clientMessagesUsed);
 
   const estimatedAvg = bounded && job.budgetMin != null && job.budgetMax != null
     ? ((job.budgetMin + job.budgetMax) / 2).toFixed(2)
@@ -117,7 +127,8 @@ export function HelperProposalModal({
         aria-modal="true"
         aria-labelledby="helper-proposal-title"
         className={clsx(
-          'relative z-10 w-full max-w-md bg-white',
+          'relative z-10 flex w-full max-w-md flex-col bg-white',
+          'max-h-[92dvh]',
           'rounded-t-[1.85rem] sm:rounded-[1.85rem]',
           'shadow-[0_-8px_40px_rgba(15,23,42,0.18),0_24px_64px_rgba(15,23,42,0.22)]',
           'animate-[helperProposalIn_0.42s_cubic-bezier(0.34,1.45,0.64,1)]',
@@ -135,11 +146,11 @@ export function HelperProposalModal({
             <h2 id="helper-proposal-title" className="text-[20px] font-black leading-tight tracking-tight text-slate-950">
               {t('helper_proposal.title')}
             </h2>
-            <p className="mt-0.5 truncate text-sm font-semibold text-[#2563EB]">
+            <p className="mt-0.5 truncate text-sm font-semibold" style={{ color: categoryTheme.iconColor }}>
               {t(`categories.${job.category}`)}
               {job.subcategory ? <span className="text-slate-400"> • </span> : null}
               {job.subcategory ? (
-                <span className="text-[#2563EB]">{t(`service_subs.${job.category}.${job.subcategory}`)}</span>
+                <span style={{ color: categoryTheme.iconColor }}>{t(`service_subs.${job.category}.${job.subcategory}`)}</span>
               ) : null}
             </p>
           </div>
@@ -154,10 +165,10 @@ export function HelperProposalModal({
           </button>
         </header>
 
-        {/* Body */}
-        <div className="px-5 pb-3 pt-1">
+        {/* Body — scrollável */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-3 pt-1">
 
-          {/* Resumo de custos — colapsível */}
+          {/* Detalhes do pedido — colapsível */}
           <div className="mb-2 overflow-hidden rounded-2xl border border-slate-200 bg-white">
             <button
               type="button"
@@ -165,9 +176,9 @@ export function HelperProposalModal({
               className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                <Icons.ReceiptText className="h-4 w-4" />
+                <Icons.FileText className="h-4 w-4" />
               </span>
-              <span className="flex-1 text-sm font-bold text-slate-800">{t('helper_proposal.job_section')}</span>
+              <span className="flex-1 text-sm font-bold text-slate-800">Detalhes do pedido</span>
               <span className="flex items-center gap-1 text-xs font-semibold text-[#2563EB]">
                 {costsOpen ? t('common.hide') : 'Ver detalhes'}
                 <Icons.ChevronDown
@@ -175,32 +186,75 @@ export function HelperProposalModal({
                 />
               </span>
             </button>
-            {costsOpen && (
-              <div className="border-t border-slate-100 px-4 pb-4 pt-3">
-                <ul className="space-y-2 text-sm font-semibold text-slate-700">
-                  <li className="flex justify-between gap-2">
-                    <span className="text-slate-500">{t('helper_proposal.apply_cost_line')}</span>
-                    <span className="tabular-nums text-slate-900">{creditDisplay.applyCost} LC</span>
-                  </li>
-                  <li className="flex justify-between gap-2">
-                    <span className="text-slate-500">{t('helper_proposal.job_cost_line')}</span>
-                    <span className="tabular-nums text-slate-900">{creditDisplay.jobCost} LC</span>
-                  </li>
-                  <li className="flex justify-between gap-2">
-                    <span className="text-slate-500">{t('helper_proposal.selected_line')}</span>
-                    <span className="tabular-nums text-slate-900">+{creditDisplay.hireEstimate} LC</span>
-                  </li>
-                  <li className="flex justify-between gap-2 border-t border-slate-100 pt-2 font-bold">
-                    <span className="text-slate-800">{t('helper_proposal.total_estimate_line')}</span>
-                    <span className="tabular-nums text-[#2563EB]">{creditDisplay.totalEstimate} LC</span>
-                  </li>
-                  <li className="flex justify-between gap-2 border-t border-slate-100 pt-2">
-                    <span className="text-slate-500">{t('helper_proposal.balance_line')}</span>
-                    <span className="tabular-nums text-slate-900">{balanceLabel}</span>
-                  </li>
-                </ul>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateRows: costsOpen ? '1fr' : '0fr',
+                transition: 'grid-template-rows 320ms cubic-bezier(0.4,0,0.2,1)',
+              }}
+            >
+              <div style={{ overflow: 'hidden', minHeight: 0 }}>
+              <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-3">
+
+                {/* Descrição do pedido */}
+                {job.description?.trim() ? (
+                  <div>
+                    <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-slate-400">
+                      {t('helper_dashboard.detail_observations')}
+                    </p>
+                    <p className="whitespace-pre-wrap rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-[13px] font-medium leading-relaxed text-slate-700">
+                      {job.description.trim()}
+                    </p>
+                  </div>
+                ) : null}
+
+                {/* Localização */}
+                {(job.address || job.city || job.location) ? (
+                  <div className="flex items-start gap-2 text-[13px] font-medium text-slate-700">
+                    <Icons.MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+                    <span>{[job.address, job.city, job.region].filter(Boolean).join(', ') || job.location}</span>
+                  </div>
+                ) : null}
+
+                {/* Horário/data preferido */}
+                {(job.date || job.preferredDate || job.preferredTimeWindow) ? (
+                  <div className="flex items-center gap-2 text-[13px] font-medium text-slate-700">
+                    <Icons.Clock className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+                    <span>{job.preferredTimeWindow || job.preferredDate || job.date}</span>
+                  </div>
+                ) : null}
+
+                {/* Separador custos */}
+                <div className="border-t border-slate-100 pt-3">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-slate-400">
+                    {t('helper_proposal.job_section')}
+                  </p>
+                  <ul className="space-y-2 text-sm font-semibold text-slate-700">
+                    <li className="flex justify-between gap-2">
+                      <span className="text-slate-500">{t('helper_proposal.apply_cost_line')}</span>
+                      <span className="tabular-nums text-slate-900">{creditDisplay.applyCost} LC</span>
+                    </li>
+                    <li className="flex justify-between gap-2">
+                      <span className="text-slate-500">{t('helper_proposal.job_cost_line')}</span>
+                      <span className="tabular-nums text-slate-900">{creditDisplay.jobCost} LC</span>
+                    </li>
+                    <li className="flex justify-between gap-2">
+                      <span className="text-slate-500">{t('helper_proposal.selected_line')}</span>
+                      <span className="tabular-nums text-slate-900">+{creditDisplay.hireEstimate} LC</span>
+                    </li>
+                    <li className="flex justify-between gap-2 border-t border-slate-100 pt-2 font-bold">
+                      <span className="text-slate-800">{t('helper_proposal.total_estimate_line')}</span>
+                      <span className="tabular-nums text-[#2563EB]">{creditDisplay.totalEstimate} LC</span>
+                    </li>
+                    <li className="flex justify-between gap-2 border-t border-slate-100 pt-2">
+                      <span className="text-slate-500">{t('helper_proposal.balance_line')}</span>
+                      <span className="tabular-nums text-slate-900">{balanceLabel}</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
-            )}
+              </div>
+            </div>
           </div>
 
           {/* Orçamento do cliente */}
@@ -246,7 +300,6 @@ export function HelperProposalModal({
               }}
               placeholder={bounded ? String(Math.round(job.budgetMin!)) : '0.00'}
               className="min-w-0 flex-1 bg-transparent text-[22px] font-black text-slate-950 outline-none placeholder:text-slate-300"
-              autoFocus
             />
           </div>
           {error ? <p className="mt-1.5 text-sm font-semibold text-rose-600">{error}</p> : null}
@@ -272,53 +325,100 @@ export function HelperProposalModal({
           </div>
 
           {/* Banner chat pré-contratação */}
-          <div className="mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <div className="flex items-start gap-3 px-4 py-2.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#2563EB]">
-                <Icons.Lock className="h-4 w-4" />
+          <div className="mt-2 overflow-hidden rounded-2xl border border-blue-100 bg-blue-50/50">
+            {/* Cabeçalho sempre visível */}
+            <div className="flex items-center gap-2.5 px-4 py-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-[#2563EB]">
+                <Icons.MessageSquare className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-slate-900">Chat pré-contratação ativo</p>
-                <p className="mt-0.5 text-[12px] font-medium leading-relaxed text-slate-500">
-                  Contatos externos liberados após a confirmação do serviço.
-                </p>
+                <p className="text-[13px] font-black text-slate-900">Chat pré-contratação</p>
+                <p className="text-[11px] font-medium text-slate-500">Limite de mensagens antes de contratar</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setChatInfoOpen((v) => !v)}
-                className="shrink-0 text-[12px] font-bold text-[#2563EB] hover:underline"
-              >
-                {chatInfoOpen ? 'Fechar' : 'Saiba mais'}
-                <Icons.ChevronDown
-                  className={clsx('ml-0.5 inline h-3.5 w-3.5 transition-transform duration-200', chatInfoOpen && 'rotate-180')}
-                />
-              </button>
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-100">
+                <Icons.Lock className="h-3.5 w-3.5 text-[#2563EB]" />
+              </span>
             </div>
 
-            {chatInfoOpen && (
-              <div className="border-t border-slate-100 bg-blue-50/50 px-4 pb-4 pt-3">
-                <ul className="space-y-2.5">
-                  <li className="flex items-start gap-2.5">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2563EB] text-[10px] font-black text-white mt-px">5</span>
-                    <p className="text-[13px] font-medium leading-relaxed text-slate-700">
-                      Você pode enviar <span className="font-bold text-slate-900">até 5 mensagens</span> para o cliente antes da contratação.
-                    </p>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2563EB] text-[10px] font-black text-white mt-px">5</span>
-                    <p className="text-[13px] font-medium leading-relaxed text-slate-700">
-                      O cliente pode te <span className="font-bold text-slate-900">responder até 5 vezes</span> nesse mesmo período.
-                    </p>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <Icons.Lock className="h-5 w-5 shrink-0 text-slate-400 mt-px" />
-                    <p className="text-[13px] font-medium leading-relaxed text-slate-700">
-                      Depois disso, o chat fica <span className="font-bold text-slate-900">bloqueado</span> até o cliente aceitar a contratação.
-                    </p>
-                  </li>
-                </ul>
+            {/* Contadores de mensagens */}
+            <div className="grid grid-cols-2 gap-2 px-4 pb-3">
+              {/* Helper */}
+              <div
+                className="rounded-xl border bg-white px-3 py-2.5"
+                style={{ borderColor: `${categoryTheme.iconColor}30` }}
+              >
+                <p
+                  className="mb-1.5 text-[10px] font-black uppercase tracking-wide"
+                  style={{ color: categoryTheme.iconColor }}
+                >
+                  Você (helper)
+                </p>
+                <div className="flex gap-1">
+                  {Array.from({ length: CHAT_LIMIT }).map((_, i) => {
+                    const used = i >= helperRemaining;
+                    return (
+                      <span
+                        key={i}
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors duration-300"
+                        style={used
+                          ? { backgroundColor: '#E2E8F0', color: '#94A3B8' }
+                          : { backgroundColor: categoryTheme.iconColor, color: '#fff' }
+                        }
+                        title={used ? 'Mensagem enviada' : 'Disponível'}
+                      >
+                        <Icons.MessageCircle className="h-3 w-3" />
+                      </span>
+                    );
+                  })}
+                </div>
+                <p className="mt-1.5 text-[11px] font-semibold text-slate-500">
+                  {helperRemaining}/{CHAT_LIMIT} disponíveis
+                </p>
               </div>
-            )}
+
+              {/* Cliente */}
+              <div
+                className="rounded-xl border bg-white px-3 py-2.5"
+                style={{ borderColor: `${categoryTheme.iconColor}20` }}
+              >
+                <p
+                  className="mb-1.5 text-[10px] font-black uppercase tracking-wide"
+                  style={{ color: `${categoryTheme.iconColor}aa` }}
+                >
+                  Cliente
+                </p>
+                <div className="flex gap-1">
+                  {Array.from({ length: CHAT_LIMIT }).map((_, i) => {
+                    const used = i >= clientRemaining;
+                    return (
+                      <span
+                        key={i}
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors duration-300"
+                        style={used
+                          ? { backgroundColor: '#E2E8F0', color: '#94A3B8' }
+                          : { backgroundColor: `${categoryTheme.iconColor}66`, color: categoryTheme.iconColor }
+                        }
+                        title={used ? 'Resposta enviada' : 'Disponível'}
+                      >
+                        <Icons.MessageCircle className="h-3 w-3" />
+                      </span>
+                    );
+                  })}
+                </div>
+                <p className="mt-1.5 text-[11px] font-semibold text-slate-500">
+                  {clientRemaining}/{CHAT_LIMIT} disponíveis
+                </p>
+              </div>
+            </div>
+
+            {/* Rodapé informativo */}
+            <div className="flex items-center gap-2 border-t border-blue-100 px-4 py-2">
+              <Icons.Lock className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+              <p className="text-[11px] font-medium text-slate-500">
+                Após o limite, o chat fica <span className="font-bold text-slate-700">bloqueado</span> até o cliente contratar.
+                Contatos externos liberados só após confirmação.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -329,7 +429,7 @@ export function HelperProposalModal({
             <button
               type="button"
               disabled={submitting}
-              className="inline-flex min-h-[58px] flex-1 flex-col items-center justify-center gap-1 rounded-xl border border-amber-300 bg-amber-50 px-2 shadow-sm transition hover:bg-amber-100 active:scale-[0.98] disabled:opacity-60"
+              className="inline-flex min-h-[68px] flex-1 flex-col items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 shadow-sm transition hover:bg-amber-100 active:scale-[0.98] disabled:opacity-60"
             >
               <span className="flex items-center gap-1.5">
                 <Icons.Crown className="h-4 w-4 shrink-0 text-amber-500" />
@@ -351,7 +451,7 @@ export function HelperProposalModal({
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="inline-flex min-h-[58px] flex-1 flex-col items-center justify-center gap-1 rounded-xl bg-[#2563EB] px-2 shadow-md shadow-blue-500/25 transition hover:bg-[#1D4ED8] active:scale-[0.98] disabled:opacity-60"
+              className="inline-flex min-h-[68px] flex-1 flex-col items-center justify-center gap-1.5 rounded-xl bg-[#2563EB] px-3 shadow-md shadow-blue-500/25 transition hover:bg-[#1D4ED8] active:scale-[0.98] disabled:opacity-60"
             >
               {submitting ? (
                 <Icons.Loader2 className="h-4 w-4 animate-spin text-white" />

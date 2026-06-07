@@ -112,6 +112,30 @@ export type Database = {
         Update: Partial<UserBonusRewardRow>;
         Relationships: [];
       };
+      push_subscriptions: {
+        Row: { user_id: string; endpoint: string; subscription: Json; updated_at: string };
+        Insert: { user_id: string; endpoint: string; subscription: Json; updated_at?: string };
+        Update: Partial<{ user_id: string; subscription: Json; updated_at: string }>;
+        Relationships: [];
+      };
+      push_notification_queue: {
+        Row: { id: string; user_id: string; title: string; body: string; url: string; created_at: string };
+        Insert: { id?: string; user_id: string; title: string; body?: string; url?: string; created_at?: string };
+        Update: Partial<{ title: string; body: string; url: string }>;
+        Relationships: [];
+      };
+      request_market_signals: {
+        Row: { id: string; request_id: string; helper_id: string | null; signal: string; event: string; category: string | null; city: string | null; province: string | null; budget_min: number | null; budget_max: number | null; distance_km: number | null; created_at: string };
+        Insert: Record<string, unknown>;
+        Update: Partial<Record<string, unknown>>;
+        Relationships: [];
+      };
+      helper_proposal_analytics: {
+        Row: { id: string; request_id: string; helper_id: string; event: string; source: string | null; proposed_amount: number | null; budget_min: number | null; budget_max: number | null; duration_ms: number | null; timezone: string; created_at: string };
+        Insert: Record<string, unknown>;
+        Update: Partial<Record<string, unknown>>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -200,6 +224,14 @@ export type Database = {
           p_proposed_amount?: number | null;
           p_interest_amount?: number;
         };
+        Returns: Json;
+      };
+      confirm_initial_profile_role: {
+        Args: { p_role: string };
+        Returns: Json;
+      };
+      refresh_request_lead_quality: {
+        Args: { p_request_id: string };
         Returns: Json;
       };
     };

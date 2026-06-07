@@ -1,9 +1,16 @@
 import { avatarUrlForName } from '@/utils/avatarUrl';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import type { Application } from '@/types/application';
-import type { Job, JobStatus, JobUrgency } from '@/types/job';
+import type { Job, JobUrgency } from '@/types/job';
 import type { AppNotification } from '@/types/notification';
 import type { UpcomingJob, UpcomingWorkflowStatus } from '@/types/upcoming';
+import type {
+  ApplicationRow,
+  MapperProfile,
+  NotificationRow,
+  RequestRow,
+  UpcomingJobRow,
+} from '@/types/database';
 import { normalizeApplicationStatus, normalizeRequestStatus } from '@/utils/statusNormalize';
 
 export function tsFromIso(iso: string): number {

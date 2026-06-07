@@ -1,4 +1,5 @@
 import type { QuebecPlace } from '@/data/quebecRegions';
+import type { Coordinates } from '@/utils/mapLocation';
 import {
   DEFAULT_MAP_CENTER,
   coordinatesFromProfile,

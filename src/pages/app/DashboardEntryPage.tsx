@@ -60,7 +60,7 @@ export default function DashboardEntryPage() {
       authFlowLog('OAuth role picker confirmed', { role, userId: session.user.id });
 
       const result = await confirmInitialProfileRole(role);
-      if (!result.ok) {
+      if (result.ok === false) {
         authFlowLog('confirmInitialProfileRole failed', { role, message: result.message });
         console.warn('[LinkHelp] confirmInitialProfileRole', result.message);
       }

@@ -1438,7 +1438,7 @@ export const pt = {
     beauty: 'Estética e beleza',
     moving: 'Mudanças e entregas',
     renovation: 'Reforma e manutenção',
-    outdoor: 'Área externa',
+    outdoor: 'Jardinagem e Área Externa',
     pet: 'Pets',
     tech: 'Suporte em TI',
     design: 'Design',

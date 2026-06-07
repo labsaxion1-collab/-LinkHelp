@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { hapticLight, hapticSuccess } from '@/utils/haptic';
 import * as Icons from 'lucide-react';
 import { CheckCircle2 } from 'lucide-react';
@@ -179,11 +179,7 @@ function HelperOpportunityCardInner({
       }, 520);
       return;
     }
-    const isTap = Math.abs(offset) < 8;
     resetSwipeVisual();
-    if (isTap && onViewDetails && !isNestedInteractiveTarget(swipeStartTarget.current)) {
-      onViewDetails(job);
-    }
   };
 
   const onSwipeStart = (clientX: number, target?: EventTarget | null) => {
@@ -206,15 +202,6 @@ function HelperOpportunityCardInner({
   const ctaBase =
     'inline-flex min-h-[44px] min-w-0 max-w-full items-center justify-center gap-2 rounded-[14px] px-3 py-2.5 text-[12px] font-semibold leading-tight transition-all duration-200 sm:min-h-0 sm:px-4 sm:text-[13px] md:text-[14px]';
 
-  const isNestedInteractiveTarget = (target: EventTarget | null, container?: EventTarget | null) => {
-    if (!(target instanceof HTMLElement)) return false;
-    const interactive = target.closest('button, a');
-    if (!interactive) return false;
-    if (container instanceof HTMLElement && interactive === container) return false;
-    return true;
-  };
-
-  const openDetails = () => onViewDetails?.(job);
 
   const interestRingLabel = t('helper_dashboard.interested_ring_label');
 
@@ -299,19 +286,9 @@ function HelperOpportunityCardInner({
 
       {/* Título — uma linha, nunca quebra */}
       <div className="col-start-2 row-start-1 min-w-0 overflow-hidden pr-1">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            openDetails();
-          }}
-          onTouchEnd={(e) => e.stopPropagation()}
-          className="block w-full overflow-hidden text-left"
-        >
-          <span className="block truncate whitespace-nowrap text-[16px] font-bold leading-snug text-[#0F172A] sm:text-[18px]">
-            {title}
-          </span>
-        </button>
+        <span className="block truncate whitespace-nowrap text-[16px] font-bold leading-snug text-[#0F172A] sm:text-[18px]">
+          {title}
+        </span>
       </div>
 
       {/* Meta (categoria, orçamento, data) — cada linha nunca quebra */}
@@ -408,11 +385,6 @@ function HelperOpportunityCardInner({
     </div>
   );
 
-  const handleCardSurfaceClick = (e: MouseEvent<HTMLElement>) => {
-    if (!onViewDetails || isNestedInteractiveTarget(e.target, e.currentTarget)) return;
-    if (Math.abs(dragX) > 8) return;
-    openDetails();
-  };
 
   const cardShell = clsx(
     'group/card relative h-full w-full max-w-full overflow-hidden rounded-[22px] border bg-white transition-all duration-200',
@@ -488,19 +460,10 @@ function HelperOpportunityCardInner({
           className={clsx(
             cardPadding,
             !dragging && 'transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.2,0.64,1)]',
-            onViewDetails && 'cursor-pointer',
           )}
           style={{
             transform: `translateX(${dragX}px) rotate(${dragRotation}deg)`,
             opacity: 1 - Math.min(0.12, Math.abs(dragX) / 400),
-          }}
-          onClick={handleCardSurfaceClick}
-          onKeyDown={(e) => {
-            if (!onViewDetails || isNestedInteractiveTarget(e.target, e.currentTarget)) return;
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              openDetails();
-            }
           }}
         >
           {feedBody}
@@ -508,17 +471,7 @@ function HelperOpportunityCardInner({
       </div>
 
       {/* Desktop */}
-      <div
-        className={clsx('hidden px-4 pb-4 pt-4 md:block', onViewDetails && 'cursor-pointer')}
-        onClick={handleCardSurfaceClick}
-        onKeyDown={(e) => {
-          if (!onViewDetails || isNestedInteractiveTarget(e.target, e.currentTarget)) return;
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            openDetails();
-          }
-        }}
-      >
+      <div className="hidden px-4 pb-4 pt-4 md:block">
         {feedBody}
       </div>
     </LhCard>

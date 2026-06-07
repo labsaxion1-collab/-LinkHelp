@@ -1430,7 +1430,7 @@ export const fr = {
     beauty: 'Esthétique et beauté',
     moving: 'Déménagement et livraisons',
     renovation: 'Rénovation et entretien',
-    outdoor: 'Espaces extérieurs',
+    outdoor: 'Jardinage et espaces extérieurs',
     pet: 'Animaux',
     cooking: 'Cuisine',
     tech: 'Support informatique',

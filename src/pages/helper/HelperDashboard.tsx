@@ -1109,12 +1109,11 @@ export default function HelperDashboard() {
                 src="/brand/helper-hero-bg.jpg"
                 alt=""
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 -top-[19.5rem] h-[calc(100%+20rem)] w-full object-cover object-top opacity-95 transition-transform duration-200 ease-out"
+                className="pointer-events-none absolute inset-x-0 -top-16 h-[calc(100%+4rem)] w-full object-cover object-top opacity-95 transition-transform duration-200 ease-out"
                 style={{ transform: `translate3d(0, ${-heroParallaxOffset}px, 0)` }}
               />
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(249,251,255,0.20)_0%,rgba(249,251,255,0.38)_27%,rgba(249,251,255,0.76)_58%,#F7F8FC_82%)]" />
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(249,251,255,0.82)_0%,rgba(249,251,255,0.52)_48%,rgba(249,251,255,0.16)_100%)]" />
-              <div className="pointer-events-none absolute -left-16 -top-12 h-52 w-72 rounded-full bg-white/28 blur-2xl" />
+              {/* Overlay — estende-se até o nav bar */}
+              <div className="pointer-events-none absolute inset-x-0 -top-16 bottom-0 bg-white/45" />
               <header className="relative mb-3 flex min-h-[40px] items-start justify-between gap-3 px-6 pr-[calc(9.75rem+1.5rem)] sm:px-7 sm:pr-[calc(9.75rem+1.75rem)]">
                 <div className="min-w-0">
                   <p className="bg-gradient-to-r from-[#0B1220] via-[#123D85] to-[#2563FF] bg-clip-text text-2xl font-black leading-none tracking-tight text-transparent">

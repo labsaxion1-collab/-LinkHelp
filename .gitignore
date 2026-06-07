@@ -10,3 +10,4 @@ coverage/
 supabase/.temp/
 public/brand/*.before-*.png
 .vercel
+vapid-secrets.txt

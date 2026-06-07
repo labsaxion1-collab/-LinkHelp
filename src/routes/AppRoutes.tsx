@@ -45,6 +45,8 @@ function AdminDashboardLoadError() {
   );
 }
 
+const PushTestPage = lazy(() => import('@/pages/admin/PushTestPage'));
+
 const AdminDashboard = lazy(() =>
   import('@/pages/admin/AdminDashboard').catch((error: unknown) => {
     console.error('[LinkHelp] AdminDashboard chunk failed to load', error);
@@ -135,6 +137,7 @@ export function AppRoutes() {
           <Route element={<AdminProtectedRoute />}>
             <Route element={<FluxAdminLayout />}>
               <Route path={ROUTES.adminDashboard} element={<AdminDashboard />} />
+              <Route path={ROUTES.adminPushTest} element={<PushTestPage />} />
             </Route>
           </Route>
         </Route>

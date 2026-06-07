@@ -65,6 +65,16 @@ export const SERVICE_CATEGORIES = [
     subKeys: ['format', 'wifi', 'install', 'tv', 'phone'],
   },
   {
+    id: 'design',
+    icon: 'Palette',
+    subKeys: ['logo_brand', 'social_media', 'ui_ux', 'print', 'presentation', 'photo_editing'],
+  },
+  {
+    id: 'marketing',
+    icon: 'Megaphone',
+    subKeys: ['social_media', 'seo', 'paid_ads', 'content', 'email', 'branding'],
+  },
+  {
     id: 'other',
     icon: 'CircleHelp',
     subKeys: ['other'],

@@ -1,0 +1,50 @@
+---
+description: Padrões de UI/UX do LinkHelp — texto, cores, componentes e i18n
+globs: src/**/*.tsx
+alwaysApply: false
+---
+
+# LinkHelp — UI Guidelines
+
+## Nunca quebrar texto em cards
+```tsx
+// Título, orçamento, nome do cliente — sempre:
+className="truncate whitespace-nowrap"
+```
+
+## Cores de categoria
+```tsx
+import { getCategoryFeedTheme, getCategoryAccent } from '@/utils/categoryFeedTheme';
+const theme = getCategoryFeedTheme(job.category); // iconBg, iconColor, dotColor
+const accent = getCategoryAccent(categoryId);      // chip, active, icon, cardBorder, cardHover
+```
+
+## i18n
+```tsx
+const { t } = useLanguage();
+t('categories.cleaning') // sempre t(), nunca strings hardcoded visíveis
+// Adicionar tradução nos 3 arquivos: src/translations/{pt,en,fr}/index.ts
+```
+
+## Design system
+- Cards: `LhCard` — `src/components/design-system/LhCard.tsx`
+- Modais: `PremiumResponsiveModal` (bottom-sheet mobile, modal desktop)
+- Botões: `LhButton` ou classes padrão do projeto
+- Ícones: `import * as Icons from 'lucide-react'`
+
+## Faixa colorida no topo do card de oportunidade
+```tsx
+<div style={{ background: `linear-gradient(90deg, ${theme.iconColor}90, ${theme.iconColor}20)` }} />
+```
+
+## InterestedRing
+```tsx
+<InterestedRing interestedCount={count} label={t('helper_dashboard.interested_ring_label')} size={80} />
+// 3 segmentos: azul → esmeralda → âmbar. Track fundo: #E8ECF4
+```
+
+## Feature flags
+```tsx
+import { UI_VISIBILITY } from '@/config/uiVisibility';
+// ideas=false, training=false, helperCreditUnlock=false
+```

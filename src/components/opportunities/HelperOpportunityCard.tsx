@@ -204,7 +204,7 @@ function HelperOpportunityCardInner({
   };
 
   const ctaBase =
-    'inline-flex min-w-0 max-w-full items-center justify-center gap-2 rounded-[14px] px-4 py-2.5 text-[13px] font-semibold leading-tight transition-all duration-200 sm:text-[14px]';
+    'inline-flex min-h-[44px] min-w-0 max-w-full items-center justify-center gap-2 rounded-[14px] px-3 py-2.5 text-[12px] font-semibold leading-tight transition-all duration-200 sm:min-h-0 sm:px-4 sm:text-[13px] md:text-[14px]';
 
   const isNestedInteractiveTarget = (target: EventTarget | null, container?: EventTarget | null) => {
     if (!(target instanceof HTMLElement)) return false;
@@ -279,26 +279,26 @@ function HelperOpportunityCardInner({
   };
 
   const feedBody = (
-    <div className="grid w-full grid-cols-[76px_1fr_88px] grid-rows-[auto_auto_auto] gap-x-4 gap-y-3">
+    <div className="grid w-full min-w-0 grid-cols-[52px_minmax(0,1fr)_80px] grid-rows-[auto_auto_auto] gap-x-2 gap-y-1.5 sm:grid-cols-[64px_minmax(0,1fr)_80px] sm:gap-x-3 sm:gap-y-2">
       {/* Ícone — ocupa as duas primeiras linhas */}
       <div
-        className="col-start-1 row-start-1 row-span-2 flex h-[76px] w-[76px] items-center justify-center self-start rounded-[20px] border shadow-[0_8px_22px_rgba(15,23,42,0.06)]"
+        className="col-start-1 row-start-1 row-span-2 flex h-[52px] w-[52px] items-center justify-center self-start rounded-xl border sm:h-16 sm:w-16 sm:rounded-[18px]"
         style={{
           backgroundColor: categoryTheme.iconBg,
-          borderColor: `${categoryTheme.iconColor}22`,
-          boxShadow: `0 8px 22px ${categoryTheme.iconColor}14`,
+          borderColor: `${categoryTheme.iconColor}28`,
+          boxShadow: `0 6px 18px ${categoryTheme.iconColor}18`,
         }}
       >
         <CategoryIcon
-          className="h-8 w-8"
+          className="h-6 w-6 sm:h-7 sm:w-7"
           style={{ color: categoryTheme.iconColor }}
-          strokeWidth={2}
+          strokeWidth={1.9}
           aria-hidden
         />
       </div>
 
-      {/* Título */}
-      <div className="col-start-2 row-start-1 min-w-0 pr-2">
+      {/* Título — uma linha, nunca quebra */}
+      <div className="col-start-2 row-start-1 min-w-0 overflow-hidden pr-1">
         <button
           type="button"
           onClick={(e) => {
@@ -306,90 +306,99 @@ function HelperOpportunityCardInner({
             openDetails();
           }}
           onTouchEnd={(e) => e.stopPropagation()}
-          className="block w-full text-left"
+          className="block w-full overflow-hidden text-left"
         >
-          <span className="text-[20px] font-bold leading-[1.2] text-[#0F172A] [overflow-wrap:normal] [word-break:normal]">
+          <span className="block truncate whitespace-nowrap text-[16px] font-bold leading-snug text-[#0F172A] sm:text-[18px]">
             {title}
           </span>
         </button>
       </div>
 
-      {/* Badge — canto superior direito */}
-      <div className="col-start-3 row-start-1 flex justify-end self-start">
-        <span
-          className={clsx(
-            'rounded-full px-3 py-1 text-[12px] font-semibold',
-            job.urgency === 'high' ? 'bg-rose-50 text-rose-600' : 'bg-[#EEF2FF] text-[#2563EB]',
-          )}
-        >
-          {job.urgency === 'high' ? t('helper_dashboard.job_card_urgent') : 'Novo'}
-        </span>
-      </div>
-
-      {/* Meta (categoria, orçamento, data) */}
-      <div className="col-start-2 row-start-2 min-w-0 self-center">
+      {/* Meta (categoria, orçamento, data) — cada linha nunca quebra */}
+      <div className="col-start-2 row-start-2 min-w-0 self-start space-y-1 overflow-hidden">
         {showCategoryLine ? (
-          <div className="mb-2 flex items-center gap-2 text-[15px] font-medium text-[#64748B]">
+          <div className="flex min-w-0 items-center gap-2">
             <span
-              className="h-2 w-2 shrink-0 rounded-full"
+              className="h-[7px] w-[7px] shrink-0 rounded-full"
               style={{ backgroundColor: categoryTheme.dotColor }}
             />
-            <span className="min-w-0 [overflow-wrap:normal] [word-break:normal]">{category}</span>
+            <span className="truncate whitespace-nowrap text-[13px] font-medium text-[#64748B]">
+              {category}
+            </span>
           </div>
         ) : null}
 
-        <div className="mb-2 flex min-w-0 items-center gap-2 text-[15px] font-bold" style={{ color: categoryTheme.budgetColor }}>
-          <Icons.Link2 className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
-          <span className="min-w-0 [overflow-wrap:normal] [word-break:normal]">
+        <div
+          className="flex min-w-0 items-center gap-1.5 overflow-hidden"
+          style={{ color: categoryTheme.budgetColor }}
+        >
+          <Icons.Link2 className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+          <span className="truncate whitespace-nowrap text-[13px] font-bold">
             {budgetNotInformed ? budgetAmount : t('jobs.budget_with_amount', { amount: budgetAmount })}
           </span>
         </div>
 
         {dateLabel ? (
-          <div className="flex min-w-0 items-center gap-2 text-[15px] font-medium text-[#64748B]">
-            <Icons.Calendar className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-            <span className="min-w-0 [overflow-wrap:normal] [word-break:normal]">{dateLabel}</span>
+          <div className="flex min-w-0 items-center gap-1.5 overflow-hidden text-[#94A3B8]">
+            <Icons.Calendar className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+            <span className="truncate whitespace-nowrap text-[12px] font-medium">
+              {dateLabel}
+            </span>
           </div>
         ) : null}
       </div>
 
-      {/* Anel — alinhado às linhas de meta */}
-      <div className="col-start-3 row-start-2 flex items-center justify-center self-center">
-        <InterestedRing interestedCount={applicationsCount} label={interestRingLabel} size={84} />
+      {/* Anel de interessados — ocupa as duas primeiras linhas, nunca quebra */}
+      <div className="col-start-3 row-start-1 row-span-2 flex shrink-0 items-center justify-center self-center">
+        <InterestedRing
+          interestedCount={applicationsCount}
+          label={interestRingLabel}
+          size={80}
+        />
       </div>
 
-      {/* Rodapé — avatar + nome + botão com espaço adequado */}
-      <div className="col-span-3 col-start-1 row-start-3 mt-1 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+      {/* Rodapé — avatar + nome do cliente + botão */}
+      <div className="col-span-3 col-start-1 row-start-3 mt-0.5 flex flex-col gap-2 border-t border-slate-100/80 pt-2.5 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onViewClientProfile?.(job);
           }}
-          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-left"
           aria-label={t('helper_public.view_profile')}
         >
           {job.clientAvatar && !job.clientAvatar.includes('pravatar') ? (
             <img
               src={job.clientAvatar}
               alt=""
-              className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white shadow-sm"
+              className="h-8 w-8 shrink-0 rounded-full object-cover ring-2 ring-white shadow-sm"
               loading="lazy"
               decoding="async"
             />
           ) : (
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600 ring-2 ring-white shadow-sm">
+            <div
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ring-2 ring-white shadow-sm"
+              style={{
+                backgroundColor: categoryTheme.iconBg,
+                color: categoryTheme.iconColor,
+              }}
+            >
               {clientInitials(job.clientName)}
             </div>
           )}
-          <div className="min-w-0">
-            <p className="truncate text-[15px] font-bold leading-tight text-[#0F172A]">
+          <div className="min-w-0 overflow-hidden">
+            <p className="truncate whitespace-nowrap text-[14px] font-bold leading-tight text-[#0F172A]">
               {job.clientName}
             </p>
-            <p className="mt-0.5 truncate text-[13px] font-medium text-[#64748B]">{clientLoc}</p>
+            <p className="mt-0.5 truncate whitespace-nowrap text-[12px] font-medium text-[#94A3B8]">
+              {clientLoc}
+            </p>
           </div>
         </button>
-        <div className="shrink-0">{renderApplyControl()}</div>
+        <div className="w-full shrink-0 sm:w-auto [&_button]:w-full sm:[&_button]:w-auto [&_span]:w-full sm:[&_span]:w-auto">
+          {renderApplyControl()}
+        </div>
       </div>
 
       <div className="sr-only">
@@ -406,20 +415,30 @@ function HelperOpportunityCardInner({
   };
 
   const cardShell = clsx(
-    'group/card h-full w-full max-w-full overflow-hidden rounded-[24px] border border-slate-200/60 bg-white transition-all duration-200',
-    'shadow-[0_8px_32px_rgba(15,23,42,0.06)]',
-    'md:hover:-translate-y-0.5 md:hover:shadow-[0_14px_48px_rgba(15,23,42,0.07)] motion-reduce:transform-none',
+    'group/card relative h-full w-full max-w-full overflow-hidden rounded-[22px] border bg-white transition-all duration-200',
+    'shadow-[0_4px_24px_rgba(15,23,42,0.07)]',
+    'md:hover:-translate-y-0.5 md:hover:shadow-[0_10px_36px_rgba(15,23,42,0.09)] motion-reduce:transform-none',
     (isExiting || passExiting) &&
       'pointer-events-none scale-[0.88] opacity-0 -translate-x-8 -rotate-2 duration-[520ms] ease-[cubic-bezier(0.34,1.15,0.64,1)]',
     swipeRateLimited && !isExiting && 'opacity-75',
-    tier === 'urgent' && 'border-rose-200/80 ring-1 ring-rose-100/60',
-    tier === 'best' && 'border-emerald-200/70 ring-1 ring-emerald-100/50',
+    tier === 'urgent' ? 'border-rose-200/80' : tier === 'best' ? 'border-emerald-200/70' : 'border-slate-200/70',
   );
 
-  const cardPadding = 'relative z-20 bg-white p-5 will-change-transform';
+  const cardPadding = 'relative z-20 bg-white px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4 will-change-transform';
+
+  const topAccent = (
+    <div
+      className="h-[3px] w-full shrink-0 rounded-t-[22px]"
+      style={{
+        background: `linear-gradient(90deg, ${categoryTheme.iconColor}90 0%, ${categoryTheme.iconColor}20 100%)`,
+      }}
+      aria-hidden
+    />
+  );
 
   return (
     <LhCard padding="none" className={cardShell}>
+      {topAccent}
       {/* Mobile — swipe */}
       <div
         className="relative w-full max-w-full overflow-hidden touch-pan-y md:hidden"
@@ -490,7 +509,7 @@ function HelperOpportunityCardInner({
 
       {/* Desktop */}
       <div
-        className={clsx('hidden p-5 md:block', onViewDetails && 'cursor-pointer')}
+        className={clsx('hidden px-4 pb-4 pt-4 md:block', onViewDetails && 'cursor-pointer')}
         onClick={handleCardSurfaceClick}
         onKeyDown={(e) => {
           if (!onViewDetails || isNestedInteractiveTarget(e.target, e.currentTarget)) return;

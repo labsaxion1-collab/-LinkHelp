@@ -20,6 +20,8 @@ const CATEGORY_BASE_PRICE: Record<string, number> = {
   renovation: 5,
   outdoor: 5,
   automotive: 5,
+  design: 4,
+  marketing: 4,
 };
 
 export function estimateBudgetCad(value: string | null | undefined): number {

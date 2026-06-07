@@ -9,6 +9,8 @@ const SERVICE_COST_LC: Record<string, number> = {
   beauty: 5,
   outdoor: 5,
   tech: 6,
+  design: 6,
+  marketing: 5,
   translation: 3,
   pet: 3,
   moving: 8,
@@ -18,7 +20,15 @@ const SERVICE_COST_LC: Record<string, number> = {
 };
 
 const LOW_COMPLEXITY_CATEGORIES = new Set(['translation', 'pet']);
-const MEDIUM_COMPLEXITY_CATEGORIES = new Set(['cleaning', 'sanitization', 'beauty', 'outdoor', 'tech']);
+const MEDIUM_COMPLEXITY_CATEGORIES = new Set([
+  'cleaning',
+  'sanitization',
+  'beauty',
+  'outdoor',
+  'tech',
+  'design',
+  'marketing',
+]);
 const HIGH_COMPLEXITY_CATEGORIES = new Set(['moving', 'assembly', 'automotive', 'renovation']);
 
 function parseValueHintCad(value: string | null | undefined): number {

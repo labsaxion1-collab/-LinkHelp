@@ -175,6 +175,28 @@ export const LINK_CREDITS_CATEGORY_CATALOG: LinkCreditCategoryPricing[] = [
     ],
   },
   {
+    category: 'design',
+    subcategories: [
+      entry('logo_brand', { minCad: 150, maxCad: 400 }, 5, 'medium'),
+      entry('social_media', { minCad: 60, maxCad: 150 }, 3, 'low'),
+      entry('ui_ux', { minCad: 200, maxCad: 600 }, 8, 'high'),
+      entry('print', { minCad: 80, maxCad: 200 }, 4, 'medium'),
+      entry('presentation', { minCad: 70, maxCad: 180 }, 3, 'low'),
+      entry('photo_editing', { minCad: 50, maxCad: 130 }, 3, 'low'),
+    ],
+  },
+  {
+    category: 'marketing',
+    subcategories: [
+      entry('social_media', { minCad: 80, maxCad: 200 }, 4, 'medium'),
+      entry('seo', { minCad: 120, maxCad: 350 }, 5, 'medium'),
+      entry('paid_ads', { minCad: 100, maxCad: 300 }, 5, 'medium'),
+      entry('content', { minCad: 60, maxCad: 180 }, 3, 'low'),
+      entry('email', { minCad: 90, maxCad: 220 }, 4, 'medium'),
+      entry('branding', { minCad: 150, maxCad: 450 }, 6, 'high'),
+    ],
+  },
+  {
     category: 'other',
     subcategories: [entry('other', { minCad: 80, maxCad: 200 }, 5, 'medium')],
   },
@@ -201,6 +223,8 @@ const CATEGORY_DEFAULTS: Partial<Record<string, number>> = {
   outdoor: 4,
   pet: 2,
   tech: 3,
+  design: 4,
+  marketing: 4,
   other: 5,
 };
 

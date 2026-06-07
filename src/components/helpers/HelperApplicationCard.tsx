@@ -4,6 +4,7 @@ import type { Application } from '@/types/application';
 import type { Job } from '@/types/job';
 import { LhCard } from '@/components/design-system';
 import { translateCategory, translateJobTitle } from '@/utils/translateCategory';
+import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 
 type Props = {
@@ -24,6 +25,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function HelperApplicationCard({ app, job, t, onOpenDetails, onCancel }: Props) {
+  const categoryTheme = getCategoryFeedTheme(job.category);
   const statusTexts: Record<string, string> = {
     pending: t('helper_dashboard.app_pending'),
     viewed: t('helper_dashboard.app_viewed'),
@@ -62,7 +64,12 @@ export function HelperApplicationCard({ app, job, t, onOpenDetails, onCancel }: 
           />
           <div>
             <h3 className="font-bold leading-tight text-gray-900">{job.clientName}</h3>
-            <p className="text-xs font-medium text-gray-400">{translateCategory(job.category, t)}</p>
+            <p
+              className="text-xs font-bold"
+              style={{ color: categoryTheme.iconColor }}
+            >
+              {translateCategory(job.category, t)}
+            </p>
           </div>
         </div>
         <h4 className="mb-3 text-lg font-bold leading-tight text-gray-900">

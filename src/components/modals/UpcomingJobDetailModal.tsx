@@ -12,6 +12,7 @@ import { remoteUpdateUpcomingWorkflow } from '@/services/supabase/appDataRemote'
 import type { Job } from '@/types/job';
 import { ROUTES } from '@/utils/constants';
 import { clsx } from 'clsx';
+import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 
 interface UpcomingJobDetailModalProps {
   job: UpcomingJob | null;
@@ -128,6 +129,7 @@ export function UpcomingJobDetailModal({
   const hasPayment = paymentText !== t('upcoming_jobs.payment_to_arrange');
   const observations = job.description?.trim();
   const categoryLabel = translateCategory(job.category, t);
+  const categoryTheme = getCategoryFeedTheme(job.category);
 
   const canCancel =
     job.workflowStatus !== 'completed' &&
@@ -223,7 +225,12 @@ export function UpcomingJobDetailModal({
             className="h-14 w-14 shrink-0 rounded-full border-2 border-[#E2E8F0] object-cover"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-lg font-bold leading-snug text-[#0F172A] sm:text-xl">{categoryLabel}</p>
+            <p
+              className="inline-flex rounded-xl px-2.5 py-1 text-lg font-bold leading-snug sm:text-xl"
+              style={{ color: categoryTheme.iconColor, backgroundColor: categoryTheme.iconBg }}
+            >
+              {categoryLabel}
+            </p>
             <p className="mt-1 text-[15px] font-medium text-[#64748B]">
               {t('upcoming_jobs.client_label', { name: job.clientName })}
             </p>

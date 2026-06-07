@@ -1,0 +1,39 @@
+---
+description: Contexto central do projeto LinkHelp — stack, arquitetura e convenções obrigatórias
+alwaysApply: true
+---
+
+# LinkHelp — Contexto do Projeto
+
+Marketplace local de serviços (Canada/BR). Cliente publica pedido → helpers usam LinkCréditos (LC) para se candidatar.
+
+## Stack
+- React 19 + TypeScript + Vite 6
+- Tailwind CSS v4 (sem tailwind.config.js)
+- Supabase (Postgres + Auth + Realtime + Storage + Edge Functions)
+- Vercel (deploy + API routes em `api/stripe/`)
+- Stripe (compra de LC), Google Maps, Web Push, Gemini AI
+
+## Estrutura chave
+- `src/data/serviceCategories.ts` → fonte de verdade das categorias
+- `src/utils/categoryFeedTheme.ts` → cores por categoria (`getCategoryFeedTheme`, `getCategoryAccent`)
+- `src/context/AuthContext.tsx` → session, profile, role
+- `src/context/AppDataContext.tsx` → requests, applications, upcoming_jobs (realtime)
+- `src/config/uiVisibility.ts` → feature flags
+- `src/utils/constants.ts` → ROUTES (todas as rotas)
+- `src/translations/{pt,en,fr}/index.ts` → i18n (sempre adicionar nas 3 línguas)
+
+## Roles
+- `client` → `/client/dashboard` — publica pedidos
+- `helper` → `/helper/dashboard` — feed de oportunidades + LC
+
+## Ao adicionar categoria
+Atualizar: serviceCategories.ts + categoryFeedTheme.ts + linkCreditsPricing.ts + marketBudgetSuggestions.ts + translations (pt/en/fr) + createRequestStepCopy.ts
+
+## Arquivos pesados (ler com offset/limit)
+- translations/*/index.ts (~100KB cada)
+- ClientDashboard.tsx / HelperDashboard.tsx (~70KB cada)
+- CreateRequestModal.tsx (~46KB)
+
+## Documentação completa
+Ver `docs/` — PROJECT_RULES, DATABASE_SCHEMA, API_ARCHITECTURE, UI_GUIDELINES, DEPLOY_GUIDE

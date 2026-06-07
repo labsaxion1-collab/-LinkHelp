@@ -3,6 +3,7 @@ import * as Icons from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
 import { SERVICE_CATEGORIES, type ServiceCategoryId } from '@/data/serviceCategories';
+import { getCategoryAccent } from '@/utils/categoryFeedTheme';
 
 type Props = {
   open: boolean;
@@ -128,6 +129,7 @@ function HelperCategoryDropdownInner({
             {SERVICE_CATEGORIES.map((category) => {
               const id = category.id as ServiceCategoryId;
               const active = selectedSet.has(id);
+              const accent = getCategoryAccent(id);
               return (
                 <button
                   key={id}
@@ -140,14 +142,17 @@ function HelperCategoryDropdownInner({
                   className={clsx(
                     'flex min-h-[4.9rem] flex-col items-center justify-center gap-1.5 rounded-[1.15rem] border px-2 text-center text-[11px] font-black transition-all active:scale-[0.98]',
                     active
-                      ? 'border-blue-400 bg-blue-600 text-white shadow-[0_10px_22px_rgba(37,99,255,0.24)]'
-                      : 'border-white bg-white/88 text-slate-800 shadow-[0_12px_28px_rgba(15,23,42,0.055)] hover:border-blue-200 hover:bg-blue-50',
+                      ? accent.filterActive
+                      : clsx(
+                          'shadow-[0_12px_28px_rgba(15,23,42,0.055)]',
+                          accent.filterInactive,
+                        ),
                   )}
                 >
                   <span
                     className={clsx(
                       'flex h-8 w-8 items-center justify-center rounded-full',
-                      active ? 'bg-white/18 text-white' : 'bg-[#EEF4FF] text-blue-600',
+                      active ? 'bg-white/18 text-white' : accent.iconInactive,
                     )}
                   >
                     <CategoryIcon icon={category.icon} className="h-[18px] w-[18px]" />
@@ -234,6 +239,7 @@ function HelperCategoryDropdownInner({
                 {SERVICE_CATEGORIES.map((category) => {
                   const id = category.id as ServiceCategoryId;
                   const active = selectedSet.has(id);
+                  const accent = getCategoryAccent(id);
                   return (
                     <button
                       key={id}
@@ -242,15 +248,13 @@ function HelperCategoryDropdownInner({
                       onClick={() => onToggleCategory(id)}
                       className={clsx(
                         'flex min-h-[4.9rem] flex-col items-center justify-center gap-1.5 rounded-[1.15rem] border px-2 text-center text-[11px] font-black transition-all active:scale-[0.98]',
-                        active
-                          ? 'border-blue-400 bg-blue-600 text-white shadow-[0_10px_22px_rgba(37,99,255,0.24)]'
-                          : 'border-slate-200 bg-slate-50/80 text-slate-800 hover:border-blue-200 hover:bg-blue-50',
+                        active ? accent.filterActive : accent.filterInactive,
                       )}
                     >
                       <span
                         className={clsx(
                           'flex h-8 w-8 items-center justify-center rounded-full',
-                          active ? 'bg-white/18 text-white' : 'bg-white text-blue-600',
+                          active ? 'bg-white/18 text-white' : accent.iconInactive,
                         )}
                       >
                         <CategoryIcon icon={category.icon} className="h-[18px] w-[18px]" />

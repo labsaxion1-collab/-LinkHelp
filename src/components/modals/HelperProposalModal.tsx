@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import * as Icons from 'lucide-react';
 import { clsx } from 'clsx';
@@ -36,6 +36,9 @@ export function HelperProposalModal({
   const [proposalMessage, setProposalMessage] = useState('');
   const [error, setError] = useState('');
   const [keyboardInset, setKeyboardInset] = useState(0);
+  const [costsOpen, setCostsOpen] = useState(false);
+  const [chatInfoOpen, setChatInfoOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const bounded = job ? jobHasBoundedBudget(job) : false;
   const negotiable = job ? jobIsNegotiableBudget(job) : false;
@@ -96,6 +99,10 @@ export function HelperProposalModal({
   const balanceLabel =
     creditBalance == null ? '…' : formatLinkCredits(creditBalance, language);
 
+  const estimatedAvg = bounded && job.budgetMin != null && job.budgetMax != null
+    ? ((job.budgetMin + job.budgetMax) / 2).toFixed(2)
+    : '0.00';
+
   return createPortal(
     <div
       className="fixed inset-0 z-[120] flex items-end justify-center sm:items-center p-0 sm:p-4"
@@ -103,101 +110,131 @@ export function HelperProposalModal({
       role="presentation"
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-[#0D1B2A]/55 backdrop-blur-lg" aria-hidden />
+      <div className="absolute inset-0 bg-[#0D1B2A]/50 backdrop-blur-sm" aria-hidden />
 
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="helper-proposal-title"
         className={clsx(
-          'relative z-10 flex w-full max-w-md flex-col overflow-hidden',
+          'relative z-10 w-full max-w-md bg-white',
           'rounded-t-[1.85rem] sm:rounded-[1.85rem]',
-          'border border-sky-100/80 bg-gradient-to-b from-white/95 via-[#F4FAFF]/95 to-[#E8F4FF]/95',
-          'shadow-[0_-12px_48px_rgba(21,101,255,0.18),0_28px_72px_rgba(13,27,42,0.22)]',
-          'backdrop-blur-xl sm:ring-1 sm:ring-blue-400/20',
-          'max-h-[min(86dvh,680px)]',
-          'animate-[helperProposalIn_0.45s_cubic-bezier(0.34,1.45,0.64,1)]',
+          'shadow-[0_-8px_40px_rgba(15,23,42,0.18),0_24px_64px_rgba(15,23,42,0.22)]',
+          'animate-[helperProposalIn_0.42s_cubic-bezier(0.34,1.45,0.64,1)]',
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mt-2.5 h-1 w-11 shrink-0 rounded-full bg-sky-200/90 sm:hidden" aria-hidden />
+        {/* Drag handle */}
+        <div className="mx-auto pt-3 flex justify-center sm:hidden" aria-hidden>
+          <div className="h-[5px] w-10 rounded-full bg-slate-200" />
+        </div>
 
-        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-sky-100/70 px-5 pb-4 pt-3 sm:pt-5">
+        {/* Header */}
+        <header className="flex items-start justify-between gap-3 px-5 pb-2 pt-3">
           <div className="min-w-0">
-            <h2 id="helper-proposal-title" className="text-xl font-black tracking-tight text-slate-950">
+            <h2 id="helper-proposal-title" className="text-[20px] font-black leading-tight tracking-tight text-slate-950">
               {t('helper_proposal.title')}
             </h2>
-            <p className="mt-1 truncate text-sm font-bold text-blue-700">{job.title}</p>
+            <p className="mt-0.5 truncate text-sm font-semibold text-[#2563EB]">
+              {t(`categories.${job.category}`)}
+              {job.subcategory ? <span className="text-slate-400"> • </span> : null}
+              {job.subcategory ? (
+                <span className="text-[#2563EB]">{t(`service_subs.${job.category}.${job.subcategory}`)}</span>
+              ) : null}
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-sky-100 bg-white/90 text-slate-500 shadow-sm transition hover:bg-white hover:text-slate-900 active:scale-95"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 active:scale-95"
             aria-label={t('common.close')}
           >
-            <Icons.X className="h-5 w-5" />
+            <Icons.X className="h-4 w-4" strokeWidth={2.5} />
           </button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-2 pb-4">
-          <div className="mb-4 rounded-2xl border border-blue-200/70 bg-white/70 px-4 py-3.5 shadow-sm shadow-blue-500/5 backdrop-blur-sm">
-            <p className="text-[10px] font-black uppercase tracking-wider text-blue-700">
-              {t('helper_proposal.job_section')}
-            </p>
-            <ul className="mt-2 space-y-1.5 text-sm font-bold text-slate-800">
-              <li className="flex justify-between gap-2">
-                <span className="text-slate-600">{t('helper_proposal.apply_cost_line')}</span>
-                <span className="tabular-nums text-blue-900">{creditDisplay.applyCost} LC</span>
-              </li>
-              <li className="flex justify-between gap-2">
-                <span className="text-slate-600">{t('helper_proposal.job_cost_line')}</span>
-                <span className="tabular-nums text-blue-800">{creditDisplay.jobCost} LC</span>
-              </li>
-              <li className="flex justify-between gap-2">
-                <span className="text-slate-600">{t('helper_proposal.selected_line')}</span>
-                <span className="tabular-nums text-blue-800">+{creditDisplay.hireEstimate} LC</span>
-              </li>
-              <li className="flex justify-between gap-2 border-t border-sky-100/80 pt-2 text-blue-900">
-                <span>{t('helper_proposal.total_estimate_line')}</span>
-                <span className="tabular-nums">{creditDisplay.totalEstimate} LC</span>
-              </li>
-              <li className="flex justify-between gap-2 border-t border-sky-100/80 pt-2">
-                <span className="text-slate-600">{t('helper_proposal.balance_line')}</span>
-                <span className="tabular-nums text-slate-950">{balanceLabel}</span>
-              </li>
-            </ul>
+        {/* Body */}
+        <div className="px-5 pb-3 pt-1">
+
+          {/* Resumo de custos — colapsível */}
+          <div className="mb-2 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <button
+              type="button"
+              onClick={() => setCostsOpen((v) => !v)}
+              className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                <Icons.ReceiptText className="h-4 w-4" />
+              </span>
+              <span className="flex-1 text-sm font-bold text-slate-800">{t('helper_proposal.job_section')}</span>
+              <span className="flex items-center gap-1 text-xs font-semibold text-[#2563EB]">
+                {costsOpen ? t('common.hide') : 'Ver detalhes'}
+                <Icons.ChevronDown
+                  className={clsx('h-4 w-4 transition-transform duration-200', costsOpen && 'rotate-180')}
+                />
+              </span>
+            </button>
+            {costsOpen && (
+              <div className="border-t border-slate-100 px-4 pb-4 pt-3">
+                <ul className="space-y-2 text-sm font-semibold text-slate-700">
+                  <li className="flex justify-between gap-2">
+                    <span className="text-slate-500">{t('helper_proposal.apply_cost_line')}</span>
+                    <span className="tabular-nums text-slate-900">{creditDisplay.applyCost} LC</span>
+                  </li>
+                  <li className="flex justify-between gap-2">
+                    <span className="text-slate-500">{t('helper_proposal.job_cost_line')}</span>
+                    <span className="tabular-nums text-slate-900">{creditDisplay.jobCost} LC</span>
+                  </li>
+                  <li className="flex justify-between gap-2">
+                    <span className="text-slate-500">{t('helper_proposal.selected_line')}</span>
+                    <span className="tabular-nums text-slate-900">+{creditDisplay.hireEstimate} LC</span>
+                  </li>
+                  <li className="flex justify-between gap-2 border-t border-slate-100 pt-2 font-bold">
+                    <span className="text-slate-800">{t('helper_proposal.total_estimate_line')}</span>
+                    <span className="tabular-nums text-[#2563EB]">{creditDisplay.totalEstimate} LC</span>
+                  </li>
+                  <li className="flex justify-between gap-2 border-t border-slate-100 pt-2">
+                    <span className="text-slate-500">{t('helper_proposal.balance_line')}</span>
+                    <span className="tabular-nums text-slate-900">{balanceLabel}</span>
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
 
-          <div className="mb-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/90 to-white px-4 py-3.5 backdrop-blur-sm">
-            <p className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
-              {t('helper_proposal.client_budget')}
-            </p>
-            <p className="mt-1 text-lg font-black text-slate-900">{clientBudget}</p>
-          </div>
-
-          {bounded ? (
-            <div className="mb-4 rounded-2xl border border-blue-200/80 bg-gradient-to-r from-blue-50/90 to-sky-50/90 px-4 py-3.5 backdrop-blur-sm">
-              <p className="text-[10px] font-black uppercase tracking-wider text-blue-700">
-                {t('helper_proposal.client_suggested')}
+          {/* Orçamento do cliente */}
+          <div className="mb-2 flex gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 px-4 py-2.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-white text-emerald-600">
+              <Icons.ClipboardList className="h-4 w-4" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
+                {t('helper_proposal.client_budget')}
               </p>
-              <p className="mt-1 text-xl font-black text-slate-900">{formatBudgetRange(job, t)}</p>
+              <p className="mt-0.5 text-[17px] font-black leading-tight text-slate-900">{clientBudget}</p>
+              {bounded && (
+                <p className="mt-0.5 text-[13px] font-medium text-slate-500">
+                  {t('helper_proposal.client_suggested')}: {formatBudgetRange(job, t)}
+                </p>
+              )}
+              {!bounded && (
+                <p className="mt-0.5 text-[13px] font-medium text-slate-500">
+                  O cliente não definiu um orçamento para este serviço.
+                </p>
+              )}
             </div>
-          ) : negotiable ? (
-            <p className="mb-4 rounded-2xl border border-sky-100 bg-white/75 px-4 py-3.5 text-sm font-medium leading-relaxed text-slate-600 backdrop-blur-sm">
-              {t('helper_proposal.negotiable_hint')}
-            </p>
-          ) : null}
+          </div>
 
-          <label className="mb-2 block text-sm font-bold text-slate-800">
+          {/* Campo de proposta */}
+          <label className="mb-1 block text-sm font-bold text-slate-800">
             {t('helper_proposal.your_proposal')}
-            {!required ? (
-              <span className="ml-1 text-xs font-semibold text-slate-500">({t('helper_proposal.optional')})</span>
-            ) : null}
+            <span className="ml-1 text-sm font-semibold text-slate-400">/ Preço médio estimado</span>
           </label>
-          <div className="flex min-h-[60px] items-center rounded-2xl border-2 border-blue-200/70 bg-white/95 px-4 shadow-inner shadow-blue-500/5 backdrop-blur-sm focus-within:border-[#1565FF] focus-within:ring-4 focus-within:ring-blue-500/15">
-            <span className="mr-2 shrink-0 text-base font-black text-slate-500">{currency} $</span>
+          <div className="flex min-h-[50px] items-center overflow-hidden rounded-2xl border-2 border-slate-200 bg-white px-4 focus-within:border-[#2563EB] focus-within:ring-4 focus-within:ring-blue-500/10">
+            <span className="mr-2 shrink-0 text-base font-bold text-slate-400">{currency} $</span>
             <input
+              ref={inputRef}
               type="text"
               inputMode="decimal"
               pattern="[0-9]*"
@@ -207,51 +244,142 @@ export function HelperProposalModal({
                 setAmount(e.target.value.replace(/[^\d.,]/g, ''));
                 setError('');
               }}
-              placeholder={bounded ? String(Math.round(job.budgetMin!)) : '0'}
-              className="min-w-0 flex-1 bg-transparent text-2xl font-black text-slate-950 outline-none placeholder:text-slate-300"
+              placeholder={bounded ? String(Math.round(job.budgetMin!)) : '0.00'}
+              className="min-w-0 flex-1 bg-transparent text-[22px] font-black text-slate-950 outline-none placeholder:text-slate-300"
               autoFocus
             />
           </div>
-          {error ? <p className="mt-2 text-sm font-semibold text-rose-600">{error}</p> : null}
+          {error ? <p className="mt-1.5 text-sm font-semibold text-rose-600">{error}</p> : null}
 
-          <label className="mb-2 mt-4 block text-sm font-bold text-slate-800">
+
+          {/* Mensagem ao cliente */}
+          <label className="mb-1 mt-2.5 block text-sm font-bold text-slate-800">
             {t('helper_proposal.message_label')}
-            <span className="ml-1 text-xs font-semibold text-slate-500">({t('helper_proposal.optional')})</span>
+            <span className="ml-1 text-xs font-semibold text-slate-400">({t('helper_proposal.optional')})</span>
           </label>
-          <textarea
-            value={proposalMessage}
-            onChange={(e) => setProposalMessage(e.target.value)}
-            rows={3}
-            maxLength={500}
-            placeholder={t('helper_proposal.message_placeholder')}
-            className="w-full resize-none rounded-2xl border-2 border-sky-100/90 bg-white/90 px-4 py-3 text-sm font-medium text-slate-800 shadow-inner shadow-blue-500/5 outline-none backdrop-blur-sm transition placeholder:text-slate-400 focus:border-[#1565FF] focus:ring-4 focus:ring-blue-500/15"
-          />
+          <div className="relative">
+            <textarea
+              value={proposalMessage}
+              onChange={(e) => setProposalMessage(e.target.value)}
+              rows={2}
+              maxLength={500}
+              placeholder={t('helper_proposal.message_placeholder')}
+              className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#2563EB] focus:ring-4 focus:ring-blue-500/10"
+            />
+            <span className="absolute bottom-3 right-4 text-[11px] font-semibold text-slate-400">
+              {proposalMessage.length}/500
+            </span>
+          </div>
+
+          {/* Banner chat pré-contratação */}
+          <div className="mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className="flex items-start gap-3 px-4 py-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#2563EB]">
+                <Icons.Lock className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-slate-900">Chat pré-contratação ativo</p>
+                <p className="mt-0.5 text-[12px] font-medium leading-relaxed text-slate-500">
+                  Contatos externos liberados após a confirmação do serviço.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setChatInfoOpen((v) => !v)}
+                className="shrink-0 text-[12px] font-bold text-[#2563EB] hover:underline"
+              >
+                {chatInfoOpen ? 'Fechar' : 'Saiba mais'}
+                <Icons.ChevronDown
+                  className={clsx('ml-0.5 inline h-3.5 w-3.5 transition-transform duration-200', chatInfoOpen && 'rotate-180')}
+                />
+              </button>
+            </div>
+
+            {chatInfoOpen && (
+              <div className="border-t border-slate-100 bg-blue-50/50 px-4 pb-4 pt-3">
+                <ul className="space-y-2.5">
+                  <li className="flex items-start gap-2.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2563EB] text-[10px] font-black text-white mt-px">5</span>
+                    <p className="text-[13px] font-medium leading-relaxed text-slate-700">
+                      Você pode enviar <span className="font-bold text-slate-900">até 5 mensagens</span> para o cliente antes da contratação.
+                    </p>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2563EB] text-[10px] font-black text-white mt-px">5</span>
+                    <p className="text-[13px] font-medium leading-relaxed text-slate-700">
+                      O cliente pode te <span className="font-bold text-slate-900">responder até 5 vezes</span> nesse mesmo período.
+                    </p>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <Icons.Lock className="h-5 w-5 shrink-0 text-slate-400 mt-px" />
+                    <p className="text-[13px] font-medium leading-relaxed text-slate-700">
+                      Depois disso, o chat fica <span className="font-bold text-slate-900">bloqueado</span> até o cliente aceitar a contratação.
+                    </p>
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
 
-        <footer className="flex shrink-0 gap-3 border-t border-sky-100/70 bg-white/75 px-5 py-4 backdrop-blur-md pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={submitting}
-            className="min-h-[52px] flex-1 rounded-2xl border-2 border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-50 active:scale-[0.98] disabled:opacity-60"
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#1565FF] to-[#33B6FF] px-4 text-sm font-bold text-white shadow-lg shadow-blue-500/30 transition hover:brightness-105 active:scale-[0.98] disabled:opacity-60"
-          >
-            {submitting ? (
-              <>
-                <Icons.Loader2 className="h-4 w-4 animate-spin" />
-                {t('helper_dashboard.apply_sending_modal')}
-              </>
-            ) : (
-              t('helper_proposal.submit')
-            )}
-          </button>
+        {/* Footer */}
+        <footer className="border-t border-slate-100 bg-white px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="flex gap-2">
+            {/* Candidatura exclusiva */}
+            <button
+              type="button"
+              disabled={submitting}
+              className="inline-flex min-h-[58px] flex-1 flex-col items-center justify-center gap-1 rounded-xl border border-amber-300 bg-amber-50 px-2 shadow-sm transition hover:bg-amber-100 active:scale-[0.98] disabled:opacity-60"
+            >
+              <span className="flex items-center gap-1.5">
+                <Icons.Crown className="h-4 w-4 shrink-0 text-amber-500" />
+                <span className="truncate text-[13.5px] font-black text-amber-900">Candidatura exclusiva</span>
+              </span>
+              <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-700/80">
+                <img
+                  src="/brand/linkcredit-coin-icon.png"
+                  alt=""
+                  aria-hidden
+                  className="h-4 w-4 shrink-0 object-contain"
+                />
+                Usará <span className="font-bold ml-0.5">{creditDisplay.totalEstimate} LC</span>
+              </span>
+            </button>
+
+            {/* Enviar candidatura */}
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="inline-flex min-h-[58px] flex-1 flex-col items-center justify-center gap-1 rounded-xl bg-[#2563EB] px-2 shadow-md shadow-blue-500/25 transition hover:bg-[#1D4ED8] active:scale-[0.98] disabled:opacity-60"
+            >
+              {submitting ? (
+                <Icons.Loader2 className="h-4 w-4 animate-spin text-white" />
+              ) : (
+                <>
+                  <span className="flex items-center gap-1.5">
+                    <Icons.Send className="h-4 w-4 shrink-0 text-white" strokeWidth={2.25} />
+                    <span className="truncate text-[13.5px] font-black text-white">
+                      {t('helper_proposal.submit')}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px] font-semibold text-blue-200">
+                    <img
+                      src="/brand/linkcredit-coin-icon.png"
+                      alt=""
+                      aria-hidden
+                      className="h-4 w-4 shrink-0 object-contain"
+                    />
+                    Usará <span className="font-bold ml-0.5">{creditDisplay.applyCost} LC</span>
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+          <p className="mt-3 text-center text-[11px] font-medium text-slate-400">
+            Ao enviar, você confirma que leu e concorda com os{' '}
+            <span className="font-semibold text-[#2563EB]">termos da plataforma</span>.
+          </p>
         </footer>
       </div>
     </div>,

@@ -139,13 +139,13 @@ export function HelperCategoriesManager({
                   'inline-flex min-h-[34px] max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-left text-xs font-black transition-colors',
                   isPrimary
                     ? `${accent.active} shadow-sm`
-                    : 'border-slate-200 bg-white text-slate-800 hover:border-blue-200',
+                    : clsx('border-slate-200 bg-white text-slate-800', accent.cardHover),
                 )}
               >
                 <span
                   className={clsx(
                     'flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
-                    isPrimary ? accent.icon : 'bg-slate-100 text-slate-500',
+                    isPrimary ? accent.icon : accent.iconInactive,
                   )}
                 >
                   <Icon className="h-3.5 w-3.5" />

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { FilePickerLabel } from '@/components/common/HiddenFileInput';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -10,10 +10,6 @@ import {
   Camera,
   LogOut,
   Languages,
-  Briefcase,
-  TrendingUp,
-  BarChart3,
-  ArrowUpRight,
 } from 'lucide-react';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useLanguage } from '@/context/LanguageContext';
@@ -27,34 +23,11 @@ import { CityRegionAutocomplete } from '@/components/common/CityRegionAutocomple
 import { ProfilePhoneField } from '@/components/profile/ProfilePhoneField';
 import type { QuebecPlace } from '@/data/quebecRegions';
 import { parseStoredPhone, validatePhoneNumber } from '@/utils/phoneFormat';
-import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { Star } from 'lucide-react';
 import { useOnboardingRewards } from '@/hooks/useOnboardingRewards';
-import { useWalletBalance } from '@/hooks/useWalletBalance';
-import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
-import { formatLinkCredits } from '@/utils/formatLinkCredits';
-import { SIGNUP_BONUS_LC } from '@/config/onboardingRewards';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
-import { type ServiceCategoryId } from '@/data/serviceCategories';
-import { getHelperCategoryPreferences, deriveHelperCategoriesFromSkillKeys } from '@/utils/helperCategoryPreferences';
-import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
 import { ByFluxBadge } from '@/components/brand/ByFluxBadge';
-import { filterValidSkillKeys } from '@/data/helperSkillsCatalog';
-import {
-  HelperBaseAddressInput,
-  helperBaseAddressFromProfile,
-  type HelperBaseAddressValue,
-} from '@/components/helper/HelperBaseAddressInput';
-import {
-  getHelperBaseChangeStatus,
-  helperBaseFieldsChanged,
-  helperBaseIsConfigured,
-} from '@/utils/helperBaseAddressLock';
-import {
-  HelperBaseAddressLockedError,
-  syncHelperBaseAddress,
-} from '@/services/supabase/helperBaseAddressRemote';
 
 const SPOKEN_LANGUAGE_OPTIONS = [
   { id: 'pt', label: 'Português' },
@@ -90,9 +63,6 @@ export default function SettingsPage() {
   const { profile, updateProfile, signOut, session, isConfigured, refreshProfile } = useAuth();
   const { showToast } = useToast();
   useOnboardingRewards();
-  const { balance: helperWalletBalance, loading: creditsLoading } = useWalletBalance();
-  const [helperSkillCount, setHelperSkillCount] = useState(0);
-  const [helperSkillIds, setHelperSkillIds] = useState<string[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
@@ -106,17 +76,9 @@ export default function SettingsPage() {
   const [cityCanon, setCityCanon] = useState('');
   const [province, setProvince] = useState('');
   const [country, setCountry] = useState('');
-  const [bio, setBio] = useState('');
   const [spokenLanguages, setSpokenLanguages] = useState<string[]>([]);
-  const [primaryCategory, setPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
-  const [secondaryCategories, setSecondaryCategories] = useState<ServiceCategoryId[]>([]);
-  const [helperBaseValue, setHelperBaseValue] = useState<HelperBaseAddressValue>(() =>
-    helperBaseAddressFromProfile({}),
-  );
-  const [baseAddressSaving, setBaseAddressSaving] = useState(false);
   const [notifOn, setNotifOn] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [creditProjectionOpen, setCreditProjectionOpen] = useState(false);
 
   const isHelper = profile?.role === 'helper';
 
@@ -132,7 +94,6 @@ export default function SettingsPage() {
     setCityCanon(c);
     setProvince(profile.region ?? '');
     setCountry(profile.country ?? '');
-    setBio(profile.bio ?? '');
     setSpokenLanguages(
       Array.isArray(profile.spoken_languages) && profile.spoken_languages.length
         ? profile.spoken_languages
@@ -140,32 +101,7 @@ export default function SettingsPage() {
           ? [profile.preferred_language]
           : [language],
     );
-    setHelperBaseValue(helperBaseAddressFromProfile(profile));
   }, [profile, session, language]);
-
-  const baseChangeStatus = useMemo(() => getHelperBaseChangeStatus(profile), [profile]);
-  const baseConfigured = useMemo(() => helperBaseIsConfigured(profile), [profile]);
-  const baseFieldsLocked =
-    !baseChangeStatus.allowed && baseChangeStatus.reason === 'locked' && baseConfigured;
-  const baseHasPendingChanges = useMemo(
-    () =>
-      helperBaseFieldsChanged(profile, {
-        address: helperBaseValue.address,
-        city: helperBaseValue.city,
-        province: helperBaseValue.province,
-        postalCode: helperBaseValue.postalCode,
-        lat: helperBaseValue.latitude,
-        lng: helperBaseValue.longitude,
-      }),
-    [profile, helperBaseValue],
-  );
-
-  useEffect(() => {
-    if (!profile || !isHelper) return;
-    const prefs = getHelperCategoryPreferences(profile, helperSkillIds);
-    setPrimaryCategory(prefs.primaryCategory);
-    setSecondaryCategories(prefs.secondaryCategories);
-  }, [profile, isHelper, helperSkillIds]);
 
   useEffect(() => {
     if (location.hash === '#avatar') {
@@ -187,20 +123,7 @@ export default function SettingsPage() {
 
   useEffect(() => () => revokeAvatarObjectUrl(), []);
 
-  useEffect(() => {
-    if (!session?.user?.id || !isHelper || !isConfigured) {
-      setHelperSkillCount(0);
-      setHelperSkillIds([]);
-      return;
-    }
-    void fetchHelperSkills(session.user.id).then((keys) => {
-      setHelperSkillIds(keys);
-      setHelperSkillCount(keys.length);
-    });
-  }, [session?.user?.id, isHelper, isConfigured]);
-
   const authEmail = session?.user?.email?.trim() ?? '';
-  const signupBonusLc = isHelper ? SIGNUP_BONUS_LC.helper : SIGNUP_BONUS_LC.client;
 
   const saveAccount = async () => {
     const { countryId, nationalNumber } = parseStoredPhone(phone);
@@ -223,15 +146,11 @@ export default function SettingsPage() {
       country: country.trim() || null,
       preferred_language: language,
     };
-    const normalizedSecondary = secondaryCategories.filter((id) => id !== primaryCategory);
     const err = await updateProfile(
       isHelper
         ? {
             ...base,
-            bio: bio.trim() || null,
             spoken_languages: spokenLanguages.length ? spokenLanguages : [language],
-            primary_category: primaryCategory,
-            secondary_categories: normalizedSecondary,
           }
         : base,
     );
@@ -242,88 +161,6 @@ export default function SettingsPage() {
     }
     await refreshProfile();
     showToast(t('app_pages.settings_saved'), 'success');
-  };
-
-  const saveHelperBaseAddress = async () => {
-    if (!isConfigured || !profile || !isHelper) {
-      showToast(t('app_pages.settings_saved'), 'info');
-      return;
-    }
-    if (!helperBaseValue.address.trim() && !helperBaseValue.city.trim()) {
-      showToast(t('app_pages.settings_helper_base_required'), 'error');
-      return;
-    }
-    if (
-      !baseChangeStatus.allowed &&
-      baseChangeStatus.reason === 'locked' &&
-      baseHasPendingChanges
-    ) {
-      showToast(t('app_pages.settings_helper_base_lock_message'), 'error');
-      return;
-    }
-    if (!baseHasPendingChanges) {
-      showToast(t('app_pages.settings_helper_base_no_changes'), 'info');
-      return;
-    }
-    setBaseAddressSaving(true);
-    try {
-      await syncHelperBaseAddress({
-        address: helperBaseValue.address.trim() || null,
-        city: helperBaseValue.city.trim() || null,
-        province: helperBaseValue.province.trim() || null,
-        postalCode: helperBaseValue.postalCode.trim() || null,
-        lat: helperBaseValue.latitude,
-        lng: helperBaseValue.longitude,
-      });
-      const refreshed = await refreshProfile();
-      if (refreshed) setHelperBaseValue(helperBaseAddressFromProfile(refreshed));
-      showToast(t('app_pages.settings_helper_base_saved'), 'success');
-    } catch (e) {
-      if (e instanceof HelperBaseAddressLockedError) {
-        showToast(t('app_pages.settings_helper_base_lock_message'), 'error');
-      } else {
-        const msg = e instanceof Error ? e.message : String(e);
-        showToast(msg || t('app_pages.settings_helper_base_save_error'), 'error');
-      }
-    } finally {
-      setBaseAddressSaving(false);
-    }
-  };
-
-  const persistHelperSkills = async (
-    ids: string[],
-    categoryOverride?: { primary: ServiceCategoryId; secondary: ServiceCategoryId[] },
-  ) => {
-    const valid = filterValidSkillKeys(ids);
-    setHelperSkillIds(valid);
-    setHelperSkillCount(valid.length);
-    const { primary, secondary } = categoryOverride ?? deriveHelperCategoriesFromSkillKeys(valid, primaryCategory);
-    setPrimaryCategory(primary);
-    setSecondaryCategories(secondary);
-    if (!session?.user?.id || !isConfigured) {
-      if (valid.length > 0) showToast(t('helper_categories.saved_ok'), 'success');
-      return;
-    }
-    try {
-      await syncHelperSkills(session.user.id, valid);
-      const err = await updateProfile({
-        primary_category: primary,
-        secondary_categories: secondary,
-      });
-      if (err) throw new Error(t(err.messageKey, err.vars));
-      await refreshProfile();
-      const synced = await fetchHelperSkills(session.user.id);
-      setHelperSkillIds(synced);
-      setHelperSkillCount(synced.length);
-      const syncedCats = deriveHelperCategoriesFromSkillKeys(synced, primary);
-      setPrimaryCategory(syncedCats.primary);
-      setSecondaryCategories(syncedCats.secondary);
-      showToast(t('helper_categories.saved_ok'), 'success');
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      showToast(msg || t('helper_categories.save_error'), 'error');
-      throw e;
-    }
   };
 
   const logout = async () => {
@@ -378,12 +215,6 @@ export default function SettingsPage() {
     }
   };
 
-  const helperCreditBalance = helperWalletBalance ?? 0;
-  const helperCreditBalanceLabel = creditsLoading ? t('common.loading') : formatLinkCredits(helperCreditBalance, language);
-  const helperCreditGraphBars = [32, 46, 38, 58, 52, 72, 64];
-  const helperProjectedJobs = Math.max(1, Math.round(helperCreditBalance / 6));
-  const helperProjectedRevenue = helperProjectedJobs * 85;
-
   return (
     <AppPageShell className="min-h-[calc(100dvh-64px)]">
       <div className="mx-auto max-w-lg space-y-4">
@@ -409,95 +240,6 @@ export default function SettingsPage() {
             <p className="mt-2 text-xs font-medium text-slate-500">{t('service_review.no_rating_yet')}</p>
           )}
         </header>
-
-        {isConfigured && profile && isHelper ? (
-          <section className="relative overflow-hidden rounded-[1.75rem] border border-blue-200/50 bg-[#071D48] p-4 text-white shadow-[0_22px_54px_rgba(8,31,84,0.22)]">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(51,182,255,0.34),transparent_34%),linear-gradient(135deg,rgba(37,99,255,0.42),transparent_58%)]" />
-            <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-sky-300/20 blur-2xl" />
-
-            <div className="relative flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-100/85">LinkCredit</p>
-                <h2 className="mt-1 text-2xl font-black tracking-tight text-amber-300 drop-shadow-[0_0_18px_rgba(251,191,36,0.22)]">{helperCreditBalanceLabel}</h2>
-                <p className="mt-1 text-xs font-semibold leading-relaxed text-sky-50/78">{t('rewards.welcome_signup_purchase_note')}</p>
-              </div>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-black/20 ring-1 ring-white/18">
-                <img src="/brand/linkcredit-coin-icon.png" alt="" className="h-11 w-11 object-cover" />
-              </div>
-            </div>
-
-            <div className="relative mt-4 grid grid-cols-3 gap-2">
-              <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/12">
-                <p className="text-[10px] font-bold uppercase text-sky-100/70">Bônus</p>
-                <p className="mt-1 text-lg font-black">+{SIGNUP_BONUS_LC.helper} LC</p>
-              </div>
-              <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/12">
-                <p className="text-[10px] font-bold uppercase text-sky-100/70">Potencial</p>
-                <p className="mt-1 text-lg font-black">{helperProjectedJobs}</p>
-              </div>
-              <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/12">
-                <p className="text-[10px] font-bold uppercase text-sky-100/70">Média</p>
-                <p className="mt-1 text-lg font-black">$85</p>
-              </div>
-            </div>
-
-            <div className="relative mt-4 rounded-[1.35rem] bg-white/10 p-3 ring-1 ring-white/12">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div>
-                  <p className="flex items-center gap-1.5 text-xs font-black">
-                    <BarChart3 className="h-4 w-4 text-sky-200" />
-                    Lucratividade ilustrativa
-                  </p>
-                  <p className="mt-0.5 text-[11px] font-semibold text-sky-50/68">Estimativa visual para futura integração com trabalhos concluídos.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setCreditProjectionOpen((open) => !open)}
-                  className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-white px-3 text-[11px] font-black text-blue-700 shadow-[0_10px_20px_rgba(37,99,255,0.18)]"
-                  aria-expanded={creditProjectionOpen}
-                >
-                  {creditProjectionOpen ? 'Menos' : 'Expandir'}
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
-
-              <div className={`flex items-end gap-2 transition-all duration-300 ${creditProjectionOpen ? 'h-36' : 'h-24'}`}>
-                {helperCreditGraphBars.map((height, index) => (
-                  <div key={index} className="flex flex-1 items-end rounded-full bg-white/8">
-                    <div
-                      className="w-full rounded-full bg-gradient-to-t from-[#2563FF] to-[#33B6FF] shadow-[0_0_18px_rgba(51,182,255,0.28)]"
-                      style={{ height: `${height}%` }}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              {creditProjectionOpen ? (
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <div className="rounded-2xl bg-white/10 px-3 py-2">
-                    <p className="text-[10px] font-bold uppercase text-sky-100/65">Trabalhos estimados</p>
-                    <p className="mt-1 text-lg font-black">{helperProjectedJobs}</p>
-                  </div>
-                  <Link
-                    to={ROUTES.helperCredits}
-                    className="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2 text-xs font-black text-blue-700"
-                  >
-                    Ver créditos
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
-              ) : null}
-
-              <div className="mt-3 flex items-center justify-between rounded-2xl bg-white/10 px-3 py-2">
-                <span className="flex items-center gap-1.5 text-[11px] font-bold text-sky-50/80">
-                  <TrendingUp className="h-3.5 w-3.5 text-emerald-300" />
-                  Projeção acumulada
-                </span>
-                <span className="text-sm font-black">${helperProjectedRevenue}</span>
-              </div>
-            </div>
-          </section>
-        ) : null}
 
         <SettingsCard icon={<User className="h-5 w-5 text-blue-600" />} title={t('app_pages.settings_account')}>
           <div className="space-y-4">
@@ -591,111 +333,6 @@ export default function SettingsPage() {
             </div>
           </div>
         </SettingsCard>
-
-        {isHelper ? (
-          <>
-            <SettingsCard icon={<User className="h-5 w-5 text-violet-600" />} title={t('app_pages.settings_profile')}>
-              <label className="block text-sm font-semibold text-gray-700">
-                {t('app_pages.settings_bio')}
-                <textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  rows={4}
-                  className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
-                />
-              </label>
-            </SettingsCard>
-
-            <SettingsCard
-              icon={<Briefcase className="h-5 w-5 text-blue-600" />}
-              title={t('helper_categories.title')}
-            >
-              <p className="mb-3 text-xs font-medium text-slate-500">{t('helper_categories.compact_hint')}</p>
-              <HelperCategoriesManager
-                t={t}
-                skillIds={helperSkillIds}
-                primaryCategory={primaryCategory}
-                secondaryCategories={secondaryCategories}
-                onSkillsChange={setHelperSkillIds}
-                onCategoriesChange={(primary, secondary) => {
-                  setPrimaryCategory(primary);
-                  setSecondaryCategories(secondary);
-                }}
-                onSaveAsync={persistHelperSkills}
-              />
-            </SettingsCard>
-
-            <SettingsCard
-              icon={<Briefcase className="h-5 w-5 text-cyan-600" />}
-              title={t('app_pages.settings_helper_base_title')}
-            >
-              <div className="mb-4 space-y-2">
-                <p className="text-xs font-medium leading-relaxed text-slate-500">
-                  {t('app_pages.settings_helper_base_hint')}
-                </p>
-                {!baseConfigured ? (
-                  <p className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-900">
-                    {t('app_pages.settings_helper_base_setup_prompt')}
-                  </p>
-                ) : (
-                  <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900">
-                    {t('app_pages.settings_helper_base_configured')}
-                  </p>
-                )}
-                {profile?.helper_base_change_unlocked_by_admin ? (
-                  <p className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-900">
-                    {t('app_pages.settings_helper_base_admin_unlock')}
-                  </p>
-                ) : null}
-                {baseConfigured && baseChangeStatus.reason === 'locked' ? (
-                  <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
-                    {t('app_pages.settings_helper_base_lock_message')}
-                    <span className="mt-1 block font-bold">
-                      {t('app_pages.settings_helper_base_lock_days', {
-                        count: baseChangeStatus.daysUntilUnlock,
-                      })}
-                    </span>
-                  </p>
-                ) : null}
-                {baseConfigured &&
-                baseChangeStatus.allowed &&
-                baseChangeStatus.reason === 'cooldown_elapsed' ? (
-                  <p className="text-xs font-medium text-slate-500">
-                    {t('app_pages.settings_helper_base_can_change_now')}
-                  </p>
-                ) : null}
-              </div>
-              <HelperBaseAddressInput
-                value={helperBaseValue}
-                onChange={setHelperBaseValue}
-                disabled={baseFieldsLocked}
-                locatingLabel={t('app_pages.settings_helper_base_locating')}
-                currentLocationLabel={t('app_pages.settings_helper_base_use_location')}
-                currentLocationShortLabel={t('app_pages.settings_helper_base_use_location_short')}
-                placeholder={t('app_pages.settings_helper_base_address_placeholder')}
-                cityLabel={t('app_pages.settings_helper_base_city')}
-                provinceLabel={t('app_pages.settings_helper_base_province')}
-                postalCodeLabel={t('app_pages.settings_helper_base_postal_code')}
-              />
-              <button
-                type="button"
-                disabled={
-                  baseAddressSaving ||
-                  !isConfigured ||
-                  baseFieldsLocked ||
-                  (!baseHasPendingChanges && baseConfigured)
-                }
-                onClick={() => void saveHelperBaseAddress()}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 text-sm font-black text-white hover:bg-cyan-700 disabled:opacity-50"
-              >
-                {baseAddressSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {t('app_pages.settings_helper_base_save')}
-              </button>
-            </SettingsCard>
-
-            <HelperScorePanel />
-          </>
-        ) : null}
 
         <SettingsCard icon={<Bell className="h-5 w-5 text-amber-500" />} title={t('app_pages.settings_preferences')}>
           <div className="space-y-4">

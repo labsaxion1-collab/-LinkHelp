@@ -1,10 +1,14 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   ArrowUpRight,
   BadgeCheck,
+  Briefcase,
   Camera,
   Coins,
+  Home,
+  Loader2,
   Mail,
   MapPin,
   Phone,
@@ -17,9 +21,30 @@ import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { useAuth } from '@/context/AuthContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useToast } from '@/context/ToastContext';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { ROUTES } from '@/utils/constants';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
+import { HelperScorePanel } from '@/components/features/HelperScorePanel';
+import { type ServiceCategoryId } from '@/data/serviceCategories';
+import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
+import { filterValidSkillKeys } from '@/data/helperSkillsCatalog';
+import { deriveHelperCategoriesFromSkillKeys, getHelperCategoryPreferences } from '@/utils/helperCategoryPreferences';
+import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
+import {
+  HelperBaseAddressInput,
+  helperBaseAddressFromProfile,
+  type HelperBaseAddressValue,
+} from '@/components/helper/HelperBaseAddressInput';
+import {
+  getHelperBaseChangeStatus,
+  helperBaseFieldsChanged,
+  helperBaseIsConfigured,
+} from '@/utils/helperBaseAddressLock';
+import {
+  HelperBaseAddressLockedError,
+  syncHelperBaseAddress,
+} from '@/services/supabase/helperBaseAddressRemote';
 
 function profileInitials(name?: string | null, email?: string | null) {
   const source = name?.trim() || email?.trim() || 'LH';
@@ -32,9 +57,17 @@ function profileInitials(name?: string | null, email?: string | null) {
 export default function ProfilePage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { profile, session } = useAuth();
+  const { profile, session, updateProfile, refreshProfile, isConfigured } = useAuth();
   const { isHelperMode } = useAppMode();
+  const { showToast } = useToast();
   const { balance, loading } = useWalletBalance();
+  const [helperSkillIds, setHelperSkillIds] = useState<string[]>([]);
+  const [primaryCategory, setPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
+  const [secondaryCategories, setSecondaryCategories] = useState<ServiceCategoryId[]>([]);
+  const [helperBaseValue, setHelperBaseValue] = useState<HelperBaseAddressValue>(() =>
+    helperBaseAddressFromProfile({}),
+  );
+  const [baseAddressSaving, setBaseAddressSaving] = useState(false);
 
   const email = session?.user.email ?? profile?.email ?? '';
   const displayName = profile?.name?.trim() || session?.user.user_metadata?.name || email || 'LinkHelp';
@@ -45,6 +78,126 @@ export default function ProfilePage() {
   const bio = profile?.bio?.trim() || 'Adicione uma bio em configurações para deixar seu perfil mais completo.';
   const balanceLabel = loading ? '...' : formatLinkCredits(balance ?? 0);
   const homeRoute = isHelperMode ? ROUTES.helperDashboard : ROUTES.clientDashboard;
+  const helperBaseLabel = [
+    profile?.helper_base_address,
+    profile?.helper_base_city,
+    profile?.helper_base_province,
+    profile?.helper_base_postal_code,
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const baseChangeStatus = useMemo(() => getHelperBaseChangeStatus(profile), [profile]);
+  const baseConfigured = useMemo(() => helperBaseIsConfigured(profile), [profile]);
+  const baseFieldsLocked =
+    !baseChangeStatus.allowed && baseChangeStatus.reason === 'locked' && baseConfigured;
+  const baseHasPendingChanges = useMemo(
+    () =>
+      helperBaseFieldsChanged(profile, {
+        address: helperBaseValue.address,
+        city: helperBaseValue.city,
+        province: helperBaseValue.province,
+        postalCode: helperBaseValue.postalCode,
+        lat: helperBaseValue.latitude,
+        lng: helperBaseValue.longitude,
+      }),
+    [profile, helperBaseValue],
+  );
+
+  useEffect(() => {
+    if (!profile) return;
+    setHelperBaseValue(helperBaseAddressFromProfile(profile));
+  }, [profile]);
+
+  useEffect(() => {
+    if (!profile || !isHelperMode) return;
+    const prefs = getHelperCategoryPreferences(profile, helperSkillIds);
+    setPrimaryCategory(prefs.primaryCategory);
+    setSecondaryCategories(prefs.secondaryCategories);
+  }, [profile, isHelperMode, helperSkillIds]);
+
+  useEffect(() => {
+    if (!session?.user?.id || !isHelperMode || !isConfigured) {
+      setHelperSkillIds([]);
+      return;
+    }
+    void fetchHelperSkills(session.user.id).then(setHelperSkillIds);
+  }, [session?.user?.id, isHelperMode, isConfigured]);
+
+  const persistHelperSkills = async (
+    ids: string[],
+    categoryOverride?: { primary: ServiceCategoryId; secondary: ServiceCategoryId[] },
+  ) => {
+    const valid = filterValidSkillKeys(ids);
+    setHelperSkillIds(valid);
+    const { primary, secondary } = categoryOverride ?? deriveHelperCategoriesFromSkillKeys(valid, primaryCategory);
+    setPrimaryCategory(primary);
+    setSecondaryCategories(secondary);
+    if (!session?.user?.id || !isConfigured) {
+      if (valid.length > 0) showToast(t('helper_categories.saved_ok'), 'success');
+      return;
+    }
+    try {
+      await syncHelperSkills(session.user.id, valid);
+      const err = await updateProfile({
+        primary_category: primary,
+        secondary_categories: secondary,
+      });
+      if (err) throw new Error(t(err.messageKey, err.vars));
+      await refreshProfile();
+      const synced = await fetchHelperSkills(session.user.id);
+      setHelperSkillIds(synced);
+      const syncedCats = deriveHelperCategoriesFromSkillKeys(synced, primary);
+      setPrimaryCategory(syncedCats.primary);
+      setSecondaryCategories(syncedCats.secondary);
+      showToast(t('helper_categories.saved_ok'), 'success');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      showToast(msg || t('helper_categories.save_error'), 'error');
+      throw e;
+    }
+  };
+
+  const saveHelperBaseAddress = async () => {
+    if (!isConfigured || !profile || !isHelperMode) {
+      showToast(t('app_pages.settings_saved'), 'info');
+      return;
+    }
+    if (!helperBaseValue.address.trim() && !helperBaseValue.city.trim()) {
+      showToast(t('app_pages.settings_helper_base_required'), 'error');
+      return;
+    }
+    if (!baseChangeStatus.allowed && baseChangeStatus.reason === 'locked' && baseHasPendingChanges) {
+      showToast(t('app_pages.settings_helper_base_lock_message'), 'error');
+      return;
+    }
+    if (!baseHasPendingChanges) {
+      showToast(t('app_pages.settings_helper_base_no_changes'), 'info');
+      return;
+    }
+    setBaseAddressSaving(true);
+    try {
+      await syncHelperBaseAddress({
+        address: helperBaseValue.address.trim() || null,
+        city: helperBaseValue.city.trim() || null,
+        province: helperBaseValue.province.trim() || null,
+        postalCode: helperBaseValue.postalCode.trim() || null,
+        lat: helperBaseValue.latitude,
+        lng: helperBaseValue.longitude,
+      });
+      const refreshed = await refreshProfile();
+      if (refreshed) setHelperBaseValue(helperBaseAddressFromProfile(refreshed));
+      showToast(t('app_pages.settings_helper_base_saved'), 'success');
+    } catch (e) {
+      if (e instanceof HelperBaseAddressLockedError) {
+        showToast(t('app_pages.settings_helper_base_lock_message'), 'error');
+      } else {
+        const msg = e instanceof Error ? e.message : String(e);
+        showToast(msg || t('app_pages.settings_helper_base_save_error'), 'error');
+      }
+    } finally {
+      setBaseAddressSaving(false);
+    }
+  };
 
   return (
     <AppPageShell className="w-full">
@@ -167,6 +320,102 @@ export default function ProfilePage() {
             </div>
           </div>
         </section>
+
+        {isHelperMode ? (
+          <>
+            <section className="grid gap-3">
+              <section className="rounded-[1.5rem] border border-slate-100 bg-white p-4 shadow-[0_14px_32px_rgba(15,23,42,0.05)]">
+                <div className="mb-3 flex items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#EEF3FF] text-[#2563FF]">
+                    <Briefcase className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h2 className="text-sm font-black text-slate-950">Categorias do Helper</h2>
+                    <p className="mt-0.5 text-xs font-medium text-slate-500">Especialidades visiveis no perfil.</p>
+                  </div>
+                </div>
+                <HelperCategoriesManager
+                  t={t}
+                  skillIds={helperSkillIds}
+                  primaryCategory={primaryCategory}
+                  secondaryCategories={secondaryCategories}
+                  onSkillsChange={setHelperSkillIds}
+                  onCategoriesChange={(primary, secondary) => {
+                    setPrimaryCategory(primary);
+                    setSecondaryCategories(secondary);
+                  }}
+                  onSaveAsync={persistHelperSkills}
+                />
+              </section>
+
+              <section className="rounded-[1.5rem] border border-slate-100 bg-white p-4 shadow-[0_14px_32px_rgba(15,23,42,0.05)]">
+                <div className="mb-3 flex items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
+                    <Home className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h2 className="text-sm font-black text-slate-950">Endereco base do Helper</h2>
+                    <p className="mt-0.5 text-xs font-medium text-slate-500">Referencia usada para oportunidades proximas.</p>
+                  </div>
+                </div>
+                <div className="mb-4 space-y-2">
+                  {helperBaseLabel ? (
+                    <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900">
+                      {helperBaseLabel}
+                    </p>
+                  ) : (
+                    <p className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-900">
+                      Endereco base nao configurado.
+                    </p>
+                  )}
+                  {profile?.helper_base_change_unlocked_by_admin ? (
+                    <p className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-900">
+                      {t('app_pages.settings_helper_base_admin_unlock')}
+                    </p>
+                  ) : null}
+                  {baseConfigured && baseChangeStatus.reason === 'locked' ? (
+                    <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+                      {t('app_pages.settings_helper_base_lock_message')}
+                      <span className="mt-1 block font-bold">
+                        {t('app_pages.settings_helper_base_lock_days', {
+                          count: baseChangeStatus.daysUntilUnlock,
+                        })}
+                      </span>
+                    </p>
+                  ) : null}
+                </div>
+                <HelperBaseAddressInput
+                  value={helperBaseValue}
+                  onChange={setHelperBaseValue}
+                  disabled={baseFieldsLocked}
+                  locatingLabel={t('app_pages.settings_helper_base_locating')}
+                  currentLocationLabel={t('app_pages.settings_helper_base_use_location')}
+                  currentLocationShortLabel={t('app_pages.settings_helper_base_use_location_short')}
+                  placeholder={t('app_pages.settings_helper_base_address_placeholder')}
+                  cityLabel={t('app_pages.settings_helper_base_city')}
+                  provinceLabel={t('app_pages.settings_helper_base_province')}
+                  postalCodeLabel={t('app_pages.settings_helper_base_postal_code')}
+                />
+                <button
+                  type="button"
+                  disabled={
+                    baseAddressSaving ||
+                    !isConfigured ||
+                    baseFieldsLocked ||
+                    (!baseHasPendingChanges && baseConfigured)
+                  }
+                  onClick={() => void saveHelperBaseAddress()}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 text-sm font-black text-white hover:bg-cyan-700 disabled:opacity-50"
+                >
+                  {baseAddressSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {t('app_pages.settings_helper_base_save')}
+                </button>
+              </section>
+            </section>
+
+            <HelperScorePanel className="rounded-[1.75rem] border border-slate-100 bg-white shadow-[0_18px_42px_rgba(15,23,42,0.06)]" />
+          </>
+        ) : null}
 
         <section className="grid gap-3 sm:grid-cols-2">
           <Link

@@ -1230,8 +1230,13 @@ export default function HelperDashboard() {
             </div>
           </div>
 
-          <div className="mb-3">
-            <h2 className="text-xl font-bold text-gray-900">{t('helper_dashboard.feed_title_jobs')}</h2>
+          <div className="mb-4 flex items-center gap-3">
+            <h2 className="text-xl font-black tracking-tight text-[#0B1220]">{t('helper_dashboard.feed_title_jobs')}</h2>
+            {displayedJobs.length > 0 && (
+              <span className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 text-[11px] font-black text-[#2563FF]">
+                {displayedJobs.length}
+              </span>
+            )}
           </div>
 
           {/* Posts (Feed) */}
@@ -1239,18 +1244,19 @@ export default function HelperDashboard() {
             {displayedJobs.length > 0 ? (
               <div
                 className={clsx(
-                  'grid w-full max-w-full min-w-0 grid-cols-1 gap-6 transition-[filter,opacity] duration-300',
+                  'grid w-full max-w-full min-w-0 grid-cols-1 gap-5 transition-[filter,opacity] duration-300',
                   proposalJob && 'pointer-events-none brightness-[0.92] md:brightness-[0.88]',
                 )}
               >
-              {displayedJobs.map((job) => (
+              {displayedJobs.map((job, idx) => (
                     <div
                       key={job.id}
                       className={clsx(
-                        'min-w-0 transition-[margin,opacity,transform] duration-[420ms] ease-[cubic-bezier(0.34,1.15,0.64,1)]',
+                        'lh-feed-card-enter min-w-0 transition-[margin,opacity,transform] duration-[420ms] ease-[cubic-bezier(0.34,1.15,0.64,1)]',
                         exitingJobIds.has(job.id) &&
                           'pointer-events-none -mt-3 scale-[0.92] opacity-0 -translate-x-6 rotate-[-2deg]',
                       )}
+                      style={{ '--card-idx': idx } as React.CSSProperties}
                     >
                       <HelperOpportunityCard
                         job={job}
@@ -1280,10 +1286,13 @@ export default function HelperDashboard() {
               ))}
               </div>
             ) : (
-              <LhCard className="text-center py-12 border-dashed" padding="lg">
-                <Icons.SearchX className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 font-medium">{t('helper_dashboard.empty_feed')}</p>
-              </LhCard>
+              <div className="flex flex-col items-center justify-center rounded-[22px] border border-dashed border-[rgba(37,99,255,0.16)] bg-gradient-to-br from-white to-[#f4f7ff] px-6 py-14 text-center shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+                <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 shadow-[0_8px_24px_rgba(37,99,255,0.12)]">
+                  <Icons.SearchX className="h-8 w-8 text-[#2563FF]" strokeWidth={1.75} />
+                </span>
+                <p className="text-[15px] font-bold text-[#0B1220]">{t('helper_dashboard.empty_feed')}</p>
+                <p className="mt-1 text-[13px] font-medium text-[#94A3B8]">Novas oportunidades aparecem em tempo real.</p>
+              </div>
             )}
           </div>
           </>
@@ -1294,15 +1303,17 @@ export default function HelperDashboard() {
         <div className="hidden lg:flex flex-col sticky top-24 h-[calc(100vh-120px)] space-y-4">
           
           {/* Live Opportunity Radar */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden hover:shadow-md transition-shadow duration-200">
-             <div className="p-4 border-b border-gray-50 flex items-center justify-between">
+          <div className="overflow-hidden rounded-[18px] border border-[rgba(15,23,42,0.08)] bg-white shadow-[0_2px_12px_rgba(15,23,42,0.05),0_6px_28px_rgba(15,23,42,0.05)] transition-shadow duration-200 hover:shadow-[0_8px_32px_rgba(15,23,42,0.08)]">
+             <div className="flex items-center justify-between border-b border-[rgba(15,23,42,0.05)] p-4">
                 <div className="flex items-center gap-2">
-                   <Icons.Crosshair className="w-4 h-4 text-blue-600" />
-                   <h3 className="font-bold text-gray-900 text-sm">{t('helper_dashboard.radar_title')}</h3>
+                   <span className="flex h-7 w-7 items-center justify-center rounded-xl border border-blue-100 bg-blue-50">
+                     <Icons.Crosshair className="h-3.5 w-3.5 text-[#2563FF]" />
+                   </span>
+                   <h3 className="text-sm font-black text-[#0B1220]">{t('helper_dashboard.radar_title')}</h3>
                 </div>
-                <span className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-md">{t('helper_dashboard.radar_badge_neutral')}</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-500">{t('helper_dashboard.radar_badge_neutral')}</span>
              </div>
-             <div className="space-y-2 p-3">
+             <div className="space-y-1.5 p-3">
                {radarJobs.length ? radarJobs.map(({ job, distanceKm }) => (
                  <button
                    key={job.id}
@@ -1312,14 +1323,14 @@ export default function HelperDashboard() {
                      setActiveTab(job.urgency === 'high' ? 'emergencia' : 'match');
                      navigate(ROUTES.helperOpportunities);
                    }}
-                   className="flex w-full items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-left transition-colors hover:border-blue-200 hover:bg-blue-50"
+                   className="flex w-full items-center gap-3 rounded-[14px] border border-[rgba(15,23,42,0.06)] bg-[#f7f8fc] p-3 text-left transition-all duration-200 hover:border-blue-200 hover:bg-blue-50 hover:shadow-[0_4px_14px_rgba(37,99,255,0.08)]"
                  >
-                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 ring-1 ring-slate-200">
-                     <Icons.MapPin className="h-4 w-4" />
+                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-white shadow-[0_2px_8px_rgba(37,99,255,0.08)]">
+                     <Icons.MapPin className="h-4 w-4 text-[#2563FF]" />
                    </span>
                    <span className="min-w-0 flex-1">
-                     <span className="block truncate text-sm font-black text-slate-900">{translateJobTitle(job.title, job.category, job.subcategory, t)}</span>
-                     <span className="block truncate text-xs font-bold text-slate-500">
+                     <span className="block truncate text-[13px] font-black text-[#0B1220]">{translateJobTitle(job.title, job.category, job.subcategory, t)}</span>
+                     <span className="block truncate text-[11px] font-bold text-[#94A3B8]">
                        {!hasHelperBaseAddress
                          ? t('helper_dashboard.base_address_missing_short')
                          : baseAddressPendingCoords
@@ -1329,18 +1340,19 @@ export default function HelperDashboard() {
                              : job.city || job.location}
                      </span>
                    </span>
-                   <span className={`rounded-full px-2 py-1 text-[10px] font-black ${job.urgency === 'high' ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'}`}>
+                   <span className={`rounded-full px-2 py-1 text-[10px] font-black ${job.urgency === 'high' ? 'border border-rose-100 bg-rose-50 text-rose-600' : 'border border-blue-100 bg-blue-50 text-[#2563FF]'}`}>
                      {job.value}
                    </span>
                  </button>
                )) : (
-                 <p className="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs font-bold text-slate-500">
+                 <p className="rounded-[14px] border border-dashed border-[rgba(37,99,255,0.15)] p-4 text-center text-[12px] font-bold text-[#94A3B8]">
                    {t('helper_dashboard.empty_feed')}
                  </p>
                )}
              </div>
-             <Link to={ROUTES.map} className="p-2 border-t border-gray-50 bg-gray-50 text-center hover:bg-gray-100 transition-colors cursor-pointer block">
-                 <span className="text-xs font-semibold text-blue-600">{t('helper_dashboard.radar_expand_map')}</span>
+             <Link to={ROUTES.map} className="flex items-center justify-center gap-1.5 border-t border-[rgba(15,23,42,0.05)] bg-[#f7f8fc] p-2.5 text-center transition-colors hover:bg-blue-50">
+                 <Icons.Map className="h-3.5 w-3.5 text-[#2563FF]" />
+                 <span className="text-[12px] font-bold text-[#2563FF]">{t('helper_dashboard.radar_expand_map')}</span>
              </Link>
           </div>
 
@@ -1357,17 +1369,16 @@ export default function HelperDashboard() {
             onQuickReject={(job) => updateUpcomingWorkflow(job.id, 'cancelled')}
           />
           
-          <div className="border-t border-gray-200 pt-4 flex-1">
-             <div className="mb-3 px-1">
-               <h3 className="text-gray-500 font-semibold text-xs tracking-wider uppercase">{t('helper_dashboard.messages_recent')}</h3>
-               <p className="text-[11px] text-gray-500 mt-1 leading-snug">{t('helper_dashboard.messages_sub')}</p>
+          <div className="overflow-hidden rounded-[18px] border border-[rgba(15,23,42,0.08)] bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.05)]">
+             <div className="mb-3">
+               <h3 className="text-[11px] font-black uppercase tracking-wider text-[#94A3B8]">{t('helper_dashboard.messages_recent')}</h3>
+               <p className="mt-1 text-[12px] font-medium leading-snug text-[#6B7280]">{t('helper_dashboard.messages_sub')}</p>
              </div>
-             
              <Link
                to={ROUTES.messages}
-               className="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-white border border-gray-200 text-sm font-bold text-blue-700 hover:bg-blue-50 hover:border-blue-200 transition-colors shadow-sm"
+               className="flex items-center justify-center gap-2 w-full rounded-[14px] bg-gradient-to-br from-[#2563FF] to-[#1D55E8] px-3 py-2.5 text-[13px] font-bold text-white shadow-[0_8px_22px_rgba(37,99,255,0.22)] transition-all hover:shadow-[0_12px_28px_rgba(37,99,255,0.30)] hover:-translate-y-0.5"
              >
-               <Icons.MessageCircle className="w-4 h-4 shrink-0" />
+               <Icons.MessageCircle className="h-4 w-4 shrink-0" />
                {t('helper_dashboard.messages_cta')}
              </Link>
           </div>

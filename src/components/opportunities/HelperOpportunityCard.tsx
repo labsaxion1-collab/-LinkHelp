@@ -200,16 +200,15 @@ function HelperOpportunityCardInner({
   };
 
   const ctaBase =
-    'inline-flex min-h-[44px] min-w-0 max-w-full items-center justify-center gap-2 rounded-[14px] px-3 py-2.5 text-[12px] font-semibold leading-tight transition-all duration-200 sm:min-h-0 sm:px-4 sm:text-[13px] md:text-[14px]';
-
+    'inline-flex min-h-[44px] min-w-0 max-w-full items-center justify-center gap-2 rounded-[14px] px-3 py-2.5 text-[12px] font-bold leading-tight transition-all duration-200 sm:min-h-0 sm:px-4 sm:text-[13px] md:text-[14px]';
 
   const interestRingLabel = t('helper_dashboard.interested_ring_label');
 
   const renderApplyControl = () => {
     const primaryBtn = clsx(
       ctaBase,
-      'border-2 border-[#2563EB] bg-white text-[#2563EB] shadow-none',
-      'hover:bg-[#EFF6FF] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-55',
+      'bg-gradient-to-br from-[#2563FF] to-[#1557F0] text-white shadow-[0_8px_22px_rgba(37,99,255,0.28),inset_0_1px_0_rgba(255,255,255,0.18)]',
+      'hover:shadow-[0_12px_30px_rgba(37,99,255,0.36)] hover:brightness-105 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50',
     );
 
     if (hasApplied) {
@@ -217,10 +216,10 @@ function HelperOpportunityCardInner({
         <span
           className={clsx(
             ctaBase,
-            'cursor-default gap-2 bg-emerald-50 text-emerald-700 shadow-none',
+            'cursor-default gap-2 rounded-[14px] border border-emerald-200/80 bg-emerald-50 text-emerald-700',
           )}
         >
-          <CheckCircle2 className="h-5 w-5 shrink-0" />
+          <CheckCircle2 className="h-[18px] w-[18px] shrink-0" />
           <span className="max-[380px]:hidden">{t('helper_dashboard.applied_sent')}</span>
         </span>
       );
@@ -229,7 +228,7 @@ function HelperOpportunityCardInner({
     if (isApplying) {
       return (
         <button type="button" disabled className={primaryBtn}>
-          <Icons.Loader2 className="h-5 w-5 animate-spin" />
+          <Icons.Loader2 className="h-[18px] w-[18px] animate-spin" />
         </button>
       );
     }
@@ -239,7 +238,7 @@ function HelperOpportunityCardInner({
         <span
           className={clsx(
             ctaBase,
-            'max-w-[10rem] cursor-default bg-slate-100 px-4 text-center text-[13px] font-semibold leading-tight text-slate-600 shadow-none',
+            'max-w-[10rem] cursor-default rounded-[14px] border border-slate-200 bg-slate-50 px-4 text-center text-[13px] font-semibold leading-tight text-slate-500',
           )}
         >
           {t('helper_dashboard.interested_limit_reached')}
@@ -259,7 +258,7 @@ function HelperOpportunityCardInner({
         disabled={!canApply}
         className={primaryBtn}
       >
-        <Icons.Send className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
+        <Icons.Send className="h-[15px] w-[15px] shrink-0" strokeWidth={2.25} aria-hidden />
         <span className="text-center">{t('helper_dashboard.apply_now')}</span>
       </button>
     );
@@ -335,7 +334,7 @@ function HelperOpportunityCardInner({
       </div>
 
       {/* Rodapé — avatar + nome do cliente + botão */}
-      <div className="col-span-3 col-start-1 row-start-3 mt-0.5 flex flex-col gap-2 border-t border-slate-100/80 pt-2.5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="col-span-3 col-start-1 row-start-3 mt-0.5 flex flex-col gap-2 border-t border-[rgba(15,23,42,0.06)] pt-2.5 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
           onClick={(e) => {
@@ -387,22 +386,26 @@ function HelperOpportunityCardInner({
 
 
   const cardShell = clsx(
-    'group/card relative h-full w-full max-w-full overflow-hidden rounded-[22px] border bg-white transition-all duration-200',
-    'shadow-[0_4px_24px_rgba(15,23,42,0.07)]',
-    'md:hover:-translate-y-0.5 md:hover:shadow-[0_10px_36px_rgba(15,23,42,0.09)] motion-reduce:transform-none',
+    'group/card relative h-full w-full max-w-full overflow-hidden rounded-[22px] border bg-white transition-all duration-300',
+    'shadow-[0_2px_12px_rgba(15,23,42,0.05),0_6px_28px_rgba(15,23,42,0.06)]',
+    'md:hover:-translate-y-1 md:hover:shadow-[0_12px_40px_rgba(15,23,42,0.10)] motion-reduce:transform-none',
     (isExiting || passExiting) &&
       'pointer-events-none scale-[0.88] opacity-0 -translate-x-8 -rotate-2 duration-[520ms] ease-[cubic-bezier(0.34,1.15,0.64,1)]',
     swipeRateLimited && !isExiting && 'opacity-75',
-    tier === 'urgent' ? 'border-rose-200/80' : tier === 'best' ? 'border-emerald-200/70' : 'border-slate-200/70',
+    tier === 'urgent'
+      ? 'border-rose-200/80'
+      : tier === 'best'
+        ? 'border-emerald-200/70'
+        : 'border-[rgba(15,23,42,0.08)]',
   );
 
   const cardPadding = 'relative z-20 bg-white px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4 will-change-transform';
 
   const topAccent = (
     <div
-      className="h-[3px] w-full shrink-0 rounded-t-[22px]"
+      className="h-[4px] w-full shrink-0 rounded-t-[22px]"
       style={{
-        background: `linear-gradient(90deg, ${categoryTheme.iconColor}90 0%, ${categoryTheme.iconColor}20 100%)`,
+        background: `linear-gradient(90deg, ${categoryTheme.iconColor} 0%, ${categoryTheme.iconColor}55 55%, transparent 100%)`,
       }}
       aria-hidden
     />

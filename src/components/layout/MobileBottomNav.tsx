@@ -10,19 +10,19 @@ type Item = { to: string; end?: boolean; labelKey: string; icon: typeof Home };
 
 function navClass(active: boolean, isHome = false) {
   return clsx(
-    'mx-auto flex w-full max-w-full flex-col items-center justify-center touch-manipulation transition-all',
+    'mx-auto flex w-full max-w-full flex-col items-center justify-center gap-0.5 touch-manipulation transition-all duration-200',
     isHome
       ? [
-          '-mt-3 h-14 w-14 rounded-[1.35rem] border transition-transform active:scale-95',
+          '-mt-4 h-[3.75rem] w-[3.75rem] rounded-[1.4rem] border transition-all duration-200 active:scale-95',
           active
-            ? 'border-[#2563FF]/30 bg-[#2563FF] text-white shadow-[0_10px_28px_rgba(37,99,255,0.28)] ring-2 ring-[#2563FF]/10'
-            : 'border-[#EDEFF5] bg-white text-[#6B7280] shadow-[0_4px_20px_rgba(15,23,42,0.06)] active:text-[#2563FF]',
+            ? 'border-[#2563FF]/25 bg-[#2563FF] text-white shadow-[0_12px_32px_rgba(37,99,255,0.32),inset_0_1px_0_rgba(255,255,255,0.2)]'
+            : 'border-[#E8ECF4] bg-white text-[#6B7280] shadow-[0_4px_20px_rgba(15,23,42,0.07)] active:text-[#2563FF]',
         ]
       : [
-          'min-h-[48px] max-w-full rounded-2xl px-0.5 py-1.5 transition-transform active:scale-95',
+          'min-h-[52px] max-w-full rounded-2xl px-0.5 py-1 transition-all duration-200 active:scale-95',
           active
-            ? 'bg-white text-[#2563FF] shadow-[0_4px_18px_rgba(37,99,255,0.10)]'
-            : 'text-[#6B7280] hover:text-[#2563FF] active:bg-[#F7F8FC]',
+            ? 'text-[#2563FF]'
+            : 'text-[#94A3B8] hover:text-[#2563FF] active:bg-[#F0F4FF]',
         ],
   );
 }
@@ -54,24 +54,61 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="lh-bottom-nav md:hidden fixed bottom-0 inset-x-0 z-40 w-full max-w-full pt-1.5 pb-[max(env(safe-area-inset-bottom),0.5rem)]"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 w-full max-w-full"
+      style={{
+        background: 'rgba(255,255,255,0.96)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderTop: '1px solid rgba(15,23,42,0.06)',
+        boxShadow: '0 -8px 32px rgba(15,23,42,0.06)',
+        paddingTop: '0.375rem',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)',
+      }}
       aria-label={t('mobile_nav.aria')}
     >
       <ul className="lh-bottom-nav-list">
         {items.map((item) => {
           const Icon = item.icon;
           const isHome = item.icon === Home;
+          const label = t(item.labelKey);
           return (
             <li key={item.to} className={clsx(isHome ? 'lh-bottom-nav-home' : 'lh-bottom-nav-item')}>
               <NavLink
                 to={item.to}
                 end={item.end}
-                title={t(item.labelKey)}
-                aria-label={t(item.labelKey)}
+                title={label}
+                aria-label={label}
                 className={({ isActive }) => navClass(isActive, isHome)}
               >
-                <Icon className={clsx('shrink-0', isHome ? 'h-7 w-7' : 'h-6 w-6')} strokeWidth={2.25} aria-hidden />
-                <span className="sr-only">{t(item.labelKey)}</span>
+                {({ isActive }) => (
+                  <>
+                    {/* Active top indicator (non-home) */}
+                    {!isHome && (
+                      <span
+                        className={clsx(
+                          'mb-0.5 h-[3px] w-5 rounded-full transition-all duration-300',
+                          isActive ? 'bg-[#2563FF] opacity-100' : 'opacity-0',
+                        )}
+                        aria-hidden
+                      />
+                    )}
+                    <Icon
+                      className={clsx('shrink-0 transition-transform duration-200', isHome ? 'h-7 w-7' : 'h-[22px] w-[22px]', isActive && !isHome && 'scale-110')}
+                      strokeWidth={isActive ? 2.5 : 2}
+                      aria-hidden
+                    />
+                    {!isHome && (
+                      <span
+                        className={clsx(
+                          'max-w-[64px] truncate text-center text-[9.5px] font-bold leading-none transition-all duration-200',
+                          isActive ? 'text-[#2563FF]' : 'text-[#94A3B8]',
+                        )}
+                      >
+                        {label}
+                      </span>
+                    )}
+                  </>
+                )}
               </NavLink>
             </li>
           );

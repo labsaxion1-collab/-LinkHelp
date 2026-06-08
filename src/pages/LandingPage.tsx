@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import { motion, useScroll, useTransform } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   ArrowRight,
   BadgeCheck,
@@ -27,41 +27,19 @@ const fadeUp = {
   visible: { opacity: 1, y: 0 },
 };
 
-function FuturisticBackground() {
-  const { scrollYProgress } = useScroll();
-  const nearLogoY = useTransform(scrollYProgress, [0, 1], [0, 140]);
-  const farGlowY = useTransform(scrollYProgress, [0, 1], [0, -110]);
-
+function LightBackground() {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      <motion.div
-        aria-hidden
-        style={{ y: nearLogoY }}
-        className="absolute -left-[14rem] -top-[11rem] h-[42rem] w-[42rem] rounded-full bg-[radial-gradient(circle,rgba(125,211,252,0.34)_0%,rgba(51,182,255,0.18)_30%,rgba(22,119,255,0.08)_48%,transparent_72%)] blur-2xl"
-      />
-      <motion.div
-        aria-hidden
-        style={{ y: farGlowY }}
-        className="absolute left-[18%] top-[6rem] h-[34rem] w-[55rem] rounded-full bg-[radial-gradient(circle,rgba(22,119,255,0.16)_0%,rgba(7,17,32,0.08)_42%,transparent_72%)] blur-3xl"
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(12,38,72,0.36)_0%,rgba(7,17,32,0.44)_30%,rgba(5,8,22,0.76)_72%,rgba(5,8,22,0.9)_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_11%_17%,rgba(226,246,255,0.20),transparent_17%),radial-gradient(circle_at_18%_28%,rgba(51,182,255,0.13),transparent_24%)]" />
-      {Array.from({ length: 16 }).map((_, index) => (
-        <motion.span
-          key={index}
-          className="absolute rounded-[1rem] border border-[#33B6FF]/25 bg-[#1677FF]/[0.04] shadow-[0_0_32px_rgba(22,119,255,0.28)] backdrop-blur-sm"
-          style={{
-            left: `${(index * 17) % 100}%`,
-            top: `${12 + ((index * 23) % 78)}%`,
-            width: `${18 + (index % 4) * 12}px`,
-            height: `${18 + (index % 4) * 12}px`,
-          }}
-          animate={{ y: [-10, 14, -10], rotate: [0, 12, 0], opacity: [0.18, 0.58, 0.18] }}
-          transition={{ duration: 6 + index * 0.35, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      ))}
-      <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.16)_1px,transparent_1px)] [background-size:38px_38px] opacity-[0.06]" />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(5,8,22,0.62)_42%,#050816_100%)]" />
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      {/* Base gradient — off-white to soft blue */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#EEF4FF] via-[#F5F8FF] to-[#E8F0FE]" />
+      {/* Radial blue glow top-left */}
+      <div className="absolute -left-32 -top-20 h-[34rem] w-[34rem] rounded-full bg-[radial-gradient(circle,rgba(37,99,255,0.12)_0%,transparent_65%)] blur-3xl" />
+      {/* Radial cyan glow top-right */}
+      <div className="absolute -right-24 top-0 h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.10)_0%,transparent_60%)] blur-3xl" />
+      {/* Subtle dot grid */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(37,99,255,0.08)_1px,transparent_1px)] [background-size:32px_32px] opacity-60" />
+      {/* Gentle fade-to-white at the very bottom so sections below blend smoothly */}
+      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white to-transparent" />
     </div>
   );
 }
@@ -70,12 +48,12 @@ function GlassCard({ children, className = '' }: { children: ReactNode; classNam
   return (
     <motion.div
       variants={fadeUp}
-      whileHover={{ y: -8, scale: 1.01 }}
+      whileHover={{ y: -6, scale: 1.005 }}
       transition={{ type: 'spring', stiffness: 220, damping: 22 }}
-      className={`group relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.055] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.32)] backdrop-blur-2xl ${className}`}
+      className={`group relative overflow-hidden rounded-[1.75rem] border border-[rgba(15,23,42,0.08)] bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.06)] ${className}`}
     >
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#33B6FF]/70 to-transparent" />
-      <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[#1677FF]/20 blur-3xl transition-opacity group-hover:opacity-100" />
+      <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-[1.75rem] bg-gradient-to-r from-transparent via-[#2563FF]/40 to-transparent" />
+      <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[#2563FF]/06 blur-3xl transition-all duration-300 group-hover:bg-[#2563FF]/10" />
       {children}
     </motion.div>
   );
@@ -91,9 +69,9 @@ function SectionHeading({ eyebrow, title, body }: { eyebrow: string; title: stri
       transition={{ duration: 0.7, ease: 'easeOut' }}
       className="mx-auto mb-10 max-w-3xl text-center sm:mb-12"
     >
-      <p className="mb-4 text-xs font-bold uppercase tracking-[0.32em] text-[#33B6FF]">{eyebrow}</p>
-      <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-5xl">{title}</h2>
-      <p className="mx-auto mt-4 max-w-2xl text-base font-medium leading-8 text-[#C7D2FE]/80 sm:text-lg">{body}</p>
+      <p className="mb-4 text-xs font-bold uppercase tracking-[0.32em] text-[#2563FF]">{eyebrow}</p>
+      <h2 className="text-2xl font-extrabold tracking-tight text-[#0B1220] sm:text-5xl">{title}</h2>
+      <p className="mx-auto mt-4 max-w-2xl text-base font-medium leading-8 text-[#4B5563] sm:text-lg">{body}</p>
     </motion.div>
   );
 }
@@ -135,172 +113,173 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-transparent text-white">
-      <FuturisticBackground />
+    <div className="relative min-h-screen overflow-hidden bg-[#EEF4FF] text-[#0B1220]">
+      <LightBackground />
 
       <main className="relative z-10">
-        <section className="relative flex min-h-[calc(100vh-64px)] items-center px-4 pb-16 pt-10 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8">
-          <div className="pointer-events-none absolute left-1/2 top-14 h-72 w-[44rem] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(226,246,255,0.28)_0%,rgba(51,182,255,0.18)_28%,rgba(22,119,255,0.08)_52%,transparent_76%)] blur-2xl" />
-          <motion.div
-            aria-hidden
-            className="pointer-events-none absolute left-[28%] top-24 h-48 w-48 rounded-full border border-[#9BE7FF]/20 shadow-[0_0_70px_rgba(51,182,255,0.24)]"
-            animate={{ scale: [0.96, 1.06, 0.96], opacity: [0.18, 0.42, 0.18] }}
-            transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
-          />
-          <div className="mx-auto grid w-full max-w-7xl items-center gap-12 lg:grid-cols-[1.02fr_0.98fr]">
+        {/* ─── HERO ─── */}
+        <section className="relative flex min-h-[calc(100vh-64px)] items-center overflow-hidden px-4 pb-16 pt-10 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8">
+
+          <div className="mx-auto grid w-full max-w-7xl items-center gap-8 lg:grid-cols-[1fr_1fr] lg:gap-12">
+
+            {/* ── Left: text ── */}
             <motion.div
               initial="hidden"
               animate="visible"
-              transition={{ staggerChildren: 0.12 }}
-              className="mx-auto max-w-3xl text-center lg:mx-0 lg:text-left"
+              transition={{ staggerChildren: 0.11 }}
+              className="mx-auto max-w-2xl text-center lg:mx-0 lg:text-left"
             >
+              {/* Live badge */}
               <motion.div
                 variants={fadeUp}
-                className="mb-8 inline-flex items-center gap-2 rounded-full border border-[#33B6FF]/25 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-[#C7D2FE] shadow-[0_0_40px_rgba(22,119,255,0.18)] backdrop-blur-xl"
+                className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#2563FF]/20 bg-white px-4 py-2 text-sm font-semibold text-[#2563FF] shadow-[0_4px_18px_rgba(37,99,255,0.10)]"
               >
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00D4FF] opacity-75" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#00D4FF]" />
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#2563FF] opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[#2563FF]" />
                 </span>
                 {t('landing.premium_badge')}
               </motion.div>
 
-              <motion.div variants={fadeUp} className="mb-8 flex justify-center lg:justify-start">
-                <motion.div
-                  animate={{ y: [0, -8, 0], filter: ['drop-shadow(0 0 18px rgba(22,119,255,0.35))', 'drop-shadow(0 0 34px rgba(51,182,255,0.58))', 'drop-shadow(0 0 18px rgba(22,119,255,0.35))'] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-                  className="relative flex items-center gap-4"
-                >
-                  <div className="absolute -inset-9 rounded-[2.5rem] bg-[radial-gradient(circle_at_23%_48%,rgba(255,255,255,0.40),rgba(155,231,255,0.24)_30%,rgba(51,182,255,0.12)_50%,transparent_74%)] blur-xl" />
-                  <LogoIcon className="relative h-16 w-16 opacity-90 sm:h-20 sm:w-20" />
-                  <div>
-                    <p className="text-3xl font-extrabold tracking-tight sm:text-6xl">
-                      Link<span className="bg-gradient-to-r from-[#33B6FF] to-[#1677FF] bg-clip-text text-transparent">Help</span>
-                    </p>
-                    <p className="mt-2 text-xs font-bold uppercase tracking-[0.28em] text-[#33B6FF]">{t('landing.brand_tagline')}</p>
-                    <div className="mt-2">
-                      <ByFluxBadge className="text-cyan-200/45" />
-                    </div>
+              {/* Logo + brand */}
+              <motion.div variants={fadeUp} className="mb-7 flex justify-center lg:justify-start">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] border border-blue-100 bg-white shadow-[0_8px_28px_rgba(37,99,255,0.14)]">
+                    <LogoIcon className="h-9 w-9" />
                   </div>
-                </motion.div>
+                  <div>
+                    <p className="text-2xl font-extrabold tracking-tight text-[#0B1220]">
+                      Link<span className="bg-gradient-to-r from-[#2563FF] to-[#38BDF8] bg-clip-text text-transparent">Help</span>
+                    </p>
+                    <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.26em] text-[#2563FF]/70">{t('landing.brand_tagline')}</p>
+                  </div>
+                </div>
               </motion.div>
 
+              {/* Heading */}
               <motion.h1
                 variants={fadeUp}
-                className="text-balance text-[2.65rem] font-extrabold leading-[1.02] tracking-tight text-white sm:text-7xl lg:text-8xl"
+                className="text-balance text-[2.4rem] font-extrabold leading-[1.06] tracking-tight text-[#0B1220] sm:text-5xl lg:text-6xl"
               >
                 {t('landing.premium_hero_title')}
               </motion.h1>
-              <motion.p variants={fadeUp} className="mx-auto mt-7 max-w-2xl text-lg font-medium leading-8 text-[#C7D2FE]/82 sm:text-xl lg:mx-0">
+
+              {/* Subheading */}
+              <motion.p
+                variants={fadeUp}
+                className="mx-auto mt-5 max-w-xl text-base font-medium leading-7 text-[#4B5563] sm:text-lg lg:mx-0"
+              >
                 {t('landing.premium_hero_sub')}
               </motion.p>
 
-              <motion.div variants={fadeUp} className="mt-10 flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
+              {/* Trust badges */}
+              <motion.div variants={fadeUp} className="mt-6 flex flex-wrap justify-center gap-3 lg:justify-start">
+                {[
+                  { icon: ShieldCheck, label: t('landing.trust_verified_title') },
+                  { icon: BadgeCheck,  label: t('landing.trust_reviews_title') },
+                ].map(({ icon: Icon, label }) => (
+                  <span
+                    key={label}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-white px-4 py-2 text-[13px] font-semibold text-[#0B1220] shadow-[0_2px_10px_rgba(15,23,42,0.06)]"
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-[#2563FF]" />
+                    {label}
+                  </span>
+                ))}
+              </motion.div>
+
+              {/* CTAs */}
+              <motion.div variants={fadeUp} className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
                 <Link
                   to={clientSignup}
-                className="group inline-flex min-h-[56px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#1677FF] to-[#00D4FF] px-5 text-center text-base font-extrabold text-white shadow-[0_18px_55px_rgba(22,119,255,0.42)] transition-all hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(0,212,255,0.36)] sm:px-7"
+                  className="group inline-flex min-h-[52px] items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-br from-[#2563FF] to-[#1D55E8] px-7 text-[15px] font-extrabold text-white shadow-[0_12px_36px_rgba(37,99,255,0.30)] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(37,99,255,0.36)]"
                 >
                   {t('landing.premium_cta_start')}
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Link>
                 <a
                   href="#services"
-                  className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-white/14 bg-white/[0.055] px-5 text-center text-base font-extrabold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-xl transition-all hover:-translate-y-1 hover:border-[#33B6FF]/50 hover:bg-white/[0.09] sm:px-7"
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-[rgba(15,23,42,0.10)] bg-white px-7 text-[15px] font-extrabold text-[#0B1220] shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition-all hover:-translate-y-0.5 hover:border-[#2563FF]/30 hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)]"
                 >
                   {t('landing.premium_cta_explore')}
                 </a>
               </motion.div>
 
-              <motion.div variants={fadeUp} className="mt-10 grid grid-cols-1 gap-3 text-left sm:max-w-xl sm:grid-cols-3">
+              {/* Stats */}
+              <motion.div variants={fadeUp} className="mt-8 grid grid-cols-3 gap-3 sm:max-w-md">
                 {[
                   ['50k+', t('landing.stat_connected_users')],
                   [t('landing.reviews_score'), t('landing.stat_average_rating')],
                   ['24/7', t('landing.stat_live_requests')],
                 ].map(([value, label]) => (
-                  <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 backdrop-blur-xl">
-                    <p className="text-xl font-extrabold text-white sm:text-2xl">{value}</p>
-                    <p className="mt-1 text-xs font-semibold text-[#C7D2FE]/70">{label}</p>
+                  <div key={label} className="rounded-2xl border border-[rgba(15,23,42,0.08)] bg-white p-4 shadow-[0_2px_10px_rgba(15,23,42,0.05)]">
+                    <p className="text-xl font-extrabold text-[#0B1220] sm:text-2xl">{value}</p>
+                    <p className="mt-0.5 text-[11px] font-semibold text-[#6B7280]">{label}</p>
                   </div>
                 ))}
               </motion.div>
             </motion.div>
 
+            {/* ── Right: hero tools image ── */}
             <motion.div
-              initial={{ opacity: 0, x: 40, rotateX: 8 }}
-              animate={{ opacity: 1, x: 0, rotateX: 0 }}
-              transition={{ duration: 0.9, ease: 'easeOut', delay: 0.2 }}
-              className="relative mx-auto w-full max-w-xl lg:max-w-none"
+              initial={{ opacity: 0, x: 40, scale: 0.96 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ duration: 0.9, ease: 'easeOut', delay: 0.15 }}
+              className="relative mx-auto w-full max-w-[480px] lg:max-w-none"
             >
-              <div className="absolute -inset-8 rounded-[3rem] bg-[#1677FF]/20 blur-3xl" />
+              {/* Glow behind image */}
+              <div className="pointer-events-none absolute inset-y-8 left-1/2 w-[85%] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(37,99,255,0.14),transparent_68%)] blur-2xl" aria-hidden />
+
+              <motion.img
+                src="/brand/hero-tools.png"
+                alt="Ferramentas de serviços"
+                className="relative w-full drop-shadow-2xl"
+                style={{ filter: 'drop-shadow(0 32px 56px rgba(15,23,42,0.16))' }}
+                animate={{ y: [0, -14, 0] }}
+                transition={{ duration: 6.5, repeat: Infinity, ease: 'easeInOut' }}
+                loading="eager"
+                decoding="async"
+              />
+
+              {/* Floating badge — Profissionais verificados */}
               <motion.div
-                animate={{ y: [0, -16, 0], rotate: [0, 0.8, 0] }}
-                transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-                className="relative min-h-[500px] overflow-hidden rounded-[1.5rem] border border-white/12 bg-[#071120]/70 p-4 shadow-[0_34px_120px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:min-h-[520px] sm:rounded-[2rem] sm:p-6"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, duration: 0.6 }}
+                className="absolute -left-4 bottom-[22%] flex items-center gap-2.5 rounded-2xl border border-[rgba(15,23,42,0.08)] bg-white px-4 py-3 shadow-[0_12px_36px_rgba(15,23,42,0.12)] sm:-left-8"
               >
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(51,182,255,0.22),transparent_32%),linear-gradient(135deg,rgba(22,119,255,0.14),transparent_44%)]" />
-                <div className="absolute left-8 top-8 h-40 w-40 rounded-full border border-[#33B6FF]/30 shadow-[0_0_60px_rgba(51,182,255,0.2)]" />
-                <div className="absolute right-10 top-20 h-24 w-24 rounded-[2rem] border border-[#00D4FF]/25 bg-white/[0.035] blur-[0.2px]" />
-                <div className="absolute bottom-16 right-8 h-56 w-56 rounded-full bg-[#1677FF]/14 blur-3xl" />
-                <div className="relative mx-auto flex h-full max-w-sm flex-col rounded-[2rem] border border-white/12 bg-[#050816]/74 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_30px_90px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
-                  <div className="mb-6 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-bold text-white">{t('landing.demo_hello')}</p>
-                      <p className="text-xs font-medium text-[#C7D2FE]/60">{t('landing.demo_ready')}</p>
-                    </div>
-                    <div className="h-9 w-9 rounded-2xl border border-white/10 bg-white/[0.06]" />
-                  </div>
-
-                  <div className="rounded-3xl border border-[#33B6FF]/25 bg-gradient-to-br from-[#1677FF]/26 to-white/[0.035] p-5 shadow-[0_0_50px_rgba(22,119,255,0.18)]">
-                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#33B6FF]">{t('landing.demo_balance')}</p>
-                    <p className="mt-3 text-3xl font-extrabold text-white sm:text-4xl">$2,540</p>
-                    <div className="mt-5 h-2 rounded-full bg-white/10">
-                      <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-[#1677FF] to-[#00D4FF]" />
-                    </div>
-                  </div>
-
-                  <div className="mt-5 grid grid-cols-4 gap-3">
-                    {[UsersRound, Sparkles, PackageCheck, Banknote].map((Icon, index) => (
-                      <div key={index} className="flex aspect-square items-center justify-center rounded-2xl border border-white/10 bg-white/[0.055] text-[#33B6FF]">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                    ))}
-                  </div>
-
-                    <div className="mt-5 space-y-2 sm:space-y-3">
-                    {[
-                      [t('landing.demo_delivery_request'), '+ $45.00'],
-                      [t('landing.demo_cleaning_service'), '+ $120.00'],
-                      [t('landing.demo_assembly_task'), '+ $85.00'],
-                    ].map(([title, value]) => (
-                      <div key={title} className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.045] px-4 py-3">
-                        <div>
-                          <p className="text-sm font-bold text-white">{title}</p>
-                          <p className="text-xs font-semibold text-[#C7D2FE]/50">{t('landing.demo_live_opportunity')}</p>
-                        </div>
-                        <p className="text-sm font-extrabold text-[#00D4FF]">{value}</p>
-                      </div>
-                    ))}
-                  </div>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50">
+                  <ShieldCheck className="h-5 w-5 text-[#2563FF]" />
+                </span>
+                <div>
+                  <p className="text-[13px] font-extrabold text-[#0B1220]">{t('landing.trust_verified_title')}</p>
+                  <p className="text-[11px] font-medium text-[#6B7280]">50k+ {t('landing.stat_connected_users')}</p>
                 </div>
+              </motion.div>
 
-                <div className="absolute bottom-4 left-4 right-4 rounded-3xl border border-white/12 bg-[#050816]/72 p-4 backdrop-blur-xl sm:bottom-7 sm:left-7 sm:right-7 sm:p-5">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#33B6FF]">{t('landing.demo_marketplace')}</p>
-                        <p className="mt-1 text-lg font-extrabold text-white sm:text-xl">{t('landing.demo_near_you')}</p>
-                    </div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1677FF] shadow-[0_0_30px_rgba(22,119,255,0.55)]">
-                      <Sparkles className="h-6 w-6" />
-                    </div>
-                  </div>
+              {/* Floating badge — top-right: avaliações */}
+              <motion.div
+                initial={{ opacity: 0, y: -16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8, duration: 0.6 }}
+                className="absolute -right-2 top-[12%] flex items-center gap-2 rounded-2xl border border-[rgba(15,23,42,0.08)] bg-white px-4 py-3 shadow-[0_12px_36px_rgba(15,23,42,0.12)] sm:-right-6"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50">
+                  <BadgeCheck className="h-5 w-5 text-amber-500" />
+                </span>
+                <div>
+                  <p className="text-[13px] font-extrabold text-[#0B1220]">{t('landing.trust_reviews_title')}</p>
+                  <p className="text-[11px] font-medium text-[#6B7280]">{t('landing.reviews_score')} ★</p>
                 </div>
               </motion.div>
             </motion.div>
+
           </div>
         </section>
 
-        <section className="relative px-4 py-20 sm:px-6 lg:px-8">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(22,119,255,0.18),transparent_38%)]" />
+        {/* ─── HOW IT WORKS ─── */}
+        <section className="relative bg-white px-4 py-20 sm:px-6 lg:px-8">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#2563FF]/20 to-transparent" />
           <div className="relative mx-auto max-w-7xl">
             <SectionHeading
               eyebrow={t('landing.premium_how_eyebrow')}
@@ -319,13 +298,13 @@ export default function LandingPage() {
                 return (
                   <GlassCard key={item.title}>
                     <div className="mb-8 flex items-center justify-between">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1677FF] to-[#00D4FF] text-white shadow-[0_0_42px_rgba(22,119,255,0.44)]">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2563FF] to-[#38BDF8] text-white shadow-[0_8px_28px_rgba(37,99,255,0.24)]">
                         <Icon className="h-7 w-7" />
                       </div>
-                      <span className="text-sm font-extrabold text-white/20">0{index + 1}</span>
+                      <span className="text-3xl font-extrabold text-[#0B1220]/08">0{index + 1}</span>
                     </div>
-                    <h3 className="text-xl font-extrabold text-white sm:text-2xl">{item.title}</h3>
-                    <p className="mt-4 text-sm font-medium leading-7 text-[#C7D2FE]/76">{item.body}</p>
+                    <h3 className="text-xl font-extrabold text-[#0B1220] sm:text-2xl">{item.title}</h3>
+                    <p className="mt-4 text-sm font-medium leading-7 text-[#4B5563]">{item.body}</p>
                   </GlassCard>
                 );
               })}
@@ -333,8 +312,9 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="services" className="relative px-4 py-20 sm:px-6 lg:px-8">
-          <div className="absolute inset-x-0 top-0 h-full bg-[radial-gradient(circle_at_78%_10%,rgba(51,182,255,0.12),transparent_32%),linear-gradient(180deg,transparent,rgba(7,17,32,0.28),transparent)]" />
+        {/* ─── SERVICES ─── */}
+        <section id="services" className="relative bg-[#F5F8FF] px-4 py-20 sm:px-6 lg:px-8">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#2563FF]/15 to-transparent" />
           <div className="relative mx-auto max-w-7xl">
             <SectionHeading
               eyebrow={t('landing.premium_services_eyebrow')}
@@ -351,20 +331,20 @@ export default function LandingPage() {
               {services.map((service) => {
                 const Icon = service.icon;
                 return (
-                  <Link key={service.title} to={clientSignup} className="block focus:outline-none focus:ring-2 focus:ring-[#33B6FF]/60 rounded-[1.75rem]">
+                  <Link key={service.title} to={clientSignup} className="block rounded-[1.75rem] focus:outline-none focus:ring-2 focus:ring-[#2563FF]/40">
                     <GlassCard className="min-h-[190px]">
-                    <div className="flex h-full flex-col justify-between">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#33B6FF]/20 bg-[#1677FF]/14 text-[#33B6FF] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
-                          <Icon className="h-6 w-6" />
+                      <div className="flex h-full flex-col justify-between">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-[#2563FF]">
+                            <Icon className="h-6 w-6" />
+                          </div>
+                          <ArrowRight className="h-5 w-5 text-[#0B1220]/25 transition-all group-hover:translate-x-1 group-hover:text-[#2563FF]" />
                         </div>
-                        <ArrowRight className="h-5 w-5 text-white/24 transition-all group-hover:translate-x-1 group-hover:text-[#33B6FF]" />
+                        <div>
+                          <h3 className="text-xl font-extrabold text-[#0B1220] sm:text-2xl">{service.title}</h3>
+                          <p className="mt-2 text-sm font-semibold text-[#6B7280]">{service.meta}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-xl font-extrabold text-white sm:text-2xl">{service.title}</h3>
-                        <p className="mt-2 text-sm font-semibold text-[#C7D2FE]/70">{service.meta}</p>
-                      </div>
-                    </div>
                     </GlassCard>
                   </Link>
                 );
@@ -373,7 +353,9 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="relative px-4 py-20 sm:px-6 lg:px-8">
+        {/* ─── BENEFITS ─── */}
+        <section className="relative bg-white px-4 py-20 sm:px-6 lg:px-8">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#2563FF]/15 to-transparent" />
           <div className="mx-auto max-w-7xl">
             <SectionHeading
               eyebrow={t('landing.premium_benefits_eyebrow')}
@@ -392,12 +374,12 @@ export default function LandingPage() {
                 return (
                   <GlassCard key={benefit.title} className="p-5">
                     <div className="flex items-center gap-4 lg:flex-col lg:items-start">
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#0A1A35] text-[#33B6FF] shadow-[0_0_34px_rgba(51,182,255,0.2)] ring-1 ring-white/10">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-[#2563FF] shadow-[0_4px_16px_rgba(37,99,255,0.10)]">
                         <Icon className="h-6 w-6" />
                       </div>
                       <div>
-                        <p className="text-xl font-extrabold text-white sm:text-2xl">{benefit.value}</p>
-                        <p className="text-sm font-semibold text-[#C7D2FE]/72">{benefit.title}</p>
+                        <p className="text-xl font-extrabold text-[#0B1220] sm:text-2xl">{benefit.value}</p>
+                        <p className="text-sm font-semibold text-[#6B7280]">{benefit.title}</p>
                       </div>
                     </div>
                   </GlassCard>
@@ -407,34 +389,36 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="relative px-4 py-24 sm:px-6 lg:px-8">
+        {/* ─── FINAL CTA ─── */}
+        <section className="relative bg-[#F5F8FF] px-4 py-24 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 34 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-80px' }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
-            className="relative mx-auto max-w-6xl overflow-hidden rounded-[1.5rem] border border-[#33B6FF]/20 bg-[#071120]/78 px-4 py-12 text-center shadow-[0_0_120px_rgba(22,119,255,0.22)] backdrop-blur-2xl sm:rounded-[2.25rem] sm:px-12 sm:py-16"
+            className="relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#1447E6] to-[#0B2FA8] px-4 py-14 text-center shadow-[0_24px_80px_rgba(37,99,255,0.30)] sm:rounded-[2.5rem] sm:px-12 sm:py-20"
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(226,246,255,0.18),transparent_22%),radial-gradient(circle_at_50%_18%,rgba(0,212,255,0.20),transparent_36%),linear-gradient(180deg,rgba(7,17,32,0.58),rgba(5,8,22,0.94))]" />
+            {/* inner glow */}
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.16),transparent_50%),radial-gradient(ellipse_at_80%_100%,rgba(56,189,248,0.18),transparent_48%)]" />
             <div className="relative mx-auto max-w-3xl">
-              <div className="mx-auto mb-7 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[#1677FF] to-[#00D4FF] shadow-[0_0_50px_rgba(0,212,255,0.45)]">
+              <div className="mx-auto mb-7 flex h-16 w-16 items-center justify-center rounded-[1.4rem] bg-white/15 text-white shadow-[0_0_40px_rgba(255,255,255,0.2)] ring-1 ring-white/20">
                 <BadgeCheck className="h-8 w-8" />
               </div>
               <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-6xl">{t('landing.premium_final_title')}</h2>
-              <p className="mx-auto mt-6 max-w-2xl text-lg font-medium leading-8 text-[#C7D2FE]/82">
+              <p className="mx-auto mt-6 max-w-2xl text-lg font-medium leading-8 text-white/80">
                 {t('landing.premium_final_body')}
               </p>
               <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
                 <Link
                   to={helperSignup}
-                  className="inline-flex min-h-[56px] items-center justify-center gap-3 rounded-2xl bg-white px-5 text-center text-base font-extrabold text-[#071120] shadow-[0_18px_60px_rgba(255,255,255,0.2)] transition-all hover:-translate-y-1 sm:px-7"
+                  className="inline-flex min-h-[54px] items-center justify-center gap-2.5 rounded-2xl bg-white px-7 text-center text-base font-extrabold text-[#1447E6] shadow-[0_12px_40px_rgba(0,0,0,0.20)] transition-all hover:-translate-y-1 hover:shadow-[0_16px_50px_rgba(0,0,0,0.26)]"
                 >
                   {t('landing.premium_cta_start')}
                   <ArrowRight className="h-5 w-5" />
                 </Link>
                 <Link
                   to={ROUTES.login}
-                  className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-white/18 bg-white/[0.06] px-5 text-center text-base font-extrabold text-white backdrop-blur-xl transition-all hover:-translate-y-1 hover:bg-white/[0.1] sm:px-7"
+                  className="inline-flex min-h-[54px] items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-7 text-center text-base font-extrabold text-white transition-all hover:-translate-y-1 hover:bg-white/16"
                 >
                   {t('login_page.submit')}
                 </Link>

@@ -20,19 +20,19 @@ export function HelperScorePanel({ className = '', collapsible = false, defaultE
       <button
         type="button"
         onClick={() => collapsible && setExpanded((value) => !value)}
-        className={`flex w-full items-start justify-between gap-3 text-left ${collapsible ? 'cursor-pointer' : 'cursor-default'}`}
+        className={`flex min-h-[76px] w-full items-center justify-between gap-3 text-left ${collapsible ? 'cursor-pointer' : 'cursor-default'}`}
         aria-expanded={showDetails}
       >
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-[10px] font-black uppercase tracking-wide text-blue-600">{t('helper_score.title')}</p>
           <p className="mt-1 text-3xl font-black tabular-nums text-slate-950">{data.overall}</p>
-          <p className="text-xs font-medium text-slate-500">
+          <p className="truncate whitespace-nowrap text-xs font-medium text-slate-500">
             {collapsible && !showDetails
-              ? 'Toque para ver os motivos da pontuacao.'
+              ? 'Toque para ver os motivos'
               : t('helper_score.evolution', { delta: data.evolutionDelta })}
           </p>
         </div>
-        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+        <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
           <TrendingUp className="h-3.5 w-3.5" />
           {data.trendLabel}
           {collapsible ? (

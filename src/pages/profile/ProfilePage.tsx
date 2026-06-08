@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -12,10 +12,9 @@ import {
   Mail,
   MapPin,
   Phone,
-  Settings,
   Star,
-  UserRound,
 } from 'lucide-react';
+import { FilePickerLabel } from '@/components/common/HiddenFileInput';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { useAuth } from '@/context/AuthContext';
@@ -45,6 +44,8 @@ import {
   HelperBaseAddressLockedError,
   syncHelperBaseAddress,
 } from '@/services/supabase/helperBaseAddressRemote';
+import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
+import { cropSquareAvatarFromFile } from '@/utils/portfolioMediaProcessing';
 
 function profileInitials(name?: string | null, email?: string | null) {
   const source = name?.trim() || email?.trim() || 'LH';
@@ -68,16 +69,18 @@ export default function ProfilePage() {
     helperBaseAddressFromProfile({}),
   );
   const [baseAddressSaving, setBaseAddressSaving] = useState(false);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const avatarObjectUrlRef = useRef<string | null>(null);
 
   const email = session?.user.email ?? profile?.email ?? '';
   const displayName = profile?.name?.trim() || session?.user.user_metadata?.name || email || 'LinkHelp';
   const initials = profileInitials(displayName, email);
-  const avatarUrl = profile?.avatar_url?.trim() || '';
+  const avatarUrl = avatarPreviewUrl ?? profile?.avatar_url?.trim() ?? '';
   const city = [profile?.city, profile?.region].filter(Boolean).join(', ');
   const roleLabel = profile?.role === 'helper' ? 'Helper' : profile?.role === 'client' ? 'Cliente' : 'LinkHelp';
   const bio = profile?.bio?.trim() || 'Adicione uma bio em configurações para deixar seu perfil mais completo.';
   const balanceLabel = loading ? '...' : formatLinkCredits(balance ?? 0);
-  const homeRoute = isHelperMode ? ROUTES.helperDashboard : ROUTES.clientDashboard;
   const helperBaseLabel = [
     profile?.helper_base_address,
     profile?.helper_base_city,
@@ -107,6 +110,16 @@ export default function ProfilePage() {
     if (!profile) return;
     setHelperBaseValue(helperBaseAddressFromProfile(profile));
   }, [profile]);
+
+  const revokeAvatarObjectUrl = () => {
+    if (avatarObjectUrlRef.current) {
+      URL.revokeObjectURL(avatarObjectUrlRef.current);
+      avatarObjectUrlRef.current = null;
+    }
+    setAvatarPreviewUrl(null);
+  };
+
+  useEffect(() => () => revokeAvatarObjectUrl(), []);
 
   useEffect(() => {
     if (!profile || !isHelperMode) return;
@@ -199,6 +212,47 @@ export default function ProfilePage() {
     }
   };
 
+  const saveAvatarFile = async (file: File) => {
+    if (!isConfigured || !session?.user?.id) {
+      showToast(t('app_pages.settings_saved'), 'info');
+      return;
+    }
+    revokeAvatarObjectUrl();
+    const preview = URL.createObjectURL(file);
+    avatarObjectUrlRef.current = preview;
+    setAvatarPreviewUrl(preview);
+    setAvatarSaving(true);
+    try {
+      let uploadFile: File = file;
+      try {
+        const cropped = await cropSquareAvatarFromFile(file);
+        uploadFile = await fileFromDataUrl(cropped, 'avatar.jpg', 'image/jpeg');
+      } catch {
+        uploadFile = file;
+      }
+      const { publicUrl } = await uploadAvatarImage(session.user.id, uploadFile);
+      const err = await updateProfile({ avatar_url: publicUrl });
+      if (err) {
+        showToast(t(err.messageKey, err.vars), 'error');
+        return;
+      }
+      await refreshProfile();
+      revokeAvatarObjectUrl();
+      showToast(t('app_pages.settings_avatar_saved'), 'success');
+    } catch (e) {
+      const raw = formatStorageError(e);
+      showToast(raw && raw !== 'NO_SUPABASE' ? raw : t('profile_setup.avatar_save_error'), 'error');
+    } finally {
+      setAvatarSaving(false);
+    }
+  };
+
+  const onAvatarFiles = (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file || avatarSaving) return;
+    void saveAvatarFile(file);
+  };
+
   return (
     <AppPageShell className="w-full">
       <DesktopBackButton className="mb-3" />
@@ -241,6 +295,11 @@ export default function ProfilePage() {
                   {initials}
                 </div>
               )}
+              {avatarSaving ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+                  <Loader2 className="h-6 w-6 animate-spin text-white" />
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -248,7 +307,7 @@ export default function ProfilePage() {
             <div className="relative mt-5 rounded-[1.5rem] bg-white/10 p-4 ring-1 ring-white/14">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-100/70">LinkCredit</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.26)]">LinkCredit</p>
                   <p className="mt-1 text-2xl font-black text-amber-300 drop-shadow-[0_0_18px_rgba(251,191,36,0.22)]">
                     {balanceLabel}
                   </p>
@@ -281,13 +340,14 @@ export default function ProfilePage() {
               <h2 className="text-lg font-black text-slate-950">Informações pessoais</h2>
               <p className="mt-1 text-sm font-medium text-slate-500">Foto, bio e dados visíveis do seu perfil.</p>
             </div>
-            <Link
-              to={`${ROUTES.settings}#avatar`}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#EEF3FF] text-[#2563FF]"
-              aria-label="Editar foto"
+            <FilePickerLabel
+              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+              disabled={!isConfigured || avatarSaving}
+              onFiles={onAvatarFiles}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#EEF3FF] text-[#2563FF] transition hover:bg-blue-100 disabled:opacity-50"
             >
-              <Camera className="h-5 w-5" />
-            </Link>
+              {avatarSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+            </FilePickerLabel>
           </div>
 
           <div className="space-y-3">
@@ -345,6 +405,7 @@ export default function ProfilePage() {
                     setSecondaryCategories(secondary);
                   }}
                   onSaveAsync={persistHelperSkills}
+                  iconOnlySummary
                 />
               </section>
 
@@ -413,36 +474,14 @@ export default function ProfilePage() {
               </section>
             </section>
 
-            <HelperScorePanel className="rounded-[1.75rem] border border-slate-100 bg-white shadow-[0_18px_42px_rgba(15,23,42,0.06)]" />
+            <HelperScorePanel
+              collapsible
+              defaultExpanded={false}
+              className="rounded-[1.75rem] border border-slate-100 bg-white shadow-[0_18px_42px_rgba(15,23,42,0.06)]"
+            />
           </>
         ) : null}
 
-        <section className="grid gap-3 sm:grid-cols-2">
-          <Link
-            to={ROUTES.settings}
-            className="flex items-center gap-3 rounded-[1.4rem] border border-slate-100 bg-white p-4 text-slate-900 shadow-[0_14px_32px_rgba(15,23,42,0.05)]"
-          >
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 text-slate-600">
-              <Settings className="h-5 w-5" />
-            </span>
-            <span>
-              <span className="block text-sm font-black">Configurações</span>
-              <span className="mt-0.5 block text-xs font-medium text-slate-500">Conta, idiomas e preferências.</span>
-            </span>
-          </Link>
-          <Link
-            to={homeRoute}
-            className="flex items-center gap-3 rounded-[1.4rem] border border-slate-100 bg-white p-4 text-slate-900 shadow-[0_14px_32px_rgba(15,23,42,0.05)]"
-          >
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF3FF] text-[#2563FF]">
-              <UserRound className="h-5 w-5" />
-            </span>
-            <span>
-              <span className="block text-sm font-black">Voltar ao painel</span>
-              <span className="mt-0.5 block text-xs font-medium text-slate-500">Retornar para sua área logada.</span>
-            </span>
-          </Link>
-        </section>
       </div>
     </AppPageShell>
   );

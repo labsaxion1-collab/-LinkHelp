@@ -718,6 +718,7 @@ export const pt = {
     swipe_rate_limit: 'Você enviou muitos interesses rapidamente. Aguarde alguns segundos.',
     already_interested: 'Você já demonstrou interesse neste chamado.',
     application_limit_reached: 'Este chamado já atingiu o limite de 3 candidaturas ativas.',
+    exclusive_application_locked: 'Este chamado já recebeu uma candidatura exclusiva.',
     apply_sending_modal: 'Enviando candidatura...',
     credits_interest_hint: 'Usa créditos para demonstrar interesse',
     credit_cost_interest: 'Custa {{count}} LC',

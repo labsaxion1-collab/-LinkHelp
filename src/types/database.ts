@@ -101,6 +101,7 @@ export type ApplicationRow = {
   status: DbApplicationStatus;
   message: string | null;
   proposed_amount: number | null;
+  is_exclusive: boolean | null;
   created_at: string;
   updated_at: string;
 };

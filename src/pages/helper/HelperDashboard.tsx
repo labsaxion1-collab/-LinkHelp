@@ -21,7 +21,11 @@ import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { UpcomingJobsSidebar } from '@/components/helpers/UpcomingJobsSidebar';
 import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailModal';
-import { buildActiveApplicationCountsByJobId } from '@/utils/applicationInterest';
+import {
+  buildActiveApplicationCountsByJobId,
+  hasExclusiveActiveApplicationForJob,
+  isJobInterestFull,
+} from '@/utils/applicationInterest';
 import type { ServiceCategoryId } from '@/data/serviceCategories';
 import { resolveCategoryId, translateCategory, translateJobTitle } from '@/utils/translateCategory';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
@@ -651,7 +655,12 @@ export default function HelperDashboard() {
     [appliedJobIds, helperUserId, baseDistanceToJobKm, hasInterestCredits, logProposalAnalytics, pushToast, t],
   );
 
-  const submitApply = async (job: Job, proposedAmount: number | null, proposalMessage?: string | null) => {
+  const submitApply = async (
+    job: Job,
+    proposedAmount: number | null,
+    proposalMessage?: string | null,
+    proposalOptions?: { isExclusive?: boolean },
+  ) => {
     if (appliedJobIds.has(job.id) || isSubmittingApplyRef.current) return;
     if (!helperUserId) {
       showToast(t('auth.errors.not_signed_in'), 'error');
@@ -672,6 +681,7 @@ export default function HelperDashboard() {
       await applyForJob(job.id, helperUserId, proposedAmount, {
         distanceKm,
         message: proposalMessage ?? null,
+        isExclusive: proposalOptions?.isExclusive === true,
       });
       await refreshCredits();
       recordMarketSignal({
@@ -714,6 +724,10 @@ export default function HelperDashboard() {
       }
       if (msg === 'APPLICATION_LIMIT_REACHED') {
         showToast(t('helper_dashboard.application_limit_reached'), 'error');
+        return;
+      }
+      if (msg === 'EXCLUSIVE_APPLICATION_LOCKED') {
+        showToast(t('helper_dashboard.exclusive_application_locked'), 'error');
         return;
       }
       const friendlyMsg =
@@ -791,9 +805,15 @@ export default function HelperDashboard() {
         categoryPrefs,
       );
     }
-    return list.filter((j) => !dismissedJobIds.has(j.id) && !helperEngagedJobIds.has(j.id));
+    return list.filter((j) => {
+      if (dismissedJobIds.has(j.id) || helperEngagedJobIds.has(j.id)) return false;
+      if (hasExclusiveActiveApplicationForJob(applications, j.id, viewerId)) return false;
+      return !isJobInterestFull(applicationCountsByJobId.get(j.id) ?? 0);
+    });
   }, [
     jobs,
+    applications,
+    applicationCountsByJobId,
     selectedCategoryFilters,
     activeTab,
     helperBaseCoords,
@@ -816,7 +836,9 @@ export default function HelperDashboard() {
         !isJobCancelled(j) &&
         j.clientId !== (helperUserId ?? me?.id ?? '') &&
         getJobServiceCategoryId(j) &&
-        !helperEngagedJobIds.has(j.id),
+        !helperEngagedJobIds.has(j.id) &&
+        !hasExclusiveActiveApplicationForJob(applications, j.id, helperUserId ?? me?.id ?? '') &&
+        !isJobInterestFull(applicationCountsByJobId.get(j.id) ?? 0),
     ),
     categoryPrefs,
   )
@@ -1431,7 +1453,7 @@ export default function HelperDashboard() {
         submitting={proposalJob ? applyingJobId === proposalJob.id : false}
         creditBalance={walletBalance}
         onClose={handleProposalClose}
-        onSubmit={(amount, message) => proposalJob && void submitApply(proposalJob, amount, message)}
+        onSubmit={(amount, message, options) => proposalJob && void submitApply(proposalJob, amount, message, options)}
         t={t}
         language={language}
         distanceKm={proposalJob ? baseDistanceToJobKm(proposalJob) : null}

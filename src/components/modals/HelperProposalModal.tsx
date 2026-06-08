@@ -18,7 +18,11 @@ type Props = {
   submitting?: boolean;
   creditBalance?: number | null;
   onClose: () => void;
-  onSubmit: (amount: number | null, message?: string | null) => void;
+  onSubmit: (
+    amount: number | null,
+    message?: string | null,
+    options?: { isExclusive?: boolean },
+  ) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
   language?: AppLanguage;
   distanceKm?: number | null;
@@ -86,7 +90,7 @@ export function HelperProposalModal({
 
   if (!open || !job) return null;
 
-  const handleSubmit = () => {
+  const handleSubmit = (isExclusive = false) => {
     if (submitting) return;
     const result = validateHelperProposal(amount, job, required);
     if (result.ok === false) {
@@ -95,7 +99,7 @@ export function HelperProposalModal({
     }
     setError('');
     const trimmed = proposalMessage.trim();
-    onSubmit(result.amount, trimmed || null);
+    onSubmit(result.amount, trimmed || null, { isExclusive });
   };
 
   const currency = job.currency?.trim() || 'CAD';
@@ -428,6 +432,7 @@ export function HelperProposalModal({
             {/* Candidatura exclusiva */}
             <button
               type="button"
+              onClick={() => handleSubmit(true)}
               disabled={submitting}
               className="inline-flex min-h-[68px] flex-1 flex-col items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 shadow-sm transition hover:bg-amber-100 active:scale-[0.98] disabled:opacity-60"
             >
@@ -449,7 +454,7 @@ export function HelperProposalModal({
             {/* Enviar candidatura */}
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={() => handleSubmit(false)}
               disabled={submitting}
               className="inline-flex min-h-[68px] flex-1 flex-col items-center justify-center gap-1.5 rounded-xl bg-[#2563EB] px-3 shadow-md shadow-blue-500/25 transition hover:bg-[#1D4ED8] active:scale-[0.98] disabled:opacity-60"
             >

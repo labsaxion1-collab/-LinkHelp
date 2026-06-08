@@ -36,6 +36,11 @@ import {
 } from '@/services/helperLeadCredits';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import { markNotificationsCleared } from '@/utils/notificationVisibility';
+import {
+  MAX_JOB_INTERESTED,
+  countActiveApplicationsForJob,
+  hasExclusiveActiveApplicationForJob,
+} from '@/utils/applicationInterest';
 
 export type { Job, JobStatus, JobUrgency, Application, ApplicationStatus, UpcomingJob, UpcomingWorkflowStatus };
 export type { AppNotification, NotificationType };
@@ -59,7 +64,7 @@ interface AppDataContextData {
     jobId: string,
     helperId: string,
     proposedAmount?: number | null,
-    options?: { distanceKm?: number | null; message?: string | null },
+    options?: { distanceKm?: number | null; message?: string | null; isExclusive?: boolean },
   ) => Promise<void>;
   updateJobStatus: (jobId: string, status: JobStatus) => Promise<void>;
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => Promise<void>;
@@ -242,7 +247,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     jobId: string,
     helperId: string,
     proposedAmount?: number | null,
-    options?: { distanceKm?: number | null; message?: string | null },
+    options?: { distanceKm?: number | null; message?: string | null; isExclusive?: boolean },
   ) => {
     const existing = applicationsRef.current.find(
       (a) => a.jobId === jobId && a.helperId === helperId && a.status !== 'cancelled',
@@ -259,9 +264,18 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       throw new Error('SELF_REQUEST');
     }
 
-    const interestCost = getApplicationChargeLc(
-      leadCostsForJob(job, { distanceKm: options?.distanceKm ?? null }),
-    );
+    if (hasExclusiveActiveApplicationForJob(applicationsRef.current, jobId, helperId)) {
+      throw new Error('EXCLUSIVE_APPLICATION_LOCKED');
+    }
+
+    if (countActiveApplicationsForJob(applicationsRef.current, jobId) >= MAX_JOB_INTERESTED) {
+      throw new Error('APPLICATION_LIMIT_REACHED');
+    }
+
+    const leadCostBreakdown = leadCostsForJob(job, { distanceKm: options?.distanceKm ?? null });
+    const interestCost = options?.isExclusive
+      ? leadCostBreakdown.estimatedTotal
+      : getApplicationChargeLc(leadCostBreakdown);
 
     const sessionUserId = session?.user?.id ?? profile?.id ?? null;
 
@@ -272,6 +286,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         clientId: job.clientId,
         proposedAmount: proposedAmount ?? null,
         message: options?.message?.trim() || null,
+        isExclusive: options?.isExclusive === true,
         interestCost:
           sessionUserId && helperId === sessionUserId ? interestCost : 0,
       });
@@ -305,6 +320,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       clientId: job.clientId,
       message: options?.message?.trim() || null,
       proposedAmount: proposedAmount ?? null,
+      isExclusive: options?.isExclusive === true,
       helperName,
       helperAvatar,
       helperRating: profile?.rating ?? 0,

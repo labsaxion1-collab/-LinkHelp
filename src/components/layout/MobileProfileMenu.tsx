@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Bookmark, Globe, LogOut, X, Home, MessageCircle, Briefcase, Package } from 'lucide-react';
+import { User, Bookmark, Globe, LogOut, X, Home, MessageCircle, Briefcase, Package, Settings } from 'lucide-react';
 import { redirectToLoginAfterSignOut } from '@/utils/authRedirect';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
@@ -170,6 +170,15 @@ export function MobileProfileMenu({
                   {t('nav.profile_menu_favorites')}
                 </button>
               ) : null}
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => go(ROUTES.settings)}
+                className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              >
+                <Settings className="h-4 w-4 text-slate-400" />
+                Configurações
+              </button>
               <div className="my-1 border-t border-slate-100 px-4 py-3">
                 <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
                   <Globe className="h-3.5 w-3.5" />

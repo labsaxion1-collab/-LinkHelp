@@ -708,6 +708,7 @@ export const en = {
     swipe_rate_limit: 'You sent too many interests quickly. Please wait a few seconds.',
     already_interested: 'You already showed interest in this request.',
     application_limit_reached: 'This request already has 3 active applications.',
+    exclusive_application_locked: 'This request already received an exclusive application.',
     apply_sending_modal: 'Sending application...',
     credits_interest_hint: 'Uses credits to show interest',
     credit_cost_interest: 'Costs {{count}} LC',

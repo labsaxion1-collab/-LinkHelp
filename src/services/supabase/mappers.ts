@@ -70,6 +70,7 @@ export function applicationRowToApp(row: ApplicationRow, helper: MapperProfile):
     clientId: row.client_id,
     message: row.message ?? undefined,
     proposedAmount: row.proposed_amount != null ? Number(row.proposed_amount) : null,
+    isExclusive: row.is_exclusive === true,
     helperName: hName,
     helperAvatar: helper.avatar_url || avatarUrlForName(hName, 'dcfce7', '14532d'),
     helperRating: helper.rating ?? 5,

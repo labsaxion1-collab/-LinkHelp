@@ -26,6 +26,7 @@ type Props = {
   onSkillsChange: (ids: string[]) => void;
   onCategoriesChange: (primary: ServiceCategoryId, secondary: ServiceCategoryId[]) => void;
   onSaveAsync?: (ids: string[], categoryOverride?: CategoryOverride) => Promise<void>;
+  iconOnlySummary?: boolean;
 };
 
 export function HelperCategoriesManager({
@@ -36,6 +37,7 @@ export function HelperCategoriesManager({
   onSkillsChange,
   onCategoriesChange,
   onSaveAsync,
+  iconOnlySummary = false,
 }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editCategory, setEditCategory] = useState<ServiceCategoryId | null>(null);
@@ -137,6 +139,7 @@ export function HelperCategoriesManager({
                 onClick={() => setMenuCategory(menuCategory === catId ? null : catId)}
                 className={clsx(
                   'inline-flex min-h-[34px] max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-left text-xs font-black transition-colors',
+                  iconOnlySummary && 'h-12 w-12 justify-center overflow-hidden p-0 [&>span:not(:first-child)]:hidden',
                   isPrimary
                     ? `${accent.active} shadow-sm`
                     : clsx('border-slate-200 bg-white text-slate-800', accent.cardHover),
@@ -145,6 +148,7 @@ export function HelperCategoriesManager({
                 <span
                   className={clsx(
                     'flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
+                    iconOnlySummary && 'h-8 w-8',
                     isPrimary ? accent.icon : accent.iconInactive,
                   )}
                 >

@@ -710,6 +710,7 @@ export const fr = {
     swipe_rate_limit: 'Vous avez envoyé trop d\'intérêts rapidement. Attendez quelques secondes.',
     already_interested: 'Vous avez déjà montré votre intérêt pour cet appel.',
     application_limit_reached: 'Cet appel a déjà atteint la limite de 3 candidatures actives.',
+    exclusive_application_locked: 'Cet appel a déjà reçu une candidature exclusive.',
     apply_sending_modal: 'Envoi de la candidature...',
     credits_interest_hint: 'Utilise des crédits pour montrer votre intérêt',
     credit_cost_interest: 'Coûte {{count}} LC',

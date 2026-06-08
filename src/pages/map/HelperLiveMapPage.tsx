@@ -18,7 +18,11 @@ import {
 } from '@/utils/locationMatching';
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
 import { isJobCancelled } from '@/utils/jobVisibility';
-import { buildActiveApplicationCountsByJobId } from '@/utils/applicationInterest';
+import {
+  buildActiveApplicationCountsByJobId,
+  hasExclusiveActiveApplicationForJob,
+  isJobInterestFull,
+} from '@/utils/applicationInterest';
 import type { Job } from '@/types/job';
 import { useHelperDismissedRequests } from '@/hooks/useHelperDismissedRequests';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
@@ -72,7 +76,9 @@ export default function HelperLiveMapPage() {
         j.status === 'open' &&
         !isJobCancelled(j) &&
         j.clientId !== me.id &&
-        !dismissedIds.has(j.id),
+        !dismissedIds.has(j.id) &&
+        !hasExclusiveActiveApplicationForJob(applications, j.id, me.id) &&
+        !isJobInterestFull(applicationCountByJobId.get(j.id) ?? 0),
     );
     const inRadius = filterJobsForHelperRadar(openJobs, userCoords);
     const sorted = sortOpportunitiesForHelper(inRadius, { origin: userCoords, helperSkillIds: [] });
@@ -93,7 +99,7 @@ export default function HelperLiveMapPage() {
         };
       })
       .filter((p): p is JobMapPoint => p != null);
-  }, [jobs, userCoords, me.id, dismissedIds]);
+  }, [jobs, userCoords, me.id, dismissedIds, applications, applicationCountByJobId]);
 
   const filteredPoints = useMemo(() => {
     let list = jobPoints.filter((p) => (activeFilter === 'urgent' ? p.urgency : true));

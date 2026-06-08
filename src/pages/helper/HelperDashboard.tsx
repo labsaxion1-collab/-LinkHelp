@@ -1106,14 +1106,22 @@ export default function HelperDashboard() {
               style={{ marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)' }}
             >
               <img
-                src="/brand/helper-hero-bg.jpg"
+                src="/brand/hero-tools.png"
                 alt=""
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 -top-16 h-[calc(100%+4rem)] w-full object-cover object-top opacity-95 transition-transform duration-200 ease-out"
+                className="pointer-events-none absolute inset-x-0 -top-16 h-[calc(100%+4rem)] w-full object-cover object-[62%_top] opacity-100 transition-transform duration-200 ease-out"
                 style={{ transform: `translate3d(0, ${-heroParallaxOffset}px, 0)` }}
               />
+              <img
+                src="/brand/helper-hero-blue-ribbon.jpg"
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute left-1/2 top-[12.8rem] h-28 w-[130vw] max-w-none -translate-x-1/2 object-cover object-center opacity-45 mix-blend-screen blur-[0.2px] sm:top-[13.5rem] sm:h-32"
+              />
               {/* Overlay — estende-se até o nav bar */}
-              <div className="pointer-events-none absolute inset-x-0 -top-16 bottom-0 bg-white/45" />
+              <div className="pointer-events-none absolute inset-x-0 -top-16 bottom-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.98)_0%,rgba(255,255,255,0.92)_34%,rgba(255,255,255,0.42)_61%,rgba(255,255,255,0.18)_100%)]" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-[-1px] h-28 bg-gradient-to-b from-transparent via-white/80 to-[#F7F9FD]" />
+              <div className="pointer-events-none absolute left-0 top-0 h-full w-[55vw] bg-[radial-gradient(circle_at_16%_26%,rgba(37,99,255,0.11),transparent_42%)]" />
               <header className="relative mb-3 flex min-h-[40px] items-start justify-between gap-3 px-6 pr-[calc(9.75rem+1.5rem)] sm:px-7 sm:pr-[calc(9.75rem+1.75rem)]">
                 <div className="min-w-0">
                   <p className="bg-gradient-to-r from-[#0B1220] via-[#123D85] to-[#2563FF] bg-clip-text text-2xl font-black leading-none tracking-tight text-transparent">
@@ -1136,23 +1144,42 @@ export default function HelperDashboard() {
                 ) : null}
               </header>
 
-              <div className="relative min-h-[20rem] px-6 py-2 sm:px-7">
-                <div className="pointer-events-none absolute right-0 top-1 h-20 w-56 rotate-[-12deg] rounded-full bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.10),transparent)] blur-[1px]" />
-                <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF]">
-                  <span className="text-base" aria-hidden>Olá</span>
+              <div className="relative min-h-[23.4rem] px-6 py-3 sm:px-7">
+                <div className="pointer-events-none absolute right-0 top-1 h-20 w-56 rotate-[-12deg] rounded-full bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.14),transparent)] blur-[1px]" />
+                <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF] drop-shadow-[0_1px_10px_rgba(255,255,255,0.55)]">
+                  <span className="text-base" aria-hidden>Olá,</span>
                   {helperFirstName}
+                  <span aria-hidden>👋</span>
                 </p>
-                <h1 className="relative mt-2 max-w-sm text-[2rem] font-black leading-[1.03] tracking-tight text-[#0B1220] sm:text-4xl">
-                  Encontre oportunidades <span className="text-[#2563FF]">perto de você.</span>
+                <h1 className="relative mt-3 max-w-[18rem] text-[2.35rem] font-black leading-[1.02] tracking-tight text-[#071633] drop-shadow-[0_2px_18px_rgba(255,255,255,0.68)] sm:max-w-sm sm:text-5xl">
+                  Encontre quem precisa de você <span className="text-[#2563FF]">perto daqui.</span>
                 </h1>
-                <span className="relative mt-2 block h-1.5 w-28 rounded-full bg-[#2563FF]" aria-hidden />
+                <span className="relative mt-3 block h-1.5 w-28 rounded-full bg-[#2563FF] shadow-[0_10px_22px_rgba(37,99,255,0.25)]" aria-hidden />
+                <p className="relative mt-5 max-w-[15.8rem] text-[13px] font-bold leading-relaxed text-[#42526B] drop-shadow-[0_1px_12px_rgba(255,255,255,0.70)] sm:max-w-xs sm:text-sm">
+                  Conecte-se com clientes reais, serviços próximos e novas oportunidades todos os dias.
+                </p>
+                <div className="relative mt-7 flex max-w-[18.2rem] items-center gap-3 text-[11px] font-black text-[#10234A] sm:max-w-sm">
+                  <span className="flex items-center gap-2">
+                    <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white/78 text-[#2563FF] shadow-[0_10px_24px_rgba(15,23,42,0.08)] ring-1 ring-white/70">
+                      <Icons.ShieldCheck className="h-4 w-4" />
+                    </span>
+                    Perfil verificado
+                  </span>
+                  <span className="h-8 w-px bg-slate-300/70" aria-hidden />
+                  <span className="flex items-center gap-2">
+                    <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white/78 text-[#2563FF] shadow-[0_10px_24px_rgba(15,23,42,0.08)] ring-1 ring-white/70">
+                      <Icons.Star className="h-4 w-4" />
+                    </span>
+                    Clientes ativos
+                  </span>
+                </div>
 
                 {homeInfoSlides.length > 0 ? (() => {
                   const slide = homeInfoSlides[activeInfoSlide] ?? homeInfoSlides[0];
 
                   return (
-                    <div className="relative mt-[7rem] flex h-[7.2rem] max-w-md flex-col items-center justify-center overflow-hidden rounded-[1.55rem] border border-white/45 bg-[#071D48]/92 px-4 py-3 text-center text-xs font-bold text-white shadow-[0_18px_42px_rgba(8,31,84,0.18)] backdrop-blur-xl" aria-live="polite">
-                      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_0%,rgba(51,182,255,0.32),transparent_36%),linear-gradient(135deg,rgba(37,99,255,0.32),transparent_52%)]" />
+                    <div className="relative mt-8 flex h-[7.2rem] max-w-md flex-col items-center justify-center overflow-hidden rounded-[1.65rem] border border-white/45 bg-[#071D48]/94 px-4 py-3 text-center text-xs font-bold text-white shadow-[0_18px_42px_rgba(8,31,84,0.20)] backdrop-blur-xl" aria-live="polite">
+                      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(51,182,255,0.36),transparent_36%),linear-gradient(135deg,rgba(37,99,255,0.34),transparent_54%)]" />
                       <div className="pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full bg-sky-300/20 blur-2xl" />
                       <div key={slide.id} className="relative flex w-full flex-col items-center justify-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/14 text-white shadow-[0_10px_22px_rgba(37,99,255,0.22)] ring-1 ring-white/18">

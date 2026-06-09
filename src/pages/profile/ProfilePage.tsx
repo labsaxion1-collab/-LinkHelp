@@ -5,7 +5,6 @@ import {
   ArrowUpRight,
   BadgeCheck,
   Briefcase,
-  Camera,
   CalendarDays,
   ChevronRight,
   Coins,
@@ -325,7 +324,7 @@ export default function ProfilePage() {
           <div className="relative flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="text-[12px] font-black uppercase tracking-[0.24em] text-sky-300">Meu perfil</p>
-              <h1 className="mt-3 max-w-[13rem] text-[34px] font-black leading-none tracking-tight sm:max-w-none sm:text-4xl">
+              <h1 className="mt-3 max-w-[13rem] text-[34px] font-black leading-none tracking-tight text-white drop-shadow-[0_0_18px_rgba(255,255,255,0.32)] sm:max-w-none sm:text-4xl">
                 {displayName}
               </h1>
               <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -341,7 +340,12 @@ export default function ProfilePage() {
                 ) : null}
               </div>
             </div>
-            <div className="relative h-[88px] w-[88px] shrink-0 overflow-hidden rounded-[1.65rem] bg-gradient-to-br from-[#1D6DFF] to-[#0757F2] shadow-[0_18px_45px_rgba(37,99,255,0.35)] ring-2 ring-cyan-300/35 sm:h-28 sm:w-28 sm:rounded-[2rem]">
+            <FilePickerLabel
+              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+              disabled={!isConfigured || avatarSaving}
+              onFiles={onAvatarFiles}
+              className="relative h-[88px] w-[88px] shrink-0 cursor-pointer overflow-hidden rounded-[1.65rem] bg-gradient-to-br from-[#1D6DFF] to-[#0757F2] shadow-[0_18px_45px_rgba(37,99,255,0.35)] ring-2 ring-cyan-300/35 transition hover:scale-[1.02] hover:ring-cyan-200/70 disabled:cursor-not-allowed disabled:opacity-70 sm:h-28 sm:w-28 sm:rounded-[2rem]"
+            >
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
               ) : (
@@ -354,11 +358,14 @@ export default function ProfilePage() {
                   <Loader2 className="h-6 w-6 animate-spin text-white" />
                 </div>
               ) : null}
-            </div>
+            </FilePickerLabel>
           </div>
 
           {isHelperMode ? (
-            <div className="relative mt-7 rounded-[1.65rem] bg-white/10 p-4 ring-1 ring-white/12 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]">
+            <div className="relative mt-7 overflow-hidden rounded-[1.65rem] border border-white/12 bg-[linear-gradient(145deg,rgba(255,255,255,0.18),rgba(255,255,255,0.06)_45%,rgba(37,99,255,0.12))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_18px_42px_rgba(0,0,0,0.22)] ring-1 ring-white/10 backdrop-blur-xl">
+              <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-amber-300/18 blur-2xl" />
+              <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+              <div className="pointer-events-none absolute -bottom-10 left-8 h-24 w-40 rounded-full bg-blue-400/16 blur-2xl" />
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[12px] font-black uppercase tracking-[0.20em] text-white/70 drop-shadow-[0_0_12px_rgba(255,255,255,0.26)]">LinkCredit</p>
@@ -371,17 +378,19 @@ export default function ProfilePage() {
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <Link
                   to={ROUTES.helperLinkCredits}
-                  className="flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2 text-sm font-black text-blue-700 shadow-[0_10px_22px_rgba(255,255,255,0.08)]"
+                  className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white px-3 py-2 text-sm font-black text-blue-700 shadow-[0_14px_28px_rgba(255,255,255,0.12),0_10px_24px_rgba(37,99,255,0.18)] ring-1 ring-white/70 transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(255,255,255,0.16),0_14px_30px_rgba(37,99,255,0.24)]"
                 >
+                  <span className="pointer-events-none absolute inset-y-0 -left-10 w-10 rotate-12 bg-white/70 blur-md transition-transform duration-700 group-hover:translate-x-40" />
                   Pacotes
-                  <ArrowUpRight className="h-3.5 w-3.5" />
+                  <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </Link>
                 <Link
                   to={ROUTES.helperCredits}
-                  className="flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-white/10 px-3 py-2 text-sm font-black text-white ring-1 ring-white/12"
+                  className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.06))] px-3 py-2 text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_12px_24px_rgba(0,0,0,0.12)] ring-1 ring-white/12 backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/16 hover:ring-white/22"
                 >
+                  <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/55 to-transparent" />
                   Carteira
-                  <Coins className="h-3.5 w-3.5" />
+                  <Coins className="h-3.5 w-3.5 transition-transform group-hover:rotate-12" />
                 </Link>
               </div>
             </div>
@@ -394,14 +403,6 @@ export default function ProfilePage() {
               <h2 className="text-lg font-black text-slate-950">Informações pessoais</h2>
               <p className="mt-1 text-sm font-medium text-slate-500">Foto, bio e dados visíveis do seu perfil.</p>
             </div>
-            <FilePickerLabel
-              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-              disabled={!isConfigured || avatarSaving}
-              onFiles={onAvatarFiles}
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#EEF3FF] text-[#2563FF] shadow-[0_10px_24px_rgba(37,99,255,0.10)] transition hover:bg-blue-100 disabled:opacity-50"
-            >
-              {avatarSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
-            </FilePickerLabel>
           </div>
 
           <div className="space-y-3">
@@ -472,7 +473,7 @@ export default function ProfilePage() {
                   </span>
                   <div>
                     <h2 className="text-sm font-black text-slate-950">Categorias do Helper</h2>
-                    <p className="mt-0.5 text-xs font-medium text-slate-500">Especialidades visiveis no perfil.</p>
+                    <p className="mt-0.5 text-xs font-medium text-slate-500">Especialidades vis?veis no perfil.</p>
                   </div>
                 </div>
                 <HelperCategoriesManager
@@ -496,8 +497,8 @@ export default function ProfilePage() {
                     <Home className="h-5 w-5" />
                   </span>
                   <div>
-                    <h2 className="text-sm font-black text-slate-950">Endereco base do Helper</h2>
-                    <p className="mt-0.5 text-xs font-medium text-slate-500">Referencia usada para oportunidades proximas.</p>
+                    <h2 className="text-sm font-black text-slate-950">Endere?o base do Helper</h2>
+                    <p className="mt-0.5 text-xs font-medium text-slate-500">Refer?ncia usada para oportunidades pr?ximas.</p>
                   </div>
                 </div>
                 <div className="mb-4 space-y-2">
@@ -507,7 +508,7 @@ export default function ProfilePage() {
                     </p>
                   ) : (
                     <p className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-900">
-                      Endereco base nao configurado.
+                      Endere?o base nao configurado.
                     </p>
                   )}
                   {profile?.helper_base_change_unlocked_by_admin ? (

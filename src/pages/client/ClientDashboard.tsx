@@ -722,60 +722,54 @@ export default function ClientDashboard() {
                   </div>
                 </header>
 
-                <section className="relative overflow-hidden rounded-[2.25rem] border border-white/80 bg-[linear-gradient(135deg,#FFFFFF_0%,#F2F7FF_100%)] p-6 shadow-[0_24px_70px_rgba(37,99,255,0.11)] sm:p-8">
-                  <div className="pointer-events-none absolute -right-16 top-2 h-56 w-56 rounded-full bg-blue-400/12 blur-3xl" />
-                  <div className="pointer-events-none absolute -bottom-20 left-10 h-44 w-44 rounded-full bg-cyan-300/12 blur-3xl" />
-                  <div className="relative grid items-center gap-5 md:grid-cols-[minmax(0,0.85fr)_minmax(260px,1fr)]">
-                    <div className="relative z-10 min-w-0">
-                      <span className="inline-flex items-center gap-2 rounded-full bg-[#EAF2FF] px-3 py-2 text-xs font-black text-[#2563FF] shadow-[0_10px_26px_rgba(37,99,255,0.10)]">
+                <section className="relative min-h-[370px] overflow-hidden rounded-[2.25rem] border border-white/80 bg-[#F8FBFF] shadow-[0_28px_80px_rgba(37,99,255,0.16)] sm:min-h-[390px]">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(37,99,255,0.28),transparent_34%),linear-gradient(135deg,#FFFFFF_0%,#EEF6FF_58%,#DDEBFF_100%)]" />
+                  <div className="absolute inset-y-0 right-0 w-[64%] overflow-hidden rounded-r-[2.25rem]">
+                    <img
+                      src="/brand/client-home-hero-trust.jpg"
+                      alt=""
+                      className="h-full w-full object-cover object-[58%_center] saturate-[1.08] contrast-[1.02]"
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(248,251,255,0.98)_0%,rgba(248,251,255,0.72)_22%,rgba(248,251,255,0.20)_52%,rgba(11,18,32,0.06)_100%)]" />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0)_48%,rgba(248,251,255,0.36)_100%)]" />
+                  </div>
+                  <div className="pointer-events-none absolute -right-16 top-8 h-48 w-48 rounded-full bg-[#2563FF]/20 blur-3xl" />
+                  <div className="pointer-events-none absolute bottom-7 right-10 h-24 w-44 rotate-[-12deg] rounded-[999px] border border-cyan-300/50 shadow-[0_0_36px_rgba(37,99,255,0.30)]" />
+                  <div className="pointer-events-none absolute left-8 top-8 h-24 w-24 rounded-full bg-white/55 blur-2xl" />
+
+                  <div className="relative z-10 flex min-h-[370px] max-w-[63%] flex-col justify-between p-6 sm:min-h-[390px] sm:max-w-[55%] sm:p-8">
+                    <div className="min-w-0">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white/82 px-3 py-2 text-xs font-black text-[#2563FF] shadow-[0_10px_26px_rgba(37,99,255,0.13)] ring-1 ring-blue-100/80 backdrop-blur">
                         <Icons.Sparkles className="h-3.5 w-3.5" />
                         Comece agora
                       </span>
-                      <h2 className="mt-5 max-w-[18rem] text-[34px] font-black leading-[0.98] tracking-tight text-[#0B1220] sm:text-5xl">
+                      <h2 className="mt-5 max-w-[18rem] text-[33px] font-black leading-[0.96] tracking-tight text-[#0B1220] sm:text-5xl">
                         O que voce precisa <span className="text-[#2563FF] drop-shadow-[0_0_18px_rgba(37,99,255,0.24)]">hoje?</span>
                       </h2>
-                      <p className="mt-4 max-w-sm text-[15px] font-medium leading-7 text-[#64748B]">
-                        Publique seu pedido e encontre ajuda rapida, confiavel e proxima de voce.
+                      <p className="mt-4 max-w-[15.5rem] text-[15px] font-semibold leading-7 text-[#4B5F7A]">
+                        Publique seu pedido e encontre profissionais confiaveis perto de voce.
                       </p>
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/82 px-3 py-2 text-[11px] font-black text-[#0B4A6F] shadow-sm ring-1 ring-blue-100/80 backdrop-blur">
+                          <Icons.ShieldCheck className="h-3.5 w-3.5 text-[#2563FF]" />
+                          Seguro
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/82 px-3 py-2 text-[11px] font-black text-[#0B4A6F] shadow-sm ring-1 ring-blue-100/80 backdrop-blur">
+                          <Icons.Clock3 className="h-3.5 w-3.5 text-[#2563FF]" />
+                          Rapido
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
                       <button
                         type="button"
                         onClick={() => openCreateModal()}
-                        className="mt-6 inline-flex min-h-[58px] w-full max-w-[270px] items-center justify-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#2563FF,#0D5BFF)] px-6 text-base font-black text-white shadow-[0_18px_40px_rgba(37,99,255,0.34),inset_0_1px_0_rgba(255,255,255,0.24)] transition hover:-translate-y-0.5 hover:brightness-105 active:scale-[0.98]"
+                        className="inline-flex min-h-[58px] w-full max-w-[245px] items-center justify-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#2563FF,#0D5BFF)] px-5 text-sm font-black text-white shadow-[0_18px_44px_rgba(37,99,255,0.38),inset_0_1px_0_rgba(255,255,255,0.25)] transition hover:-translate-y-0.5 hover:brightness-105 active:scale-[0.98] sm:text-base"
                       >
                         <Plus className="h-6 w-6" />
                         Criar novo pedido
                       </button>
-                    </div>
-
-                    <div className="relative min-h-[210px] md:min-h-[280px]">
-                      <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(37,99,255,0.18),transparent_58%)] blur-xl" />
-                      <div className="absolute left-1/2 top-1/2 h-44 w-64 -translate-x-1/2 -translate-y-1/2 rounded-[50%] border border-blue-300/45 shadow-[0_0_28px_rgba(37,99,255,0.24)] md:h-56 md:w-80" />
-                      <div className="absolute left-1/2 top-1/2 h-32 w-60 -translate-x-1/2 -translate-y-1/2 rotate-[-9deg] rounded-[50%] border border-cyan-300/35 md:h-44 md:w-72" />
-                      <div className="absolute left-1/2 top-[54%] h-28 w-52 -translate-x-1/2 rounded-b-[3rem] rounded-t-[1.4rem] bg-white shadow-[0_22px_50px_rgba(15,23,42,0.12)] ring-1 ring-blue-100 md:h-36 md:w-64">
-                        <img src="/brand/linkhelp-handshake-icon.png" alt="" className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full object-cover shadow-[0_10px_22px_rgba(37,99,255,0.18)]" />
-                      </div>
-                      {[
-                        { icon: Icons.Drill, cls: 'left-[46%] top-1 rotate-[-12deg] bg-[#1463F3] text-white' },
-                        { icon: Icons.PaintRoller, cls: 'right-[5%] top-10 rotate-[14deg] bg-white text-[#2563FF]' },
-                        { icon: Icons.SprayCan, cls: 'right-[25%] top-9 rotate-[16deg] bg-emerald-100 text-emerald-600' },
-                        { icon: Icons.Wrench, cls: 'left-[19%] top-20 rotate-[-20deg] bg-white text-[#0B1220]' },
-                      ].map((tool, index) => {
-                        const Icon = tool.icon;
-                        return (
-                          <span
-                            key={index}
-                            className={clsx(
-                              'absolute flex h-16 w-16 items-center justify-center rounded-2xl shadow-[0_18px_35px_rgba(15,23,42,0.14)] ring-1 ring-white/80 md:h-20 md:w-20',
-                              tool.cls,
-                            )}
-                          >
-                            <Icon className="h-8 w-8" />
-                          </span>
-                        );
-                      })}
-                      <span className="absolute right-[18%] top-[14%] h-1.5 w-1.5 rounded-full bg-[#2563FF] shadow-[0_0_18px_rgba(37,99,255,0.8)]" />
-                      <span className="absolute left-[20%] top-[28%] h-1 w-1 rounded-full bg-cyan-400" />
-                      <span className="absolute right-[10%] bottom-[28%] h-1 w-1 rounded-full bg-emerald-400" />
                     </div>
                   </div>
                 </section>
@@ -843,8 +837,8 @@ export default function ClientDashboard() {
 
                 <section className="grid gap-3 rounded-[1.9rem] bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.045)] sm:grid-cols-3">
                   {[
-                    { icon: Icons.ShieldCheck, title: 'Seguran?a', body: 'Verifica??o de perfil e avalia??es' },
-                    { icon: Icons.MessageSquare, title: 'Chat seguro', body: 'Converse e combine detalhes com seguran?a' },
+                    { icon: Icons.ShieldCheck, title: 'Seguranca', body: 'Verificacao de perfil e avaliacoes' },
+                    { icon: Icons.MessageSquare, title: 'Chat seguro', body: 'Converse e combine detalhes com seguranca' },
                     { icon: Icons.Sparkle, title: 'Qualidade', body: 'Helpers avaliados pela comunidade' },
                   ].map((item, index) => {
                     const Icon = item.icon;

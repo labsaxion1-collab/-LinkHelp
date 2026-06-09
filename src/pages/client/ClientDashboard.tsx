@@ -686,7 +686,7 @@ export default function ClientDashboard() {
         {/* Main Feed */}
         {activeSidebarTab === 'dashboard' && (
           <div className="mx-auto w-full max-w-[680px] animate-in fade-in duration-300 md:max-w-6xl">
-            <section className="relative overflow-hidden rounded-[2rem] bg-[#F5F7FB] px-4 pb-24 pt-4 sm:px-6 md:px-8">
+            <section className="relative overflow-hidden bg-[#F5F7FB] px-4 pb-24 pt-4 sm:px-6 md:px-8">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_5%,rgba(37,99,255,0.12),transparent_28%),radial-gradient(circle_at_86%_20%,rgba(59,130,246,0.10),transparent_28%)]" />
               <div className="relative space-y-7">
                 <header className="flex items-center justify-between gap-4">
@@ -722,24 +722,21 @@ export default function ClientDashboard() {
                   </div>
                 </header>
 
-                <section className="relative min-h-[370px] overflow-hidden rounded-[2.25rem] border border-white/80 bg-[#F8FBFF] shadow-[0_28px_80px_rgba(37,99,255,0.16)] sm:min-h-[390px]">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(37,99,255,0.28),transparent_34%),linear-gradient(135deg,#FFFFFF_0%,#EEF6FF_58%,#DDEBFF_100%)]" />
-                  <div className="absolute inset-y-0 right-0 w-[64%] overflow-hidden rounded-r-[2.25rem]">
-                    <img
-                      src="/brand/client-home-hero-trust.jpg"
-                      alt=""
-                      className="h-full w-full object-cover object-[58%_center] saturate-[1.08] contrast-[1.02]"
-                    />
-                    <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(248,251,255,0.98)_0%,rgba(248,251,255,0.72)_22%,rgba(248,251,255,0.20)_52%,rgba(11,18,32,0.06)_100%)]" />
-                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0)_48%,rgba(248,251,255,0.36)_100%)]" />
-                  </div>
-                  <div className="pointer-events-none absolute -right-16 top-8 h-48 w-48 rounded-full bg-[#2563FF]/20 blur-3xl" />
-                  <div className="pointer-events-none absolute bottom-7 right-10 h-24 w-44 rotate-[-12deg] rounded-[999px] border border-cyan-300/50 shadow-[0_0_36px_rgba(37,99,255,0.30)]" />
-                  <div className="pointer-events-none absolute left-8 top-8 h-24 w-24 rounded-full bg-white/55 blur-2xl" />
+                <section className="relative -mx-4 min-h-[410px] overflow-hidden sm:-mx-6 sm:min-h-[440px] md:-mx-8">
+                  <img
+                    src="/brand/client-home-hero-trust.jpg"
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover object-[64%_center] saturate-[1.08] contrast-[1.02]"
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(245,247,251,0.98)_0%,rgba(245,247,251,0.90)_28%,rgba(245,247,251,0.50)_54%,rgba(245,247,251,0.08)_100%)]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(245,247,251,0.08)_0%,rgba(245,247,251,0)_52%,#F5F7FB_100%)]" />
+                  <div className="pointer-events-none absolute -right-20 top-10 h-56 w-56 rounded-full bg-[#2563FF]/20 blur-3xl" />
+                  <div className="pointer-events-none absolute bottom-20 right-6 h-28 w-52 rotate-[-12deg] rounded-[999px] border border-cyan-300/55 shadow-[0_0_42px_rgba(37,99,255,0.34)]" />
+                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-28 bg-[linear-gradient(180deg,rgba(245,247,251,0),#F5F7FB_75%)]" />
 
-                  <div className="relative z-10 flex min-h-[370px] max-w-[63%] flex-col justify-between p-6 sm:min-h-[390px] sm:max-w-[55%] sm:p-8">
+                  <div className="relative z-10 flex min-h-[410px] max-w-[65%] flex-col justify-between px-6 py-7 sm:min-h-[440px] sm:max-w-[54%] sm:px-8 sm:py-9 md:px-10">
                     <div className="min-w-0">
-                      <span className="inline-flex items-center gap-2 rounded-full bg-white/82 px-3 py-2 text-xs font-black text-[#2563FF] shadow-[0_10px_26px_rgba(37,99,255,0.13)] ring-1 ring-blue-100/80 backdrop-blur">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-2 text-xs font-black text-[#2563FF] shadow-[0_10px_26px_rgba(37,99,255,0.13)] ring-1 ring-blue-100/80 backdrop-blur-xl">
                         <Icons.Sparkles className="h-3.5 w-3.5" />
                         Comece agora
                       </span>
@@ -750,11 +747,11 @@ export default function ClientDashboard() {
                         Publique seu pedido e encontre profissionais confiaveis perto de voce.
                       </p>
                       <div className="mt-5 flex flex-wrap gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/82 px-3 py-2 text-[11px] font-black text-[#0B4A6F] shadow-sm ring-1 ring-blue-100/80 backdrop-blur">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-2 text-[11px] font-black text-[#0B4A6F] shadow-sm ring-1 ring-blue-100/80 backdrop-blur-xl">
                           <Icons.ShieldCheck className="h-3.5 w-3.5 text-[#2563FF]" />
                           Seguro
                         </span>
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/82 px-3 py-2 text-[11px] font-black text-[#0B4A6F] shadow-sm ring-1 ring-blue-100/80 backdrop-blur">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-2 text-[11px] font-black text-[#0B4A6F] shadow-sm ring-1 ring-blue-100/80 backdrop-blur-xl">
                           <Icons.Clock3 className="h-3.5 w-3.5 text-[#2563FF]" />
                           Rapido
                         </span>
@@ -797,14 +794,15 @@ export default function ClientDashboard() {
                   </div>
                 </section>
 
-                <section className="rounded-[2rem] bg-white/70 p-4 shadow-[0_16px_45px_rgba(15,23,42,0.045)] ring-1 ring-white/70 backdrop-blur">
+                <section className="relative">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <h2 className="text-lg font-black tracking-tight text-[#0B1220]">Categorias populares</h2>
                     <button type="button" onClick={() => openCreateModal()} className="inline-flex items-center gap-1 text-sm font-black text-[#2563FF]">
                       Ver todas <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 [&::-webkit-scrollbar]:hidden">
+                    <div className="flex min-w-max gap-3">
                     {SERVICE_CATEGORIES.slice(0, 8).map((cat, index) => {
                       const IconComponent = getCategoryLucideIcon(cat.icon);
                       const palette = [
@@ -822,7 +820,7 @@ export default function ClientDashboard() {
                           key={cat.id}
                           type="button"
                           onClick={() => openCreateModal(cat.id)}
-                          className="group min-h-[132px] rounded-[1.55rem] border border-slate-100 bg-white p-4 text-center shadow-[0_12px_32px_rgba(15,23,42,0.045)] transition hover:-translate-y-0.5 hover:border-blue-100 hover:shadow-[0_18px_42px_rgba(37,99,255,0.10)]"
+                          className="group min-h-[132px] w-[128px] shrink-0 rounded-[1.55rem] border border-white bg-white/92 p-4 text-center shadow-[0_12px_32px_rgba(15,23,42,0.055)] ring-1 ring-slate-100/70 backdrop-blur transition hover:-translate-y-0.5 hover:border-blue-100 hover:shadow-[0_18px_42px_rgba(37,99,255,0.10)] sm:w-[150px]"
                         >
                           <span className={clsx('mx-auto flex h-14 w-14 items-center justify-center rounded-[1.25rem] shadow-lg transition group-hover:scale-105', palette)}>
                             <IconComponent className="h-7 w-7" />
@@ -832,6 +830,7 @@ export default function ClientDashboard() {
                         </button>
                       );
                     })}
+                    </div>
                   </div>
                 </section>
 

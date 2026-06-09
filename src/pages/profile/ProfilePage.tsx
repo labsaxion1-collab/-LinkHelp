@@ -406,13 +406,13 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-3">
-            <ProfileInfoRow icon={UserRound} label="Bio" value={bio} />
+            {isHelperMode ? <ProfileInfoRow icon={UserRound} label="Bio" value={bio} /> : null}
             <ProfileInfoRow icon={Mail} label="Email" value={email || 'Não informado'} />
             <ProfileInfoRow icon={Phone} label="Telefone" value={profile?.phone || 'Não informado'} />
             <ProfileInfoRow icon={MapPin} label="Localização" value={city || 'Não informada'} />
             <ProfileInfoRow icon={CalendarDays} label="Data de nascimento" value="Não informado" />
-            <ProfileInfoRow icon={IdCard} label="Documento" value="Não informado" />
-            <ProfileInfoRow icon={Briefcase} label="Profissão" value={roleLabel} />
+            {isHelperMode ? <ProfileInfoRow icon={IdCard} label="Documento" value="Não informado" /> : null}
+            {isHelperMode ? <ProfileInfoRow icon={Briefcase} label="Profissão" value={roleLabel} /> : null}
             <ProfileInfoRow icon={Globe2} label="Idioma" value={languageLabel} badge="Padrão" />
 
             <div className="hidden rounded-2xl bg-slate-50 px-4 py-3">

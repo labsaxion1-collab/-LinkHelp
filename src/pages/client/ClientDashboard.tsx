@@ -728,7 +728,8 @@ export default function ClientDashboard() {
                     alt=""
                     className="absolute inset-0 h-full w-full object-cover object-[66%_center] saturate-[1.08] contrast-[1.02]"
                   />
-                  <div className="absolute inset-y-0 left-0 w-[62%] bg-[linear-gradient(90deg,rgba(245,247,251,0.96)_0%,rgba(245,247,251,0.78)_62%,rgba(245,247,251,0)_100%)]" />
+                  <div className="absolute inset-y-0 left-0 w-[74%] bg-[linear-gradient(90deg,rgba(245,247,251,0.99)_0%,rgba(245,247,251,0.94)_54%,rgba(245,247,251,0.58)_78%,rgba(245,247,251,0)_100%)]" />
+                  <div className="pointer-events-none absolute left-[20%] top-[43%] h-[46%] w-[42%] bg-[radial-gradient(ellipse_at_center,rgba(245,247,251,0.96)_0%,rgba(245,247,251,0.90)_44%,rgba(245,247,251,0.52)_63%,rgba(245,247,251,0)_80%)] blur-[1px]" />
                   <div className="pointer-events-none absolute -right-20 top-10 h-56 w-56 rounded-full bg-[#2563FF]/20 blur-3xl" />
                   <div className="pointer-events-none absolute bottom-20 right-6 h-28 w-52 rotate-[-12deg] rounded-[999px] border border-cyan-300/55 shadow-[0_0_42px_rgba(37,99,255,0.34)]" />
                   <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-[linear-gradient(180deg,rgba(245,247,251,0),#F5F7FB_88%)]" />

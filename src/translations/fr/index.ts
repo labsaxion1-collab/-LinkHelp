@@ -1813,6 +1813,12 @@ export const fr = {
   helper_credits: {
     page_title: 'Mes credits',
     page_sub: 'Utilisez des LinkCredits pour montrer votre intérêt et être choisi. Le client ne paie pas de crédits.',
+    hero_saldo_label: 'SOLDE DISPONIBLE',
+    hero_tagline_1: 'Vos crédits,',
+    hero_tagline_2: 'plus d\'opportunités.',
+    hero_como_funciona: 'Comment ça fonctionne?',
+    stats_economize_title: 'Économisez malin',
+    stats_economize_sub: 'Achetez seulement quand nécessaire',
     purchase_coming_soon: 'L achat via Stripe sera active bientot. Votre solde et historique sont deja synchronises.',
     coming_soon_cta: 'Bientot',
     insufficient_title: 'Crédits insuffisants',

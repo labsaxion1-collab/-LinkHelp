@@ -1821,6 +1821,12 @@ export const pt = {
   helper_credits: {
     page_title: 'Meus creditos',
     page_sub: 'Use LinkCredits para demonstrar interesse e ser escolhido em oportunidades. O cliente nao paga creditos.',
+    hero_saldo_label: 'SALDO DISPONÍVEL',
+    hero_tagline_1: 'Seus créditos,',
+    hero_tagline_2: 'mais oportunidades.',
+    hero_como_funciona: 'Como funciona?',
+    stats_economize_title: 'Economize com inteligência',
+    stats_economize_sub: 'Compre apenas quando precisar',
     purchase_coming_soon: 'Compra de pacotes via Stripe sera ativada em breve. Seu saldo e historico ja estao sincronizados.',
     coming_soon_cta: 'Em breve',
     insufficient_title: 'Creditos insuficientes',

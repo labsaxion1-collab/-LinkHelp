@@ -1808,6 +1808,12 @@ export const en = {
   helper_credits: {
     page_title: 'My credits',
     page_sub: 'Use LinkCredits to show interest and get chosen on opportunities. Clients never pay credits.',
+    hero_saldo_label: 'AVAILABLE BALANCE',
+    hero_tagline_1: 'Your credits,',
+    hero_tagline_2: 'more opportunities.',
+    hero_como_funciona: 'How does it work?',
+    stats_economize_title: 'Save smart',
+    stats_economize_sub: 'Buy only when you need it',
     purchase_coming_soon: 'Stripe package checkout will be enabled soon. Your balance and history are already synced.',
     coming_soon_cta: 'Coming soon',
     insufficient_title: 'Not enough credits',

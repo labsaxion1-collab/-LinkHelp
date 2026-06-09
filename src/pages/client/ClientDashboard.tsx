@@ -686,7 +686,7 @@ export default function ClientDashboard() {
         {/* Main Feed */}
         {activeSidebarTab === 'dashboard' && (
           <div className="mx-auto w-full max-w-[680px] animate-in fade-in duration-300 md:max-w-6xl">
-            <section className="relative overflow-hidden bg-[#F5F7FB] px-4 pb-24 pt-4 sm:px-6 md:px-8">
+            <section className="relative overflow-hidden bg-[#F5F7FB] px-0 pb-24 pt-4 sm:px-0 md:px-0">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_5%,rgba(37,99,255,0.12),transparent_28%),radial-gradient(circle_at_86%_20%,rgba(59,130,246,0.10),transparent_28%)]" />
               <div className="relative space-y-7">
                 <header className="flex items-center justify-between gap-4">
@@ -722,17 +722,16 @@ export default function ClientDashboard() {
                   </div>
                 </header>
 
-                <section className="relative -mx-4 min-h-[410px] overflow-hidden sm:-mx-6 sm:min-h-[440px] md:-mx-8">
+                <section className="relative left-1/2 min-h-[410px] w-screen -translate-x-1/2 overflow-hidden sm:min-h-[440px]">
                   <img
                     src="/brand/client-home-hero-trust.jpg"
                     alt=""
-                    className="absolute inset-0 h-full w-full object-cover object-[64%_center] saturate-[1.08] contrast-[1.02]"
+                    className="absolute inset-0 h-full w-full object-cover object-[66%_center] saturate-[1.08] contrast-[1.02]"
                   />
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(245,247,251,0.98)_0%,rgba(245,247,251,0.90)_28%,rgba(245,247,251,0.50)_54%,rgba(245,247,251,0.08)_100%)]" />
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(245,247,251,0.08)_0%,rgba(245,247,251,0)_52%,#F5F7FB_100%)]" />
+                  <div className="absolute inset-y-0 left-0 w-[62%] bg-[linear-gradient(90deg,rgba(245,247,251,0.96)_0%,rgba(245,247,251,0.78)_62%,rgba(245,247,251,0)_100%)]" />
                   <div className="pointer-events-none absolute -right-20 top-10 h-56 w-56 rounded-full bg-[#2563FF]/20 blur-3xl" />
                   <div className="pointer-events-none absolute bottom-20 right-6 h-28 w-52 rotate-[-12deg] rounded-[999px] border border-cyan-300/55 shadow-[0_0_42px_rgba(37,99,255,0.34)]" />
-                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-28 bg-[linear-gradient(180deg,rgba(245,247,251,0),#F5F7FB_75%)]" />
+                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-[linear-gradient(180deg,rgba(245,247,251,0),#F5F7FB_88%)]" />
 
                   <div className="relative z-10 flex min-h-[410px] max-w-[65%] flex-col justify-between px-6 py-7 sm:min-h-[440px] sm:max-w-[54%] sm:px-8 sm:py-9 md:px-10">
                     <div className="min-w-0">
@@ -771,7 +770,7 @@ export default function ClientDashboard() {
                   </div>
                 </section>
 
-                <section>
+                <section className="px-4 sm:px-6 md:px-8">
                   <h2 className="text-lg font-black tracking-tight text-[#0B1220]">Resumo rapido</h2>
                   <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {[
@@ -794,7 +793,7 @@ export default function ClientDashboard() {
                   </div>
                 </section>
 
-                <section className="relative">
+                <section className="relative px-4 sm:px-6 md:px-8">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <h2 className="text-lg font-black tracking-tight text-[#0B1220]">Categorias populares</h2>
                     <button type="button" onClick={() => openCreateModal()} className="inline-flex items-center gap-1 text-sm font-black text-[#2563FF]">
@@ -834,7 +833,7 @@ export default function ClientDashboard() {
                   </div>
                 </section>
 
-                <section className="grid gap-3 rounded-[1.9rem] bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.045)] sm:grid-cols-3">
+                <section className="mx-4 grid gap-3 rounded-[1.9rem] bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.045)] sm:mx-6 sm:grid-cols-3 md:mx-8">
                   {[
                     { icon: Icons.ShieldCheck, title: 'Seguranca', body: 'Verificacao de perfil e avaliacoes' },
                     { icon: Icons.MessageSquare, title: 'Chat seguro', body: 'Converse e combine detalhes com seguranca' },
@@ -855,7 +854,7 @@ export default function ClientDashboard() {
                   })}
                 </section>
 
-                <section>
+                <section className="px-4 sm:px-6 md:px-8">
                   <h2 className="text-lg font-black tracking-tight text-[#0B1220]">Como funciona</h2>
                   <div className="relative mt-4 grid gap-3 sm:grid-cols-3">
                     <div className="pointer-events-none absolute left-8 right-8 top-6 hidden border-t border-dashed border-blue-200 sm:block" />

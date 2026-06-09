@@ -87,7 +87,7 @@ export function ServiceReviewProvider({ children }: { children: React.ReactNode 
         /* ignore */
       }
       await refreshProfile();
-      showToast(t('service_review.thanks'), 'success');
+      showToast(t('service_review.thanks_with_credits'), 'success');
       setActive(null);
     },
     [active, profile, submitServiceReview, refreshProfile, showToast, t],
@@ -101,11 +101,11 @@ export function ServiceReviewProvider({ children }: { children: React.ReactNode 
   return (
     <ServiceReviewContext.Provider value={value}>
       {children}
-      {profile ? (
+      {profile?.role === 'client' ? (
         <ServiceReviewModal
           open={Boolean(active)}
           pending={active}
-          reviewerRole={profile.role}
+          reviewerRole="client"
           onClose={handleClose}
           onSubmit={handleSubmit}
           t={t}

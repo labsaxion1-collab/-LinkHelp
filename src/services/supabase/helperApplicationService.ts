@@ -34,6 +34,7 @@ function mapRpcError(error: { message?: string }, interestCost: number): never {
   if (msg.includes('SELF_REQUEST')) throw new Error('SELF_REQUEST');
   if (msg.includes('NOT_ALLOWED') || msg.includes('AUTH_REQUIRED')) throw new Error('NOT_ALLOWED');
   if (msg.includes('REQUEST_NOT_OPEN')) throw new Error('JOB_NOT_OPEN');
+  if (msg.includes('APPLICATION_LIMIT_REACHED')) throw new Error('APPLICATION_LIMIT_REACHED');
   throw new Error(msg || 'APPLICATION_SUBMIT_FAILED');
 }
 

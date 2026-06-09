@@ -6,6 +6,7 @@ import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData, type OfficialHirePayload } from '@/context/AppDataContext';
 import { useServiceReview } from '@/context/ServiceReviewContext';
+import { ServiceConfirmModal } from '@/components/modals/ServiceConfirmModal';
 import { SERVICE_CATEGORIES, isOfficialServiceCategoryId } from '@/data/serviceCategories';
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
@@ -42,8 +43,11 @@ import {
 } from '@/utils/jobVisibility';
 import { CancelRequestModal } from '@/components/client/CancelRequestModal';
 import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
+import type { Job } from '@/types/job';
 import { extractErrorMessage } from '@/utils/errorMessage';
 import { formatHireError, logAcceptProposalError } from '@/utils/formatHireError';
+
+const SERVICE_CONFIRM_DISMISS_PREFIX = 'lh_service_confirm_skip_';
 import { translateJobTitle } from '@/utils/translateCategory';
 import type { Job } from '@/types/job';
 import type { Application } from '@/types/application';
@@ -125,6 +129,8 @@ export default function ClientDashboard() {
   const [acceptingApplicationId, setAcceptingApplicationId] = useState<string | null>(null);
   const [cancelTargetJobId, setCancelTargetJobId] = useState<string | null>(null);
   const [cancellingJobId, setCancellingJobId] = useState<string | null>(null);
+  const [serviceConfirmJob, setServiceConfirmJob] = useState<Job | null>(null);
+  const [serviceConfirmBusy, setServiceConfirmBusy] = useState(false);
   
   const navigate = useNavigate();
   const routerLocation = useLocation();
@@ -134,11 +140,67 @@ export default function ClientDashboard() {
   const { showToast } = useToast();
   const skillChip = (skill: string) =>
     skill === 'support' ? t('skills.support') : t(`categories.${skill}`);
-  const { jobs, applications, notifications, updateApplicationStatus, updateJobStatus, officiallyHireHelper, pendingServiceReviews } = useAppData();
+  const { jobs, applications, notifications, updateApplicationStatus, updateJobStatus, officiallyHireHelper, pendingServiceReviews, upcomingJobs, confirmServiceCompleted } = useAppData();
   const { openReviewByRequestId } = useServiceReview();
   const me = useSessionViewer();
 
   const myJobIds = useMemo(() => jobs.filter((j) => j.clientId === me.id).map((j) => j.id), [jobs, me.id]);
+
+  const jobsAwaitingServiceConfirm = useMemo(
+    () =>
+      jobs.filter(
+        (j) =>
+          j.clientId === me.id &&
+          j.status === 'in_progress' &&
+          upcomingJobs.some(
+            (u) => u.jobId === j.id && u.workflowStatus === 'awaiting_client_confirmation',
+          ),
+      ),
+    [jobs, upcomingJobs, me.id],
+  );
+
+  useEffect(() => {
+    if (serviceConfirmJob || serviceConfirmBusy) return;
+    const next = jobsAwaitingServiceConfirm.find((job) => {
+      try {
+        return sessionStorage.getItem(`${SERVICE_CONFIRM_DISMISS_PREFIX}${job.id}`) !== '1';
+      } catch {
+        return true;
+      }
+    });
+    if (next) setServiceConfirmJob(next);
+  }, [jobsAwaitingServiceConfirm, serviceConfirmJob, serviceConfirmBusy]);
+
+  const dismissServiceConfirm = (job: Job) => {
+    try {
+      sessionStorage.setItem(`${SERVICE_CONFIRM_DISMISS_PREFIX}${job.id}`, '1');
+    } catch {
+      /* ignore */
+    }
+    setServiceConfirmJob(null);
+  };
+
+  const handleConfirmServiceCompleted = async () => {
+    if (!serviceConfirmJob) return;
+    setServiceConfirmBusy(true);
+    const requestId = serviceConfirmJob.id;
+    try {
+      await confirmServiceCompleted(requestId);
+      try {
+        sessionStorage.removeItem(`${SERVICE_CONFIRM_DISMISS_PREFIX}${requestId}`);
+      } catch {
+        /* ignore */
+      }
+      setServiceConfirmJob(null);
+      showToast(t('service_confirm.success_toast'), 'success');
+      window.setTimeout(() => openReviewByRequestId(requestId), 400);
+    } catch (error) {
+      console.error('[LinkHelp] confirm service completed', error);
+      showToast(t('service_confirm.error_toast'), 'error');
+    } finally {
+      setServiceConfirmBusy(false);
+    }
+  };
 
   const profileChatUnlocked = useMemo(() => {
     if (!selectedHelper) return false;
@@ -364,6 +426,15 @@ export default function ClientDashboard() {
         }}
         onConfirm={() => void handleConfirmCancelJob()}
         confirming={cancellingJobId != null}
+      />
+
+      <ServiceConfirmModal
+        open={serviceConfirmJob != null}
+        job={serviceConfirmJob}
+        busy={serviceConfirmBusy}
+        onConfirm={() => void handleConfirmServiceCompleted()}
+        onDismiss={() => serviceConfirmJob && dismissServiceConfirm(serviceConfirmJob)}
+        t={t}
       />
 
       {/* Credits Modal */}
@@ -836,7 +907,11 @@ export default function ClientDashboard() {
                     })
                     .map((job) => {
                     const jobApps = applications
-                      .filter((a) => a.jobId === job.id && a.status !== 'cancelled')
+                      .filter(
+                        (a) =>
+                          a.jobId === job.id &&
+                          (a.status === 'pending' || a.status === 'viewed' || a.status === 'accepted'),
+                      )
                       .filter((a) =>
                         job.status === 'in_progress'
                           ? a.status === 'accepted'
@@ -889,19 +964,21 @@ export default function ClientDashboard() {
                             {t('service_review.rate_now')}
                           </button>
                         ) : null}
+                        {jobsAwaitingServiceConfirm.some((j) => j.id === job.id) ? (
+                          <button
+                            type="button"
+                            onClick={() => setServiceConfirmJob(job)}
+                            className="mb-3 inline-flex min-h-[40px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-bold text-emerald-900 hover:bg-emerald-100"
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            {t('service_confirm.confirm')}
+                          </button>
+                        ) : null}
                         <JobTaskActionsBar
                           canCancel={canCancelJob}
                           canRepublish={job.status === 'cancelled' || isJobExpired(job)}
-                          canFinalize={job.status === 'in_progress'}
                           onCancel={() => setCancelTargetJobId(job.id)}
                           onRepublish={() => openCreateModal(job.category, job.subcategory ?? '')}
-                          onFinalize={() => {
-                            void updateJobStatus(job.id, 'completed')
-                              .then(() => {
-                                window.setTimeout(() => openReviewByRequestId(job.id), 400);
-                              })
-                              .catch(console.error);
-                          }}
                         />
                         <div className="mb-4 flex flex-wrap gap-2">
                           <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800">

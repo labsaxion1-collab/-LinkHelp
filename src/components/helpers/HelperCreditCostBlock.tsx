@@ -80,17 +80,13 @@ export function HelperCreditCostBlock({
 
   if (variant === 'feed') {
     return (
-      <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] font-bold leading-snug text-blue-800">
-        <Icons.Coins className="h-3 w-3 shrink-0 text-blue-600" aria-hidden />
-        <span>{t('helper_dashboard.credit_apply_cost', { count: display.applyCost })}</span>
-        {showHireEstimate ? (
-          <>
-            <span className="text-slate-300" aria-hidden>
-              ·
-            </span>
-            <span>{t('helper_dashboard.credit_total_estimated', { count: display.totalEstimate })}</span>
-          </>
-        ) : null}
+      <p className="truncate text-[9px] font-semibold leading-snug text-blue-800">
+        {showHireEstimate
+          ? t('helper_dashboard.credit_feed_inline', {
+              apply: display.applyCost,
+              total: display.totalEstimate,
+            })
+          : t('helper_dashboard.credit_apply_short', { count: display.applyCost })}
       </p>
     );
   }

@@ -202,6 +202,14 @@ export type Database = {
         };
         Returns: Json;
       };
+      helper_mark_service_awaiting_confirmation: {
+        Args: { p_upcoming_job_id: string };
+        Returns: Json;
+      };
+      client_confirm_service_completed: {
+        Args: { p_request_id: string };
+        Returns: Json;
+      };
     };
     Enums: Record<string, never>;
   };

@@ -21,6 +21,8 @@ import {
   remoteOfficiallyHireHelper,
   remoteUpdateApplicationStatus,
   remoteUpdateUpcomingWorkflow,
+  remoteMarkServiceAwaitingConfirmation,
+  remoteConfirmServiceCompleted,
   subscribeRemoteData,
 } from '@/services/supabase/appDataRemote';
 import { submitHelperApplication } from '@/services/supabase/helperApplicationService';
@@ -68,6 +70,7 @@ interface AppDataContextData {
   getJobApplications: (jobId: string) => Application[];
   getUpcomingJobsForHelper: (helperId: string) => UpcomingJob[];
   updateUpcomingWorkflow: (upcomingId: string, workflowStatus: UpcomingWorkflowStatus) => void;
+  confirmServiceCompleted: (requestId: string) => Promise<void>;
   addNotification: (notification: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => void;
   markNotificationAsRead: (id: string) => void;
   markAllAsRead: () => void;
@@ -119,8 +122,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   const jobsRef = useRef(jobs);
   const applicationsRef = useRef(applications);
+  const upcomingJobsRef = useRef(upcomingJobs);
   jobsRef.current = jobs;
   applicationsRef.current = applications;
+  upcomingJobsRef.current = upcomingJobs;
 
   useEffect(() => {
     clearDemoLocalData();
@@ -257,6 +262,14 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     if (job.clientId === helperId) {
       console.log('[LinkHelp] Self request blocked', { requestId: jobId, helperId });
       throw new Error('SELF_REQUEST');
+    }
+
+    const activeCount = applicationsRef.current.filter(
+      (a) =>
+        a.jobId === jobId && (a.status === 'pending' || a.status === 'viewed' || a.status === 'accepted'),
+    ).length;
+    if (activeCount >= 3) {
+      throw new Error('APPLICATION_LIMIT_REACHED');
     }
 
     const interestCost = getApplicationChargeLc(
@@ -646,11 +659,55 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateUpcomingWorkflow = (upcomingId: string, workflowStatus: UpcomingWorkflowStatus) => {
+    const upcoming = upcomingJobsRef.current.find((u) => u.id === upcomingId);
+    const jobSnapshot = upcoming ? jobsRef.current.find((j) => j.id === upcoming.jobId) : undefined;
+
     if (useRemote) {
+      if (workflowStatus === 'awaiting_client_confirmation') {
+        void remoteMarkServiceAwaitingConfirmation(upcomingId)
+          .then(() => void refreshRemote())
+          .catch((e) => console.error('[LinkHelp] mark service awaiting confirmation', e));
+        return;
+      }
       void remoteUpdateUpcomingWorkflow(upcomingId, workflowStatus).then(() => void refreshRemote());
       return;
     }
+
     setUpcomingJobs((prev) => prev.map((u) => (u.id === upcomingId ? { ...u, workflowStatus } : u)));
+
+    if (workflowStatus === 'awaiting_client_confirmation' && upcoming && jobSnapshot?.clientId) {
+      addNotification({
+        userId: jobSnapshot.clientId,
+        type: 'application',
+        title: 'Serviço concluído',
+        message: `Seu Help informou que o trabalho "${jobSnapshot.title}" foi concluído. Confirme se o serviço foi feito.`,
+        actionUrl: ROUTES.clientDashboard,
+      });
+    }
+  };
+
+  const confirmServiceCompleted = async (requestId: string) => {
+    if (useRemote) {
+      await remoteConfirmServiceCompleted(requestId);
+      await refreshRemote();
+      return;
+    }
+
+    setJobs((prev) => prev.map((job) => (job.id === requestId ? { ...job, status: 'completed' as JobStatus } : job)));
+    setUpcomingJobs((prev) =>
+      prev.map((u) =>
+        u.jobId === requestId && u.workflowStatus === 'awaiting_client_confirmation'
+          ? { ...u, workflowStatus: 'completed' as UpcomingWorkflowStatus }
+          : u,
+      ),
+    );
+    setApplications((prev) =>
+      prev.map((app) =>
+        app.jobId === requestId && app.status === 'accepted'
+          ? { ...app, status: 'completed' as ApplicationStatus }
+          : app,
+      ),
+    );
   };
 
   const pendingServiceReviews = useMemo(
@@ -709,6 +766,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         getJobApplications,
         getUpcomingJobsForHelper,
         updateUpcomingWorkflow,
+        confirmServiceCompleted,
         addNotification,
         markNotificationAsRead,
         markAllAsRead,

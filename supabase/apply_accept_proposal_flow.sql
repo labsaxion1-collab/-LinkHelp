@@ -1,4 +1,40 @@
--- Atomic client accept-proposal flow: charge helper (optional), hire, chat unlock, notifications.
+-- Paste this entire file in Supabase Dashboard → SQL Editor when the client sees:
+--   Could not find the function public.charge_helper_on_client_hire(...)
+--   Could not find the function public.client_accept_proposal(...)
+--   PGRST202 / 404 on POST /rest/v1/rpc/client_accept_proposal
+--   Error: FORBIDDEN on POST /rest/v1/rpc/client_accept_proposal
+--     (client JWT debiting helper wallet via ensure_helper_credit_wallet)
+--
+-- Same as supabase/migrations/0034_fix_client_hire_helper_flow.sql (idempotent).
+-- Prerequisite: apply_helper_application_flow.sql (helper candidatura RPCs).
+-- Safe to re-run.
+
+-- ---------------------------------------------------------------------------
+-- Columns used by accept-proposal flow
+-- ---------------------------------------------------------------------------
+
+alter table public.applications
+  add column if not exists proposed_amount numeric;
+
+alter table public.requests
+  add column if not exists accepted_amount numeric;
+
+alter table public.credit_transactions
+  add column if not exists request_id uuid references public.requests(id) on delete set null,
+  add column if not exists application_id uuid references public.applications(id) on delete set null,
+  add column if not exists balance_before int;
+
+alter table public.credit_transactions drop constraint if exists credit_transactions_type_check;
+alter table public.credit_transactions add constraint credit_transactions_type_check check (
+  type in (
+    'CREDIT_PURCHASE', 'FREE_BONUS', 'OPPORTUNITY_UNLOCK', 'REFUND', 'ADMIN_ADJUSTMENT',
+    'APPLICATION_INTEREST', 'APPLICATION_SELECTED'
+  )
+);
+
+-- ---------------------------------------------------------------------------
+-- RPCs: conversation, debit credits (idempotent), accept proposal (atomic)
+-- ---------------------------------------------------------------------------
 
 create or replace function public.ensure_conversation(
   p_request_id uuid,
@@ -74,6 +110,9 @@ begin
     return jsonb_build_object('alreadyCharged', true, 'amount', p_amount);
   end if;
 
+  -- Do not call ensure_helper_credit_wallet here: client_accept_proposal runs as the
+  -- request owner (client JWT). ensure_helper_credit_wallet raises FORBIDDEN when
+  -- auth.uid() <> p_helper_id, even after NOT_ALLOWED checks above pass.
   insert into public.credit_wallets (helper_id)
   values (p_helper_id)
   on conflict (helper_id) do nothing;
@@ -303,3 +342,5 @@ grant execute on function public.ensure_conversation(uuid, uuid, uuid, boolean) 
 grant execute on function public.helper_debit_application_selected(uuid, uuid, uuid, int) to authenticated;
 grant execute on function public.charge_helper_on_client_hire(uuid, int) to authenticated;
 grant execute on function public.client_accept_proposal(uuid, int) to authenticated;
+
+notify pgrst, 'reload schema';

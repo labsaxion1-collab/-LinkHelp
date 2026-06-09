@@ -234,6 +234,14 @@ export async function remoteApply(input: {
     throw new Error('SELF_REQUEST');
   }
 
+  const { count, error: countErr } = await sb
+    .from('applications')
+    .select('id', { count: 'exact', head: true })
+    .eq('request_id', input.requestId)
+    .in('status', ['pending', 'viewed', 'accepted']);
+  if (countErr) throw new Error(countErr.message || 'APPLICATION_COUNT_FAILED');
+  if ((count ?? 0) >= 3) throw new Error('APPLICATION_LIMIT_REACHED');
+
   const findExisting = async (): Promise<string | null> => {
     const { data } = await sb
       .from('applications')
@@ -670,6 +678,25 @@ export async function remoteMarkAllNotificationsRead(userId: string): Promise<vo
 
 export async function remoteUpdateUpcomingWorkflow(id: string, workflowStatus: string): Promise<void> {
   const sb = getSupabase();
-  if (!sb) return;
-  await sb.from('upcoming_jobs').update({ workflow_status: workflowStatus }).eq('id', id);
+  if (!sb) throw new Error('NO_SUPABASE');
+  const { error } = await sb.from('upcoming_jobs').update({ workflow_status: workflowStatus }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function remoteMarkServiceAwaitingConfirmation(upcomingJobId: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+  const { error } = await sb.rpc('helper_mark_service_awaiting_confirmation', {
+    p_upcoming_job_id: upcomingJobId,
+  });
+  if (error) throw new Error(error.message || 'MARK_COMPLETED_FAILED');
+}
+
+export async function remoteConfirmServiceCompleted(requestId: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+  const { error } = await sb.rpc('client_confirm_service_completed', {
+    p_request_id: requestId,
+  });
+  if (error) throw new Error(error.message || 'CONFIRM_SERVICE_FAILED');
 }

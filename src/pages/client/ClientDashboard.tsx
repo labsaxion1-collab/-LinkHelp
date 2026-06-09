@@ -45,7 +45,6 @@ import {
 } from '@/utils/jobVisibility';
 import { CancelRequestModal } from '@/components/client/CancelRequestModal';
 import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
-import type { Job } from '@/types/job';
 import { extractErrorMessage } from '@/utils/errorMessage';
 import { formatHireError, logAcceptProposalError } from '@/utils/formatHireError';
 
@@ -236,6 +235,14 @@ export default function ClientDashboard() {
     if (tab === 'saved') setActiveSidebarTab('saved');
   }, [routerLocation.state]);
 
+  useEffect(() => {
+    const state = routerLocation.state as { openCreate?: boolean } | null;
+    if (routerLocation.pathname === ROUTES.clientDashboard && state?.openCreate) {
+      setShowCreateModal(true);
+      navigate(ROUTES.clientDashboard, { replace: true, state: null });
+    }
+  }, [navigate, routerLocation.pathname, routerLocation.state]);
+
   useEffect(
     () => () => {
       if (successModalTimerRef.current) clearTimeout(successModalTimerRef.current);
@@ -277,6 +284,19 @@ export default function ClientDashboard() {
   const { helpers: nearbyHelpers, loading: nearbyHelpersLoading } = useNearbyHelpers({
     relatedCategoryIds: myOpenJobCategories,
   });
+
+  const clientJobs = useMemo(
+    () => jobs.filter((j) => j.clientId === me.id && isOfficialServiceCategoryId(j.category)),
+    [jobs, me.id],
+  );
+  const activeClientJobs = useMemo(
+    () => clientJobs.filter((j) => isJobVisibleToClient(j, hiddenJobIds) && (j.status === 'open' || j.status === 'in_progress')),
+    [clientJobs, hiddenJobIds],
+  );
+  const clientApplicationCount = useMemo(
+    () => applications.filter((app) => clientJobs.some((job) => job.id === app.jobId)).length,
+    [applications, clientJobs],
+  );
 
   const handleConfirmCancelJob = async () => {
     if (!cancelTargetJobId || cancellingJobId) return;
@@ -665,112 +685,214 @@ export default function ClientDashboard() {
 
         {/* Main Feed */}
         {activeSidebarTab === 'dashboard' && (
-          <div className="w-full max-w-full mx-auto animate-in fade-in duration-300 min-w-0">
+          <div className="mx-auto w-full max-w-[680px] animate-in fade-in duration-300 md:max-w-6xl">
+            <section className="relative overflow-hidden rounded-[2rem] bg-[#F5F7FB] px-4 pb-24 pt-4 sm:px-6 md:px-8">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_5%,rgba(37,99,255,0.12),transparent_28%),radial-gradient(circle_at_86%_20%,rgba(59,130,246,0.10),transparent_28%)]" />
+              <div className="relative space-y-7">
+                <header className="flex items-center justify-between gap-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-[0_12px_34px_rgba(37,99,255,0.20)] ring-1 ring-blue-100">
+                      <img src="/brand/linkhelp-handshake-icon.png" alt="" className="h-full w-full object-cover" />
+                    </span>
+                    <div className="min-w-0">
+                      <h1 className="truncate text-xl font-black tracking-tight text-[#0B1220]">Link Help</h1>
+                      <p className="truncate text-xs font-semibold text-[#64748B]">Conectando voce ao que precisa.</p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate(ROUTES.notifications)}
+                      className="relative flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#0B1220] shadow-[0_10px_24px_rgba(15,23,42,0.07)] ring-1 ring-slate-100 transition hover:-translate-y-0.5 hover:text-[#2563FF]"
+                      aria-label={t('notifications.title')}
+                    >
+                      <Bell className="h-5 w-5" />
+                      {notifications.some((n) => !n.read) ? (
+                        <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#2563FF]" />
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate(ROUTES.profile)}
+                      className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-[#8B6F61] text-sm font-black uppercase text-white shadow-[0_10px_24px_rgba(15,23,42,0.08)] ring-1 ring-white"
+                      aria-label={t('nav.profile_menu_profile')}
+                    >
+                      {me.avatar ? <img src={me.avatar} alt="" className="h-full w-full object-cover" /> : me.name.slice(0, 1)}
+                    </button>
+                  </div>
+                </header>
 
-          <LhCard className="mb-6 w-full max-w-full min-w-0">
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950">{t('client_dashboard.category_hub_title')}</h2>
-                <p className="mt-1 text-sm font-medium text-slate-500">{t('client_dashboard.category_hub_sub')}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => openCreateModal()}
-                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white hover:bg-black"
-              >
-                <Icons.Plus className="h-4 w-4" />
-                {t('client_dashboard.create_order_now')}
-              </button>
-            </div>
-
-            <div className="grid w-full max-w-full min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {SERVICE_CATEGORIES.map((cat) => {
-                const IconComponent = getCategoryLucideIcon(cat.icon);
-                const accent = getCategoryAccent(cat.id);
-                return (
-                  <section
-                    key={cat.id}
-                    className={clsx(
-                      'w-full max-w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 transition-all hover:shadow-sm',
-                      accent.cardHover,
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
+                <section className="relative overflow-hidden rounded-[2.25rem] border border-white/80 bg-[linear-gradient(135deg,#FFFFFF_0%,#F2F7FF_100%)] p-6 shadow-[0_24px_70px_rgba(37,99,255,0.11)] sm:p-8">
+                  <div className="pointer-events-none absolute -right-16 top-2 h-56 w-56 rounded-full bg-blue-400/12 blur-3xl" />
+                  <div className="pointer-events-none absolute -bottom-20 left-10 h-44 w-44 rounded-full bg-cyan-300/12 blur-3xl" />
+                  <div className="relative grid items-center gap-5 md:grid-cols-[minmax(0,0.85fr)_minmax(260px,1fr)]">
+                    <div className="relative z-10 min-w-0">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-[#EAF2FF] px-3 py-2 text-xs font-black text-[#2563FF] shadow-[0_10px_26px_rgba(37,99,255,0.10)]">
+                        <Icons.Sparkles className="h-3.5 w-3.5" />
+                        Comece agora
+                      </span>
+                      <h2 className="mt-5 max-w-[18rem] text-[34px] font-black leading-[0.98] tracking-tight text-[#0B1220] sm:text-5xl">
+                        O que voce precisa <span className="text-[#2563FF] drop-shadow-[0_0_18px_rgba(37,99,255,0.24)]">hoje?</span>
+                      </h2>
+                      <p className="mt-4 max-w-sm text-[15px] font-medium leading-7 text-[#64748B]">
+                        Publique seu pedido e encontre ajuda rapida, confiavel e proxima de voce.
+                      </p>
                       <button
                         type="button"
-                        onClick={() => openCreateModal(cat.id)}
-                        className="group inline-flex min-w-0 flex-1 items-center gap-3 text-left"
+                        onClick={() => openCreateModal()}
+                        className="mt-6 inline-flex min-h-[58px] w-full max-w-[270px] items-center justify-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#2563FF,#0D5BFF)] px-6 text-base font-black text-white shadow-[0_18px_40px_rgba(37,99,255,0.34),inset_0_1px_0_rgba(255,255,255,0.24)] transition hover:-translate-y-0.5 hover:brightness-105 active:scale-[0.98]"
                       >
-                        <span
-                          className={clsx(
-                            'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-md ring-1 ring-white/60',
-                            accent.icon,
-                          )}
-                        >
-                          <IconComponent className="h-6 w-6" />
-                        </span>
-                        <span className="min-w-0">
-                          <span
-                            className={clsx(
-                              'inline-flex max-w-full items-center gap-2 rounded-xl border px-3 py-1.5 text-sm font-black',
-                              accent.active,
-                            )}
-                          >
-                            <span className="truncate">{t(`categories.${cat.id}`)}</span>
-                          </span>
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openCreateModal(cat.id)}
-                        className={clsx(
-                          'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white ring-1 ring-slate-200 transition-colors',
-                          accent.iconInactive,
-                        )}
-                        aria-label={t(`categories.${cat.id}`)}
-                      >
-                        <Icons.ChevronRight className="h-5 w-5" />
+                        <Plus className="h-6 w-6" />
+                        Criar novo pedido
                       </button>
                     </div>
-                  </section>
-                );
-              })}
-            </div>
-          </LhCard>
 
-          <div className="space-y-6">
-            <section className="rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-white p-5 sm:p-6 shadow-sm">
-              <h3 className="text-lg font-black text-slate-950">{t('client_how_it_works.title')}</h3>
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
-                {(
-                  [
-                    { icon: Icons.ClipboardCheck, title: 'card1_title', desc: 'card1_desc', accent: 'from-blue-500 to-indigo-600' },
-                    { icon: Icons.MapPinned, title: 'card2_title', desc: 'card2_desc', accent: 'from-sky-500 to-blue-600' },
-                    { icon: Icons.ShieldCheck, title: 'card3_title', desc: 'card3_desc', accent: 'from-indigo-500 to-violet-600' },
-                  ] as const
-                ).map((card, idx) => {
-                  const Icon = card.icon;
-                  return (
-                    <article
-                      key={card.title}
-                      className="group relative overflow-hidden rounded-2xl border border-white/80 bg-white/90 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg"
-                    >
-                      <div className={`mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${card.accent} text-white shadow-lg shadow-blue-500/20`}>
-                        <Icon className="h-7 w-7" strokeWidth={2.2} />
+                    <div className="relative min-h-[210px] md:min-h-[280px]">
+                      <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(37,99,255,0.18),transparent_58%)] blur-xl" />
+                      <div className="absolute left-1/2 top-1/2 h-44 w-64 -translate-x-1/2 -translate-y-1/2 rounded-[50%] border border-blue-300/45 shadow-[0_0_28px_rgba(37,99,255,0.24)] md:h-56 md:w-80" />
+                      <div className="absolute left-1/2 top-1/2 h-32 w-60 -translate-x-1/2 -translate-y-1/2 rotate-[-9deg] rounded-[50%] border border-cyan-300/35 md:h-44 md:w-72" />
+                      <div className="absolute left-1/2 top-[54%] h-28 w-52 -translate-x-1/2 rounded-b-[3rem] rounded-t-[1.4rem] bg-white shadow-[0_22px_50px_rgba(15,23,42,0.12)] ring-1 ring-blue-100 md:h-36 md:w-64">
+                        <img src="/brand/linkhelp-handshake-icon.png" alt="" className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full object-cover shadow-[0_10px_22px_rgba(37,99,255,0.18)]" />
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-blue-600">0{idx + 1}</span>
-                      <h4 className="mt-1 text-base font-black text-slate-950">{t(`client_how_it_works.${card.title}`)}</h4>
-                      <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">{t(`client_how_it_works.${card.desc}`)}</p>
-                    </article>
-                  );
-                })}
+                      {[
+                        { icon: Icons.Drill, cls: 'left-[46%] top-1 rotate-[-12deg] bg-[#1463F3] text-white' },
+                        { icon: Icons.PaintRoller, cls: 'right-[5%] top-10 rotate-[14deg] bg-white text-[#2563FF]' },
+                        { icon: Icons.SprayCan, cls: 'right-[25%] top-9 rotate-[16deg] bg-emerald-100 text-emerald-600' },
+                        { icon: Icons.Wrench, cls: 'left-[19%] top-20 rotate-[-20deg] bg-white text-[#0B1220]' },
+                      ].map((tool, index) => {
+                        const Icon = tool.icon;
+                        return (
+                          <span
+                            key={index}
+                            className={clsx(
+                              'absolute flex h-16 w-16 items-center justify-center rounded-2xl shadow-[0_18px_35px_rgba(15,23,42,0.14)] ring-1 ring-white/80 md:h-20 md:w-20',
+                              tool.cls,
+                            )}
+                          >
+                            <Icon className="h-8 w-8" />
+                          </span>
+                        );
+                      })}
+                      <span className="absolute right-[18%] top-[14%] h-1.5 w-1.5 rounded-full bg-[#2563FF] shadow-[0_0_18px_rgba(37,99,255,0.8)]" />
+                      <span className="absolute left-[20%] top-[28%] h-1 w-1 rounded-full bg-cyan-400" />
+                      <span className="absolute right-[10%] bottom-[28%] h-1 w-1 rounded-full bg-emerald-400" />
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <h2 className="text-lg font-black tracking-tight text-[#0B1220]">Resumo rapido</h2>
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {[
+                      { icon: Icons.ClipboardCheck, value: clientJobs.length, label: 'Pedidos publicados', tone: 'text-[#2563FF] bg-blue-50' },
+                      { icon: Icons.UsersRound, value: Math.max(nearbyHelpers.length, clientApplicationCount), label: 'Helpers ativos', tone: 'text-emerald-600 bg-emerald-50' },
+                      { icon: Icons.ShieldCheck, value: '98%', label: 'Avaliacoes positivas', tone: 'text-violet-600 bg-violet-50' },
+                      { icon: Icons.Clock3, value: '15 min', label: 'Tempo medio de resposta', tone: 'text-amber-600 bg-amber-50' },
+                    ].map((stat) => {
+                      const Icon = stat.icon;
+                      return (
+                        <article key={stat.label} className="rounded-[1.55rem] border border-white bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.055)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(37,99,255,0.10)]">
+                          <span className={clsx('flex h-10 w-10 items-center justify-center rounded-2xl', stat.tone)}>
+                            <Icon className="h-5 w-5" />
+                          </span>
+                          <p className="mt-4 text-2xl font-black tracking-tight text-[#0B1220]">{stat.value}</p>
+                          <p className="mt-1 text-xs font-semibold leading-snug text-[#64748B]">{stat.label}</p>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                <section className="rounded-[2rem] bg-white/70 p-4 shadow-[0_16px_45px_rgba(15,23,42,0.045)] ring-1 ring-white/70 backdrop-blur">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <h2 className="text-lg font-black tracking-tight text-[#0B1220]">Categorias populares</h2>
+                    <button type="button" onClick={() => openCreateModal()} className="inline-flex items-center gap-1 text-sm font-black text-[#2563FF]">
+                      Ver todas <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {SERVICE_CATEGORIES.slice(0, 8).map((cat, index) => {
+                      const IconComponent = getCategoryLucideIcon(cat.icon);
+                      const palette = [
+                        'text-cyan-500 bg-cyan-50 shadow-cyan-500/10',
+                        'text-emerald-500 bg-emerald-50 shadow-emerald-500/10',
+                        'text-blue-600 bg-blue-50 shadow-blue-500/10',
+                        'text-violet-600 bg-violet-50 shadow-violet-500/10',
+                        'text-pink-500 bg-pink-50 shadow-pink-500/10',
+                        'text-sky-600 bg-sky-50 shadow-sky-500/10',
+                        'text-orange-500 bg-orange-50 shadow-orange-500/10',
+                        'text-slate-600 bg-slate-50 shadow-slate-500/10',
+                      ][index % 8];
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => openCreateModal(cat.id)}
+                          className="group min-h-[132px] rounded-[1.55rem] border border-slate-100 bg-white p-4 text-center shadow-[0_12px_32px_rgba(15,23,42,0.045)] transition hover:-translate-y-0.5 hover:border-blue-100 hover:shadow-[0_18px_42px_rgba(37,99,255,0.10)]"
+                        >
+                          <span className={clsx('mx-auto flex h-14 w-14 items-center justify-center rounded-[1.25rem] shadow-lg transition group-hover:scale-105', palette)}>
+                            <IconComponent className="h-7 w-7" />
+                          </span>
+                          <span className="mt-3 block text-sm font-black text-[#0B1220]">{t('categories.' + cat.id)}</span>
+                          <span className="mt-1 block text-xs font-semibold text-[#64748B]">+{120 - index * 9} pedidos</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                <section className="grid gap-3 rounded-[1.9rem] bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.045)] sm:grid-cols-3">
+                  {[
+                    { icon: Icons.ShieldCheck, title: 'Seguran?a', body: 'Verifica??o de perfil e avalia??es' },
+                    { icon: Icons.MessageSquare, title: 'Chat seguro', body: 'Converse e combine detalhes com seguran?a' },
+                    { icon: Icons.Sparkle, title: 'Qualidade', body: 'Helpers avaliados pela comunidade' },
+                  ].map((item, index) => {
+                    const Icon = item.icon;
+                    return (
+                      <article key={item.title} className={clsx('flex items-center gap-3 p-2', index > 0 && 'sm:border-l sm:border-slate-100 sm:pl-5')}>
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F1F6FF] text-[#2563FF]">
+                          <Icon className="h-5 w-5" />
+                        </span>
+                        <span>
+                          <span className="block text-xs font-black text-[#2563FF]">{item.title}</span>
+                          <span className="mt-1 block text-[11px] font-semibold leading-snug text-[#64748B]">{item.body}</span>
+                        </span>
+                      </article>
+                    );
+                  })}
+                </section>
+
+                <section>
+                  <h2 className="text-lg font-black tracking-tight text-[#0B1220]">Como funciona</h2>
+                  <div className="relative mt-4 grid gap-3 sm:grid-cols-3">
+                    <div className="pointer-events-none absolute left-8 right-8 top-6 hidden border-t border-dashed border-blue-200 sm:block" />
+                    {[
+                      { icon: Icons.ClipboardCheck, title: 'Publique seu pedido', body: 'Conte o que precisa de forma rapida' },
+                      { icon: Icons.UsersRound, title: 'Receba interessados', body: 'Helpers proximos enviam propostas' },
+                      { icon: Icons.ShieldCheck, title: 'Escolha e combine', body: 'Converse, combine e feche o servico' },
+                    ].map((step, index) => {
+                      const Icon = step.icon;
+                      return (
+                        <article key={step.title} className="relative rounded-[1.5rem] bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.045)] ring-1 ring-slate-100">
+                          <span className="absolute -top-3 left-4 flex h-7 w-7 items-center justify-center rounded-full bg-[#2563FF] text-xs font-black text-white shadow-[0_10px_22px_rgba(37,99,255,0.24)]">{index + 1}</span>
+                          <div className="mt-4 flex items-start gap-3">
+                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EAF2FF] text-[#2563FF]">
+                              <Icon className="h-6 w-6" />
+                            </span>
+                            <span>
+                              <span className="block text-sm font-black text-[#0B1220]">{step.title}</span>
+                              <span className="mt-1 block text-xs font-semibold leading-relaxed text-[#64748B]">{step.body}</span>
+                            </span>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </section>
               </div>
             </section>
-
-          </div>
           </div>
         )}
-
         {/* My Helpers Tab */}
         {activeSidebarTab === 'my-helpers' && (
           <div className="w-full max-w-[680px] mx-auto animate-in fade-in duration-300">

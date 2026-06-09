@@ -1,0 +1,52 @@
+---
+description: Schema do banco e padrões de acesso ao Supabase no LinkHelp
+globs: src/services/**/*.ts
+alwaysApply: false
+---
+
+# LinkHelp — Database & Supabase
+
+## Tabelas principais
+- `profiles` — id=auth.uid(), role=client|helper
+- `requests` — pedidos dos clientes (category, subcategory, status, budget_type/amount)
+- `applications` — candidaturas dos helpers (status: pending→viewed→accepted|rejected)
+- `conversations` + `messages` — chat (realtime)
+- `upcoming_jobs` — jobs agendados após aceite
+- `notifications` — alertas em tempo real
+- `credit_wallets` + `credit_transactions` — carteira de LC do helper
+- `helper_skills` — subchaves `{category}:{subcategory}` do helper
+
+## Sempre verificar antes de chamar Supabase
+```ts
+import { isSupabaseConfigured, getSupabase } from '@/lib/supabase';
+if (!isSupabaseConfigured()) return; // graceful fallback
+const db = getSupabase()!;
+```
+
+## RPCs principais
+```ts
+db.rpc('helper_debit_application_interest', { ... })
+db.rpc('ensure_helper_credit_wallet', { p_helper_id })
+db.rpc('grant_user_reward', { ... })
+db.rpc('helper_submit_application', { ... })
+db.rpc('confirm_credit_purchase', { ... })
+```
+
+## RLS — regras chave
+- profiles: SELECT todos autenticados; UPDATE apenas próprio
+- requests: SELECT todos; INSERT/UPDATE apenas client_id=auth.uid()
+- applications: SELECT/UPDATE apenas helper ou client da app
+- upcoming_jobs: SELECT/UPDATE apenas helper_id=auth.uid()
+
+## Tipos TypeScript
+```ts
+import type { ProfileRow, RequestRow, ApplicationRow } from '@/types/database';
+import type { Database } from '@/types/supabase.database';
+```
+
+## Realtime (AppDataContext)
+```ts
+// Canais ativos em AppDataContext:
+channel.on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, ...)
+// messages: gerenciado em MessagesPage via useSupabaseMessages
+```

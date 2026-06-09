@@ -1,33 +1,165 @@
 # LinkHelp
 
-Marketplace local de servicos para conectar clientes e helpers por categoria, regiao, disponibilidade e confianca.
+**Marketplace local de serviços** que conecta clientes e helpers por categoria, região, disponibilidade e confiança.
 
-## Stack
+[![Deploy Status](https://img.shields.io/badge/deploy-Vercel-black?logo=vercel)](https://link-help.vercel.app)
+[![Supabase](https://img.shields.io/badge/backend-Supabase-3ECF8E?logo=supabase)](https://supabase.com)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript)](https://typescriptlang.org)
 
-- React 19 + Vite
-- TypeScript
-- Tailwind CSS 4
-- Supabase Auth, Database, Realtime e Storage
-- Google Maps
-- PWA
+---
 
-## Rodar Localmente
+## Visão geral
 
-1. Instale as dependencias:
-   `npm install`
-2. Copie `.env.example` para `.env` e preencha as chaves reais do Supabase.
-3. Rode o app:
-   `npm run dev`
+O LinkHelp opera como um **marketplace de leads**: o cliente publica uma necessidade guiada por categoria, e helpers qualificados recebem oportunidades filtradas por categoria e região. O helper usa **LinkCréditos (LC)** para demonstrar interesse e candidatar-se aos pedidos mais relevantes.
 
-O servidor usa `http://localhost:3000`.
+### Fluxo principal
+
+```
+Cliente publica pedido → Helpers recebem no feed → Helper usa LC para se candidatar
+→ Cliente revisa candidaturas → Aceita helper → Job agendado → Conclusão + avaliação
+```
+
+---
+
+## Stack tecnológica
+
+| Camada | Tecnologia |
+|--------|-----------|
+| Frontend | React 19, TypeScript 5.8, Vite 6 |
+| Estilo | Tailwind CSS v4, clsx, tailwind-merge |
+| Animações | motion/react (Framer Motion) |
+| Ícones | Lucide React |
+| Backend | Supabase (PostgreSQL + Auth + Realtime + Storage) |
+| API routes | Vercel Serverless Functions |
+| Pagamentos | Stripe Checkout |
+| Mapas | Google Maps JavaScript API (@vis.gl/react-google-maps) |
+| Push | Web Push (VAPID via Supabase Edge Function) |
+| IA | Google Generative AI (Gemini) — tradução |
+| PWA | vite-plugin-pwa + Workbox |
+| Deploy | Vercel |
+
+---
+
+## Rotas da aplicação
+
+| Rota | Acesso | Página |
+|------|--------|--------|
+| `/` | Público | Landing Page |
+| `/como-funciona` | Público | How It Works |
+| `/contato` | Público | Contact |
+| `/auth/login` | Não autenticado | Login |
+| `/auth/register` | Não autenticado | Cadastro |
+| `/auth/callback` | OAuth redirect | Callback Google |
+| `/dashboard` | Autenticado | Redireciona por role |
+| `/client/dashboard` | Cliente | Dashboard do cliente |
+| `/client/jobs` | Cliente | Pedidos do cliente |
+| `/helper/dashboard` | Helper | Feed de oportunidades |
+| `/helper/jobs` | Helper | Jobs agendados |
+| `/helper/credits` | Helper | Carteira de LC |
+| `/helper/linkcredits` | Helper | Comprar LC |
+| `/messages` | Autenticado | Chat |
+| `/notifications` | Autenticado | Notificações |
+| `/map` | Autenticado | Mapa ao vivo |
+| `/profile` | Autenticado | Perfil |
+| `/settings` | Autenticado | Configurações |
+| `/admin/dashboard` | Admin only | Painel FLUX Admin |
+
+---
+
+## Categorias de serviço
+
+| ID | Nome | Cor |
+|----|------|-----|
+| `cleaning` | Limpeza | Ciano |
+| `sanitization` | Higienização | Teal |
+| `moving` | Mudanças | Azul |
+| `assembly` | Montagem | Índigo |
+| `automotive` | Automotivo | Laranja |
+| `translation` | Tradução | Violeta |
+| `beauty` | Estética | Rosa |
+| `renovation` | Reforma | Cinza |
+| `outdoor` | Área externa | Esmeralda |
+| `pet` | Pets | Âmbar |
+| `tech` | Suporte TI | Índigo escuro |
+| `design` | Design | Fúcsia |
+| `marketing` | Marketing | Vermelho |
+| `other` | Outros | Cinza |
+
+---
+
+## Desenvolvimento local
+
+```bash
+git clone https://github.com/labsaxion1-collab/-LinkHelp.git
+cd -LinkHelp
+npm install
+cp .env.example .env
+# Preencher .env com as chaves do Supabase (ver .env.example)
+npm run dev
+# → http://localhost:3000
+```
+
+**Variáveis obrigatórias** (mínimo para rodar):
+```env
+VITE_SUPABASE_URL=https://xxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...
+```
+
+---
+
+## Documentação técnica
+
+| Documento | Descrição |
+|-----------|-----------|
+| [`docs/PROJECT_RULES.md`](docs/PROJECT_RULES.md) | Convenções de código, estrutura, regras |
+| [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) | Tabelas, colunas, RLS, funções |
+| [`docs/API_ARCHITECTURE.md`](docs/API_ARCHITECTURE.md) | Serviços, contextos, fluxo de auth |
+| [`docs/UI_GUIDELINES.md`](docs/UI_GUIDELINES.md) | Design system, cores, tipografia, i18n |
+| [`docs/DEPLOY_GUIDE.md`](docs/DEPLOY_GUIDE.md) | Deploy Vercel + Supabase passo a passo |
+
+---
 
 ## Scripts
 
-- `npm run dev`: ambiente local
-- `npm run build`: build de producao
-- `npm run lint`: checagem TypeScript
-- `npm run preview`: preview do build
+```bash
+npm run dev          # Dev server (porta 3000)
+npm run build        # Build de produção
+npm run preview      # Preview do build
+npm run lint         # TypeScript check
+```
 
-## Direcao do Produto
+---
 
-O fluxo principal segue o modelo de marketplace de leads: cliente publica uma necessidade guiada, helpers recebem oportunidades qualificadas por categoria/regiao e se candidatam aos pedidos mais relevantes. Pagamentos do servico ainda sao combinados diretamente entre cliente e helper nesta etapa.
+## Integrações
+
+- **Supabase Auth**: email/senha + Google OAuth (PKCE)
+- **Stripe**: pacotes de LinkCréditos (Starter/Popular/Pro/Power)
+- **Google Maps**: mapa de oportunidades e helpers próximos
+- **Web Push**: alertas de novos pedidos (VAPID)
+- **Gemini AI**: tradução automática de documentos
+
+---
+
+## Arquitetura
+
+```
+Vercel (CDN + Serverless)
+├── /dist              ← React PWA (static)
+└── /api/stripe/*      ← Serverless functions (Stripe)
+
+Supabase
+├── PostgreSQL         ← dados + RLS
+├── Auth               ← JWT + OAuth
+├── Realtime           ← websockets
+├── Storage            ← avatars, portfolio
+└── Edge Functions     ← Stripe webhook, Push, Checkout
+```
+
+---
+
+## Repositório
+
+- GitHub: [labsaxion1-collab/-LinkHelp](https://github.com/labsaxion1-collab/-LinkHelp)
+- Branch principal: `main`
+- Deploy automático: push em `main` → Vercel deploy

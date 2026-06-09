@@ -61,7 +61,7 @@ export function formatJobBudgetAmount(job: BudgetFields, t: (key: string) => str
 }
 
 /** Display budget on cards — always prefixed with "Orçamento:" when informed. */
-export function formatJobBudgetDisplay(job: BudgetFields, t: (key: string) => string): string {
+export function formatJobBudgetDisplay(job: BudgetFields, t: (key: string, vars?: Record<string, unknown>) => string): string {
   const amount = formatJobBudgetAmount(job, t);
   if (amount === t('jobs.budget_not_informed')) {
     return amount;

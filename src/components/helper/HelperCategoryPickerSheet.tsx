@@ -146,7 +146,10 @@ export function HelperCategoryPickerSheet({
                         setStep('subs');
                         setQ('');
                       }}
-                      className="flex w-full min-h-[52px] items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 px-3 text-left transition-colors hover:border-blue-200 hover:bg-blue-50/60"
+                      className={clsx(
+                        'flex w-full min-h-[52px] items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 px-3 text-left transition-colors',
+                        accent.cardHover,
+                      )}
                     >
                       <span
                         className={clsx(

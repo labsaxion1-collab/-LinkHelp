@@ -150,7 +150,7 @@ const EXTENDED_REQUEST_COLUMNS = [
   'created_timezone',
 ] as const;
 
-function isMissingColumnError(error: { code?: string; message?: string } | null, column: string): boolean {
+export function isMissingColumnError(error: { code?: string; message?: string } | null, column: string): boolean {
   if (!error) return false;
   const code = error.code ?? '';
   const msg = (error.message ?? '').toLowerCase();
@@ -226,6 +226,7 @@ export async function remoteApply(input: {
   clientId: string;
   message?: string | null;
   proposedAmount?: number | null;
+  isExclusive?: boolean;
 }): Promise<{ outcome: 'created' } | { outcome: 'already_exists'; applicationId: string }> {
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
@@ -259,6 +260,7 @@ export async function remoteApply(input: {
     client_id: input.clientId,
     message: input.message ?? null,
     status: 'pending',
+    is_exclusive: input.isExclusive === true,
   };
   if (input.proposedAmount != null) {
     payload.proposed_amount = input.proposedAmount;
@@ -271,7 +273,17 @@ export async function remoteApply(input: {
       const existingId = await findExisting();
       return { outcome: 'already_exists', applicationId: existingId ?? '' };
     }
-    if (input.proposedAmount != null && isMissingColumnError(error, 'proposed_amount')) {
+    if (isMissingColumnError(error, 'is_exclusive')) {
+      delete payload.is_exclusive;
+      const { error: retryErr } = await sb.from('applications').insert(payload);
+      if (retryErr) {
+        if (retryErr.code === '23505') {
+          const existingId = await findExisting();
+          return { outcome: 'already_exists', applicationId: existingId ?? '' };
+        }
+        throw new Error(retryErr.message || 'APPLICATION_INSERT_FAILED');
+      }
+    } else if (input.proposedAmount != null && isMissingColumnError(error, 'proposed_amount')) {
       delete payload.proposed_amount;
       const { error: retryErr } = await sb.from('applications').insert(payload);
       if (retryErr) {
@@ -550,7 +562,7 @@ async function remoteOfficiallyHireHelperLegacy(
         accepted_amount: acceptedAmount,
         budget: valueHint,
       };
-      const { error: amtErr } = await sb.from('requests').update(reqUpdate).eq('id', app.request_id);
+      const { error: amtErr } = await sb.from('requests').update(reqUpdate as Partial<RequestRow>).eq('id', app.request_id);
       if (amtErr && isMissingColumnError(amtErr, 'accepted_amount')) {
         await sb.from('requests').update({ budget: valueHint }).eq('id', app.request_id);
       }

@@ -227,6 +227,82 @@ const DATA: Record<Lang, Tree> = {
       tags: ['tech', 'wifi', 'support'],
       exampleHint: 'I need help setting up Wi-Fi and my smart TV.',
     }),
+    design: {
+      logo_brand: {
+        suggestions: ['Logo for small business', 'Brand refresh', 'Business card + logo', 'Startup identity kit'],
+        placeholder: 'e.g. I need a logo and basic brand colors for my café.',
+        tags: ['design', 'logo', 'branding'],
+        exampleHint: 'I need a simple logo and brand identity for a local shop.',
+      },
+      social_media: {
+        suggestions: ['Instagram post pack', 'Story templates', 'Carousel for promo', 'Feed refresh'],
+        placeholder: 'e.g. Create 5 social posts for a product launch.',
+        tags: ['design', 'social', 'graphics'],
+        exampleHint: 'I need social media graphics for this month.',
+      },
+      ui_ux: {
+        suggestions: ['Landing page layout', 'App screen mockups', 'Wireframes', 'Design system basics'],
+        placeholder: 'e.g. Design a simple landing page for my service.',
+        tags: ['design', 'ui', 'ux'],
+        exampleHint: 'I need UI mockups for a small mobile app.',
+      },
+      print: {
+        suggestions: ['Flyer for event', 'Menu design', 'Poster', 'Brochure'],
+        placeholder: 'e.g. Flyer for a weekend promotion.',
+        tags: ['design', 'print', 'flyer'],
+        exampleHint: 'I need a printable flyer for a local event.',
+      },
+      presentation: {
+        suggestions: ['Pitch deck', 'Sales slides', 'Training deck', 'Investor presentation'],
+        placeholder: 'e.g. Polish a 10-slide pitch deck.',
+        tags: ['design', 'slides', 'presentation'],
+        exampleHint: 'I need help designing a short pitch presentation.',
+      },
+      photo_editing: {
+        suggestions: ['Product photos', 'Background removal', 'Color correction', 'Batch edits'],
+        placeholder: 'e.g. Edit product photos for my online store.',
+        tags: ['design', 'photo', 'editing'],
+        exampleHint: 'I need product photos cleaned up for my shop.',
+      },
+    },
+    marketing: {
+      social_media: {
+        suggestions: ['Monthly content plan', 'Post scheduling', 'Community management', 'Hashtag strategy'],
+        placeholder: 'e.g. Manage Instagram for a local salon.',
+        tags: ['marketing', 'social', 'content'],
+        exampleHint: 'I need help managing social media for my business.',
+      },
+      seo: {
+        suggestions: ['Google Business profile', 'Local SEO audit', 'Keyword research', 'On-page fixes'],
+        placeholder: 'e.g. Improve local search visibility for my store.',
+        tags: ['marketing', 'seo', 'google'],
+        exampleHint: 'I want to rank better on Google locally.',
+      },
+      paid_ads: {
+        suggestions: ['Meta ads setup', 'Google Ads campaign', 'Retargeting', 'Ad creative review'],
+        placeholder: 'e.g. Launch a small Google Ads campaign.',
+        tags: ['marketing', 'ads', 'paid'],
+        exampleHint: 'I need help setting up paid ads with a small budget.',
+      },
+      content: {
+        suggestions: ['Blog articles', 'Newsletter copy', 'Product descriptions', 'Video scripts'],
+        placeholder: 'e.g. Write 3 blog posts for my website.',
+        tags: ['marketing', 'content', 'copy'],
+        exampleHint: 'I need marketing copy for my website and social.',
+      },
+      email: {
+        suggestions: ['Welcome sequence', 'Promo campaign', 'Newsletter template', 'List cleanup'],
+        placeholder: 'e.g. Set up a simple welcome email series.',
+        tags: ['marketing', 'email', 'newsletter'],
+        exampleHint: 'I need an email campaign for new customers.',
+      },
+      branding: {
+        suggestions: ['Brand positioning', 'Messaging guide', 'Tone of voice', 'Launch strategy'],
+        placeholder: 'e.g. Define brand message for a new service.',
+        tags: ['marketing', 'branding', 'strategy'],
+        exampleHint: 'I need help defining my brand message and audience.',
+      },
+    },
   },
   pt: {
     cleaning: {
@@ -440,6 +516,82 @@ const DATA: Record<Lang, Tree> = {
       tags: ['TI', 'wifi', 'suporte'],
       exampleHint: 'Preciso configurar Wi-Fi, TV ou celular.',
     }),
+    design: {
+      logo_brand: {
+        suggestions: ['Logo para negócio local', 'Identidade visual', 'Cartão + logo', 'Kit para startup'],
+        placeholder: 'Ex.: Preciso de logo e cores para meu negócio.',
+        tags: ['design', 'logo', 'marca'],
+        exampleHint: 'Preciso de logo e identidade visual simples.',
+      },
+      social_media: {
+        suggestions: ['Posts para Instagram', 'Stories', 'Carrossel promocional', 'Feed do mês'],
+        placeholder: 'Ex.: Criar posts para lançamento de produto.',
+        tags: ['design', 'redes', 'grafico'],
+        exampleHint: 'Preciso de artes para redes sociais este mês.',
+      },
+      ui_ux: {
+        suggestions: ['Layout de landing page', 'Telas de app', 'Wireframes', 'Design system básico'],
+        placeholder: 'Ex.: Design de landing page para meu serviço.',
+        tags: ['design', 'ui', 'ux'],
+        exampleHint: 'Preciso de mockups de interface para um app.',
+      },
+      print: {
+        suggestions: ['Flyer de evento', 'Cardápio', 'Pôster', 'Folder'],
+        placeholder: 'Ex.: Flyer para promoção de fim de semana.',
+        tags: ['design', 'impresso', 'flyer'],
+        exampleHint: 'Preciso de material impresso para divulgação.',
+      },
+      presentation: {
+        suggestions: ['Pitch deck', 'Slides comerciais', 'Apresentação de treino', 'Deck para investidores'],
+        placeholder: 'Ex.: Melhorar apresentação de 10 slides.',
+        tags: ['design', 'slides', 'apresentacao'],
+        exampleHint: 'Preciso de ajuda com slides de apresentação.',
+      },
+      photo_editing: {
+        suggestions: ['Fotos de produto', 'Remover fundo', 'Correção de cor', 'Edição em lote'],
+        placeholder: 'Ex.: Editar fotos para loja online.',
+        tags: ['design', 'foto', 'edicao'],
+        exampleHint: 'Preciso tratar fotos de produtos para venda.',
+      },
+    },
+    marketing: {
+      social_media: {
+        suggestions: ['Plano de conteúdo mensal', 'Agendamento de posts', 'Gestão de comunidade', 'Estratégia de hashtags'],
+        placeholder: 'Ex.: Gerenciar Instagram do meu negócio.',
+        tags: ['marketing', 'redes', 'conteudo'],
+        exampleHint: 'Preciso de ajuda com redes sociais do negócio.',
+      },
+      seo: {
+        suggestions: ['Perfil Google Business', 'Auditoria SEO local', 'Palavras-chave', 'Ajustes on-page'],
+        placeholder: 'Ex.: Melhorar visibilidade no Google local.',
+        tags: ['marketing', 'seo', 'google'],
+        exampleHint: 'Quero aparecer melhor nas buscas locais.',
+      },
+      paid_ads: {
+        suggestions: ['Anúncios Meta', 'Campanha Google Ads', 'Remarketing', 'Revisão de criativos'],
+        placeholder: 'Ex.: Lançar campanha pequena no Google Ads.',
+        tags: ['marketing', 'anuncios', 'pago'],
+        exampleHint: 'Preciso configurar anúncios pagos com orçamento baixo.',
+      },
+      content: {
+        suggestions: ['Artigos de blog', 'Texto de newsletter', 'Descrições de produto', 'Roteiros de vídeo'],
+        placeholder: 'Ex.: Escrever 3 posts para o site.',
+        tags: ['marketing', 'conteudo', 'copy'],
+        exampleHint: 'Preciso de textos de marketing para site e redes.',
+      },
+      email: {
+        suggestions: ['Sequência de boas-vindas', 'Campanha promocional', 'Template de newsletter', 'Limpeza de lista'],
+        placeholder: 'Ex.: Montar e-mails de boas-vindas.',
+        tags: ['marketing', 'email', 'newsletter'],
+        exampleHint: 'Preciso de campanha de e-mail para novos clientes.',
+      },
+      branding: {
+        suggestions: ['Posicionamento de marca', 'Guia de mensagens', 'Tom de voz', 'Estratégia de lançamento'],
+        placeholder: 'Ex.: Definir mensagem da marca para novo serviço.',
+        tags: ['marketing', 'marca', 'estrategia'],
+        exampleHint: 'Preciso definir mensagem e público da minha marca.',
+      },
+    },
   },
   fr: {},
 };

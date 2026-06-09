@@ -2,6 +2,7 @@ import { Star, MapPin, Clock, Shield } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { translateCategory } from '@/utils/translateCategory';
+import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 
 export type HelperPublicProfileData = {
   id: string;
@@ -55,11 +56,18 @@ export function HelperPublicProfileView({ helper }: Props) {
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
         <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{t('helper_public.categories')}</p>
         <div className="mt-2 flex flex-wrap gap-2">
-          {helper.categories.map((c) => (
-            <span key={c} className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-800">
-              {translateCategory(c, t)}
-            </span>
-          ))}
+          {helper.categories.map((c) => {
+            const theme = getCategoryFeedTheme(c);
+            return (
+              <span
+                key={c}
+                className="rounded-lg px-2.5 py-1 text-xs font-bold"
+                style={{ color: theme.iconColor, backgroundColor: theme.iconBg }}
+              >
+                {translateCategory(c, t)}
+              </span>
+            );
+          })}
         </div>
       </div>
 

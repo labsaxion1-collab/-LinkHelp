@@ -23,8 +23,8 @@ export function HelperInsufficientCreditsModal({
 }: Props) {
   const navigate = useNavigate();
   const balanceLabel =
-    currentBalance != null ? formatLinkCredits(currentBalance, language) : '—';
-  const requiredLabel = formatLinkCredits(requiredLc, language);
+    currentBalance != null ? formatLinkCredits(currentBalance, language as 'pt' | 'en' | 'fr') : '—';
+  const requiredLabel = formatLinkCredits(requiredLc, language as 'pt' | 'en' | 'fr');
 
   return (
     <PremiumResponsiveModal

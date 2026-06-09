@@ -9,7 +9,7 @@ export async function savePushSubscription(userId: string, subscription: PushSub
     {
       user_id: userId,
       endpoint: subscription.endpoint,
-      subscription,
+      subscription: subscription as unknown as Record<string, unknown>,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'endpoint' },

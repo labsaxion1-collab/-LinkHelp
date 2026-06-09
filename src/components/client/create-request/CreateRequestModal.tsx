@@ -6,6 +6,8 @@ import { useToast } from '@/context/ToastContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
+import { getCategoryAccent } from '@/utils/categoryFeedTheme';
+import { clsx } from 'clsx';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { CreateRequestScheduleStep, type MovePropertyType } from '@/components/client/create-request/CreateRequestScheduleStep';
 import { CreateRequestReviewStep } from '@/components/client/create-request/CreateRequestReviewStep';
@@ -678,17 +680,22 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 w-full max-w-full">
                 {SERVICE_CATEGORIES.map((cat) => {
                   const IconComponent = getCategoryLucideIcon(cat.icon);
+                  const accent = getCategoryAccent(cat.id);
                   return (
                     <button
                       key={cat.id}
                       type="button"
                       onClick={() => { setSelectedCategory(cat.id); setSelectedSubcategory(''); setStep('subcategory'); }}
-                      className="flex w-full max-w-full min-w-0 flex-col items-center p-4 rounded-2xl border-2 border-gray-200 hover:border-blue-300 bg-white hover:shadow-md transition-all"
+                      className={clsx(
+                        'flex w-full max-w-full min-w-0 flex-col items-center rounded-2xl border-2 bg-white p-4 transition-all hover:shadow-md',
+                        accent.cardBorder,
+                        accent.cardHover,
+                      )}
                     >
-                      <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
-                        <IconComponent className="w-6 h-6" />
+                      <div className={clsx('mb-3 flex h-12 w-12 items-center justify-center rounded-xl', accent.icon)}>
+                        <IconComponent className="h-6 w-6" />
                       </div>
-                      <span className="text-sm font-bold text-center">{t('categories.' + cat.id)}</span>
+                      <span className="text-center text-sm font-bold text-gray-900">{t('categories.' + cat.id)}</span>
                     </button>
                   );
                 })}

@@ -33,6 +33,20 @@ export function buildActiveApplicationCountsByJobId(
   return counts;
 }
 
+export function hasExclusiveActiveApplicationForJob(
+  applications: Application[],
+  jobId: string,
+  viewerHelperId?: string | null,
+): boolean {
+  return applications.some((app) => {
+    if (app.jobId !== jobId) return false;
+    if (!app.isExclusive) return false;
+    if (!isActiveApplicationStatus(app.status)) return false;
+    if (viewerHelperId && app.helperId === viewerHelperId) return false;
+    return true;
+  });
+}
+
 export function isJobInterestFull(count: number, max = MAX_JOB_INTERESTED): boolean {
   return count >= max;
 }

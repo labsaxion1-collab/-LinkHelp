@@ -2,7 +2,7 @@ import { PremiumResponsiveModal } from '@/components/design-system/PremiumRespon
 
 type DialogProps = {
   t: (key: string) => string;
-  onContinue: () => void;
+  onContinue?: () => void;
   onDiscard: () => void;
 };
 

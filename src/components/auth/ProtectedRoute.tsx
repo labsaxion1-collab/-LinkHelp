@@ -117,7 +117,10 @@ export function ProtectedRoute() {
         <button
           type="button"
           className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-black"
-          onClick={() => void refreshProfile()}
+          onClick={() => {
+            profileKick.current = 0;
+            void refreshProfile(session.user);
+          }}
         >
           Tentar novamente
         </button>

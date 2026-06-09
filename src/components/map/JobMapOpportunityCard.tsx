@@ -3,6 +3,7 @@ import type { Job } from '@/types/job';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { translateCategory, translateJobTitle } from '@/utils/translateCategory';
+import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { getHelperLeadCreditSummary, getHelperCreditPublicDisplay } from '@/utils/helperCreditDisplay';
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
 
@@ -26,6 +27,7 @@ export function JobMapOpportunityCard({
   const creditDisplay = getHelperCreditPublicDisplay(
     getHelperLeadCreditSummary(job, remote ? null : distanceKm),
   );
+  const categoryTheme = getCategoryFeedTheme(job.category);
   const distanceLabel = remote
     ? t('jobs.remote')
     : distanceKm != null
@@ -35,7 +37,10 @@ export function JobMapOpportunityCard({
   return (
     <div className="min-w-[220px] max-w-[260px] space-y-2.5 pt-0.5">
       <div>
-        <span className="text-[10px] font-bold uppercase tracking-wide text-blue-600">
+        <span
+          className="inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+          style={{ color: categoryTheme.iconColor, backgroundColor: categoryTheme.iconBg }}
+        >
           {translateCategory(job.category, t)}
         </span>
         <p className="mt-1 text-sm font-black text-gray-900 leading-snug">{clientName}</p>

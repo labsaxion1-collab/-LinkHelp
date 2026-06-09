@@ -96,7 +96,7 @@ export default function NotificationsPage() {
           <p className="mt-1 text-sm font-medium text-slate-500">{t('notification_types.section_sub')}</p>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {NOTIFICATION_PREVIEW_TYPES.map((item) => {
-              const Icon = (Icons as Record<string, React.ComponentType<{ className?: string }>>)[item.icon] ?? Icons.Bell;
+              const Icon = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[item.icon] ?? Icons.Bell;
               return (
                 <div
                   key={item.id}

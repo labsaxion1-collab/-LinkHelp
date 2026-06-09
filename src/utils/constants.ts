@@ -36,4 +36,6 @@ export const ROUTES = {
   settings: '/settings',
   /** FLUX multi-app admin console */
   adminDashboard: '/admin/dashboard',
+  /** Dev-only push notification diagnostics */
+  adminPushTest: '/admin/push-test',
 } as const;

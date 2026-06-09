@@ -11,6 +11,8 @@ export interface Application {
   message?: string | null;
   /** Helper proposed price when applying (CAD). */
   proposedAmount?: number | null;
+  /** Exclusive applications hide the request from other helpers. */
+  isExclusive?: boolean;
   helperName: string;
   helperAvatar: string;
   helperRating: number;

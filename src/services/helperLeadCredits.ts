@@ -17,8 +17,11 @@ export class InsufficientCreditsError extends Error {
 }
 
 export function leadCostsForJob(job: Job, input?: number | null | { distanceKm?: number | null }) {
-  const distanceKm = typeof input === 'object' && input !== null ? input.distanceKm : input;
-  return calculateHelperLeadCreditCost(job, { distanceKm });
+  const opts =
+    typeof input === 'object' && input !== null
+      ? input
+      : ({ distanceKm: input } as { distanceKm?: number | null });
+  return calculateHelperLeadCreditCost(job, opts);
 }
 
 export async function fetchHelperBaseDistanceKm(helperId: string, job: Job): Promise<number | null> {

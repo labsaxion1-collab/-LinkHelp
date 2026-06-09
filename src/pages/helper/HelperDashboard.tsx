@@ -21,7 +21,11 @@ import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { UpcomingJobsSidebar } from '@/components/helpers/UpcomingJobsSidebar';
 import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailModal';
-import { buildActiveApplicationCountsByJobId } from '@/utils/applicationInterest';
+import {
+  buildActiveApplicationCountsByJobId,
+  hasExclusiveActiveApplicationForJob,
+  isJobInterestFull,
+} from '@/utils/applicationInterest';
 import type { ServiceCategoryId } from '@/data/serviceCategories';
 import { resolveCategoryId, translateCategory, translateJobTitle } from '@/utils/translateCategory';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
@@ -651,7 +655,12 @@ export default function HelperDashboard() {
     [appliedJobIds, helperUserId, baseDistanceToJobKm, hasInterestCredits, logProposalAnalytics, pushToast, t],
   );
 
-  const submitApply = async (job: Job, proposedAmount: number | null, proposalMessage?: string | null) => {
+  const submitApply = async (
+    job: Job,
+    proposedAmount: number | null,
+    proposalMessage?: string | null,
+    proposalOptions?: { isExclusive?: boolean },
+  ) => {
     if (appliedJobIds.has(job.id) || isSubmittingApplyRef.current) return;
     if (!helperUserId) {
       showToast(t('auth.errors.not_signed_in'), 'error');
@@ -672,6 +681,7 @@ export default function HelperDashboard() {
       await applyForJob(job.id, helperUserId, proposedAmount, {
         distanceKm,
         message: proposalMessage ?? null,
+        isExclusive: proposalOptions?.isExclusive === true,
       });
       await refreshCredits();
       recordMarketSignal({
@@ -714,6 +724,10 @@ export default function HelperDashboard() {
       }
       if (msg === 'APPLICATION_LIMIT_REACHED') {
         showToast(t('helper_dashboard.application_limit_reached'), 'error');
+        return;
+      }
+      if (msg === 'EXCLUSIVE_APPLICATION_LOCKED') {
+        showToast(t('helper_dashboard.exclusive_application_locked'), 'error');
         return;
       }
       const friendlyMsg =
@@ -791,9 +805,15 @@ export default function HelperDashboard() {
         categoryPrefs,
       );
     }
-    return list.filter((j) => !dismissedJobIds.has(j.id) && !helperEngagedJobIds.has(j.id));
+    return list.filter((j) => {
+      if (dismissedJobIds.has(j.id) || helperEngagedJobIds.has(j.id)) return false;
+      if (hasExclusiveActiveApplicationForJob(applications, j.id, viewerId)) return false;
+      return !isJobInterestFull(applicationCountsByJobId.get(j.id) ?? 0);
+    });
   }, [
     jobs,
+    applications,
+    applicationCountsByJobId,
     selectedCategoryFilters,
     activeTab,
     helperBaseCoords,
@@ -816,7 +836,9 @@ export default function HelperDashboard() {
         !isJobCancelled(j) &&
         j.clientId !== (helperUserId ?? me?.id ?? '') &&
         getJobServiceCategoryId(j) &&
-        !helperEngagedJobIds.has(j.id),
+        !helperEngagedJobIds.has(j.id) &&
+        !hasExclusiveActiveApplicationForJob(applications, j.id, helperUserId ?? me?.id ?? '') &&
+        !isJobInterestFull(applicationCountsByJobId.get(j.id) ?? 0),
     ),
     categoryPrefs,
   )
@@ -1106,15 +1128,22 @@ export default function HelperDashboard() {
               style={{ marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)' }}
             >
               <img
-                src="/brand/helper-hero-bg.jpg"
+                src="/brand/hero-tools.png"
                 alt=""
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 -top-[19.5rem] h-[calc(100%+20rem)] w-full object-cover object-top opacity-95 transition-transform duration-200 ease-out"
+                className="pointer-events-none absolute inset-x-0 -top-16 h-[calc(100%+4rem)] w-full object-cover object-[62%_top] opacity-100 transition-transform duration-200 ease-out"
                 style={{ transform: `translate3d(0, ${-heroParallaxOffset}px, 0)` }}
               />
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(249,251,255,0.20)_0%,rgba(249,251,255,0.38)_27%,rgba(249,251,255,0.76)_58%,#F7F8FC_82%)]" />
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(249,251,255,0.82)_0%,rgba(249,251,255,0.52)_48%,rgba(249,251,255,0.16)_100%)]" />
-              <div className="pointer-events-none absolute -left-16 -top-12 h-52 w-72 rounded-full bg-white/28 blur-2xl" />
+              <img
+                src="/brand/helper-hero-blue-ribbon.jpg"
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute left-1/2 top-[12.8rem] h-28 w-[130vw] max-w-none -translate-x-1/2 object-cover object-center opacity-45 mix-blend-screen blur-[0.2px] sm:top-[13.5rem] sm:h-32"
+              />
+              {/* Overlay — estende-se até o nav bar */}
+              <div className="pointer-events-none absolute inset-x-0 -top-16 bottom-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.98)_0%,rgba(255,255,255,0.92)_34%,rgba(255,255,255,0.42)_61%,rgba(255,255,255,0.18)_100%)]" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-[-1px] h-28 bg-gradient-to-b from-transparent via-white/80 to-[#F7F9FD]" />
+              <div className="pointer-events-none absolute left-0 top-0 h-full w-[55vw] bg-[radial-gradient(circle_at_16%_26%,rgba(37,99,255,0.11),transparent_42%)]" />
               <header className="relative mb-3 flex min-h-[40px] items-start justify-between gap-3 px-6 pr-[calc(9.75rem+1.5rem)] sm:px-7 sm:pr-[calc(9.75rem+1.75rem)]">
                 <div className="min-w-0">
                   <p className="bg-gradient-to-r from-[#0B1220] via-[#123D85] to-[#2563FF] bg-clip-text text-2xl font-black leading-none tracking-tight text-transparent">
@@ -1137,23 +1166,42 @@ export default function HelperDashboard() {
                 ) : null}
               </header>
 
-              <div className="relative min-h-[20rem] px-6 py-2 sm:px-7">
-                <div className="pointer-events-none absolute right-0 top-1 h-20 w-56 rotate-[-12deg] rounded-full bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.10),transparent)] blur-[1px]" />
-                <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF]">
-                  <span className="text-base" aria-hidden>Olá</span>
+              <div className="relative min-h-[23.4rem] px-6 py-3 sm:px-7">
+                <div className="pointer-events-none absolute right-0 top-1 h-20 w-56 rotate-[-12deg] rounded-full bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.14),transparent)] blur-[1px]" />
+                <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF] drop-shadow-[0_1px_10px_rgba(255,255,255,0.55)]">
+                  <span className="text-base" aria-hidden>Olá,</span>
                   {helperFirstName}
+                  <span aria-hidden>👋</span>
                 </p>
-                <h1 className="relative mt-2 max-w-sm text-[2rem] font-black leading-[1.03] tracking-tight text-[#0B1220] sm:text-4xl">
-                  Encontre oportunidades <span className="text-[#2563FF]">perto de você.</span>
+                <h1 className="relative mt-3 max-w-[18rem] text-[2.35rem] font-black leading-[1.02] tracking-tight text-[#071633] drop-shadow-[0_2px_18px_rgba(255,255,255,0.68)] sm:max-w-sm sm:text-5xl">
+                  Encontre quem precisa de você <span className="text-[#2563FF]">perto daqui.</span>
                 </h1>
-                <span className="relative mt-2 block h-1.5 w-28 rounded-full bg-[#2563FF]" aria-hidden />
+                <span className="relative mt-3 block h-1.5 w-28 rounded-full bg-[#2563FF] shadow-[0_10px_22px_rgba(37,99,255,0.25)]" aria-hidden />
+                <p className="relative mt-5 max-w-[15.8rem] text-[13px] font-bold leading-relaxed text-[#42526B] drop-shadow-[0_1px_12px_rgba(255,255,255,0.70)] sm:max-w-xs sm:text-sm">
+                  Conecte-se com clientes reais, serviços próximos e novas oportunidades todos os dias.
+                </p>
+                <div className="relative mt-7 flex max-w-[18.2rem] items-center gap-3 text-[11px] font-black text-[#10234A] sm:max-w-sm">
+                  <span className="flex items-center gap-2">
+                    <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white/78 text-[#2563FF] shadow-[0_10px_24px_rgba(15,23,42,0.08)] ring-1 ring-white/70">
+                      <Icons.ShieldCheck className="h-4 w-4" />
+                    </span>
+                    Perfil verificado
+                  </span>
+                  <span className="h-8 w-px bg-slate-300/70" aria-hidden />
+                  <span className="flex items-center gap-2">
+                    <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white/78 text-[#2563FF] shadow-[0_10px_24px_rgba(15,23,42,0.08)] ring-1 ring-white/70">
+                      <Icons.Star className="h-4 w-4" />
+                    </span>
+                    Clientes ativos
+                  </span>
+                </div>
 
                 {homeInfoSlides.length > 0 ? (() => {
                   const slide = homeInfoSlides[activeInfoSlide] ?? homeInfoSlides[0];
 
                   return (
-                    <div className="relative mt-[7rem] flex h-[7.2rem] max-w-md flex-col items-center justify-center overflow-hidden rounded-[1.55rem] border border-white/45 bg-[#071D48]/92 px-4 py-3 text-center text-xs font-bold text-white shadow-[0_18px_42px_rgba(8,31,84,0.18)] backdrop-blur-xl" aria-live="polite">
-                      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_0%,rgba(51,182,255,0.32),transparent_36%),linear-gradient(135deg,rgba(37,99,255,0.32),transparent_52%)]" />
+                    <div className="relative mt-8 flex h-[7.2rem] max-w-md flex-col items-center justify-center overflow-hidden rounded-[1.65rem] border border-white/45 bg-[#071D48]/94 px-4 py-3 text-center text-xs font-bold text-white shadow-[0_18px_42px_rgba(8,31,84,0.20)] backdrop-blur-xl" aria-live="polite">
+                      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(51,182,255,0.36),transparent_36%),linear-gradient(135deg,rgba(37,99,255,0.34),transparent_54%)]" />
                       <div className="pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full bg-sky-300/20 blur-2xl" />
                       <div key={slide.id} className="relative flex w-full flex-col items-center justify-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/14 text-white shadow-[0_10px_22px_rgba(37,99,255,0.22)] ring-1 ring-white/18">
@@ -1231,8 +1279,13 @@ export default function HelperDashboard() {
             </div>
           </div>
 
-          <div className="mb-3">
-            <h2 className="text-xl font-bold text-gray-900">{t('helper_dashboard.feed_title_jobs')}</h2>
+          <div className="mb-4 flex items-center gap-3">
+            <h2 className="text-xl font-black tracking-tight text-[#0B1220]">{t('helper_dashboard.feed_title_jobs')}</h2>
+            {displayedJobs.length > 0 && (
+              <span className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 text-[11px] font-black text-[#2563FF]">
+                {displayedJobs.length}
+              </span>
+            )}
           </div>
 
           {/* Posts (Feed) */}
@@ -1240,18 +1293,19 @@ export default function HelperDashboard() {
             {displayedJobs.length > 0 ? (
               <div
                 className={clsx(
-                  'grid w-full max-w-full min-w-0 grid-cols-1 gap-6 transition-[filter,opacity] duration-300',
+                  'grid w-full max-w-full min-w-0 grid-cols-1 gap-5 transition-[filter,opacity] duration-300',
                   proposalJob && 'pointer-events-none brightness-[0.92] md:brightness-[0.88]',
                 )}
               >
-              {displayedJobs.map((job) => (
+              {displayedJobs.map((job, idx) => (
                     <div
                       key={job.id}
                       className={clsx(
-                        'min-w-0 transition-[margin,opacity,transform] duration-[420ms] ease-[cubic-bezier(0.34,1.15,0.64,1)]',
+                        'lh-feed-card-enter min-w-0 transition-[margin,opacity,transform] duration-[420ms] ease-[cubic-bezier(0.34,1.15,0.64,1)]',
                         exitingJobIds.has(job.id) &&
                           'pointer-events-none -mt-3 scale-[0.92] opacity-0 -translate-x-6 rotate-[-2deg]',
                       )}
+                      style={{ '--card-idx': idx } as React.CSSProperties}
                     >
                       <HelperOpportunityCard
                         job={job}
@@ -1281,10 +1335,13 @@ export default function HelperDashboard() {
               ))}
               </div>
             ) : (
-              <LhCard className="text-center py-12 border-dashed" padding="lg">
-                <Icons.SearchX className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 font-medium">{t('helper_dashboard.empty_feed')}</p>
-              </LhCard>
+              <div className="flex flex-col items-center justify-center rounded-[22px] border border-dashed border-[rgba(37,99,255,0.16)] bg-gradient-to-br from-white to-[#f4f7ff] px-6 py-14 text-center shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+                <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 shadow-[0_8px_24px_rgba(37,99,255,0.12)]">
+                  <Icons.SearchX className="h-8 w-8 text-[#2563FF]" strokeWidth={1.75} />
+                </span>
+                <p className="text-[15px] font-bold text-[#0B1220]">{t('helper_dashboard.empty_feed')}</p>
+                <p className="mt-1 text-[13px] font-medium text-[#94A3B8]">Novas oportunidades aparecem em tempo real.</p>
+              </div>
             )}
           </div>
           </>
@@ -1295,15 +1352,17 @@ export default function HelperDashboard() {
         <div className="hidden lg:flex flex-col sticky top-24 h-[calc(100vh-120px)] space-y-4">
           
           {/* Live Opportunity Radar */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden hover:shadow-md transition-shadow duration-200">
-             <div className="p-4 border-b border-gray-50 flex items-center justify-between">
+          <div className="overflow-hidden rounded-[18px] border border-[rgba(15,23,42,0.08)] bg-white shadow-[0_2px_12px_rgba(15,23,42,0.05),0_6px_28px_rgba(15,23,42,0.05)] transition-shadow duration-200 hover:shadow-[0_8px_32px_rgba(15,23,42,0.08)]">
+             <div className="flex items-center justify-between border-b border-[rgba(15,23,42,0.05)] p-4">
                 <div className="flex items-center gap-2">
-                   <Icons.Crosshair className="w-4 h-4 text-blue-600" />
-                   <h3 className="font-bold text-gray-900 text-sm">{t('helper_dashboard.radar_title')}</h3>
+                   <span className="flex h-7 w-7 items-center justify-center rounded-xl border border-blue-100 bg-blue-50">
+                     <Icons.Crosshair className="h-3.5 w-3.5 text-[#2563FF]" />
+                   </span>
+                   <h3 className="text-sm font-black text-[#0B1220]">{t('helper_dashboard.radar_title')}</h3>
                 </div>
-                <span className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-md">{t('helper_dashboard.radar_badge_neutral')}</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-500">{t('helper_dashboard.radar_badge_neutral')}</span>
              </div>
-             <div className="space-y-2 p-3">
+             <div className="space-y-1.5 p-3">
                {radarJobs.length ? radarJobs.map(({ job, distanceKm }) => (
                  <button
                    key={job.id}
@@ -1313,14 +1372,14 @@ export default function HelperDashboard() {
                      setActiveTab(job.urgency === 'high' ? 'emergencia' : 'match');
                      navigate(ROUTES.helperOpportunities);
                    }}
-                   className="flex w-full items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-left transition-colors hover:border-blue-200 hover:bg-blue-50"
+                   className="flex w-full items-center gap-3 rounded-[14px] border border-[rgba(15,23,42,0.06)] bg-[#f7f8fc] p-3 text-left transition-all duration-200 hover:border-blue-200 hover:bg-blue-50 hover:shadow-[0_4px_14px_rgba(37,99,255,0.08)]"
                  >
-                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 ring-1 ring-slate-200">
-                     <Icons.MapPin className="h-4 w-4" />
+                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-white shadow-[0_2px_8px_rgba(37,99,255,0.08)]">
+                     <Icons.MapPin className="h-4 w-4 text-[#2563FF]" />
                    </span>
                    <span className="min-w-0 flex-1">
-                     <span className="block truncate text-sm font-black text-slate-900">{translateJobTitle(job.title, job.category, job.subcategory, t)}</span>
-                     <span className="block truncate text-xs font-bold text-slate-500">
+                     <span className="block truncate text-[13px] font-black text-[#0B1220]">{translateJobTitle(job.title, job.category, job.subcategory, t)}</span>
+                     <span className="block truncate text-[11px] font-bold text-[#94A3B8]">
                        {!hasHelperBaseAddress
                          ? t('helper_dashboard.base_address_missing_short')
                          : baseAddressPendingCoords
@@ -1330,18 +1389,19 @@ export default function HelperDashboard() {
                              : job.city || job.location}
                      </span>
                    </span>
-                   <span className={`rounded-full px-2 py-1 text-[10px] font-black ${job.urgency === 'high' ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'}`}>
+                   <span className={`rounded-full px-2 py-1 text-[10px] font-black ${job.urgency === 'high' ? 'border border-rose-100 bg-rose-50 text-rose-600' : 'border border-blue-100 bg-blue-50 text-[#2563FF]'}`}>
                      {job.value}
                    </span>
                  </button>
                )) : (
-                 <p className="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs font-bold text-slate-500">
+                 <p className="rounded-[14px] border border-dashed border-[rgba(37,99,255,0.15)] p-4 text-center text-[12px] font-bold text-[#94A3B8]">
                    {t('helper_dashboard.empty_feed')}
                  </p>
                )}
              </div>
-             <Link to={ROUTES.map} className="p-2 border-t border-gray-50 bg-gray-50 text-center hover:bg-gray-100 transition-colors cursor-pointer block">
-                 <span className="text-xs font-semibold text-blue-600">{t('helper_dashboard.radar_expand_map')}</span>
+             <Link to={ROUTES.map} className="flex items-center justify-center gap-1.5 border-t border-[rgba(15,23,42,0.05)] bg-[#f7f8fc] p-2.5 text-center transition-colors hover:bg-blue-50">
+                 <Icons.Map className="h-3.5 w-3.5 text-[#2563FF]" />
+                 <span className="text-[12px] font-bold text-[#2563FF]">{t('helper_dashboard.radar_expand_map')}</span>
              </Link>
           </div>
 
@@ -1358,17 +1418,16 @@ export default function HelperDashboard() {
             onQuickReject={(job) => updateUpcomingWorkflow(job.id, 'cancelled')}
           />
           
-          <div className="border-t border-gray-200 pt-4 flex-1">
-             <div className="mb-3 px-1">
-               <h3 className="text-gray-500 font-semibold text-xs tracking-wider uppercase">{t('helper_dashboard.messages_recent')}</h3>
-               <p className="text-[11px] text-gray-500 mt-1 leading-snug">{t('helper_dashboard.messages_sub')}</p>
+          <div className="overflow-hidden rounded-[18px] border border-[rgba(15,23,42,0.08)] bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.05)]">
+             <div className="mb-3">
+               <h3 className="text-[11px] font-black uppercase tracking-wider text-[#94A3B8]">{t('helper_dashboard.messages_recent')}</h3>
+               <p className="mt-1 text-[12px] font-medium leading-snug text-[#6B7280]">{t('helper_dashboard.messages_sub')}</p>
              </div>
-             
              <Link
                to={ROUTES.messages}
-               className="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-white border border-gray-200 text-sm font-bold text-blue-700 hover:bg-blue-50 hover:border-blue-200 transition-colors shadow-sm"
+               className="flex items-center justify-center gap-2 w-full rounded-[14px] bg-gradient-to-br from-[#2563FF] to-[#1D55E8] px-3 py-2.5 text-[13px] font-bold text-white shadow-[0_8px_22px_rgba(37,99,255,0.22)] transition-all hover:shadow-[0_12px_28px_rgba(37,99,255,0.30)] hover:-translate-y-0.5"
              >
-               <Icons.MessageCircle className="w-4 h-4 shrink-0" />
+               <Icons.MessageCircle className="h-4 w-4 shrink-0" />
                {t('helper_dashboard.messages_cta')}
              </Link>
           </div>
@@ -1394,7 +1453,7 @@ export default function HelperDashboard() {
         submitting={proposalJob ? applyingJobId === proposalJob.id : false}
         creditBalance={walletBalance}
         onClose={handleProposalClose}
-        onSubmit={(amount, message) => proposalJob && void submitApply(proposalJob, amount, message)}
+        onSubmit={(amount, message, options) => proposalJob && void submitApply(proposalJob, amount, message, options)}
         t={t}
         language={language}
         distanceKm={proposalJob ? baseDistanceToJobKm(proposalJob) : null}

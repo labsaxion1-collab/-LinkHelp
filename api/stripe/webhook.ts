@@ -140,7 +140,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const result = await callConfirmStripeLinkCreditPurchase(rpcPayload);
 
-    if (!result.ok) {
+    if (result.ok === false) {
       return res.status(result.status >= 400 ? result.status : 500).send(result.body);
     }
   }

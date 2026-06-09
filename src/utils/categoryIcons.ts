@@ -7,7 +7,7 @@ const iconByCategoryId = Object.fromEntries(
 ) as Record<ServiceCategoryId, string>;
 
 export function getCategoryLucideIcon(iconName: string): LucideIcon {
-  const Icon = (Icons as Record<string, LucideIcon | undefined>)[iconName];
+  const Icon = (Icons as unknown as Record<string, LucideIcon | undefined>)[iconName];
   return Icon ?? Icons.HelpCircle;
 }
 

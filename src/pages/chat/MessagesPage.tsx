@@ -376,7 +376,7 @@ export default function MessagesPage() {
           </span>
           <span className="mt-1 block truncate text-[16px] font-black leading-tight text-[#0B1220] sm:text-[17px]">{compactJobLabel}</span>
           <span className="mt-2 flex min-w-0 flex-wrap gap-x-3 gap-y-1 text-[12px] font-semibold text-[#6B7280] sm:text-[13px]">
-            <span className="inline-flex min-w-0 items-center gap-1"><Icons.CalendarDays className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{activeJob?.desiredDate || t('messages_page.today')}</span></span>
+            <span className="inline-flex min-w-0 items-center gap-1"><Icons.CalendarDays className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{activeJob?.preferredDate || t('messages_page.today')}</span></span>
             <span className="inline-flex min-w-0 items-center gap-1"><Icons.MapPin className="h-3.5 w-3.5 shrink-0" /><span className="max-w-[150px] truncate sm:max-w-[260px]">{activeJob?.location || 'LinkHelp'}</span></span>
           </span>
         </span>
@@ -450,17 +450,17 @@ export default function MessagesPage() {
             <div className={msg.sender === 'me' ? 'flex flex-col items-end min-w-0' : 'min-w-0'}>
               <div
                 className={clsx(
-                  'relative break-words px-4 py-3 text-[15px] leading-[1.55] shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:px-5 sm:py-3.5',
+                  'relative break-words px-4 py-3 text-[15px] leading-[1.55] sm:px-5 sm:py-3.5',
                   msg.sender === 'me'
-                    ? 'rounded-[22px] rounded-br-md bg-[#E9EEFF] text-[#0B1220]'
-                    : 'rounded-[22px] rounded-bl-md border border-[#E9EDF5]/70 bg-white text-[#0B1220]',
+                    ? 'rounded-[22px] rounded-br-[6px] bg-gradient-to-br from-[#2563FF] to-[#1D55E8] text-white shadow-[0_8px_22px_rgba(37,99,255,0.22),inset_0_1px_0_rgba(255,255,255,0.18)]'
+                    : 'rounded-[22px] rounded-bl-[6px] border border-[rgba(15,23,42,0.07)] bg-white text-[#0B1220] shadow-[0_4px_16px_rgba(15,23,42,0.05)]',
                 )}
               >
                 <p>{msg.text}</p>
               </div>
               <span
                 className={clsx(
-                  'mt-1.5 flex items-center gap-1 text-xs font-medium text-[#6B7280]',
+                  'mt-1.5 flex items-center gap-1 text-[11px] font-medium text-[#94A3B8]',
                   msg.sender === 'me' ? 'mr-1' : 'ml-1',
                 )}
               >
@@ -498,11 +498,11 @@ export default function MessagesPage() {
 
   const inputBar = (
     <div
-      className="shrink-0 space-y-2 bg-[#F7F8FC]/95 px-4 pb-[max(env(safe-area-inset-bottom),0.85rem)] pt-3 backdrop-blur-md md:pb-4 sm:px-6"
+      className="shrink-0 space-y-2 border-t border-[rgba(15,23,42,0.06)] bg-white/96 px-4 pb-[max(env(safe-area-inset-bottom),0.85rem)] pt-3 backdrop-blur-xl md:pb-4 sm:px-6"
       style={keyboardInset > 0 ? { paddingBottom: `max(${keyboardInset}px, env(safe-area-inset-bottom))` } : undefined}
     >
       {counterLabel ? (
-        <p className="px-1 text-center text-sm font-semibold text-[#6B7280] tabular-nums">
+        <p className="px-1 text-center text-[13px] font-semibold text-[#6B7280] tabular-nums">
           {counterLabel.replace(/(\d+\s*\/\s*\d+|\d+)/, '').trim()}{' '}
           <span className="font-black text-[#2563FF]">{counterLabel.match(/(\d+\s*\/\s*\d+|\d+)/)?.[0] ?? ''}</span>
         </p>
@@ -511,14 +511,14 @@ export default function MessagesPage() {
         onSubmit={(ev) => {
           void handleSendMessage(ev);
         }}
-        className="flex min-h-[72px] items-center gap-2 rounded-[28px] bg-white p-2 shadow-[0_12px_35px_rgba(15,23,42,0.06)]"
+        className="flex min-h-[64px] items-center gap-2 rounded-[26px] border border-[rgba(15,23,42,0.07)] bg-[#F7F8FC] p-1.5 shadow-[0_6px_24px_rgba(15,23,42,0.05)]"
       >
         <button
           type="button"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] text-[#6B7280] transition hover:bg-[#F7F8FC] hover:text-[#2563FF]"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] text-[#94A3B8] transition-all hover:bg-white hover:text-[#2563FF] hover:shadow-[0_2px_8px_rgba(37,99,255,0.1)]"
           aria-label="Anexar"
         >
-          <Icons.Paperclip className="h-5 w-5" />
+          <Icons.Paperclip className="h-[19px] w-[19px]" />
         </button>
         <div className="flex-1 relative min-w-0">
           <textarea
@@ -532,20 +532,20 @@ export default function MessagesPage() {
               }
             }}
             placeholder={serviceConfirmed ? t('messages_page.input_placeholder') : t('messages_page.input_placeholder_limited')}
-            className="max-h-32 min-h-[48px] w-full resize-none border-none bg-transparent px-1 py-3 text-base text-[#0B1220] outline-none placeholder:text-[#9CA3AF] focus:outline-none sm:text-base"
+            className="max-h-32 min-h-[44px] w-full resize-none border-none bg-transparent px-1 py-2.5 text-[15px] text-[#0B1220] outline-none placeholder:text-[#B0BAC9] focus:outline-none"
           />
         </div>
         <button
           type="submit"
           disabled={sendDisabled || !message.trim()}
           className={clsx(
-            'flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-[20px] transition-all',
+            'flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[20px] transition-all duration-200',
             message.trim() && !sendDisabled
-              ? 'bg-[#2563FF] text-white shadow-[0_12px_30px_rgba(37,99,255,0.28)] hover:bg-blue-700 active:scale-95'
-              : 'bg-[#EEF3FF] text-[#9CA3AF]',
+              ? 'bg-gradient-to-br from-[#2563FF] to-[#1D55E8] text-white shadow-[0_10px_26px_rgba(37,99,255,0.28)] hover:shadow-[0_14px_32px_rgba(37,99,255,0.36)] active:scale-95'
+              : 'bg-[#EDF0F7] text-[#B0BAC9]',
           )}
         >
-          <Send className="w-5 h-5" />
+          <Send className="h-[18px] w-[18px]" />
         </button>
       </form>
     </div>

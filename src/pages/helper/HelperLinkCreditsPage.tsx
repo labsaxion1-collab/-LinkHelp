@@ -58,17 +58,17 @@ function packageArtwork(packageId: string): string | null {
 
 function packageArtworkClass(packageId: string): string {
   const base =
-    'h-24 max-w-none object-contain object-center drop-shadow-[0_14px_18px_rgba(180,83,9,0.22)] transition duration-500 group-hover:-translate-y-0.5';
+    'max-h-20 max-w-full object-contain object-center drop-shadow-[0_14px_18px_rgba(180,83,9,0.22)] transition duration-500 group-hover:-translate-y-0.5 sm:max-h-none sm:h-24';
 
   switch (packageId) {
     case 'starter':
-      return `${base} w-[5.25rem] scale-[0.68] group-hover:scale-[0.72]`;
+      return `${base} w-[4.5rem] scale-[0.72] sm:w-[5.25rem] sm:scale-[0.68] sm:group-hover:scale-[0.72]`;
     case 'popular':
-      return `${base} w-[9.8rem] scale-[1.28] group-hover:scale-[1.32]`;
+      return `${base} w-[7.5rem] scale-[1.02] sm:w-[9.8rem] sm:scale-[1.28] sm:group-hover:scale-[1.32]`;
     case 'pro':
-      return `${base} w-[10.4rem] scale-[1.18] group-hover:scale-[1.22]`;
+      return `${base} w-[8rem] scale-[0.96] sm:w-[10.4rem] sm:scale-[1.18] sm:group-hover:scale-[1.22]`;
     case 'power':
-      return `${base} w-[10.8rem] scale-[1.20] group-hover:scale-[1.24]`;
+      return `${base} w-[8.25rem] scale-[0.98] sm:w-[10.8rem] sm:scale-[1.20] sm:group-hover:scale-[1.24]`;
     default:
       return `${base} w-full group-hover:scale-[1.04]`;
   }
@@ -168,22 +168,44 @@ export default function HelperLinkCreditsPage() {
                 className="group relative overflow-hidden rounded-[1.35rem] border border-white/85 bg-white/88 px-4 py-4 shadow-[0_14px_38px_rgba(92,67,16,0.10)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(92,67,16,0.15)] sm:px-5 sm:py-5"
               >
                 <div className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${packageAccent(pkg.id)} opacity-80`} />
-                <div className="pointer-events-none absolute right-[22%] top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-amber-300/10 blur-2xl transition group-hover:bg-amber-300/20" />
+                <div className="pointer-events-none absolute right-[22%] top-1/2 hidden h-24 w-24 -translate-y-1/2 rounded-full bg-amber-300/10 blur-2xl transition group-hover:bg-amber-300/20 sm:block" />
 
-                <div className="relative grid grid-cols-[minmax(0,0.88fr)_minmax(5.9rem,0.9fr)_minmax(0,0.94fr)] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(8.4rem,0.95fr)_minmax(0,1fr)] sm:gap-5">
-                  <div className="relative z-10 flex min-w-0 flex-col justify-center">
-                    <h2 className={`text-lg font-black sm:text-xl ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
-                    <p className="mt-2 whitespace-nowrap bg-gradient-to-b from-[#FFE36A] via-[#F3B51B] to-[#C98508] bg-clip-text text-[2.65rem] font-black leading-none tracking-tight text-transparent drop-shadow-[0_0_16px_rgba(217,169,40,0.28)] sm:text-6xl">
-                      {pkg.credits}
-                    </p>
-                    <p className="mt-1.5 whitespace-nowrap text-[11px] font-black text-black sm:text-sm">LinkCredits</p>
+                <div className="relative flex flex-col gap-4 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(8.4rem,0.95fr)_minmax(0,1fr)] sm:items-center sm:gap-5">
+                  <div className="relative z-10 flex min-w-0 items-end justify-between gap-3 sm:block">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className={`text-lg font-black sm:text-xl ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
+                        {pkg.badge ? (
+                          <span className="rounded-full bg-[#245BFF] px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white">
+                            {pkg.badge}
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-2 whitespace-nowrap bg-gradient-to-b from-[#FFE36A] via-[#F3B51B] to-[#C98508] bg-clip-text text-[2.35rem] font-black leading-none tracking-tight text-transparent drop-shadow-[0_0_16px_rgba(217,169,40,0.28)] sm:text-6xl">
+                        {pkg.credits}
+                      </p>
+                      <p className="mt-1.5 whitespace-nowrap text-[11px] font-black text-black sm:text-sm">LinkCredits</p>
+                    </div>
+
+                    <div className="relative z-0 flex shrink-0 items-center justify-center overflow-visible sm:hidden">
+                      {artwork ? (
+                        <img
+                          src={artwork}
+                          alt={`Pacote ${pkg.label} LinkCredit`}
+                          className={packageArtworkClass(pkg.id)}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : null}
+                    </div>
                   </div>
 
-                  <div className="relative z-0 flex h-24 min-w-0 items-center justify-center overflow-visible">
+                  <div className="relative z-0 hidden min-w-0 items-center justify-center overflow-visible sm:flex">
                     {artwork ? (
                       <img
                         src={artwork}
-                        alt={`Pacote ${pkg.label} LinkCredit`}
+                        alt=""
+                        aria-hidden
                         className={packageArtworkClass(pkg.id)}
                         loading="lazy"
                         decoding="async"
@@ -191,15 +213,15 @@ export default function HelperLinkCreditsPage() {
                     ) : null}
                   </div>
 
-                  <div className="relative z-10 min-w-0 border-l border-slate-200/80 bg-white/20 pl-3 sm:pl-6">
-                    <p className="whitespace-nowrap text-[13px] font-black leading-tight text-[#071238] drop-shadow-[0_8px_18px_rgba(7,18,56,0.10)] min-[390px]:text-[14px] sm:text-xl">
+                  <div className="relative z-10 min-w-0 border-t border-slate-200/80 pt-3 sm:border-l sm:border-t-0 sm:bg-white/20 sm:pl-6 sm:pt-0">
+                    <p className="whitespace-nowrap text-[15px] font-black leading-tight text-[#071238] drop-shadow-[0_8px_18px_rgba(7,18,56,0.10)] sm:text-xl">
                       {pkg.currency} ${pkg.price.toFixed(2)}
                     </p>
                     <button
                       type="button"
                       disabled={busyId != null}
                       onClick={() => void handleBuy(pkg.id, pkg.priceId)}
-                      className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-[1rem] bg-gradient-to-r from-[#071238] to-[#02102D] px-2.5 text-[10px] font-black text-white shadow-[0_10px_22px_rgba(7,18,56,0.20)] transition hover:scale-[1.02] hover:brightness-125 disabled:opacity-60 sm:min-h-[50px] sm:gap-2 sm:px-4 sm:text-sm"
+                      className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[1rem] bg-gradient-to-r from-[#071238] to-[#02102D] px-4 text-[13px] font-black text-white shadow-[0_10px_22px_rgba(7,18,56,0.20)] transition hover:scale-[1.02] hover:brightness-125 disabled:opacity-60 sm:min-h-[50px] sm:text-sm"
                     >
                       {busyId === pkg.id ? (
                         <Icons.Loader2 className="h-4 w-4 animate-spin" />
@@ -215,7 +237,7 @@ export default function HelperLinkCreditsPage() {
           })}
         </div>
 
-        <section className="mx-auto mt-7 grid max-w-3xl grid-cols-3 divide-x divide-slate-100 rounded-[1.75rem] border border-black/[0.04] bg-white px-2 py-6 shadow-[0_12px_34px_rgba(15,23,42,0.05)] sm:px-5">
+        <section className="mx-auto mt-7 grid max-w-3xl grid-cols-1 gap-4 rounded-[1.75rem] border border-black/[0.04] bg-white px-4 py-5 shadow-[0_12px_34px_rgba(15,23,42,0.05)] sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-slate-100 sm:px-5 sm:py-6">
           {[
             { label: 'Seguro e confiável', icon: Icons.ShieldCheck },
             { label: 'Transações rápidas', icon: Icons.Zap },
@@ -225,7 +247,7 @@ export default function HelperLinkCreditsPage() {
             return (
               <div key={benefit.label} className="flex min-w-0 flex-col items-center px-2 text-center sm:px-5">
                 <Icon className="h-7 w-7 text-[#D9A928] drop-shadow-[0_0_10px_rgba(217,169,40,0.28)] sm:h-9 sm:w-9" />
-                <p className="mt-3 text-[9px] font-black uppercase leading-tight text-black sm:text-xs">{benefit.label}</p>
+                <p className="mt-2 text-[10px] font-black uppercase leading-tight text-black sm:mt-3 sm:text-xs">{benefit.label}</p>
               </div>
             );
           })}

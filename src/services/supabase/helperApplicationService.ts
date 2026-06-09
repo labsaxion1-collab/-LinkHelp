@@ -1,6 +1,6 @@
 import { getSupabase } from '@/lib/supabase';
 import { InsufficientCreditsError, remoteDebitApplicationInterest } from '@/services/helperLeadCredits';
-import { remoteApply } from '@/services/supabase/appDataRemote';
+import { isMissingColumnError, remoteApply } from '@/services/supabase/appDataRemote';
 import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
 
 export type SubmitHelperApplicationInput = {
@@ -9,6 +9,7 @@ export type SubmitHelperApplicationInput = {
   clientId: string;
   message?: string | null;
   proposedAmount?: number | null;
+  isExclusive?: boolean;
   /** LinkCredits debited once per helper+request (0 skips debit). */
   interestCost?: number;
 };
@@ -26,6 +27,49 @@ type RpcSubmitRow = {
   alreadyExists?: boolean;
 };
 
+const ACTIVE_APPLICATION_STATUSES = ['pending', 'viewed', 'accepted'] as const;
+
+async function assertRequestCanReceiveApplication(input: SubmitHelperApplicationInput): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+
+  const withExclusive = await sb
+    .from('applications')
+    .select('id, helper_id, status, is_exclusive')
+    .eq('request_id', input.requestId)
+    .in('status', ACTIVE_APPLICATION_STATUSES);
+
+  let rows = (withExclusive.data ?? []) as Array<{
+    helper_id?: string;
+    status?: string;
+    is_exclusive?: boolean | null;
+  }>;
+
+  if (withExclusive.error) {
+    if (!isMissingColumnError(withExclusive.error, 'is_exclusive')) {
+      throw new Error(withExclusive.error.message || 'APPLICATION_PRECHECK_FAILED');
+    }
+    if (input.isExclusive) throw new Error('APPLICATION_BACKEND_NOT_READY');
+
+    const withoutExclusive = await sb
+      .from('applications')
+      .select('id, helper_id, status')
+      .eq('request_id', input.requestId)
+      .in('status', ACTIVE_APPLICATION_STATUSES);
+    if (withoutExclusive.error) {
+      throw new Error(withoutExclusive.error.message || 'APPLICATION_PRECHECK_FAILED');
+    }
+    rows = (withoutExclusive.data ?? []) as Array<{ helper_id?: string; status?: string }>;
+  }
+
+  if (rows.some((row) => row.helper_id !== input.helperId && row.is_exclusive === true)) {
+    throw new Error('EXCLUSIVE_APPLICATION_LOCKED');
+  }
+  if (rows.length >= 3) {
+    throw new Error('APPLICATION_LIMIT_REACHED');
+  }
+}
+
 function mapRpcError(error: { message?: string }, interestCost: number): never {
   const msg = error.message ?? '';
   if (msg.includes('INSUFFICIENT_CREDITS')) {
@@ -35,6 +79,7 @@ function mapRpcError(error: { message?: string }, interestCost: number): never {
   if (msg.includes('NOT_ALLOWED') || msg.includes('AUTH_REQUIRED')) throw new Error('NOT_ALLOWED');
   if (msg.includes('REQUEST_NOT_OPEN')) throw new Error('JOB_NOT_OPEN');
   if (msg.includes('APPLICATION_LIMIT_REACHED')) throw new Error('APPLICATION_LIMIT_REACHED');
+  if (msg.includes('EXCLUSIVE_APPLICATION_LOCKED')) throw new Error('EXCLUSIVE_APPLICATION_LOCKED');
   throw new Error(msg || 'APPLICATION_SUBMIT_FAILED');
 }
 
@@ -45,17 +90,20 @@ async function submitViaRpc(
   if (!sb) throw new Error('NO_SUPABASE');
 
   const interest = Math.max(0, Math.round(input.interestCost ?? 1));
-  const { data, error } = await sb.rpc('helper_submit_application', {
+  const rpcPayload = {
     p_request_id: input.requestId,
     p_helper_id: input.helperId,
     p_client_id: input.clientId,
     p_message: input.message ?? null,
     p_proposed_amount: input.proposedAmount ?? null,
     p_interest_amount: interest,
-  });
+    p_is_exclusive: input.isExclusive === true,
+  };
+
+  const { data, error } = await sb.rpc('helper_submit_application', rpcPayload);
 
   if (error) {
-    if (isPostgrestMissingResource(error)) return null;
+    if (isPostgrestMissingResource(error) || isMissingColumnError(error, 'p_is_exclusive')) return null;
     mapRpcError(error, interest);
   }
 
@@ -73,6 +121,8 @@ async function submitViaRpc(
 
 async function submitViaLegacy(input: SubmitHelperApplicationInput): Promise<SubmitHelperApplicationResult> {
   const interest = Math.max(0, Math.round(input.interestCost ?? 1));
+  await assertRequestCanReceiveApplication(input);
+
   if (interest > 0) {
     await remoteDebitApplicationInterest(input.helperId, input.requestId, interest);
   }
@@ -83,6 +133,7 @@ async function submitViaLegacy(input: SubmitHelperApplicationInput): Promise<Sub
     clientId: input.clientId,
     message: input.message ?? null,
     proposedAmount: input.proposedAmount ?? null,
+    isExclusive: input.isExclusive === true,
   });
 
   if (applyResult.outcome === 'already_exists') {

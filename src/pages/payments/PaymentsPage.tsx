@@ -5,13 +5,14 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useCredits } from '@/context/CreditContext';
 import { useAuth } from '@/context/AuthContext';
 import { createCheckoutSession } from '@/services/paymentService';
+import { getSupabase } from '@/lib/supabase';
 import { ROUTES } from '@/utils/constants';
 
 export default function PaymentsPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { session } = useAuth();
-  const { wallet, packages, transactions, unlocks, adminAdjustCredits } = useCredits();
+  const { wallet, packages, transactions, unlocks } = useCredits();
   const [busyPackage, setBusyPackage] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [adminHelperId, setAdminHelperId] = useState('');
@@ -41,7 +42,14 @@ export default function PaymentsPage() {
     if (!adminHelperId.trim()) return;
     setError('');
     try {
-      await adminAdjustCredits(adminHelperId.trim(), adminAmount, adminDescription.trim() || 'Ajuste administrativo');
+      const sb = getSupabase();
+      if (!sb) throw new Error('Supabase not configured');
+      const { error: rpcErr } = await sb.rpc('admin_adjust_helper_credits', {
+        p_helper_id: adminHelperId.trim(),
+        p_amount: adminAmount,
+        p_description: adminDescription.trim() || 'Ajuste administrativo',
+      });
+      if (rpcErr) throw rpcErr;
       setAdminHelperId('');
     } catch {
       setError(t('credits.admin_error'));

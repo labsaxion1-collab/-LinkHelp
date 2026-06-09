@@ -1,9 +1,16 @@
 import { avatarUrlForName } from '@/utils/avatarUrl';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import type { Application } from '@/types/application';
-import type { Job, JobStatus, JobUrgency } from '@/types/job';
+import type { Job, JobUrgency } from '@/types/job';
 import type { AppNotification } from '@/types/notification';
 import type { UpcomingJob, UpcomingWorkflowStatus } from '@/types/upcoming';
+import type {
+  ApplicationRow,
+  MapperProfile,
+  NotificationRow,
+  RequestRow,
+  UpcomingJobRow,
+} from '@/types/database';
 import { normalizeApplicationStatus, normalizeRequestStatus } from '@/utils/statusNormalize';
 
 export function tsFromIso(iso: string): number {
@@ -63,6 +70,7 @@ export function applicationRowToApp(row: ApplicationRow, helper: MapperProfile):
     clientId: row.client_id,
     message: row.message ?? undefined,
     proposedAmount: row.proposed_amount != null ? Number(row.proposed_amount) : null,
+    isExclusive: row.is_exclusive === true,
     helperName: hName,
     helperAvatar: helper.avatar_url || avatarUrlForName(hName, 'dcfce7', '14532d'),
     helperRating: helper.rating ?? 5,

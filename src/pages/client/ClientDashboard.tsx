@@ -9,6 +9,8 @@ import { useServiceReview } from '@/context/ServiceReviewContext';
 import { ServiceConfirmModal } from '@/components/modals/ServiceConfirmModal';
 import { SERVICE_CATEGORIES, isOfficialServiceCategoryId } from '@/data/serviceCategories';
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
+import { getCategoryAccent } from '@/utils/categoryFeedTheme';
+import { clsx } from 'clsx';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { formatJobScheduleDisplay, isBeautyScheduledJob } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
@@ -684,19 +686,36 @@ export default function ClientDashboard() {
             <div className="grid w-full max-w-full min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {SERVICE_CATEGORIES.map((cat) => {
                 const IconComponent = getCategoryLucideIcon(cat.icon);
+                const accent = getCategoryAccent(cat.id);
                 return (
-                  <section key={cat.id} className="w-full max-w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 transition-all hover:border-blue-200 hover:bg-blue-50/50 hover:shadow-sm">
+                  <section
+                    key={cat.id}
+                    className={clsx(
+                      'w-full max-w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 transition-all hover:shadow-sm',
+                      accent.cardHover,
+                    )}
+                  >
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
                         onClick={() => openCreateModal(cat.id)}
                         className="group inline-flex min-w-0 flex-1 items-center gap-3 text-left"
                       >
-                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#17A8FF] to-[#1565FF] text-white shadow-md shadow-blue-500/20 ring-1 ring-blue-200">
+                        <span
+                          className={clsx(
+                            'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-md ring-1 ring-white/60',
+                            accent.icon,
+                          )}
+                        >
                           <IconComponent className="h-6 w-6" />
                         </span>
                         <span className="min-w-0">
-                          <span className="inline-flex max-w-full items-center gap-2 rounded-xl bg-slate-900 px-3 py-1.5 text-sm font-black text-slate-100">
+                          <span
+                            className={clsx(
+                              'inline-flex max-w-full items-center gap-2 rounded-xl border px-3 py-1.5 text-sm font-black',
+                              accent.active,
+                            )}
+                          >
                             <span className="truncate">{t(`categories.${cat.id}`)}</span>
                           </span>
                         </span>
@@ -704,7 +723,10 @@ export default function ClientDashboard() {
                       <button
                         type="button"
                         onClick={() => openCreateModal(cat.id)}
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-400 ring-1 ring-slate-200 hover:text-blue-700"
+                        className={clsx(
+                          'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white ring-1 ring-slate-200 transition-colors',
+                          accent.iconInactive,
+                        )}
                         aria-label={t(`categories.${cat.id}`)}
                       >
                         <Icons.ChevronRight className="h-5 w-5" />

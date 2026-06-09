@@ -1,4 +1,4 @@
-import { lazy, type ComponentType } from 'react';
+import { lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
@@ -45,12 +45,16 @@ function AdminDashboardLoadError() {
   );
 }
 
-const AdminDashboard = lazy(() =>
-  import('@/pages/admin/AdminDashboard').catch((error: unknown) => {
+const PushTestPage = lazy(() => import('@/pages/admin/PushTestPage'));
+
+const AdminDashboard = lazy(async () => {
+  try {
+    return await import('@/pages/admin/AdminDashboard');
+  } catch (error: unknown) {
     console.error('[LinkHelp] AdminDashboard chunk failed to load', error);
-    return { default: AdminDashboardLoadError as ComponentType };
-  }),
-);
+    return { default: AdminDashboardLoadError };
+  }
+});
 
 export function AppRoutes() {
   return (
@@ -135,6 +139,7 @@ export function AppRoutes() {
           <Route element={<AdminProtectedRoute />}>
             <Route element={<FluxAdminLayout />}>
               <Route path={ROUTES.adminDashboard} element={<AdminDashboard />} />
+              <Route path={ROUTES.adminPushTest} element={<PushTestPage />} />
             </Route>
           </Route>
         </Route>

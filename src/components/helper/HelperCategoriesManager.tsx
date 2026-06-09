@@ -26,6 +26,7 @@ type Props = {
   onSkillsChange: (ids: string[]) => void;
   onCategoriesChange: (primary: ServiceCategoryId, secondary: ServiceCategoryId[]) => void;
   onSaveAsync?: (ids: string[], categoryOverride?: CategoryOverride) => Promise<void>;
+  iconOnlySummary?: boolean;
 };
 
 export function HelperCategoriesManager({
@@ -36,6 +37,7 @@ export function HelperCategoriesManager({
   onSkillsChange,
   onCategoriesChange,
   onSaveAsync,
+  iconOnlySummary = false,
 }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editCategory, setEditCategory] = useState<ServiceCategoryId | null>(null);
@@ -44,7 +46,7 @@ export function HelperCategoriesManager({
 
   const grouped = useMemo(() => groupSkillKeysByServiceCategory(skillIds), [skillIds]);
   const categoryOrder = useMemo(() => {
-    const ids = [...grouped.keys()];
+    const ids = [...grouped.keys()] as ServiceCategoryId[];
     const primaryFirst = [primaryCategory, ...secondaryCategories.filter((id) => id !== primaryCategory)];
     const ordered = primaryFirst.filter((id) => ids.includes(id));
     for (const id of ids) {
@@ -137,15 +139,17 @@ export function HelperCategoriesManager({
                 onClick={() => setMenuCategory(menuCategory === catId ? null : catId)}
                 className={clsx(
                   'inline-flex min-h-[34px] max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-left text-xs font-black transition-colors',
+                  iconOnlySummary && 'h-12 w-12 justify-center overflow-hidden p-0 [&>span:not(:first-child)]:hidden',
                   isPrimary
                     ? `${accent.active} shadow-sm`
-                    : 'border-slate-200 bg-white text-slate-800 hover:border-blue-200',
+                    : clsx('border-slate-200 bg-white text-slate-800', accent.cardHover),
                 )}
               >
                 <span
                   className={clsx(
                     'flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
-                    isPrimary ? accent.icon : 'bg-slate-100 text-slate-500',
+                    iconOnlySummary && 'h-8 w-8',
+                    isPrimary ? accent.icon : accent.iconInactive,
                   )}
                 >
                   <Icon className="h-3.5 w-3.5" />

@@ -1,0 +1,40 @@
+---
+description: Como adicionar e manter categorias de serviço no LinkHelp
+globs: src/data/serviceCategories.ts
+alwaysApply: false
+---
+
+# LinkHelp — Categorias de Serviço
+
+## Ao ADICIONAR uma nova categoria, atualizar estes 7 arquivos:
+
+1. `src/data/serviceCategories.ts` — adicionar em SERVICE_CATEGORIES com id, icon, subKeys
+2. `src/utils/categoryFeedTheme.ts` — adicionar tema de cor em THEMES
+3. `src/config/linkCreditsPricing.ts` — preços LC por subcategoria + CATEGORY_DEFAULTS
+4. `src/utils/marketBudgetSuggestions.ts` — faixas de orçamento sugerido
+5. `src/data/createRequestStepCopy.ts` — sugestões de descrição (EN + PT)
+6. `src/translations/pt/index.ts` — categories.{id} e service_subs.{id}
+7. `src/translations/en/index.ts` — idem
+   `src/translations/fr/index.ts` — idem
+
+## Estrutura de tema de categoria
+```ts
+{
+  iconBg: '#FDF4FF',      // fundo do ícone
+  iconColor: '#C026D3',   // cor principal
+  dotColor: '#C026D3',    // ponto na meta line
+  budgetColor: '#A21CAF', // cor do orçamento
+  accent: {
+    chip, active, icon, glow,
+    cardBorder, cardHover,
+    iconInactive,
+    filterActive, filterInactive,
+  }
+}
+```
+
+## Ícones disponíveis (Lucide)
+Palette, Megaphone, Monitor, Car, Sparkles, Truck, Hammer, Languages, Smile, Wrench, TreePine, Dog, CircleHelp
+
+## Categorias atuais (14)
+cleaning, sanitization, moving, assembly, automotive, translation, beauty, renovation, outdoor, pet, tech, design, marketing, other

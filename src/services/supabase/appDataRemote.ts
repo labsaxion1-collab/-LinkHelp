@@ -4,6 +4,7 @@ import type { Application, ApplicationStatus } from '@/types/application';
 import type { UpcomingJob } from '@/types/upcoming';
 import type { AppNotification } from '@/types/notification';
 import type { ApplicationRow, NotificationRow, RequestRow, RequestStatus, UpcomingJobRow } from '@/types/database';
+export type { NotificationRow };
 import {
   applicationRowToApp,
   notificationRowToApp,
@@ -94,9 +95,73 @@ export function subscribeRemoteData(onChange: () => void): () => void {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'upcoming_jobs' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, onChange)
+    // notifications is handled by subscribeNotificationsChannel (granular, per-user)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, onChange)
+    .subscribe();
+
+  return () => {
+    sb.removeChannel(ch);
+  };
+}
+
+/**
+ * Granular realtime subscription for the notifications table.
+ * Handles INSERT/UPDATE/DELETE individually so the UI updates
+ * instantly without a full app-data refetch.
+ *
+ * Requires `REPLICA IDENTITY FULL` on the notifications table
+ * (see supabase/apply_notifications_realtime_fix.sql).
+ */
+export function subscribeNotificationsChannel(
+  userId: string,
+  handlers: {
+    onInsert: (row: NotificationRow) => void;
+    onUpdate: (row: NotificationRow) => void;
+    onDelete: (id: string) => void;
+  },
+): () => void {
+  const sb = getSupabase();
+  if (!sb || !userId) return () => {};
+
+  const ch = sb
+    .channel(`linkhelp-notifs-${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => handlers.onInsert(payload.new as NotificationRow),
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => handlers.onUpdate(payload.new as NotificationRow),
+    )
+    .on(
+      'postgres_changes',
+      {
+        // DELETE: old row may only have pk without REPLICA IDENTITY FULL,
+        // but with RI FULL the user_id filter also works on DELETE.
+        // We pass the id from payload.old regardless.
+        event: 'DELETE',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        const oldRow = payload.old as { id?: string };
+        if (oldRow?.id) handlers.onDelete(oldRow.id);
+      },
+    )
     .subscribe();
 
   return () => {
@@ -314,7 +379,7 @@ export async function remoteApply(input: {
     type: 'application',
     title: 'New application',
     description: `${hName}${proposalPart}`,
-    action_url: '/client/dashboard',
+    action_url: `/client/dashboard?request=${input.requestId}`,
     read: false,
   });
 
@@ -391,7 +456,7 @@ export async function remoteCancelClientRequest(requestId: string): Promise<void
     type: 'application',
     title: 'Request cancelled',
     description: `Your request "${title}" was cancelled.`,
-    action_url: '/client/dashboard',
+    action_url: `/client/dashboard?request=${requestId}`,
     read: false,
   });
 }
@@ -711,4 +776,35 @@ export async function remoteConfirmServiceCompleted(requestId: string): Promise<
     p_request_id: requestId,
   });
   if (error) throw new Error(error.message || 'CONFIRM_SERVICE_FAILED');
+}
+
+/**
+ * Returns how many messages the given user has sent in the pre-hire conversation
+ * for a specific request + helper pair. Returns 0 if no conversation exists or
+ * if the conversation is already unlocked (post-hire).
+ */
+export async function remoteGetPreMatchClientCount(
+  userId: string,
+  requestId: string,
+  helperId: string,
+): Promise<number> {
+  const sb = getSupabase();
+  if (!sb) return 0;
+
+  const { data: conv } = await sb
+    .from('conversations')
+    .select('id, contact_unlocked')
+    .eq('request_id', requestId)
+    .eq('helper_id', helperId)
+    .maybeSingle();
+
+  if (!conv || conv.contact_unlocked) return 0;
+
+  const { count } = await sb
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('conversation_id', conv.id)
+    .eq('sender_id', userId);
+
+  return count ?? 0;
 }

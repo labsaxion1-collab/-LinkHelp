@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, Plus, MapPin, Clock, Star, MessageSquare, ChevronRight, CheckCircle2, Bell } from 'lucide-react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -9,7 +9,7 @@ import { useServiceReview } from '@/context/ServiceReviewContext';
 import { ServiceConfirmModal } from '@/components/modals/ServiceConfirmModal';
 import { SERVICE_CATEGORIES, isOfficialServiceCategoryId } from '@/data/serviceCategories';
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
-import { getCategoryAccent } from '@/utils/categoryFeedTheme';
+import { getCategoryAccent, getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { clsx } from 'clsx';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { formatJobScheduleDisplay, isBeautyScheduledJob } from '@/utils/jobDisplay';
@@ -35,8 +35,11 @@ import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { formatMoneyAmount, jobHasBoundedBudget } from '@/utils/jobProposal';
 import {
   findClientHelperApplication,
-  isClientChatUnlockedForHelper,
+  isChatUnlockedApplication,
 } from '@/utils/chatHireGate';
+import { ensureConversation } from '@/services/supabase/conversationEnsure';
+import { remoteGetPreMatchClientCount } from '@/services/supabase/appDataRemote';
+import { PRE_HIRE_MESSAGE_LIMIT } from '@/utils/preMatchLimits';
 import {
   isJobExpired,
   isJobCancelled,
@@ -130,11 +133,13 @@ export default function ClientDashboard() {
   const [acceptingApplicationId, setAcceptingApplicationId] = useState<string | null>(null);
   const [cancelTargetJobId, setCancelTargetJobId] = useState<string | null>(null);
   const [cancellingJobId, setCancellingJobId] = useState<string | null>(null);
+  const [detailJob, setDetailJob] = useState<Job | null>(null);
   const [serviceConfirmJob, setServiceConfirmJob] = useState<Job | null>(null);
   const [serviceConfirmBusy, setServiceConfirmBusy] = useState(false);
   
   const navigate = useNavigate();
   const routerLocation = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isClientJobsPage = routerLocation.pathname === ROUTES.clientJobs;
 
   const { t } = useLanguage();
@@ -203,16 +208,39 @@ export default function ClientDashboard() {
     }
   };
 
-  const profileChatUnlocked = useMemo(() => {
-    if (!selectedHelper) return false;
-    return isClientChatUnlockedForHelper(String(selectedHelper.id), myJobIds, applications);
+  const profileApp = useMemo(() => {
+    if (!selectedHelper) return undefined;
+    return findClientHelperApplication(String(selectedHelper.id), myJobIds, applications);
   }, [selectedHelper, myJobIds, applications]);
+
+  const profileChatUnlocked = useMemo(() => {
+    return profileApp ? isChatUnlockedApplication(profileApp) : false;
+  }, [profileApp]);
+
+  /** True when the helper has an active (pending/viewed) application — pre-hire chat allowed. */
+  const profilePreMatchEligible = useMemo(() => {
+    if (!profileApp || profileChatUnlocked) return false;
+    return profileApp.status === 'pending' || profileApp.status === 'viewed';
+  }, [profileApp, profileChatUnlocked]);
 
   const profileApplicationId = useMemo(() => {
     if (selectedApplicationId) return selectedApplicationId;
-    if (!selectedHelper) return null;
-    return findClientHelperApplication(String(selectedHelper.id), myJobIds, applications)?.id ?? null;
-  }, [selectedApplicationId, selectedHelper, myJobIds, applications]);
+    return profileApp?.id ?? null;
+  }, [selectedApplicationId, profileApp]);
+
+  const [profilePreMatchCount, setProfilePreMatchCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!showHelperProfileModal || !profilePreMatchEligible || !profileApp) {
+      setProfilePreMatchCount(null);
+      return;
+    }
+    let cancelled = false;
+    remoteGetPreMatchClientCount(me.id, profileApp.jobId, profileApp.helperId)
+      .then((c) => { if (!cancelled) setProfilePreMatchCount(c); })
+      .catch(() => { if (!cancelled) setProfilePreMatchCount(null); });
+    return () => { cancelled = true; };
+  }, [showHelperProfileModal, profilePreMatchEligible, profileApp, me.id]);
 
   useEffect(() => {
     setHiddenJobIds(readHiddenJobIds(me.id));
@@ -249,6 +277,22 @@ export default function ClientDashboard() {
     },
     [],
   );
+
+  // Deep-link: ?request=UUID → auto-open the request detail sheet.
+  // Notification click lands here with this param.
+  useEffect(() => {
+    const requestId = searchParams.get('request');
+    if (!requestId || jobs.length === 0) return;
+    const target = jobs.find((j) => j.id === requestId && j.clientId === me.id);
+    if (!target) return;
+    setDetailJob(target);
+    // Remove the param so refreshing doesn't re-open the sheet
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('request');
+      return next;
+    }, { replace: true });
+  }, [searchParams, jobs, me.id, setSearchParams]);
 
   useEffect(() => {
     const myJobIds = jobs.filter((j) => j.clientId === me.id).map((j) => j.id);
@@ -326,10 +370,25 @@ export default function ClientDashboard() {
     setShowHelperProfileModal(true);
   };
 
-  const handleProfileMessageClick = () => {
+  const handleProfileMessageClick = async () => {
     if (profileChatUnlocked) {
       setShowHelperProfileModal(false);
       navigate(ROUTES.messages);
+      return;
+    }
+    if (profilePreMatchEligible && profileApp) {
+      try {
+        const convId = await ensureConversation({
+          requestId: profileApp.jobId,
+          clientId: me.id,
+          helperId: profileApp.helperId,
+          contactUnlocked: false,
+        });
+        setShowHelperProfileModal(false);
+        navigate(`${ROUTES.messages}?c=${convId}`);
+      } catch {
+        showToast(t('helper_profile.chat_error'), 'error');
+      }
       return;
     }
     showToast(t('helper_profile.chat_locked_hint'), 'info');
@@ -439,22 +498,22 @@ export default function ClientDashboard() {
             <div className="min-w-0">
               <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-2 text-xs font-black text-[#2563FF] shadow-[0_10px_26px_rgba(37,99,255,0.13)] ring-1 ring-blue-100/80 backdrop-blur-xl">
                 <Icons.Sparkles className="h-3.5 w-3.5" />
-                Comece agora
+                {t('client_dashboard.hero_eyebrow')}
               </span>
               <h2 className="mt-5 max-w-[18rem] text-[33px] font-black leading-[0.96] tracking-tight text-[#0B1220] sm:text-5xl">
-                O que voce precisa <span className="text-[#2563FF] drop-shadow-[0_0_18px_rgba(37,99,255,0.24)]">hoje?</span>
+                {t('client_dashboard.hero_title')} <span className="text-[#2563FF] drop-shadow-[0_0_18px_rgba(37,99,255,0.24)]">{t('client_dashboard.hero_title_highlight')}</span>
               </h2>
               <p className="mt-4 max-w-[15.5rem] text-[15px] font-semibold leading-7 text-[#0B1220] [text-shadow:0_0_3px_rgba(255,255,255,0.9),0_0_8px_rgba(255,255,255,0.7)]">
-                Publique seu pedido e encontre profissionais confiaveis perto de voce.
+                {t('client_dashboard.hero_subtitle')}
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-2 text-[11px] font-black text-[#0B4A6F] shadow-sm ring-1 ring-blue-100/80 backdrop-blur-xl">
                   <Icons.ShieldCheck className="h-3.5 w-3.5 text-[#2563FF]" />
-                  Seguro
+                  {t('client_dashboard.hero_badge_safe')}
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-2 text-[11px] font-black text-[#0B4A6F] shadow-sm ring-1 ring-blue-100/80 backdrop-blur-xl">
                   <Icons.Clock3 className="h-3.5 w-3.5 text-[#2563FF]" />
-                  Rapido
+                  {t('client_dashboard.hero_badge_fast')}
                 </span>
               </div>
             </div>
@@ -465,7 +524,7 @@ export default function ClientDashboard() {
                 className="inline-flex min-h-[58px] w-full max-w-[245px] items-center justify-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#3B82F6_0%,#2563FF_45%,#1D4ED8_100%)] px-5 text-sm font-black text-white shadow-[0_18px_48px_rgba(37,99,255,0.45),inset_0_1px_0_rgba(255,255,255,0.22)] ring-1 ring-blue-400/20 transition hover:-translate-y-0.5 hover:shadow-[0_22px_52px_rgba(37,99,255,0.55)] active:scale-[0.98] sm:text-base"
               >
                 <Plus className="h-5 w-5 opacity-80" />
-                Criar novo pedido
+                {t('client_dashboard.hero_cta')}
               </button>
             </div>
           </div>
@@ -490,6 +549,188 @@ export default function ClientDashboard() {
           </div>
         </div>
       )}
+
+      {/* ─── Job detail sheet ─────────────────────────────────────────── */}
+      {detailJob && (() => {
+        const sheetApps = applications
+          .filter((a) => a.jobId === detailJob.id && (a.status === 'pending' || a.status === 'viewed' || a.status === 'accepted'))
+          .filter((a) => detailJob.status === 'in_progress' ? a.status === 'accepted' : a.status !== 'rejected')
+          .sort((a, b) => a.createdAt - b.createdAt);
+        const sheetExclusiveApp = detailJob.exclusiveHelperId
+          ? sheetApps.find((a) => a.helperId === detailJob.exclusiveHelperId && a.isExclusive)
+          : null;
+        const sheetIsExclusive = sheetExclusiveApp != null;
+        const sheetDisplayApps = sheetIsExclusive ? [sheetExclusiveApp] : sheetApps.slice(0, 3);
+        const sheetBudgetRange = formatClientBudgetRangeLabel(detailJob, t);
+        const sheetTheme = getCategoryFeedTheme(detailJob.category);
+        const SheetCategoryIcon = getCategoryLucideIcon(detailJob.category) ?? Icons.Briefcase;
+        return (
+          <div className="fixed inset-0 z-[200] flex flex-col justify-end sm:justify-center sm:items-center">
+            {/* backdrop */}
+            <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setDetailJob(null)} />
+            {/* sheet */}
+            <div className="relative z-10 w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90dvh] flex flex-col overflow-hidden">
+              {/* handle bar */}
+              <div className="shrink-0 flex justify-center pt-3 pb-1 sm:hidden">
+                <div className="w-10 h-1 rounded-full bg-slate-200" />
+              </div>
+              {/* header */}
+              <div className="shrink-0 flex items-start gap-3 px-5 pt-4 pb-3 border-b border-slate-100">
+                <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: sheetTheme.iconBg }}>
+                  <SheetCategoryIcon className="w-5 h-5" style={{ color: sheetTheme.iconColor }} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  {sheetIsExclusive && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 mb-1">
+                      👑 {t('client_dashboard.exclusive_application_badge')}
+                    </span>
+                  )}
+                  <h2 className="font-bold text-slate-950 text-base leading-snug line-clamp-2">
+                    {translateJobTitle(detailJob.title, detailJob.category, detailJob.subcategory, t)}
+                  </h2>
+                  <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
+                    <Icons.MapPin className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{detailJob.address || detailJob.city || detailJob.location}</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDetailJob(null)}
+                  className="shrink-0 rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200"
+                >
+                  <Icons.X className="w-4 h-4" />
+                </button>
+              </div>
+              {/* scrollable content */}
+              <div className="overflow-y-auto overscroll-contain flex-1 px-5 py-4 space-y-3">
+                {sheetDisplayApps.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
+                    <Icons.Users className="w-8 h-8" />
+                    <p className="text-sm font-medium">{t('client_dashboard.candidates_count_zero')}</p>
+                  </div>
+                ) : sheetDisplayApps.map((app) => app && (
+                  <div
+                    key={app.id}
+                    className={`rounded-2xl border p-4 ${app.isExclusive ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-slate-50/50'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="relative shrink-0">
+                        {app.isExclusive && <span className="absolute -top-1 -right-1 z-10 text-sm leading-none">👑</span>}
+                        <img
+                          src={app.helperAvatar}
+                          alt={app.helperName}
+                          className="w-12 h-12 rounded-full object-cover"
+                          style={app.isExclusive
+                            ? { border: '3px solid #F5C542', boxShadow: '0 0 12px rgba(245,197,66,.35)' }
+                            : { border: '2px solid white', boxShadow: '0 1px 4px rgba(0,0,0,.1)' }
+                          }
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="flex items-center gap-1.5 text-sm font-black text-slate-950">
+                          <span className="truncate">{app.helperName}</span>
+                          <HelperPlanBadge tier={helperTierFromApplication(app)} size="sm" />
+                        </p>
+                        <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
+                          <Icons.Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                          <span>{app.helperRating}</span>
+                          <span>· {t('client_dashboard.helper_jobs_count', { count: app.helperJobs })}</span>
+                        </p>
+                        {app.proposedAmount != null ? (
+                          <p className="mt-1 text-xs font-black text-slate-900">
+                            {t('client_dashboard.helper_proposal_amount', { amount: formatMoneyAmount(app.proposedAmount, detailJob.currency || 'CAD') })}
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-xs font-semibold text-slate-600">{t('client_dashboard.helper_proposal_negotiable')}</p>
+                        )}
+                        {sheetBudgetRange && <p className="mt-0.5 text-[11px] text-slate-400">{sheetBudgetRange}</p>}
+                        {app.message ? (
+                          <p className="mt-1.5 text-xs text-slate-600 italic line-clamp-2">"{app.message}"</p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {(app.status === 'pending' || app.status === 'viewed') ? (
+                        <>
+                          <button
+                            type="button"
+                            disabled={acceptingApplicationId === app.id}
+                            onClick={() => void handleAcceptProposal(detailJob, app)}
+                            className="flex-1 min-w-[7rem] rounded-xl bg-green-600 px-3 py-2.5 text-xs font-black text-white hover:bg-green-700 disabled:opacity-60"
+                          >
+                            {t('client_dashboard.accept_proposal')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDetailJob(null);
+                              openHelperProfile(
+                                { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
+                                app.id,
+                              );
+                            }}
+                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50"
+                          >
+                            {t('helper_public.view_profile')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void updateApplicationStatus(app.id, 'rejected').catch(console.error)}
+                            className={`rounded-xl px-3 py-2 text-xs font-bold ${app.isExclusive ? 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}
+                          >
+                            {app.isExclusive ? t('client_dashboard.exclusive_reject_unlock') : t('client_dashboard.reject_helper')}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDetailJob(null);
+                              openHelperProfile(
+                                { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
+                                app.id,
+                              );
+                            }}
+                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50"
+                          >
+                            {t('helper_public.view_profile')}
+                          </button>
+                          {app.chatUnlocked ? (
+                            <button
+                              type="button"
+                              onClick={() => { setDetailJob(null); navigate(ROUTES.messages); }}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700"
+                            >
+                              <Icons.MessageSquare className="h-3.5 w-3.5" />
+                              {t('client_dashboard.open_chat_with', { name: app.helperName.split(' ')[0] })}
+                            </button>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-bold text-slate-400 opacity-70">
+                              <Icons.MessageSquare className="h-3.5 w-3.5" />
+                              {t('client_dashboard.chat_locked_until_accept')}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* sheet footer */}
+              <div className="shrink-0 border-t border-slate-100 px-5 py-4">
+                <button
+                  type="button"
+                  onClick={() => setDetailJob(null)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100"
+                >
+                  {t('common.close')}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <CancelRequestModal
         open={cancelTargetJobId != null}
@@ -740,13 +981,13 @@ export default function ClientDashboard() {
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_5%,rgba(37,99,255,0.12),transparent_28%),radial-gradient(circle_at_86%_20%,rgba(59,130,246,0.10),transparent_28%)]" />
               <div className="relative space-y-7">
                 <section className="px-4 sm:px-6 md:px-8">
-                  <h2 className="text-lg font-black tracking-tight text-[#0B1220]">Como funciona</h2>
+                  <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_how_it_works.title')}</h2>
                   <div className="relative mt-4 grid gap-3 sm:grid-cols-3">
                     <div className="pointer-events-none absolute left-8 right-8 top-6 hidden border-t border-dashed border-blue-200 sm:block" />
                     {[
-                      { icon: Icons.ClipboardCheck, title: 'Publique seu pedido', body: 'Conte o que precisa de forma rapida' },
-                      { icon: Icons.UsersRound, title: 'Receba interessados', body: 'Helpers proximos enviam propostas' },
-                      { icon: Icons.ShieldCheck, title: 'Escolha e combine', body: 'Converse, combine e feche o servico' },
+                      { icon: Icons.ClipboardCheck, title: t('client_how_it_works.card1_title'), body: t('client_how_it_works.card1_desc') },
+                      { icon: Icons.UsersRound, title: t('client_how_it_works.card2_title'), body: t('client_how_it_works.card2_desc') },
+                      { icon: Icons.ShieldCheck, title: t('client_how_it_works.card3_title'), body: t('client_how_it_works.card3_desc') },
                     ].map((step, index) => {
                       const Icon = step.icon;
                       return (
@@ -768,13 +1009,13 @@ export default function ClientDashboard() {
                 </section>
 
                 <section className="px-4 sm:px-6 md:px-8">
-                  <h2 className="text-lg font-black tracking-tight text-[#0B1220]">Resumo rapido</h2>
+                  <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_dashboard.quick_summary_title')}</h2>
                   <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {[
-                      { icon: Icons.ClipboardCheck, value: clientJobs.length, label: 'Pedidos publicados', tone: 'text-[#2563FF] bg-blue-50' },
-                      { icon: Icons.UsersRound, value: Math.max(nearbyHelpers.length, clientApplicationCount), label: 'Helpers ativos', tone: 'text-emerald-600 bg-emerald-50' },
-                      { icon: Icons.ShieldCheck, value: '98%', label: 'Avaliacoes positivas', tone: 'text-violet-600 bg-violet-50' },
-                      { icon: Icons.Clock3, value: '15 min', label: 'Tempo medio de resposta', tone: 'text-amber-600 bg-amber-50' },
+                      { icon: Icons.ClipboardCheck, value: clientJobs.length, label: t('client_dashboard.stat_orders'), tone: 'text-[#2563FF] bg-blue-50' },
+                      { icon: Icons.UsersRound, value: Math.max(nearbyHelpers.length, clientApplicationCount), label: t('client_dashboard.stat_helpers'), tone: 'text-emerald-600 bg-emerald-50' },
+                      { icon: Icons.ShieldCheck, value: '98%', label: t('client_dashboard.stat_reviews'), tone: 'text-violet-600 bg-violet-50' },
+                      { icon: Icons.Clock3, value: '15 min', label: t('client_dashboard.stat_response_time'), tone: 'text-amber-600 bg-amber-50' },
                     ].map((stat) => {
                       const Icon = stat.icon;
                       return (
@@ -792,9 +1033,9 @@ export default function ClientDashboard() {
 
                 <section className="relative px-4 sm:px-6 md:px-8">
                   <div className="mb-4 flex items-center justify-between gap-3">
-                    <h2 className="text-lg font-black tracking-tight text-[#0B1220]">Categorias populares</h2>
+                    <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_dashboard.popular_categories_title')}</h2>
                     <button type="button" onClick={() => openCreateModal()} className="inline-flex items-center gap-1 text-sm font-black text-[#2563FF]">
-                      Ver todas <ChevronRight className="h-4 w-4" />
+                      {t('client_dashboard.view_all_categories')} <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
                   <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 [&::-webkit-scrollbar]:hidden">
@@ -822,7 +1063,7 @@ export default function ClientDashboard() {
                             <IconComponent className="h-7 w-7" />
                           </span>
                           <span className="mt-3 block text-sm font-black text-[#0B1220]">{t('categories.' + cat.id)}</span>
-                          <span className="mt-1 block text-xs font-semibold text-[#64748B]">+{120 - index * 9} pedidos</span>
+                          <span className="mt-1 block text-xs font-semibold text-[#64748B]">{t('client_dashboard.category_order_count', { count: 120 - index * 9 })}</span>
                         </button>
                       );
                     })}
@@ -832,9 +1073,9 @@ export default function ClientDashboard() {
 
                 <section className="mx-4 grid gap-3 rounded-[1.9rem] bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.045)] sm:mx-6 sm:grid-cols-3 md:mx-8">
                   {[
-                    { icon: Icons.ShieldCheck, title: 'Seguranca', body: 'Verificacao de perfil e avaliacoes' },
-                    { icon: Icons.MessageSquare, title: 'Chat seguro', body: 'Converse e combine detalhes com seguranca' },
-                    { icon: Icons.Sparkle, title: 'Qualidade', body: 'Helpers avaliados pela comunidade' },
+                    { icon: Icons.ShieldCheck, title: t('client_dashboard.trust_safe_title'), body: t('client_dashboard.trust_safe_body') },
+                    { icon: Icons.MessageSquare, title: t('client_dashboard.trust_chat_title'), body: t('client_dashboard.trust_chat_body') },
+                    { icon: Icons.Sparkle, title: t('client_dashboard.trust_quality_title'), body: t('client_dashboard.trust_quality_body') },
                   ].map((item, index) => {
                     const Icon = item.icon;
                     return (
@@ -1024,221 +1265,161 @@ export default function ClientDashboard() {
                           : a.status !== 'rejected',
                       )
                       .sort((a, b) => a.createdAt - b.createdAt);
-                    const clientBudgetRange = formatClientBudgetRangeLabel(job, t);
                     const canCancelJob = job.status === 'open' || job.status === 'in_progress';
                     const qualityScore = estimateClientLeadQuality(job.description, job.location, job.value, jobApps.length);
                     const exclusiveApp = job.exclusiveHelperId
                       ? jobApps.find((a) => a.helperId === job.exclusiveHelperId && a.isExclusive)
                       : null;
                     const isExclusiveLocked = exclusiveApp != null;
-                    // No empty slots — only real apps
                     const displayApps = isExclusiveLocked ? [exclusiveApp] : jobApps.slice(0, 3);
                     const isFull = !isExclusiveLocked && jobApps.length >= 3;
-                    const candidatesLabel = (() => {
-                      if (jobApps.length === 0) return t('client_dashboard.candidates_count_zero');
-                      if (isFull) return t('client_dashboard.candidates_count_full', { count: jobApps.length });
-                      if (jobApps.length === 1) return t('client_dashboard.candidates_count_one');
-                      return t('client_dashboard.candidates_count_other', { count: jobApps.length });
-                    })();
-                    
+                    const candidatesLabel = isExclusiveLocked
+                      ? t('client_dashboard.candidates_count_exclusive')
+                      : jobApps.length === 0
+                        ? t('client_dashboard.candidates_count_zero')
+                        : isFull
+                          ? t('client_dashboard.candidates_count_full', { count: jobApps.length })
+                          : jobApps.length === 1
+                            ? t('client_dashboard.candidates_count_one')
+                            : t('client_dashboard.candidates_count_other', { count: jobApps.length });
+                    const accent = getCategoryAccent(job.category);
+                    const CategoryIcon = getCategoryLucideIcon(job.category) ?? Icons.Briefcase;
+                    const theme = getCategoryFeedTheme(job.category);
+
                     return (
-                      <div key={job.id} className="min-w-0 border border-blue-100 bg-white rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col shadow-sm">
-                        <div className={`absolute top-0 left-0 w-1 h-full ${job.status === 'open' ? 'bg-yellow-400' : 'bg-green-500'}`}></div>
-                        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start mb-4">
-                          <div className="min-w-0">
-                            <span className={`text-xs font-bold px-2.5 py-1 rounded-md mb-2 inline-block ${job.status === 'open' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                              {job.status === 'cancelled'
-                                ? t('upcoming_jobs.status_cancelled')
-                                : job.status === 'open'
-                                  ? t('client_dashboard.status_waiting_helpers')
-                                  : t('client_dashboard.status_in_progress')}
-                            </span>
-                            <h3 className="font-bold text-gray-900 text-lg leading-snug line-clamp-2">{translateJobTitle(job.title, job.category, job.subcategory, t)}</h3>
-                            <p className="text-gray-500 text-xs md:text-sm flex items-center gap-1 mt-1 min-w-0">
-                              <Icons.Clock className="w-4 h-4 shrink-0" />
-                              <span className="truncate">{formatJobScheduleDisplay(job, t)}</span>
+                      <div
+                        key={job.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setDetailJob(job)}
+                        onKeyDown={(e) => e.key === 'Enter' && setDetailJob(job)}
+                        className="group cursor-pointer min-w-0 border border-slate-200 bg-white rounded-2xl p-4 relative overflow-hidden flex flex-col gap-3 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-150"
+                      >
+                        {/* left accent bar */}
+                        <div className={`absolute top-0 left-0 w-1 h-full ${job.status === 'open' ? 'bg-yellow-400' : 'bg-green-500'}`} />
+
+                        {/* top row: icon + content + chevron */}
+                        <div className="flex items-start gap-3 pr-1">
+                          {/* category icon */}
+                          <div
+                            className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
+                            style={{ backgroundColor: theme.iconBg }}
+                          >
+                            <CategoryIcon className="w-5 h-5" style={{ color: theme.iconColor }} />
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            {/* status + budget badges */}
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              {isExclusiveLocked ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200">
+                                  👑 {t('client_dashboard.exclusive_application_badge')}
+                                </span>
+                              ) : (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${job.status === 'open' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                                  {job.status === 'open' ? t('client_dashboard.status_waiting_helpers') : t('client_dashboard.status_in_progress')}
+                                </span>
+                              )}
+                              <span className="ml-auto text-[11px] font-black text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">{formatJobBudgetDisplay(job, t)}</span>
+                            </div>
+
+                            {/* title */}
+                            <h3 className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 pr-4">{translateJobTitle(job.title, job.category, job.subcategory, t)}</h3>
+
+                            {/* address */}
+                            <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 min-w-0">
+                              <Icons.MapPin className="w-3 h-3 shrink-0 text-slate-400" />
+                              <span className="truncate">{job.address || job.city || job.location}</span>
                             </p>
-                            {isBeautyScheduledJob(job) ? (
-                              <span className="mt-1.5 inline-flex items-center gap-1 rounded-md border border-violet-100 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-800">
-                                <span aria-hidden>🕒</span>
-                                {job.preferredTime}
-                                <span className="text-violet-600/90">· {t('jobs.scheduled_time_badge')}</span>
-                              </span>
-                            ) : null}
                           </div>
-                          <div className="shrink-0 sm:text-right">
-                            <p className="inline-flex rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-sm font-black text-blue-800">{formatJobBudgetDisplay(job, t)}</p>
-                          </div>
+
+                          <ChevronRight className="shrink-0 w-4 h-4 text-slate-300 group-hover:text-blue-400 transition-colors mt-0.5" />
                         </div>
-                        {jobsListTab === 'history' &&
-                        job.status === 'completed' &&
-                        pendingServiceReviews.some((p) => p.requestId === job.id) ? (
-                          <button
-                            type="button"
-                            onClick={() => openReviewByRequestId(job.id)}
-                            className="mb-3 inline-flex min-h-[40px] w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-bold text-amber-900 hover:bg-amber-100"
-                          >
-                            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                            {t('service_review.rate_now')}
-                          </button>
-                        ) : null}
-                        {jobsAwaitingServiceConfirm.some((j) => j.id === job.id) ? (
-                          <button
-                            type="button"
-                            onClick={() => setServiceConfirmJob(job)}
-                            className="mb-3 inline-flex min-h-[40px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-bold text-emerald-900 hover:bg-emerald-100"
-                          >
-                            <CheckCircle2 className="h-4 w-4" />
-                            {t('service_confirm.confirm')}
-                          </button>
-                        ) : null}
-                        <JobTaskActionsBar
-                          canCancel={canCancelJob}
-                          canRepublish={job.status === 'cancelled' || isJobExpired(job)}
-                          onCancel={() => setCancelTargetJobId(job.id)}
-                          onRepublish={() => openCreateModal(job.category, job.subcategory ?? '')}
-                        />
-                        <div className="mb-4 flex flex-wrap gap-2">
-                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800">
-                            <Icons.BadgeCheck className="h-3.5 w-3.5 text-emerald-600" />
+
+                        {/* quality + avatar row */}
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">
+                            <Icons.BadgeCheck className="w-3.5 h-3.5 text-emerald-500" />
                             {t('client_dashboard.request_quality', { pct: qualityScore })}
                           </span>
-                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-bold text-blue-800">
-                            <Icons.Users className="h-3.5 w-3.5 text-blue-600" />
-                            {t('client_dashboard.request_helper_limit', { count: job.urgency === 'high' ? 5 : 3 })}
-                          </span>
-                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 max-w-full truncate">
-                            <Icons.MapPin className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-                            <span className="truncate">{job.address || job.city || job.location}</span>
-                          </span>
-                        </div>
 
-                        <div className="border-t border-gray-200 pt-4 mt-auto">
-                          {/* Candidates header */}
-                          <div className="mb-3 flex items-center justify-between gap-2">
-                            {isExclusiveLocked ? (
-                              <span className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-black text-amber-900">
-                                {t('client_dashboard.exclusive_application_badge')}
-                              </span>
+                          {/* avatar stack + count */}
+                          <div
+                            className="flex items-center gap-2"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {displayApps.length === 0 ? (
+                              <span className="text-[11px] font-medium text-slate-400">{t('client_dashboard.candidates_count_zero')}</span>
                             ) : (
-                              <span className={`text-xs font-black ${isFull ? 'text-emerald-700' : 'text-slate-700'}`}>
-                                {candidatesLabel}
-                              </span>
+                              <>
+                                <div className="flex items-center">
+                                  {displayApps.map((app, i) => app && (
+                                    <button
+                                      key={app.id}
+                                      type="button"
+                                      title={app.helperName}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openHelperProfile(
+                                          { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
+                                          app.id,
+                                        );
+                                      }}
+                                      className="relative focus:outline-none focus:ring-2 focus:ring-blue-400 rounded-full"
+                                      style={{ marginLeft: i === 0 ? 0 : -10 }}
+                                    >
+                                      {app.isExclusive ? (
+                                        <span className="absolute -top-1 -right-1 z-10 text-[10px] leading-none">👑</span>
+                                      ) : null}
+                                      <img
+                                        src={app.helperAvatar}
+                                        alt={app.helperName}
+                                        loading="lazy"
+                                        className="w-8 h-8 rounded-full object-cover"
+                                        style={app.isExclusive
+                                          ? { border: '3px solid #F5C542', boxShadow: '0 0 10px rgba(245,197,66,.4)' }
+                                          : { border: '2px solid white', boxShadow: '0 1px 3px rgba(0,0,0,.12)' }
+                                        }
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                                <span className={`text-[11px] font-bold ${isExclusiveLocked ? 'text-amber-700' : isFull ? 'text-emerald-700' : 'text-slate-600'}`}>
+                                  {candidatesLabel}
+                                </span>
+                              </>
                             )}
                           </div>
+                        </div>
 
-                          {/* No candidates yet — compact empty state */}
-                          {displayApps.length === 0 && (
-                            <p className="text-xs font-medium text-slate-400 pb-1">
-                              {t('client_dashboard.candidates_count_zero')}
-                            </p>
-                          )}
-
-                          {/* Helper cards — only real apps, no empty slots */}
-                          {displayApps.length > 0 && (
-                            <div className="grid grid-cols-1 gap-2">
-                              {displayApps.map((app) => app && (
-                                <div
-                                  key={app.id}
-                                  className={`min-w-0 rounded-xl border p-3 ${app.isExclusive ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-slate-50/70'}`}
-                                >
-                                  <div className="flex min-w-0 items-center gap-3">
-                                    <img src={app.helperAvatar} alt="" className="h-10 w-10 shrink-0 rounded-full border border-white object-cover shadow-sm" loading="lazy" />
-                                    <div className="min-w-0 flex-1">
-                                      <p className="flex min-w-0 items-center gap-1.5 text-sm font-black text-slate-950">
-                                        <span className="truncate">{app.helperName}</span>
-                                        <HelperPlanBadge tier={helperTierFromApplication(app)} size="sm" />
-                                      </p>
-                                      <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
-                                        <Icons.Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                                        <span>{app.helperRating}</span>
-                                        <span>{t('client_dashboard.helper_jobs_count', { count: app.helperJobs })}</span>
-                                      </p>
-                                      {app.proposedAmount != null ? (
-                                        <p className="mt-1 text-xs font-black text-slate-900">
-                                          {t('client_dashboard.helper_proposal_amount', {
-                                            amount: formatMoneyAmount(app.proposedAmount, job.currency || 'CAD'),
-                                          })}
-                                        </p>
-                                      ) : (
-                                        <p className="mt-1 text-xs font-semibold text-slate-600">
-                                          {t('client_dashboard.helper_proposal_negotiable')}
-                                        </p>
-                                      )}
-                                      {clientBudgetRange ? (
-                                        <p className="mt-0.5 text-[11px] font-semibold text-slate-500">{clientBudgetRange}</p>
-                                      ) : null}
-                                    </div>
-                                  </div>
-                                  <div className="mt-2.5 flex flex-wrap gap-1.5">
-                                    {(app.status === 'pending' || app.status === 'viewed') ? (
-                                      <>
-                                        <button
-                                          type="button"
-                                          disabled={acceptingApplicationId === app.id}
-                                          onClick={() => void handleAcceptProposal(job, app)}
-                                          className="flex-1 min-w-[7rem] rounded-xl bg-green-600 px-3 py-2 text-xs font-black text-white hover:bg-green-700 disabled:opacity-60"
-                                        >
-                                          {t('client_dashboard.accept_proposal')}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            openHelperProfile(
-                                              { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
-                                              app.id,
-                                            );
-                                          }}
-                                          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50"
-                                        >
-                                          {t('helper_public.view_profile')}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => void updateApplicationStatus(app.id, 'rejected').catch(console.error)}
-                                          className={`rounded-xl px-3 py-2 text-xs font-bold ${app.isExclusive ? 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}
-                                        >
-                                          {app.isExclusive
-                                            ? t('client_dashboard.exclusive_reject_unlock')
-                                            : t('client_dashboard.reject_helper')}
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            openHelperProfile(
-                                              { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
-                                              app.id,
-                                            );
-                                          }}
-                                          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50"
-                                        >
-                                          {t('helper_public.view_profile')}
-                                        </button>
-                                        {app.chatUnlocked ? (
-                                          <button
-                                            type="button"
-                                            onClick={() => navigate(ROUTES.messages)}
-                                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700"
-                                          >
-                                            <Icons.MessageSquare className="h-3.5 w-3.5" />
-                                            {t('client_dashboard.open_chat_with', { name: app.helperName.split(' ')[0] })}
-                                          </button>
-                                        ) : (
-                                          <span className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-bold text-slate-400 opacity-70">
-                                            <Icons.MessageSquare className="h-3.5 w-3.5" />
-                                            {t('client_dashboard.chat_locked_until_accept')}
-                                          </span>
-                                        )}
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                        {/* action bar: review / confirm / cancel — stopPropagation so card click doesn't fire */}
+                        <div onClick={(e) => e.stopPropagation()} className="empty:hidden">
+                          {jobsListTab === 'history' && job.status === 'completed' && pendingServiceReviews.some((p) => p.requestId === job.id) ? (
+                            <button
+                              type="button"
+                              onClick={() => openReviewByRequestId(job.id)}
+                              className="inline-flex min-h-[36px] w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-900 hover:bg-amber-100"
+                            >
+                              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                              {t('service_review.rate_now')}
+                            </button>
+                          ) : null}
+                          {jobsAwaitingServiceConfirm.some((j) => j.id === job.id) ? (
+                            <button
+                              type="button"
+                              onClick={() => setServiceConfirmJob(job)}
+                              className="inline-flex min-h-[36px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-900 hover:bg-emerald-100"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              {t('service_confirm.confirm')}
+                            </button>
+                          ) : null}
+                          <JobTaskActionsBar
+                            canCancel={canCancelJob}
+                            canRepublish={job.status === 'cancelled' || isJobExpired(job)}
+                            onCancel={() => setCancelTargetJobId(job.id)}
+                            onRepublish={() => openCreateModal(job.category, job.subcategory ?? '')}
+                          />
                         </div>
                       </div>
                     );
@@ -1335,24 +1516,45 @@ export default function ClientDashboard() {
                 />
               </div>
               <div className="shrink-0 flex flex-col gap-2 border-t border-gray-100 bg-white px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-3 sm:px-6">
-                <button
-                  type="button"
-                  onClick={handleProfileMessageClick}
-                  disabled={!profileChatUnlocked}
-                  className={`w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-2xl border-2 text-sm font-bold transition-colors ${
-                    profileChatUnlocked
-                      ? 'border-slate-200 bg-white text-slate-800 hover:border-blue-200 hover:bg-blue-50'
-                      : 'cursor-not-allowed border-slate-100 bg-slate-50 text-slate-400 opacity-60'
-                  }`}
-                >
-                  <Icons.MessageSquare className={`w-5 h-5 ${profileChatUnlocked ? 'text-blue-600' : 'text-slate-400'}`} />
-                  {t('helper_profile.cta_chat')}
-                </button>
-                {!profileChatUnlocked ? (
-                  <p className="text-center text-xs font-semibold text-slate-500 px-2">
-                    {t('helper_profile.chat_locked_hint')}
-                  </p>
-                ) : null}
+                {(() => {
+                  const msgsRemaining = profilePreMatchEligible
+                    ? Math.max(0, PRE_HIRE_MESSAGE_LIMIT - (profilePreMatchCount ?? 0))
+                    : null;
+                  const chatEnabled = profileChatUnlocked || (profilePreMatchEligible && (msgsRemaining ?? 1) > 0);
+                  return (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleProfileMessageClick}
+                        disabled={!chatEnabled}
+                        className={`w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-2xl border-2 text-sm font-bold transition-colors ${
+                          chatEnabled
+                            ? 'border-slate-200 bg-white text-slate-800 hover:border-blue-200 hover:bg-blue-50'
+                            : 'cursor-not-allowed border-slate-100 bg-slate-50 text-slate-400 opacity-60'
+                        }`}
+                      >
+                        <Icons.MessageSquare className={`w-5 h-5 ${chatEnabled ? 'text-blue-600' : 'text-slate-400'}`} />
+                        {t('helper_profile.cta_chat')}
+                        {msgsRemaining !== null && (
+                          <span className="ml-1 text-xs font-medium opacity-60">· {msgsRemaining}/{PRE_HIRE_MESSAGE_LIMIT}</span>
+                        )}
+                      </button>
+                      {profilePreMatchEligible && msgsRemaining !== null && msgsRemaining <= 0 ? (
+                        <p className="text-center text-xs font-semibold text-amber-600 px-2">
+                          {t('helper_profile.pre_match_limit_reached')}
+                        </p>
+                      ) : profilePreMatchEligible ? (
+                        <p className="text-center text-xs text-slate-400 px-2">
+                          {t('helper_profile.pre_match_hint', { count: msgsRemaining ?? PRE_HIRE_MESSAGE_LIMIT })}
+                        </p>
+                      ) : !profileChatUnlocked ? (
+                        <p className="text-center text-xs font-semibold text-slate-500 px-2">
+                          {t('helper_profile.chat_locked_hint')}
+                        </p>
+                      ) : null}
+                    </>
+                  );
+                })()}
                 <button
                   type="button"
                   onClick={() => {

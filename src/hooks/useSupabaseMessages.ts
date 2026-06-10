@@ -174,6 +174,12 @@ export function useSupabaseMessages(opts: UseSupabaseMessagesOpts) {
     return rows.filter((r) => r.kind === 'user' && r.sender === 'me').length;
   }, [rows, contactUnlocked, userId]);
 
+  /** How many messages the OTHER participant has sent pre-hire. */
+  const preMatchPeerOutgoingCount = useMemo(() => {
+    if (contactUnlocked || !userId) return 0;
+    return rows.filter((r) => r.kind === 'user' && r.sender === 'other').length;
+  }, [rows, contactUnlocked, userId]);
+
   const sendRemoteMessage = useCallback(
     async (filteredText: string) => {
       if (!enabled || !selectedId || !userId || !peerId) return;
@@ -212,6 +218,7 @@ export function useSupabaseMessages(opts: UseSupabaseMessagesOpts) {
     peerPlan,
     peerId,
     preMatchOutgoingCount,
+    preMatchPeerOutgoingCount,
     sendRemoteMessage,
     sendError,
   };

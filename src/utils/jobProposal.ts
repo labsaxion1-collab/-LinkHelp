@@ -34,13 +34,11 @@ export type ProposalValidation =
   | { ok: true; amount: number | null }
   | { ok: false; messageKey: string; messageVars?: Record<string, string | number> };
 
-export function validateHelperProposal(raw: string, job: Job, required: boolean): ProposalValidation {
+export function validateHelperProposal(raw: string, job: Job, _required?: boolean): ProposalValidation {
+  // Amount is always required — helpers must declare a price before applying.
   const trimmed = raw.trim();
   if (!trimmed) {
-    if (required) {
-      return { ok: false, messageKey: 'helper_proposal.error_required' };
-    }
-    return { ok: true, amount: null };
+    return { ok: false, messageKey: 'helper_proposal.error_required' };
   }
 
   const amount = parseBudgetInt(trimmed);
@@ -61,4 +59,12 @@ export function validateHelperProposal(raw: string, job: Job, required: boolean)
   }
 
   return { ok: true, amount };
+}
+
+/** Quick validity check (no job-range validation) used for real-time button gating. */
+export function isProposalAmountValid(raw: string): boolean {
+  const trimmed = raw.trim();
+  if (!trimmed) return false;
+  const amount = parseBudgetInt(trimmed);
+  return amount != null && amount > 0;
 }

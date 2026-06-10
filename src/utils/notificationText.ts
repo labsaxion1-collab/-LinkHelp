@@ -137,33 +137,113 @@ export function getNotificationActionUrl(notification: AppNotification): string 
   const title = notification.title.trim().toLowerCase();
   const message = notification.message.trim().toLowerCase();
 
-  if (title.includes('message') || title.includes('official hire') || title.includes('helper hired')) {
+  // ── Chat / hire — open messages ─────────────────────────────────────
+  if (
+    title.includes('message') ||
+    title.includes('nova mensagem') ||
+    title.includes('nouveau message') ||
+    title.includes('official hire') ||
+    title.includes('contratação oficial') ||
+    title.includes('contratação confirmada') ||
+    title.includes('embauche officielle') ||
+    title.includes('helper hired') ||
+    title.includes('helper contratado') ||
+    title.includes('helper embauché')
+  ) {
     return ROUTES.messages;
   }
 
-  if (title.includes('new application') || title.includes('nova candidatura') || title.includes('application withdrawn')) {
+  // ── New application — open client dashboard ──────────────────────────
+  if (
+    title.includes('new application') ||
+    title.includes('nova candidatura') ||
+    title.includes('nouvelle candidature') ||
+    title.includes('application withdrawn') ||
+    title.includes('candidatura retirada')
+  ) {
     return ROUTES.clientDashboard;
   }
 
-  if (title.includes('application accepted')) {
+  // ── Application accepted / official hire (helper side) — open chat ──
+  if (
+    title.includes('application accepted') ||
+    title.includes('candidatura aceita') ||
+    title.includes('candidature acceptée')
+  ) {
     return ROUTES.messages;
   }
 
-  if (title.includes('application update') || title.includes('declined')) {
+  // ── Application update / declined ────────────────────────────────────
+  if (
+    title.includes('application update') ||
+    title.includes('atualização de candidatura') ||
+    title.includes('declined')
+  ) {
     return ROUTES.helperOpportunities;
   }
 
-  if (title.includes('request cancelled') || title.includes('chamado cancelado')) {
+  // ── Request cancelled ────────────────────────────────────────────────
+  if (
+    title.includes('request cancelled') ||
+    title.includes('pedido cancelado') ||
+    title.includes('chamado cancelado') ||
+    title.includes('demande annulée')
+  ) {
     if (
       message.includes('client cancelled') ||
       message.includes('the client cancelled') ||
       message.includes('cliente cancelou') ||
-      message.includes('o cliente cancelou')
+      message.includes('o cliente cancelou') ||
+      message.includes('le client a annulé')
     ) {
       return ROUTES.helperDashboard;
     }
     return ROUTES.clientDashboard;
   }
 
+  // ── Credits / payment ────────────────────────────────────────────────
+  if (
+    title.includes('credit') ||
+    title.includes('crédito') ||
+    title.includes('linkcredit') ||
+    title.includes('payment') ||
+    title.includes('pagamento')
+  ) {
+    return ROUTES.helperDashboard;
+  }
+
+  // ── Service / job completed ──────────────────────────────────────────
+  if (
+    title.includes('service completed') ||
+    title.includes('serviço concluído') ||
+    title.includes('work completed') ||
+    title.includes('job completed')
+  ) {
+    return ROUTES.clientDashboard;
+  }
+
+  // ── Review pending ───────────────────────────────────────────────────
+  if (
+    title.includes('review') ||
+    title.includes('avaliação') ||
+    title.includes('évaluation')
+  ) {
+    return ROUTES.clientDashboard;
+  }
+
   return ROUTES.notifications;
+}
+
+/**
+ * Extracts a request ID from a notification action URL of the form
+ * "/client/dashboard?request=UUID". Returns null if not present.
+ */
+export function getNotificationRequestId(notification: AppNotification): string | null {
+  if (!notification.actionUrl) return null;
+  try {
+    const url = new URL(notification.actionUrl, 'http://x');
+    return url.searchParams.get('request');
+  } catch {
+    return null;
+  }
 }

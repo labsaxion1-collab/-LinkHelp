@@ -24,7 +24,10 @@ import {
   remoteMarkServiceAwaitingConfirmation,
   remoteConfirmServiceCompleted,
   subscribeRemoteData,
+  subscribeNotificationsChannel,
+  type NotificationRow,
 } from '@/services/supabase/appDataRemote';
+import { notificationRowToApp } from '@/services/supabase/mappers';
 import { submitHelperApplication } from '@/services/supabase/helperApplicationService';
 import { fetchRemoteReviews, remoteSubmitReview } from '@/services/supabase/reviewsRemote';
 import { buildPendingServiceReviews } from '@/utils/serviceReviewQueue';
@@ -161,9 +164,47 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     return unsub;
   }, [useRemote, refreshRemote]);
 
+  // Granular realtime subscription for notifications — updates state
+  // directly without a full app-data refetch, making the bell icon
+  // update instantly for both clients and helpers on web and PWA.
+  useEffect(() => {
+    if (!useRemote || !userId) return;
+    return subscribeNotificationsChannel(userId, {
+      onInsert: (row: NotificationRow) => {
+        const notif = notificationRowToApp(row);
+        setNotifications((prev) => {
+          if (prev.some((n) => n.id === notif.id)) return prev;
+          return [notif, ...prev];
+        });
+      },
+      onUpdate: (row: NotificationRow) => {
+        const notif = notificationRowToApp(row);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notif.id ? notif : n)),
+        );
+      },
+      onDelete: (id: string) => {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+      },
+    });
+  }, [useRemote, userId]);
+
   const addNotification = (notif: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => {
     if (useRemote) {
-      void remoteInsertNotification(notif).then(() => void refreshRemote());
+      // Optimistically add to local state immediately; the realtime
+      // INSERT event from subscribeNotificationsChannel will confirm it.
+      const optimisticNotif: AppNotification = {
+        ...notif,
+        id: `optimistic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        read: false,
+        createdAt: Date.now(),
+      };
+      setNotifications((prev) => [optimisticNotif, ...prev]);
+      void remoteInsertNotification(notif).catch((e) => {
+        console.warn('[LinkHelp] addNotification remote insert', e);
+        // On failure, remove optimistic entry
+        setNotifications((prev) => prev.filter((n) => n.id !== optimisticNotif.id));
+      });
       return;
     }
     const newNotif: AppNotification = {

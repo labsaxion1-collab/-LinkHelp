@@ -4,7 +4,7 @@ import * as Icons from 'lucide-react';
 import { clsx } from 'clsx';
 import type { Job } from '@/types/job';
 import type { AppLanguage } from '@/services/translationService';
-import { formatBudgetRange, jobHasBoundedBudget, jobIsNegotiableBudget, validateHelperProposal } from '@/utils/jobProposal';
+import { formatBudgetRange, isProposalAmountValid, jobHasBoundedBudget, jobIsNegotiableBudget, validateHelperProposal } from '@/utils/jobProposal';
 import { getHelperLeadCreditSummary, getHelperCreditPublicDisplay } from '@/utils/helperCreditDisplay';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
@@ -52,7 +52,9 @@ export function HelperProposalModal({
 
   const bounded = job ? jobHasBoundedBudget(job) : false;
   const negotiable = job ? jobIsNegotiableBudget(job) : false;
-  const required = bounded;
+  // Amount is always required — helpers must declare a price before applying.
+  const required = true;
+  const isAmountValid = isProposalAmountValid(amount);
 
   useEffect(() => {
     if (!open) {
@@ -302,7 +304,7 @@ export function HelperProposalModal({
                 setAmount(e.target.value.replace(/[^\d.,]/g, ''));
                 setError('');
               }}
-              placeholder={bounded ? String(Math.round(job.budgetMin!)) : '0.00'}
+              placeholder={bounded ? String(Math.round(job.budgetMin!)) : t('helper_proposal.amount_placeholder')}
               className="min-w-0 flex-1 bg-transparent text-[22px] font-black text-slate-950 outline-none placeholder:text-slate-300"
             />
           </div>
@@ -433,7 +435,7 @@ export function HelperProposalModal({
             <button
               type="button"
               onClick={() => handleSubmit(true)}
-              disabled={submitting}
+              disabled={submitting || !isAmountValid}
               className="inline-flex min-h-[68px] flex-1 flex-col items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 shadow-sm transition hover:bg-amber-100 active:scale-[0.98] disabled:opacity-60"
             >
               <span className="flex items-center gap-1.5">
@@ -455,7 +457,7 @@ export function HelperProposalModal({
             <button
               type="button"
               onClick={() => handleSubmit(false)}
-              disabled={submitting}
+              disabled={submitting || !isAmountValid}
               className="inline-flex min-h-[68px] flex-1 flex-col items-center justify-center gap-1.5 rounded-xl bg-[#2563EB] px-3 shadow-md shadow-blue-500/25 transition hover:bg-[#1D4ED8] active:scale-[0.98] disabled:opacity-60"
             >
               {submitting ? (

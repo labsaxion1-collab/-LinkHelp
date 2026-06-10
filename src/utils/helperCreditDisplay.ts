@@ -34,3 +34,8 @@ export function getHelperCreditPublicDisplay(costs: HelperLeadCreditBreakdown): 
     chargeOnApply: getApplicationChargeLc(costs),
   };
 }
+
+/** LinkCredits debited when helper submits an exclusive candidatura (apply + job + hire estimate). */
+export function getExclusiveApplicationChargeLc(costs: HelperLeadCreditBreakdown): number {
+  return getHelperCreditPublicDisplay(costs).totalEstimate;
+}

@@ -43,4 +43,6 @@ export interface Job {
   createdTimezone?: string | null;
   /** Internal 0–100; not shown in UI */
   leadQualityScore?: number | null;
+  /** Helper with active exclusive candidatura; other helpers cannot apply. */
+  exclusiveHelperId?: string | null;
 }

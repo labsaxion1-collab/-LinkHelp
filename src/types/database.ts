@@ -88,6 +88,7 @@ export type RequestRow = {
   budget_min: number | null;
   budget_max: number | null;
   accepted_amount: number | null;
+  exclusive_helper_id?: string | null;
   status: RequestStatus;
   created_at: string;
   updated_at: string;

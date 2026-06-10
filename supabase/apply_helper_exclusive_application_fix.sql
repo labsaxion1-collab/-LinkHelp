@@ -18,6 +18,13 @@ alter table public.applications
 alter table public.applications
   add column if not exists proposed_amount numeric;
 
+alter table public.requests
+  add column if not exists exclusive_helper_id uuid references public.profiles(id) on delete set null;
+
+create index if not exists requests_exclusive_helper_idx
+  on public.requests (exclusive_helper_id)
+  where exclusive_helper_id is not null;
+
 alter table public.credit_transactions
   add column if not exists request_id uuid references public.requests(id) on delete set null;
 
@@ -258,6 +265,12 @@ begin
 
   conv_id := public.ensure_conversation(p_request_id, p_client_id, p_helper_id, false);
 
+  if coalesce(p_is_exclusive, false) then
+    update public.requests
+    set exclusive_helper_id = p_helper_id
+    where id = p_request_id;
+  end if;
+
   select title into req_title from public.requests where id = p_request_id;
   select name into helper_name from public.profiles where id = p_helper_id;
 
@@ -289,5 +302,75 @@ end;
 $$;
 
 grant execute on function public.helper_submit_application(uuid, uuid, uuid, text, numeric, int, boolean) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 4. Exclusive lock visibility for helpers (RLS hides other helpers' applications)
+-- ---------------------------------------------------------------------------
+
+create or replace function public.request_has_exclusive_lock(
+  p_request_id uuid,
+  p_helper_id uuid default auth.uid()
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.applications a
+    where a.request_id = p_request_id
+      and a.is_exclusive = true
+      and a.status in ('pending', 'viewed', 'accepted')
+      and a.helper_id <> coalesce(p_helper_id, '00000000-0000-0000-0000-000000000000'::uuid)
+  );
+$$;
+
+grant execute on function public.request_has_exclusive_lock(uuid, uuid) to authenticated;
+
+create or replace function public.sync_request_exclusive_helper_id()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  req_id uuid := coalesce(NEW.request_id, OLD.request_id);
+  lock_helper uuid;
+begin
+  select a.helper_id into lock_helper
+  from public.applications a
+  where a.request_id = req_id
+    and a.is_exclusive = true
+    and a.status in ('pending', 'viewed', 'accepted')
+  order by a.created_at desc
+  limit 1;
+
+  update public.requests
+  set exclusive_helper_id = lock_helper
+  where id = req_id;
+
+  return coalesce(NEW, OLD);
+end;
+$$;
+
+drop trigger if exists trg_sync_request_exclusive_helper on public.applications;
+create trigger trg_sync_request_exclusive_helper
+  after insert or update of is_exclusive, status or delete
+  on public.applications
+  for each row
+  execute function public.sync_request_exclusive_helper_id();
+
+update public.requests r
+set exclusive_helper_id = sub.helper_id
+from (
+  select distinct on (a.request_id) a.request_id, a.helper_id
+  from public.applications a
+  where a.is_exclusive = true
+    and a.status in ('pending', 'viewed', 'accepted')
+  order by a.request_id, a.created_at desc
+) sub
+where r.id = sub.request_id;
 
 notify pgrst, 'reload schema';

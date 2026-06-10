@@ -20,8 +20,8 @@ import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import {
   buildActiveApplicationCountsByJobId,
-  hasExclusiveActiveApplicationForJob,
   isJobInterestFull,
+  isRequestExclusiveLockedForViewer,
 } from '@/utils/applicationInterest';
 import type { Job } from '@/types/job';
 import { useHelperDismissedRequests } from '@/hooks/useHelperDismissedRequests';
@@ -77,7 +77,7 @@ export default function HelperLiveMapPage() {
         !isJobCancelled(j) &&
         j.clientId !== me.id &&
         !dismissedIds.has(j.id) &&
-        !hasExclusiveActiveApplicationForJob(applications, j.id, me.id) &&
+        !isRequestExclusiveLockedForViewer(j, applications, me.id) &&
         !isJobInterestFull(applicationCountByJobId.get(j.id) ?? 0),
     );
     const inRadius = filterJobsForHelperRadar(openJobs, userCoords);

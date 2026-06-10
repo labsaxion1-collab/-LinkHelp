@@ -23,8 +23,8 @@ import { UpcomingJobsSidebar } from '@/components/helpers/UpcomingJobsSidebar';
 import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailModal';
 import {
   buildActiveApplicationCountsByJobId,
-  hasExclusiveActiveApplicationForJob,
   isJobInterestFull,
+  isRequestExclusiveLockedForViewer,
 } from '@/utils/applicationInterest';
 import type { ServiceCategoryId } from '@/data/serviceCategories';
 import { resolveCategoryId, translateCategory, translateJobTitle } from '@/utils/translateCategory';
@@ -40,6 +40,7 @@ import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperO
 import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
 import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
 import { getApplicationChargeLc } from '@/config/helperCreditCharge';
+import { getExclusiveApplicationChargeLc } from '@/utils/helperCreditDisplay';
 import { InsufficientCreditsError, leadCostsForJob } from '@/services/helperLeadCredits';
 import { recordMarketSignal } from '@/services/marketSignals';
 import { persistLocalDismissedRequest } from '@/services/supabase/helperDismissedRemote';
@@ -667,11 +668,23 @@ export default function HelperDashboard() {
       return;
     }
     const distanceKm = baseDistanceToJobKm(job);
-    if (!hasInterestCredits(job)) {
-      showToast(
-        t('helper_credits.insufficient_interest_body', { required: interestCostForJob(job) }),
-        'error',
-      );
+    const isExclusive = proposalOptions?.isExclusive === true;
+    const requiredCredits = isExclusive
+      ? getExclusiveApplicationChargeLc(leadCostsForJob(job, { distanceKm }))
+      : interestCostForJob(job);
+    if (walletLoading && walletBalance == null) {
+      showToast(t('common.loading'), 'error');
+      return;
+    }
+    if (walletBalance == null || walletBalance < requiredCredits) {
+      if (isExclusive) {
+        showToast(
+          t('helper_credits.insufficient_interest_body', { required: requiredCredits }),
+          'error',
+        );
+      } else {
+        openInsufficientCreditsModal(job);
+      }
       return;
     }
 
@@ -807,7 +820,7 @@ export default function HelperDashboard() {
     }
     return list.filter((j) => {
       if (dismissedJobIds.has(j.id) || helperEngagedJobIds.has(j.id)) return false;
-      if (hasExclusiveActiveApplicationForJob(applications, j.id, viewerId)) return false;
+      if (isRequestExclusiveLockedForViewer(j, applications, viewerId)) return false;
       return !isJobInterestFull(applicationCountsByJobId.get(j.id) ?? 0);
     });
   }, [
@@ -837,7 +850,7 @@ export default function HelperDashboard() {
         j.clientId !== (helperUserId ?? me?.id ?? '') &&
         getJobServiceCategoryId(j) &&
         !helperEngagedJobIds.has(j.id) &&
-        !hasExclusiveActiveApplicationForJob(applications, j.id, helperUserId ?? me?.id ?? '') &&
+        !isRequestExclusiveLockedForViewer(j, applications, helperUserId ?? me?.id ?? '') &&
         !isJobInterestFull(applicationCountsByJobId.get(j.id) ?? 0),
     ),
     categoryPrefs,

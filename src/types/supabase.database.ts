@@ -227,6 +227,13 @@ export type Database = {
         };
         Returns: Json;
       };
+      request_has_exclusive_lock: {
+        Args: {
+          p_request_id: string;
+          p_helper_id?: string;
+        };
+        Returns: boolean;
+      };
       helper_mark_service_awaiting_confirmation: {
         Args: { p_upcoming_job_id: string };
         Returns: Json;

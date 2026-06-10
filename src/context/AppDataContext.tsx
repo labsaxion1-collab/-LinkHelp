@@ -32,6 +32,7 @@ import type { PendingServiceReview, ServiceReview } from '@/types/review';
 import { dispatchPushEvent } from '@/services/push/pushEventDispatcher';
 import { useCredits } from '@/context/CreditContext';
 import { getApplicationChargeLc } from '@/config/helperCreditCharge';
+import { getExclusiveApplicationChargeLc } from '@/utils/helperCreditDisplay';
 import {
   fetchHelperBaseDistanceKm,
   leadCostsForJob,
@@ -41,7 +42,7 @@ import { markNotificationsCleared } from '@/utils/notificationVisibility';
 import {
   MAX_JOB_INTERESTED,
   countActiveApplicationsForJob,
-  hasExclusiveActiveApplicationForJob,
+  isRequestExclusiveLockedForViewer,
 } from '@/utils/applicationInterest';
 
 export type { Job, JobStatus, JobUrgency, Application, ApplicationStatus, UpcomingJob, UpcomingWorkflowStatus };
@@ -269,7 +270,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       throw new Error('SELF_REQUEST');
     }
 
-    if (hasExclusiveActiveApplicationForJob(applicationsRef.current, jobId, helperId)) {
+    if (isRequestExclusiveLockedForViewer(job, applicationsRef.current, helperId)) {
       throw new Error('EXCLUSIVE_APPLICATION_LOCKED');
     }
 
@@ -279,7 +280,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
     const leadCostBreakdown = leadCostsForJob(job, { distanceKm: options?.distanceKm ?? null });
     const interestCost = options?.isExclusive
-      ? leadCostBreakdown.estimatedTotal
+      ? getExclusiveApplicationChargeLc(leadCostBreakdown)
       : getApplicationChargeLc(leadCostBreakdown);
 
     const sessionUserId = session?.user?.id ?? profile?.id ?? null;

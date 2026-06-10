@@ -29,9 +29,34 @@ type RpcSubmitRow = {
 
 const ACTIVE_APPLICATION_STATUSES = ['pending', 'viewed', 'accepted'] as const;
 
+async function requestHasExclusiveLock(
+  requestId: string,
+  helperId: string,
+): Promise<boolean | null> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+
+  const { data, error } = await sb.rpc('request_has_exclusive_lock', {
+    p_request_id: requestId,
+    p_helper_id: helperId,
+  });
+
+  if (error) {
+    if (isPostgrestMissingResource(error)) return null;
+    throw new Error(error.message || 'APPLICATION_PRECHECK_FAILED');
+  }
+
+  return data === true;
+}
+
 async function assertRequestCanReceiveApplication(input: SubmitHelperApplicationInput): Promise<void> {
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
+
+  const lockedViaRpc = await requestHasExclusiveLock(input.requestId, input.helperId);
+  if (lockedViaRpc === true) {
+    throw new Error('EXCLUSIVE_APPLICATION_LOCKED');
+  }
 
   const withExclusive = await sb
     .from('applications')
@@ -62,7 +87,7 @@ async function assertRequestCanReceiveApplication(input: SubmitHelperApplication
     rows = (withoutExclusive.data ?? []) as Array<{ helper_id?: string; status?: string }>;
   }
 
-  if (rows.some((row) => row.helper_id !== input.helperId && row.is_exclusive === true)) {
+  if (lockedViaRpc === null && rows.some((row) => row.helper_id !== input.helperId && row.is_exclusive === true)) {
     throw new Error('EXCLUSIVE_APPLICATION_LOCKED');
   }
   if (rows.length >= 3) {

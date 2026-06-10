@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { calculateHelperLeadCreditCost } from '@/utils/calculateHelperLeadCreditCost';
-import { getHelperCreditPublicDisplay } from '@/utils/helperCreditDisplay';
+import { getHelperCreditPublicDisplay, getExclusiveApplicationChargeLc } from '@/utils/helperCreditDisplay';
 import type { Job } from '@/types/job';
 
 const baseJob = (overrides: Partial<Job> = {}): Job => ({
@@ -33,5 +33,6 @@ describe('getHelperCreditPublicDisplay', () => {
     expect(display.hireEstimate).toBe(costs.selectedCost);
     expect(display.totalEstimate).toBe(display.applyCost + display.jobCost + display.hireEstimate);
     expect(display.chargeOnApply).toBe(4);
+    expect(getExclusiveApplicationChargeLc(costs)).toBe(display.totalEstimate);
   });
 });

@@ -1,4 +1,5 @@
 import type { Application } from '@/types/application';
+import type { Job } from '@/types/job';
 
 export const MAX_JOB_INTERESTED = 3;
 
@@ -45,6 +46,18 @@ export function hasExclusiveActiveApplicationForJob(
     if (viewerHelperId && app.helperId === viewerHelperId) return false;
     return true;
   });
+}
+
+/** True when another helper holds an active exclusive lock on this request. */
+export function isRequestExclusiveLockedForViewer(
+  job: Pick<Job, 'id' | 'exclusiveHelperId'>,
+  applications: Application[],
+  viewerHelperId: string,
+): boolean {
+  if (job.exclusiveHelperId && job.exclusiveHelperId !== viewerHelperId) {
+    return true;
+  }
+  return hasExclusiveActiveApplicationForJob(applications, job.id, viewerHelperId);
 }
 
 export function isJobInterestFull(count: number, max = MAX_JOB_INTERESTED): boolean {

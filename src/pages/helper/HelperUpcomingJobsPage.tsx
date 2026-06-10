@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { useLanguage } from '@/context/LanguageContext';
@@ -8,6 +8,7 @@ import { translateCategory, translateJobTitle } from '@/utils/translateCategory'
 import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailModal';
 import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
 import { HelperApplicationCard } from '@/components/helpers/HelperApplicationCard';
+import { HelperAcceptedJobCard } from '@/components/helpers/HelperAcceptedJobCard';
 import { formatScheduledClock, formatScheduledDay } from '@/utils/upcomingJobUtils';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
@@ -25,39 +26,9 @@ const ACTIVE_WORKFLOW: UpcomingWorkflowStatus[] = [
 
 type TasksTab = 'applications' | 'accepted';
 
-function badgeClass(s: UpcomingWorkflowStatus): string {
-  switch (s) {
-    case 'scheduled':
-      return 'bg-sky-100 text-sky-800 border-sky-200';
-    case 'in_progress':
-      return 'bg-amber-100 text-amber-900 border-amber-200';
-    case 'arriving':
-      return 'bg-violet-100 text-violet-800 border-violet-200';
-    case 'awaiting_client_confirmation':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'completed':
-      return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-    case 'cancelled':
-      return 'bg-gray-100 text-gray-600 border-gray-200';
-    default:
-      return 'bg-gray-100 text-gray-700 border-gray-200';
-  }
-}
-
-function statusLabel(s: UpcomingWorkflowStatus, t: (k: string) => string) {
-  const map: Record<UpcomingWorkflowStatus, string> = {
-    scheduled: 'upcoming_jobs.status_scheduled',
-    in_progress: 'upcoming_jobs.status_in_progress',
-    arriving: 'upcoming_jobs.status_arriving',
-    awaiting_client_confirmation: 'upcoming_jobs.status_awaiting_client_confirmation',
-    completed: 'upcoming_jobs.status_completed',
-    cancelled: 'upcoming_jobs.status_cancelled',
-  };
-  return t(map[s]);
-}
-
 export default function HelperUpcomingJobsPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { jobs, upcomingJobs, updateUpcomingWorkflow, getHelperApplications, updateApplicationStatus } = useAppData();
   const [activeTab, setActiveTab] = useState<TasksTab>(() => {
@@ -204,6 +175,7 @@ export default function HelperUpcomingJobsPage() {
                       t={t}
                       onOpenDetails={() => openRequestDetail(job)}
                       onCancel={() => setCancelTarget(app)}
+                      onOpenChat={() => navigate(ROUTES.messages)}
                     />
                   );
                 })
@@ -222,46 +194,14 @@ export default function HelperUpcomingJobsPage() {
               </div>
             ) : (
               acceptedList.map((job) => (
-                <button
+                <HelperAcceptedJobCard
                   key={job.id}
-                  type="button"
-                  onClick={() => openUpcomingDetail(job)}
-                  className="flex w-full flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md sm:flex-row sm:items-center sm:p-5"
-                >
-                  <img
-                    src={job.clientAvatar}
-                    alt=""
-                    className="h-14 w-14 shrink-0 rounded-2xl border border-gray-100 object-cover"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-1 flex flex-wrap items-center gap-2">
-                      <span
-                        className={`rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase ${badgeClass(job.workflowStatus)}`}
-                      >
-                        {statusLabel(job.workflowStatus, t)}
-                      </span>
-                      <span className="rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
-                        {tc(job.category)}
-                      </span>
-                    </div>
-                    <h2 className="truncate text-base font-bold leading-snug text-gray-900 sm:text-lg">
-                      {translateJobTitle(job.title, job.category, null, t)}
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-500">{t('upcoming_jobs.client_label', { name: job.clientName })}</p>
-                    <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-                      <span className="inline-flex items-center gap-1">
-                        <Icons.Clock className="h-3.5 w-3.5" />
-                        {formatScheduledDay(job.scheduledAt, locale)} · {formatScheduledClock(job.scheduledAt, locale)}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Icons.MapPin className="h-3.5 w-3.5" />
-                        {job.location}
-                      </span>
-                      <span className="font-bold text-emerald-700">${job.value}</span>
-                    </p>
-                  </div>
-                  <Icons.ChevronRight className="hidden h-5 w-5 shrink-0 text-gray-300 sm:block" />
-                </button>
+                  job={job}
+                  locale={locale}
+                  t={t}
+                  onOpenDetails={() => openUpcomingDetail(job)}
+                  onOpenChat={() => navigate(ROUTES.messages)}
+                />
               ))
             )}
           </div>

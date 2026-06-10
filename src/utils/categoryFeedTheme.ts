@@ -281,3 +281,22 @@ export function getCategoryFeedTheme(categoryRaw: string): CategoryFeedTheme {
 export function getCategoryAccent(categoryRaw: string): CategoryAccent {
   return getCategoryFeedTheme(categoryRaw).accent;
 }
+
+/**
+ * Colors for map markers, derived from the category theme.
+ * @returns `border` — the solid ring/border color (e.g. "#06B6D4")
+ *          `ring`   — a semi-transparent outer glow (e.g. "#06B6D440")
+ *          `bg`     — the light background for SVG classic dots (e.g. "#ECFEFF")
+ */
+export function getCategoryMapColors(categoryRaw: string): {
+  border: string;
+  ring: string;
+  bg: string;
+} {
+  const theme = getCategoryFeedTheme(categoryRaw);
+  return {
+    border: theme.iconColor,
+    ring: `${theme.iconColor}40`,  // 25% opacity
+    bg: theme.iconBg,
+  };
+}

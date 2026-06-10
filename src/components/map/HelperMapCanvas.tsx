@@ -8,6 +8,7 @@ import { ClientJobMapPin } from '@/components/map/ClientJobMapPin';
 import { JobMapOpportunityCard } from '@/components/map/JobMapOpportunityCard';
 import { useMapMarkerMode, type MapMarkerMode } from '@/hooks/useMapMarkerMode';
 import { sanitizeMapPosition } from '@/utils/mapMarkerIcons';
+import { getCategoryMapColors } from '@/utils/categoryFeedTheme';
 import type { Job } from '@/types/job';
 
 export type HelperMapJobPoint = {
@@ -56,6 +57,8 @@ export function HelperMapCanvas({
       {mapMarkerPoints.map((point) => {
         const pos = sanitizeMapPosition(point.position);
         if (!pos) return null;
+        const catColors = getCategoryMapColors(point.data.category);
+        const classicColor = point.urgency ? '#dc2626' : catColors.border;
         return (
           <MarkerWithInfoWindow
             key={point.id}
@@ -64,7 +67,7 @@ export function HelperMapCanvas({
             open={focusedMarkerId === point.id}
             highlighted={focusedMarkerId === point.id}
             mode={mode}
-            classicColor={point.urgency ? '#dc2626' : '#2563eb'}
+            classicColor={classicColor}
             onOpenChange={(open) => {
               if (open) onFocusMarker(point.id);
               else if (focusedMarkerId === point.id) onFocusMarker(null);
@@ -75,6 +78,7 @@ export function HelperMapCanvas({
                 clientAvatar={point.data.clientAvatar}
                 urgent={point.urgency}
                 highlighted={focusedMarkerId === point.id}
+                category={point.data.category}
               />
             }
           >
@@ -97,6 +101,8 @@ export function HelperMapCanvas({
       {mapMarkerPoints.map((point) => {
         const pos = sanitizeMapPosition(point.position);
         if (!pos) return null;
+        const catColors = getCategoryMapColors(point.data.category);
+        const classicColor = point.urgency ? '#dc2626' : catColors.border;
         return (
           <MarkerWithInfoWindow
             key={point.id}
@@ -105,7 +111,7 @@ export function HelperMapCanvas({
             open={focusedMarkerId === point.id}
             highlighted={focusedMarkerId === point.id}
             mode="classic"
-            classicColor={point.urgency ? '#dc2626' : '#2563eb'}
+            classicColor={classicColor}
             onOpenChange={(open) => {
               if (open) onFocusMarker(point.id);
               else if (focusedMarkerId === point.id) onFocusMarker(null);

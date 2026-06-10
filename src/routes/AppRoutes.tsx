@@ -6,10 +6,10 @@ import { importWithRetry } from '@/utils/lazyWithRetry';
 import Layout from '@/components/layout/Layout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PublicOnlyRoute } from '@/components/auth/PublicOnlyRoute';
-import { LoginSplashGate } from '@/components/auth/LoginSplashGate';
 import { RoleRoute } from '@/components/auth/RoleRoute';
 import { AdminProtectedRoute } from '@/components/admin/AdminProtectedRoute';
 import { FluxAdminLayout } from '@/components/admin/FluxAdminLayout';
+import { LoginSplashGate } from '@/components/auth/LoginSplashGate';
 
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
 const HowItWorksPage = lazy(() => import('@/pages/public/HowItWorksPage'));

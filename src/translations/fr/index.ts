@@ -2031,8 +2031,8 @@ export const fr = {
     finalize: 'Terminer la tâche',
   },
   client_linkcredits: {
-    launch_promo: 'Lancement : ouvrir des demandes est gratuit pendant les 90 premiers jours.',
-    after_promo: 'Après la période promotionnelle, les clients utiliseront des LinkCredits pour ouvrir de nouvelles demandes.',
+    launch_promo: 'Créer des demandes utilise des LinkCredits — vous recevez 20 LC gratuits à l\'inscription.',
+    after_promo: 'Utilisez vos LinkCredits pour publier des demandes et engager des helpers. Rechargez quand vous voulez.',
     admin_flag: 'CLIENT_LINKCREDITS_ENABLED=false — les clients ne sont pas facturés pour ouvrir des demandes.',
   },
   client_how_it_works: {

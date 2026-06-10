@@ -621,11 +621,11 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
 
   return (
     <div
-      className="fixed inset-0 z-[1000] flex items-start justify-center overflow-y-auto lh-modal-overlay p-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-[calc(env(safe-area-inset-bottom)+0.75rem)] animate-in fade-in duration-200 sm:items-center sm:p-6"
+      className="fixed inset-0 z-[1000] flex items-start justify-center overflow-y-auto lh-modal-overlay p-3 pt-[calc(env(safe-area-inset-top)+60px+0.75rem)] pb-[calc(env(safe-area-inset-bottom)+4.25rem+0.75rem)] animate-in fade-in duration-200 md:pt-[calc(env(safe-area-inset-top)+72px+0.75rem)] md:pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:items-center sm:p-6"
       onClick={requestClose}
     >
       <div
-        className="lh-modal-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1.5rem)] sm:max-h-[min(92dvh,900px)] min-w-0"
+        className="lh-modal-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-60px-4.25rem-1.5rem)] md:max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-72px-1.5rem)] sm:max-h-[min(92dvh,900px)] min-w-0"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2 sm:gap-3 bg-gray-50/50 shrink-0 min-w-0">

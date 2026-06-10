@@ -2025,8 +2025,8 @@ export const en = {
     finalize: 'Complete task',
   },
   client_linkcredits: {
-    launch_promo: 'Launch offer: opening requests is free for the first 90 days.',
-    after_promo: 'After the promotional period, clients will use LinkCredits to open new requests.',
+    launch_promo: 'Creating requests uses LinkCredits — you get 20 LC free when you sign up.',
+    after_promo: 'Use your LinkCredits to post requests and hire helpers. Top up whenever you want.',
     admin_flag: 'CLIENT_LINKCREDITS_ENABLED=false — clients are not charged to open requests.',
   },
   client_how_it_works: {

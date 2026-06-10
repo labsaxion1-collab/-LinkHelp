@@ -422,7 +422,57 @@ export default function ClientDashboard() {
   };
 
   return (
-    <AppPageShell wide className="min-w-0 overflow-x-hidden">
+    <div className="w-full min-w-0">
+      {/* Hero — fora de qualquer container com padding para ser verdadeiramente full-width */}
+      {activeSidebarTab === 'dashboard' && (
+        <section className="relative z-0 isolate min-h-[410px] overflow-hidden bg-[#F5F7FB] sm:min-h-[440px]">
+          <div className="absolute inset-y-0 right-[-4%] w-[85%] overflow-hidden">
+            <img
+              src="/brand/client-home-hero-trust.jpg"
+              alt=""
+              className="h-[120%] w-full object-cover object-[center_50%] saturate-[1.08] contrast-[1.02]"
+            />
+            <div className="absolute inset-y-0 left-0 w-[45%] bg-[linear-gradient(90deg,#F5F7FB_0%,rgba(245,247,251,0.85)_40%,transparent_100%)]" />
+          </div>
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-[linear-gradient(180deg,transparent,#F5F7FB_90%)]" />
+          <div className="relative z-[1] flex min-h-[410px] max-w-[58%] flex-col justify-between px-8 py-7 sm:min-h-[440px] sm:max-w-[50%] sm:px-10 sm:py-9">
+            <div className="min-w-0">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-2 text-xs font-black text-[#2563FF] shadow-[0_10px_26px_rgba(37,99,255,0.13)] ring-1 ring-blue-100/80 backdrop-blur-xl">
+                <Icons.Sparkles className="h-3.5 w-3.5" />
+                Comece agora
+              </span>
+              <h2 className="mt-5 max-w-[18rem] text-[33px] font-black leading-[0.96] tracking-tight text-[#0B1220] sm:text-5xl">
+                O que voce precisa <span className="text-[#2563FF] drop-shadow-[0_0_18px_rgba(37,99,255,0.24)]">hoje?</span>
+              </h2>
+              <p className="mt-4 max-w-[15.5rem] text-[15px] font-semibold leading-7 text-[#0B1220] [text-shadow:0_0_3px_rgba(255,255,255,0.9),0_0_8px_rgba(255,255,255,0.7)]">
+                Publique seu pedido e encontre profissionais confiaveis perto de voce.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-2 text-[11px] font-black text-[#0B4A6F] shadow-sm ring-1 ring-blue-100/80 backdrop-blur-xl">
+                  <Icons.ShieldCheck className="h-3.5 w-3.5 text-[#2563FF]" />
+                  Seguro
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-2 text-[11px] font-black text-[#0B4A6F] shadow-sm ring-1 ring-blue-100/80 backdrop-blur-xl">
+                  <Icons.Clock3 className="h-3.5 w-3.5 text-[#2563FF]" />
+                  Rapido
+                </span>
+              </div>
+            </div>
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() => openCreateModal()}
+                className="inline-flex min-h-[58px] w-full max-w-[245px] items-center justify-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#3B82F6_0%,#2563FF_45%,#1D4ED8_100%)] px-5 text-sm font-black text-white shadow-[0_18px_48px_rgba(37,99,255,0.45),inset_0_1px_0_rgba(255,255,255,0.22)] ring-1 ring-blue-400/20 transition hover:-translate-y-0.5 hover:shadow-[0_22px_52px_rgba(37,99,255,0.55)] active:scale-[0.98] sm:text-base"
+              >
+                <Plus className="h-5 w-5 opacity-80" />
+                Criar novo pedido
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+    <AppPageShell wide className="relative z-10 min-w-0 overflow-x-hidden">
       {/* Toast Notification */}
       {toastNotification.show && (
         <div className="fixed top-20 right-4 z-[100] animate-in slide-in-from-right-8 fade-in duration-300">
@@ -686,88 +736,34 @@ export default function ClientDashboard() {
         {/* Main Feed */}
         {activeSidebarTab === 'dashboard' && (
           <div className="mx-auto w-full max-w-[680px] animate-in fade-in duration-300 md:max-w-6xl">
-            <section className="relative overflow-hidden bg-[#F5F7FB] px-0 pb-24 pt-4 sm:px-0 md:px-0">
+            <section className="relative overflow-hidden bg-[#F5F7FB] px-0 pb-24 pt-0 sm:px-0 md:px-0">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_5%,rgba(37,99,255,0.12),transparent_28%),radial-gradient(circle_at_86%_20%,rgba(59,130,246,0.10),transparent_28%)]" />
               <div className="relative space-y-7">
-                <header className="flex items-center justify-between gap-4">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-[0_12px_34px_rgba(37,99,255,0.20)] ring-1 ring-blue-100">
-                      <img src="/brand/linkhelp-handshake-icon.png" alt="" className="h-full w-full object-cover" />
-                    </span>
-                    <div className="min-w-0">
-                      <h1 className="truncate text-xl font-black tracking-tight text-[#0B1220]">Link Help</h1>
-                      <p className="truncate text-xs font-semibold text-[#64748B]">Conectando voce ao que precisa.</p>
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => navigate(ROUTES.notifications)}
-                      className="relative flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#0B1220] shadow-[0_10px_24px_rgba(15,23,42,0.07)] ring-1 ring-slate-100 transition hover:-translate-y-0.5 hover:text-[#2563FF]"
-                      aria-label={t('notifications.title')}
-                    >
-                      <Bell className="h-5 w-5" />
-                      {notifications.some((n) => !n.read) ? (
-                        <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#2563FF]" />
-                      ) : null}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => navigate(ROUTES.profile)}
-                      className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-[#8B6F61] text-sm font-black uppercase text-white shadow-[0_10px_24px_rgba(15,23,42,0.08)] ring-1 ring-white"
-                      aria-label={t('nav.profile_menu_profile')}
-                    >
-                      {me.avatar ? <img src={me.avatar} alt="" className="h-full w-full object-cover" /> : me.name.slice(0, 1)}
-                    </button>
-                  </div>
-                </header>
-
-                <section className="relative left-1/2 min-h-[410px] w-screen -translate-x-1/2 overflow-hidden sm:min-h-[440px]">
-                  <img
-                    src="/brand/client-home-hero-trust.jpg"
-                    alt=""
-                    className="absolute inset-0 h-full w-full object-cover object-[66%_center] saturate-[1.08] contrast-[1.02]"
-                  />
-                  <div className="absolute inset-y-0 left-0 w-[74%] bg-[linear-gradient(90deg,rgba(245,247,251,0.99)_0%,rgba(245,247,251,0.94)_54%,rgba(245,247,251,0.58)_78%,rgba(245,247,251,0)_100%)]" />
-                  <div className="pointer-events-none absolute left-[20%] top-[43%] h-[46%] w-[42%] bg-[radial-gradient(ellipse_at_center,rgba(245,247,251,0.96)_0%,rgba(245,247,251,0.90)_44%,rgba(245,247,251,0.52)_63%,rgba(245,247,251,0)_80%)] blur-[1px]" />
-                  <div className="pointer-events-none absolute -right-20 top-10 h-56 w-56 rounded-full bg-[#2563FF]/20 blur-3xl" />
-                  <div className="pointer-events-none absolute bottom-20 right-6 h-28 w-52 rotate-[-12deg] rounded-[999px] border border-cyan-300/55 shadow-[0_0_42px_rgba(37,99,255,0.34)]" />
-                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-[linear-gradient(180deg,rgba(245,247,251,0),#F5F7FB_88%)]" />
-
-                  <div className="relative z-10 flex min-h-[410px] max-w-[65%] flex-col justify-between px-6 py-7 sm:min-h-[440px] sm:max-w-[54%] sm:px-8 sm:py-9 md:px-10">
-                    <div className="min-w-0">
-                      <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-2 text-xs font-black text-[#2563FF] shadow-[0_10px_26px_rgba(37,99,255,0.13)] ring-1 ring-blue-100/80 backdrop-blur-xl">
-                        <Icons.Sparkles className="h-3.5 w-3.5" />
-                        Comece agora
-                      </span>
-                      <h2 className="mt-5 max-w-[18rem] text-[33px] font-black leading-[0.96] tracking-tight text-[#0B1220] sm:text-5xl">
-                        O que voce precisa <span className="text-[#2563FF] drop-shadow-[0_0_18px_rgba(37,99,255,0.24)]">hoje?</span>
-                      </h2>
-                      <p className="mt-4 max-w-[15.5rem] text-[15px] font-semibold leading-7 text-[#4B5F7A]">
-                        Publique seu pedido e encontre profissionais confiaveis perto de voce.
-                      </p>
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-2 text-[11px] font-black text-[#0B4A6F] shadow-sm ring-1 ring-blue-100/80 backdrop-blur-xl">
-                          <Icons.ShieldCheck className="h-3.5 w-3.5 text-[#2563FF]" />
-                          Seguro
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-2 text-[11px] font-black text-[#0B4A6F] shadow-sm ring-1 ring-blue-100/80 backdrop-blur-xl">
-                          <Icons.Clock3 className="h-3.5 w-3.5 text-[#2563FF]" />
-                          Rapido
-                        </span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => openCreateModal()}
-                        className="inline-flex min-h-[58px] w-full max-w-[245px] items-center justify-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#2563FF,#0D5BFF)] px-5 text-sm font-black text-white shadow-[0_18px_44px_rgba(37,99,255,0.38),inset_0_1px_0_rgba(255,255,255,0.25)] transition hover:-translate-y-0.5 hover:brightness-105 active:scale-[0.98] sm:text-base"
-                      >
-                        <Plus className="h-6 w-6" />
-                        Criar novo pedido
-                      </button>
-                    </div>
+                <section className="px-4 sm:px-6 md:px-8">
+                  <h2 className="text-lg font-black tracking-tight text-[#0B1220]">Como funciona</h2>
+                  <div className="relative mt-4 grid gap-3 sm:grid-cols-3">
+                    <div className="pointer-events-none absolute left-8 right-8 top-6 hidden border-t border-dashed border-blue-200 sm:block" />
+                    {[
+                      { icon: Icons.ClipboardCheck, title: 'Publique seu pedido', body: 'Conte o que precisa de forma rapida' },
+                      { icon: Icons.UsersRound, title: 'Receba interessados', body: 'Helpers proximos enviam propostas' },
+                      { icon: Icons.ShieldCheck, title: 'Escolha e combine', body: 'Converse, combine e feche o servico' },
+                    ].map((step, index) => {
+                      const Icon = step.icon;
+                      return (
+                        <article key={step.title} className="relative rounded-[1.5rem] bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.045)] ring-1 ring-slate-100">
+                          <span className="absolute -top-3 left-4 flex h-7 w-7 items-center justify-center rounded-full bg-[#2563FF] text-xs font-black text-white shadow-[0_10px_22px_rgba(37,99,255,0.24)]">{index + 1}</span>
+                          <div className="mt-4 flex items-start gap-3">
+                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EAF2FF] text-[#2563FF]">
+                              <Icon className="h-6 w-6" />
+                            </span>
+                            <span>
+                              <span className="block text-sm font-black text-[#0B1220]">{step.title}</span>
+                              <span className="mt-1 block text-xs font-semibold leading-relaxed text-[#64748B]">{step.body}</span>
+                            </span>
+                          </div>
+                        </article>
+                      );
+                    })}
                   </div>
                 </section>
 
@@ -855,33 +851,6 @@ export default function ClientDashboard() {
                   })}
                 </section>
 
-                <section className="px-4 sm:px-6 md:px-8">
-                  <h2 className="text-lg font-black tracking-tight text-[#0B1220]">Como funciona</h2>
-                  <div className="relative mt-4 grid gap-3 sm:grid-cols-3">
-                    <div className="pointer-events-none absolute left-8 right-8 top-6 hidden border-t border-dashed border-blue-200 sm:block" />
-                    {[
-                      { icon: Icons.ClipboardCheck, title: 'Publique seu pedido', body: 'Conte o que precisa de forma rapida' },
-                      { icon: Icons.UsersRound, title: 'Receba interessados', body: 'Helpers proximos enviam propostas' },
-                      { icon: Icons.ShieldCheck, title: 'Escolha e combine', body: 'Converse, combine e feche o servico' },
-                    ].map((step, index) => {
-                      const Icon = step.icon;
-                      return (
-                        <article key={step.title} className="relative rounded-[1.5rem] bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.045)] ring-1 ring-slate-100">
-                          <span className="absolute -top-3 left-4 flex h-7 w-7 items-center justify-center rounded-full bg-[#2563FF] text-xs font-black text-white shadow-[0_10px_22px_rgba(37,99,255,0.24)]">{index + 1}</span>
-                          <div className="mt-4 flex items-start gap-3">
-                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EAF2FF] text-[#2563FF]">
-                              <Icon className="h-6 w-6" />
-                            </span>
-                            <span>
-                              <span className="block text-sm font-black text-[#0B1220]">{step.title}</span>
-                              <span className="mt-1 block text-xs font-semibold leading-relaxed text-[#64748B]">{step.body}</span>
-                            </span>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                </section>
               </div>
             </section>
           </div>
@@ -1474,5 +1443,6 @@ export default function ClientDashboard() {
       )}
 
     </AppPageShell>
+    </div>
   );
 }

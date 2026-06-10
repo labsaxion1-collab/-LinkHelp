@@ -361,40 +361,38 @@ export default function ProfilePage() {
             </FilePickerLabel>
           </div>
 
-          {isHelperMode ? (
-            <div className="relative mt-7 overflow-hidden rounded-[1.65rem] border border-white/12 bg-[linear-gradient(145deg,rgba(255,255,255,0.18),rgba(255,255,255,0.06)_45%,rgba(37,99,255,0.12))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_18px_42px_rgba(0,0,0,0.22)] ring-1 ring-white/10 backdrop-blur-xl">
-              <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-amber-300/18 blur-2xl" />
-              <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-              <div className="pointer-events-none absolute -bottom-10 left-8 h-24 w-40 rounded-full bg-blue-400/16 blur-2xl" />
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[12px] font-black uppercase tracking-[0.20em] text-white/70 drop-shadow-[0_0_12px_rgba(255,255,255,0.26)]">LinkCredit</p>
-                  <p className="mt-2 text-[34px] font-black leading-none text-amber-300 drop-shadow-[0_0_18px_rgba(251,191,36,0.22)]">
-                    {balanceLabel}
-                  </p>
-                </div>
-                <img src="/brand/linkcredit-coin-icon.png" alt="" className="h-16 w-16 rounded-full object-cover drop-shadow-[0_10px_22px_rgba(251,191,36,0.28)]" />
+          <div className="relative mt-7 overflow-hidden rounded-[1.65rem] border border-white/12 bg-[linear-gradient(145deg,rgba(255,255,255,0.18),rgba(255,255,255,0.06)_45%,rgba(37,99,255,0.12))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_18px_42px_rgba(0,0,0,0.22)] ring-1 ring-white/10 backdrop-blur-xl">
+            <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-amber-300/18 blur-2xl" />
+            <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+            <div className="pointer-events-none absolute -bottom-10 left-8 h-24 w-40 rounded-full bg-blue-400/16 blur-2xl" />
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[12px] font-black uppercase tracking-[0.20em] text-white/70 drop-shadow-[0_0_12px_rgba(255,255,255,0.26)]">LinkCredit</p>
+                <p className="mt-2 text-[34px] font-black leading-none text-amber-300 drop-shadow-[0_0_18px_rgba(251,191,36,0.22)]">
+                  {balanceLabel}
+                </p>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <Link
-                  to={ROUTES.helperLinkCredits}
-                  className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white px-3 py-2 text-sm font-black text-blue-700 shadow-[0_14px_28px_rgba(255,255,255,0.12),0_10px_24px_rgba(37,99,255,0.18)] ring-1 ring-white/70 transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(255,255,255,0.16),0_14px_30px_rgba(37,99,255,0.24)]"
-                >
-                  <span className="pointer-events-none absolute inset-y-0 -left-10 w-10 rotate-12 bg-white/70 blur-md transition-transform duration-700 group-hover:translate-x-40" />
-                  Pacotes
-                  <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                </Link>
-                <Link
-                  to={ROUTES.helperCredits}
-                  className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.06))] px-3 py-2 text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_12px_24px_rgba(0,0,0,0.12)] ring-1 ring-white/12 backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/16 hover:ring-white/22"
-                >
-                  <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/55 to-transparent" />
-                  Carteira
-                  <Coins className="h-3.5 w-3.5 transition-transform group-hover:rotate-12" />
-                </Link>
-              </div>
+              <img src="/brand/linkcredit-coin-icon.png" alt="" className="h-16 w-16 rounded-full object-cover drop-shadow-[0_10px_22px_rgba(251,191,36,0.28)]" />
             </div>
-          ) : null}
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <Link
+                to={ROUTES.helperLinkCredits}
+                className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white px-3 py-2 text-sm font-black text-blue-700 shadow-[0_14px_28px_rgba(255,255,255,0.12),0_10px_24px_rgba(37,99,255,0.18)] ring-1 ring-white/70 transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(255,255,255,0.16),0_14px_30px_rgba(37,99,255,0.24)]"
+              >
+                <span className="pointer-events-none absolute inset-y-0 -left-10 w-10 rotate-12 bg-white/70 blur-md transition-transform duration-700 group-hover:translate-x-40" />
+                Comprar Pacote
+                <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </Link>
+              <Link
+                to={isHelperMode ? ROUTES.helperCredits : ROUTES.payments}
+                className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.06))] px-3 py-2 text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_12px_24px_rgba(0,0,0,0.12)] ring-1 ring-white/12 backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/16 hover:ring-white/22"
+              >
+                <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/55 to-transparent" />
+                Carteira
+                <Coins className="h-3.5 w-3.5 transition-transform group-hover:rotate-12" />
+              </Link>
+            </div>
+          </div>
         </section>
 
         <section className="rounded-[1.9rem] border border-slate-100 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.065)]">

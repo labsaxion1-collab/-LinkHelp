@@ -5,7 +5,7 @@
  * Route table and lazy-loaded pages live in `src/routes/AppRoutes.tsx`.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { AppDataProvider } from '@/context/AppDataContext';
@@ -19,16 +19,6 @@ import { ServiceReviewProvider } from '@/context/ServiceReviewContext';
 import { AppRoutes } from '@/routes/AppRoutes';
 import { checkSupabaseConnection, isSupabaseConfigured } from '@/lib/supabase';
 import { authDevLog } from '@/lib/authDebug';
-import { IntroSplash } from '@/components/common/IntroSplash';
-
-/** Returns true if the intro was already shown this session */
-function introAlreadyPlayed(): boolean {
-  try {
-    return sessionStorage.getItem('lh:intro-played') === '1';
-  } catch {
-    return false;
-  }
-}
 
 function DevSupabasePing() {
   useEffect(() => {
@@ -42,8 +32,6 @@ function DevSupabasePing() {
 }
 
 export default function App() {
-  const [showIntro, setShowIntro] = useState(() => !introAlreadyPlayed());
-
   return (
     <ThemeProvider>
       <LanguageProvider>
@@ -65,11 +53,6 @@ export default function App() {
           </ToastProvider>
         </AuthProvider>
       </LanguageProvider>
-
-      {/* Intro splash — renderiza por cima, remove-se após o vídeo terminar */}
-      {showIntro && (
-        <IntroSplash onDone={() => setShowIntro(false)} />
-      )}
     </ThemeProvider>
   );
 }

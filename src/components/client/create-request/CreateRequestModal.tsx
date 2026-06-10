@@ -620,9 +620,12 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center lh-modal-overlay animate-in fade-in duration-200" onClick={requestClose}>
+    <div
+      className="fixed inset-0 z-[1000] flex items-start justify-center overflow-y-auto lh-modal-overlay p-3 pt-[calc(env(safe-area-inset-top)+60px+0.75rem)] pb-[calc(env(safe-area-inset-bottom)+4.25rem+0.75rem)] animate-in fade-in duration-200 md:pt-[calc(env(safe-area-inset-top)+72px+0.75rem)] md:pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:items-center sm:p-6"
+      onClick={requestClose}
+    >
       <div
-        className="lh-modal-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[min(92dvh,900px)] min-w-0"
+        className="lh-modal-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-60px-4.25rem-1.5rem)] md:max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-72px-1.5rem)] sm:max-h-[min(92dvh,900px)] min-w-0"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2 sm:gap-3 bg-gray-50/50 shrink-0 min-w-0">
@@ -677,7 +680,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                   {t('create_modal.marketplace_tip_body')}
                 </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 w-full max-w-full">
+              <div className="-mx-4 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex w-max gap-3">
                 {SERVICE_CATEGORIES.map((cat) => {
                   const IconComponent = getCategoryLucideIcon(cat.icon);
                   const accent = getCategoryAccent(cat.id);
@@ -687,7 +691,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                       type="button"
                       onClick={() => { setSelectedCategory(cat.id); setSelectedSubcategory(''); setStep('subcategory'); }}
                       className={clsx(
-                        'flex w-full max-w-full min-w-0 flex-col items-center rounded-2xl border-2 bg-white p-4 transition-all hover:shadow-md',
+                        'flex h-[132px] w-[126px] shrink-0 flex-col items-center justify-center rounded-2xl border-2 bg-white p-4 transition-all hover:shadow-md sm:w-[142px]',
                         accent.cardBorder,
                         accent.cardHover,
                       )}
@@ -699,6 +703,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                     </button>
                   );
                 })}
+                </div>
               </div>
             </div>
           )}

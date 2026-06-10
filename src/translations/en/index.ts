@@ -1808,6 +1808,12 @@ export const en = {
   helper_credits: {
     page_title: 'My credits',
     page_sub: 'Use LinkCredits to show interest and get chosen on opportunities. Clients never pay credits.',
+    hero_saldo_label: 'AVAILABLE BALANCE',
+    hero_tagline_1: 'Your credits,',
+    hero_tagline_2: 'more opportunities.',
+    hero_como_funciona: 'How does it work?',
+    stats_economize_title: 'Save smart',
+    stats_economize_sub: 'Buy only when you need it',
     purchase_coming_soon: 'Stripe package checkout will be enabled soon. Your balance and history are already synced.',
     coming_soon_cta: 'Coming soon',
     insufficient_title: 'Not enough credits',
@@ -2019,8 +2025,8 @@ export const en = {
     finalize: 'Complete task',
   },
   client_linkcredits: {
-    launch_promo: 'Launch offer: opening requests is free for the first 90 days.',
-    after_promo: 'After the promotional period, clients will use LinkCredits to open new requests.',
+    launch_promo: 'Creating requests uses LinkCredits — you get 20 LC free when you sign up.',
+    after_promo: 'Use your LinkCredits to post requests and hire helpers. Top up whenever you want.',
     admin_flag: 'CLIENT_LINKCREDITS_ENABLED=false — clients are not charged to open requests.',
   },
   client_how_it_works: {

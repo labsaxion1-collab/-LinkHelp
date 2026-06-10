@@ -1,12 +1,12 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, MessageCircle, ClipboardList, MapPin, UserRound } from 'lucide-react';
+import { Home, MessageCircle, ClipboardList, MapPin, UserRound, Plus } from 'lucide-react';
 import { ROUTES } from '@/utils/constants';
 import { isAppShellPath } from '@/utils/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { clsx } from 'clsx';
 
-type Item = { to: string; end?: boolean; labelKey: string; icon: typeof Home };
+type Item = { to: string; end?: boolean; labelKey: string; icon: typeof Home; state?: Record<string, boolean>; primary?: boolean };
 
 function navClass(active: boolean, isHome = false) {
   return clsx(
@@ -47,7 +47,7 @@ export function MobileBottomNav() {
     : [
         { to: ROUTES.messages, labelKey: 'mobile_nav.messages', icon: MessageCircle },
         { to: ROUTES.clientJobs, labelKey: 'mobile_nav.activities', icon: ClipboardList },
-        { to: ROUTES.clientDashboard, end: true, labelKey: 'mobile_nav.home', icon: Home },
+        { to: ROUTES.clientDashboard, end: true, labelKey: 'client_dashboard.create_order_now', icon: Plus, state: { openCreate: true }, primary: true },
         { to: ROUTES.map, labelKey: 'mobile_nav.map', icon: MapPin },
         { to: ROUTES.profile, labelKey: 'mobile_nav.profile_menu', icon: UserRound },
       ];
@@ -69,12 +69,13 @@ export function MobileBottomNav() {
       <ul className="lh-bottom-nav-list">
         {items.map((item) => {
           const Icon = item.icon;
-          const isHome = item.icon === Home;
+          const isHome = item.primary === true || item.icon === Home;
           const label = t(item.labelKey);
           return (
             <li key={item.to} className={clsx(isHome ? 'lh-bottom-nav-home' : 'lh-bottom-nav-item')}>
               <NavLink
                 to={item.to}
+                state={item.state}
                 end={item.end}
                 title={label}
                 aria-label={label}

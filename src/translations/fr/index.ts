@@ -1813,6 +1813,12 @@ export const fr = {
   helper_credits: {
     page_title: 'Mes credits',
     page_sub: 'Utilisez des LinkCredits pour montrer votre intérêt et être choisi. Le client ne paie pas de crédits.',
+    hero_saldo_label: 'SOLDE DISPONIBLE',
+    hero_tagline_1: 'Vos crédits,',
+    hero_tagline_2: 'plus d\'opportunités.',
+    hero_como_funciona: 'Comment ça fonctionne?',
+    stats_economize_title: 'Économisez malin',
+    stats_economize_sub: 'Achetez seulement quand nécessaire',
     purchase_coming_soon: 'L achat via Stripe sera active bientot. Votre solde et historique sont deja synchronises.',
     coming_soon_cta: 'Bientot',
     insufficient_title: 'Crédits insuffisants',
@@ -2025,8 +2031,8 @@ export const fr = {
     finalize: 'Terminer la tâche',
   },
   client_linkcredits: {
-    launch_promo: 'Lancement : ouvrir des demandes est gratuit pendant les 90 premiers jours.',
-    after_promo: 'Après la période promotionnelle, les clients utiliseront des LinkCredits pour ouvrir de nouvelles demandes.',
+    launch_promo: 'Créer des demandes utilise des LinkCredits — vous recevez 20 LC gratuits à l\'inscription.',
+    after_promo: 'Utilisez vos LinkCredits pour publier des demandes et engager des helpers. Rechargez quand vous voulez.',
     admin_flag: 'CLIENT_LINKCREDITS_ENABLED=false — les clients ne sont pas facturés pour ouvrir des demandes.',
   },
   client_how_it_works: {

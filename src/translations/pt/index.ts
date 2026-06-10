@@ -1821,6 +1821,12 @@ export const pt = {
   helper_credits: {
     page_title: 'Meus creditos',
     page_sub: 'Use LinkCredits para demonstrar interesse e ser escolhido em oportunidades. O cliente nao paga creditos.',
+    hero_saldo_label: 'SALDO DISPONÍVEL',
+    hero_tagline_1: 'Seus créditos,',
+    hero_tagline_2: 'mais oportunidades.',
+    hero_como_funciona: 'Como funciona?',
+    stats_economize_title: 'Economize com inteligência',
+    stats_economize_sub: 'Compre apenas quando precisar',
     purchase_coming_soon: 'Compra de pacotes via Stripe sera ativada em breve. Seu saldo e historico ja estao sincronizados.',
     coming_soon_cta: 'Em breve',
     insufficient_title: 'Creditos insuficientes',
@@ -2033,8 +2039,8 @@ export const pt = {
     finalize: 'Finalizar tarefa',
   },
   client_linkcredits: {
-    launch_promo: 'Lançamento: abrir chamados é grátis nos primeiros 90 dias.',
-    after_promo: 'Depois do período promocional, clientes poderão usar LinkCredits para abrir novos chamados.',
+    launch_promo: 'Criar pedidos usa LinkCredits — você ganha 20 LC grátis ao se cadastrar.',
+    after_promo: 'Use seus LinkCredits para publicar pedidos e contratar helpers. Recarregue quando quiser.',
     admin_flag: 'CLIENT_LINKCREDITS_ENABLED=false — clientes não são cobrados ao abrir chamados.',
   },
   client_how_it_works: {

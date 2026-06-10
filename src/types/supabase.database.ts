@@ -223,6 +223,7 @@ export type Database = {
           p_message?: string | null;
           p_proposed_amount?: number | null;
           p_interest_amount?: number;
+          p_is_exclusive?: boolean;
         };
         Returns: Json;
       };

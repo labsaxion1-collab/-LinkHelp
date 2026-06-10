@@ -70,6 +70,14 @@ async function assertRequestCanReceiveApplication(input: SubmitHelperApplication
   }
 }
 
+function isRpcExclusiveParamUnsupported(error: { code?: string; message?: string }): boolean {
+  const msg = (error.message ?? '').toLowerCase();
+  return (
+    error.code === 'PGRST202' &&
+    (msg.includes('p_is_exclusive') || msg.includes('is_exclusive'))
+  );
+}
+
 function mapRpcError(error: { message?: string }, interestCost: number): never {
   const msg = error.message ?? '';
   if (msg.includes('INSUFFICIENT_CREDITS')) {
@@ -85,25 +93,35 @@ function mapRpcError(error: { message?: string }, interestCost: number): never {
 
 async function submitViaRpc(
   input: SubmitHelperApplicationInput,
+  options?: { omitExclusiveParam?: boolean },
 ): Promise<SubmitHelperApplicationResult | null> {
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
 
   const interest = Math.max(0, Math.round(input.interestCost ?? 1));
-  const rpcPayload = {
+  const rpcPayload: Record<string, unknown> = {
     p_request_id: input.requestId,
     p_helper_id: input.helperId,
     p_client_id: input.clientId,
     p_message: input.message ?? null,
     p_proposed_amount: input.proposedAmount ?? null,
     p_interest_amount: interest,
-    p_is_exclusive: input.isExclusive === true,
   };
+  if (!options?.omitExclusiveParam) {
+    rpcPayload.p_is_exclusive = input.isExclusive === true;
+  }
 
   const { data, error } = await sb.rpc('helper_submit_application', rpcPayload);
 
   if (error) {
-    if (isPostgrestMissingResource(error) || isMissingColumnError(error, 'p_is_exclusive')) return null;
+    if (isPostgrestMissingResource(error)) return null;
+    if (
+      !options?.omitExclusiveParam &&
+      (isMissingColumnError(error, 'p_is_exclusive') || isRpcExclusiveParamUnsupported(error))
+    ) {
+      if (input.isExclusive) throw new Error('APPLICATION_BACKEND_NOT_READY');
+      return submitViaRpc(input, { omitExclusiveParam: true });
+    }
     mapRpcError(error, interest);
   }
 

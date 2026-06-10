@@ -40,8 +40,30 @@ create policy request_review_rewards_select_own on public.request_review_rewards
   using (auth.uid() = reviewer_id);
 
 -- ---------------------------------------------------------------------------
--- helper_submit_application — enforce 3 active applications per request
+-- helper_submit_application — max 3 active + exclusive candidatura (7 params)
+-- Do NOT downgrade to 6-param version; frontend sends p_is_exclusive.
+-- Full definition: supabase/apply_helper_exclusive_application_fix.sql
 -- ---------------------------------------------------------------------------
+
+alter table public.applications
+  add column if not exists is_exclusive boolean not null default false;
+
+alter table public.applications
+  add column if not exists proposed_amount numeric;
+
+alter table public.credit_transactions
+  add column if not exists request_id uuid references public.requests(id) on delete set null;
+
+alter table public.credit_transactions
+  add column if not exists application_id uuid references public.applications(id) on delete set null;
+
+alter table public.credit_transactions
+  add column if not exists balance_before int;
+
+-- See apply_helper_exclusive_application_fix.sql for helper_debit_application_interest body.
+
+drop function if exists public.helper_submit_application(uuid, uuid, uuid, text, numeric, int);
+drop function if exists public.helper_submit_application(uuid, uuid, uuid, text, numeric, int, boolean);
 
 create or replace function public.helper_submit_application(
   p_request_id uuid,
@@ -49,7 +71,8 @@ create or replace function public.helper_submit_application(
   p_client_id uuid,
   p_message text default null,
   p_proposed_amount numeric default null,
-  p_interest_amount int default 1
+  p_interest_amount int default 1,
+  p_is_exclusive boolean default false
 )
 returns jsonb
 language plpgsql
@@ -63,7 +86,7 @@ declare
   req_title text;
   helper_name text;
   proposal_part text;
-  active_count int;
+  active_count int := 0;
 begin
   if caller is null or caller <> p_helper_id then
     raise exception 'NOT_ALLOWED';
@@ -98,6 +121,16 @@ begin
     );
   end if;
 
+  if exists (
+    select 1
+    from public.applications
+    where request_id = p_request_id
+      and is_exclusive = true
+      and status in ('pending', 'viewed', 'accepted')
+  ) then
+    raise exception 'EXCLUSIVE_APPLICATION_LOCKED';
+  end if;
+
   select count(*)::int into active_count
   from public.applications
   where request_id = p_request_id
@@ -111,9 +144,9 @@ begin
 
   begin
     insert into public.applications (
-      request_id, helper_id, client_id, message, proposed_amount, status
+      request_id, helper_id, client_id, message, proposed_amount, is_exclusive, status
     ) values (
-      p_request_id, p_helper_id, p_client_id, p_message, p_proposed_amount, 'pending'
+      p_request_id, p_helper_id, p_client_id, p_message, p_proposed_amount, coalesce(p_is_exclusive, false), 'pending'
     )
     returning id into app_id;
   exception
@@ -158,14 +191,15 @@ begin
   );
 
   return jsonb_build_object(
-    'created', true,
+    'alreadyExists', false,
     'applicationId', app_id,
-    'conversationId', conv_id
+    'conversationId', conv_id,
+    'created', true
   );
 end;
 $$;
 
-grant execute on function public.helper_submit_application(uuid, uuid, uuid, text, numeric, int) to authenticated;
+grant execute on function public.helper_submit_application(uuid, uuid, uuid, text, numeric, int, boolean) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Helper marks service done → awaiting client confirmation + notify client

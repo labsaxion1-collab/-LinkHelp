@@ -1027,7 +1027,19 @@ export default function ClientDashboard() {
                     const clientBudgetRange = formatClientBudgetRangeLabel(job, t);
                     const canCancelJob = job.status === 'open' || job.status === 'in_progress';
                     const qualityScore = estimateClientLeadQuality(job.description, job.location, job.value, jobApps.length);
-                    const helperSlots = [...jobApps.slice(0, 3), ...Array(Math.max(0, 3 - jobApps.length)).fill(null)];
+                    const exclusiveApp = job.exclusiveHelperId
+                      ? jobApps.find((a) => a.helperId === job.exclusiveHelperId && a.isExclusive)
+                      : null;
+                    const isExclusiveLocked = exclusiveApp != null;
+                    // No empty slots — only real apps
+                    const displayApps = isExclusiveLocked ? [exclusiveApp] : jobApps.slice(0, 3);
+                    const isFull = !isExclusiveLocked && jobApps.length >= 3;
+                    const candidatesLabel = (() => {
+                      if (jobApps.length === 0) return t('client_dashboard.candidates_count_zero');
+                      if (isFull) return t('client_dashboard.candidates_count_full', { count: jobApps.length });
+                      if (jobApps.length === 1) return t('client_dashboard.candidates_count_one');
+                      return t('client_dashboard.candidates_count_other', { count: jobApps.length });
+                    })();
                     
                     return (
                       <div key={job.id} className="min-w-0 border border-blue-100 bg-white rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col shadow-sm">
@@ -1102,16 +1114,33 @@ export default function ClientDashboard() {
                         </div>
 
                         <div className="border-t border-gray-200 pt-4 mt-auto">
+                          {/* Candidates header */}
                           <div className="mb-3 flex items-center justify-between gap-2">
-                            <h4 className="font-black text-gray-900 text-sm">{t('client_dashboard.interested_helpers_title')}</h4>
-                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-600">{jobApps.length}/3</span>
+                            {isExclusiveLocked ? (
+                              <span className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-black text-amber-900">
+                                {t('client_dashboard.exclusive_application_badge')}
+                              </span>
+                            ) : (
+                              <span className={`text-xs font-black ${isFull ? 'text-emerald-700' : 'text-slate-700'}`}>
+                                {candidatesLabel}
+                              </span>
+                            )}
                           </div>
-                          <div className="grid grid-cols-1 gap-2">
-                            {helperSlots.map((app, index) => (
-                              app ? (
+
+                          {/* No candidates yet — compact empty state */}
+                          {displayApps.length === 0 && (
+                            <p className="text-xs font-medium text-slate-400 pb-1">
+                              {t('client_dashboard.candidates_count_zero')}
+                            </p>
+                          )}
+
+                          {/* Helper cards — only real apps, no empty slots */}
+                          {displayApps.length > 0 && (
+                            <div className="grid grid-cols-1 gap-2">
+                              {displayApps.map((app) => app && (
                                 <div
                                   key={app.id}
-                                  className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/70 p-3"
+                                  className={`min-w-0 rounded-xl border p-3 ${app.isExclusive ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-slate-50/70'}`}
                                 >
                                   <div className="flex min-w-0 items-center gap-3">
                                     <img src={app.helperAvatar} alt="" className="h-10 w-10 shrink-0 rounded-full border border-white object-cover shadow-sm" loading="lazy" />
@@ -1126,13 +1155,13 @@ export default function ClientDashboard() {
                                         <span>{t('client_dashboard.helper_jobs_count', { count: app.helperJobs })}</span>
                                       </p>
                                       {app.proposedAmount != null ? (
-                                        <p className="mt-1.5 text-xs font-black text-slate-900">
+                                        <p className="mt-1 text-xs font-black text-slate-900">
                                           {t('client_dashboard.helper_proposal_amount', {
                                             amount: formatMoneyAmount(app.proposedAmount, job.currency || 'CAD'),
                                           })}
                                         </p>
                                       ) : (
-                                        <p className="mt-1.5 text-xs font-black text-slate-700">
+                                        <p className="mt-1 text-xs font-semibold text-slate-600">
                                           {t('client_dashboard.helper_proposal_negotiable')}
                                         </p>
                                       )}
@@ -1141,14 +1170,14 @@ export default function ClientDashboard() {
                                       ) : null}
                                     </div>
                                   </div>
-                                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                                    {app.status === 'pending' || app.status === 'viewed' ? (
+                                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                                    {(app.status === 'pending' || app.status === 'viewed') ? (
                                       <>
                                         <button
                                           type="button"
                                           disabled={acceptingApplicationId === app.id}
                                           onClick={() => void handleAcceptProposal(job, app)}
-                                          className="order-1 w-full rounded-xl bg-green-600 px-3 py-2.5 text-xs font-black text-white hover:bg-green-700 disabled:opacity-60 sm:order-3 sm:w-auto sm:min-w-[9rem]"
+                                          className="flex-1 min-w-[7rem] rounded-xl bg-green-600 px-3 py-2 text-xs font-black text-white hover:bg-green-700 disabled:opacity-60"
                                         >
                                           {t('client_dashboard.accept_proposal')}
                                         </button>
@@ -1156,30 +1185,22 @@ export default function ClientDashboard() {
                                           type="button"
                                           onClick={() => {
                                             openHelperProfile(
-                                              {
-                                                id: app.helperId,
-                                                name: app.helperName,
-                                                avatar: app.helperAvatar,
-                                                rating: app.helperRating,
-                                                roleKey: 'pro_helper',
-                                                roleColor: '',
-                                                skills: [],
-                                                isOnline: true,
-                                                trainingCert: 'none',
-                                              },
+                                              { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
                                               app.id,
                                             );
                                           }}
-                                          className="order-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50 sm:order-1 sm:w-auto"
+                                          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50"
                                         >
                                           {t('helper_public.view_profile')}
                                         </button>
                                         <button
                                           type="button"
                                           onClick={() => void updateApplicationStatus(app.id, 'rejected').catch(console.error)}
-                                          className="order-3 w-full rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-100 sm:order-2 sm:w-auto"
+                                          className={`rounded-xl px-3 py-2 text-xs font-bold ${app.isExclusive ? 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}
                                         >
-                                          {t('client_dashboard.reject_helper')}
+                                          {app.isExclusive
+                                            ? t('client_dashboard.exclusive_reject_unlock')
+                                            : t('client_dashboard.reject_helper')}
                                         </button>
                                       </>
                                     ) : (
@@ -1188,21 +1209,11 @@ export default function ClientDashboard() {
                                           type="button"
                                           onClick={() => {
                                             openHelperProfile(
-                                              {
-                                                id: app.helperId,
-                                                name: app.helperName,
-                                                avatar: app.helperAvatar,
-                                                rating: app.helperRating,
-                                                roleKey: 'pro_helper',
-                                                roleColor: '',
-                                                skills: [],
-                                                isOnline: true,
-                                                trainingCert: 'none',
-                                              },
+                                              { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
                                               app.id,
                                             );
                                           }}
-                                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50 sm:w-auto"
+                                          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-blue-200 hover:bg-blue-50"
                                         >
                                           {t('helper_public.view_profile')}
                                         </button>
@@ -1210,13 +1221,13 @@ export default function ClientDashboard() {
                                           <button
                                             type="button"
                                             onClick={() => navigate(ROUTES.messages)}
-                                            className="inline-flex min-h-[32px] w-full items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 sm:w-auto"
+                                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700"
                                           >
                                             <Icons.MessageSquare className="h-3.5 w-3.5" />
                                             {t('client_dashboard.open_chat_with', { name: app.helperName.split(' ')[0] })}
                                           </button>
                                         ) : (
-                                          <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-bold text-slate-400 opacity-70 sm:w-auto">
+                                          <span className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-bold text-slate-400 opacity-70">
                                             <Icons.MessageSquare className="h-3.5 w-3.5" />
                                             {t('client_dashboard.chat_locked_until_accept')}
                                           </span>
@@ -1225,13 +1236,9 @@ export default function ClientDashboard() {
                                     )}
                                   </div>
                                 </div>
-                              ) : (
-                                <div key={`empty-${job.id}-${index}`} className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-3 text-sm font-bold text-slate-400">
-                                  {t('client_dashboard.waiting_helper_slot')}
-                                </div>
-                              )
-                            ))}
-                          </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     );

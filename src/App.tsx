@@ -5,7 +5,12 @@
  * Route table and lazy-loaded pages live in `src/routes/AppRoutes.tsx`.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { IntroSplash } from '@/components/common/IntroSplash';
+
+function introAlreadyPlayed(): boolean {
+  try { return sessionStorage.getItem('lh:intro-played') === '1'; } catch { return false; }
+}
 import { BrowserRouter } from 'react-router-dom';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { AppDataProvider } from '@/context/AppDataContext';
@@ -32,6 +37,8 @@ function DevSupabasePing() {
 }
 
 export default function App() {
+  const [showIntro, setShowIntro] = useState(() => !introAlreadyPlayed());
+
   return (
     <ThemeProvider>
       <LanguageProvider>
@@ -53,6 +60,7 @@ export default function App() {
           </ToastProvider>
         </AuthProvider>
       </LanguageProvider>
+      {showIntro && <IntroSplash onDone={() => setShowIntro(false)} />}
     </ThemeProvider>
   );
 }

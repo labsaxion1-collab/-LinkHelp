@@ -91,6 +91,8 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
           height: '100%',
           objectFit: 'cover',
           display: 'block',
+          transform: 'scale(1.12)',
+          transformOrigin: 'top center',
         }}
       />
     </div>

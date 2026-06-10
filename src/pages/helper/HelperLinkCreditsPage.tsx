@@ -8,7 +8,6 @@ import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { LINK_CREDIT_PACKAGES } from '@/config/linkCreditPackages';
 import { startLinkCreditCheckout } from '@/services/paymentService';
 import { ROUTES } from '@/utils/constants';
-import { Navigate } from 'react-router-dom';
 
 const linkCreditGlowClass = 'text-amber-300 drop-shadow-[0_0_14px_rgba(251,191,36,0.55)]';
 
@@ -64,11 +63,11 @@ function packageArtworkClass(packageId: string): string {
     case 'starter':
       return `${base} w-[4.5rem] scale-[0.72] sm:w-[5.25rem] sm:scale-[0.68] sm:group-hover:scale-[0.72]`;
     case 'popular':
-      return `${base} w-[7.5rem] scale-[1.02] sm:w-[9.8rem] sm:scale-[1.28] sm:group-hover:scale-[1.32]`;
+      return `${base} w-[9.5rem] scale-[1.28] group-hover:scale-[1.34] sm:w-[9.8rem] sm:scale-[1.48] sm:group-hover:scale-[1.54]`;
     case 'pro':
-      return `${base} w-[8rem] scale-[0.96] sm:w-[10.4rem] sm:scale-[1.18] sm:group-hover:scale-[1.22]`;
+      return `${base} w-[10rem] scale-[1.22] group-hover:scale-[1.28] sm:w-[10.4rem] sm:scale-[1.38] sm:group-hover:scale-[1.44]`;
     case 'power':
-      return `${base} w-[8.25rem] scale-[0.98] sm:w-[10.8rem] sm:scale-[1.20] sm:group-hover:scale-[1.24]`;
+      return `${base} w-[10.5rem] scale-[1.26] group-hover:scale-[1.32] sm:w-[10.8rem] sm:scale-[1.42] sm:group-hover:scale-[1.48]`;
     default:
       return `${base} w-full group-hover:scale-[1.04]`;
   }
@@ -96,10 +95,6 @@ export default function HelperLinkCreditsPage() {
   const cancelled = searchParams.get('cancelled') === 'true';
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  if (profile?.role !== 'helper') {
-    return <Navigate to={ROUTES.clientDashboard} replace />;
-  }
 
   const handleBuy = async (packageId: string, priceId: string) => {
     setError(null);
@@ -165,23 +160,24 @@ export default function HelperLinkCreditsPage() {
             return (
               <article
                 key={pkg.id}
-                className="group relative overflow-hidden rounded-[1.35rem] border border-white/85 bg-white/88 px-4 py-4 shadow-[0_14px_38px_rgba(92,67,16,0.10)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(92,67,16,0.15)] sm:px-5 sm:py-5"
+                className="group relative rounded-[1.35rem] border border-white/85 bg-white/88 px-4 py-4 shadow-[0_14px_38px_rgba(92,67,16,0.10)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(92,67,16,0.15)] sm:px-5 sm:py-5"
               >
                 <div className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${packageAccent(pkg.id)} opacity-80`} />
                 <div className="pointer-events-none absolute right-[22%] top-1/2 hidden h-24 w-24 -translate-y-1/2 rounded-full bg-amber-300/10 blur-2xl transition group-hover:bg-amber-300/20 sm:block" />
 
+                {pkg.badge ? (
+                  <div className="absolute inset-x-0 top-0 z-20 flex justify-center">
+                    <span className="rounded-b-full bg-[#245BFF] px-3 py-1 text-[9px] font-black uppercase tracking-wide text-white shadow-[0_4px_12px_rgba(36,91,255,0.35)]">
+                      {pkg.badge}
+                    </span>
+                  </div>
+                ) : null}
+
                 <div className="relative flex flex-col gap-4 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(8.4rem,0.95fr)_minmax(0,1fr)] sm:items-center sm:gap-5">
                   <div className="relative z-10 flex min-w-0 items-end justify-between gap-3 sm:block">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className={`text-lg font-black sm:text-xl ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
-                        {pkg.badge ? (
-                          <span className="rounded-full bg-[#245BFF] px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white">
-                            {pkg.badge}
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-2 whitespace-nowrap bg-gradient-to-b from-[#FFE36A] via-[#F3B51B] to-[#C98508] bg-clip-text text-[2.35rem] font-black leading-none tracking-tight text-transparent drop-shadow-[0_0_16px_rgba(217,169,40,0.28)] sm:text-6xl">
+                    <div className="ml-2 min-w-0">
+                      <h2 className={`text-xl font-black sm:text-2xl ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
+                      <p className="mt-2 whitespace-nowrap bg-gradient-to-b from-[#FFE36A] via-[#F3B51B] to-[#C98508] bg-clip-text text-[2.75rem] font-black leading-none tracking-tight text-transparent drop-shadow-[0_0_16px_rgba(217,169,40,0.28)] sm:text-6xl">
                         {pkg.credits}
                       </p>
                       <p className="mt-1.5 whitespace-nowrap text-[11px] font-black text-black sm:text-sm">LinkCredits</p>
@@ -213,7 +209,7 @@ export default function HelperLinkCreditsPage() {
                     ) : null}
                   </div>
 
-                  <div className="relative z-10 min-w-0 border-t border-slate-200/80 pt-3 sm:border-l sm:border-t-0 sm:bg-white/20 sm:pl-6 sm:pt-0">
+                  <div className="relative z-10 min-w-0 border-t border-slate-200/80 pt-3 text-center sm:border-l sm:border-t-0 sm:bg-white/20 sm:pl-6 sm:pt-0 sm:text-left">
                     <p className="whitespace-nowrap text-[15px] font-black leading-tight text-[#071238] drop-shadow-[0_8px_18px_rgba(7,18,56,0.10)] sm:text-xl">
                       {pkg.currency} ${pkg.price.toFixed(2)}
                     </p>
@@ -237,7 +233,7 @@ export default function HelperLinkCreditsPage() {
           })}
         </div>
 
-        <section className="mx-auto mt-7 grid max-w-3xl grid-cols-1 gap-4 rounded-[1.75rem] border border-black/[0.04] bg-white px-4 py-5 shadow-[0_12px_34px_rgba(15,23,42,0.05)] sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-slate-100 sm:px-5 sm:py-6">
+        <section className="mx-auto mt-7 grid max-w-3xl grid-cols-3 divide-x divide-slate-100 rounded-[1.75rem] border border-black/[0.04] bg-white px-4 py-5 shadow-[0_12px_34px_rgba(15,23,42,0.05)]">
           {[
             { label: 'Seguro e confiável', icon: Icons.ShieldCheck },
             { label: 'Transações rápidas', icon: Icons.Zap },
@@ -245,9 +241,9 @@ export default function HelperLinkCreditsPage() {
           ].map((benefit) => {
             const Icon = benefit.icon;
             return (
-              <div key={benefit.label} className="flex min-w-0 flex-col items-center px-2 text-center sm:px-5">
-                <Icon className="h-7 w-7 text-[#D9A928] drop-shadow-[0_0_10px_rgba(217,169,40,0.28)] sm:h-9 sm:w-9" />
-                <p className="mt-2 text-[10px] font-black uppercase leading-tight text-black sm:mt-3 sm:text-xs">{benefit.label}</p>
+              <div key={benefit.label} className="flex min-w-0 flex-col items-center px-2 text-center">
+                <Icon className="h-5 w-5 text-[#D9A928] drop-shadow-[0_0_10px_rgba(217,169,40,0.28)]" />
+                <p className="mt-1.5 text-[9px] font-black uppercase leading-tight text-black">{benefit.label}</p>
               </div>
             );
           })}

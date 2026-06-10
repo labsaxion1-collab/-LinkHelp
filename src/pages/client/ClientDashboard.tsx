@@ -977,7 +977,7 @@ export default function ClientDashboard() {
         {/* Main Feed */}
         {activeSidebarTab === 'dashboard' && (
           <div className="mx-auto w-full max-w-[680px] animate-in fade-in duration-300 md:max-w-6xl">
-            <section className="relative overflow-hidden bg-[#F5F7FB] px-0 pb-24 pt-0 sm:px-0 md:px-0">
+            <section className="relative bg-[#F5F7FB] px-0 pb-24 pt-0 sm:px-0 md:px-0">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_5%,rgba(37,99,255,0.12),transparent_28%),radial-gradient(circle_at_86%_20%,rgba(59,130,246,0.10),transparent_28%)]" />
               <div className="relative space-y-7">
                 <section className="px-4 sm:px-6 md:px-8">
@@ -991,15 +991,15 @@ export default function ClientDashboard() {
                     ].map((step, index) => {
                       const Icon = step.icon;
                       return (
-                        <article key={step.title} className="relative rounded-[1.5rem] bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.045)] ring-1 ring-slate-100">
-                          <span className="absolute -top-3 left-4 flex h-7 w-7 items-center justify-center rounded-full bg-[#2563FF] text-xs font-black text-white shadow-[0_10px_22px_rgba(37,99,255,0.24)]">{index + 1}</span>
-                          <div className="mt-4 flex items-start gap-3">
-                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EAF2FF] text-[#2563FF]">
-                              <Icon className="h-6 w-6" />
+                        <article key={step.title} className="relative rounded-[1.5rem] bg-white px-3 py-2.5 shadow-[0_12px_32px_rgba(15,23,42,0.045)] ring-1 ring-slate-100">
+                          <span className="absolute right-3 top-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#2563FF] text-[10px] font-black text-white shadow-[0_6px_14px_rgba(37,99,255,0.22)]">{index + 1}</span>
+                          <div className="flex items-center gap-3 pr-7">
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF2FF] text-[#2563FF]">
+                              <Icon className="h-5 w-5" />
                             </span>
                             <span>
                               <span className="block text-sm font-black text-[#0B1220]">{step.title}</span>
-                              <span className="mt-1 block text-xs font-semibold leading-relaxed text-[#64748B]">{step.body}</span>
+                              <span className="mt-0.5 block text-xs font-semibold leading-relaxed text-[#64748B]">{step.body}</span>
                             </span>
                           </div>
                         </article>
@@ -1031,15 +1031,15 @@ export default function ClientDashboard() {
                   </div>
                 </section>
 
-                <section className="relative px-4 sm:px-6 md:px-8">
-                  <div className="mb-4 flex items-center justify-between gap-3">
+                <section className="relative" style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)' }}>
+                  <div className="mb-4 flex items-center justify-between gap-3 px-4 sm:px-6 md:px-8">
                     <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_dashboard.popular_categories_title')}</h2>
                     <button type="button" onClick={() => openCreateModal()} className="inline-flex items-center gap-1 text-sm font-black text-[#2563FF]">
                       {t('client_dashboard.view_all_categories')} <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
-                  <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 [&::-webkit-scrollbar]:hidden">
-                    <div className="flex min-w-max gap-3">
+                  <div className="overflow-x-auto pb-2 [scrollbar-width:none] [scroll-snap-type:x_mandatory] [&::-webkit-scrollbar]:hidden">
+                    <div className="flex min-w-max gap-3 px-4 sm:px-6 md:px-8">
                     {SERVICE_CATEGORIES.slice(0, 8).map((cat, index) => {
                       const IconComponent = getCategoryLucideIcon(cat.icon);
                       const palette = [
@@ -1057,7 +1057,7 @@ export default function ClientDashboard() {
                           key={cat.id}
                           type="button"
                           onClick={() => openCreateModal(cat.id)}
-                          className="group min-h-[132px] w-[128px] shrink-0 rounded-[1.55rem] border border-white bg-white/92 p-4 text-center shadow-[0_12px_32px_rgba(15,23,42,0.055)] ring-1 ring-slate-100/70 backdrop-blur transition hover:-translate-y-0.5 hover:border-blue-100 hover:shadow-[0_18px_42px_rgba(37,99,255,0.10)] sm:w-[150px]"
+                          className="group min-h-[132px] w-[128px] shrink-0 rounded-[1.55rem] border border-white bg-white/92 p-4 text-center shadow-[0_12px_32px_rgba(15,23,42,0.055)] ring-1 ring-slate-100/70 backdrop-blur transition hover:-translate-y-0.5 hover:border-blue-100 hover:shadow-[0_18px_42px_rgba(37,99,255,0.10)] [scroll-snap-align:start] sm:w-[150px]"
                         >
                           <span className={clsx('mx-auto flex h-14 w-14 items-center justify-center rounded-[1.25rem] shadow-lg transition group-hover:scale-105', palette)}>
                             <IconComponent className="h-7 w-7" />

@@ -1,5 +1,5 @@
 import * as Icons from 'lucide-react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCredits } from '@/context/CreditContext';
@@ -130,10 +130,6 @@ export default function HelperCreditsPage() {
   const { profile } = useAuth();
   const { transactions, unlocks } = useCredits();
   const { balance, wallet, loading } = useWalletBalance();
-
-  if (profile?.role !== 'helper') {
-    return <Navigate to={ROUTES.clientDashboard} replace />;
-  }
 
   const creditsUsed = wallet?.totalSpent ?? 0;
   const balanceNum = normalizeLinkCreditsAmount(balance ?? 0);

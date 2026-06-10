@@ -87,6 +87,21 @@ export function AppRoutes() {
           <Route path={ROUTES.profile} element={<ProfilePage />} />
           <Route path={ROUTES.settings} element={<SettingsPage />} />
           <Route path={ROUTES.map} element={<LiveMapPage />} />
+          <Route
+            path={ROUTES.helperCredits}
+            element={UI_VISIBILITY.helperCredits ? <HelperCreditsPage /> : <Navigate to={ROUTES.dashboard} replace />}
+          />
+          <Route
+            path={ROUTES.helperLinkCredits}
+            element={
+              UI_VISIBILITY.helperCreditPurchase ? (
+                <HelperLinkCreditsPage />
+              ) : (
+                <Navigate to={ROUTES.helperCredits} replace />
+              )
+            }
+          />
+          <Route path={ROUTES.helperCreditsSuccess} element={<HelperCreditsSuccessPage />} />
 
           <Route element={<RoleRoute requiredRole="client" />}>
             <Route path="/client" element={<Navigate to={ROUTES.clientDashboard} replace />} />
@@ -119,21 +134,6 @@ export function AppRoutes() {
                 )
               }
             />
-            <Route
-              path={ROUTES.helperCredits}
-              element={UI_VISIBILITY.helperCredits ? <HelperCreditsPage /> : <Navigate to={ROUTES.helperDashboard} replace />}
-            />
-            <Route
-              path={ROUTES.helperLinkCredits}
-              element={
-                UI_VISIBILITY.helperCreditPurchase ? (
-                  <HelperLinkCreditsPage />
-                ) : (
-                  <Navigate to={ROUTES.helperCredits} replace />
-                )
-              }
-            />
-            <Route path={ROUTES.helperCreditsSuccess} element={<HelperCreditsSuccessPage />} />
           </Route>
 
           <Route element={<AdminProtectedRoute />}>

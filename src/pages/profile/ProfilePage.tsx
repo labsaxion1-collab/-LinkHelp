@@ -384,7 +384,7 @@ export default function ProfilePage() {
                 <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </Link>
               <Link
-                to={isHelperMode ? ROUTES.helperCredits : ROUTES.payments}
+                to={ROUTES.helperCredits}
                 className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.06))] px-3 py-2 text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_12px_24px_rgba(0,0,0,0.12)] ring-1 ring-white/12 backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/16 hover:ring-white/22"
               >
                 <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/55 to-transparent" />

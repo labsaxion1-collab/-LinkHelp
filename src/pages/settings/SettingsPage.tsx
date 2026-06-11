@@ -566,8 +566,8 @@ export default function SettingsPage() {
 
       {/* Delete Account Modal */}
       {showDeleteModal ? (
-        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/50 p-4 sm:items-center">
-          <div className="w-full max-w-sm rounded-[1.75rem] bg-white p-6 shadow-[0_32px_80px_rgba(0,0,0,0.28)]">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="w-full max-w-sm overflow-y-auto rounded-[1.75rem] bg-white p-6 shadow-[0_32px_80px_rgba(0,0,0,0.28)]" style={{ maxHeight: 'calc(100dvh - 2rem)' }}>
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
               <span className="text-2xl">⚠️</span>
             </div>
@@ -584,13 +584,14 @@ export default function SettingsPage() {
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder="EXCLUIR"
+                autoCapitalize="characters"
                 className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-bold tracking-widest"
               />
             </div>
             <div className="mt-5 flex flex-col gap-2">
               <button
                 type="button"
-                disabled={deleteConfirmText !== 'EXCLUIR' || deleting}
+                disabled={deleteConfirmText.trim().toUpperCase() !== 'EXCLUIR' || deleting}
                 onClick={() => void deleteAccount()}
                 className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-black text-white hover:bg-red-700 disabled:opacity-50"
               >

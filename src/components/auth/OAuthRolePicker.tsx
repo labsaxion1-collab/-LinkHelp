@@ -7,46 +7,41 @@ type Props = {
   busy?: boolean;
   accountPreviouslyRegistered?: boolean;
   onConfirm: (role: 'client' | 'helper') => void | Promise<void>;
+  onReject?: () => void | Promise<void>;
 };
 
-export function OAuthRolePicker({ busy, accountPreviouslyRegistered, onConfirm }: Props) {
+export function OAuthRolePicker({ busy, accountPreviouslyRegistered, onConfirm, onReject }: Props) {
   const { t } = useLanguage();
   const [mode, setMode] = useState<'client' | 'helper' | null>(null);
-  const [helperModalOpen, setHelperModalOpen] = useState(false);
-  const [helperLegalOk, setHelperLegalOk] = useState(false);
-
-  const selectClient = () => {
-    setMode('client');
-    setHelperLegalOk(false);
-    setHelperModalOpen(false);
-  };
-
-  const selectHelper = () => {
-    setMode('helper');
-    if (!helperLegalOk) setHelperModalOpen(true);
-  };
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
+  const [pendingRole, setPendingRole] = useState<'client' | 'helper' | null>(null);
 
   const handleContinue = () => {
     if (!mode) return;
-    if (mode === 'helper' && !helperLegalOk) {
-      setHelperModalOpen(true);
-      return;
-    }
-    void onConfirm(mode);
+    setPendingRole(mode);
+    setTermsModalOpen(true);
+  };
+
+  const handleTermsReject = () => {
+    setTermsModalOpen(false);
+    setPendingRole(null);
+    void onReject?.();
+  };
+
+  const handleTermsConfirm = () => {
+    if (!pendingRole) return;
+    setTermsModalOpen(false);
+    void onConfirm(pendingRole);
+    setPendingRole(null);
   };
 
   return (
     <>
       <HelperTermsGateModal
-        open={helperModalOpen}
-        onClose={() => {
-          setHelperModalOpen(false);
-          if (!helperLegalOk) setMode(null);
-        }}
-        onConfirm={() => {
-          setHelperLegalOk(true);
-          setHelperModalOpen(false);
-        }}
+        open={termsModalOpen}
+        onReject={handleTermsReject}
+        onConfirm={handleTermsConfirm}
+        loading={busy}
       />
 
       <div className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-10 bg-gradient-to-b from-slate-50 to-white">
@@ -65,7 +60,7 @@ export function OAuthRolePicker({ busy, accountPreviouslyRegistered, onConfirm }
                 mode === 'client' ? 'border-blue-500 bg-blue-50/40 ring-2 ring-blue-500/20' : 'border-slate-200 bg-white'
               }`}
             >
-              <input type="radio" name="oauth-mode" className="sr-only" checked={mode === 'client'} onChange={selectClient} />
+              <input type="radio" name="oauth-mode" className="sr-only" checked={mode === 'client'} onChange={() => setMode('client')} />
               <span className="flex flex-1 items-center gap-3">
                 <span
                   className={`p-2.5 rounded-xl flex items-center justify-center ${
@@ -87,7 +82,7 @@ export function OAuthRolePicker({ busy, accountPreviouslyRegistered, onConfirm }
                 mode === 'helper' ? 'border-blue-500 bg-blue-50/40 ring-2 ring-blue-500/20' : 'border-slate-200 bg-white'
               }`}
             >
-              <input type="radio" name="oauth-mode" className="sr-only" checked={mode === 'helper'} onChange={selectHelper} />
+              <input type="radio" name="oauth-mode" className="sr-only" checked={mode === 'helper'} onChange={() => setMode('helper')} />
               <span className="flex flex-1 items-center gap-3">
                 <span
                   className={`p-2.5 rounded-xl flex items-center justify-center ${

@@ -35,9 +35,7 @@ export default function RegisterPage() {
   const [cityCanon, setCityCanon] = useState('');
   const [province, setProvince] = useState('');
   const [country, setCountry] = useState('');
-  const [acceptedClientTerms, setAcceptedClientTerms] = useState(false);
-  const [helperLegalOk, setHelperLegalOk] = useState(false);
-  const [helperModalOpen, setHelperModalOpen] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,41 +53,12 @@ export default function RegisterPage() {
     navigate(dashboardPathForRole(role), { replace: true });
   }, [isConfigured, authBootstrapped, authLoading, session, profile, navigate, refreshProfile]);
 
-  const selectClientMode = () => {
-    setUserMode('client');
-    setHelperLegalOk(false);
-    setHelperModalOpen(false);
-  };
+  const selectClientMode = () => setUserMode('client');
 
-  const selectHelperMode = () => {
-    setUserMode('helper');
-    if (!helperLegalOk) setHelperModalOpen(true);
-  };
+  const selectHelperMode = () => setUserMode('helper');
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setErrorKey(null);
-    if (!userMode) {
-      setError(t('auth.register_need_mode'));
-      return;
-    }
-    if (userMode === 'client' && !acceptedClientTerms) {
-      setError(t('auth.register_need_terms_client'));
-      return;
-    }
-    if (userMode === 'helper' && !helperLegalOk) {
-      setError(t('auth.register_need_terms_helper'));
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError(t('register_page.password_mismatch'));
-      return;
-    }
-    if (!isConfigured) {
-      showToast(t('auth.errors.env_not_ready'), 'info');
-      return;
-    }
+  const completeRegistration = async () => {
+    if (!userMode || !isConfigured) return;
     setSubmitting(true);
     const now = new Date().toISOString();
     const ut = userMode === 'helper' ? 'helper' : 'client';
@@ -99,13 +68,14 @@ export default function RegisterPage() {
       city: cityCanon.trim() || city.trim(),
       region: province.trim(),
       country: country.trim(),
-      acceptedTerms: userMode === 'client' ? acceptedClientTerms : true,
+      acceptedTerms: true,
       acceptedTermsAt: now,
       helperTermsAccepted: ut === 'helper',
       helperTermsAcceptedAt: ut === 'helper' ? now : undefined,
       preferredLanguage: language,
     });
     setSubmitting(false);
+    setTermsModalOpen(false);
     if (err) {
       if (err.messageKey === 'auth.errors.profile_create') {
         const loginErr = await signInWithEmail(email, password);
@@ -127,16 +97,35 @@ export default function RegisterPage() {
     const sb = getSupabase();
     if (sb) {
       const {
-        data: { session },
+        data: { session: newSession },
       } = await sb.auth.getSession();
-      if (session) {
-        writeStoredAppMode(ut, session.user.id);
+      if (newSession) {
+        writeStoredAppMode(ut, newSession.user.id);
         navigate(dashboardPathForRole(ut), { replace: true });
         showToast(t('register_page.welcome'), 'success');
         return;
       }
     }
     navigate(ROUTES.login, { replace: true, state: { registered: true } });
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setErrorKey(null);
+    if (!userMode) {
+      setError(t('auth.register_need_mode'));
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError(t('register_page.password_mismatch'));
+      return;
+    }
+    if (!isConfigured) {
+      showToast(t('auth.errors.env_not_ready'), 'info');
+      return;
+    }
+    setTermsModalOpen(true);
   };
 
   const handleGoogle = async () => {
@@ -173,15 +162,10 @@ export default function RegisterPage() {
   return (
     <div className="lh-auth-bg min-h-[100dvh] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative">
       <HelperTermsGateModal
-        open={helperModalOpen}
-        onClose={() => {
-          setHelperModalOpen(false);
-          if (!helperLegalOk) setUserMode(null);
-        }}
-        onConfirm={() => {
-          setHelperLegalOk(true);
-          setHelperModalOpen(false);
-        }}
+        open={termsModalOpen}
+        onReject={() => setTermsModalOpen(false)}
+        onConfirm={() => void completeRegistration()}
+        loading={submitting}
       />
 
       <Link
@@ -381,19 +365,6 @@ export default function RegisterPage() {
                 />
               </div>
             </div>
-
-            {userMode === 'client' ? (
-              <label className="flex gap-3 cursor-pointer items-start rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3.5 text-sm text-slate-800 font-medium leading-snug hover:bg-slate-50 transition-colors">
-                <input
-                  type="checkbox"
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                  checked={acceptedClientTerms}
-                  onChange={(e) => setAcceptedClientTerms(e.target.checked)}
-                  disabled={submitting}
-                />
-                <span>{t('auth.client_terms_checkbox')}</span>
-              </label>
-            ) : null}
 
             <div className="pt-1">
               <button

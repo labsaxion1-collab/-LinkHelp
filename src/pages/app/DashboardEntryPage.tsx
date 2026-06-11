@@ -16,7 +16,7 @@ import { writeStoredAppMode } from '@/utils/appModeStorage';
  */
 export default function DashboardEntryPage() {
   const navigate = useNavigate();
-  const { session, profile, authBootstrapped, authLoading, refreshProfile, isConfigured } = useAuth();
+  const { session, profile, authBootstrapped, authLoading, refreshProfile, isConfigured, signOut } = useAuth();
   const attempts = useRef(0);
   const redirected = useRef(false);
   const [roleBusy, setRoleBusy] = useState(false);
@@ -115,12 +115,19 @@ export default function DashboardEntryPage() {
     return <Navigate to={ROUTES.login} replace />;
   }
 
+  const handleRoleReject = async () => {
+    authFlowLog('OAuth role picker rejected terms', { userId: session?.user?.id });
+    await signOut();
+    navigate(ROUTES.register, { replace: true });
+  };
+
   if (needsRole) {
     return (
       <OAuthRolePicker
         busy={roleBusy}
         accountPreviouslyRegistered={profileIsDeleted(profile)}
         onConfirm={handleRoleConfirm}
+        onReject={handleRoleReject}
       />
     );
   }

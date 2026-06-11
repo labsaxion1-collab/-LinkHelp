@@ -66,7 +66,7 @@ function formatClientBudgetRangeLabel(job: Job, t: (key: string, vars?: Record<s
   });
 }
 type RecommendedHelperCard = {
-  id: number;
+  id: string | number;
   name: string;
   roleKey: 'pro_helper' | 'elite' | 'trusted';
   roleColor: string;
@@ -217,6 +217,11 @@ export default function ClientDashboard() {
     return profileApp ? isChatUnlockedApplication(profileApp) : false;
   }, [profileApp]);
 
+  const isHelperChatUnlocked = (helperId: string | number) => {
+    const helperChatApp = findClientHelperApplication(String(helperId), myJobIds, applications);
+    return helperChatApp ? isChatUnlockedApplication(helperChatApp) : false;
+  };
+
   /** True when the helper has an active (pending/viewed) application — pre-hire chat allowed. */
   const profilePreMatchEligible = useMemo(() => {
     if (!profileApp || profileChatUnlocked) return false;
@@ -330,7 +335,7 @@ export default function ClientDashboard() {
   });
 
   const clientJobs = useMemo(
-    () => jobs.filter((j) => j.clientId === me.id && isOfficialServiceCategoryId(j.category)),
+    () => jobs.filter((j) => j.clientId === me.id),
     [jobs, me.id],
   );
   const activeClientJobs = useMemo(
@@ -1143,14 +1148,14 @@ export default function ClientDashboard() {
                        <button
                          type="button"
                          onClick={() => {
-                           if (isClientChatUnlockedForHelper(String(helper.id), myJobIds, applications)) {
+                           if (isHelperChatUnlocked(helper.id)) {
                              navigate(ROUTES.messages);
                              return;
                            }
                            showToast(t('helper_profile.chat_locked_hint'), 'info');
                          }}
                          className={`px-4 py-2 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
-                           isClientChatUnlockedForHelper(String(helper.id), myJobIds, applications)
+                           isHelperChatUnlocked(helper.id)
                              ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                              : 'cursor-not-allowed bg-gray-50 text-gray-400 opacity-70'
                          }`}
@@ -1223,7 +1228,6 @@ export default function ClientDashboard() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
                 {jobs
                   .filter((j) => j.clientId === me.id)
-                  .filter((j) => isOfficialServiceCategoryId(j.category))
                   .filter((j) => {
                     const visible = isJobVisibleToClient(j, hiddenJobIds, {
                       includeHistory: jobsListTab === 'history',
@@ -1239,7 +1243,6 @@ export default function ClientDashboard() {
                   .length > 0 ? (
                   jobs
                     .filter((j) => j.clientId === me.id)
-                    .filter((j) => isOfficialServiceCategoryId(j.category))
                     .filter((j) => {
                       if (jobsListTab === 'history') {
                         return (

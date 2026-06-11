@@ -727,7 +727,7 @@ export default function HelperDashboard() {
   const displayedJobs = useMemo(() => {
     const viewerId = helperUserId ?? me?.id ?? '';
     let list = jobs.filter(
-      (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== viewerId && getJobServiceCategoryId(j),
+      (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== viewerId,
     );
     if (activeTab === 'emergencia') {
       list = list.filter((j) => j.urgency === 'high');
@@ -779,7 +779,6 @@ export default function HelperDashboard() {
         j.status === 'open' &&
         !isJobCancelled(j) &&
         j.clientId !== (helperUserId ?? me?.id ?? '') &&
-        getJobServiceCategoryId(j) &&
         !helperEngagedJobIds.has(j.id) &&
         !isRequestExclusiveLockedForViewer(j, applications, helperUserId ?? me?.id ?? '') &&
         !isJobInterestFull(j.applicantCount ?? 0),

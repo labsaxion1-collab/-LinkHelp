@@ -27,6 +27,16 @@ type RpcSubmitRow = {
   alreadyExists?: boolean;
 };
 
+type RpcSubmitPayload = {
+  p_request_id: string;
+  p_helper_id: string;
+  p_client_id: string;
+  p_message: string | null;
+  p_proposed_amount: number | null;
+  p_interest_amount: number;
+  p_is_exclusive?: boolean;
+};
+
 const ACTIVE_APPLICATION_STATUSES = ['pending', 'viewed', 'accepted'] as const;
 
 async function requestHasExclusiveLock(
@@ -124,7 +134,7 @@ async function submitViaRpc(
   if (!sb) throw new Error('NO_SUPABASE');
 
   const interest = Math.max(0, Math.round(input.interestCost ?? 1));
-  const rpcPayload: Record<string, unknown> = {
+  const rpcPayload: RpcSubmitPayload = {
     p_request_id: input.requestId,
     p_helper_id: input.helperId,
     p_client_id: input.clientId,

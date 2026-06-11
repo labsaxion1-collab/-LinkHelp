@@ -118,7 +118,7 @@ export default function DashboardEntryPage() {
   const handleRoleReject = async () => {
     authFlowLog('OAuth role picker rejected terms', { userId: session?.user?.id });
     await signOut();
-    navigate(ROUTES.register, { replace: true });
+    navigate(ROUTES.signup, { replace: true });
   };
 
   if (needsRole) {

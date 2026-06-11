@@ -13,7 +13,7 @@ export function normalizeProfileRole(raw: unknown): ProfileRole {
 
 /** Resolve workspace role — profile row wins when present; stored mode only before profile loads. */
 export function resolveEffectiveRole(
-  profile: { role?: unknown } | null | undefined,
+  profile: { role?: unknown; deleted_at?: unknown } | null | undefined,
   user?: User | null,
   storedMode?: AppMode | null,
 ): ProfileRole {

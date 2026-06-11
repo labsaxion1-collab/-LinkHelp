@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowUpRight,
   BadgeCheck,
+  Briefcase,
   Check,
   ChevronRight,
   Coins,

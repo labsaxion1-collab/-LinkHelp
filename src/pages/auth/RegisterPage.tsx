@@ -1,6 +1,20 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, ArrowLeft, Globe, Briefcase, Search, CheckCircle2 } from 'lucide-react';
+import {
+  Mail,
+  ArrowLeft,
+  Globe,
+  Briefcase,
+  Search,
+  CheckCircle2,
+  User,
+  LockKeyhole,
+  ShieldCheck,
+  Zap,
+  UsersRound,
+  ArrowRight,
+  Sparkles,
+} from 'lucide-react';
 import { ROUTES } from '@/utils/constants';
 import { writeStoredAppMode } from '@/utils/appModeStorage';
 import { dashboardPathForRole, normalizeProfileRole, resolveEffectiveRole } from '@/utils/userRole';
@@ -159,7 +173,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="lh-auth-bg min-h-[100dvh] flex flex-col">
+    <div className="min-h-[100dvh] overflow-x-hidden bg-[linear-gradient(180deg,#F8FBFF_0%,#EEF5FF_46%,#F7F9FD_100%)] text-[#0B1220]">
       <HelperTermsGateModal
         open={termsModalOpen}
         onReject={() => setTermsModalOpen(false)}
@@ -167,244 +181,295 @@ export default function RegisterPage() {
         loading={submitting}
       />
 
-      <div className="w-full px-4 pt-3 pb-1 sm:px-6 lg:px-8">
-        <Link
-          to={ROUTES.home}
-          className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-xl transition-colors hover:bg-white/[0.1] hover:text-white"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {t('login_page.back_home')}
-        </Link>
-      </div>
+      <main className="mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col px-5 pb-8 pt-[calc(env(safe-area-inset-top)+1.25rem)] sm:px-8 lg:px-10">
+        <div className="relative">
+          <div className="pointer-events-none absolute -right-20 top-4 h-64 w-64 rounded-full bg-[#2563FF]/10 blur-3xl" />
+          <div className="pointer-events-none absolute -left-24 top-64 h-52 w-52 rounded-full bg-cyan-300/20 blur-3xl" />
 
-      <div className="flex-1 flex flex-col justify-center px-4 pb-10 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-xl text-center flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <h2 className="text-center text-3xl font-black tracking-tight text-white">{t('register_page.title')}</h2>
-          <p className="mt-2 text-center text-sm text-slate-200/88 max-w-sm leading-relaxed">{t('register_page.subtitle')}</p>
-        </div>
+          <Link
+            to={ROUTES.home}
+            className="relative z-10 inline-flex min-h-12 items-center gap-3 rounded-full border border-white bg-white/90 px-5 text-sm font-black text-[#2563FF] shadow-[0_16px_40px_rgba(15,23,42,0.07)] ring-1 ring-slate-200/60 backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            {t('login_page.back_home')}
+          </Link>
 
-        <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-[500px] animate-in fade-in slide-in-from-bottom-8 duration-700">
-        <div className="bg-white/[0.82] backdrop-blur-3xl py-8 px-4 shadow-[0_36px_120px_rgba(0,0,0,0.48)] sm:rounded-3xl sm:px-10 border border-white/35 ring-1 ring-white/45">
-          {error && (
-            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 font-medium animate-in fade-in zoom-in-95 duration-200">
-              <p>{error}</p>
-              {errorKey === 'auth.errors.email_taken' ? (
-                <p className="mt-2">
-                  <Link to={ROUTES.login} className="font-bold text-red-900 underline underline-offset-2 hover:text-red-950">
-                    {t('register_page.login_link')}
-                  </Link>
-                </p>
-              ) : null}
+          <section className="relative z-10 mt-7 grid items-center gap-7 md:grid-cols-[1fr_0.92fr]">
+            <div>
+              <h1 className="max-w-sm text-[56px] font-black leading-[0.88] tracking-tight text-[#0B1220] sm:text-7xl">
+                Crie sua <span className="block text-[#2563FF] drop-shadow-[0_10px_30px_rgba(37,99,255,0.24)]">conta</span>
+              </h1>
+              <p className="mt-5 max-w-md text-lg font-semibold leading-8 text-[#475569]">
+                Encontre ajuda, ofereca servicos e crie conexoes na sua regiao.
+              </p>
             </div>
-          )}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
-              <h3 className="text-base font-black text-slate-900">{t('register_page.account_type_heading')}</h3>
-              <p className="mt-1 text-xs font-medium text-slate-500">{t('register_page.account_type_sub')}</p>
-                            <div className="mt-4 grid grid-cols-1 gap-3">
+            <div className="relative min-h-[250px] md:min-h-[330px]">
+              <div className="absolute inset-0 rounded-[2.5rem] bg-[radial-gradient(circle_at_50%_45%,rgba(37,99,255,0.15),transparent_58%)]" />
+              <img
+                src="/brand/register-hero-identity.jpg"
+                alt=""
+                className="relative z-10 mx-auto h-[280px] w-full max-w-[440px] object-contain mix-blend-screen drop-shadow-[0_26px_46px_rgba(37,99,255,0.28)] md:h-[350px]"
+              />
+              <Sparkles className="absolute right-12 top-7 h-5 w-5 fill-[#2563FF] text-[#2563FF]" />
+              <Sparkles className="absolute bottom-10 left-10 h-4 w-4 fill-cyan-400 text-cyan-400" />
+            </div>
+          </section>
+
+          <section className="relative z-10 mt-3 grid grid-cols-3 overflow-hidden rounded-[2rem] border border-white/80 bg-white/60 shadow-[0_14px_40px_rgba(15,23,42,0.04)] backdrop-blur-xl">
+            {[
+              { icon: ShieldCheck, title: 'Seguro', sub: 'e confiavel' },
+              { icon: Zap, title: 'Rapido', sub: 'e facil' },
+              { icon: UsersRound, title: 'Conecte-se', sub: 'na sua regiao' },
+            ].map((benefit, index) => {
+              const Icon = benefit.icon;
+              return (
+                <div key={benefit.title} className="relative flex flex-col items-center px-2 py-5 text-center">
+                  {index > 0 ? <span className="absolute left-0 top-6 h-16 w-px bg-slate-200" /> : null}
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#2563FF] shadow-[0_12px_24px_rgba(37,99,255,0.10)] ring-1 ring-blue-100">
+                    <Icon className="h-6 w-6" />
+                  </span>
+                  <span className="mt-3 text-sm font-black text-[#0B1220]">{benefit.title}</span>
+                  <span className="mt-0.5 text-xs font-semibold text-[#64748B]">{benefit.sub}</span>
+                </div>
+              );
+            })}
+          </section>
+
+          <section className="relative z-10 mt-7 rounded-[2rem] border border-[#E9EEF7] bg-white/92 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-7 lg:p-8">
+            {error && (
+              <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800 animate-in fade-in zoom-in-95 duration-200">
+                <p>{error}</p>
+                {errorKey === 'auth.errors.email_taken' ? (
+                  <p className="mt-2">
+                    <Link to={ROUTES.login} className="font-black text-red-900 underline underline-offset-2 hover:text-red-950">
+                      {t('register_page.login_link')}
+                    </Link>
+                  </p>
+                ) : null}
+              </div>
+            )}
+
+            <form className="space-y-5" onSubmit={handleSubmit}>
+              <div>
+                <h2 className="text-2xl font-black tracking-tight text-[#0B1220]">{t('register_page.account_type_heading')}</h2>
+                <p className="mt-2 text-sm font-semibold leading-relaxed text-[#64748B]">{t('register_page.account_type_sub')}</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
                 <label
-                  className={`relative flex cursor-pointer rounded-2xl border p-4 shadow-sm transition-all hover:shadow-md hover:border-slate-300 ${
-                    userMode === 'client' ? 'border-blue-500 bg-blue-50/40 ring-2 ring-blue-500/20' : 'border-slate-200 bg-white'
+                  className={`relative flex cursor-pointer items-center gap-4 rounded-[1.45rem] border p-4 transition-all ${
+                    userMode === 'client'
+                      ? 'border-[#2563FF] bg-[#F4F8FF] shadow-[0_16px_42px_rgba(37,99,255,0.14)] ring-4 ring-blue-500/10'
+                      : 'border-[#E9EEF7] bg-white shadow-[0_10px_26px_rgba(15,23,42,0.035)] hover:border-blue-200'
                   }`}
                 >
                   <input type="radio" name="mode" value="client" className="sr-only" onChange={selectClientMode} checked={userMode === 'client'} />
-                  <span className="flex flex-1 items-center gap-3">
-                                        <div
-                      className={`p-2.5 rounded-xl flex items-center justify-center transition-colors ${
-                        userMode === 'client' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
-                      }`}
-                    >
-                      <Search className="w-5 h-5" />
-                    </div>
-                    <span className="flex flex-col text-left">
-                      <span className="block text-sm font-bold text-slate-900">{t('register_page.mode_client_title')}</span>
-                      <span className="block text-xs font-medium text-slate-500 mt-0.5">{t('register_page.mode_client_sub')}</span>
-                    </span>
+                  <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#F1F6FF] text-[#2563FF] shadow-inner">
+                    <Search className="h-8 w-8" />
                   </span>
-                  {userMode === 'client' ? <CheckCircle2 className="h-5 w-5 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" /> : null}
+                  <span className="min-w-0 flex-1 text-left">
+                    <span className="block text-xl font-black text-[#0B1220]">{t('register_page.mode_client_title')}</span>
+                    <span className="mt-1 block text-sm font-semibold leading-relaxed text-[#64748B]">{t('register_page.mode_client_sub')}</span>
+                  </span>
+                  <span
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${
+                      userMode === 'client' ? 'border-[#2563FF] bg-[#2563FF] text-white' : 'border-slate-200 bg-white text-transparent'
+                    }`}
+                  >
+                    <CheckCircle2 className="h-5 w-5" />
+                  </span>
                 </label>
 
                 <label
-                  className={`relative flex cursor-pointer rounded-2xl border p-4 shadow-sm transition-all hover:shadow-md hover:border-slate-300 ${
-                    userMode === 'helper' ? 'border-blue-500 bg-blue-50/40 ring-2 ring-blue-500/20' : 'border-slate-200 bg-white'
+                  className={`relative flex cursor-pointer items-center gap-4 rounded-[1.45rem] border p-4 transition-all ${
+                    userMode === 'helper'
+                      ? 'border-[#2563FF] bg-[#F4F8FF] shadow-[0_16px_42px_rgba(37,99,255,0.14)] ring-4 ring-blue-500/10'
+                      : 'border-[#E9EEF7] bg-white shadow-[0_10px_26px_rgba(15,23,42,0.035)] hover:border-blue-200'
                   }`}
                 >
                   <input type="radio" name="mode" value="helper" className="sr-only" onChange={selectHelperMode} checked={userMode === 'helper'} />
-                  <span className="flex flex-1 items-center gap-3">
-                    <div
-                      className={`p-2.5 rounded-xl flex items-center justify-center transition-colors ${
-                        userMode === 'helper' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
-                      }`}
-                    >
-                      <Briefcase className="w-5 h-5" />
-                    </div>
-                    <span className="flex flex-col text-left">
-                      <span className="block text-sm font-bold text-slate-900">{t('register_page.mode_helper_title')}</span>
-                      <span className="block text-xs font-medium text-slate-500 mt-0.5">{t('register_page.mode_helper_sub')}</span>
-                    </span>
+                  <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#F1F6FF] text-[#2563FF] shadow-inner">
+                    <Briefcase className="h-8 w-8" />
                   </span>
-                  {userMode === 'helper' ? <CheckCircle2 className="h-5 w-5 text-blue-600 absolute right-4 top-1/2 -translate-y-1/2" /> : null}
-                </label>
-              </div>
-            </section>
-
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">
-                  {t('register_page.full_name')}
-                </label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  disabled={submitting}
-                  className="block w-full rounded-2xl border border-slate-200 px-4 py-3.5 placeholder:text-slate-400 shadow-inner text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50/80 hover:bg-slate-50/90 transition-colors disabled:opacity-60"
-                  placeholder="Alex Dupont"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">
-                  {t('login_page.email_label')}
-                </label>
-                <div className="relative">
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={submitting}
-                    className="block w-full rounded-2xl border border-slate-200 px-4 py-3.5 pl-11 placeholder:text-slate-400 shadow-inner text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50/80 hover:bg-slate-50/90 transition-colors disabled:opacity-60"
-                    placeholder="you@example.com"
-                  />
-                  <Mail className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">
-                  {t('login_page.password_label')}
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={submitting}
-                  className="block w-full rounded-2xl border border-slate-200 px-4 py-3.5 placeholder:text-slate-400 shadow-inner text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50/80 hover:bg-slate-50/90 transition-colors disabled:opacity-60"
-                  placeholder="••••••••"
-                />
-              </div>
-              <div>
-                <label htmlFor="confirmPassword" className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">
-                  {t('register_page.confirm_password')}
-                </label>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  disabled={submitting}
-                  className="block w-full rounded-2xl border border-slate-200 px-4 py-3.5 placeholder:text-slate-400 shadow-inner text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50/80 hover:bg-slate-50/90 transition-colors disabled:opacity-60"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="language" className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">
-                  {t('register_page.preferred_language')}
-                </label>
-                <div className="relative">
-                  <select
-                    id="language"
-                    name="language"
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value as AppLanguage)}
-                    disabled={submitting}
-                    className="block w-full appearance-none rounded-2xl border border-slate-200 px-4 py-3.5 pl-11 shadow-inner text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50/80 hover:bg-slate-50/90 transition-colors disabled:opacity-60"
+                  <span className="min-w-0 flex-1 text-left">
+                    <span className="block text-xl font-black text-[#0B1220]">{t('register_page.mode_helper_title')}</span>
+                    <span className="mt-1 block text-sm font-semibold leading-relaxed text-[#64748B]">{t('register_page.mode_helper_sub')}</span>
+                  </span>
+                  <span
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${
+                      userMode === 'helper' ? 'border-[#2563FF] bg-[#2563FF] text-white' : 'border-slate-200 bg-white text-transparent'
+                    }`}
                   >
-                    <option value="pt">Português</option>
-                    <option value="en">English</option>
-                    <option value="fr">Français</option>
-                  </select>
-                  <Globe className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <CheckCircle2 className="h-5 w-5" />
+                  </span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label htmlFor="name" className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-[#64748B]">
+                    {t('register_page.full_name')}
+                  </label>
+                  <div className="relative">
+                    <User className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      required
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      disabled={submitting}
+                      className="block min-h-[60px] w-full rounded-2xl border border-[#E9EEF7] bg-white px-5 py-4 pl-14 text-base font-semibold text-[#0B1220] placeholder:text-slate-400 transition focus:border-[#2563FF] focus:outline-none focus:ring-4 focus:ring-blue-500/10 disabled:opacity-60"
+                      placeholder="Alex Dupont"
+                    />
+                  </div>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label htmlFor="email" className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-[#64748B]">
+                    {t('login_page.email_label')}
+                  </label>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={submitting}
+                      className="block min-h-[60px] w-full rounded-2xl border border-[#E9EEF7] bg-white px-5 py-4 pl-14 text-base font-semibold text-[#0B1220] placeholder:text-slate-400 transition focus:border-[#2563FF] focus:outline-none focus:ring-4 focus:ring-blue-500/10 disabled:opacity-60"
+                      placeholder="you@example.com"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="password" className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-[#64748B]">
+                    {t('login_page.password_label')}
+                  </label>
+                  <div className="relative">
+                    <LockKeyhole className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      id="password"
+                      name="password"
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={submitting}
+                      className="block min-h-[60px] w-full rounded-2xl border border-[#E9EEF7] bg-white px-5 py-4 pl-14 text-base font-semibold text-[#0B1220] placeholder:text-slate-400 transition focus:border-[#2563FF] focus:outline-none focus:ring-4 focus:ring-blue-500/10 disabled:opacity-60"
+                      placeholder="********"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="confirmPassword" className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-[#64748B]">
+                    {t('register_page.confirm_password')}
+                  </label>
+                  <div className="relative">
+                    <LockKeyhole className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      disabled={submitting}
+                      className="block min-h-[60px] w-full rounded-2xl border border-[#E9EEF7] bg-white px-5 py-4 pl-14 text-base font-semibold text-[#0B1220] placeholder:text-slate-400 transition focus:border-[#2563FF] focus:outline-none focus:ring-4 focus:ring-blue-500/10 disabled:opacity-60"
+                      placeholder="********"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="language" className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-[#64748B]">
+                    {t('register_page.preferred_language')}
+                  </label>
+                  <div className="relative">
+                    <Globe className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <select
+                      id="language"
+                      name="language"
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value as AppLanguage)}
+                      disabled={submitting}
+                      className="block min-h-[60px] w-full appearance-none rounded-2xl border border-[#E9EEF7] bg-white px-5 py-4 pl-14 text-base font-semibold text-[#0B1220] transition focus:border-[#2563FF] focus:outline-none focus:ring-4 focus:ring-blue-500/10 disabled:opacity-60"
+                    >
+                      <option value="pt">Portugues</option>
+                      <option value="en">English</option>
+                      <option value="fr">Francais</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <CityRegionAutocomplete
+                    label={t('register_page.city_region')}
+                    value={city}
+                    onChangeText={(text) => {
+                      setCity(text);
+                      setCityCanon('');
+                      setProvince('');
+                      setCountry('');
+                    }}
+                    onPickPlace={(p: QuebecPlace) => {
+                      setCity(p.label);
+                      setCityCanon(p.city);
+                      setProvince(p.region);
+                      setCountry(p.country);
+                    }}
+                    disabled={submitting}
+                    placeholder={t('register_page.city_placeholder')}
+                  />
                 </div>
               </div>
-              <div className="sm:col-span-2">
-                <CityRegionAutocomplete
-                  label={t('register_page.city_region')}
-                  value={city}
-                  onChangeText={(text) => {
-                    setCity(text);
-                    setCityCanon('');
-                    setProvince('');
-                    setCountry('');
-                  }}
-                  onPickPlace={(p: QuebecPlace) => {
-                    setCity(p.label);
-                    setCityCanon(p.city);
-                    setProvince(p.region);
-                    setCountry(p.country);
-                  }}
-                  disabled={submitting}
-                  placeholder={t('register_page.city_placeholder')}
-                />
-              </div>
-            </div>
 
-            <div className="pt-1">
               <button
                 type="submit"
                 disabled={!userMode || submitting || googleLoading}
-                className="flex w-full justify-center rounded-2xl bg-slate-900 py-3.5 px-4 text-sm font-bold text-white shadow-lg shadow-slate-900/20 hover:bg-black hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 min-h-[52px]"
+                className="group flex min-h-[62px] w-full items-center justify-center gap-4 rounded-2xl bg-[linear-gradient(135deg,#2563FF,#0A5BFF)] px-5 text-base font-black text-white shadow-[0_18px_42px_rgba(37,99,255,0.34)] transition hover:-translate-y-0.5 hover:brightness-105 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
               >
-                {submitting ? t('common.loading') : t('register_page.submit')}
+                <span>{submitting ? t('common.loading') : 'Continuar'}</span>
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 transition group-hover:translate-x-0.5">
+                  <ArrowRight className="h-5 w-5" />
+                </span>
               </button>
-            </div>
 
-            <p className="text-center text-sm text-slate-500">
-              {t('register_page.have_account')}{' '}
-              <Link to={ROUTES.login} className="font-bold text-blue-600 hover:text-blue-700 transition-colors">
-                {t('register_page.login_link')}
-              </Link>
-            </p>
-          </form>
+              <p className="flex items-center justify-center gap-2 text-center text-xs font-bold text-slate-500">
+                <LockKeyhole className="h-4 w-4" />
+                Seus dados estao protegidos e nunca serao compartilhados.
+              </p>
 
-          <div className="mt-8">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
+              <p className="text-center text-sm font-semibold text-slate-500">
+                {t('register_page.have_account')}{' '}
+                <Link to={ROUTES.login} className="font-black text-[#2563FF] hover:text-blue-700">
+                  {t('register_page.login_link')}
+                </Link>
+              </p>
+            </form>
+
+            <div className="mt-8">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200" />
+                </div>
+                <div className="relative flex justify-center text-xs font-black uppercase tracking-wider text-slate-400">
+                  <span className="bg-white px-4">{t('login_page.divider')}</span>
+                </div>
               </div>
-              <div className="relative flex justify-center text-xs font-bold uppercase tracking-wider text-slate-400">
-                <span className="bg-white px-4">{t('login_page.divider')}</span>
-              </div>
-            </div>
 
-            <GoogleSignInButton
-              className="mt-6"
-              loading={googleLoading}
-              disabled={submitting}
-              onClick={() => void handleGoogle()}
-            />
-          </div>
+              <GoogleSignInButton className="mt-6" loading={googleLoading} disabled={submitting} onClick={() => void handleGoogle()} />
+            </div>
+          </section>
         </div>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

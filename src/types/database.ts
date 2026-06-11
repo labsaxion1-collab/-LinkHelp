@@ -35,6 +35,8 @@ export type ProfileRow = {
   accepted_terms_at: string | null;
   helper_terms_accepted: boolean;
   helper_terms_accepted_at: string | null;
+  /** Timestamp of last personal address/city change (30-day lock). */
+  address_updated_at: string | null;
   created_at: string;
   updated_at: string;
 };

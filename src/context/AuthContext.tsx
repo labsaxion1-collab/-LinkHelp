@@ -779,6 +779,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         'accepted_terms_at',
         'helper_terms_accepted',
         'helper_terms_accepted_at',
+        'address_updated_at',
       ];
       const profilePatch: Partial<AuthProfile> = {};
       for (const k of allowed) {

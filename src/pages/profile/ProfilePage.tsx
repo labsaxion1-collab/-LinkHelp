@@ -4,20 +4,19 @@ import {
   ArrowLeft,
   ArrowUpRight,
   BadgeCheck,
-  Briefcase,
-  CalendarDays,
+  Check,
   ChevronRight,
   Coins,
   Globe2,
   Home,
-  IdCard,
+  Languages,
   Loader2,
-  Mail,
-  MapPin,
-  Phone,
+  Pencil,
+  Settings,
   ShieldCheck,
   Star,
   UserRound,
+  X,
 } from 'lucide-react';
 import { FilePickerLabel } from '@/components/common/HiddenFileInput';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
@@ -65,15 +64,20 @@ function ProfileInfoRow({
   label,
   value,
   badge,
+  onClick,
+  actionIcon: ActionIcon,
 }: {
   icon: ComponentType<{ className?: string }>;
   label: string;
   value: string;
   badge?: string;
+  onClick?: () => void;
+  actionIcon?: ComponentType<{ className?: string }>;
 }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="group flex w-full items-center gap-4 rounded-[1.35rem] border border-slate-100 bg-white px-4 py-3.5 text-left shadow-[0_10px_26px_rgba(15,23,42,0.035)] transition hover:border-blue-100 hover:bg-[#F8FBFF]"
     >
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F1F6FF] text-[#2563FF]">
@@ -92,7 +96,11 @@ function ProfileInfoRow({
           ) : null}
         </span>
       </span>
-      <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-[#2563FF]" />
+      {ActionIcon ? (
+        <ActionIcon className="h-5 w-5 shrink-0 text-slate-400 transition group-hover:text-[#2563FF]" />
+      ) : (
+        <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-[#2563FF]" />
+      )}
     </button>
   );
 }
@@ -114,6 +122,9 @@ export default function ProfilePage() {
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [avatarSaving, setAvatarSaving] = useState(false);
   const avatarObjectUrlRef = useRef<string | null>(null);
+  const [bioEditing, setBioEditing] = useState(false);
+  const [bioValue, setBioValue] = useState('');
+  const [bioSaving, setBioSaving] = useState(false);
 
   const email = session?.user.email ?? profile?.email ?? '';
   const displayName = profile?.name?.trim() || session?.user.user_metadata?.name || email || 'LinkHelp';
@@ -121,15 +132,17 @@ export default function ProfilePage() {
   const avatarUrl = avatarPreviewUrl ?? profile?.avatar_url?.trim() ?? '';
   const city = [profile?.city, profile?.region].filter(Boolean).join(', ');
   const roleLabel = profile?.role === 'helper' ? 'Helper' : profile?.role === 'client' ? 'Cliente' : 'LinkHelp';
-  const bio = profile?.bio?.trim() || 'Adicione uma bio em configurações para deixar seu perfil mais completo.';
+  const bio = profile?.bio?.trim() || '';
   const balanceLabel = loading ? '...' : formatLinkCredits(balance ?? 0);
-  const preferredLanguage = profile?.preferred_language || language;
-  const languageLabel =
-    preferredLanguage === 'en'
-      ? 'English'
-      : preferredLanguage === 'fr'
-        ? 'Français'
-        : 'Português (Brasil)';
+
+  const LANGUAGE_LABELS: Record<string, string> = {
+    pt: 'Português', en: 'English', fr: 'Français', es: 'Español',
+    ar: 'Árabe', zh: 'Mandarim', hi: 'Hindi', it: 'Italiano',
+    ht: 'Crioulo Haitiano', pa: 'Punjabi',
+  };
+  const spokenLanguageLabels = (profile?.spoken_languages ?? [])
+    .map((id) => LANGUAGE_LABELS[id] ?? id)
+    .filter(Boolean);
   const helperBaseLabel = [
     profile?.helper_base_address,
     profile?.helper_base_city,
@@ -302,6 +315,20 @@ export default function ProfilePage() {
     void saveAvatarFile(file);
   };
 
+  const saveBio = async () => {
+    if (!isConfigured || !profile) return;
+    setBioSaving(true);
+    const err = await updateProfile({ bio: bioValue.trim() || null });
+    setBioSaving(false);
+    if (err) {
+      showToast(t(err.messageKey, err.vars), 'error');
+      return;
+    }
+    await refreshProfile();
+    setBioEditing(false);
+    showToast(t('app_pages.settings_saved'), 'success');
+  };
+
   return (
     <AppPageShell className="w-full">
       <DesktopBackButton className="mb-3" />
@@ -398,68 +425,109 @@ export default function ProfilePage() {
         <section className="rounded-[1.9rem] border border-slate-100 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.065)]">
           <div className="mb-5 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-black text-slate-950">Informações pessoais</h2>
-              <p className="mt-1 text-sm font-medium text-slate-500">Foto, bio e dados visíveis do seu perfil.</p>
+              <h2 className="text-lg font-black text-slate-950">{t('profile_page.section_public_title')}</h2>
+              <p className="mt-1 text-sm font-medium text-slate-500">{t('profile_page.section_public_subtitle')}</p>
             </div>
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.settings)}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              {t('profile_page.edit_in_settings')}
+            </button>
           </div>
 
           <div className="space-y-3">
-            {isHelperMode ? <ProfileInfoRow icon={UserRound} label="Bio" value={bio} /> : null}
-            <ProfileInfoRow icon={Mail} label="Email" value={email || 'Não informado'} />
-            <ProfileInfoRow icon={Phone} label="Telefone" value={profile?.phone || 'Não informado'} />
-            <ProfileInfoRow icon={MapPin} label="Localização" value={city || 'Não informada'} />
-            <ProfileInfoRow icon={CalendarDays} label="Data de nascimento" value="Não informado" />
-            {isHelperMode ? <ProfileInfoRow icon={IdCard} label="Documento" value="Não informado" /> : null}
-            {isHelperMode ? <ProfileInfoRow icon={Briefcase} label="Profissão" value={roleLabel} /> : null}
-            <ProfileInfoRow icon={Globe2} label="Idioma" value={languageLabel} badge="Padrão" />
+            {isHelperMode ? (
+              bioEditing ? (
+                <div className="rounded-[1.35rem] border border-blue-200 bg-[#F8FBFF] p-4 shadow-[0_10px_26px_rgba(37,99,255,0.06)]">
+                  <p className="mb-2 text-[11px] font-black uppercase tracking-wide text-[#2563FF]/75">Bio</p>
+                  <textarea
+                    rows={4}
+                    value={bioValue}
+                    onChange={(e) => setBioValue(e.target.value)}
+                    placeholder={t('profile_page.bio_placeholder')}
+                    className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-[#0B1220] outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    autoFocus
+                  />
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      disabled={bioSaving}
+                      onClick={() => void saveBio()}
+                      className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700 disabled:opacity-60"
+                    >
+                      {bioSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                      {t('app_pages.settings_save')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBioEditing(false)}
+                      className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <ProfileInfoRow
+                  icon={UserRound}
+                  label="Bio"
+                  value={bio || t('profile_page.bio_empty')}
+                  onClick={() => { setBioValue(bio); setBioEditing(true); }}
+                  actionIcon={Pencil}
+                />
+              )
+            ) : null}
 
-            <div className="hidden rounded-2xl bg-slate-50 px-4 py-3">
-              <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">Bio</p>
-              <p className="mt-1 text-sm font-semibold leading-relaxed text-slate-700">{bio}</p>
-            </div>
-            <div className="hidden gap-3 sm:grid-cols-2">
-              <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3">
-                <Mail className="h-5 w-5 shrink-0 text-blue-600" />
-                <div className="min-w-0">
-                  <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">Email</p>
-                  <p className="truncate text-sm font-bold text-slate-800">{email || 'Não informado'}</p>
-                </div>
+            {isHelperMode && spokenLanguageLabels.length > 0 ? (
+              <div className="flex items-center gap-4 rounded-[1.35rem] border border-slate-100 bg-white px-4 py-3.5 shadow-[0_10px_26px_rgba(15,23,42,0.035)]">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F1F6FF] text-[#2563FF]">
+                  <Languages className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11px] font-black uppercase tracking-wide text-[#2563FF]/75">
+                    {t('profile_page.spoken_languages')}
+                  </span>
+                  <span className="mt-1.5 flex flex-wrap gap-1.5">
+                    {spokenLanguageLabels.map((label) => (
+                      <span
+                        key={label}
+                        className="rounded-full bg-[#F1F6FF] px-2.5 py-0.5 text-[12px] font-bold text-[#2563FF]"
+                      >
+                        {label}
+                      </span>
+                    ))}
+                  </span>
+                </span>
+                <Globe2 className="h-5 w-5 shrink-0 text-slate-300" />
               </div>
-              <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3">
-                <Phone className="h-5 w-5 shrink-0 text-blue-600" />
-                <div className="min-w-0">
-                  <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">Telefone</p>
-                  <p className="truncate text-sm font-bold text-slate-800">{profile?.phone || 'Não informado'}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 sm:col-span-2">
-                <MapPin className="h-5 w-5 shrink-0 text-blue-600" />
-                <div className="min-w-0">
-                  <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">Localização</p>
-                  <p className="truncate text-sm font-bold text-slate-800">{city || 'Não informada'}</p>
-                </div>
-              </div>
-            </div>
+            ) : isHelperMode ? (
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.settings)}
+                className="group flex w-full items-center gap-4 rounded-[1.35rem] border border-dashed border-slate-200 bg-slate-50 px-4 py-3.5 text-left transition hover:border-blue-200 hover:bg-[#F8FBFF]"
+              >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                  <Languages className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11px] font-black uppercase tracking-wide text-slate-400">
+                    {t('profile_page.spoken_languages')}
+                  </span>
+                  <span className="mt-0.5 text-sm font-semibold text-slate-400">
+                    {t('profile_page.spoken_languages_empty')}
+                  </span>
+                </span>
+                <ChevronRight className="h-5 w-5 shrink-0 text-slate-300 transition group-hover:text-blue-400" />
+              </button>
+            ) : null}
           </div>
         </section>
 
-        <section className="flex items-center gap-4 rounded-[1.65rem] border border-blue-100/70 bg-gradient-to-r from-[#EEF4FF] to-white p-4 shadow-[0_16px_38px_rgba(37,99,255,0.08)]">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#2563FF] text-white shadow-[0_14px_28px_rgba(37,99,255,0.24)]">
-            <ShieldCheck className="h-7 w-7" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-black text-[#0B1220]">Perfil verificado</h2>
-            <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
-              Complete suas informações e ganhe mais confiança de clientes.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="shrink-0 rounded-2xl bg-white px-4 py-3 text-xs font-black text-[#2563FF] shadow-[0_10px_24px_rgba(15,23,42,0.06)]"
-          >
-            Verificar agora
-          </button>
-        </section>
+        {/* Perfil verificado — placeholder for future verification feature */}
 
         {isHelperMode ? (
           <>

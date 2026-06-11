@@ -34,7 +34,13 @@ const SPOKEN_LANGUAGE_OPTIONS = [
   { id: 'en', label: 'English' },
   { id: 'fr', label: 'Français' },
   { id: 'es', label: 'Español' },
-] as const;
+  { id: 'ar', label: 'Árabe' },
+  { id: 'zh', label: 'Mandarim' },
+  { id: 'hi', label: 'Hindi' },
+  { id: 'it', label: 'Italiano' },
+  { id: 'ht', label: 'Crioulo Haitiano' },
+  { id: 'pa', label: 'Punjabi' },
+];
 
 function SettingsCard({
   icon,
@@ -77,8 +83,12 @@ export default function SettingsPage() {
   const [province, setProvince] = useState('');
   const [country, setCountry] = useState('');
   const [spokenLanguages, setSpokenLanguages] = useState<string[]>([]);
+  const [bio, setBio] = useState('');
   const [notifOn, setNotifOn] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const isHelper = profile?.role === 'helper';
 
@@ -101,6 +111,7 @@ export default function SettingsPage() {
           ? [profile.preferred_language]
           : [language],
     );
+    setBio(profile.bio?.trim() ?? '');
   }, [profile, session, language]);
 
   useEffect(() => {
@@ -124,6 +135,18 @@ export default function SettingsPage() {
   useEffect(() => () => revokeAvatarObjectUrl(), []);
 
   const authEmail = session?.user?.email?.trim() ?? '';
+  const isOAuthUser = Boolean(
+    session?.user?.app_metadata?.provider === 'google' ||
+    (session?.user?.app_metadata?.providers as string[] | undefined)?.includes('google'),
+  );
+
+  // Address 30-day lock
+  const addressUpdatedAt = profile?.address_updated_at ? new Date(profile.address_updated_at) : null;
+  const now = new Date();
+  const addressLockDaysRemaining = addressUpdatedAt
+    ? Math.ceil((30 - (now.getTime() - addressUpdatedAt.getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+  const addressLocked = addressLockDaysRemaining > 0;
 
   const saveAccount = async () => {
     const { countryId, nationalNumber } = parseStoredPhone(phone);
@@ -137,14 +160,25 @@ export default function SettingsPage() {
       showToast(t('app_pages.settings_saved'), 'info');
       return;
     }
+
+    // Check address 30-day lock
+    const newCity = (cityCanon.trim() || cityDisplay.trim()) || null;
+    const addressChanged = newCity !== (profile.city ?? null);
+    if (addressLocked && addressChanged) {
+      showToast(t('app_pages.settings_address_lock', { count: String(addressLockDaysRemaining) }), 'error');
+      return;
+    }
+
     setSaving(true);
-    const base = {
+    const base: Parameters<typeof updateProfile>[0] = {
       name: name.trim() || null,
       phone: phone?.trim() ? phone.trim() : null,
-      city: (cityCanon.trim() || cityDisplay.trim()) || null,
+      city: newCity,
       region: province.trim() || null,
       country: country.trim() || null,
       preferred_language: language,
+      bio: bio.trim() || null,
+      ...(addressChanged && newCity ? { address_updated_at: new Date().toISOString() } : {}),
     };
     const err = await updateProfile(
       isHelper
@@ -167,6 +201,38 @@ export default function SettingsPage() {
     await signOut();
     showToast(t('nav.toast_logout'), 'success');
     navigate(ROUTES.home, { replace: true });
+  };
+
+  const deleteAccount = async () => {
+    if (!isConfigured || !profile || !session?.user?.id) return;
+    setDeleting(true);
+    try {
+      // Anonymize profile data
+      await updateProfile({
+        name: null,
+        bio: null,
+        phone: null,
+        city: null,
+        region: null,
+        country: null,
+        avatar_url: null,
+        spoken_languages: [],
+      });
+      // Clear notifications via direct Supabase call
+      const { getSupabase } = await import('@/lib/supabase');
+      const sb = getSupabase();
+      if (sb) {
+        await sb.from('notifications').delete().eq('user_id', session.user.id);
+      }
+      showToast(t('app_pages.settings_delete_account_success'), 'success');
+      await signOut();
+      navigate(ROUTES.home, { replace: true });
+    } catch {
+      showToast('Erro ao excluir conta. Tente novamente.', 'error');
+    } finally {
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
   };
 
   useEffect(() => {
@@ -243,6 +309,7 @@ export default function SettingsPage() {
 
         <SettingsCard icon={<User className="h-5 w-5 text-blue-600" />} title={t('app_pages.settings_account')}>
           <div className="space-y-4">
+            {/* Name */}
             <label className="block text-sm font-semibold text-gray-700">
               {t('app_pages.settings_name')}
               <input
@@ -251,11 +318,24 @@ export default function SettingsPage() {
                 className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
               />
             </label>
+
+            {/* Email — readonly with OAuth explanation */}
             {authEmail ? (
-              <p className="text-xs text-gray-500">
-                {t('app_pages.settings_email')}: <span className="font-semibold text-gray-700">{authEmail}</span>
-              </p>
+              <div>
+                <p className="mb-1 text-sm font-semibold text-gray-700">{t('app_pages.settings_email')}</p>
+                <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
+                  <span className="flex-1 text-sm text-gray-700">{authEmail}</span>
+                  <span className="rounded-md bg-gray-200 px-2 py-0.5 text-[10px] font-bold text-gray-500">
+                    {isOAuthUser ? 'Google' : 'Email'}
+                  </span>
+                </div>
+                {isOAuthUser ? (
+                  <p className="mt-1 text-[11px] text-gray-400">{t('app_pages.settings_email_oauth_hint')}</p>
+                ) : null}
+              </div>
             ) : null}
+
+            {/* Phone */}
             <ProfilePhoneField
               label={t('app_pages.settings_phone')}
               value={phone}
@@ -263,24 +343,63 @@ export default function SettingsPage() {
               disabled={!isConfigured || saving}
               t={t}
             />
-            <CityRegionAutocomplete
-              label={t('app_pages.settings_city')}
-              value={cityDisplay}
-              onChangeText={(text) => {
-                setCityDisplay(text);
-                setCityCanon('');
-                setProvince('');
-                setCountry('');
-              }}
-              onPickPlace={(p: QuebecPlace) => {
-                setCityDisplay(p.label);
-                setCityCanon(p.city);
-                setProvince(p.region);
-                setCountry(p.country);
-              }}
-              disabled={!isConfigured}
-              placeholder={t('profile_form.city_placeholder')}
-            />
+            <p className="mt-1 text-[11px] text-gray-400">
+              Seu telefone só será exibido para o cliente após a contratação.
+            </p>
+
+            {/* Address with 30-day lock */}
+            <div>
+              <CityRegionAutocomplete
+                label={t('app_pages.settings_city')}
+                value={cityDisplay}
+                onChangeText={(text) => {
+                  if (addressLocked) return;
+                  setCityDisplay(text);
+                  setCityCanon('');
+                  setProvince('');
+                  setCountry('');
+                }}
+                onPickPlace={(p: QuebecPlace) => {
+                  if (addressLocked) return;
+                  setCityDisplay(p.label);
+                  setCityCanon(p.city);
+                  setProvince(p.region);
+                  setCountry(p.country);
+                }}
+                disabled={!isConfigured || addressLocked}
+                placeholder={t('profile_form.city_placeholder')}
+              />
+              {addressLocked ? (
+                <p className="mt-1 text-[11px] font-semibold text-amber-600">
+                  {t('app_pages.settings_address_lock', { count: String(addressLockDaysRemaining) })}
+                </p>
+              ) : null}
+            </div>
+
+            {/* Bio (helpers only) */}
+            {isHelper ? (
+              <label className="block text-sm font-semibold text-gray-700">
+                {t('app_pages.settings_bio')}
+                <textarea
+                  rows={3}
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder={t('app_pages.settings_bio_placeholder')}
+                  className="mt-1 block w-full resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm leading-relaxed"
+                />
+              </label>
+            ) : null}
+
+            {/* Delete account */}
+            <div className="border-t border-gray-100 pt-4">
+              <button
+                type="button"
+                onClick={() => { setDeleteConfirmText(''); setShowDeleteModal(true); }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-100"
+              >
+                {t('app_pages.settings_delete_account')}
+              </button>
+            </div>
           </div>
         </SettingsCard>
 
@@ -444,6 +563,53 @@ export default function SettingsPage() {
           {t('app_pages.settings_logout')}
         </button>
       </div>
+
+      {/* Delete Account Modal */}
+      {showDeleteModal ? (
+        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/50 p-4 sm:items-center">
+          <div className="w-full max-w-sm rounded-[1.75rem] bg-white p-6 shadow-[0_32px_80px_rgba(0,0,0,0.28)]">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <h2 className="text-lg font-black text-gray-900">{t('app_pages.settings_delete_account_confirm_title')}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-gray-500">
+              {t('app_pages.settings_delete_account_confirm_body')}
+            </p>
+            <div className="mt-4">
+              <p className="mb-1.5 text-sm font-semibold text-gray-700">
+                {t('app_pages.settings_delete_account_type_hint')}
+              </p>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="EXCLUIR"
+                className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-bold tracking-widest"
+              />
+            </div>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                disabled={deleteConfirmText !== 'EXCLUIR' || deleting}
+                onClick={() => void deleteAccount()}
+                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-black text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {deleting
+                  ? t('app_pages.settings_delete_account_deleting')
+                  : t('app_pages.settings_delete_account_confirm_btn')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="flex min-h-[44px] w-full items-center justify-center rounded-2xl border border-gray-200 px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50"
+              >
+                {t('common.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AppPageShell>
   );
 }

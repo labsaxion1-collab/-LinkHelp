@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import * as Icons from 'lucide-react';
 import { clsx } from 'clsx';
 import type { ServiceCategoryId } from '@/data/serviceCategories';
@@ -27,6 +27,7 @@ type Props = {
   onCategoriesChange: (primary: ServiceCategoryId, secondary: ServiceCategoryId[]) => void;
   onSaveAsync?: (ids: string[], categoryOverride?: CategoryOverride) => Promise<void>;
   iconOnlySummary?: boolean;
+  autoOpenPicker?: boolean;
 };
 
 export function HelperCategoriesManager({
@@ -38,6 +39,7 @@ export function HelperCategoriesManager({
   onCategoriesChange,
   onSaveAsync,
   iconOnlySummary = false,
+  autoOpenPicker = false,
 }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editCategory, setEditCategory] = useState<ServiceCategoryId | null>(null);
@@ -56,6 +58,12 @@ export function HelperCategoriesManager({
   }, [grouped, primaryCategory, secondaryCategories]);
 
   const existingCategoryIds = useMemo(() => new Set(grouped.keys()), [grouped]);
+
+  useEffect(() => {
+    if (autoOpenPicker && categoryOrder.length === 0) {
+      setPickerOpen(true);
+    }
+  }, [autoOpenPicker, categoryOrder.length]);
 
   const persistSkills = async (next: string[], categoryOverride?: CategoryOverride) => {
     const valid = filterValidSkillKeys(next);

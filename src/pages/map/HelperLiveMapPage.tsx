@@ -23,6 +23,13 @@ import {
   isRequestExclusiveLockedForViewer,
 } from '@/utils/applicationInterest';
 import type { Job } from '@/types/job';
+import { useAuth } from '@/context/AuthContext';
+import { fetchHelperSkills } from '@/services/supabase/helperSkillsRemote';
+import {
+  filterToPreferredCategoriesIfPossible,
+  getHelperCategoryPreferences,
+} from '@/utils/helperCategoryPreferences';
+import { loadHelperProfileSettings } from '@/utils/helperProfileSettings';
 import { useHelperDismissedRequests } from '@/hooks/useHelperDismissedRequests';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { HelperMapCanvas } from '@/components/map/HelperMapCanvas';
@@ -40,6 +47,9 @@ export default function HelperLiveMapPage() {
   const { jobs, applications } = useAppData();
   const { t } = useLanguage();
   const me = useSessionViewer();
+  const { profile, isConfigured, session } = useAuth();
+  const helperUserId = session?.user?.id ?? profile?.id ?? null;
+  const [skillIds, setSkillIds] = useState(() => loadHelperProfileSettings().skillIds);
   const { dismissedIds } = useHelperDismissedRequests(me.id !== 'guest' && me.id !== '…' ? me.id : undefined);
   const { coords: userCoords, ready: locationReady } = useUserLocation();
   const initialCameraDone = useRef(false);
@@ -53,6 +63,24 @@ export default function HelperLiveMapPage() {
   const mapsApiKey = getGoogleMapsApiKey();
   const mapsReady = isGoogleMapsConfigured();
 
+  useEffect(() => {
+    if (!isConfigured || !helperUserId) return;
+    let cancelled = false;
+    void (async () => {
+      const remote = await fetchHelperSkills(helperUserId);
+      if (cancelled) return;
+      if (remote.length > 0) setSkillIds(remote);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isConfigured, helperUserId]);
+
+  const categoryPrefs = useMemo(
+    () => getHelperCategoryPreferences(profile, skillIds),
+    [profile, skillIds],
+  );
+
   const center = useMemo(
     () => ({ lat: userCoords.lat, lng: userCoords.lng }),
     [userCoords.lat, userCoords.lng],
@@ -65,14 +93,17 @@ export default function HelperLiveMapPage() {
   }, [locationReady, center]);
 
   const jobPoints = useMemo((): JobMapPoint[] => {
-    const openJobs = jobs.filter(
-      (j) =>
-        j.status === 'open' &&
-        !isJobCancelled(j) &&
-        j.clientId !== me.id &&
-        !dismissedIds.has(j.id) &&
-        !isRequestExclusiveLockedForViewer(j, applications, me.id) &&
-        !isJobInterestFull(j.applicantCount ?? 0),
+    const openJobs = filterToPreferredCategoriesIfPossible(
+      jobs.filter(
+        (j) =>
+          j.status === 'open' &&
+          !isJobCancelled(j) &&
+          j.clientId !== me.id &&
+          !dismissedIds.has(j.id) &&
+          !isRequestExclusiveLockedForViewer(j, applications, me.id) &&
+          !isJobInterestFull(j.applicantCount ?? 0),
+      ),
+      categoryPrefs,
     );
     const inRadius = filterJobsForHelperRadar(openJobs, userCoords);
     const sorted = sortOpportunitiesForHelper(inRadius, { origin: userCoords, helperSkillIds: [] });
@@ -93,7 +124,7 @@ export default function HelperLiveMapPage() {
         };
       })
       .filter((p): p is JobMapPoint => p != null);
-  }, [jobs, userCoords, me.id, dismissedIds, applications]);
+  }, [jobs, userCoords, me.id, dismissedIds, applications, categoryPrefs]);
 
   const filteredPoints = useMemo(() => {
     let list = jobPoints.filter((p) => (activeFilter === 'urgent' ? p.urgency : true));

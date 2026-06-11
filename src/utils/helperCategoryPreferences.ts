@@ -177,10 +177,10 @@ export function filterToPreferredCategoriesIfPossible<T extends Pick<Job, 'categ
   jobs: T[],
   prefs: HelperCategoryPreferences,
 ): T[] {
-  if (!prefs.hasExplicitPreference) return jobs;
-  const preferred = jobs.filter((job) => {
+  if (!prefs.hasExplicitPreference) return [];
+  return jobs.filter((job) => {
     const id = getJobServiceCategoryId(job);
-    return id === prefs.primaryCategory || Boolean(id && prefs.secondaryCategories.includes(id));
+    if (!id) return false;
+    return id === prefs.primaryCategory || prefs.secondaryCategories.includes(id);
   });
-  return preferred.length > 0 ? preferred : jobs;
 }

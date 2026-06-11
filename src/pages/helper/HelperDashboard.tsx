@@ -149,6 +149,7 @@ export default function HelperDashboard() {
   const { balance: walletBalance, loading: walletLoading } = useWalletBalance();
   const [helperPrimaryCategory, setHelperPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
   const [helperSecondaryCategories, setHelperSecondaryCategories] = useState<ServiceCategoryId[]>([]);
+  const [skillsFetchDone, setSkillsFetchDone] = useState(() => !isConfigured);
 
   const selectFeedTab = React.useCallback(
     (tab: 'match' | 'recentes' | 'emergencia') => {
@@ -200,6 +201,8 @@ export default function HelperDashboard() {
     () => getHelperCategoryPreferences(profile, profileSettings.skillIds),
     [profile, profileSettings.skillIds],
   );
+  const needsCategorySetup =
+    skillsFetchDone && !categoryPrefs.hasExplicitPreference && (!isConfigured || Boolean(storageUserId));
   const helperBaseCoords = useMemo(() => helperBaseCoordinates(profile), [profile]);
   const hasHelperBaseAddress = useMemo(() => helperHasBaseAddress(profile), [profile]);
   const hasExactBaseCoords = useMemo(() => helperHasExactBaseCoordinates(profile), [profile]);
@@ -277,19 +280,30 @@ export default function HelperDashboard() {
     setHelperSecondaryCategories(categoryPrefs.secondaryCategories);
   }, [categoryPrefs.primaryCategory, categoryPrefs.secondaryCategories]);
   useEffect(() => {
-    if (!isConfigured || !storageUserId) return;
+    if (!isConfigured || !storageUserId) {
+      setSkillsFetchDone(true);
+      return;
+    }
     let cancelled = false;
+    setSkillsFetchDone(false);
     void (async () => {
       const remote = await fetchHelperSkills(storageUserId);
       if (cancelled) return;
       if (remote.length > 0) {
         setProfileSettings((prev) => ({ ...prev, skillIds: remote }));
       }
+      setSkillsFetchDone(true);
     })();
     return () => {
       cancelled = true;
     };
   }, [isConfigured, storageUserId]);
+
+  useEffect(() => {
+    if (needsCategorySetup && profileSetupModal !== 'avatar') {
+      setProfileSetupModal('skills');
+    }
+  }, [needsCategorySetup, profileSetupModal]);
 
   const completionBreakdown = React.useMemo(
     () => computeHelperProfileCompletion(profileSettings, helperAvatarUrl),
@@ -318,7 +332,10 @@ export default function HelperDashboard() {
       setHelperPrimaryCategory(primary);
       setHelperSecondaryCategories(secondary);
       if (!isConfigured || !storageUserId) {
-        if (valid.length > 0) showToast(t('helper_categories.saved_ok'), 'success');
+        if (valid.length > 0) {
+          showToast(t('helper_categories.saved_ok'), 'success');
+          setProfileSetupModal(null);
+        }
         return;
       }
       try {
@@ -335,6 +352,7 @@ export default function HelperDashboard() {
         setHelperPrimaryCategory(syncedCats.primary);
         setHelperSecondaryCategories(syncedCats.secondary);
         showToast(t('helper_categories.saved_ok'), 'success');
+        if (valid.length > 0) setProfileSetupModal(null);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         showToast(msg || t('helper_categories.save_error'), 'error');
@@ -789,12 +807,6 @@ export default function HelperDashboard() {
     let list = jobs.filter(
       (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== viewerId && getJobServiceCategoryId(j),
     );
-    if (selectedCategoryFilters.length) {
-      list = list.filter((j) => {
-        const id = resolveCategoryId(j.category) || j.category;
-        return selectedCategoryFilters.includes(id);
-      });
-    }
     if (activeTab === 'emergencia') {
       list = list.filter((j) => j.urgency === 'high');
     } else if (activeTab === 'recentes') {
@@ -806,11 +818,15 @@ export default function HelperDashboard() {
         helperPlanTier: me?.subscriptionTier ?? 'BASIC',
       });
     }
-    if (!selectedCategoryFilters.length) {
-      list = filterToPreferredCategoriesIfPossible(
-        sortJobsByHelperCategoryPreference(list, categoryPrefs),
-        categoryPrefs,
-      );
+    list = filterToPreferredCategoriesIfPossible(
+      sortJobsByHelperCategoryPreference(list, categoryPrefs),
+      categoryPrefs,
+    );
+    if (selectedCategoryFilters.length) {
+      list = list.filter((j) => {
+        const id = resolveCategoryId(j.category) || j.category;
+        return selectedCategoryFilters.includes(id);
+      });
     }
     return list.filter((j) => {
       if (dismissedJobIds.has(j.id) || helperEngagedJobIds.has(j.id)) return false;
@@ -949,23 +965,36 @@ export default function HelperDashboard() {
       )}
       {profileSetupModal === 'skills' ? (
         <div className="fixed inset-0 z-[110] flex items-end justify-center" role="presentation">
-          <button
-            type="button"
-            className="absolute inset-0 bg-slate-900/55 backdrop-blur-sm"
-            aria-label={t('common.close')}
-            onClick={() => setProfileSetupModal(null)}
-          />
+          {needsCategorySetup ? (
+            <div className="absolute inset-0 bg-slate-900/55 backdrop-blur-sm" aria-hidden />
+          ) : (
+            <button
+              type="button"
+              className="absolute inset-0 bg-slate-900/55 backdrop-blur-sm"
+              aria-label={t('common.close')}
+              onClick={() => setProfileSetupModal(null)}
+            />
+          )}
           <div className="relative z-10 flex max-h-[min(88dvh,640px)] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl">
             <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-slate-200" />
             <header className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-              <h3 className="text-lg font-black text-slate-950">{t('helper_categories.title')}</h3>
-              <button
-                type="button"
-                onClick={() => setProfileSetupModal(null)}
-                className="rounded-full bg-slate-100 p-2 text-slate-600"
-              >
-                <Icons.X className="h-5 w-5" />
-              </button>
+              <div className="min-w-0">
+                <h3 className="text-lg font-black text-slate-950">
+                  {needsCategorySetup ? t('helper_categories.onboarding_title') : t('helper_categories.title')}
+                </h3>
+                {needsCategorySetup ? (
+                  <p className="mt-1 text-xs font-medium text-slate-500">{t('helper_categories.onboarding_subtitle')}</p>
+                ) : null}
+              </div>
+              {!needsCategorySetup ? (
+                <button
+                  type="button"
+                  onClick={() => setProfileSetupModal(null)}
+                  className="rounded-full bg-slate-100 p-2 text-slate-600"
+                >
+                  <Icons.X className="h-5 w-5" />
+                </button>
+              ) : null}
             </header>
             <div className="flex-1 overflow-y-auto px-4 py-3">
               <HelperCategoriesManager
@@ -979,6 +1008,7 @@ export default function HelperDashboard() {
                   setHelperSecondaryCategories(secondary);
                 }}
                 onSaveAsync={handleSkillsSave}
+                autoOpenPicker={needsCategorySetup}
               />
             </div>
           </div>
@@ -1345,8 +1375,24 @@ export default function HelperDashboard() {
                 <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 shadow-[0_8px_24px_rgba(37,99,255,0.12)]">
                   <Icons.SearchX className="h-8 w-8 text-[#2563FF]" strokeWidth={1.75} />
                 </span>
-                <p className="text-[15px] font-bold text-[#0B1220]">{t('helper_dashboard.empty_feed')}</p>
-                <p className="mt-1 text-[13px] font-medium text-[#94A3B8]">Novas oportunidades aparecem em tempo real.</p>
+                {!categoryPrefs.hasExplicitPreference ? (
+                  <>
+                    <p className="text-[15px] font-bold text-[#0B1220]">{t('helper_dashboard.empty_feed_no_categories')}</p>
+                    <p className="mt-1 text-[13px] font-medium text-[#94A3B8]">{t('helper_categories.onboarding_subtitle')}</p>
+                    <button
+                      type="button"
+                      onClick={() => setProfileSetupModal('skills')}
+                      className="mt-5 rounded-xl bg-[#2563FF] px-5 py-2.5 text-sm font-black text-white shadow-[0_8px_20px_rgba(37,99,255,0.25)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      {t('helper_dashboard.add_categories_cta')}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[15px] font-bold text-[#0B1220]">{t('helper_dashboard.empty_feed')}</p>
+                    <p className="mt-1 text-[13px] font-medium text-[#94A3B8]">Novas oportunidades aparecem em tempo real.</p>
+                  </>
+                )}
               </div>
             )}
           </div>

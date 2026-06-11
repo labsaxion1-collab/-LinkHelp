@@ -1949,6 +1949,8 @@ export const en = {
     settings_helper_base_use_location: 'Use current location',
     settings_helper_base_use_location_short: 'GPS',
     settings_helper_base_locating: 'Locating...',
+    settings_location_denied: 'Could not access your location.',
+    settings_location_geocode_partial: 'Location captured. Complete the address manually if needed.',
     settings_saved: 'Saved',
     settings_save: 'Save changes',
     settings_logout: 'Sign out',

@@ -480,6 +480,8 @@ export default function SettingsPage() {
                   cityLabel={t('app_pages.settings_helper_base_city')}
                   provinceLabel={t('app_pages.settings_helper_base_province')}
                   postalCodeLabel={t('app_pages.settings_helper_base_postal_code')}
+                  onLocationError={() => showToast(t('app_pages.settings_location_denied'), 'error')}
+                  onLocationPartial={() => showToast(t('app_pages.settings_location_geocode_partial'), 'info')}
                 />
                 <button
                   type="button"

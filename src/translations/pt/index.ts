@@ -1963,6 +1963,8 @@ export const pt = {
     settings_helper_base_use_location: 'Usar localizacao atual',
     settings_helper_base_use_location_short: 'GPS',
     settings_helper_base_locating: 'Localizando...',
+    settings_location_denied: 'Não foi possível acessar sua localização.',
+    settings_location_geocode_partial: 'Localização capturada. Complete o endereço manualmente se necessário.',
     settings_saved: 'Salvo',
     settings_save: 'Salvar alterações',
     settings_logout: 'Sair da conta',

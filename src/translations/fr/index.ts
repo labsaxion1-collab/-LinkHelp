@@ -1956,6 +1956,8 @@ export const fr = {
     settings_helper_base_use_location: 'Utiliser la position actuelle',
     settings_helper_base_use_location_short: 'GPS',
     settings_helper_base_locating: 'Localisation...',
+    settings_location_denied: 'Impossible d’accéder à votre localisation.',
+    settings_location_geocode_partial: 'Localisation capturée. Complétez l’adresse manuellement si nécessaire.',
     settings_save: 'Enregistrer',
     settings_logout: 'Se déconnecter',
     settings_toast_reset: 'Vérifiez votre e-mail pour le lien de réinitialisation.',

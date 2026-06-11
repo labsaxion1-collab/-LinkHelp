@@ -36,15 +36,31 @@ export function jobCoordinates(job: {
   return null;
 }
 
-export function requestBrowserCoordinates(): Promise<Coordinates | null> {
-  if (!('geolocation' in navigator)) return Promise.resolve(null);
+export type GeolocationFailureReason = 'denied' | 'unavailable' | 'timeout';
+
+export type BrowserCoordinatesResult =
+  | { ok: true; coords: Coordinates }
+  | { ok: false; reason: GeolocationFailureReason };
+
+export function requestBrowserCoordinatesDetailed(): Promise<BrowserCoordinatesResult> {
+  if (!('geolocation' in navigator)) {
+    return Promise.resolve({ ok: false, reason: 'unavailable' });
+  }
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => resolve(null),
+      (pos) => resolve({ ok: true, coords: { lat: pos.coords.latitude, lng: pos.coords.longitude } }),
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) resolve({ ok: false, reason: 'denied' });
+        else if (err.code === err.TIMEOUT) resolve({ ok: false, reason: 'timeout' });
+        else resolve({ ok: false, reason: 'unavailable' });
+      },
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
     );
   });
+}
+
+export function requestBrowserCoordinates(): Promise<Coordinates | null> {
+  return requestBrowserCoordinatesDetailed().then((result) => (result.ok ? result.coords : null));
 }
 
 /** Re-export for callers that need a safe default. */

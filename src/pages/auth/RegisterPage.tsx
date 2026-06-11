@@ -194,29 +194,28 @@ export default function RegisterPage() {
             {t('login_page.back_home')}
           </Link>
 
-          <section className="relative z-10 mt-7 grid items-center gap-7 md:grid-cols-[1fr_0.92fr]">
-            <div>
-              <h1 className="max-w-sm text-[56px] font-black leading-[0.88] tracking-tight text-[#0B1220] sm:text-7xl">
+          <section className="relative z-10 mt-7 min-h-[310px] overflow-hidden rounded-[2.5rem] bg-[linear-gradient(135deg,rgba(255,255,255,0.72),rgba(239,246,255,0.32))] px-1 py-4 sm:min-h-[360px] sm:px-4 md:px-8">
+            <div className="pointer-events-none absolute -right-12 top-0 h-64 w-64 rounded-full bg-[#2563FF]/12 blur-3xl" />
+            <div className="pointer-events-none absolute right-[5%] top-[10%] h-[72%] w-[48%] rounded-full border border-blue-200/60" />
+            <div className="pointer-events-none absolute right-[13%] top-[8%] h-24 w-40 bg-[radial-gradient(circle,#2563FF_1.3px,transparent_1.6px)] bg-[length:10px_10px] opacity-[0.13]" />
+            <img
+              src="/brand/register-hero-identity-transparent.png"
+              alt=""
+              className="pointer-events-none absolute right-[-28%] top-1/2 z-0 h-[255px] w-[78%] max-w-[420px] -translate-y-1/2 object-contain drop-shadow-[0_28px_54px_rgba(37,99,255,0.30)] sm:right-[-10%] sm:h-[320px] sm:w-[52%] md:right-[-4%] md:h-[355px] md:w-[48%]"
+            />
+            <div className="relative z-10 max-w-[58%] py-4 sm:max-w-[52%] sm:py-8 md:max-w-[48%]">
+              <h1 className="text-[50px] font-black leading-[0.88] tracking-tight text-[#0B1220] sm:text-7xl">
                 Crie sua <span className="block text-[#2563FF] drop-shadow-[0_10px_30px_rgba(37,99,255,0.24)]">conta</span>
               </h1>
-              <p className="mt-5 max-w-md text-lg font-semibold leading-8 text-[#475569]">
+              <p className="mt-5 max-w-[18rem] text-base font-semibold leading-7 text-[#475569] sm:text-lg sm:leading-8">
                 Encontre ajuda, ofereca servicos e crie conexoes na sua regiao.
               </p>
             </div>
-
-            <div className="relative min-h-[250px] md:min-h-[330px]">
-              <div className="absolute inset-0 rounded-[2.5rem] bg-[radial-gradient(circle_at_50%_45%,rgba(37,99,255,0.15),transparent_58%)]" />
-              <img
-                src="/brand/register-hero-identity.jpg"
-                alt=""
-                className="relative z-10 mx-auto h-[280px] w-full max-w-[440px] object-contain mix-blend-screen drop-shadow-[0_26px_46px_rgba(37,99,255,0.28)] md:h-[350px]"
-              />
-              <Sparkles className="absolute right-12 top-7 h-5 w-5 fill-[#2563FF] text-[#2563FF]" />
-              <Sparkles className="absolute bottom-10 left-10 h-4 w-4 fill-cyan-400 text-cyan-400" />
-            </div>
+            <Sparkles className="absolute right-[20%] top-8 h-5 w-5 fill-[#2563FF] text-[#2563FF]" />
+            <Sparkles className="absolute bottom-10 left-[46%] h-4 w-4 fill-cyan-400 text-cyan-400" />
           </section>
 
-          <section className="relative z-10 mt-3 grid grid-cols-3 overflow-hidden rounded-[2rem] border border-white/80 bg-white/60 shadow-[0_14px_40px_rgba(15,23,42,0.04)] backdrop-blur-xl">
+          <section className="relative z-10 -mt-2 grid grid-cols-3 overflow-hidden rounded-[2rem] border border-white/80 bg-white/70 shadow-[0_14px_40px_rgba(15,23,42,0.04)] backdrop-blur-xl">
             {[
               { icon: ShieldCheck, title: 'Seguro', sub: 'e confiavel' },
               { icon: Zap, title: 'Rapido', sub: 'e facil' },

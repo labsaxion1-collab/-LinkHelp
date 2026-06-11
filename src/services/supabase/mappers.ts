@@ -54,6 +54,7 @@ export function requestRowToJob(row: RequestRow, client: MapperProfile): Job {
     budgetMin: row.budget_min,
     budgetMax: row.budget_max,
     acceptedAmount: row.accepted_amount,
+    applicantCount: row.application_count ?? 0,
     exclusiveHelperId: row.exclusive_helper_id ?? null,
     value: budgetValue || '---',
     urgency: (row.urgency === 'high' ? 'high' : 'normal') as JobUrgency,

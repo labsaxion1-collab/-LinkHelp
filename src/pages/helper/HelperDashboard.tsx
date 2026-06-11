@@ -22,7 +22,6 @@ import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { UpcomingJobsSidebar } from '@/components/helpers/UpcomingJobsSidebar';
 import { UpcomingJobDetailModal } from '@/components/modals/UpcomingJobDetailModal';
 import {
-  buildActiveApplicationCountsByJobId,
   isJobInterestFull,
   isRequestExclusiveLockedForViewer,
 } from '@/utils/applicationInterest';
@@ -785,11 +784,6 @@ export default function HelperDashboard() {
 
   const swipeRateLimited = Date.now() < swipeCooldownUntil;
 
-  const applicationCountsByJobId = useMemo(
-    () => buildActiveApplicationCountsByJobId(applications),
-    [applications],
-  );
-
   const displayedJobs = useMemo(() => {
     const viewerId = helperUserId ?? me?.id ?? '';
     let list = jobs.filter(
@@ -821,12 +815,11 @@ export default function HelperDashboard() {
     return list.filter((j) => {
       if (dismissedJobIds.has(j.id) || helperEngagedJobIds.has(j.id)) return false;
       if (isRequestExclusiveLockedForViewer(j, applications, viewerId)) return false;
-      return !isJobInterestFull(applicationCountsByJobId.get(j.id) ?? 0);
+      return !isJobInterestFull(j.applicantCount ?? 0);
     });
   }, [
     jobs,
     applications,
-    applicationCountsByJobId,
     selectedCategoryFilters,
     activeTab,
     helperBaseCoords,
@@ -851,7 +844,7 @@ export default function HelperDashboard() {
         getJobServiceCategoryId(j) &&
         !helperEngagedJobIds.has(j.id) &&
         !isRequestExclusiveLockedForViewer(j, applications, helperUserId ?? me?.id ?? '') &&
-        !isJobInterestFull(applicationCountsByJobId.get(j.id) ?? 0),
+        !isJobInterestFull(j.applicantCount ?? 0),
     ),
     categoryPrefs,
   )
@@ -1333,7 +1326,7 @@ export default function HelperDashboard() {
                         distanceFromBase={hasExactBaseCoords}
                         needsBaseAddress={!hasHelperBaseAddress}
                         baseAddressPendingCoords={baseAddressPendingCoords}
-                        applicationsCount={applicationCountsByJobId.get(job.id) ?? 0}
+                        applicationsCount={job.applicantCount ?? 0}
                         clientReviewCount={reviewCountByUserId.get(job.clientId) ?? 0}
                         onApply={requestApply}
                         onSwipeInterest={handleSwipeInterest}

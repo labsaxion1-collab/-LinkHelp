@@ -25,7 +25,6 @@ type Props = {
   cameraFocus: { position: google.maps.LatLngLiteral; zoom: number } | null;
   focusedMarkerId: string | null;
   onFocusMarker: (id: string | null) => void;
-  applicationCountByJobId: Map<string, number>;
   onViewOpportunity: (jobId: string) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
 };
@@ -36,7 +35,6 @@ export function HelperMapCanvas({
   cameraFocus,
   focusedMarkerId,
   onFocusMarker,
-  applicationCountByJobId,
   onViewOpportunity,
   t,
 }: Props) {
@@ -85,7 +83,7 @@ export function HelperMapCanvas({
             <JobMapOpportunityCard
               job={point.data}
               distanceKm={point.dist}
-              applicationsCount={applicationCountByJobId.get(point.data.id) ?? 0}
+              applicationsCount={point.data.applicantCount ?? 0}
               t={t}
               onViewOpportunity={() => onViewOpportunity(point.data.id)}
             />
@@ -121,7 +119,7 @@ export function HelperMapCanvas({
             <JobMapOpportunityCard
               job={point.data}
               distanceKm={point.dist}
-              applicationsCount={applicationCountByJobId.get(point.data.id) ?? 0}
+              applicationsCount={point.data.applicantCount ?? 0}
               t={t}
               onViewOpportunity={() => onViewOpportunity(point.data.id)}
             />

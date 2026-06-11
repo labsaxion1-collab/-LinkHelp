@@ -43,6 +43,8 @@ export interface Job {
   createdTimezone?: string | null;
   /** Internal 0–100; not shown in UI */
   leadQualityScore?: number | null;
+  /** Denormalized count of active applications (pending/viewed/accepted). Updated by DB trigger. */
+  applicantCount?: number;
   /** Helper with active exclusive candidatura; other helpers cannot apply. */
   exclusiveHelperId?: string | null;
 }

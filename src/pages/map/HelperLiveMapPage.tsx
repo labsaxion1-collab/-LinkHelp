@@ -19,7 +19,6 @@ import {
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import {
-  buildActiveApplicationCountsByJobId,
   isJobInterestFull,
   isRequestExclusiveLockedForViewer,
 } from '@/utils/applicationInterest';
@@ -54,11 +53,6 @@ export default function HelperLiveMapPage() {
   const mapsApiKey = getGoogleMapsApiKey();
   const mapsReady = isGoogleMapsConfigured();
 
-  const applicationCountByJobId = useMemo(
-    () => buildActiveApplicationCountsByJobId(applications),
-    [applications],
-  );
-
   const center = useMemo(
     () => ({ lat: userCoords.lat, lng: userCoords.lng }),
     [userCoords.lat, userCoords.lng],
@@ -78,7 +72,7 @@ export default function HelperLiveMapPage() {
         j.clientId !== me.id &&
         !dismissedIds.has(j.id) &&
         !isRequestExclusiveLockedForViewer(j, applications, me.id) &&
-        !isJobInterestFull(applicationCountByJobId.get(j.id) ?? 0),
+        !isJobInterestFull(j.applicantCount ?? 0),
     );
     const inRadius = filterJobsForHelperRadar(openJobs, userCoords);
     const sorted = sortOpportunitiesForHelper(inRadius, { origin: userCoords, helperSkillIds: [] });
@@ -99,7 +93,7 @@ export default function HelperLiveMapPage() {
         };
       })
       .filter((p): p is JobMapPoint => p != null);
-  }, [jobs, userCoords, me.id, dismissedIds, applications, applicationCountByJobId]);
+  }, [jobs, userCoords, me.id, dismissedIds, applications]);
 
   const filteredPoints = useMemo(() => {
     let list = jobPoints.filter((p) => (activeFilter === 'urgent' ? p.urgency : true));
@@ -171,7 +165,6 @@ export default function HelperLiveMapPage() {
               cameraFocus={cameraFocus}
               focusedMarkerId={focusedMarkerId}
               onFocusMarker={setFocusedMarkerId}
-              applicationCountByJobId={applicationCountByJobId}
               onViewOpportunity={openOpportunity}
               t={t}
             />

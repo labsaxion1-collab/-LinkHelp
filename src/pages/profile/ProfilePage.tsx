@@ -1,4 +1,4 @@
-import { type ComponentType, useEffect, useMemo, useRef, useState } from 'react';
+import { type ComponentType, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -9,12 +9,10 @@ import {
   ChevronRight,
   Coins,
   Globe2,
-  Home,
   Languages,
   Loader2,
   Pencil,
   Settings,
-  ShieldCheck,
   Star,
   UserRound,
   X,
@@ -35,20 +33,6 @@ import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperS
 import { filterValidSkillKeys } from '@/data/helperSkillsCatalog';
 import { deriveHelperCategoriesFromSkillKeys, getHelperCategoryPreferences } from '@/utils/helperCategoryPreferences';
 import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
-import {
-  HelperBaseAddressInput,
-  helperBaseAddressFromProfile,
-  type HelperBaseAddressValue,
-} from '@/components/helper/HelperBaseAddressInput';
-import {
-  getHelperBaseChangeStatus,
-  helperBaseFieldsChanged,
-  helperBaseIsConfigured,
-} from '@/utils/helperBaseAddressLock';
-import {
-  HelperBaseAddressLockedError,
-  syncHelperBaseAddress,
-} from '@/services/supabase/helperBaseAddressRemote';
 import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
 import { cropSquareAvatarFromFile } from '@/utils/portfolioMediaProcessing';
 
@@ -116,10 +100,6 @@ export default function ProfilePage() {
   const [helperSkillIds, setHelperSkillIds] = useState<string[]>([]);
   const [primaryCategory, setPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
   const [secondaryCategories, setSecondaryCategories] = useState<ServiceCategoryId[]>([]);
-  const [helperBaseValue, setHelperBaseValue] = useState<HelperBaseAddressValue>(() =>
-    helperBaseAddressFromProfile({}),
-  );
-  const [baseAddressSaving, setBaseAddressSaving] = useState(false);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [avatarSaving, setAvatarSaving] = useState(false);
   const avatarObjectUrlRef = useRef<string | null>(null);
@@ -131,7 +111,6 @@ export default function ProfilePage() {
   const displayName = profile?.name?.trim() || session?.user.user_metadata?.name || email || 'LinkHelp';
   const initials = profileInitials(displayName, email);
   const avatarUrl = avatarPreviewUrl ?? profile?.avatar_url?.trim() ?? '';
-  const city = [profile?.city, profile?.region].filter(Boolean).join(', ');
   const roleLabel = profile?.role === 'helper' ? 'Helper' : profile?.role === 'client' ? 'Cliente' : 'LinkHelp';
   const bio = profile?.bio?.trim() || '';
   const balanceLabel = loading ? '...' : formatLinkCredits(balance ?? 0);
@@ -144,35 +123,6 @@ export default function ProfilePage() {
   const spokenLanguageLabels = (profile?.spoken_languages ?? [])
     .map((id) => LANGUAGE_LABELS[id] ?? id)
     .filter(Boolean);
-  const helperBaseLabel = [
-    profile?.helper_base_address,
-    profile?.helper_base_city,
-    profile?.helper_base_province,
-    profile?.helper_base_postal_code,
-  ]
-    .filter(Boolean)
-    .join(', ');
-  const baseChangeStatus = useMemo(() => getHelperBaseChangeStatus(profile), [profile]);
-  const baseConfigured = useMemo(() => helperBaseIsConfigured(profile), [profile]);
-  const baseFieldsLocked =
-    !baseChangeStatus.allowed && baseChangeStatus.reason === 'locked' && baseConfigured;
-  const baseHasPendingChanges = useMemo(
-    () =>
-      helperBaseFieldsChanged(profile, {
-        address: helperBaseValue.address,
-        city: helperBaseValue.city,
-        province: helperBaseValue.province,
-        postalCode: helperBaseValue.postalCode,
-        lat: helperBaseValue.latitude,
-        lng: helperBaseValue.longitude,
-      }),
-    [profile, helperBaseValue],
-  );
-
-  useEffect(() => {
-    if (!profile) return;
-    setHelperBaseValue(helperBaseAddressFromProfile(profile));
-  }, [profile]);
 
   const revokeAvatarObjectUrl = () => {
     if (avatarObjectUrlRef.current) {
@@ -230,48 +180,6 @@ export default function ProfilePage() {
       const msg = e instanceof Error ? e.message : String(e);
       showToast(msg || t('helper_categories.save_error'), 'error');
       throw e;
-    }
-  };
-
-  const saveHelperBaseAddress = async () => {
-    if (!isConfigured || !profile || !isHelperMode) {
-      showToast(t('app_pages.settings_saved'), 'info');
-      return;
-    }
-    if (!helperBaseValue.address.trim() && !helperBaseValue.city.trim()) {
-      showToast(t('app_pages.settings_helper_base_required'), 'error');
-      return;
-    }
-    if (!baseChangeStatus.allowed && baseChangeStatus.reason === 'locked' && baseHasPendingChanges) {
-      showToast(t('app_pages.settings_helper_base_lock_message'), 'error');
-      return;
-    }
-    if (!baseHasPendingChanges) {
-      showToast(t('app_pages.settings_helper_base_no_changes'), 'info');
-      return;
-    }
-    setBaseAddressSaving(true);
-    try {
-      await syncHelperBaseAddress({
-        address: helperBaseValue.address.trim() || null,
-        city: helperBaseValue.city.trim() || null,
-        province: helperBaseValue.province.trim() || null,
-        postalCode: helperBaseValue.postalCode.trim() || null,
-        lat: helperBaseValue.latitude,
-        lng: helperBaseValue.longitude,
-      });
-      const refreshed = await refreshProfile();
-      if (refreshed) setHelperBaseValue(helperBaseAddressFromProfile(refreshed));
-      showToast(t('app_pages.settings_helper_base_saved'), 'success');
-    } catch (e) {
-      if (e instanceof HelperBaseAddressLockedError) {
-        showToast(t('app_pages.settings_helper_base_lock_message'), 'error');
-      } else {
-        const msg = e instanceof Error ? e.message : String(e);
-        showToast(msg || t('app_pages.settings_helper_base_save_error'), 'error');
-      }
-    } finally {
-      setBaseAddressSaving(false);
     }
   };
 
@@ -558,76 +466,12 @@ export default function ProfilePage() {
                 />
               </section>
 
-              <section className="rounded-[1.5rem] border border-slate-100 bg-white p-4 shadow-[0_14px_32px_rgba(15,23,42,0.05)]">
-                <div className="mb-3 flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
-                    <Home className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <h2 className="text-sm font-black text-slate-950">Endere?o base do Helper</h2>
-                    <p className="mt-0.5 text-xs font-medium text-slate-500">Refer?ncia usada para oportunidades pr?ximas.</p>
-                  </div>
-                </div>
-                <div className="mb-4 space-y-2">
-                  {helperBaseLabel ? (
-                    <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900">
-                      {helperBaseLabel}
-                    </p>
-                  ) : (
-                    <p className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-900">
-                      Endere?o base nao configurado.
-                    </p>
-                  )}
-                  {profile?.helper_base_change_unlocked_by_admin ? (
-                    <p className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-900">
-                      {t('app_pages.settings_helper_base_admin_unlock')}
-                    </p>
-                  ) : null}
-                  {baseConfigured && baseChangeStatus.reason === 'locked' ? (
-                    <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
-                      {t('app_pages.settings_helper_base_lock_message')}
-                      <span className="mt-1 block font-bold">
-                        {t('app_pages.settings_helper_base_lock_days', {
-                          count: baseChangeStatus.daysUntilUnlock,
-                        })}
-                      </span>
-                    </p>
-                  ) : null}
-                </div>
-                <HelperBaseAddressInput
-                  value={helperBaseValue}
-                  onChange={setHelperBaseValue}
-                  disabled={baseFieldsLocked}
-                  locatingLabel={t('app_pages.settings_helper_base_locating')}
-                  currentLocationLabel={t('app_pages.settings_helper_base_use_location')}
-                  currentLocationShortLabel={t('app_pages.settings_helper_base_use_location_short')}
-                  placeholder={t('app_pages.settings_helper_base_address_placeholder')}
-                  cityLabel={t('app_pages.settings_helper_base_city')}
-                  provinceLabel={t('app_pages.settings_helper_base_province')}
-                  postalCodeLabel={t('app_pages.settings_helper_base_postal_code')}
-                />
-                <button
-                  type="button"
-                  disabled={
-                    baseAddressSaving ||
-                    !isConfigured ||
-                    baseFieldsLocked ||
-                    (!baseHasPendingChanges && baseConfigured)
-                  }
-                  onClick={() => void saveHelperBaseAddress()}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 text-sm font-black text-white hover:bg-cyan-700 disabled:opacity-50"
-                >
-                  {baseAddressSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {t('app_pages.settings_helper_base_save')}
-                </button>
-              </section>
-            </section>
-
             <HelperScorePanel
               collapsible
               defaultExpanded={false}
               className="rounded-[1.75rem] border border-slate-100 bg-white shadow-[0_18px_42px_rgba(15,23,42,0.06)]"
             />
+            </section>
           </>
         ) : null}
 

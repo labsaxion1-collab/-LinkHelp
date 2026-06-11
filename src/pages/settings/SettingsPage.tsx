@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { FilePickerLabel } from '@/components/common/HiddenFileInput';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -28,6 +28,20 @@ import { useOnboardingRewards } from '@/hooks/useOnboardingRewards';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { ByFluxBadge } from '@/components/brand/ByFluxBadge';
+import {
+  HelperBaseAddressInput,
+  helperBaseAddressFromProfile,
+  type HelperBaseAddressValue,
+} from '@/components/helper/HelperBaseAddressInput';
+import {
+  getHelperBaseChangeStatus,
+  helperBaseFieldsChanged,
+  helperBaseIsConfigured,
+} from '@/utils/helperBaseAddressLock';
+import {
+  HelperBaseAddressLockedError,
+  syncHelperBaseAddress,
+} from '@/services/supabase/helperBaseAddressRemote';
 
 const SPOKEN_LANGUAGE_OPTIONS = [
   { id: 'pt', label: 'Português' },
@@ -89,6 +103,10 @@ export default function SettingsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [helperBaseValue, setHelperBaseValue] = useState<HelperBaseAddressValue>(() =>
+    helperBaseAddressFromProfile({}),
+  );
+  const [baseAddressSaving, setBaseAddressSaving] = useState(false);
 
   const isHelper = profile?.role === 'helper';
 
@@ -112,6 +130,7 @@ export default function SettingsPage() {
           : [language],
     );
     setBio(profile.bio?.trim() ?? '');
+    setHelperBaseValue(helperBaseAddressFromProfile(profile));
   }, [profile, session, language]);
 
   useEffect(() => {
@@ -148,6 +167,23 @@ export default function SettingsPage() {
     : 0;
   const addressLocked = addressLockDaysRemaining > 0;
 
+  const baseChangeStatus = useMemo(() => getHelperBaseChangeStatus(profile), [profile]);
+  const baseConfigured = useMemo(() => helperBaseIsConfigured(profile), [profile]);
+  const baseFieldsLocked =
+    !baseChangeStatus.allowed && baseChangeStatus.reason === 'locked' && baseConfigured;
+  const baseHasPendingChanges = useMemo(
+    () =>
+      helperBaseFieldsChanged(profile, {
+        address: helperBaseValue.address,
+        city: helperBaseValue.city,
+        province: helperBaseValue.province,
+        postalCode: helperBaseValue.postalCode,
+        lat: helperBaseValue.latitude,
+        lng: helperBaseValue.longitude,
+      }),
+    [profile, helperBaseValue],
+  );
+
   const saveAccount = async () => {
     const { countryId, nationalNumber } = parseStoredPhone(phone);
     const phoneValidation = validatePhoneNumber(countryId, nationalNumber);
@@ -161,10 +197,10 @@ export default function SettingsPage() {
       return;
     }
 
-    // Check address 30-day lock
+    // Check address 30-day lock (clients only — helpers use helper base address)
     const newCity = (cityCanon.trim() || cityDisplay.trim()) || null;
-    const addressChanged = newCity !== (profile.city ?? null);
-    if (addressLocked && addressChanged) {
+    const addressChanged = !isHelper && newCity !== (profile.city ?? null);
+    if (!isHelper && addressLocked && addressChanged) {
       showToast(t('app_pages.settings_address_lock', { count: String(addressLockDaysRemaining) }), 'error');
       return;
     }
@@ -173,12 +209,16 @@ export default function SettingsPage() {
     const base: Parameters<typeof updateProfile>[0] = {
       name: name.trim() || null,
       phone: phone?.trim() ? phone.trim() : null,
-      city: newCity,
-      region: province.trim() || null,
-      country: country.trim() || null,
       preferred_language: language,
       bio: bio.trim() || null,
-      ...(addressChanged && newCity ? { address_updated_at: new Date().toISOString() } : {}),
+      ...(!isHelper
+        ? {
+            city: newCity,
+            region: province.trim() || null,
+            country: country.trim() || null,
+            ...(addressChanged && newCity ? { address_updated_at: new Date().toISOString() } : {}),
+          }
+        : {}),
     };
     const err = await updateProfile(
       isHelper
@@ -201,6 +241,48 @@ export default function SettingsPage() {
     await signOut();
     showToast(t('nav.toast_logout'), 'success');
     navigate(ROUTES.home, { replace: true });
+  };
+
+  const saveHelperBaseAddress = async () => {
+    if (!isConfigured || !profile || !isHelper) {
+      showToast(t('app_pages.settings_saved'), 'info');
+      return;
+    }
+    if (!helperBaseValue.address.trim() && !helperBaseValue.city.trim()) {
+      showToast(t('app_pages.settings_helper_base_required'), 'error');
+      return;
+    }
+    if (!baseChangeStatus.allowed && baseChangeStatus.reason === 'locked' && baseHasPendingChanges) {
+      showToast(t('app_pages.settings_helper_base_lock_message'), 'error');
+      return;
+    }
+    if (!baseHasPendingChanges) {
+      showToast(t('app_pages.settings_helper_base_no_changes'), 'info');
+      return;
+    }
+    setBaseAddressSaving(true);
+    try {
+      await syncHelperBaseAddress({
+        address: helperBaseValue.address.trim() || null,
+        city: helperBaseValue.city.trim() || null,
+        province: helperBaseValue.province.trim() || null,
+        postalCode: helperBaseValue.postalCode.trim() || null,
+        lat: helperBaseValue.latitude,
+        lng: helperBaseValue.longitude,
+      });
+      const refreshed = await refreshProfile();
+      if (refreshed) setHelperBaseValue(helperBaseAddressFromProfile(refreshed));
+      showToast(t('app_pages.settings_helper_base_saved'), 'success');
+    } catch (e) {
+      if (e instanceof HelperBaseAddressLockedError) {
+        showToast(t('app_pages.settings_helper_base_lock_message'), 'error');
+      } else {
+        const msg = e instanceof Error ? e.message : String(e);
+        showToast(msg || t('app_pages.settings_helper_base_save_error'), 'error');
+      }
+    } finally {
+      setBaseAddressSaving(false);
+    }
   };
 
   const deleteAccount = async () => {
@@ -347,34 +429,82 @@ export default function SettingsPage() {
               Seu telefone só será exibido para o cliente após a contratação.
             </p>
 
-            {/* Address with 30-day lock */}
-            <div>
-              <CityRegionAutocomplete
-                label={t('app_pages.settings_city')}
-                value={cityDisplay}
-                onChangeText={(text) => {
-                  if (addressLocked) return;
-                  setCityDisplay(text);
-                  setCityCanon('');
-                  setProvince('');
-                  setCountry('');
-                }}
-                onPickPlace={(p: QuebecPlace) => {
-                  if (addressLocked) return;
-                  setCityDisplay(p.label);
-                  setCityCanon(p.city);
-                  setProvince(p.region);
-                  setCountry(p.country);
-                }}
-                disabled={!isConfigured || addressLocked}
-                placeholder={t('profile_form.city_placeholder')}
-              />
-              {addressLocked ? (
-                <p className="mt-1 text-[11px] font-semibold text-amber-600">
-                  {t('app_pages.settings_address_lock', { count: String(addressLockDaysRemaining) })}
-                </p>
-              ) : null}
-            </div>
+            {/* Address — helpers: full base address; clients: city with 30-day lock */}
+            {isHelper ? (
+              <div>
+                <p className="mb-1 text-sm font-semibold text-gray-700">{t('app_pages.settings_address_section')}</p>
+                <p className="mb-3 text-[11px] text-gray-400">{t('app_pages.settings_helper_base_hint')}</p>
+                {profile?.helper_base_change_unlocked_by_admin ? (
+                  <p className="mb-3 rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-900">
+                    {t('app_pages.settings_helper_base_admin_unlock')}
+                  </p>
+                ) : null}
+                {baseConfigured && baseChangeStatus.reason === 'locked' ? (
+                  <p className="mb-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+                    {t('app_pages.settings_helper_base_lock_message')}
+                    <span className="mt-1 block font-bold">
+                      {t('app_pages.settings_helper_base_lock_days', {
+                        count: baseChangeStatus.daysUntilUnlock,
+                      })}
+                    </span>
+                  </p>
+                ) : null}
+                <HelperBaseAddressInput
+                  value={helperBaseValue}
+                  onChange={setHelperBaseValue}
+                  disabled={baseFieldsLocked || !isConfigured}
+                  locatingLabel={t('app_pages.settings_helper_base_locating')}
+                  currentLocationLabel={t('app_pages.settings_helper_base_use_location')}
+                  currentLocationShortLabel={t('app_pages.settings_helper_base_use_location_short')}
+                  placeholder={t('app_pages.settings_helper_base_address_placeholder')}
+                  cityLabel={t('app_pages.settings_helper_base_city')}
+                  provinceLabel={t('app_pages.settings_helper_base_province')}
+                  postalCodeLabel={t('app_pages.settings_helper_base_postal_code')}
+                />
+                <button
+                  type="button"
+                  disabled={
+                    baseAddressSaving ||
+                    !isConfigured ||
+                    baseFieldsLocked ||
+                    (!baseHasPendingChanges && baseConfigured)
+                  }
+                  onClick={() => void saveHelperBaseAddress()}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {baseAddressSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {t('app_pages.settings_helper_base_save')}
+                </button>
+              </div>
+            ) : (
+              <div>
+                <CityRegionAutocomplete
+                  label={t('app_pages.settings_city')}
+                  value={cityDisplay}
+                  onChangeText={(text) => {
+                    if (addressLocked) return;
+                    setCityDisplay(text);
+                    setCityCanon('');
+                    setProvince('');
+                    setCountry('');
+                  }}
+                  onPickPlace={(p: QuebecPlace) => {
+                    if (addressLocked) return;
+                    setCityDisplay(p.label);
+                    setCityCanon(p.city);
+                    setProvince(p.region);
+                    setCountry(p.country);
+                  }}
+                  disabled={!isConfigured || addressLocked}
+                  placeholder={t('profile_form.city_placeholder')}
+                />
+                {addressLocked ? (
+                  <p className="mt-1 text-[11px] font-semibold text-amber-600">
+                    {t('app_pages.settings_address_lock', { count: String(addressLockDaysRemaining) })}
+                  </p>
+                ) : null}
+              </div>
+            )}
 
             {/* Bio (helpers only) */}
             {isHelper ? (

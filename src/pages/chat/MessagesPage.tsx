@@ -75,6 +75,7 @@ export default function MessagesPage() {
   const [showScrollTopFab, setShowScrollTopFab] = useState(false);
   const [showScrollBottomFab, setShowScrollBottomFab] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
+  const [vvHeight, setVvHeight] = useState<number | null>(null);
   const [showPreMatchInfo, setShowPreMatchInfo] = useState(false);
   const [showJobDetail, setShowJobDetail] = useState(false);
   const [listLevel, setListLevel] = useState<'peers' | 'jobs'>('peers');
@@ -194,12 +195,24 @@ export default function MessagesPage() {
     return () => window.clearTimeout(t);
   }, [threadMessages, isTyping, scrollMessagesTo, mobilePanel, isMd, remote.selectedId]);
 
+  // Scroll to bottom when keyboard opens so the latest message stays visible
+  useEffect(() => {
+    if (keyboardInset > 0) {
+      const t = window.setTimeout(() => scrollMessagesTo('bottom', 'auto'), 80);
+      return () => window.clearTimeout(t);
+    }
+  }, [keyboardInset, scrollMessagesTo]);
+
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
     const sync = () => {
+      // keyboard inset = gap between layout viewport bottom and visual viewport bottom
       const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      setKeyboardInset(inset > 40 ? inset : 0);
+      const isOpen = inset > 40;
+      setKeyboardInset(isOpen ? inset : 0);
+      // Store actual visual viewport height for precise thread sizing (no 280px cap)
+      setVvHeight(isOpen ? vv.height : null);
     };
     vv.addEventListener('resize', sync);
     vv.addEventListener('scroll', sync);
@@ -499,7 +512,6 @@ export default function MessagesPage() {
   const inputBar = (
     <div
       className="shrink-0 space-y-2 border-t border-[rgba(15,23,42,0.06)] bg-white/96 px-4 pb-[max(env(safe-area-inset-bottom),0.85rem)] pt-3 backdrop-blur-xl md:pb-4 sm:px-6"
-      style={keyboardInset > 0 ? { paddingBottom: `max(${keyboardInset}px, env(safe-area-inset-bottom))` } : undefined}
     >
       {counterLabel ? (
         <p className="px-1 text-center text-[13px] font-semibold text-[#6B7280] tabular-nums">
@@ -760,10 +772,13 @@ export default function MessagesPage() {
             'md:flex',
           )}
           style={
-            !isMd && keyboardInset > 0
+            !isMd && vvHeight !== null
               ? {
-                  maxHeight: `calc(100dvh - ${Math.min(keyboardInset, 280)}px)`,
-                  height: `calc(100dvh - ${Math.min(keyboardInset, 280)}px)`,
+                  // Pin thread height to the actual visual viewport (excludes keyboard).
+                  // vvHeight comes from window.visualViewport.height which is always accurate
+                  // on both Android Chrome and iOS Safari when keyboard is open.
+                  height: `${vvHeight}px`,
+                  maxHeight: `${vvHeight}px`,
                 }
               : undefined
           }

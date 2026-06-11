@@ -59,10 +59,18 @@ export default function DashboardEntryPage() {
     try {
       authFlowLog('OAuth role picker confirmed', { role, userId: session.user.id });
 
+      // First attempt to set role in DB
       const result = await confirmInitialProfileRole(role);
       if (result.ok === false) {
-        authFlowLog('confirmInitialProfileRole failed', { role, message: result.message });
-        console.warn('[LinkHelp] confirmInitialProfileRole', result.message);
+        authFlowLog('confirmInitialProfileRole first attempt failed — retrying', { role, message: result.message });
+        console.warn('[LinkHelp] confirmInitialProfileRole first attempt:', result.message);
+        // Profile may not exist yet (trigger race). Wait briefly then retry.
+        await new Promise((r) => window.setTimeout(r, 1500));
+        const retry = await confirmInitialProfileRole(role);
+        if (retry.ok === false) {
+          console.warn('[LinkHelp] confirmInitialProfileRole retry failed:', retry.message);
+          // Continue anyway — updateUser metadata is the fallback path
+        }
       }
 
       const sb = getSupabase();
@@ -76,9 +84,15 @@ export default function DashboardEntryPage() {
             helper_terms_accepted_at: role === 'helper' ? now : '',
           },
         });
+
+        // Get fresh user AFTER updateUser so that refreshProfile sees user_type: role
+        const { data: freshSession } = await sb.auth.getUser();
+        const freshUser = freshSession?.user ?? session.user;
+        await refreshProfile(freshUser);
+      } else {
+        await refreshProfile(session.user);
       }
 
-      await refreshProfile(session.user);
       writeStoredAppMode(role, session.user.id);
       redirected.current = true;
       const dest = dashboardPathForRole(role);

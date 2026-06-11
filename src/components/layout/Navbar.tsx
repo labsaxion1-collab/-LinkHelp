@@ -39,7 +39,13 @@ export default function Navbar() {
 
   const isHelperNav = isHelperMode;
   const isHome = location.pathname === ROUTES.home;
-  const usePremiumNav = isHome || location.pathname === ROUTES.login || location.pathname === ROUTES.signup || isConnected;
+  const usePremiumNav =
+    isHome ||
+    location.pathname === ROUTES.login ||
+    location.pathname === ROUTES.signup ||
+    location.pathname === ROUTES.howItWorks ||
+    location.pathname === ROUTES.contact ||
+    isConnected;
   const logoTarget = isConnected
     ? isHelperNav
       ? ROUTES.helperOpportunities

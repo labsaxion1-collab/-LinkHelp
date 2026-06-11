@@ -4,14 +4,11 @@ import {
   BadgeCheck,
   Banknote,
   BriefcaseBusiness,
-  CheckCircle2,
   MessageCircle,
   Search,
-  ShieldCheck,
   Sparkles,
   UserRound,
 } from 'lucide-react';
-import { LogoIcon } from '@/components/ui/Logo';
 import { ROUTES } from '@/utils/constants';
 
 const clientSteps = [
@@ -50,13 +47,6 @@ const helperSteps = [
   },
 ];
 
-const trustItems = [
-  'Chat protegido antes da contratacao',
-  'Perfis organizados para decisao rapida',
-  'Fluxo mobile-first para usar no dia a dia',
-  'Categorias e oportunidades em tempo real',
-];
-
 export default function HowItWorksPage() {
   return (
     <div className="relative min-h-dvh overflow-hidden bg-[#050816] text-white">
@@ -64,7 +54,7 @@ export default function HowItWorksPage() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.14)_1px,transparent_1px)] [background-size:42px_42px] opacity-[0.07]" />
 
       <main className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col gap-16 px-5 py-12 sm:px-6 lg:px-8">
-        <section className="grid min-h-[58vh] items-center gap-10 lg:grid-cols-[1.02fr_0.98fr]">
+        <section className="flex min-h-[58vh] items-center">
           <div className="max-w-3xl">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-sky-200 backdrop-blur-xl">
               <Sparkles className="h-4 w-4" />
@@ -91,32 +81,6 @@ export default function HowItWorksPage() {
               >
                 Quero ser helper
               </Link>
-            </div>
-          </div>
-
-          <div className="relative mx-auto w-full max-w-md">
-            <div className="absolute -inset-8 rounded-[3rem] bg-[#2563FF]/20 blur-3xl" />
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[0.07] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
-              <div className="flex items-center justify-between rounded-[1.6rem] bg-white/[0.08] p-4 ring-1 ring-white/10">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2563FF]">
-                    <LogoIcon className="h-7 w-7" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-black">LinkHelp</p>
-                    <p className="text-xs font-semibold text-sky-100/65">Marketplace local</p>
-                  </div>
-                </div>
-                <ShieldCheck className="h-6 w-6 text-emerald-300" />
-              </div>
-              <div className="mt-5 space-y-3">
-                {trustItems.map((item) => (
-                  <div key={item} className="flex items-center gap-3 rounded-2xl bg-white/[0.06] px-4 py-3 ring-1 ring-white/8">
-                    <CheckCircle2 className="h-5 w-5 shrink-0 text-[#33B6FF]" />
-                    <span className="text-sm font-bold text-white/90">{item}</span>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </section>

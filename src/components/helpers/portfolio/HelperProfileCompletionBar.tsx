@@ -7,12 +7,19 @@ type Props = {
   breakdown: HelperCompletionBreakdown;
   onRowClick?: (key: CompletionRowKey) => void;
   suggestions?: string[];
+  /** Hide skills row — category setup lives on Profile page only */
+  hideSkillsRow?: boolean;
 };
 
-export function HelperProfileCompletionBar({ breakdown, onRowClick, suggestions = [] }: Props) {
+export function HelperProfileCompletionBar({
+  breakdown,
+  onRowClick,
+  suggestions = [],
+  hideSkillsRow = false,
+}: Props) {
   const { t } = useLanguage();
 
-  const rows: { key: CompletionRowKey; labelKey: string; icon: ReactNode }[] = [
+  const allRows: { key: CompletionRowKey; labelKey: string; icon: ReactNode }[] = [
     {
       key: 'profilePhoto',
       labelKey: 'helper_profile_completion.item_profile_photo',
@@ -24,8 +31,13 @@ export function HelperProfileCompletionBar({ breakdown, onRowClick, suggestions 
       icon: <Icons.Wrench className="w-3.5 h-3.5" />,
     },
   ];
+  const rows = hideSkillsRow ? allRows.filter((row) => row.key !== 'skillsSelected') : allRows;
 
-  const pct = breakdown.percent;
+  const pct = hideSkillsRow
+    ? breakdown.profilePhoto
+      ? 100
+      : 0
+    : breakdown.percent;
 
   if (pct >= 100) return null;
 

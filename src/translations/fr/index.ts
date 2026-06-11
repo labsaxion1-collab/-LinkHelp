@@ -689,6 +689,7 @@ export const fr = {
   },
   helper_dashboard: {
     app_pending: 'En attente',
+    app_your_proposal: 'Votre proposition : {{amount}}',
     app_viewed: 'Vu',
     app_accepted: 'Accepté',
     app_rejected: 'Refusé',

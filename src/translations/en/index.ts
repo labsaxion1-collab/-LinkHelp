@@ -687,6 +687,7 @@ export const en = {
   },
   helper_dashboard: {
     app_pending: 'Pending',
+    app_your_proposal: 'Your proposal: {{amount}}',
     app_viewed: 'Viewed',
     app_accepted: 'Accepted',
     app_rejected: 'Rejected',

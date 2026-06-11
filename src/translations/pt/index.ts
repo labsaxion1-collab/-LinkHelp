@@ -697,6 +697,7 @@ export const pt = {
   },
   helper_dashboard: {
     app_pending: 'Pendente',
+    app_your_proposal: 'Sua proposta: {{amount}}',
     app_viewed: 'Visualizado',
     app_accepted: 'Aceito',
     app_rejected: 'Recusado',

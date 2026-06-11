@@ -5,10 +5,11 @@ import { HelperTermsGateModal } from '@/components/auth/HelperTermsGateModal';
 
 type Props = {
   busy?: boolean;
+  accountPreviouslyRegistered?: boolean;
   onConfirm: (role: 'client' | 'helper') => void | Promise<void>;
 };
 
-export function OAuthRolePicker({ busy, onConfirm }: Props) {
+export function OAuthRolePicker({ busy, accountPreviouslyRegistered, onConfirm }: Props) {
   const { t } = useLanguage();
   const [mode, setMode] = useState<'client' | 'helper' | null>(null);
   const [helperModalOpen, setHelperModalOpen] = useState(false);
@@ -50,6 +51,11 @@ export function OAuthRolePicker({ busy, onConfirm }: Props) {
 
       <div className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-10 bg-gradient-to-b from-slate-50 to-white">
         <div className="w-full max-w-md rounded-3xl bg-white border border-slate-100 shadow-xl p-6 sm:p-8 ring-1 ring-slate-100/80">
+          {accountPreviouslyRegistered ? (
+            <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 leading-relaxed">
+              {t('auth.account_reactivate_notice')}
+            </div>
+          ) : null}
           <h1 className="text-xl font-black text-slate-900 text-center">{t('register_page.account_type_heading')}</h1>
           <p className="mt-2 text-sm text-slate-500 text-center leading-relaxed">{t('register_page.account_type_sub')}</p>
 

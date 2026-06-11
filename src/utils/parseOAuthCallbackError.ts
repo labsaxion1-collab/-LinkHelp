@@ -91,3 +91,20 @@ export function userNeedsOAuthRoleSelection(user: {
   const raw = user.user_metadata?.user_type;
   return typeof raw !== 'string' || (raw !== 'client' && raw !== 'helper');
 }
+
+export function profileIsDeleted(profile: { deleted_at?: string | null } | null | undefined): boolean {
+  return Boolean(profile?.deleted_at);
+}
+
+/** True when user must pick Client vs Helper (new OAuth signup or re-onboarding after account deletion). */
+export function userNeedsRoleSelection(
+  user: {
+    user_metadata?: Record<string, unknown>;
+    app_metadata?: Record<string, unknown>;
+  } | null | undefined,
+  profile?: { deleted_at?: string | null } | null,
+): boolean {
+  if (!user) return false;
+  if (profileIsDeleted(profile)) return true;
+  return userNeedsOAuthRoleSelection(user);
+}

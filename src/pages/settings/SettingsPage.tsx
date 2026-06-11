@@ -42,6 +42,8 @@ import {
   HelperBaseAddressLockedError,
   syncHelperBaseAddress,
 } from '@/services/supabase/helperBaseAddressRemote';
+import { PUSH_SUBSCRIPTIONS_TABLE } from '@/config/pushNotifications';
+import { clearStoredAppMode } from '@/utils/appModeStorage';
 
 const SPOKEN_LANGUAGE_OPTIONS = [
   { id: 'pt', label: 'Português' },
@@ -287,10 +289,11 @@ export default function SettingsPage() {
 
   const deleteAccount = async () => {
     if (!isConfigured || !profile || !session?.user?.id) return;
+    const userId = session.user.id;
     setDeleting(true);
     try {
-      // Anonymize profile data
-      await updateProfile({
+      const deletedAt = new Date().toISOString();
+      const profileErr = await updateProfile({
         name: null,
         bio: null,
         phone: null,
@@ -299,13 +302,30 @@ export default function SettingsPage() {
         country: null,
         avatar_url: null,
         spoken_languages: [],
+        deleted_at: deletedAt,
       });
-      // Clear notifications via direct Supabase call
+      if (profileErr) {
+        showToast(t(profileErr.messageKey, profileErr.vars), 'error');
+        return;
+      }
+
       const { getSupabase } = await import('@/lib/supabase');
       const sb = getSupabase();
       if (sb) {
-        await sb.from('notifications').delete().eq('user_id', session.user.id);
+        await sb.from('notifications').delete().eq('user_id', userId);
+        await sb.from(PUSH_SUBSCRIPTIONS_TABLE).delete().eq('user_id', userId);
+        await sb.auth.updateUser({
+          data: {
+            user_type: '',
+            accepted_terms: false,
+            accepted_terms_at: '',
+            helper_terms_accepted: false,
+            helper_terms_accepted_at: '',
+          },
+        });
       }
+
+      clearStoredAppMode(userId);
       showToast(t('app_pages.settings_delete_account_success'), 'success');
       await signOut();
       navigate(ROUTES.home, { replace: true });

@@ -119,10 +119,12 @@ export const pt = {
     reset_back_login: 'Voltar ao login',
     oauth_choose_role_title: 'Como você vai usar o LinkHelp?',
     oauth_choose_role_sub: 'Escolha se você quer contratar ajuda ou oferecer serviços como helper.',
+    account_reactivate_notice:
+      'Esta conta já foi cadastrada antes. Escolha novamente Cliente ou Helper para reativar seu acesso.',
     errors: {
       env_not_ready:
         'O Supabase não está configurado. Crie um ficheiro `.env` na raiz (não use só o `.env.example`) com o URL do projeto e a chave anon reais em Supabase → Definições → API e reinicie o `npm run dev`. Em Authentication → URL Configuration, inclua http://localhost:3000 e http://localhost:3000/auth/callback.',
-      email_taken: 'Este e-mail já está cadastrado.',
+      email_taken: 'Este e-mail já está cadastrado. Use Entrar se já tiver conta.',
       invalid_credentials: 'E-mail ou senha inválidos.',
       email_not_confirmed: 'Confirme seu e-mail antes de entrar (verifique a caixa de entrada).',
       weak_password: 'Senha fraca. Use uma senha mais longa e forte.',

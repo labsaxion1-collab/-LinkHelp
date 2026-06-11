@@ -119,10 +119,12 @@ export const fr = {
     reset_back_login: 'Retour a la connexion',
     oauth_choose_role_title: 'Comment utiliserez-vous LinkHelp ?',
     oauth_choose_role_sub: "Choisissez si vous cherchez de l'aide ou si vous offrez des services comme helper.",
+    account_reactivate_notice:
+      'Ce compte a déjà été enregistré. Choisissez à nouveau Client ou Helper pour réactiver votre accès.',
     errors: {
       env_not_ready:
         'Supabase n’est pas configuré. Créez un fichier `.env` à la racine (pas seulement `.env.example`) avec l’URL du projet et la clé anon réelles (Supabase → Settings → API), puis redémarrez `npm run dev`. Dans Authentication → URL Configuration, ajoutez http://localhost:3000 et http://localhost:3000/auth/callback.',
-      email_taken: 'Cette adresse e-mail est déjà enregistrée.',
+      email_taken: 'Cette adresse e-mail est déjà enregistrée. Utilisez Connexion si vous avez déjà un compte.',
       invalid_credentials: 'E-mail ou mot de passe invalide.',
       email_not_confirmed: "Confirmez votre e-mail avant de vous connecter (vérifiez votre boîte de réception).",
       weak_password: 'Mot de passe trop faible. Utilisez un mot de passe plus long et robuste.',

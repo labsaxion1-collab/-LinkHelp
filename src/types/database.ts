@@ -37,6 +37,8 @@ export type ProfileRow = {
   helper_terms_accepted_at: string | null;
   /** Timestamp of last personal address/city change (30-day lock). */
   address_updated_at: string | null;
+  /** Set when user deletes account; cleared on re-onboarding. */
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 };

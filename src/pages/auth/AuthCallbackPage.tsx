@@ -14,7 +14,7 @@ import {
   clearOAuthRedirectPending,
   markOAuthCallbackActive,
 } from '@/utils/authStorage';
-import { parseOAuthCallbackError, userNeedsOAuthRoleSelection } from '@/utils/parseOAuthCallbackError';
+import { parseOAuthCallbackError, userNeedsRoleSelection } from '@/utils/parseOAuthCallbackError';
 
 async function waitForSessionFromClient(sb: SupabaseClient, maxMs: number): Promise<import('@supabase/supabase-js').Session | null> {
   const deadline = Date.now() + maxMs;
@@ -162,8 +162,8 @@ export default function AuthCallbackPage() {
 
         if (cancelled) return;
 
-        if (userNeedsOAuthRoleSelection(session.user)) {
-          authFlowLog('OAuth user needs role selection', { userId: session.user.id });
+        if (userNeedsRoleSelection(session.user, profileRow)) {
+          authFlowLog('OAuth user needs role selection', { userId: session.user.id, deleted: Boolean(profileRow?.deleted_at) });
           clearOAuthCallbackActive();
           clearOAuthRedirectPending();
           navigate(ROUTES.dashboard, { replace: true });

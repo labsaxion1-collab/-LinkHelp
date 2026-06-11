@@ -628,6 +628,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           devRaw: import.meta.env.DEV ? error.message : undefined,
         };
       }
+
+      // Supabase may return 200 with empty identities when email already exists (anti-enumeration).
+      const identities = data.user?.identities;
+      if (data.user && (!identities || identities.length === 0)) {
+        authDevLog('signUp:existing_account', { email, userId: data.user.id });
+        return { code: 'auth_failed', messageKey: 'auth.errors.email_taken' };
+      }
+
       return null;
     },
     [],
@@ -780,6 +788,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         'helper_terms_accepted',
         'helper_terms_accepted_at',
         'address_updated_at',
+        'deleted_at',
       ];
       const profilePatch: Partial<AuthProfile> = {};
       for (const k of allowed) {

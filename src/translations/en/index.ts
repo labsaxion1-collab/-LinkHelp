@@ -119,10 +119,12 @@ export const en = {
     reset_back_login: 'Back to login',
     oauth_choose_role_title: 'How will you use LinkHelp?',
     oauth_choose_role_sub: 'Choose whether you want to hire help or offer services as a helper.',
+    account_reactivate_notice:
+      'This account was registered before. Choose Client or Helper again to reactivate your access.',
     errors: {
       env_not_ready:
         'Supabase is not configured. Create a `.env` file in the project root (not `.env.example`) with your real project URL and anon key from Supabase → Settings → API, then restart `npm run dev`. Add redirect URLs for http://localhost:3000 and http://localhost:3000/auth/callback.',
-      email_taken: 'This email is already registered.',
+      email_taken: 'This email is already registered. Use Sign in if you already have an account.',
       invalid_credentials: 'Invalid email or password.',
       email_not_confirmed: 'Confirm your email before signing in (check your inbox).',
       weak_password: 'Password is too weak. Use a longer, stronger password.',

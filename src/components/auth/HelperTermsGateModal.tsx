@@ -11,22 +11,12 @@ type Props = {
 export function HelperTermsGateModal({ open, onClose, onConfirm, loading }: Props) {
   const { t } = useLanguage();
   const [c1, setC1] = useState(false);
-  const [c2, setC2] = useState(false);
-  const [c3, setC3] = useState(false);
-  const [c4, setC4] = useState(false);
 
   useEffect(() => {
-    if (open) {
-      setC1(false);
-      setC2(false);
-      setC3(false);
-      setC4(false);
-    }
+    if (open) setC1(false);
   }, [open]);
 
   if (!open) return null;
-
-  const allOk = c1 && c2 && c3 && c4;
 
   return (
     <div
@@ -52,24 +42,6 @@ export function HelperTermsGateModal({ open, onClose, onConfirm, loading }: Prop
               <span>{t('auth.helper_check_1')}</span>
             </label>
           </li>
-          <li>
-            <label className="flex gap-3 cursor-pointer items-start text-sm text-slate-800 font-medium leading-snug">
-              <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" checked={c2} onChange={(e) => setC2(e.target.checked)} />
-              <span>{t('auth.helper_check_2')}</span>
-            </label>
-          </li>
-          <li>
-            <label className="flex gap-3 cursor-pointer items-start text-sm text-slate-800 font-medium leading-snug">
-              <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" checked={c3} onChange={(e) => setC3(e.target.checked)} />
-              <span>{t('auth.helper_check_3')}</span>
-            </label>
-          </li>
-          <li>
-            <label className="flex gap-3 cursor-pointer items-start text-sm text-slate-800 font-medium leading-snug">
-              <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" checked={c4} onChange={(e) => setC4(e.target.checked)} />
-              <span>{t('auth.helper_check_4')}</span>
-            </label>
-          </li>
         </ul>
 
         <div className="mt-8 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
@@ -82,7 +54,7 @@ export function HelperTermsGateModal({ open, onClose, onConfirm, loading }: Prop
           </button>
           <button
             type="button"
-            disabled={!allOk || loading}
+            disabled={!c1 || loading}
             onClick={() => void onConfirm()}
             className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-slate-900/15 hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >

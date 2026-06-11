@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { ROUTES } from '@/utils/constants';
 import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
 import { getSupabase } from '@/lib/supabase';
-import { userNeedsOAuthRoleSelection } from '@/utils/parseOAuthCallbackError';
+import { userNeedsRoleSelection, profileIsDeleted } from '@/utils/parseOAuthCallbackError';
 import { confirmInitialProfileRole } from '@/services/supabase/profileRoleRemote';
 import { dashboardPathForRole, normalizeProfileRole } from '@/utils/userRole';
 import { writeStoredAppMode } from '@/utils/appModeStorage';
@@ -21,7 +21,7 @@ export default function DashboardEntryPage() {
   const redirected = useRef(false);
   const [roleBusy, setRoleBusy] = useState(false);
 
-  const needsRole = Boolean(session?.user && userNeedsOAuthRoleSelection(session.user));
+  const needsRole = Boolean(session?.user && userNeedsRoleSelection(session.user, profile));
 
   useEffect(() => {
     if (!isConfigured) return;
@@ -116,7 +116,13 @@ export default function DashboardEntryPage() {
   }
 
   if (needsRole) {
-    return <OAuthRolePicker busy={roleBusy} onConfirm={handleRoleConfirm} />;
+    return (
+      <OAuthRolePicker
+        busy={roleBusy}
+        accountPreviouslyRegistered={profileIsDeleted(profile)}
+        onConfirm={handleRoleConfirm}
+      />
+    );
   }
 
   if (!profile) {

@@ -19,6 +19,10 @@ export function resolveEffectiveRole(
 ): ProfileRole {
   const roleFromAuth = roleFromAuthMetadata(user);
 
+  if (profile?.deleted_at) {
+    return 'client';
+  }
+
   if (profile?.role === 'helper' || profile?.role === 'client') {
     const profileRole = normalizeProfileRole(profile.role);
     if (storedMode && storedMode !== profileRole) {

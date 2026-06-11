@@ -41,6 +41,7 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorKey, setErrorKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isConfigured || !authBootstrapped || authLoading) return;
@@ -68,6 +69,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    setErrorKey(null);
     if (!userMode) {
       setError(t('auth.register_need_mode'));
       return;
@@ -117,6 +119,7 @@ export default function RegisterPage() {
         }
       }
       setError(t(err.messageKey, err.vars));
+      setErrorKey(err.messageKey);
       if (import.meta.env.DEV && err.devRaw) console.info('[LinkHelp] signUp raw:', err.devRaw);
       return;
     }
@@ -139,6 +142,7 @@ export default function RegisterPage() {
   const handleGoogle = async () => {
     console.log('[Google OAuth] Button clicked');
     setError(null);
+    setErrorKey(null);
     if (!isConfigured) {
       showToast(t('auth.errors.env_not_ready'), 'info');
       return;
@@ -198,7 +202,14 @@ export default function RegisterPage() {
         <div className="bg-white/[0.82] backdrop-blur-3xl py-8 px-4 shadow-[0_36px_120px_rgba(0,0,0,0.48)] sm:rounded-3xl sm:px-10 border border-white/35 ring-1 ring-white/45">
           {error && (
             <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 font-medium animate-in fade-in zoom-in-95 duration-200">
-              {error}
+              <p>{error}</p>
+              {errorKey === 'auth.errors.email_taken' ? (
+                <p className="mt-2">
+                  <Link to={ROUTES.login} className="font-bold text-red-900 underline underline-offset-2 hover:text-red-950">
+                    {t('register_page.login_link')}
+                  </Link>
+                </p>
+              ) : null}
             </div>
           )}
 

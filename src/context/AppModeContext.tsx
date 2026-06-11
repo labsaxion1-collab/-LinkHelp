@@ -29,7 +29,7 @@ export function AppModeProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const userId = session?.user?.id ?? null;
-  const profileRole = normalizeProfileRole(profile?.role);
+  const profileRole = profile?.deleted_at ? 'client' : normalizeProfileRole(profile?.role);
 
   const [mode, setModeState] = useState<AppMode>(() => {
     const stored = readStoredAppMode(userId);

@@ -36,6 +36,7 @@ function txFromRow(row: Record<string, unknown>): CreditTransaction {
     relatedOpportunityId: (row.related_opportunity_id as string | null) ?? null,
     requestId: (row.request_id as string | null) ?? null,
     applicationId: (row.application_id as string | null) ?? null,
+    unlockId: (row.unlock_id as string | null) ?? null,
     relatedPaymentId: (row.related_payment_id as string | null) ?? null,
     description: String(row.description ?? ''),
     createdAt: toMs(row.created_at as string),
@@ -43,14 +44,22 @@ function txFromRow(row: Record<string, unknown>): CreditTransaction {
 }
 
 function unlockFromRow(row: Record<string, unknown>): OpportunityUnlock {
+  const rawStatus = String(row.status ?? 'pending');
+  const status = (
+    rawStatus === 'unlocked' ? 'pending' : rawStatus
+  ) as OpportunityUnlock['status'];
+
   return {
     id: String(row.id),
     opportunityId: String(row.opportunity_id),
     helperId: String(row.helper_id),
     creditsSpent: Number(row.credits_spent ?? 0),
-    status: (row.status as OpportunityUnlock['status']) ?? 'unlocked',
+    status,
     unlockedAt: toMs(row.unlocked_at as string),
     refundEligible: Boolean(row.refund_eligible),
+    refundStatus: (row.refund_status as OpportunityUnlock['refundStatus']) ?? 'none',
+    responseDeadline: row.response_deadline ? toMs(row.response_deadline as string) : null,
+    applicationId: (row.application_id as string | null) ?? null,
     refundedAt: row.refunded_at ? toMs(row.refunded_at as string) : null,
     createdAt: toMs(row.created_at as string),
   };

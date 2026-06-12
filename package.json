@@ -9,6 +9,8 @@
     "preview": "vite preview --port=3000 --host=0.0.0.0",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:apply-region": "node scripts/apply-supabase-region.mjs",
     "assets:optimize": "python scripts/optimize-brand-assets.py"
   },
@@ -42,6 +44,7 @@
     "typescript": "~5.8.2",
     "vite": "^6.2.3",
     "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^3.2.6",
     "workbox-window": "^7.4.1"
   }
 }

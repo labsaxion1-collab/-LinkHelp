@@ -207,6 +207,9 @@ export type OpportunityUnlockRow = {
   status: string;
   unlocked_at: string;
   refund_eligible: boolean;
+  refund_status: string;
+  response_deadline: string | null;
+  application_id: string | null;
   refunded_at: string | null;
   created_at: string;
 };

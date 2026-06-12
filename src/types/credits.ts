@@ -7,7 +7,14 @@ export type CreditTransactionType =
   | 'APPLICATION_INTEREST'
   | 'APPLICATION_SELECTED';
 
-export type OpportunityUnlockStatus = 'unlocked' | 'refunded' | 'cancelled';
+export type UnlockRefundStatus = 'none' | 'pending' | 'processed' | 'rejected';
+
+export type OpportunityUnlockStatus =
+  | 'pending'
+  | 'responded'
+  | 'expired'
+  | 'refunded'
+  | 'cancelled';
 
 export type CreditWallet = {
   id: string;
@@ -30,6 +37,7 @@ export type CreditTransaction = {
   relatedOpportunityId?: string | null;
   requestId?: string | null;
   applicationId?: string | null;
+  unlockId?: string | null;
   relatedPaymentId?: string | null;
   description: string;
   createdAt: number;
@@ -43,6 +51,9 @@ export type OpportunityUnlock = {
   status: OpportunityUnlockStatus;
   unlockedAt: number;
   refundEligible: boolean;
+  refundStatus: UnlockRefundStatus;
+  responseDeadline: number | null;
+  applicationId?: string | null;
   refundedAt?: number | null;
   createdAt: number;
 };

@@ -127,7 +127,29 @@ npm run dev          # Dev server (porta 3000)
 npm run build        # Build de produção
 npm run preview      # Preview do build
 npm run lint         # TypeScript check
+npm run test         # Unit tests (vitest)
 ```
+
+### Reembolso automático de LinkCredits
+
+Quando um helper gasta LC para demonstrar interesse (`APPLICATION_INTEREST`) e o **cliente não responde** dentro do prazo configurado (padrão **48h**, tabela `platform_settings.response_deadline_hours`), o job `process_expired_unlock_refunds` devolve **100%** dos créditos.
+
+| Item | Detalhe |
+|------|---------|
+| Migração | `supabase/migrations/0042_opportunity_unlock_refunds.sql` |
+| Job (cron) | Edge Function `process-credit-refunds` → RPC `process_expired_unlock_refunds` |
+| Admin | RPC `admin_force_unlock_refund(unlock_id)` |
+| Env | `RESPONSE_DEADLINE_HOURS` documentado em `.env.example` (valor em `platform_settings`) |
+
+Rodar manualmente em dev/staging:
+
+```bash
+supabase functions deploy process-credit-refunds
+curl -X POST "$VITE_SUPABASE_URL/functions/v1/process-credit-refunds" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
+```
+
+Ou via SQL Editor (service role): `select public.process_expired_unlock_refunds();`
 
 ---
 

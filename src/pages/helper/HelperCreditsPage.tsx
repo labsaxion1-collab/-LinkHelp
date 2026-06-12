@@ -9,8 +9,12 @@ import { ROUTES } from '@/utils/constants';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { formatLinkCredits, normalizeLinkCreditsAmount } from '@/utils/formatLinkCredits';
-import { MOCK_CREDITS_USAGE } from '@/config/creditsUsageConfig';
 import { BRAND } from '@/utils/brandAssets';
+import {
+  CreditRefundStatusCard,
+  OpportunityUnlocksList,
+} from '@/components/features/CreditsUsageDashboard';
+import { computeCreditsUsageSummary } from '@/utils/opportunityUnlockRefund';
 
 /** Neon ring SVG — ~310° arc with glow, gap at bottom-right */
 function NeonRing() {
@@ -133,6 +137,7 @@ export default function HelperCreditsPage() {
   const { balance, wallet, loading } = useWalletBalance();
 
   const creditsUsed = wallet?.totalSpent ?? 0;
+  const usageSummary = computeCreditsUsageSummary(unlocks, transactions);
   const balanceNum = normalizeLinkCreditsAmount(balance ?? 0);
   const balanceDisplay = loading ? '…' : formatLinkCredits(balance ?? 0, language);
 
@@ -246,7 +251,7 @@ export default function HelperCreditsPage() {
             <StatTile
               icon={Icons.RefreshCw}
               label={t('credits_usage.lc_returned')}
-              value={`${MOCK_CREDITS_USAGE.lcReturned} LC`}
+              value={`${usageSummary.lcReturned} LC`}
               iconColor="text-emerald-400"
               iconBg="bg-emerald-500/15"
             />
@@ -312,6 +317,8 @@ export default function HelperCreditsPage() {
             </div>
           )}
 
+          <CreditRefundStatusCard unlocks={unlocks} transactions={transactions} />
+
           {/* ── HISTORY ──────────────────────────────── */}
           <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5">
             <div className="mb-4 flex items-center justify-between">
@@ -328,7 +335,11 @@ export default function HelperCreditsPage() {
                     className="grid grid-cols-[1fr_auto] gap-3 rounded-xl border border-white/[0.05] bg-white/[0.03] px-4 py-3 transition hover:bg-white/[0.06]"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-slate-200">{tx.description}</p>
+                      <p className="truncate text-sm font-bold text-slate-200">
+                        {tx.type === 'REFUND'
+                          ? t('credits.transaction_refund_no_reply')
+                          : tx.description}
+                      </p>
                       <p className="text-xs font-medium text-slate-500">
                         {new Date(tx.createdAt).toLocaleString()}
                       </p>
@@ -357,6 +368,8 @@ export default function HelperCreditsPage() {
               )}
             </div>
           </div>
+
+          <OpportunityUnlocksList unlocks={unlocks} />
 
         </div>
       </div>

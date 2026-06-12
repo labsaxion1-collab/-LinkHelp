@@ -1000,7 +1000,9 @@ export default function HelperDashboard() {
             <div className="space-y-3">
               <HelperStatsStrip dataLoading={dataLoading} stats={helperMvpStats} t={t} />
               <HelperScorePanel />
-              {UI_VISIBILITY.helperCredits ? <CreditsUsageDashboard /> : null}
+              {UI_VISIBILITY.helperCredits ? (
+                <CreditsUsageDashboard unlocks={unlocks} transactions={creditTransactions} />
+              ) : null}
               <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h2 className="text-xl font-black text-slate-950">{t('helper_dashboard.stats_strip_title')}</h2>
                 <p className="mt-1 text-sm font-medium text-slate-500">{t('helper_dashboard.score_section_performance')}</p>

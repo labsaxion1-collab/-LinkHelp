@@ -119,10 +119,10 @@ Subchaves no formato `{category}:{subcategory}` vinculadas ao helper.
 Carteira de LinkCréditos do helper (balance, total_purchased, total_bonus, total_spent).
 
 ### `credit_transactions`
-Log de todas as movimentações de crédito (type, amount, balance_after, related_opportunity_id).
+Log de todas as movimentações de crédito (type, amount, balance_after, related_opportunity_id, unlock_id para reembolsos).
 
 ### `opportunity_unlocks`
-Registro de desbloqueios de oportunidade com créditos (credits_spent, refund_eligible).
+Registro de interesse/desbloqueio com créditos. Campos: `credits_spent`, `status` (`pending` | `responded` | `refunded`…), `response_deadline`, `refund_status`, `refund_eligible`, `application_id`. Reembolso automático via RPC `process_expired_unlock_refunds` após prazo sem resposta do cliente (ver migração `0042`).
 
 ### `user_bonus_rewards`
 Recompensas de onboarding (reward_type, amount).

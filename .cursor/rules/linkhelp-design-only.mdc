@@ -1,0 +1,33 @@
+---
+description: Modo design-only — layout, aparência e UX visual (economiza tokens)
+alwaysApply: true
+---
+
+# LinkHelp — Modo Design Only
+
+Sessão focada em **layout, design e aparência**. Seguir estritamente.
+
+## Referência única
+Ler apenas `docs/LAYOUT_DESIGN.md` para padrões visuais. Não abrir outros docs em `docs/`.
+
+## Não ler / não alterar
+- `docs/DATABASE_SCHEMA.md`, `API_ARCHITECTURE.md`, `PROJECT_RULES.md`, `DEPLOY_GUIDE.md`
+- `src/services/**`, `src/lib/supabase*`, `api/**`, `supabase/**`
+- Lógica em `context/`, hooks de dados, RPCs, tipos de banco
+- Stripe, auth flows, créditos, candidaturas (comportamento)
+
+## Pode alterar
+- Classes Tailwind, `premium.*`, cores, spacing, grid/flex
+- JSX estrutural (sem mudar props/handlers de negócio)
+- `src/components/design-system/`, `layout/`, `opportunities/`, páginas `.tsx`
+- `categoryFeedTheme.ts` (só valores visuais)
+- Traduções **somente** se mudar copy visível (grep na chave, não ler arquivo inteiro)
+
+## Arquivos pesados
+Ler com offset/limit: `ClientDashboard.tsx`, `HelperDashboard.tsx`, `CreateRequestModal.tsx`, `translations/*/index.ts`
+
+## Design system
+Reutilizar `LhCard`, `LhButton`, `LhBadge`, `PremiumResponsiveModal`, `AppPageShell`, `premiumClasses.ts`.
+
+## Texto em cards
+Sempre `truncate whitespace-nowrap` em título, orçamento e nome do cliente.

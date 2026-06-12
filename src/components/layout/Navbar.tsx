@@ -11,11 +11,12 @@ import { ROUTES } from '@/utils/constants';
 import { useToast } from '@/context/ToastContext';
 import { isAppShellPath } from '@/utils/navigation';
 import { NotificationsDropdown } from './NotificationsDropdown';
-import { MobileProfileMenu } from '@/components/layout/MobileProfileMenu';
+import { useMobileProfileMenu } from '@/context/MobileProfileMenuContext';
 import { clsx } from 'clsx';
 
 export default function Navbar() {
-  const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
+  const { open: mobileProfileOpen, toggleMenu: toggleMobileProfileMenu, closeMenu: closeMobileProfileMenu } =
+    useMobileProfileMenu();
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
@@ -129,7 +130,7 @@ export default function Navbar() {
 
   const doLogout = async () => {
     closeProfile();
-    setMobileProfileOpen(false);
+    closeMobileProfileMenu();
     await signOut();
     redirectToLoginAfterSignOut();
   };
@@ -284,12 +285,12 @@ export default function Navbar() {
             {isConnected ? <NotificationsDropdown userId={userId} compact /> : null}
             <button
               type="button"
-              onClick={() => {
+              onClick={(event) => {
                 if (!isConnected) {
                   navigate(ROUTES.login);
                   return;
                 }
-                setMobileProfileOpen((o) => !o);
+                toggleMobileProfileMenu(event.currentTarget);
               }}
               className="rounded-full p-0.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               aria-label={isConnected ? t('mobile_nav.profile_menu') : t('nav.login')}
@@ -306,13 +307,6 @@ export default function Navbar() {
           </div>
         </div>
       </div>
-
-      <MobileProfileMenu
-        open={mobileProfileOpen && isConnected}
-        onClose={() => setMobileProfileOpen(false)}
-        isConnected={isConnected}
-        isHelperNav={isHelperNav}
-      />
 
       {isLangMenuOpen
         ? createPortal(

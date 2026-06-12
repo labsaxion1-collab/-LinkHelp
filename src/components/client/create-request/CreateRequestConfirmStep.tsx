@@ -1,24 +1,26 @@
+import { PremiumDatePicker } from '@/components/design-system/PremiumDatePicker';
+import { PremiumTimePicker } from '@/components/design-system/PremiumTimePicker';
 import * as Icons from 'lucide-react';
-import { isPreferredDateComplete, isPreferredTimeComplete } from '@/utils/requestSchedule';
+import {
+  isPreferredDateComplete,
+  isPreferredTimeComplete,
+  PREFERRED_WORK_HOUR_SLOTS,
+} from '@/utils/requestSchedule';
+import { todayIsoLocal } from '@/utils/calendar';
+import type { AppLanguage } from '@/services/translationService';
 
 type Props = {
   t: (key: string, vars?: Record<string, string | number>) => string;
+  language: AppLanguage;
   preferredDateIso: string;
   setPreferredDateIso: (v: string) => void;
   preferredTimeSpecific: string;
   setPreferredTimeSpecific: (v: string) => void;
 };
 
-function todayIsoLocal(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
 export function CreateRequestConfirmStep({
   t,
+  language,
   preferredDateIso,
   setPreferredDateIso,
   preferredTimeSpecific,
@@ -27,53 +29,49 @@ export function CreateRequestConfirmStep({
   const dateComplete = isPreferredDateComplete(preferredDateIso);
   const timeComplete = isPreferredTimeComplete(preferredTimeSpecific);
   const stepComplete = dateComplete && timeComplete;
-  const minDate = todayIsoLocal();
 
   return (
     <div className="animate-in fade-in duration-300 space-y-4">
       <div>
-        <h4 className="text-2xl font-bold text-gray-900">{t('create_modal.preferred_date')}</h4>
-        <p className="text-gray-500 text-sm mt-1">{t('create_modal.confirm_when')}</p>
+        <h4 className="text-2xl font-bold text-[#0F172A]">{t('create_modal.preferred_date')}</h4>
+        <p className="mt-1 text-sm text-[#64748B]">{t('create_modal.confirm_when')}</p>
       </div>
 
-      <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-sm space-y-5">
+      <div className="space-y-5 rounded-[28px] border border-[rgba(37,99,255,0.15)] bg-[#F5F7FB] p-4 shadow-[0_20px_60px_rgba(15,23,42,0.06)] sm:p-5">
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-bold text-slate-800">{t('create_modal.work_date_label')}</span>
-          <div className="flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-slate-50/60 px-3 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
-            <Icons.Calendar className="h-5 w-5 shrink-0 text-blue-600" aria-hidden />
-            <input
-              type="date"
-              required
-              value={preferredDateIso}
-              min={minDate}
-              onChange={(e) => setPreferredDateIso(e.target.value)}
-              className="min-h-[48px] w-full flex-1 touch-manipulation bg-transparent text-base font-bold text-slate-800 outline-none"
-            />
-          </div>
+          <span className="text-sm font-bold text-[#0F172A]">{t('create_modal.work_date_label')}</span>
+          <PremiumDatePicker
+            value={preferredDateIso}
+            onChange={setPreferredDateIso}
+            minDate={todayIsoLocal()}
+            placeholder={t('create_modal.date_pick')}
+            todayLabel={t('create_modal.date_today')}
+            clearLabel={t('create_modal.date_picker_clear')}
+            language={language}
+            ariaLabel={t('create_modal.work_date_label')}
+          />
         </label>
 
-        <label className="flex flex-col gap-2">
-          <span className="text-sm font-bold text-slate-800">{t('create_modal.work_time_label')}</span>
-          <div className="flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-slate-50/60 px-3 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
-            <Icons.Clock className="h-5 w-5 shrink-0 text-blue-600" aria-hidden />
-            <input
-              type="time"
-              required
-              value={preferredTimeSpecific}
-              onChange={(e) => setPreferredTimeSpecific(e.target.value)}
-              className="min-h-[48px] w-full flex-1 touch-manipulation bg-transparent text-base font-bold text-slate-800 outline-none"
-            />
-          </div>
-        </label>
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-bold text-[#0F172A]">{t('create_modal.work_time_label')}</span>
+          <PremiumTimePicker
+            value={preferredTimeSpecific}
+            onChange={setPreferredTimeSpecific}
+            options={PREFERRED_WORK_HOUR_SLOTS}
+            placeholder={t('create_modal.preferred_time_select')}
+            clearLabel={t('create_modal.date_picker_clear')}
+            ariaLabel={t('create_modal.work_time_label')}
+          />
+        </div>
       </div>
 
       {!stepComplete ? (
-        <p className="text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+        <p className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
           {!dateComplete ? t('create_modal.confirm_date_required') : t('create_modal.confirm_time_required')}
         </p>
       ) : (
-        <p className="text-sm font-medium text-emerald-700 flex items-center gap-2">
-          <Icons.CheckCircle2 className="w-4 h-4 shrink-0" />
+        <p className="flex items-center gap-2 text-sm font-medium text-emerald-700">
+          <Icons.CheckCircle2 className="h-4 w-4 shrink-0" />
           {t('create_modal.confirm_ready')}
         </p>
       )}

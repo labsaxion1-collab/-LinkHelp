@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Bookmark, Globe, LogOut, X, Home, MessageCircle, Briefcase, Package, Settings } from 'lucide-react';
@@ -11,19 +11,74 @@ import type { AppLanguage } from '@/services/translationService';
 type Props = {
   open: boolean;
   onClose: () => void;
+  anchorEl: HTMLElement | null;
   isConnected: boolean;
   isHelperNav: boolean;
 };
 
+type PanelPosition = CSSProperties & {
+  maxHeight?: string;
+};
+
+function computePanelPosition(anchor: HTMLElement): PanelPosition {
+  const rect = anchor.getBoundingClientRect();
+  const panelWidth = Math.min(288, window.innerWidth - 24);
+  const horizontalPadding = 12;
+  const left = Math.min(
+    Math.max(horizontalPadding, rect.right - panelWidth),
+    window.innerWidth - panelWidth - horizontalPadding,
+  );
+  const opensAbove = rect.top > window.innerHeight * 0.55;
+  const gap = 10;
+
+  if (opensAbove) {
+    const spaceAbove = rect.top - gap - 16;
+    return {
+      position: 'fixed',
+      bottom: window.innerHeight - rect.top + gap,
+      left,
+      width: panelWidth,
+      maxHeight: `${Math.max(220, Math.min(spaceAbove, window.innerHeight * 0.72))}px`,
+      zIndex: 130,
+    };
+  }
+
+  return {
+    position: 'fixed',
+    top: rect.bottom + gap,
+    left,
+    width: panelWidth,
+    maxHeight: `${Math.min(window.innerHeight - rect.bottom - gap - 16, window.innerHeight * 0.72)}px`,
+    zIndex: 130,
+  };
+}
+
 export function MobileProfileMenu({
   open,
   onClose,
+  anchorEl,
   isConnected,
   isHelperNav,
 }: Props) {
   const { t, language, setLanguage } = useLanguage();
   const { signOut, isConfigured, session, updateProfile } = useAuth();
   const navigate = useNavigate();
+  const [panelStyle, setPanelStyle] = useState<PanelPosition>({});
+
+  useLayoutEffect(() => {
+    if (!open || !anchorEl) return;
+    const updatePosition = () => {
+      if (!anchorEl) return;
+      setPanelStyle(computePanelPosition(anchorEl));
+    };
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [open, anchorEl]);
 
   useEffect(() => {
     if (!open) return;
@@ -58,40 +113,43 @@ export function MobileProfileMenu({
     navigate(ROUTES.clientDashboard, { state: { tab: 'saved' } });
   };
 
-  if (!open) return null;
+  if (!open || !anchorEl) return null;
+
+  const opensAbove = anchorEl.getBoundingClientRect().top > window.innerHeight * 0.55;
 
   return createPortal(
     <div className="fixed inset-0 z-[120] md:hidden" role="presentation">
       <button
         type="button"
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-slate-900/35 backdrop-blur-[2px]"
         aria-label={t('common.close')}
         onClick={onClose}
       />
       <div
-        className="absolute inset-x-3 bottom-[max(1rem,env(safe-area-inset-bottom))] max-h-[min(85dvh,calc(100dvh-5rem))] overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-200"
+        style={panelStyle}
+        className={`flex flex-col overflow-hidden rounded-3xl border border-[rgba(37,99,255,0.12)] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.16)] ${
+          opensAbove ? 'animate-in slide-in-from-bottom-3 fade-in duration-200' : 'animate-in slide-in-from-top-2 fade-in duration-200'
+        }`}
         role="menu"
       >
-        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-          <p className="text-sm font-black text-gray-900">{t('mobile_nav.profile_menu')}</p>
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
+          <p className="text-sm font-black text-[#0F172A]">{t('mobile_nav.profile_menu')}</p>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+            className="rounded-full p-2 text-slate-500 hover:bg-slate-100"
             aria-label={t('common.close')}
           >
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="max-h-[calc(85dvh-4rem-env(safe-area-inset-bottom))] overflow-y-auto overscroll-contain py-1">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1">
           {isConnected ? (
             <>
               <button
                 type="button"
                 role="menuitem"
-                onClick={() =>
-                  go(isHelperNav ? ROUTES.helperDashboard : ROUTES.clientDashboard)
-                }
+                onClick={() => go(isHelperNav ? ROUTES.helperDashboard : ROUTES.clientDashboard)}
                 className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
               >
                 <Home className="h-4 w-4 text-slate-400" />
@@ -190,7 +248,7 @@ export function MobileProfileMenu({
                       key={lang}
                       type="button"
                       onClick={() => setLang(lang)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-bold border ${
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-bold ${
                         language === lang
                           ? 'border-primary-500 bg-primary-50 text-primary-600'
                           : 'border-slate-200 text-slate-600'

@@ -83,7 +83,6 @@ export function MobileBottomNav() {
               >
                 {({ isActive }) => (
                   <>
-                    {/* Active top indicator (non-home) */}
                     {!isHome && (
                       <span
                         className={clsx(

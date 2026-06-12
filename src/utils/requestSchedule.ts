@@ -8,6 +8,12 @@ export type PreferredTimeChoice = TimeWindow | 'pick' | '';
 /** Quick slots for beauty / aesthetics appointments */
 export const BEAUTY_PREFERRED_TIME_SLOTS = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'] as const;
 
+/** Hour-only slots for client preferred work time (HH:00) */
+export const PREFERRED_WORK_HOUR_SLOTS = Array.from({ length: 15 }, (_, index) => {
+  const hour = 8 + index;
+  return `${String(hour).padStart(2, '0')}:00`;
+});
+
 export type RequestScheduleInput = {
   priority: RequestPriority;
   preferredDateMode?: PreferredDateMode;

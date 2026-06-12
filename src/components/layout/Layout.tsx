@@ -4,6 +4,9 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import { PageLoader } from '@/components/common/PageLoader';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
+import { MobileProfileMenu } from '@/components/layout/MobileProfileMenu';
+import { MobileProfileMenuProvider, useMobileProfileMenu } from '@/context/MobileProfileMenuContext';
+import { useAppMode } from '@/context/AppModeContext';
 import { ScrollToTop } from '@/components/layout/ScrollToTop';
 import { PwaInstallPrompt } from '@/components/layout/PwaInstallPrompt';
 import { PushNotificationPrompt } from '@/components/notifications/PushNotificationPrompt';
@@ -13,6 +16,23 @@ import { clsx } from 'clsx';
 import { AppErrorBoundary } from '@/components/common/AppErrorBoundary';
 import { useLanguage } from '@/context/LanguageContext';
 
+function LayoutMobileProfileMenu() {
+  const { pathname } = useLocation();
+  const { open, anchorEl, closeMenu } = useMobileProfileMenu();
+  const { isHelperMode } = useAppMode();
+  const isConnected = isAppShellPath(pathname);
+
+  return (
+    <MobileProfileMenu
+      open={open && isConnected}
+      onClose={closeMenu}
+      anchorEl={anchorEl}
+      isConnected={isConnected}
+      isHelperNav={isHelperMode}
+    />
+  );
+}
+
 export default function Layout() {
   const { pathname } = useLocation();
   const { t } = useLanguage();
@@ -21,6 +41,7 @@ export default function Layout() {
   const isAppShell = !isAdmin && isAppShellPath(pathname);
 
   return (
+    <MobileProfileMenuProvider>
     <div
       className={clsx(
         'relative min-h-dvh flex flex-col font-sans w-full max-w-full overflow-x-hidden',
@@ -62,6 +83,8 @@ export default function Layout() {
           <Footer />
         </div>
       ) : null}
+      <LayoutMobileProfileMenu />
     </div>
+    </MobileProfileMenuProvider>
   );
 }

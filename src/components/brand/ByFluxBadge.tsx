@@ -1,5 +1,4 @@
 import { clsx } from 'clsx';
-import { BRAND_ASSETS } from '@/assets/brand';
 import { useLanguage } from '@/context/LanguageContext';
 
 type Props = {
@@ -21,14 +20,6 @@ export function ByFluxBadge({ className, alwaysVisible = false }: Props) {
       )}
     >
       <span className="opacity-70">{t('brand.by_flux')}</span>
-      <img
-        src={BRAND_ASSETS.fluxLogo}
-        alt=""
-        aria-hidden
-        className="h-3.5 w-3.5 rounded-sm object-cover opacity-80"
-        loading="lazy"
-        decoding="async"
-      />
     </span>
   );
 }

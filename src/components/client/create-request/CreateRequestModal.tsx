@@ -65,7 +65,7 @@ type Props = {
 };
 
 export function CreateRequestModal({ open, onClose, onPublished, initialCategory = '', initialSubcategory = '' }: Props) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { createJob } = useAppData();
   const { showToast } = useToast();
   const me = useSessionViewer();
@@ -932,6 +932,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
           {step === 'confirm' && (
             <CreateRequestConfirmStep
               t={t}
+              language={language}
               preferredDateIso={preferredDateIso}
               setPreferredDateIso={setPreferredDateIso}
               preferredTimeSpecific={preferredTimeSpecific}

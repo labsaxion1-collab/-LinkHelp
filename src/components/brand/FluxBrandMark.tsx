@@ -1,5 +1,4 @@
 import { clsx } from 'clsx';
-import { BRAND_ASSETS } from '@/assets/brand';
 import { useLanguage } from '@/context/LanguageContext';
 
 type Props = {
@@ -13,25 +12,7 @@ export function FluxBrandMark({ compact = false, showTagline = true, className }
   const { t } = useLanguage();
 
   return (
-    <div className={clsx('flex min-w-0 items-center gap-3', className)}>
-      <div
-        className={clsx(
-          'relative shrink-0 overflow-hidden rounded-2xl ring-1 ring-cyan-400/20',
-          compact ? 'h-9 w-9' : 'h-11 w-11',
-        )}
-      >
-        <img
-          src={BRAND_ASSETS.fluxLogo}
-          alt=""
-          className="h-full w-full object-cover"
-          loading="eager"
-          decoding="async"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-cyan-400/10 via-transparent to-violet-600/15"
-        />
-      </div>
+    <div className={clsx('flex min-w-0 items-center', className)}>
       <div className="min-w-0">
         <p
           className={clsx(

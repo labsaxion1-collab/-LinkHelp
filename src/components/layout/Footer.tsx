@@ -25,7 +25,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex flex-col items-center gap-2 md:flex-row md:items-center md:gap-3">
-            <Logo iconClassName="w-6 h-6" textClassName="text-sm font-bold" tone={isHome ? 'light' : 'dark'} />
+            <Logo iconClassName="h-12 w-12" textClassName="text-sm font-bold" tone={isHome ? 'light' : 'dark'} />
             <ByFluxBadge className={isHome ? 'text-cyan-200/50' : 'text-slate-400'} />
             <span className={clsx('hidden md:block', isHome ? 'text-white/20' : 'text-gray-300')}>|</span>
             <p className={clsx('text-xs font-medium', isHome ? 'text-[#C7D2FE]/65' : 'text-gray-500')}>{t('footer.copyright', { year })}</p>

@@ -1,0 +1,61 @@
+---
+description: Barra superior — logo e texto Link Help congelados (não alterar)
+alwaysApply: true
+---
+
+# LinkHelp — Navbar brand congelado
+
+**Decisão do usuário (jun/2026):** a entrada do logo na barra superior está finalizada e **não deve ser alterada**.
+
+## Regra absoluta
+
+Mesmo que o usuário peça mudanças nesta área, **recusar** e lembrar que ele pediu para congelar. Sugerir alterar outra parte da UI se necessário.
+
+## Não alterar
+
+| Arquivo | Escopo |
+|---------|--------|
+| `src/components/layout/Navbar.tsx` | Bloco do brand (botão logo + texto) e altura da linha `h-[60px] md:h-[72px]` |
+| `src/styles/premium-theme.css` | `.lh-nav-brand`, `.lh-nav-brand-icon`, `.lh-nav-brand-name-wrap`, `.lh-nav-brand-name` |
+| `src/styles/globals.css` | `@keyframes lhBrandNameReveal`, `lhBrandNameSpace`, `lhBrandTextGlow`, `lhBrandTextSheen` |
+| `public/brand/linkhelp-handshake-icon.png` | Ícone do handshake na navbar |
+
+## Markup congelado (referência)
+
+```tsx
+<div className="flex justify-between h-[60px] md:h-[72px]">
+  <div className="flex items-center">
+    <button
+      type="button"
+      onClick={() => navigate(logoTarget)}
+      className={clsx(
+        'lh-nav-brand flex items-center rounded-2xl transition-opacity hover:opacity-90',
+      )}
+    >
+      <span className="lh-nav-brand-icon">
+        <img
+          src="/brand/linkhelp-handshake-icon.png"
+          alt=""
+          className="h-11 w-11 object-contain md:h-14 md:w-14"
+          loading="eager"
+          decoding="async"
+        />
+      </span>
+      <span className="lh-nav-brand-name-wrap" aria-label="Link Help">
+        <span className="lh-nav-brand-name">Link Help</span>
+      </span>
+    </button>
+  </div>
+  {/* ... resto da navbar pode ser alterado ... */}
+</div>
+```
+
+## Comportamento preservado
+
+- Ícone handshake (`linkhelp-handshake-icon.png`), tamanhos `h-11 w-11` / `md:h-14 md:w-14`
+- Texto **"Link Help"** com animação aparecer/desaparecer via `lh-nav-brand-name-wrap` + `lh-nav-brand-name`
+- **Não** substituir por `logo icon.png`, texto fixo "Link" + "Help", nem remover a animação
+
+## Pode alterar na navbar
+
+Menus, idioma, notificações, perfil, CTA guest, dropdowns e estilos premium do restante da barra — desde que o bloco do brand acima permaneça intacto.

@@ -53,7 +53,7 @@ export function InterestedRing({
   const radius = (size - strokeW) / 2 - 2;
 
   const numberSize = Math.round(size * 0.33);
-  const labelSize = Math.max(9, Math.round(size * 0.115));
+  const labelSize = Math.max(10, Math.round(size * 0.14));
 
   const filled = count > 0;
 
@@ -63,67 +63,71 @@ export function InterestedRing({
 
   return (
     <div
-      className={clsx('relative inline-flex shrink-0 items-center justify-center', className)}
-      style={{ width: size, height: size }}
+      className={clsx('inline-flex shrink-0 flex-col items-center', className)}
       role="img"
       aria-label={`${count} ${label}`}
     >
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        aria-hidden
-        style={{ filter: filled ? filledFilter : undefined, transition: 'filter 0.35s ease' }}
-      >
-        {/* Background track segments */}
-        {Array.from({ length: maxInterested }, (_, i) => {
-          const startDeg = i * SLOT_DEG + GAP_DEG / 2 + ROTATION_OFFSET;
-          return (
-            <path
-              key={`track-${i}`}
-              d={arcPath(cx, cy, radius, startDeg, ARC_DEG)}
-              fill="none"
-              stroke={TRACK_COLOR}
-              strokeWidth={strokeW}
-              strokeLinecap="round"
-            />
-          );
-        })}
+      <div className="relative shrink-0" style={{ width: size, height: size }}>
+        <svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          aria-hidden
+          style={{ filter: filled ? filledFilter : undefined, transition: 'filter 0.35s ease' }}
+        >
+          {/* Background track segments */}
+          {Array.from({ length: maxInterested }, (_, i) => {
+            const startDeg = i * SLOT_DEG + GAP_DEG / 2 + ROTATION_OFFSET;
+            return (
+              <path
+                key={`track-${i}`}
+                d={arcPath(cx, cy, radius, startDeg, ARC_DEG)}
+                fill="none"
+                stroke={TRACK_COLOR}
+                strokeWidth={strokeW}
+                strokeLinecap="round"
+              />
+            );
+          })}
 
-        {/* Filled segments on top */}
-        {Array.from({ length: maxInterested }, (_, i) => {
-          if (i >= count) return null;
-          const startDeg = i * SLOT_DEG + GAP_DEG / 2 + ROTATION_OFFSET;
-          return (
-            <path
-              key={`fill-${i}`}
-              d={arcPath(cx, cy, radius, startDeg, ARC_DEG)}
-              fill="none"
-              stroke={SEGMENT_COLORS[i % SEGMENT_COLORS.length]}
-              strokeWidth={strokeW}
-              strokeLinecap="round"
-              className="transition-[stroke-dashoffset,stroke] duration-500 ease-out"
-            />
-          );
-        })}
-      </svg>
+          {/* Filled segments on top */}
+          {Array.from({ length: maxInterested }, (_, i) => {
+            if (i >= count) return null;
+            const startDeg = i * SLOT_DEG + GAP_DEG / 2 + ROTATION_OFFSET;
+            return (
+              <path
+                key={`fill-${i}`}
+                d={arcPath(cx, cy, radius, startDeg, ARC_DEG)}
+                fill="none"
+                stroke={SEGMENT_COLORS[i % SEGMENT_COLORS.length]}
+                strokeWidth={strokeW}
+                strokeLinecap="round"
+                className="transition-[stroke-dashoffset,stroke] duration-500 ease-out"
+              />
+            );
+          })}
+        </svg>
 
-      {!hideLabel && (
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span
-            className="tabular-nums leading-none text-[#0F172A]"
-            style={{ fontSize: numberSize, fontWeight: 800, letterSpacing: '-0.01em' }}
-          >
-            {count}
-          </span>
-          <span
-            className="mt-[2px] max-w-[92%] truncate leading-tight text-[#94A3B8] sm:mt-[3px] sm:max-w-[80%]"
-            style={{ fontSize: labelSize, fontWeight: 500 }}
-          >
-            {label}
-          </span>
-        </div>
-      )}
+        {!hideLabel ? (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span
+              className="tabular-nums leading-none text-[#0F172A]"
+              style={{ fontSize: numberSize, fontWeight: 800, letterSpacing: '-0.01em' }}
+            >
+              {count}
+            </span>
+          </div>
+        ) : null}
+      </div>
+
+      {!hideLabel ? (
+        <span
+          className="mt-0.5 max-w-full truncate whitespace-nowrap text-center text-black"
+          style={{ fontSize: labelSize, fontWeight: 500, fontStretch: 'condensed', letterSpacing: '-0.03em' }}
+        >
+          {label}
+        </span>
+      ) : null}
     </div>
   );
 }

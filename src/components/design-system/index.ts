@@ -6,3 +6,5 @@ export { LhInput } from './LhInput';
 export { LhModal } from './LhModal';
 export { LhSectionTitle } from './LhSectionTitle';
 export { premium } from './premiumClasses';
+export { PremiumDatePicker } from './PremiumDatePicker';
+export { PremiumTimePicker } from './PremiumTimePicker';

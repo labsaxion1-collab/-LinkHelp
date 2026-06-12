@@ -198,11 +198,6 @@ export default function RegisterPage() {
             <div className="pointer-events-none absolute -right-12 top-0 h-64 w-64 rounded-full bg-[#2563FF]/12 blur-3xl" />
             <div className="pointer-events-none absolute right-[5%] top-[10%] h-[72%] w-[48%] rounded-full border border-blue-200/60" />
             <div className="pointer-events-none absolute right-[13%] top-[8%] h-24 w-40 bg-[radial-gradient(circle,#2563FF_1.3px,transparent_1.6px)] bg-[length:10px_10px] opacity-[0.13]" />
-            <img
-              src="/brand/register-hero-identity-transparent.png"
-              alt=""
-              className="pointer-events-none absolute right-[-28%] top-1/2 z-0 h-[255px] w-[78%] max-w-[420px] -translate-y-1/2 object-contain drop-shadow-[0_28px_54px_rgba(37,99,255,0.30)] sm:right-[-10%] sm:h-[320px] sm:w-[52%] md:right-[-4%] md:h-[355px] md:w-[48%]"
-            />
             <div className="relative z-10 max-w-[58%] py-4 sm:max-w-[52%] sm:py-8 md:max-w-[48%]">
               <h1 className="text-[50px] font-black leading-[0.88] tracking-tight text-[#0B1220] sm:text-7xl">
                 Crie sua <span className="block text-[#2563FF] drop-shadow-[0_10px_30px_rgba(37,99,255,0.24)]">conta</span>
@@ -211,6 +206,11 @@ export default function RegisterPage() {
                 Encontre ajuda, ofereca servicos e crie conexoes na sua regiao.
               </p>
             </div>
+            <img
+              src="/brand/registrarconta.png"
+              alt=""
+              className="pointer-events-none absolute -right-3 top-1/2 z-0 h-[300px] w-auto max-w-[58%] -translate-y-1/2 object-contain object-center opacity-85 drop-shadow-[0_28px_54px_rgba(37,99,255,0.30)] sm:-right-4 sm:h-[380px] sm:max-w-[56%] md:-right-5 md:h-[420px] md:max-w-[54%]"
+            />
             <Sparkles className="absolute right-[20%] top-8 h-5 w-5 fill-[#2563FF] text-[#2563FF]" />
             <Sparkles className="absolute bottom-10 left-[46%] h-4 w-4 fill-cyan-400 text-cyan-400" />
           </section>

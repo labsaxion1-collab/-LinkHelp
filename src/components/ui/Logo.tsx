@@ -1,9 +1,9 @@
-import { BRAND_ASSETS } from '@/assets/brand';
+const LOGO_ICON_SRC = '/brand/logo icon.png';
 
 export function LogoIcon({ className = 'w-8 h-8' }: { className?: string }) {
   return (
     <img
-      src={BRAND_ASSETS.linkhelpLogo}
+      src={LOGO_ICON_SRC}
       alt=""
       aria-hidden="true"
       className={`object-contain ${className}`}
@@ -30,8 +30,8 @@ export function Logo({
         <LogoIcon className={`${iconClassName} shrink-0`} />
       </span>
       <span className={`font-display font-black leading-none tracking-normal ${textClassName}`} aria-label="LinkHelp">
-        <span className={tone === 'light' ? 'text-white' : 'text-slate-950'}>Link</span>
-        <span className="text-primary-600">Help</span>
+        <span className={tone === 'light' ? 'text-white' : 'text-[#0F172A]'}>Link</span>
+        <span className="text-[#2563FF]">Help</span>
       </span>
     </div>
   );

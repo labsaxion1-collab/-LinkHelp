@@ -85,7 +85,14 @@ export function ProtectedRoute() {
     !session &&
     (!sessionRecoveryAttempted || sessionRecoveryBusy);
 
-  if (!authBootstrapped || authLoading || sessionRecoveryBusy || waitForSessionGate) {
+  const hasEstablishedWorkspace = Boolean(session && profile);
+  const showBlockingLoader =
+    !authBootstrapped ||
+    sessionRecoveryBusy ||
+    waitForSessionGate ||
+    (authLoading && !hasEstablishedWorkspace);
+
+  if (showBlockingLoader) {
     return <PageLoader />;
   }
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { isChunkLoadError } from '@/utils/lazyWithRetry';
 
 type Props = {
   children: React.ReactNode;
@@ -29,8 +30,27 @@ export class AppErrorBoundary extends React.Component<Props, State> {
     }
   }
 
-  componentDidCatch(error: unknown) {
-    console.error('[LinkHelp] Route render failed', error);
+  componentDidCatch(error: unknown, errorInfo: React.ErrorInfo) {
+    const errorName = error instanceof Error ? error.name : 'UnknownError';
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const chunkLoadFailure = isChunkLoadError(error);
+
+    console.error('[LinkHelp][RouteError]', {
+      pathname: typeof window !== 'undefined' ? window.location.pathname : '',
+      resetKey: this.props.resetKey,
+      errorName,
+      errorMessage,
+      chunkLoadFailure,
+      componentStack: errorInfo.componentStack,
+    });
+
+    if (chunkLoadFailure && typeof window !== 'undefined') {
+      const reloadKey = 'lh:chunk-reload';
+      if (!sessionStorage.getItem(reloadKey)) {
+        sessionStorage.setItem(reloadKey, '1');
+        window.location.reload();
+      }
+    }
   }
 
   render() {

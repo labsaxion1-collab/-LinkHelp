@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { lazy, type ComponentType } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
@@ -11,28 +11,32 @@ import { AdminProtectedRoute } from '@/components/admin/AdminProtectedRoute';
 import { FluxAdminLayout } from '@/components/admin/FluxAdminLayout';
 import { LoginSplashGate } from '@/components/auth/LoginSplashGate';
 
-const LandingPage = lazy(() => import('@/pages/LandingPage'));
-const HowItWorksPage = lazy(() => import('@/pages/public/HowItWorksPage'));
-const ContactPage = lazy(() => import('@/pages/public/ContactPage'));
-const LoginPage = lazy(() => importWithRetry(() => import('@/pages/auth/LoginPage')));
-const RegisterPage = lazy(() => importWithRetry(() => import('@/pages/auth/RegisterPage')));
-const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'));
-const AuthCallbackPage = lazy(() => import('@/pages/auth/AuthCallbackPage'));
-const DashboardEntryPage = lazy(() => import('@/pages/app/DashboardEntryPage'));
-const ClientDashboard = lazy(() => import('@/pages/client/ClientDashboard'));
-const HelperDashboard = lazy(() => import('@/pages/helper/HelperDashboard'));
-const HelperUpcomingJobsPage = lazy(() => import('@/pages/helper/HelperUpcomingJobsPage'));
-const HelperTrainingPage = lazy(() => import('@/pages/helper/HelperTrainingPage'));
-const MessagesPage = lazy(() => import('@/pages/chat/MessagesPage'));
-const IdeasPage = lazy(() => import('@/pages/ideas/IdeasPage'));
-const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'));
-const LiveMapPage = lazy(() => import('@/pages/map/LiveMapPage'));
-const PaymentsPage = lazy(() => import('@/pages/payments/PaymentsPage'));
-const HelperCreditsPage = lazy(() => import('@/pages/helper/HelperCreditsPage'));
-const HelperLinkCreditsPage = lazy(() => import('@/pages/helper/HelperLinkCreditsPage'));
-const HelperCreditsSuccessPage = lazy(() => import('@/pages/helper/HelperCreditsSuccessPage'));
-const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
-const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'));
+function lazyPage<T extends { default: ComponentType<unknown> }>(loader: () => Promise<T>) {
+  return lazy(() => importWithRetry(loader));
+}
+
+const LandingPage = lazyPage(() => import('@/pages/LandingPage'));
+const HowItWorksPage = lazyPage(() => import('@/pages/public/HowItWorksPage'));
+const ContactPage = lazyPage(() => import('@/pages/public/ContactPage'));
+const LoginPage = lazyPage(() => import('@/pages/auth/LoginPage'));
+const RegisterPage = lazyPage(() => import('@/pages/auth/RegisterPage'));
+const ResetPasswordPage = lazyPage(() => import('@/pages/auth/ResetPasswordPage'));
+const AuthCallbackPage = lazyPage(() => import('@/pages/auth/AuthCallbackPage'));
+const DashboardEntryPage = lazyPage(() => import('@/pages/app/DashboardEntryPage'));
+const ClientDashboard = lazyPage(() => import('@/pages/client/ClientDashboard'));
+const HelperDashboard = lazyPage(() => import('@/pages/helper/HelperDashboard'));
+const HelperUpcomingJobsPage = lazyPage(() => import('@/pages/helper/HelperUpcomingJobsPage'));
+const HelperTrainingPage = lazyPage(() => import('@/pages/helper/HelperTrainingPage'));
+const MessagesPage = lazyPage(() => import('@/pages/chat/MessagesPage'));
+const IdeasPage = lazyPage(() => import('@/pages/ideas/IdeasPage'));
+const NotificationsPage = lazyPage(() => import('@/pages/notifications/NotificationsPage'));
+const LiveMapPage = lazyPage(() => import('@/pages/map/LiveMapPage'));
+const PaymentsPage = lazyPage(() => import('@/pages/payments/PaymentsPage'));
+const HelperCreditsPage = lazyPage(() => import('@/pages/helper/HelperCreditsPage'));
+const HelperLinkCreditsPage = lazyPage(() => import('@/pages/helper/HelperLinkCreditsPage'));
+const HelperCreditsSuccessPage = lazyPage(() => import('@/pages/helper/HelperCreditsSuccessPage'));
+const SettingsPage = lazyPage(() => import('@/pages/settings/SettingsPage'));
+const ProfilePage = lazyPage(() => import('@/pages/profile/ProfilePage'));
 
 function AdminDashboardLoadError() {
   return (
@@ -45,16 +49,14 @@ function AdminDashboardLoadError() {
   );
 }
 
-const PushTestPage = lazy(() => import('@/pages/admin/PushTestPage'));
+const PushTestPage = lazyPage(() => import('@/pages/admin/PushTestPage'));
 
-const AdminDashboard = lazy(async () => {
-  try {
-    return await import('@/pages/admin/AdminDashboard');
-  } catch (error: unknown) {
+const AdminDashboard = lazy(() =>
+  importWithRetry(() => import('@/pages/admin/AdminDashboard')).catch((error: unknown) => {
     console.error('[LinkHelp] AdminDashboard chunk failed to load', error);
     return { default: AdminDashboardLoadError };
-  }
-});
+  }),
+);
 
 export function AppRoutes() {
   return (

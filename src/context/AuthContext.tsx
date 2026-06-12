@@ -266,6 +266,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const sessionRef = useRef<Session | null>(null);
   sessionRef.current = session;
 
+  const profileRef = useRef<AuthProfile | null>(null);
+  profileRef.current = profile;
+
   const profileSyncTargetRef = useRef<string | null>(null);
 
   const refreshProfile = useCallback(async (userOverride?: User | null): Promise<AuthProfile | null> => {
@@ -353,7 +356,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const sb = getSupabase()!;
     let cancelled = false;
 
-    const syncSession = (next: Session | null) => {
+    const syncSession = (next: Session | null, options?: { silent?: boolean }) => {
       if (cancelled) return;
       setSession(next);
 
@@ -364,7 +367,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      setAuthLoading(true);
       const targetId = next.user.id;
       profileSyncTargetRef.current = targetId;
 
@@ -379,6 +381,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               userId: targetId,
               role: p.role,
               email: p.email ?? undefined,
+              silent: options?.silent ?? false,
             });
             roleRoutingLog('AuthContext:profile_loaded', {
               userId: targetId,
@@ -388,12 +391,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
           }
         } finally {
-          if (!cancelled && profileSyncTargetRef.current === targetId) {
+          if (!options?.silent && !cancelled && profileSyncTargetRef.current === targetId) {
             setAuthLoading(false);
           }
         }
       };
 
+      if (options?.silent) {
+        void run();
+        return;
+      }
+
+      setAuthLoading(true);
       setTimeout(() => {
         void run();
       }, 0);
@@ -445,6 +454,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             syncSession(null);
           }
         });
+        return;
+      }
+
+      const sameUser =
+        sessionRef.current?.user?.id === next.user.id && Boolean(profileRef.current);
+      if (event === 'TOKEN_REFRESHED' && sameUser) {
+        authFlowLog('onAuthStateChange: silent TOKEN_REFRESHED', {
+          userId: next.user.id,
+        });
+        syncSession(next, { silent: true });
         return;
       }
 

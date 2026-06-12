@@ -63,9 +63,11 @@ def main() -> None:
         ("helper-hero-bg.jpg", "helper-hero-bg.webp", 768, 80),
         ("helper-hero-blue-ribbon.jpg", "helper-hero-blue-ribbon.webp", 960, 80),
         ("linkcredits-store-background.jpg", "linkcredits-store-background.webp", 960, 78),
-        ("linkcredit-popular-stack.jpg", "linkcredit-popular-stack.webp", 640, 84),
-        ("linkcredit-pro-stack.jpg", "linkcredit-pro-stack.webp", 640, 84),
-        ("linkcredit-power-stack.jpg", "linkcredit-power-stack.webp", 640, 84),
+        # PNG sources — must preserve alpha (restore from git before re-running if missing).
+        #   git checkout 1e31299^ -- public/brand/linkcredit-*-stack.png public/brand/linkcredit-coin-icon.png
+        ("linkcredit-popular-stack.png", "linkcredit-popular-stack.webp", 640, 84),
+        ("linkcredit-pro-stack.png", "linkcredit-pro-stack.webp", 640, 84),
+        ("linkcredit-power-stack.png", "linkcredit-power-stack.webp", 640, 84),
     ]
 
     for src_name, dst_name, max_dim, quality in webp_jobs:

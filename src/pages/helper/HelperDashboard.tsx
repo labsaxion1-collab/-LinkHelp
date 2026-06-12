@@ -23,6 +23,7 @@ import {
 } from '@/utils/applicationInterest';
 import { resolveCategoryId, translateCategory, translateJobTitle } from '@/utils/translateCategory';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
+import { BRAND } from '@/utils/brandAssets';
 import { ROUTES } from '@/utils/constants';
 import type { Job } from '@/types/job';
 import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/HelperProfileCompletionBar';
@@ -1035,16 +1036,21 @@ export default function HelperDashboard() {
               style={{ marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)' }}
             >
               <img
-                src="/brand/hero-tools.png"
+                src={BRAND.heroTools}
                 alt=""
                 aria-hidden="true"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
                 className="pointer-events-none absolute inset-x-0 -top-16 h-[calc(100%+4rem)] w-full object-cover object-[62%_top] opacity-100 transition-transform duration-200 ease-out"
                 style={{ transform: `translate3d(0, ${-heroParallaxOffset}px, 0)` }}
               />
               <img
-                src="/brand/helper-hero-blue-ribbon.jpg"
+                src={BRAND.helperHeroRibbon}
                 alt=""
                 aria-hidden="true"
+                loading="lazy"
+                decoding="async"
                 className="pointer-events-none absolute left-1/2 top-[12.8rem] h-28 w-[130vw] max-w-none -translate-x-1/2 object-cover object-center opacity-45 mix-blend-screen blur-[0.2px] sm:top-[13.5rem] sm:h-32"
               />
               {/* Overlay — estende-se até o nav bar */}

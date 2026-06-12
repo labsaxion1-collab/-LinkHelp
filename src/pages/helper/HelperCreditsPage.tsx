@@ -10,6 +10,7 @@ import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { formatLinkCredits, normalizeLinkCreditsAmount } from '@/utils/formatLinkCredits';
 import { MOCK_CREDITS_USAGE } from '@/config/creditsUsageConfig';
+import { BRAND } from '@/utils/brandAssets';
 
 /** Neon ring SVG — ~310° arc with glow, gap at bottom-right */
 function NeonRing() {
@@ -294,7 +295,7 @@ export default function HelperCreditsPage() {
                 {/* Right — image clipped to show wallet body */}
                 <div className="relative shrink-0 overflow-hidden" style={{ height: '140px', width: '160px' }}>
                   <img
-                    src="/brand/wallet-illustration.png"
+                    src={BRAND.walletIllustration}
                     alt=""
                     aria-hidden
                     className="absolute right-0 w-auto object-contain"

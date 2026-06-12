@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { ROUTES } from '@/utils/constants';
+import { BRAND } from '@/utils/brandAssets';
 import { writeStoredAppMode } from '@/utils/appModeStorage';
 import { dashboardPathForRole, normalizeProfileRole, resolveEffectiveRole } from '@/utils/userRole';
 import { useAuth } from '@/context/AuthContext';
@@ -207,8 +208,13 @@ export default function RegisterPage() {
               </p>
             </div>
             <img
-              src="/brand/registrarconta.png"
+              src={BRAND.registrarConta}
               alt=""
+              width={1024}
+              height={682}
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
               className="pointer-events-none absolute -right-3 top-1/2 z-0 h-[300px] w-auto max-w-[58%] -translate-y-1/2 object-contain object-center opacity-85 drop-shadow-[0_28px_54px_rgba(37,99,255,0.30)] sm:-right-4 sm:h-[380px] sm:max-w-[56%] md:-right-5 md:h-[420px] md:max-w-[54%]"
             />
             <Sparkles className="absolute right-[20%] top-8 h-5 w-5 fill-[#2563FF] text-[#2563FF]" />

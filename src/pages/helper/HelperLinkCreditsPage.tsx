@@ -8,6 +8,7 @@ import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { LINK_CREDIT_PACKAGES } from '@/config/linkCreditPackages';
 import { startLinkCreditCheckout } from '@/services/paymentService';
 import { ROUTES } from '@/utils/constants';
+import { BRAND } from '@/utils/brandAssets';
 
 const linkCreditGlowClass = 'text-amber-300 drop-shadow-[0_0_14px_rgba(251,191,36,0.55)]';
 
@@ -43,13 +44,13 @@ function packageTitleClass(packageId: string): string {
 function packageArtwork(packageId: string): string | null {
   switch (packageId) {
     case 'starter':
-      return '/brand/linkcredit-coin-icon.png';
+      return BRAND.linkCreditCoin;
     case 'popular':
-      return '/brand/linkcredit-popular-stack.png';
+      return BRAND.linkCreditPopular;
     case 'pro':
-      return '/brand/linkcredit-pro-stack.png';
+      return BRAND.linkCreditPro;
     case 'power':
-      return '/brand/linkcredit-power-stack.png';
+      return BRAND.linkCreditPower;
     default:
       return null;
   }
@@ -111,7 +112,7 @@ export default function HelperLinkCreditsPage() {
   };
 
   return (
-    <AppPageShell wide className="relative min-w-0 overflow-x-hidden bg-[#F8F5EE] bg-[url('/brand/linkcredits-store-background.jpg')] bg-cover bg-fixed bg-center px-0 pb-28 pt-5 md:px-7 md:pb-10">
+    <AppPageShell wide className="relative min-w-0 overflow-x-hidden bg-[#F8F5EE] bg-[url('/brand/linkcredits-store-background.webp')] bg-cover bg-fixed bg-center px-0 pb-28 pt-5 md:px-7 md:pb-10">
       <div className="pointer-events-none absolute inset-0 bg-white/58 backdrop-blur-[1px]" />
       <div className="pointer-events-none absolute -left-24 top-36 h-64 w-64 rounded-full bg-blue-200/25 blur-3xl" />
       <div className="pointer-events-none absolute -right-24 top-[32rem] h-72 w-72 rounded-full bg-amber-200/20 blur-3xl" />

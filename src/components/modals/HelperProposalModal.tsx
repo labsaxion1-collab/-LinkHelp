@@ -9,6 +9,7 @@ import { getHelperLeadCreditSummary, getHelperCreditPublicDisplay } from '@/util
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
+import { BRAND } from '@/utils/brandAssets';
 
 const CHAT_LIMIT = 5;
 
@@ -444,7 +445,7 @@ export function HelperProposalModal({
               </span>
               <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-700/80">
                 <img
-                  src="/brand/linkcredit-coin-icon.png"
+                  src={BRAND.linkCreditCoin}
                   alt=""
                   aria-hidden
                   className="h-4 w-4 shrink-0 object-contain"
@@ -472,7 +473,7 @@ export function HelperProposalModal({
                   </span>
                   <span className="flex items-center gap-1 text-[10px] font-semibold text-blue-200">
                     <img
-                      src="/brand/linkcredit-coin-icon.png"
+                      src={BRAND.linkCreditCoin}
                       alt=""
                       aria-hidden
                       className="h-4 w-4 shrink-0 object-contain"

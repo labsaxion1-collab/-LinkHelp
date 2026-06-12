@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { ROUTES } from '@/utils/constants';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatLinkCredits, normalizeLinkCreditsAmount } from '@/utils/formatLinkCredits';
+import { BRAND } from '@/utils/brandAssets';
 
 type Props = {
   balance: number | null;
@@ -52,7 +53,7 @@ export function HelperCreditsWalletCard({
         className="inline-flex min-h-[34px] max-w-[9.5rem] shrink-0 items-center gap-1.5 rounded-full border border-blue-200/80 bg-white/95 px-2.5 py-1 text-left text-[11px] font-bold text-slate-700 shadow-sm hover:border-blue-300 hover:bg-blue-50"
       >
         <img
-          src="/brand/linkcredit-coin-icon.png"
+          src={BRAND.linkCreditCoin}
           alt=""
           className="h-6 w-6 shrink-0 rounded-full object-cover"
           loading="lazy"
@@ -83,7 +84,7 @@ export function HelperCreditsWalletCard({
           )}
         >
           <img
-            src="/brand/linkcredit-coin-icon.png"
+            src={BRAND.linkCreditCoin}
             alt=""
             className="h-full w-full rounded-full object-cover"
             loading="lazy"

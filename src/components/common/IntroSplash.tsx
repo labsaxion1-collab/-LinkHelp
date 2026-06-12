@@ -83,7 +83,7 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
         src="/brand/intro.mp4"
         muted
         playsInline
-        preload="auto"
+        preload="metadata"
         onEnded={finish}
         onError={finish}
         style={{

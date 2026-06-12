@@ -14,6 +14,7 @@ import { clsx } from 'clsx';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { formatJobScheduleDisplay, isBeautyScheduledJob } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
+import { BRAND } from '@/utils/brandAssets';
 import { avatarUrlForName } from '@/utils/avatarUrl';
 import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
 import { CreateRequestModal } from '@/components/client/create-request/CreateRequestModal';
@@ -492,8 +493,11 @@ export default function ClientDashboard() {
         <section className="relative z-0 isolate min-h-[410px] overflow-hidden bg-[#F5F7FB] sm:min-h-[440px]">
           <div className="absolute inset-y-0 right-[-4%] w-[85%] overflow-hidden">
             <img
-              src="/brand/client-home-hero-trust.jpg"
+              src={BRAND.clientHomeHero}
               alt=""
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
               className="h-[120%] w-full object-cover object-[center_50%] saturate-[1.08] contrast-[1.02]"
             />
             <div className="absolute inset-y-0 left-0 w-[45%] bg-[linear-gradient(90deg,#F5F7FB_0%,rgba(245,247,251,0.85)_40%,transparent_100%)]" />

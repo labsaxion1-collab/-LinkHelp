@@ -7,6 +7,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, ArrowLeft, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 import { ByFluxBadge } from '@/components/brand/ByFluxBadge';
+import { BRAND } from '@/utils/brandAssets';
 
 import { ROUTES } from '@/utils/constants';
 
@@ -388,19 +389,29 @@ export default function LoginPage() {
 
             <div className="mb-8 text-center">
 
-              <img
+              <div className="mb-5 flex flex-col items-center">
 
-                src="/brand/logo icon.png"
+                <img
 
-                alt="LinkHelp"
+                  src={BRAND.logoIcon}
 
-                className="mx-auto mb-3 h-20 w-20 object-contain sm:h-24 sm:w-24"
+                  alt="LinkHelp"
 
-              />
+                  width={256}
 
-              <div className="mb-5 flex justify-center">
+                  height={256}
 
-                <ByFluxBadge alwaysVisible className="text-[#94A3B8]" />
+                  loading="eager"
+
+                  decoding="async"
+
+                  fetchPriority="high"
+
+                  className="h-36 w-36 object-contain"
+
+                />
+
+                <ByFluxBadge alwaysVisible className="-mt-2 text-[#94A3B8]" />
 
               </div>
 
@@ -668,11 +679,15 @@ export default function LoginPage() {
 
                 <img
 
-                  src="/brand/cadeado.png"
+                  src={BRAND.cadeado}
 
                   alt=""
 
                   aria-hidden
+
+                  loading="lazy"
+
+                  decoding="async"
 
                   style={{ width: 300, height: 300, maxWidth: 'none' }}
 

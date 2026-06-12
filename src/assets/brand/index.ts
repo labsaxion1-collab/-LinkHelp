@@ -1,7 +1,2 @@
-import linkhelpLogo from './linkhelp-logo.png';
-
-export const BRAND_ASSETS = {
-  linkhelpLogo,
-} as const;
-
+/** Flux brand copy — raster assets live in /public/brand (see brandAssets.ts). */
 export const FLUX_TAGLINE = 'Infinitas possibilidades.';

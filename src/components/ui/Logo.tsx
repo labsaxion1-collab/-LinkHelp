@@ -1,11 +1,21 @@
-const LOGO_ICON_SRC = '/brand/logo icon.png';
+import { BRAND } from '@/utils/brandAssets';
 
-export function LogoIcon({ className = 'w-8 h-8' }: { className?: string }) {
+export function LogoIcon({
+  className = 'w-8 h-8',
+  loading = 'lazy',
+  decoding = 'async',
+}: {
+  className?: string;
+  loading?: 'eager' | 'lazy';
+  decoding?: 'async' | 'auto' | 'sync';
+}) {
   return (
     <img
-      src={LOGO_ICON_SRC}
+      src={BRAND.logoIcon}
       alt=""
       aria-hidden="true"
+      loading={loading}
+      decoding={decoding}
       className={`object-contain ${className}`}
     />
   );

@@ -50,10 +50,36 @@ export default defineConfig(({ mode }) => {
           cleanupOutdatedCaches: true,
           skipWaiting: true,
           importScripts: ['push-sw.js'],
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+          globPatterns: ['**/*.{js,css,html,ico,svg,woff2,webp}'],
+          globIgnores: [
+            '**/brand/intro*.mp4',
+            '**/brand/*.png',
+            '**/brand/*.jpg',
+            '**/brand/*.jpeg',
+          ],
+          maximumFileSizeToCacheInBytes: 1024 * 1024,
           navigateFallback: '/index.html',
           navigateFallbackDenylist: [/^\/api\//],
           runtimeCaching: [
+            {
+              urlPattern: /^\/brand\/.*\.(?:webp|png|jpe?g)$/i,
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'brand-images',
+                expiration: { maxEntries: 64, maxAgeSeconds: 60 * 60 * 24 * 30 },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+            {
+              urlPattern: /^\/brand\/.*\.mp4$/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'brand-video',
+                expiration: { maxEntries: 4, maxAgeSeconds: 60 * 60 * 24 * 30 },
+                cacheableResponse: { statuses: [0, 200] },
+                rangeRequests: true,
+              },
+            },
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
               handler: 'CacheFirst',

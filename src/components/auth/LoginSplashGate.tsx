@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { Logo } from '@/components/ui/Logo';
+import { BRAND } from '@/utils/brandAssets';
 
 const SPLASH_DURATION_MS = 1200;
 
@@ -21,9 +22,14 @@ export function LoginSplashGate({ children }: { children: ReactNode }) {
 
       <div className="relative flex flex-col items-center text-center -translate-y-14 sm:-translate-y-16">
         <img
-          src="/brand/logo icon.png"
+          src={BRAND.logoIcon}
           alt=""
           aria-hidden
+          width={256}
+          height={256}
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
           className="relative mb-2 h-28 w-28 object-contain sm:h-32 sm:w-32"
         />
 

@@ -26,6 +26,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { ROUTES } from '@/utils/constants';
+import { BRAND } from '@/utils/brandAssets';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { type ServiceCategoryId } from '@/data/serviceCategories';
@@ -308,7 +309,7 @@ export default function ProfilePage() {
                   {balanceLabel}
                 </p>
               </div>
-              <img src="/brand/linkcredit-coin-icon.png" alt="" className="h-16 w-16 rounded-full object-cover drop-shadow-[0_10px_22px_rgba(251,191,36,0.28)]" />
+              <img src={BRAND.linkCreditCoin} alt="" loading="lazy" decoding="async" className="h-16 w-16 rounded-full object-cover drop-shadow-[0_10px_22px_rgba(251,191,36,0.28)]" />
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
               <Link

@@ -796,7 +796,7 @@ export default function HelperDashboard() {
     location.pathname === ROUTES.helperOpportunities;
 
   return (
-    <AppPageShell wide className="min-w-0 overflow-x-hidden">
+    <AppPageShell wide className="min-w-0 overflow-x-hidden pt-0 sm:pt-0">
       {/* Toast Notification */}
       {toastNotification.show && (
         <div className="fixed top-20 right-4 z-[100] animate-in slide-in-from-right-8 fade-in duration-300">
@@ -1034,7 +1034,7 @@ export default function HelperDashboard() {
           ) : null}
 
           <section
-              className="relative mb-8 w-screen min-w-[100vw] max-w-none overflow-visible pb-8 pt-0"
+              className="relative isolate mb-8 w-screen min-w-[100vw] max-w-none overflow-hidden pb-8 pt-0"
               style={{ marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)' }}
             >
               <img
@@ -1044,7 +1044,7 @@ export default function HelperDashboard() {
                 loading="eager"
                 decoding="async"
                 fetchPriority="high"
-                className="pointer-events-none absolute inset-x-0 -top-16 h-[calc(100%+4rem)] w-full object-cover object-[62%_top] opacity-100 transition-transform duration-200 ease-out"
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[62%_top] opacity-100 transition-transform duration-200 ease-out"
                 style={{ transform: `translate3d(0, ${-heroParallaxOffset}px, 0)` }}
               />
               <img
@@ -1055,11 +1055,10 @@ export default function HelperDashboard() {
                 decoding="async"
                 className="pointer-events-none absolute left-1/2 top-[12.8rem] h-28 w-[130vw] max-w-none -translate-x-1/2 object-cover object-center opacity-45 mix-blend-screen blur-[0.2px] sm:top-[13.5rem] sm:h-32"
               />
-              {/* Overlay — estende-se até o nav bar */}
-              <div className="pointer-events-none absolute inset-x-0 -top-16 bottom-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.98)_0%,rgba(255,255,255,0.92)_34%,rgba(255,255,255,0.42)_61%,rgba(255,255,255,0.18)_100%)]" />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.98)_0%,rgba(255,255,255,0.92)_34%,rgba(255,255,255,0.42)_61%,rgba(255,255,255,0.18)_100%)]" />
               <div className="pointer-events-none absolute inset-x-0 bottom-[-1px] h-28 bg-gradient-to-b from-transparent via-white/80 to-[#F7F9FD]" />
               <div className="pointer-events-none absolute left-0 top-0 h-full w-[55vw] bg-[radial-gradient(circle_at_16%_26%,rgba(37,99,255,0.11),transparent_42%)]" />
-              <header className="relative mb-3 flex min-h-[40px] items-start justify-between gap-3 px-6 pr-[calc(9.75rem+1.5rem)] sm:px-7 sm:pr-[calc(9.75rem+1.75rem)]">
+              <header className="relative z-[1] mb-3 flex min-h-[40px] items-start justify-between gap-3 px-6 pr-[calc(9.75rem+1.5rem)] sm:px-7 sm:pr-[calc(9.75rem+1.75rem)]">
                 <div className="min-w-0">
                   <p className="bg-gradient-to-r from-[#0B1220] via-[#123D85] to-[#2563FF] bg-clip-text text-2xl font-black leading-none tracking-tight text-transparent">
                     Helper
@@ -1081,7 +1080,7 @@ export default function HelperDashboard() {
                 ) : null}
               </header>
 
-              <div className="relative min-h-[23.4rem] px-6 py-3 sm:px-7">
+              <div className="relative z-[1] min-h-[23.4rem] px-6 py-3 sm:px-7">
                 <div className="pointer-events-none absolute right-0 top-1 h-20 w-56 rotate-[-12deg] rounded-full bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.14),transparent)] blur-[1px]" />
                 <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF] drop-shadow-[0_1px_10px_rgba(255,255,255,0.55)]">
                   <span className="text-base" aria-hidden>Olá,</span>

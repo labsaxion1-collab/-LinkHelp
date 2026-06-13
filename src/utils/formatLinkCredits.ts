@@ -7,6 +7,15 @@ export function normalizeLinkCreditsAmount(amount: number): number {
   return safe;
 }
 
+/** Like normalizeLinkCreditsAmount but preserves sign for debits/credits in transaction rows. */
+export function normalizeSignedLinkCreditsAmount(amount: number): number {
+  if (!Number.isFinite(amount)) return 0;
+  const rounded = Math.round(amount);
+  if (rounded === 0) return 0;
+  const sign = rounded < 0 ? -1 : 1;
+  return sign * normalizeLinkCreditsAmount(Math.abs(rounded));
+}
+
 const normalizeLegacyBonusAmount = normalizeLinkCreditsAmount;
 
 /** Formats LC balance without locale grouping. Never shows fiat currency. */

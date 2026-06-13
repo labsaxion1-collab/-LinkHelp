@@ -9,6 +9,7 @@ import {
   getLatestRefundTransaction,
   isUnlockRefundEligible,
 } from '@/utils/opportunityUnlockRefund';
+import { resolveCreditTransactionAmount } from '@/utils/creditTransactionDisplay';
 
 type Props = {
   unlocks: OpportunityUnlock[];
@@ -85,7 +86,7 @@ export function CreditRefundStatusCard({
   if (!latestRefund && !pendingEligible) return null;
 
   const labelKey = latestRefund ? 'credits_refund.no_reply' : 'credits_refund.awaiting_deadline';
-  const amount = latestRefund?.amount ?? pendingEligible?.creditsSpent ?? 0;
+  const amount = latestRefund ? resolveCreditTransactionAmount(latestRefund) : pendingEligible?.creditsSpent ?? 0;
 
   return (
     <div
@@ -99,7 +100,7 @@ export function CreditRefundStatusCard({
         <p className="mt-0.5 text-sm font-black text-emerald-200">
           {latestRefund
             ? t('credits_refund.lc_returned', {
-                amount: formatLinkCredits(latestRefund.amount, language),
+                amount: formatLinkCredits(resolveCreditTransactionAmount(latestRefund), language),
               })
             : t('credits_refund.eligible_amount', {
                 amount: formatLinkCredits(amount, language),

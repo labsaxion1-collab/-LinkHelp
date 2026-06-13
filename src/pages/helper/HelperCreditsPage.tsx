@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -14,6 +15,8 @@ import {
   CreditRefundStatusCard,
   OpportunityUnlocksList,
 } from '@/components/features/CreditsUsageDashboard';
+import { CreditTransactionDetailModal } from '@/components/credits/CreditTransactionDetailModal';
+import { CreditTransactionHistoryList } from '@/components/credits/CreditTransactionHistoryList';
 import { computeCreditsUsageSummary } from '@/utils/opportunityUnlockRefund';
 
 /** Neon ring SVG — ~310° arc with glow, gap at bottom-right */
@@ -135,6 +138,7 @@ export default function HelperCreditsPage() {
   const { profile } = useAuth();
   const { transactions, unlocks } = useCredits();
   const { balance, wallet, loading } = useWalletBalance();
+  const [selectedTx, setSelectedTx] = useState<(typeof transactions)[number] | null>(null);
 
   const creditsUsed = wallet?.totalSpent ?? 0;
   const usageSummary = computeCreditsUsageSummary(unlocks, transactions);
@@ -327,47 +331,25 @@ export default function HelperCreditsPage() {
                 {t('helper_dashboard.view_history')} →
               </button>
             </div>
-            <div className="space-y-2">
-              {transactions.length ? (
-                transactions.slice(0, 20).map((tx) => (
-                  <div
-                    key={tx.id}
-                    className="grid grid-cols-[1fr_auto] gap-3 rounded-xl border border-white/[0.05] bg-white/[0.03] px-4 py-3 transition hover:bg-white/[0.06]"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-slate-200">
-                        {tx.type === 'REFUND'
-                          ? t('credits.transaction_refund_no_reply')
-                          : tx.description}
-                      </p>
-                      <p className="text-xs font-medium text-slate-500">
-                        {new Date(tx.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p
-                        className={`text-sm font-black ${tx.amount >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}
-                      >
-                        {tx.amount >= 0 ? '+' : ''}
-                        {tx.amount}
-                      </p>
-                      <p className="text-[11px] font-bold text-slate-500">
-                        {t('credits.balance_after', { count: tx.balanceAfter })}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/10 px-4 py-10 text-center">
-                  <Icons.Inbox className="h-10 w-10 text-slate-600" />
-                  <p className="text-sm font-bold text-slate-500">{t('credits.history_empty')}</p>
-                  <p className="text-xs font-medium text-slate-600">
-                    Quando você usar ou receber créditos, eles aparecerão aqui.
-                  </p>
-                </div>
-              )}
-            </div>
+            <CreditTransactionHistoryList
+              transactions={transactions}
+              unlocks={unlocks}
+              limit={20}
+              variant="dark"
+              onSelect={setSelectedTx}
+              t={t}
+              emptyLabel={t('credits.history_empty')}
+              emptyHint="Quando você usar ou receber créditos, eles aparecerão aqui."
+              balanceAfterLabel={(count) => t('credits.balance_after', { count })}
+            />
           </div>
+
+          <CreditTransactionDetailModal
+            tx={selectedTx}
+            unlocks={unlocks}
+            open={Boolean(selectedTx)}
+            onClose={() => setSelectedTx(null)}
+          />
 
           <OpportunityUnlocksList unlocks={unlocks} />
 

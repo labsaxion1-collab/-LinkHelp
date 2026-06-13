@@ -1,7 +1,7 @@
 import { getSupabase } from '@/lib/supabase';
 import type { CreditPackage, CreditTransaction, CreditWallet, OpportunityUnlock } from '@/types/credits';
 import { CREDIT_PACKAGES } from '@/utils/credits';
-import { normalizeLinkCreditsAmount } from '@/utils/formatLinkCredits';
+import { normalizeLinkCreditsAmount, normalizeSignedLinkCreditsAmount } from '@/utils/formatLinkCredits';
 import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
 
 function warnUnlessMissing(label: string, error: { message?: string; code?: string; status?: number } | null): void {
@@ -29,7 +29,7 @@ function txFromRow(row: Record<string, unknown>): CreditTransaction {
     id: String(row.id),
     helperId: String(row.helper_id),
     type: row.type as CreditTransaction['type'],
-    amount: normalizeLinkCreditsAmount(Number(row.amount ?? 0)),
+    amount: normalizeSignedLinkCreditsAmount(Number(row.amount ?? 0)),
     balanceBefore:
       row.balance_before != null ? normalizeLinkCreditsAmount(Number(row.balance_before)) : null,
     balanceAfter: normalizeLinkCreditsAmount(Number(row.balance_after ?? 0)),

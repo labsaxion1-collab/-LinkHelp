@@ -1,4 +1,5 @@
 import type { CreditTransaction, OpportunityUnlock, OpportunityUnlockStatus, UnlockRefundStatus } from '@/types/credits';
+import { resolveCreditTransactionAmount } from '@/utils/creditTransactionDisplay';
 
 export type { OpportunityUnlockStatus, UnlockRefundStatus };
 
@@ -32,11 +33,11 @@ export function computeCreditsUsageSummary(
 ): CreditsUsageSummary {
   const interestSpent = transactions
     .filter((tx) => tx.type === 'APPLICATION_INTEREST' || tx.type === 'OPPORTUNITY_UNLOCK')
-    .reduce((sum, tx) => sum + Math.abs(Math.min(0, tx.amount)), 0);
+    .reduce((sum, tx) => sum + Math.abs(Math.min(0, resolveCreditTransactionAmount(tx))), 0);
 
   const lcReturned = transactions
     .filter((tx) => tx.type === 'REFUND')
-    .reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
+    .reduce((sum, tx) => sum + Math.max(0, resolveCreditTransactionAmount(tx)), 0);
 
   const leadsUnlocked = unlocks.length;
   const repliesReceived = unlocks.filter((u) => u.status === 'responded').length;
@@ -56,7 +57,7 @@ export function getLatestRefundTransaction(
   transactions: CreditTransaction[],
 ): CreditTransaction | null {
   return (
-    transactions.find((tx) => tx.type === 'REFUND' && tx.amount > 0) ?? null
+    transactions.find((tx) => tx.type === 'REFUND' && resolveCreditTransactionAmount(tx) > 0) ?? null
   );
 }
 

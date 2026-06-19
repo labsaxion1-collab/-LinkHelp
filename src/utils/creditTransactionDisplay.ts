@@ -1,5 +1,5 @@
 import type { CreditTransaction, CreditTransactionType, OpportunityUnlock } from '@/types/credits';
-import { normalizeLinkCreditsAmount, normalizeSignedLinkCreditsAmount } from '@/utils/formatLinkCredits';
+import { sanitizeLinkCreditsAmount, sanitizeSignedLinkCreditsAmount } from '@/utils/formatLinkCredits';
 
 const DEBIT_TYPES: CreditTransactionType[] = [
   'APPLICATION_INTEREST',
@@ -17,27 +17,25 @@ export function resolveCreditTransactionAmount(
   tx: Pick<CreditTransaction, 'amount' | 'balanceBefore' | 'balanceAfter' | 'type'>,
   unlock?: Pick<OpportunityUnlock, 'creditsSpent'> | null,
 ): number {
-  let amount = normalizeSignedLinkCreditsAmount(tx.amount);
+  let amount = sanitizeSignedLinkCreditsAmount(tx.amount);
 
   if (amount === 0 && tx.balanceBefore != null && tx.balanceAfter != null) {
-    const before = normalizeLinkCreditsAmount(tx.balanceBefore);
-    const after = normalizeLinkCreditsAmount(tx.balanceAfter);
-    const delta = after - before;
+    const delta = tx.balanceAfter - tx.balanceBefore;
     if (delta !== 0) amount = delta;
   }
 
   if (amount === 0 && unlock?.creditsSpent) {
-    amount = -normalizeLinkCreditsAmount(unlock.creditsSpent);
+    amount = -sanitizeLinkCreditsAmount(unlock.creditsSpent);
   }
 
   if (amount === 0 && tx.type === 'REFUND' && unlock?.creditsSpent) {
-    amount = normalizeLinkCreditsAmount(unlock.creditsSpent);
+    amount = sanitizeLinkCreditsAmount(unlock.creditsSpent);
   }
 
   if (amount !== 0) return amount;
 
   if (isCreditTransactionDebitType(tx.type) && unlock?.creditsSpent) {
-    return -normalizeLinkCreditsAmount(unlock.creditsSpent);
+    return -sanitizeLinkCreditsAmount(unlock.creditsSpent);
   }
 
   return amount;

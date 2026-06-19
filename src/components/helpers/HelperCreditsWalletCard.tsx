@@ -4,7 +4,7 @@ import { clsx } from 'clsx';
 import type { ReactNode } from 'react';
 import { ROUTES } from '@/utils/constants';
 import { useLanguage } from '@/context/LanguageContext';
-import { formatLinkCredits, normalizeLinkCreditsAmount } from '@/utils/formatLinkCredits';
+import { coerceLegacyLinkCreditsDisplay, formatLinkCredits } from '@/utils/formatLinkCredits';
 import { BRAND } from '@/utils/brandAssets';
 
 type Props = {
@@ -43,7 +43,7 @@ export function HelperCreditsWalletCard({
   const { language } = useLanguage();
   const unresolvedBalance = loading || balance == null;
   const balanceLabel = unresolvedBalance ? '...' : formatLinkCredits(balance, language);
-  const lowBalance = !unresolvedBalance && balance <= 500;
+  const lowBalance = !unresolvedBalance && balance <= 5;
 
   if (compact) {
     return (
@@ -62,7 +62,7 @@ export function HelperCreditsWalletCard({
         <span className="truncate text-[11px] font-black tabular-nums text-slate-950">
           {unresolvedBalance
             ? '...'
-            : t('helper_dashboard.credits_balance', { amount: normalizeLinkCreditsAmount(balance!) })}
+            : t('helper_dashboard.credits_balance', { amount: coerceLegacyLinkCreditsDisplay(balance!) })}
         </span>
         {lowBalance ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" /> : null}
       </button>

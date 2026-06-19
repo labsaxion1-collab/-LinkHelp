@@ -1,7 +1,7 @@
 import { getSupabase } from '@/lib/supabase';
 import type { CreditPackage, CreditTransaction, CreditWallet, OpportunityUnlock } from '@/types/credits';
 import { CREDIT_PACKAGES } from '@/utils/credits';
-import { normalizeLinkCreditsAmount, normalizeSignedLinkCreditsAmount } from '@/utils/formatLinkCredits';
+import { sanitizeLinkCreditsAmount, sanitizeSignedLinkCreditsAmount } from '@/utils/formatLinkCredits';
 import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
 
 function warnUnlessMissing(label: string, error: { message?: string; code?: string; status?: number } | null): void {
@@ -15,10 +15,10 @@ function walletFromRow(row: Record<string, unknown>): CreditWallet {
   return {
     id: String(row.id),
     helperId: String(row.helper_id),
-    balance: normalizeLinkCreditsAmount(Number(row.balance ?? 0)),
-    totalPurchased: normalizeLinkCreditsAmount(Number(row.total_purchased ?? 0)),
-    totalBonus: normalizeLinkCreditsAmount(Number(row.total_bonus ?? 0)),
-    totalSpent: normalizeLinkCreditsAmount(Number(row.total_spent ?? 0)),
+    balance: sanitizeLinkCreditsAmount(Number(row.balance ?? 0)),
+    totalPurchased: sanitizeLinkCreditsAmount(Number(row.total_purchased ?? 0)),
+    totalBonus: sanitizeLinkCreditsAmount(Number(row.total_bonus ?? 0)),
+    totalSpent: sanitizeLinkCreditsAmount(Number(row.total_spent ?? 0)),
     createdAt: toMs(row.created_at as string),
     updatedAt: toMs(row.updated_at as string),
   };
@@ -29,10 +29,10 @@ function txFromRow(row: Record<string, unknown>): CreditTransaction {
     id: String(row.id),
     helperId: String(row.helper_id),
     type: row.type as CreditTransaction['type'],
-    amount: normalizeSignedLinkCreditsAmount(Number(row.amount ?? 0)),
+    amount: sanitizeSignedLinkCreditsAmount(Number(row.amount ?? 0)),
     balanceBefore:
-      row.balance_before != null ? normalizeLinkCreditsAmount(Number(row.balance_before)) : null,
-    balanceAfter: normalizeLinkCreditsAmount(Number(row.balance_after ?? 0)),
+      row.balance_before != null ? sanitizeLinkCreditsAmount(Number(row.balance_before)) : null,
+    balanceAfter: sanitizeLinkCreditsAmount(Number(row.balance_after ?? 0)),
     relatedOpportunityId: (row.related_opportunity_id as string | null) ?? null,
     requestId: (row.request_id as string | null) ?? null,
     applicationId: (row.application_id as string | null) ?? null,
@@ -99,7 +99,7 @@ export async function loadHelperWalletBalance(helperId: string): Promise<number>
 
   if (!data) return 0;
 
-  return normalizeLinkCreditsAmount(Number(data.balance ?? 0));
+  return sanitizeLinkCreditsAmount(Number(data.balance ?? 0));
 }
 
 /** Full wallet row for the logged-in helper. */

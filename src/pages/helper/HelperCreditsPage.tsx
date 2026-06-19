@@ -9,7 +9,7 @@ import { HelperDashboardNav } from '@/components/helpers/HelperDashboardNav';
 import { ROUTES } from '@/utils/constants';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
-import { formatLinkCredits, normalizeLinkCreditsAmount } from '@/utils/formatLinkCredits';
+import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { BRAND } from '@/utils/brandAssets';
 import {
   CreditRefundStatusCard,
@@ -147,7 +147,7 @@ export default function HelperCreditsPage() {
 
   const creditsUsed = wallet?.totalSpent ?? 0;
   const usageSummary = computeCreditsUsageSummary(unlocks, transactions);
-  const balanceNum = normalizeLinkCreditsAmount(balance ?? 0);
+  const balanceNum = balance ?? 0;
   const balanceDisplay = loading ? '…' : formatLinkCredits(balance ?? 0, language);
 
   return (

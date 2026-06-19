@@ -7,20 +7,20 @@ const baseTx: CreditTransaction = {
   helperId: 'helper-1',
   type: 'APPLICATION_INTEREST',
   amount: 0,
-  balanceAfter: 31185,
-  balanceBefore: 31206,
+  balanceAfter: 144,
+  balanceBefore: 165,
   description: 'Interesse em oportunidade',
   createdAt: Date.now(),
 };
 
 describe('resolveCreditTransactionAmount', () => {
-  it('preserves negative amounts after signed normalization', () => {
+  it('preserves negative amounts from real-scale tx.amount', () => {
     expect(
       resolveCreditTransactionAmount({
         ...baseTx,
         amount: -21,
         balanceBefore: null,
-        balanceAfter: 31185,
+        balanceAfter: 144,
       }),
     ).toBe(-21);
   });
@@ -32,7 +32,7 @@ describe('resolveCreditTransactionAmount', () => {
   it('uses unlock credits_spent when amount and balances are missing', () => {
     expect(
       resolveCreditTransactionAmount(
-        { ...baseTx, amount: 0, balanceBefore: null, balanceAfter: 31185 },
+        { ...baseTx, amount: 0, balanceBefore: null, balanceAfter: 144 },
         { creditsSpent: 13 },
       ),
     ).toBe(-13);
@@ -44,8 +44,8 @@ describe('resolveCreditTransactionAmount', () => {
         ...baseTx,
         type: 'REFUND',
         amount: 21,
-        balanceBefore: 31164,
-        balanceAfter: 31185,
+        balanceBefore: 123,
+        balanceAfter: 144,
       }),
     ).toBe(21);
   });

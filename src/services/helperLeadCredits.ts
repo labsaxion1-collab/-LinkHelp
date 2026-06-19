@@ -3,7 +3,7 @@ import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
 import type { Job } from '@/types/job';
 import { calculateHelperLeadCreditCost } from '@/utils/calculateHelperLeadCreditCost';
 import type { CreditTransaction } from '@/types/credits';
-import { normalizeLinkCreditsAmount } from '@/utils/formatLinkCredits';
+import { sanitizeLinkCreditsAmount } from '@/utils/formatLinkCredits';
 import { distanceFromHelperBaseToJobKm } from '@/utils/helperBaseLocation';
 
 export class InsufficientCreditsError extends Error {
@@ -130,7 +130,7 @@ export function localDebit(
   }
 
   const balanceBefore = wallet.balance;
-  const balanceAfter = normalizeLinkCreditsAmount(balanceBefore - input.amount);
+  const balanceAfter = sanitizeLinkCreditsAmount(balanceBefore - input.amount);
   const tx: CreditTransaction = {
     id: `tx_${input.type}_${input.requestId}_${Date.now()}`,
     helperId: input.helperId,

@@ -117,6 +117,7 @@ export default function HelperDashboard() {
 
   // Modals state
   const [profileSettings, setProfileSettings] = useState<HelperProfileSettings>(() => loadHelperProfileSettings());
+  const [skillsLoaded, setSkillsLoaded] = useState(false);
   type ProfileSetupModal = null | 'avatar';
   const [profileSetupModal, setProfileSetupModal] = useState<ProfileSetupModal>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -191,6 +192,7 @@ export default function HelperDashboard() {
     () => getHelperCategoryPreferences(profile, profileSettings.skillIds),
     [profile, profileSettings.skillIds],
   );
+  const hasCategories = profileSettings.skillIds.length > 0;
   const helperBaseCoords = useMemo(() => helperBaseCoordinates(profile), [profile]);
   const hasHelperBaseAddress = useMemo(() => helperHasBaseAddress(profile), [profile]);
   const hasExactBaseCoords = useMemo(() => helperHasExactBaseCoordinates(profile), [profile]);
@@ -268,9 +270,8 @@ export default function HelperDashboard() {
     void (async () => {
       const remote = await fetchHelperSkills(storageUserId);
       if (cancelled) return;
-      if (remote.length > 0) {
-        setProfileSettings((prev) => ({ ...prev, skillIds: remote }));
-      }
+      setProfileSettings((prev) => ({ ...prev, skillIds: remote }));
+      setSkillsLoaded(true);
     })();
     return () => {
       cancelled = true;
@@ -726,6 +727,7 @@ export default function HelperDashboard() {
   const swipeRateLimited = Date.now() < swipeCooldownUntil;
 
   const displayedJobs = useMemo(() => {
+    if (profileSettings.skillIds.length === 0) return [];
     const viewerId = helperUserId ?? me?.id ?? '';
     let list = jobs.filter(
       (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== viewerId,
@@ -1247,6 +1249,21 @@ export default function HelperDashboard() {
                       />
                     </div>
               ))}
+              </div>
+            ) : skillsLoaded && !hasCategories ? (
+              <div className="flex flex-col items-center justify-center rounded-[22px] border border-dashed border-[rgba(37,99,255,0.16)] bg-gradient-to-br from-white to-[#f4f7ff] px-6 py-14 text-center shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+                <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 shadow-[0_8px_24px_rgba(37,99,255,0.12)]">
+                  <Icons.Briefcase className="h-8 w-8 text-[#2563FF]" strokeWidth={1.75} />
+                </span>
+                <p className="text-[15px] font-bold text-[#0B1220]">{t('helper_dashboard.no_categories_title')}</p>
+                <p className="mt-2 max-w-[18rem] text-[13px] font-medium text-[#94A3B8]">{t('helper_dashboard.empty_feed_no_categories')}</p>
+                <button
+                  type="button"
+                  onClick={() => navigate(`${ROUTES.profile}#helper-categories`)}
+                  className="mt-5 rounded-2xl bg-[#2563FF] px-5 py-2.5 text-[13px] font-black text-white shadow-[0_4px_14px_rgba(37,99,255,0.30)] transition-opacity hover:opacity-90 active:opacity-80"
+                >
+                  {t('helper_dashboard.add_categories_cta')}
+                </button>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center rounded-[22px] border border-dashed border-[rgba(37,99,255,0.16)] bg-gradient-to-br from-white to-[#f4f7ff] px-6 py-14 text-center shadow-[0_2px_12px_rgba(15,23,42,0.04)]">

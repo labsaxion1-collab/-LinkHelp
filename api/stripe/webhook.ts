@@ -27,11 +27,20 @@ async function callConfirmStripeLinkCreditPurchase(
 ): Promise<{ ok: true; data: unknown } | { ok: false; status: number; body: string }> {
   const cfg = getSupabaseRpcConfig();
   if (!cfg) {
+    console.error('[stripe/webhook] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set — cannot call RPC');
     return { ok: false, status: 503, body: 'Supabase not configured' };
   }
 
   const rpcUrl = `${cfg.url}/rest/v1/rpc/confirm_stripe_linkcredit_purchase`;
   const body = JSON.stringify({ payload });
+
+  console.log('[stripe/webhook] calling RPC', {
+    rpcUrl,
+    userId: payload.user_id,
+    sessionId: payload.stripe_session_id,
+    credits: payload.credits,
+    packageId: payload.package_id,
+  });
 
   const response = await fetch(rpcUrl, {
     method: 'POST',
@@ -47,11 +56,13 @@ async function callConfirmStripeLinkCreditPurchase(
   const text = await response.text();
 
   if (!response.ok) {
-    console.error('[stripe/webhook] RPC fetch failed', {
-      status: response.status,
-      responseText: text,
-      payloadKeys: Object.keys(payload),
-      rpcPath: '/rest/v1/rpc/confirm_stripe_linkcredit_purchase',
+    console.error('[stripe/webhook] RPC call FAILED', {
+      httpStatus: response.status,
+      responseBody: text,
+      userId: payload.user_id,
+      sessionId: payload.stripe_session_id,
+      credits: payload.credits,
+      hint: 'Check if credit_transactions.metadata column exists — run apply_fix_stripe_credit_purchase.sql',
     });
     return { ok: false, status: response.status, body: text };
   }
@@ -64,6 +75,13 @@ async function callConfirmStripeLinkCreditPurchase(
       data = text;
     }
   }
+
+  console.log('[stripe/webhook] RPC success', {
+    userId: payload.user_id,
+    sessionId: payload.stripe_session_id,
+    credits: payload.credits,
+    rpcResult: data,
+  });
 
   return { ok: true, data };
 }
@@ -95,10 +113,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).send(message);
   }
 
+  console.log('[stripe/webhook] event received', { type: event.type, id: event.id });
+
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
 
+    console.log('[stripe/webhook] checkout.session.completed', {
+      sessionId: session.id,
+      paymentStatus: session.payment_status,
+      clientReferenceId: session.client_reference_id,
+      metadata: session.metadata,
+      amountTotal: session.amount_total,
+    });
+
     if (session.payment_status !== 'paid') {
+      console.log('[stripe/webhook] skipping — payment_status:', session.payment_status);
       return res.status(200).send('skipped unpaid');
     }
 
@@ -110,11 +139,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const currency = meta.currency ?? 'CAD';
 
     if (!userId || !packageId || !Number.isFinite(credits) || credits <= 0) {
-      console.error('[stripe/webhook] missing metadata', meta);
+      console.error('[stripe/webhook] missing or invalid metadata', {
+        meta,
+        userId,
+        packageId,
+        credits,
+        sessionId: session.id,
+      });
       return res.status(200).send('missing metadata');
     }
 
     if (!getSupabaseRpcConfig()) {
+      console.error('[stripe/webhook] Supabase env vars not set — SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
       return res.status(503).send('Supabase not configured');
     }
 

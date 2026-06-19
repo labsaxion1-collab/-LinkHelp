@@ -658,37 +658,39 @@ export default function ClientDashboard() {
                         ) : null}
                       </div>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-1.5">
+                    <div className="mt-3 space-y-1.5">
                       {(app.status === 'pending' || app.status === 'viewed') ? (
                         <>
                           <button
                             type="button"
                             disabled={acceptingApplicationId === app.id}
                             onClick={() => void handleAcceptProposal(detailJob, app)}
-                            className="flex-1 min-w-[7rem] rounded-xl bg-green-600 px-3 py-2.5 text-xs font-black text-white hover:bg-green-700 disabled:opacity-60"
+                            className="w-full rounded-xl bg-green-600 px-3 py-2 text-xs font-black text-white hover:bg-green-700 disabled:opacity-60"
                           >
                             {t('client_dashboard.accept_proposal')}
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setDetailJob(null);
-                              openHelperProfile(
-                                { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
-                                app.id,
-                              );
-                            }}
-                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50"
-                          >
-                            {t('helper_public.view_profile')}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void updateApplicationStatus(app.id, 'rejected').catch(console.error)}
-                            className={`rounded-xl px-3 py-2 text-xs font-bold ${app.isExclusive ? 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}
-                          >
-                            {app.isExclusive ? t('client_dashboard.exclusive_reject_unlock') : t('client_dashboard.reject_helper')}
-                          </button>
+                          <div className="flex gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDetailJob(null);
+                                openHelperProfile(
+                                  { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
+                                  app.id,
+                                );
+                              }}
+                              className="flex-1 min-w-0 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700 hover:bg-blue-50 truncate"
+                            >
+                              {t('helper_public.view_profile')}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void updateApplicationStatus(app.id, 'rejected').catch(console.error)}
+                              className={`flex-1 min-w-0 rounded-xl px-2 py-1.5 text-xs font-bold truncate ${app.isExclusive ? 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}
+                            >
+                              {app.isExclusive ? t('client_dashboard.exclusive_reject_unlock') : t('client_dashboard.reject_helper')}
+                            </button>
+                          </div>
                         </>
                       ) : (
                         <>
@@ -1317,17 +1319,19 @@ export default function ClientDashboard() {
 
                           <div className="min-w-0 flex-1">
                             {/* status + budget badges */}
-                            <div className="flex items-center gap-2 flex-wrap mb-1">
-                              {isExclusiveLocked ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200">
-                                  👑 {t('client_dashboard.exclusive_application_badge')}
-                                </span>
-                              ) : (
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${job.status === 'open' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                                  {job.status === 'open' ? t('client_dashboard.status_waiting_helpers') : t('client_dashboard.status_in_progress')}
-                                </span>
-                              )}
-                              <span className="ml-auto text-[11px] font-black text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">{formatJobBudgetDisplay(job, t)}</span>
+                            <div className="flex items-center justify-between gap-2 mb-1 min-w-0">
+                              <div className="shrink-0">
+                                {isExclusiveLocked ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200">
+                                    👑 {t('client_dashboard.exclusive_application_badge')}
+                                  </span>
+                                ) : (
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${job.status === 'open' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                                    {job.status === 'open' ? t('client_dashboard.status_waiting_helpers') : t('client_dashboard.status_in_progress')}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="shrink-0 text-[11px] font-black text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">{formatJobBudgetDisplay(job, t)}</span>
                             </div>
 
                             {/* title */}

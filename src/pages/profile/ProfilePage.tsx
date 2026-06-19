@@ -1,5 +1,5 @@
 import { type ComponentType, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -94,6 +94,7 @@ function ProfileInfoRow({
 export default function ProfilePage() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const { profile, session, updateProfile, refreshProfile, isConfigured } = useAuth();
   const { isHelperMode } = useAppMode();
   const { showToast } = useToast();
@@ -104,6 +105,7 @@ export default function ProfilePage() {
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [avatarSaving, setAvatarSaving] = useState(false);
   const avatarObjectUrlRef = useRef<string | null>(null);
+  const categoriesSectionRef = useRef<HTMLElement | null>(null);
   const [bioEditing, setBioEditing] = useState(false);
   const [bioValue, setBioValue] = useState('');
   const [bioSaving, setBioSaving] = useState(false);
@@ -149,6 +151,14 @@ export default function ProfilePage() {
     }
     void fetchHelperSkills(session.user.id).then(setHelperSkillIds);
   }, [session?.user?.id, isHelperMode, isConfigured]);
+
+  useEffect(() => {
+    if (location.hash !== '#helper-categories' || !categoriesSectionRef.current) return;
+    const timer = setTimeout(() => {
+      categoriesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [location.hash]);
 
   const persistHelperSkills = async (
     ids: string[],
@@ -442,7 +452,11 @@ export default function ProfilePage() {
         {isHelperMode ? (
           <>
             <section className="grid gap-3">
-              <section className="rounded-[1.5rem] border border-slate-100 bg-white p-4 shadow-[0_14px_32px_rgba(15,23,42,0.05)]">
+              <section
+                id="helper-categories"
+                ref={categoriesSectionRef}
+                className="rounded-[1.5rem] border border-slate-100 bg-white p-4 shadow-[0_14px_32px_rgba(15,23,42,0.05)]"
+              >
                 <div className="mb-3 flex items-center gap-3">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#EEF3FF] text-[#2563FF]">
                     <Briefcase className="h-5 w-5" />

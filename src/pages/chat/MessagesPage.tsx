@@ -102,6 +102,12 @@ export default function MessagesPage() {
     if (isMd) setMobilePanel('thread');
   }, [isMd]);
 
+  useEffect(() => {
+    if (convQuery && remote.selectedId === convQuery) {
+      setMobilePanel('thread');
+    }
+  }, [convQuery, remote.selectedId]);
+
   const peerNameShort = remote.peerName.split(' ')[0] || remote.peerName;
   const peerAvatar = remote.peerAvatar;
   const peerTier = remote.peerPlan;
@@ -507,7 +513,7 @@ export default function MessagesPage() {
   );
 
   const sendDisabled =
-    useRemoteChat && (!remote.selectedId || remote.threadLoading || !remote.peerId || remote.listLoading);
+    useRemoteChat && (!remote.selectedId || remote.threadLoading || !remote.peerId);
 
   const inputBar = (
     <div

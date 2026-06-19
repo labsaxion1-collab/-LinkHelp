@@ -107,6 +107,54 @@ export async function fetchChatConversationSummaries(userId: string): Promise<Ch
   });
 }
 
+function mapConversationRowToSummary(row: ConvSelectRow, userId: string, peers: Map<string, { name?: string | null; avatar_url?: string | null; plan_type?: string | null }>): ChatConversationSummary {
+  const peerId = row.client_id === userId ? row.helper_id : row.client_id;
+  const u = peers.get(peerId);
+  const name = u?.name?.trim() || 'User';
+  return {
+    id: row.id,
+    requestId: row.request_id,
+    requestTitle: requestTitleFromRow(row),
+    contactUnlocked: row.contact_unlocked,
+    peerId,
+    peerName: name,
+    peerAvatar: u?.avatar_url || avatarUrlForName(name, 'dbeafe', '1e3a8a'),
+    peerPlan: tierFromPlan(u?.plan_type),
+  };
+}
+
+export async function fetchChatConversationSummaryById(
+  conversationId: string,
+  userId: string,
+): Promise<ChatConversationSummary | null> {
+  const sb = getSupabase();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from('conversations')
+    .select(
+      `
+      id,
+      request_id,
+      client_id,
+      helper_id,
+      contact_unlocked,
+      created_at,
+      requests ( title )
+    `,
+    )
+    .eq('id', conversationId)
+    .or(`client_id.eq.${userId},helper_id.eq.${userId}`)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const row = data as unknown as ConvSelectRow;
+  const peerId = row.client_id === userId ? row.helper_id : row.client_id;
+  const peers = await fetchProfilesAsMapperMap([peerId]);
+  return mapConversationRowToSummary(row, userId, peers);
+}
+
 export async function fetchChatMessages(conversationId: string): Promise<MessageRow[]> {
   const sb = getSupabase();
   if (!sb) return [];

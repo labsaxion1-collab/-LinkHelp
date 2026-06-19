@@ -33,3 +33,29 @@ export function findClientHelperApplication(
     )
     .sort((a, b) => b.createdAt - a.createdAt)[0];
 }
+
+/** Prefer explicit application / open request context over the most recent application. */
+export function resolveClientHelperApplication(
+  helperId: string,
+  clientJobIds: string[],
+  applications: Application[],
+  options?: { applicationId?: string | null; requestId?: string | null },
+): Application | undefined {
+  const isActive = (a: Application) =>
+    a.helperId === helperId &&
+    clientJobIds.includes(a.jobId) &&
+    a.status !== 'cancelled' &&
+    a.status !== 'rejected';
+
+  if (options?.applicationId) {
+    const byId = applications.find((a) => a.id === options.applicationId);
+    if (byId && isActive(byId)) return byId;
+  }
+
+  if (options?.requestId) {
+    const onRequest = applications.find((a) => a.jobId === options.requestId && isActive(a));
+    if (onRequest) return onRequest;
+  }
+
+  return findClientHelperApplication(helperId, clientJobIds, applications);
+}

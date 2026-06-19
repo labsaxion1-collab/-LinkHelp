@@ -37,6 +37,7 @@ import { formatMoneyAmount, jobHasBoundedBudget } from '@/utils/jobProposal';
 import {
   findClientHelperApplication,
   isChatUnlockedApplication,
+  resolveClientHelperApplication,
 } from '@/utils/chatHireGate';
 import { ensureConversation } from '@/services/supabase/conversationEnsure';
 import { remoteGetPreMatchClientCount } from '@/services/supabase/appDataRemote';
@@ -211,8 +212,11 @@ export default function ClientDashboard() {
 
   const profileApp = useMemo(() => {
     if (!selectedHelper) return undefined;
-    return findClientHelperApplication(String(selectedHelper.id), myJobIds, applications);
-  }, [selectedHelper, myJobIds, applications]);
+    return resolveClientHelperApplication(String(selectedHelper.id), myJobIds, applications, {
+      applicationId: selectedApplicationId,
+      requestId: detailJob?.id ?? null,
+    });
+  }, [selectedHelper, selectedApplicationId, detailJob?.id, myJobIds, applications]);
 
   const profileChatUnlocked = useMemo(() => {
     return profileApp ? isChatUnlockedApplication(profileApp) : false;
@@ -377,27 +381,38 @@ export default function ClientDashboard() {
   };
 
   const handleProfileMessageClick = async () => {
-    if (profileChatUnlocked) {
+    const app = profileApp;
+    if (!app) {
+      showToast(t('helper_profile.chat_locked_hint'), 'info');
+      return;
+    }
+
+    const unlocked = isChatUnlockedApplication(app);
+    const preMatch = !unlocked && (app.status === 'pending' || app.status === 'viewed');
+
+    if (!unlocked && !preMatch) {
+      showToast(t('helper_profile.chat_locked_hint'), 'info');
+      return;
+    }
+
+    if (preMatch && profilePreMatchCount !== null && profilePreMatchCount >= PRE_HIRE_MESSAGE_LIMIT) {
+      showToast(t('helper_profile.pre_match_limit_reached'), 'info');
+      return;
+    }
+
+    try {
+      const convId = await ensureConversation({
+        requestId: app.jobId,
+        clientId: me.id,
+        helperId: app.helperId,
+        contactUnlocked: unlocked,
+      });
       setShowHelperProfileModal(false);
-      navigate(ROUTES.messages);
-      return;
+      navigate(`${ROUTES.messages}?c=${convId}`);
+    } catch (error) {
+      console.error('[LinkHelp] profile message', error);
+      showToast(t('helper_profile.chat_error'), 'error');
     }
-    if (profilePreMatchEligible && profileApp) {
-      try {
-        const convId = await ensureConversation({
-          requestId: profileApp.jobId,
-          clientId: me.id,
-          helperId: profileApp.helperId,
-          contactUnlocked: false,
-        });
-        setShowHelperProfileModal(false);
-        navigate(`${ROUTES.messages}?c=${convId}`);
-      } catch {
-        showToast(t('helper_profile.chat_error'), 'error');
-      }
-      return;
-    }
-    showToast(t('helper_profile.chat_locked_hint'), 'info');
   };
 
   const handleAcceptProposal = async (job: Job, app: Application) => {

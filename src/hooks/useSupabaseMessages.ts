@@ -4,6 +4,7 @@ import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import { getSupabase } from '@/lib/supabase';
 import {
   fetchChatConversationSummaries,
+  fetchChatConversationSummaryById,
   fetchChatMessages,
   insertChatMessage,
   notifyPeerNewMessage,
@@ -102,12 +103,39 @@ export function useSupabaseMessages(opts: UseSupabaseMessagesOpts) {
       (appliedInitial.current ? null : summaries[0]?.id) ||
       null;
     if (!want) return;
-    const exists = summaries.some((s) => s.id === want);
-    if (exists) {
+
+    if (searchConversationId === want || initialConversationId === want) {
+      setSelectedId(want);
+      appliedInitial.current = true;
+      return;
+    }
+
+    if (summaries.some((s) => s.id === want)) {
       setSelectedId(want);
       appliedInitial.current = true;
     }
   }, [enabled, userId, summaries, initialConversationId, searchConversationId]);
+
+  /** Deep-link (?c=) may arrive before the new thread appears in the list query. */
+  useEffect(() => {
+    if (!enabled || !userId || !selectedId || selected) return;
+
+    let cancelled = false;
+    void fetchChatConversationSummaryById(selectedId, userId).then((summary) => {
+      if (cancelled || !summary) return;
+      setSummaries((prev) => (prev.some((s) => s.id === summary.id) ? prev : [summary, ...prev]));
+      setContactUnlocked(summary.contactUnlocked);
+      setRequestTitle(summary.requestTitle);
+      setPeerName(summary.peerName);
+      setPeerAvatar(summary.peerAvatar);
+      setPeerPlan(summary.peerPlan);
+      setPeerId(summary.peerId);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, userId, selectedId, selected]);
 
   useEffect(() => {
     if (!enabled || !selectedId || !userId) {

@@ -1,22 +1,71 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
+import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { ROUTES } from '@/utils/constants';
 
+function SuccessLoader({ message }: { message?: string }) {
+  return (
+    <AppPageShell className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
+      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      {message ? (
+        <p className="text-sm font-medium text-slate-500">{message}</p>
+      ) : null}
+    </AppPageShell>
+  );
+}
+
 export default function HelperCreditsSuccessPage() {
   const { t } = useLanguage();
-  const { profile, authLoading } = useAuth();
+  const {
+    session,
+    profile,
+    authLoading,
+    authBootstrapped,
+    attemptSessionRecovery,
+    refreshProfile,
+  } = useAuth();
   const { refresh, balance } = useWalletBalance();
   const [refreshCount, setRefreshCount] = useState(0);
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [recoveryAttempted, setRecoveryAttempted] = useState(false);
+  const profileKick = useRef(0);
 
+  // Restore Supabase session after external Stripe redirect (same-origin return required).
   useEffect(() => {
-    // Refresh immediately and then poll every 4 s (up to 5 times) to catch
-    // the webhook crediting the wallet. After 5 polls we stop and let the
-    // user see whatever balance is showing.
+    if (!authBootstrapped || authLoading || session || recoveryAttempted) return;
+
+    let cancelled = false;
+    setRecoveryBusy(true);
+    void attemptSessionRecovery()
+      .finally(() => {
+        if (!cancelled) {
+          setRecoveryBusy(false);
+          setRecoveryAttempted(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authBootstrapped, authLoading, session, recoveryAttempted, attemptSessionRecovery]);
+
+  // Load profile once session is available.
+  useEffect(() => {
+    if (!authBootstrapped || authLoading || !session?.user || profile) return;
+    if (profileKick.current >= 4) return;
+    profileKick.current += 1;
+    void refreshProfile(session.user);
+  }, [authBootstrapped, authLoading, session, profile, refreshProfile]);
+
+  // Poll wallet balance after purchase (webhook may arrive shortly after redirect).
+  useEffect(() => {
+    if (!session || profile?.role !== 'helper') return;
+
     void refresh();
     const timer = window.setInterval(() => {
       setRefreshCount((n) => {
@@ -28,21 +77,37 @@ export default function HelperCreditsSuccessPage() {
         return n + 1;
       });
     }, 4000);
-    return () => window.clearInterval(timer);
-  }, [refresh]);
 
-  // Wait until auth has fully resolved before deciding where to send the user.
-  // Without this guard, profile === null during initial load → role check fails
-  // → user gets bounced to /client/dashboard → ProtectedRoute redirects to login.
-  if (authLoading) {
+    return () => window.clearInterval(timer);
+  }, [session, profile?.role, refresh]);
+
+  const waitingForAuth =
+    !authBootstrapped ||
+    authLoading ||
+    recoveryBusy ||
+    (!session && !recoveryAttempted);
+
+  const waitingForProfile = Boolean(session?.user && !profile);
+
+  if (waitingForAuth) {
+    return <SuccessLoader message="Restaurando sessão…" />;
+  }
+
+  if (waitingForProfile) {
+    return <SuccessLoader message="Carregando perfil…" />;
+  }
+
+  if (!session) {
     return (
-      <AppPageShell className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </AppPageShell>
+      <Navigate
+        to={ROUTES.login}
+        replace
+        state={{ from: ROUTES.helperCreditsSuccess }}
+      />
     );
   }
 
-  if (profile?.role !== 'helper') {
+  if (profile && profile.role !== 'helper') {
     return <Navigate to={ROUTES.helperLinkCredits} replace />;
   }
 
@@ -57,7 +122,7 @@ export default function HelperCreditsSuccessPage() {
 
         {balance !== null && (
           <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700">
-            Saldo atual: {balance} LC
+            Saldo atual: {formatLinkCredits(balance)}
           </p>
         )}
 
@@ -69,7 +134,7 @@ export default function HelperCreditsSuccessPage() {
         )}
 
         <Link
-          to={ROUTES.helperLinkCredits}
+          to={ROUTES.helperCredits}
           className="mt-6 inline-flex min-h-[48px] w-full items-center justify-center rounded-2xl bg-blue-600 px-4 text-sm font-black text-white hover:bg-blue-700"
         >
           {t('link_credits_store.back_to_dashboard')}

@@ -82,6 +82,8 @@ export function AppRoutes() {
         <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />
         <Route path={ROUTES.authCallback} element={<AuthCallbackPage />} />
         <Route path={ROUTES.dashboard} element={<DashboardEntryPage />} />
+        {/* Stripe return — outside ProtectedRoute so session recovery can run before login redirect */}
+        <Route path={ROUTES.helperCreditsSuccess} element={<HelperCreditsSuccessPage />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path={ROUTES.messages} element={<MessagesPage />} />
@@ -103,7 +105,6 @@ export function AppRoutes() {
               )
             }
           />
-          <Route path={ROUTES.helperCreditsSuccess} element={<HelperCreditsSuccessPage />} />
 
           <Route element={<RoleRoute requiredRole="client" />}>
             <Route path="/client" element={<Navigate to={ROUTES.clientDashboard} replace />} />

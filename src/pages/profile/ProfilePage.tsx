@@ -98,7 +98,7 @@ export default function ProfilePage() {
   const { profile, session, updateProfile, refreshProfile, isConfigured } = useAuth();
   const { isHelperMode } = useAppMode();
   const { showToast } = useToast();
-  const { balance, loading } = useWalletBalance();
+  const { balance, loading, refresh: refreshWallet } = useWalletBalance();
   const [helperSkillIds, setHelperSkillIds] = useState<string[]>([]);
   const [primaryCategory, setPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
   const [secondaryCategories, setSecondaryCategories] = useState<ServiceCategoryId[]>([]);
@@ -136,6 +136,12 @@ export default function ProfilePage() {
   };
 
   useEffect(() => () => revokeAvatarObjectUrl(), []);
+
+  // Fetch fresh wallet balance every time this page is opened (prevents stale context).
+  useEffect(() => {
+    if (profile?.role !== 'helper') return;
+    void refreshWallet();
+  }, [profile?.role, refreshWallet]);
 
   useEffect(() => {
     if (!profile || !isHelperMode) return;

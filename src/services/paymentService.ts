@@ -42,13 +42,15 @@ export async function startLinkCreditCheckout(input: {
   } = await sb.auth.getSession();
   if (!session?.access_token) throw new Error('AUTH_REQUIRED');
 
+  const returnOrigin = typeof window !== 'undefined' ? window.location.origin : undefined;
+
   const res = await fetch('/api/stripe/create-checkout-session', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, returnOrigin }),
   });
 
   const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };

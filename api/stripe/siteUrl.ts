@@ -45,3 +45,33 @@ export function getServerSiteUrl(): string {
 
   return DEFAULT_SITE_URL;
 }
+
+function hostnameAllowed(hostname: string): boolean {
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+  if (hostname === 'linkhelp.app' || hostname === 'www.linkhelp.app') return true;
+  if (hostname.endsWith('.vercel.app')) return true;
+  return false;
+}
+
+/** Validates a client-provided origin for Stripe return URLs (must match logged-in domain). */
+export function isAllowedCheckoutOrigin(origin: string): boolean {
+  try {
+    const parsed = new URL(origin);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    return hostnameAllowed(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Prefer the browser origin where checkout started so Supabase session (localStorage)
+ * survives the Stripe redirect. Falls back to env SITE_URL when origin is missing/invalid.
+ */
+export function resolveCheckoutSiteUrl(clientOrigin?: string): string {
+  const normalizedClient = normalizeSiteUrl(clientOrigin);
+  if (normalizedClient && isAllowedCheckoutOrigin(normalizedClient)) {
+    return normalizedClient;
+  }
+  return getServerSiteUrl();
+}

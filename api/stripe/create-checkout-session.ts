@@ -1,12 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { getLinkCreditPackage } from './packages.js';
-import { getServerSiteUrl } from './siteUrl.js';
+import { getServerSiteUrl, resolveCheckoutSiteUrl } from './siteUrl.js';
 import { getAuthedUserId, getSupabaseAdmin } from './supabaseAdmin.js';
 
 type Body = {
   packageId?: string;
   priceId?: string;
+  /** Browser origin where checkout started — keeps Stripe return on the same domain as the session. */
+  returnOrigin?: string;
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -51,11 +53,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  const siteUrl = getServerSiteUrl();
+  const siteUrl = resolveCheckoutSiteUrl(body.returnOrigin);
   const successUrl = `${siteUrl}/helper/credits/success?session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl = `${siteUrl}/helper/linkcredits?cancelled=true`;
 
-  console.error('[stripe/create-checkout-session] siteUrl:', siteUrl);
+  console.log('[stripe/create-checkout-session] redirect urls', {
+    returnOrigin: body.returnOrigin ?? null,
+    siteUrl,
+    fallbackSiteUrl: getServerSiteUrl(),
+    successUrl,
+    cancelUrl,
+    userId,
+  });
 
   const stripe = new Stripe(stripeSecret, { apiVersion: '2025-02-24.acacia' });
 

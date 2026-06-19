@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import * as Icons from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -137,8 +137,13 @@ export default function HelperCreditsPage() {
   const { t, language } = useLanguage();
   const { profile } = useAuth();
   const { transactions, unlocks } = useCredits();
-  const { balance, wallet, loading } = useWalletBalance();
+  const { balance, wallet, loading, refresh: refreshWallet } = useWalletBalance();
   const [selectedTx, setSelectedTx] = useState<(typeof transactions)[number] | null>(null);
+
+  // Fetch fresh wallet balance every time this page is opened (prevents stale context).
+  useEffect(() => {
+    void refreshWallet();
+  }, [refreshWallet]);
 
   const creditsUsed = wallet?.totalSpent ?? 0;
   const usageSummary = computeCreditsUsageSummary(unlocks, transactions);

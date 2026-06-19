@@ -15,6 +15,7 @@ export const ROUTES = {
   dashboard: '/dashboard',
   clientDashboard: '/client/dashboard',
   clientJobs: '/client/jobs',
+  clientCredits: '/client/credits',
   helperDashboard: '/helper/dashboard',
   helperOpportunities: '/helper/opportunities',
   helperPerformance: '/helper/performance',

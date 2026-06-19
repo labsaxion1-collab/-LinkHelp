@@ -2167,6 +2167,15 @@ export const pt = {
     after_promo: 'Use seus LinkCredits para publicar pedidos e contratar helpers. Recarregue quando quiser.',
     admin_flag: 'CLIENT_LINKCREDITS_ENABLED=false — clientes não são cobrados ao abrir chamados.',
   },
+  client_credits: {
+    balance: 'Saldo: {{amount}} LC',
+    buy_title: 'Comprar LinkCredits',
+    your_credits: 'Seus créditos',
+    coming_soon: 'Em breve você poderá comprar créditos para publicar pedidos.',
+    coming_soon_badge: 'Em breve',
+    current_balance: 'Seu saldo atual: {{amount}} LC',
+    back_dashboard: 'Voltar ao início',
+  },
   client_how_it_works: {
     title: 'Como funciona',
     card1_title: 'Publique seu pedido',

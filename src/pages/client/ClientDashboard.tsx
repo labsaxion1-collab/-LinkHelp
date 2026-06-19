@@ -52,6 +52,8 @@ import { CancelRequestModal } from '@/components/client/CancelRequestModal';
 import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
 import { extractErrorMessage } from '@/utils/errorMessage';
 import { formatHireError, logAcceptProposalError } from '@/utils/formatHireError';
+import { useAuth } from '@/context/AuthContext';
+import { ClientCreditsWalletBadge } from '@/components/client/ClientCreditsWalletBadge';
 
 const SERVICE_CONFIRM_DISMISS_PREFIX = 'lh_service_confirm_skip_';
 import { translateJobTitle } from '@/utils/translateCategory';
@@ -146,6 +148,8 @@ export default function ClientDashboard() {
 
   const { t } = useLanguage();
   const { showToast } = useToast();
+  const { profile, authLoading } = useAuth();
+  const clientCreditsBalance = profile?.credits ?? 0;
   const skillChip = (skill: string) =>
     skill === 'support' ? t('skills.support') : t(`categories.${skill}`);
   const { jobs, applications, notifications, updateApplicationStatus, updateJobStatus, officiallyHireHelper, pendingServiceReviews, upcomingJobs, confirmServiceCompleted } = useAppData();
@@ -502,7 +506,17 @@ export default function ClientDashboard() {
   };
 
   return (
-    <div className="w-full min-w-0">
+    <div className="relative w-full min-w-0">
+      <div className="pointer-events-none absolute right-3 top-3 z-[2] sm:right-5 sm:top-4">
+        <div className="pointer-events-auto">
+          <ClientCreditsWalletBadge
+            balance={authLoading ? null : clientCreditsBalance}
+            loading={authLoading}
+            t={t}
+          />
+        </div>
+      </div>
+
       {/* Hero — fora de qualquer container com padding para ser verdadeiramente full-width */}
       {activeSidebarTab === 'dashboard' && (
         <section className="relative z-0 isolate min-h-[410px] overflow-hidden bg-[#F5F7FB] sm:min-h-[440px]">

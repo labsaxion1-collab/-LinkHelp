@@ -2153,6 +2153,15 @@ export const en = {
     after_promo: 'Use your LinkCredits to post requests and hire helpers. Top up whenever you want.',
     admin_flag: 'CLIENT_LINKCREDITS_ENABLED=false — clients are not charged to open requests.',
   },
+  client_credits: {
+    balance: 'Balance: {{amount}} LC',
+    buy_title: 'Buy LinkCredits',
+    your_credits: 'Your credits',
+    coming_soon: 'Soon you will be able to buy credits to post requests.',
+    coming_soon_badge: 'Coming soon',
+    current_balance: 'Your current balance: {{amount}} LC',
+    back_dashboard: 'Back to home',
+  },
   client_how_it_works: {
     title: 'How it works',
     card1_title: 'Post your request',

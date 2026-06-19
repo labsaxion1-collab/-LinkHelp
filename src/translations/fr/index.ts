@@ -2159,6 +2159,15 @@ export const fr = {
     after_promo: 'Utilisez vos LinkCredits pour publier des demandes et engager des helpers. Rechargez quand vous voulez.',
     admin_flag: 'CLIENT_LINKCREDITS_ENABLED=false — les clients ne sont pas facturés pour ouvrir des demandes.',
   },
+  client_credits: {
+    balance: 'Solde : {{amount}} LC',
+    buy_title: 'Acheter des LinkCredits',
+    your_credits: 'Vos crédits',
+    coming_soon: 'Bientôt vous pourrez acheter des crédits pour publier des demandes.',
+    coming_soon_badge: 'Bientôt',
+    current_balance: 'Votre solde actuel : {{amount}} LC',
+    back_dashboard: 'Retour à l\'accueil',
+  },
   client_how_it_works: {
     title: 'Comment ça marche',
     card1_title: 'Publiez votre demande',

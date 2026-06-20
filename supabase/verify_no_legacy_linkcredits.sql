@@ -53,6 +53,16 @@ select 'user_bonus_rewards exact x1000 multiples' as check_name,
 from public.user_bonus_rewards
 where amount >= 1000 and amount % 1000 = 0;
 
+select 'profiles client credits >= 1000' as check_name,
+       count(*)::int as suspect_count
+from public.profiles
+where role = 'client' and credits >= 1000;
+
+select 'profiles client exact x1000 multiples' as check_name,
+       count(*)::int as suspect_count
+from public.profiles
+where role = 'client' and credits >= 1000 and credits % 1000 = 0;
+
 -- ---------------------------------------------------------------------------
 -- 2) Sample rows (only if suspects exist — should return 0 rows in healthy prod)
 -- ---------------------------------------------------------------------------
@@ -78,12 +88,19 @@ where ubr.amount >= 1000
 order by ubr.created_at desc
 limit 20;
 
+select 'client profile credit samples' as section, p.email, p.role, p.credits, p.updated_at
+from public.profiles p
+where p.role = 'client'
+  and (p.credits >= 1000 or (p.credits >= 1000 and p.credits % 1000 = 0))
+order by p.credits desc
+limit 20;
+
 -- ---------------------------------------------------------------------------
 -- 3) RPC source scan — legacy literals should NOT appear in active functions
 -- ---------------------------------------------------------------------------
 select p.proname as function_name,
        case
-         when pg_get_functiondef(p.oid) ~* '25000|12000|35000|80000|\* 1000|/ 1000' then 'LEGACY_LITERAL_FOUND'
+         when pg_get_functiondef(p.oid) ~* '25000|12000|35000|80000|17000|30000|\* 1000|/ 1000' then 'LEGACY_LITERAL_FOUND'
          else 'OK'
        end as legacy_scan
 from pg_proc p
@@ -118,7 +135,7 @@ limit 10;
 
 -- ---------------------------------------------------------------------------
 -- PASS CRITERIA:
---   All suspect_count rows in section 1 should be 0.
+--   Section 1 suspect_count rows should be 0 (including profiles.client credits).
 --   Section 2 sample queries should return no rows.
 --   Section 3 legacy_scan should be 'OK' for all listed functions.
 -- If not, re-run apply_fix_linkcredits_scale.sql (data) and verify RPC bodies in prod.

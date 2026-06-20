@@ -95,10 +95,10 @@ export default function ProfilePage() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, session, updateProfile, refreshProfile, isConfigured } = useAuth();
+  const { profile, session, updateProfile, refreshProfile, isConfigured, authLoading } = useAuth();
   const { isHelperMode } = useAppMode();
   const { showToast } = useToast();
-  const { balance, loading, refresh: refreshWallet } = useWalletBalance();
+  const { balance, loading: walletLoading, refresh: refreshWallet } = useWalletBalance();
   const [helperSkillIds, setHelperSkillIds] = useState<string[]>([]);
   const [primaryCategory, setPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
   const [secondaryCategories, setSecondaryCategories] = useState<ServiceCategoryId[]>([]);
@@ -116,7 +116,11 @@ export default function ProfilePage() {
   const avatarUrl = avatarPreviewUrl ?? profile?.avatar_url?.trim() ?? '';
   const roleLabel = profile?.role === 'helper' ? 'Helper' : profile?.role === 'client' ? 'Cliente' : 'LinkHelp';
   const bio = profile?.bio?.trim() || '';
-  const balanceLabel = loading ? '...' : formatLinkCredits(balance ?? 0);
+  const isHelperProfile = profile?.role === 'helper';
+  const clientCredits = profile?.credits ?? 0;
+  const creditsLoading = isHelperProfile ? walletLoading : authLoading;
+  const creditsAmount = isHelperProfile ? (balance ?? 0) : clientCredits;
+  const balanceLabel = creditsLoading ? '...' : formatLinkCredits(creditsAmount, language);
 
   const LANGUAGE_LABELS: Record<string, string> = {
     pt: 'Português', en: 'English', fr: 'Français', es: 'Español',
@@ -137,7 +141,7 @@ export default function ProfilePage() {
 
   useEffect(() => () => revokeAvatarObjectUrl(), []);
 
-  // Fetch fresh wallet balance every time this page is opened (prevents stale context).
+  // Fetch fresh wallet balance every time this page is opened (helpers only).
   useEffect(() => {
     if (profile?.role !== 'helper') return;
     void refreshWallet();
@@ -328,22 +332,34 @@ export default function ProfilePage() {
               <img src={BRAND.linkCreditCoin} alt="" loading="lazy" decoding="async" className="h-16 w-16 rounded-full object-cover drop-shadow-[0_10px_22px_rgba(251,191,36,0.28)]" />
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <Link
-                to={ROUTES.helperLinkCredits}
-                className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white px-3 py-2 text-sm font-black text-blue-700 shadow-[0_14px_28px_rgba(255,255,255,0.12),0_10px_24px_rgba(37,99,255,0.18)] ring-1 ring-white/70 transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(255,255,255,0.16),0_14px_30px_rgba(37,99,255,0.24)]"
-              >
-                <span className="pointer-events-none absolute inset-y-0 -left-10 w-10 rotate-12 bg-white/70 blur-md transition-transform duration-700 group-hover:translate-x-40" />
-                Comprar Pacote
-                <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </Link>
-              <Link
-                to={ROUTES.helperCredits}
-                className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.06))] px-3 py-2 text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_12px_24px_rgba(0,0,0,0.12)] ring-1 ring-white/12 backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/16 hover:ring-white/22"
-              >
-                <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/55 to-transparent" />
-                Carteira
-                <Coins className="h-3.5 w-3.5 transition-transform group-hover:rotate-12" />
-              </Link>
+              {isHelperProfile ? (
+                <>
+                  <Link
+                    to={ROUTES.helperLinkCredits}
+                    className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white px-3 py-2 text-sm font-black text-blue-700 shadow-[0_14px_28px_rgba(255,255,255,0.12),0_10px_24px_rgba(37,99,255,0.18)] ring-1 ring-white/70 transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(255,255,255,0.16),0_14px_30px_rgba(37,99,255,0.24)]"
+                  >
+                    <span className="pointer-events-none absolute inset-y-0 -left-10 w-10 rotate-12 bg-white/70 blur-md transition-transform duration-700 group-hover:translate-x-40" />
+                    Comprar Pacote
+                    <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </Link>
+                  <Link
+                    to={ROUTES.helperCredits}
+                    className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.06))] px-3 py-2 text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_12px_24px_rgba(0,0,0,0.12)] ring-1 ring-white/12 backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/16 hover:ring-white/22"
+                  >
+                    <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/55 to-transparent" />
+                    Carteira
+                    <Coins className="h-3.5 w-3.5 transition-transform group-hover:rotate-12" />
+                  </Link>
+                </>
+              ) : (
+                <Link
+                  to={ROUTES.clientCredits}
+                  className="group relative col-span-2 flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white px-3 py-2 text-sm font-black text-blue-700 shadow-[0_14px_28px_rgba(255,255,255,0.12),0_10px_24px_rgba(37,99,255,0.18)] ring-1 ring-white/70 transition hover:-translate-y-0.5"
+                >
+                  {t('client_credits.buy_title')}
+                  <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </Link>
+              )}
             </div>
           </div>
         </section>

@@ -2252,6 +2252,8 @@ export const fr = {
     coming_soon_badge: 'Bientôt',
     current_balance: 'Votre solde actuel : {{amount}} LC',
     back_dashboard: 'Retour à l\'accueil',
+    buy_cta: 'Acheter des LinkCredits',
+    purchase_coming_soon: 'L\'achat de crédits pour les clients sera bientôt disponible.',
   },
   client_how_it_works: {
     title: 'Comment ça marche',

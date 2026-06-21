@@ -2244,6 +2244,8 @@ export const en = {
     coming_soon_badge: 'Coming soon',
     current_balance: 'Your current balance: {{amount}} LC',
     back_dashboard: 'Back to home',
+    buy_cta: 'Buy LinkCredits',
+    purchase_coming_soon: 'Client credit purchases will be available soon.',
   },
   client_how_it_works: {
     title: 'How it works',

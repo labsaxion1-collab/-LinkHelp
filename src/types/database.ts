@@ -39,6 +39,8 @@ export type ProfileRow = {
   address_updated_at: string | null;
   /** Set when user deletes account; cleared on re-onboarding. */
   deleted_at: string | null;
+  /** Set when client completes welcome onboarding (CLIENT_WELCOME_30). */
+  client_onboarding_completed_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -219,6 +221,18 @@ export type UserBonusRewardRow = {
   user_id: string;
   reward_type: string;
   amount: number;
+  created_at: string;
+};
+
+export type ClientCreditLedgerRow = {
+  id: string;
+  client_id: string;
+  type: string;
+  amount: number;
+  balance_after: number;
+  reward_type: string | null;
+  description: string | null;
+  metadata: Record<string, unknown>;
   created_at: string;
 };
 

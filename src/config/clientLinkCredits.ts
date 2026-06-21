@@ -6,3 +6,5 @@ export const CLIENT_LINKCREDITS_ENABLED = false;
 
 /** Promotional window length (days) — informational only until billing is enabled. */
 export const CLIENT_LINKCREDITS_PROMO_DAYS = 90;
+
+export { CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';

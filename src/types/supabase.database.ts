@@ -10,6 +10,7 @@ import type {
   NotificationRow,
   OpportunityUnlockRow,
   UserBonusRewardRow,
+  ClientCreditLedgerRow,
   ProfileRow,
   RequestRow,
   ReviewRow,
@@ -112,6 +113,12 @@ export type Database = {
         Update: Partial<UserBonusRewardRow>;
         Relationships: [];
       };
+      client_credit_ledger: {
+        Row: ClientCreditLedgerRow;
+        Insert: Record<string, unknown>;
+        Update: Partial<ClientCreditLedgerRow>;
+        Relationships: [];
+      };
       push_subscriptions: {
         Row: { user_id: string; endpoint: string; subscription: Json; updated_at: string };
         Insert: { user_id: string; endpoint: string; subscription: Json; updated_at?: string };
@@ -198,6 +205,10 @@ export type Database = {
         Args: { p_application_id: string; p_charge_amount?: number | null };
         Returns: Json;
       };
+      client_reject_application: {
+        Args: { p_application_id: string };
+        Returns: Json;
+      };
       charge_helper_on_client_hire: {
         Args: { p_application_id: string; p_amount: number };
         Returns: Json;
@@ -240,6 +251,10 @@ export type Database = {
       };
       client_confirm_service_completed: {
         Args: { p_request_id: string };
+        Returns: Json;
+      };
+      complete_client_onboarding: {
+        Args: { p_client_id: string; p_device_fingerprint?: string | null };
         Returns: Json;
       };
       confirm_initial_profile_role: {

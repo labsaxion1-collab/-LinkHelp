@@ -2255,6 +2255,39 @@ export const fr = {
     buy_cta: 'Acheter des LinkCredits',
     purchase_coming_soon: 'L\'achat de crédits pour les clients sera bientôt disponible.',
   },
+  client_onboarding: {
+    cta_start: 'Commencer',
+    cta_next: 'Continuer',
+    cta_back: 'Retour',
+    cta_explore: 'Explorer maintenant',
+    cta_create_request: 'Créer ma première demande',
+    success_toast: 'Vous avez reçu {{amount}} LinkCredits pour commencer !',
+    welcome: {
+      title: 'Bienvenue sur LinkHelp',
+      body: 'Trouvez des helpers de confiance près de chez vous pour vos tâches du quotidien.',
+    },
+    publish: {
+      title: 'Publiez votre demande',
+      body: 'Décrivez le service, le lieu et le délai en quelques étapes rapides.',
+    },
+    helpers: {
+      title: 'Les helpers proches reçoivent votre demande',
+      body: 'Des professionnels de votre région voient votre demande et manifestent leur intérêt.',
+    },
+    compare: {
+      title: 'Comparez propositions et profils',
+      body: 'Consultez avis, expérience et détails avant d\'engager.',
+    },
+    chat: {
+      title: 'Discutez et choisissez en toute confiance',
+      body: 'Coordonnez tout par chat et engagez en toute sérénité sur la plateforme.',
+    },
+    bonus: {
+      title: 'Vous gagnez {{amount}} LinkCredits pour commencer',
+      body: 'Terminez ce tour pour débloquer vos crédits. Ils n\'expirent pas et restent sur votre solde.',
+      amount_label: '+{{amount}} LC',
+    },
+  },
   client_how_it_works: {
     title: 'Comment ça marche',
     card1_title: 'Publiez votre demande',

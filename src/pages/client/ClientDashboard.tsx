@@ -54,6 +54,9 @@ import { extractErrorMessage } from '@/utils/errorMessage';
 import { formatHireError, logAcceptProposalError } from '@/utils/formatHireError';
 import { useAuth } from '@/context/AuthContext';
 import { ClientCreditsWalletBadge } from '@/components/client/ClientCreditsWalletBadge';
+import { ClientOnboardingCarousel } from '@/components/client/onboarding/ClientOnboardingCarousel';
+import { useClientOnboarding } from '@/hooks/useClientOnboarding';
+import { CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';
 
 const SERVICE_CONFIRM_DISMISS_PREFIX = 'lh_service_confirm_skip_';
 import { translateJobTitle } from '@/utils/translateCategory';
@@ -149,6 +152,8 @@ export default function ClientDashboard() {
   const { t } = useLanguage();
   const { showToast } = useToast();
   const { profile, authLoading } = useAuth();
+  const { shouldShow: showClientOnboarding, completing: completingClientOnboarding, complete: completeClientOnboarding } =
+    useClientOnboarding();
   const clientCreditsBalance = profile?.credits ?? 0;
   const skillChip = (skill: string) =>
     skill === 'support' ? t('skills.support') : t(`categories.${skill}`);
@@ -503,6 +508,20 @@ export default function ClientDashboard() {
     setCreateInitialCategory(categoryId);
     setCreateInitialSubcategory(subcategoryId);
     setShowCreateModal(true);
+  };
+
+  const handleClientOnboardingComplete = async (action: 'explore' | 'createRequest') => {
+    try {
+      const result = await completeClientOnboarding(action);
+      if (result?.granted) {
+        showToast(t('client_onboarding.success_toast', { amount: CLIENT_WELCOME_30_LC }), 'success');
+      }
+      if (action === 'createRequest') {
+        openCreateModal();
+      }
+    } catch (error) {
+      showToast(extractErrorMessage(error), 'error');
+    }
   };
 
   return (
@@ -921,6 +940,13 @@ export default function ClientDashboard() {
         open={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         avatarUrl={me.avatar}
+      />
+
+      <ClientOnboardingCarousel
+        open={showClientOnboarding}
+        completing={completingClientOnboarding}
+        t={t}
+        onComplete={handleClientOnboardingComplete}
       />
 
       <CreateRequestModal

@@ -2247,6 +2247,39 @@ export const en = {
     buy_cta: 'Buy LinkCredits',
     purchase_coming_soon: 'Client credit purchases will be available soon.',
   },
+  client_onboarding: {
+    cta_start: 'Get started',
+    cta_next: 'Continue',
+    cta_back: 'Back',
+    cta_explore: 'Explore now',
+    cta_create_request: 'Create my first request',
+    success_toast: 'You received {{amount}} LinkCredits to get started!',
+    welcome: {
+      title: 'Welcome to LinkHelp',
+      body: 'Find trusted helpers near you for everyday tasks — safely and easily.',
+    },
+    publish: {
+      title: 'Post your request',
+      body: 'Describe the service, location, and timing in a few quick steps.',
+    },
+    helpers: {
+      title: 'Nearby helpers see your request',
+      body: 'Professionals in your area can view your job and show interest.',
+    },
+    compare: {
+      title: 'Compare proposals and profiles',
+      body: 'Review ratings, experience, and details before you hire.',
+    },
+    chat: {
+      title: 'Chat and choose with confidence',
+      body: 'Coordinate everything in chat and hire with peace of mind.',
+    },
+    bonus: {
+      title: 'You earned {{amount}} LinkCredits to get started',
+      body: 'Finish this tour to unlock your credits. They never expire and stay in your balance.',
+      amount_label: '+{{amount}} LC',
+    },
+  },
   client_how_it_works: {
     title: 'How it works',
     card1_title: 'Post your request',

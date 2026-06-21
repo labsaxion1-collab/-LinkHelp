@@ -6,6 +6,7 @@
 export type RewardType =
   | 'SIGNUP_CLIENT'
   | 'SIGNUP_HELPER'
+  | 'CLIENT_WELCOME_30'
   | 'PROFILE_PHOTO'
   | 'PROFILE_DESCRIPTION'
   | 'PROFILE_SKILLS'
@@ -23,7 +24,10 @@ export const SIGNUP_BONUS_LC = {
 } as const;
 
 /** Legacy action rewards — profile completion no longer grants LC. */
-export const ACTION_REWARD_LC: Record<Exclude<RewardType, 'SIGNUP_CLIENT' | 'SIGNUP_HELPER'>, number> = {
+export const ACTION_REWARD_LC: Record<
+  Exclude<RewardType, 'SIGNUP_CLIENT' | 'SIGNUP_HELPER' | 'CLIENT_WELCOME_30'>,
+  number
+> = {
   PROFILE_PHOTO: 0,
   PROFILE_DESCRIPTION: 0,
   PROFILE_SKILLS: 0,
@@ -34,10 +38,14 @@ export const ACTION_REWARD_LC: Record<Exclude<RewardType, 'SIGNUP_CLIENT' | 'SIG
   REFERRAL_COMPLETED: 10,
 };
 
+/** One-time welcome bonus after client onboarding carousel. */
+export const CLIENT_WELCOME_30_LC = 30;
+
 export function rewardAmountForType(type: RewardType): number {
   if (type === 'SIGNUP_CLIENT') return SIGNUP_BONUS_LC.client;
   if (type === 'SIGNUP_HELPER') return SIGNUP_BONUS_LC.helper;
-  return ACTION_REWARD_LC[type];
+  if (type === 'CLIENT_WELCOME_30') return CLIENT_WELCOME_30_LC;
+  return ACTION_REWARD_LC[type as Exclude<RewardType, 'SIGNUP_CLIENT' | 'SIGNUP_HELPER' | 'CLIENT_WELCOME_30'>];
 }
 
 /** Profile checklist items shown in progress UI (excludes signup / transactional rewards). */

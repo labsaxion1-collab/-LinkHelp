@@ -2259,6 +2259,39 @@ export const pt = {
     buy_cta: 'Comprar LinkCredits',
     purchase_coming_soon: 'Compra de créditos para clientes estará disponível em breve.',
   },
+  client_onboarding: {
+    cta_start: 'Começar',
+    cta_next: 'Continuar',
+    cta_back: 'Voltar',
+    cta_explore: 'Explorar agora',
+    cta_create_request: 'Criar meu primeiro pedido',
+    success_toast: 'Você recebeu {{amount}} LinkCredits para começar!',
+    welcome: {
+      title: 'Bem-vindo ao LinkHelp',
+      body: 'Encontre helpers confiáveis perto de você para resolver tarefas do dia a dia com segurança.',
+    },
+    publish: {
+      title: 'Publique seu pedido',
+      body: 'Descreva o serviço, local e prazo em poucos passos. É rápido e gratuito por enquanto.',
+    },
+    helpers: {
+      title: 'Helpers próximos recebem seu pedido',
+      body: 'Profissionais da sua região veem sua solicitação e demonstram interesse.',
+    },
+    compare: {
+      title: 'Compare propostas e perfis',
+      body: 'Veja avaliações, experiência e detalhes antes de decidir quem contratar.',
+    },
+    chat: {
+      title: 'Converse e escolha com segurança',
+      body: 'Combine tudo pelo chat e contrate com tranquilidade dentro da plataforma.',
+    },
+    bonus: {
+      title: 'Você ganhou {{amount}} LinkCredits para começar',
+      body: 'Conclua este tour para liberar seus créditos. Eles não expiram e ficam no seu saldo.',
+      amount_label: '+{{amount}} LC',
+    },
+  },
   client_how_it_works: {
     title: 'Como funciona',
     card1_title: 'Publique seu pedido',

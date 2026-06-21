@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Bookmark, Globe, LogOut, X, Home, MessageCircle, Briefcase, Package, Settings } from 'lucide-react';
+import { User, Bookmark, Globe, LogOut, X, Home, MessageCircle, Briefcase, Package, Settings, GraduationCap } from 'lucide-react';
 import { redirectToLoginAfterSignOut } from '@/utils/authRedirect';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
+import { useTutorial } from '@/context/TutorialContext';
 import { ROUTES } from '@/utils/constants';
 import type { AppLanguage } from '@/services/translationService';
 
@@ -62,6 +63,7 @@ export function MobileProfileMenu({
 }: Props) {
   const { t, language, setLanguage } = useLanguage();
   const { signOut, isConfigured, session, updateProfile } = useAuth();
+  const { openTutorial } = useTutorial();
   const navigate = useNavigate();
   const [panelStyle, setPanelStyle] = useState<PanelPosition>({});
 
@@ -111,6 +113,11 @@ export function MobileProfileMenu({
   const goFavorites = () => {
     onClose();
     navigate(ROUTES.clientDashboard, { state: { tab: 'saved' } });
+  };
+
+  const openTutorialFromMenu = () => {
+    onClose();
+    openTutorial();
   };
 
   if (!open || !anchorEl) return null;
@@ -228,6 +235,15 @@ export function MobileProfileMenu({
                   {t('nav.profile_menu_favorites')}
                 </button>
               ) : null}
+              <button
+                type="button"
+                role="menuitem"
+                onClick={openTutorialFromMenu}
+                className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              >
+                <GraduationCap className="h-4 w-4 text-slate-400" />
+                {t('nav.tutorial')}
+              </button>
               <button
                 type="button"
                 role="menuitem"

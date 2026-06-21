@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Activity, Briefcase, Globe, ChevronDown, Home, MessageCircle, User, LogOut, Package, Settings } from 'lucide-react';
+import { Activity, Briefcase, Globe, ChevronDown, Home, MessageCircle, User, LogOut, Package, Settings, GraduationCap } from 'lucide-react';
 import { redirectToLoginAfterSignOut } from '@/utils/authRedirect';
 import { useEffect, useRef, useState, useCallback, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
@@ -12,11 +12,13 @@ import { useToast } from '@/context/ToastContext';
 import { isAppShellPath } from '@/utils/navigation';
 import { NotificationsDropdown } from './NotificationsDropdown';
 import { useMobileProfileMenu } from '@/context/MobileProfileMenuContext';
+import { useTutorial } from '@/context/TutorialContext';
 import { clsx } from 'clsx';
 
 export default function Navbar() {
   const { open: mobileProfileOpen, toggleMenu: toggleMobileProfileMenu, closeMenu: closeMobileProfileMenu } =
     useMobileProfileMenu();
+  const { openTutorial } = useTutorial();
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
@@ -123,6 +125,13 @@ export default function Navbar() {
 
   const closeProfile = () => setProfileOpen(false);
 
+  const openTutorialFromNav = () => {
+    setIsLangMenuOpen(false);
+    closeProfile();
+    closeMobileProfileMenu();
+    openTutorial();
+  };
+
   const goProfileRoute = (path: string) => {
     closeProfile();
     navigate(path);
@@ -193,26 +202,35 @@ export default function Navbar() {
           </div>
 
           <div ref={navControlsRef} className={clsx('hidden md:flex md:items-center md:space-x-8', usePremiumNav && 'lh-nav-controls rounded-full px-3 py-2 backdrop-blur-xl')}>
-            <div className="relative">
-              <button
-                ref={langButtonRef}
-                type="button"
-                onClick={() => {
-                  setProfileOpen(false);
-                  setIsLangMenuOpen((o) => !o);
-                }}
-                className={`flex items-center space-x-1 rounded-full px-3 py-2 transition-colors focus:outline-none ${usePremiumNav ? 'lh-nav-link text-slate-100/92 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
-                aria-expanded={isLangMenuOpen}
-                aria-haspopup="true"
-              >
-                <Globe className="w-4 h-4" />
-                <span className="text-sm font-medium uppercase">{language}</span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${isLangMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-            </div>
+            {isConnected ? (
+              <>
+                <button
+                  type="button"
+                  onClick={openTutorialFromNav}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition-colors focus:outline-none ${usePremiumNav ? 'lh-nav-link text-slate-100/92 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                  <GraduationCap className="h-4 w-4" />
+                  <span>{t('nav.tutorial')}</span>
+                </button>
 
-            <div className="flex items-center space-x-4 ml-4">
-              {isConnected ? (
+                <div className="relative">
+                  <button
+                    ref={langButtonRef}
+                    type="button"
+                    onClick={() => {
+                      setProfileOpen(false);
+                      setIsLangMenuOpen((o) => !o);
+                    }}
+                    className={`flex items-center space-x-1 rounded-full px-3 py-2 transition-colors focus:outline-none ${usePremiumNav ? 'lh-nav-link text-slate-100/92 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
+                    aria-expanded={isLangMenuOpen}
+                    aria-haspopup="true"
+                  >
+                    <Globe className="w-4 h-4" />
+                    <span className="text-sm font-medium uppercase">{language}</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform ${isLangMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+
                 <div className={clsx('flex items-center space-x-4 pl-4', usePremiumNav ? 'border-l border-white/15' : 'border-l border-gray-200')}>
                   <NotificationsDropdown userId={userId} />
                   {isConfigured && session ? (
@@ -246,54 +264,39 @@ export default function Navbar() {
                     </button>
                   )}
                 </div>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => navigate(ROUTES.howItWorks)}
-                    className={`font-semibold text-sm transition-colors ${usePremiumNav ? 'lh-nav-link rounded-full px-4 py-2 text-slate-100/92 hover:text-white' : 'text-gray-900 hover:text-primary-600'}`}
-                  >
-                    Como funciona
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate(ROUTES.contact)}
-                    className={`font-semibold text-sm transition-colors ${usePremiumNav ? 'lh-nav-link rounded-full px-4 py-2 text-slate-100/92 hover:text-white' : 'text-gray-900 hover:text-primary-600'}`}
-                  >
-                    Contato
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate(ROUTES.login)}
-                    className={`font-semibold text-sm transition-colors ${usePremiumNav ? 'lh-nav-link rounded-full px-4 py-2 text-slate-100/92 hover:text-white' : 'text-gray-900 hover:text-primary-600'}`}
-                  >
-                    {t('nav.login')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate(ROUTES.signup)}
-                    className={`${usePremiumNav ? 'lh-nav-cta bg-gradient-to-r from-[#1677FF] via-[#1B8FFF] to-[#00D4FF] hover:brightness-110' : 'bg-primary-600 hover:bg-primary-700 shadow-sm'} text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all`}
-                  >
-                    {t('nav.signup')}
-                  </button>
-                </>
-              )}
-            </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={(event) => toggleMobileProfileMenu(event.currentTarget)}
+                className="rounded-full p-0.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                aria-label={t('mobile_nav.guest_menu')}
+                aria-expanded={mobileProfileOpen}
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                  <User className="h-4 w-4" />
+                </span>
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 md:hidden">
+            {isConnected ? (
+              <button
+                type="button"
+                onClick={openTutorialFromNav}
+                className={`rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${usePremiumNav ? 'text-white/90 hover:bg-white/10' : 'text-slate-600 hover:bg-slate-100'}`}
+                aria-label={t('nav.tutorial')}
+              >
+                <GraduationCap className="h-5 w-5" />
+              </button>
+            ) : null}
             {isConnected ? <NotificationsDropdown userId={userId} compact /> : null}
             <button
               type="button"
-              onClick={(event) => {
-                if (!isConnected) {
-                  navigate(ROUTES.login);
-                  return;
-                }
-                toggleMobileProfileMenu(event.currentTarget);
-              }}
+              onClick={(event) => toggleMobileProfileMenu(event.currentTarget)}
               className="rounded-full p-0.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-              aria-label={isConnected ? t('mobile_nav.profile_menu') : t('nav.login')}
+              aria-label={isConnected ? t('mobile_nav.profile_menu') : t('mobile_nav.guest_menu')}
               aria-expanded={mobileProfileOpen}
             >
               {isConnected ? (
@@ -415,6 +418,14 @@ export default function Navbar() {
                 className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
               >
                 <User className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_profile')}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={openTutorialFromNav}
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
+              >
+                <GraduationCap className="w-4 h-4 text-gray-400" /> {t('nav.tutorial')}
               </button>
               <button
                 type="button"

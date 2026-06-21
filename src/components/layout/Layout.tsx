@@ -5,6 +5,7 @@ import Footer from './Footer';
 import { PageLoader } from '@/components/common/PageLoader';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { MobileProfileMenu } from '@/components/layout/MobileProfileMenu';
+import { MobileGuestDrawer } from '@/components/layout/MobileGuestDrawer';
 import { MobileProfileMenuProvider, useMobileProfileMenu } from '@/context/MobileProfileMenuContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { ScrollToTop } from '@/components/layout/ScrollToTop';
@@ -16,20 +17,23 @@ import { clsx } from 'clsx';
 import { AppErrorBoundary } from '@/components/common/AppErrorBoundary';
 import { useLanguage } from '@/context/LanguageContext';
 
-function LayoutMobileProfileMenu() {
+function LayoutMobileMenus() {
   const { pathname } = useLocation();
   const { open, anchorEl, closeMenu } = useMobileProfileMenu();
   const { isHelperMode } = useAppMode();
   const isConnected = isAppShellPath(pathname);
 
   return (
-    <MobileProfileMenu
-      open={open && isConnected}
-      onClose={closeMenu}
-      anchorEl={anchorEl}
-      isConnected={isConnected}
-      isHelperNav={isHelperMode}
-    />
+    <>
+      <MobileProfileMenu
+        open={open && isConnected}
+        onClose={closeMenu}
+        anchorEl={anchorEl}
+        isConnected={isConnected}
+        isHelperNav={isHelperMode}
+      />
+      <MobileGuestDrawer open={open && !isConnected} onClose={closeMenu} />
+    </>
   );
 }
 
@@ -83,7 +87,7 @@ export default function Layout() {
           <Footer />
         </div>
       ) : null}
-      <LayoutMobileProfileMenu />
+      <LayoutMobileMenus />
     </div>
     </MobileProfileMenuProvider>
   );

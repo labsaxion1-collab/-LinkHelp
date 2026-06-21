@@ -22,6 +22,8 @@ import { AppModeProvider } from '@/context/AppModeContext';
 import { CreditProvider } from '@/context/CreditContext';
 import { ServiceReviewProvider } from '@/context/ServiceReviewContext';
 import { AppRoutes } from '@/routes/AppRoutes';
+import { TutorialProvider } from '@/context/TutorialContext';
+import { AppTutorialModal } from '@/components/tutorial/AppTutorialModal';
 import { checkSupabaseConnection, isSupabaseConfigured } from '@/lib/supabase';
 import { authDevLog } from '@/lib/authDebug';
 
@@ -51,7 +53,10 @@ export default function App() {
                 <ServiceReviewProvider>
                   <BrowserRouter>
                     <AppModeProvider>
-                      <AppRoutes />
+                      <TutorialProvider>
+                        <AppRoutes />
+                        <AppTutorialModal />
+                      </TutorialProvider>
                     </AppModeProvider>
                   </BrowserRouter>
                 </ServiceReviewProvider>

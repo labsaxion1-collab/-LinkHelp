@@ -10,6 +10,7 @@ import { logMediaPicker } from '@/utils/mediaPickerDebug';
 import { fetchHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import { parseSkillKey, skillSubLabelKey } from '@/data/helperSkillsCatalog';
 import { useLanguage } from '@/context/LanguageContext';
+import { resolveLanguageLabel } from '@/services/translationService';
 import { useAppData, type UpcomingJob } from '@/context/AppDataContext';
 import { useToast } from '@/context/ToastContext';
 import { useCredits } from '@/context/CreditContext';
@@ -206,7 +207,7 @@ export default function HelperDashboard() {
       {
         id: 'nearby-opportunities',
         icon: <Icons.Sparkles className="h-4 w-4" />,
-        message: 'Novas oportunidades aparecem aqui conforme sua região, categorias e candidaturas.',
+        message: t('helper_dashboard.banner_nearby_opportunities'),
       },
     ];
 
@@ -214,7 +215,7 @@ export default function HelperDashboard() {
       slides.push({
         id: 'category-preferences',
         icon: <Icons.Sparkles className="h-4 w-4" />,
-        message: 'Use as categorias para focar nos serviços que combinam melhor com seu perfil.',
+        message: t('helper_dashboard.banner_category_focus'),
       });
     }
 
@@ -222,7 +223,7 @@ export default function HelperDashboard() {
       id: 'base-address',
       icon: <Icons.MapPinned className="h-4 w-4" />,
       message: hasHelperBaseAddress
-        ? 'Sua base ajuda o LinkHelp a priorizar trabalhos mais próximos e relevantes.'
+        ? t('helper_dashboard.banner_base_address_active')
         : t('helper_dashboard.base_address_banner'),
     });
 
@@ -791,7 +792,7 @@ export default function HelperDashboard() {
     .map((job) => ({ job, distanceKm: baseDistanceToJobKm(job) }))
     .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
     .slice(0, 3);
-  const helperFirstName = (me?.name || profile?.name || 'Helper').split(' ')[0] || 'Helper';
+  const helperFirstName = (me?.name || profile?.name || t('helper_dashboard.fallback_helper_name')).split(' ')[0] || t('helper_dashboard.fallback_helper_name');
   const isPerformancePage = location.pathname === ROUTES.helperPerformance;
   const showDesktopBack =
     location.pathname === ROUTES.helperPerformance ||
@@ -842,7 +843,7 @@ export default function HelperDashboard() {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {profile.spoken_languages.map((id) => (
                     <span key={id} className="rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-black text-blue-800">
-                      {id === 'pt' ? 'Português' : id === 'en' ? 'English' : id === 'fr' ? 'Français' : id === 'es' ? 'Español' : id}
+                      {resolveLanguageLabel(id, t)}
                     </span>
                   ))}
                 </div>
@@ -1030,7 +1031,7 @@ export default function HelperDashboard() {
             <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900 shadow-sm">
               <div className="flex items-start gap-2">
                 <Icons.Activity className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                <span>Atualize o status deste trabalho para manter seu score saudável.</span>
+                <span>{t('helper_dashboard.status_update_banner')}</span>
               </div>
             </div>
           ) : null}
@@ -1063,7 +1064,7 @@ export default function HelperDashboard() {
               <header className="relative z-[1] mb-3 flex min-h-[40px] items-start justify-between gap-3 px-6 pr-[calc(9.75rem+1.5rem)] sm:px-7 sm:pr-[calc(9.75rem+1.75rem)]">
                 <div className="min-w-0">
                   <p className="bg-gradient-to-r from-[#0B1220] via-[#123D85] to-[#2563FF] bg-clip-text text-2xl font-black leading-none tracking-tight text-transparent">
-                    Helper
+                    {t('helper_dashboard.brand_label')}
                   </p>
                   <span className="mt-2 block h-1 w-14 rounded-full bg-gradient-to-r from-[#2563FF] to-[#33B6FF] shadow-[0_8px_18px_rgba(37,99,255,0.24)]" />
                 </div>
@@ -1085,30 +1086,31 @@ export default function HelperDashboard() {
               <div className="relative z-[1] min-h-[23.4rem] px-6 py-3 sm:px-7">
                 <div className="pointer-events-none absolute right-0 top-1 h-20 w-56 rotate-[-12deg] rounded-full bg-[linear-gradient(100deg,transparent,rgba(37,99,255,0.14),transparent)] blur-[1px]" />
                 <p className="relative flex items-center gap-2 text-sm font-black text-[#2563FF] drop-shadow-[0_1px_10px_rgba(255,255,255,0.55)]">
-                  <span className="text-base" aria-hidden>Olá,</span>
+                  <span className="text-base" aria-hidden>{t('helper_dashboard.hero_greeting')}</span>
                   {helperFirstName}
                   <span aria-hidden>👋</span>
                 </p>
                 <h1 className="relative mt-3 max-w-[18rem] text-[2.35rem] font-black leading-[1.02] tracking-tight text-[#071633] drop-shadow-[0_2px_18px_rgba(255,255,255,0.68)] sm:max-w-sm sm:text-5xl">
-                  Encontre quem precisa de você <span className="text-[#2563FF]">perto daqui.</span>
+                  {t('helper_dashboard.hero_title')}{' '}
+                  <span className="text-[#2563FF]">{t('helper_dashboard.hero_title_highlight')}</span>
                 </h1>
                 <span className="relative mt-3 block h-1.5 w-28 rounded-full bg-[#2563FF] shadow-[0_10px_22px_rgba(37,99,255,0.25)]" aria-hidden />
                 <p className="relative mt-5 max-w-[15.8rem] text-[13px] font-bold leading-relaxed text-[#42526B] drop-shadow-[0_1px_12px_rgba(255,255,255,0.70)] sm:max-w-xs sm:text-sm">
-                  Conecte-se com clientes reais, serviços próximos e novas oportunidades todos os dias.
+                  {t('helper_dashboard.hero_sub')}
                 </p>
                 <div className="relative mt-7 flex max-w-[18.2rem] items-center gap-3 text-[11px] font-black text-[#10234A] sm:max-w-sm">
                   <span className="flex items-center gap-2">
                     <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white/78 text-[#2563FF] shadow-[0_10px_24px_rgba(15,23,42,0.08)] ring-1 ring-white/70">
                       <Icons.ShieldCheck className="h-4 w-4" />
                     </span>
-                    Perfil verificado
+                    {t('helper_dashboard.hero_badge_verified')}
                   </span>
                   <span className="h-8 w-px bg-slate-300/70" aria-hidden />
                   <span className="flex items-center gap-2">
                     <span className="grid h-9 w-9 place-items-center rounded-2xl bg-white/78 text-[#2563FF] shadow-[0_10px_24px_rgba(15,23,42,0.08)] ring-1 ring-white/70">
                       <Icons.Star className="h-4 w-4" />
                     </span>
-                    Clientes ativos
+                    {t('helper_dashboard.hero_badge_active_clients')}
                   </span>
                 </div>
 
@@ -1142,10 +1144,15 @@ export default function HelperDashboard() {
               </div>
 
               <div className="relative mt-2 mb-3 flex items-center justify-between px-6 sm:px-7">
-                <h2 className="text-base font-black tracking-tight text-[#0B1220]">Categorias</h2>
+                <h2 className="text-base font-black tracking-tight text-[#0B1220]">{t('helper_dashboard.categories_heading')}</h2>
                 {selectedCategoryFilters.length ? (
                   <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black text-[#2563FF]">
-                    {selectedCategoryFilters.length} selecionada{selectedCategoryFilters.length > 1 ? 's' : ''}
+                    {t(
+                      selectedCategoryFilters.length === 1
+                        ? 'helper_dashboard.categories_selected_one'
+                        : 'helper_dashboard.categories_selected_other',
+                      { count: selectedCategoryFilters.length },
+                    )}
                   </span>
                 ) : null}
               </div>
@@ -1271,7 +1278,7 @@ export default function HelperDashboard() {
                   <Icons.SearchX className="h-8 w-8 text-[#2563FF]" strokeWidth={1.75} />
                 </span>
                 <p className="text-[15px] font-bold text-[#0B1220]">{t('helper_dashboard.empty_feed')}</p>
-                <p className="mt-1 text-[13px] font-medium text-[#94A3B8]">Novas oportunidades aparecem em tempo real.</p>
+                <p className="mt-1 text-[13px] font-medium text-[#94A3B8]">{t('helper_dashboard.empty_feed_sub')}</p>
               </div>
             )}
           </div>
@@ -1419,14 +1426,14 @@ export default function HelperDashboard() {
       />
 
       {clientProfileJob ? (
-        <div className="fixed inset-0 z-[85] flex items-end justify-center p-0 sm:items-center sm:p-4">
+        <div className="fixed inset-0 z-[85] flex items-center justify-center p-4">
           <button
             type="button"
             className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
             aria-label={t('common.close')}
             onClick={() => setClientProfileJob(null)}
           />
-          <section className="relative w-full max-w-md rounded-t-3xl border border-slate-100 bg-white p-5 shadow-2xl sm:rounded-3xl">
+          <section className="relative z-10 w-full max-w-md max-h-[min(88dvh,640px)] overflow-y-auto overscroll-contain rounded-3xl border border-slate-100 bg-white p-5 shadow-2xl">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <img
@@ -1461,18 +1468,23 @@ export default function HelperDashboard() {
             </div>
 
             <div className="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-              <p className="text-xs font-black uppercase tracking-wide text-emerald-700">Perfil público do cliente</p>
+              <p className="text-xs font-black uppercase tracking-wide text-emerald-700">
+                {t('helper_dashboard.client_public_profile_title')}
+              </p>
               <p className="mt-1 text-sm font-semibold leading-relaxed text-emerald-950">
-                Cliente responsivo. Dados sensíveis ficam protegidos até haver conversa dentro do app.
+                {t('helper_dashboard.client_public_profile_body')}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               {[
-                ['Score', '92%'],
-                ['Pedidos anteriores', jobs.filter((job) => job.clientId === clientProfileJob.clientId).length],
-                ['Taxa de resposta', 'Alta'],
-                ['Avaliações', 'Positivas'],
+                [t('helper_dashboard.client_stat_score'), '92%'],
+                [
+                  t('helper_dashboard.client_stat_previous_requests'),
+                  jobs.filter((job) => job.clientId === clientProfileJob.clientId).length,
+                ],
+                [t('helper_dashboard.client_stat_response_rate'), t('helper_dashboard.client_stat_response_high')],
+                [t('helper_dashboard.client_stat_reviews'), t('helper_dashboard.client_stat_reviews_positive')],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
                   <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>
@@ -1482,9 +1494,9 @@ export default function HelperDashboard() {
             </div>
 
             <div className="mt-4 rounded-2xl border border-slate-100 bg-white p-4">
-              <p className="text-sm font-black text-slate-950">Avaliações recebidas de helpers</p>
+              <p className="text-sm font-black text-slate-950">{t('helper_dashboard.client_reviews_from_helpers')}</p>
               <p className="mt-1 text-sm font-semibold leading-relaxed text-slate-600">
-                Bom alinhamento antes do serviço e respostas claras no chat interno.
+                {t('helper_dashboard.client_reviews_sample')}
               </p>
             </div>
           </section>

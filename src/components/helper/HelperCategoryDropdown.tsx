@@ -12,7 +12,7 @@ type Props = {
   selectedIds: string[];
   onToggleCategory: (categoryId: string) => void;
   onClear: () => void;
-  t: (key: string) => string;
+  t: (key: string, vars?: Record<string, string | number>) => string;
   className?: string;
   buttonLabel?: string;
   inline?: boolean;
@@ -219,7 +219,9 @@ function HelperCategoryDropdownInner({
           >
             <div className="mb-3 flex items-center justify-between gap-3 px-1">
               <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-                {selectedIds.length ? `${selectedIds.length} filtros ativos` : t('helper_dashboard.all_categories')}
+                {selectedIds.length
+                  ? t('helper_dashboard.category_filters_active', { count: selectedIds.length })
+                  : t('helper_dashboard.all_categories')}
               </span>
               {selectedIds.length ? (
                 <button
@@ -227,7 +229,7 @@ function HelperCategoryDropdownInner({
                   onClick={onClear}
                   className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-black text-slate-600 transition-colors hover:bg-slate-200"
                 >
-                  Limpar
+                  {t('helper_dashboard.category_clear')}
                 </button>
               ) : null}
             </div>

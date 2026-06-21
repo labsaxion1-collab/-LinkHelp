@@ -1,19 +1,19 @@
 export type LinkCreditPackageId = 'starter' | 'popular' | 'pro' | 'power';
 
+export type LinkCreditPackageBadgeKey = 'badge_popular' | 'badge_best_value';
+
 export type LinkCreditPackage = {
   id: LinkCreditPackageId;
-  label: string;
   credits: number;
   price: number;
   currency: 'CAD';
   priceId: string;
-  badge?: string;
+  badgeKey?: LinkCreditPackageBadgeKey;
 };
 
 export const LINK_CREDIT_PACKAGES: LinkCreditPackage[] = [
   {
     id: 'starter',
-    label: 'Starter',
     credits: 35,
     price: 14.99,
     currency: 'CAD',
@@ -21,16 +21,14 @@ export const LINK_CREDIT_PACKAGES: LinkCreditPackage[] = [
   },
   {
     id: 'popular',
-    label: 'Popular',
     credits: 80,
     price: 29.99,
     currency: 'CAD',
     priceId: 'price_1TcywIFZU1PZrMJuJRkyrNS7',
-    badge: 'Mais popular',
+    badgeKey: 'badge_popular',
   },
   {
     id: 'pro',
-    label: 'Pro',
     credits: 180,
     price: 59.99,
     currency: 'CAD',
@@ -38,12 +36,11 @@ export const LINK_CREDIT_PACKAGES: LinkCreditPackage[] = [
   },
   {
     id: 'power',
-    label: 'Power',
     credits: 400,
     price: 119.99,
     currency: 'CAD',
     priceId: 'price_1TcyxzFZU1PZrMJufeX8zQ6K',
-    badge: 'Melhor valor',
+    badgeKey: 'badge_best_value',
   },
 ];
 

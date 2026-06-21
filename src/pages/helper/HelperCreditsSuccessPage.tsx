@@ -20,7 +20,7 @@ function SuccessLoader({ message }: { message?: string }) {
 }
 
 export default function HelperCreditsSuccessPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const {
     session,
     profile,
@@ -90,11 +90,11 @@ export default function HelperCreditsSuccessPage() {
   const waitingForProfile = Boolean(session?.user && !profile);
 
   if (waitingForAuth) {
-    return <SuccessLoader message="Restaurando sessão…" />;
+    return <SuccessLoader message={t('helper_credits.restoring_session')} />;
   }
 
   if (waitingForProfile) {
-    return <SuccessLoader message="Carregando perfil…" />;
+    return <SuccessLoader message={t('helper_credits.loading_profile')} />;
   }
 
   if (!session) {
@@ -122,14 +122,14 @@ export default function HelperCreditsSuccessPage() {
 
         {balance !== null && (
           <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700">
-            Saldo atual: {formatLinkCredits(balance)}
+            {t('helper_credits.current_balance_label', { amount: formatLinkCredits(balance, language) })}
           </p>
         )}
 
         {refreshCount < 5 && (
           <p className="mt-2 flex items-center justify-center gap-1.5 text-[11px] font-medium text-slate-400">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Verificando saldo…
+            {t('helper_credits.verifying_balance')}
           </p>
         )}
 

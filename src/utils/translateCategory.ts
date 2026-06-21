@@ -93,6 +93,27 @@ export function translateCategory(raw: string, t: (key: string) => string): stri
   return raw;
 }
 
+export function translateServiceSubcategory(
+  categoryRaw: string,
+  subRaw: string | null | undefined,
+  t: (key: string) => string,
+): string {
+  if (!subRaw?.trim()) return '';
+  const categoryId = resolveCategoryId(categoryRaw);
+  if (!categoryId) return subRaw.trim();
+
+  const normalized = subRaw.trim().toLowerCase().replace(/\s+/g, '_');
+  const legacySubKey: Record<string, string> = {
+    dead_battery: 'battery',
+    jump_start: 'jump_start',
+    wont_start: 'wont_start',
+  };
+  const subKey = legacySubKey[normalized] ?? normalized;
+  const i18nKey = `service_subs.${categoryId}.${subKey}`;
+  const label = t(i18nKey);
+  return label !== i18nKey ? label : subRaw.trim();
+}
+
 export function translateJobTitle(
   title: string,
   category: string,

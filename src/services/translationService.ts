@@ -49,5 +49,19 @@ export function resolveMessage(
     return humanizeKeyPath(key);
   }
 
-  return key;
+  return humanizeKeyPath(key);
+}
+
+export function resolveLanguageLabel(
+  languageId: string,
+  t: (key: string) => string,
+): string {
+  const map: Record<string, string> = {
+    pt: 'client_dashboard.lang_portuguese',
+    en: 'client_dashboard.lang_english',
+    fr: 'client_dashboard.lang_french',
+    es: 'client_dashboard.lang_spanish',
+  };
+  const key = map[languageId];
+  return key ? t(key) : languageId;
 }

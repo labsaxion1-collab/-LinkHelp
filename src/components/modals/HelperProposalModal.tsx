@@ -10,6 +10,8 @@ import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { BRAND } from '@/utils/brandAssets';
+import { translateCategory, translateServiceSubcategory } from '@/utils/translateCategory';
+import { getRequestDescriptionForViewer } from '@/utils/requestDescriptionDisplay';
 
 const CHAT_LIMIT = 5;
 
@@ -112,6 +114,11 @@ export function HelperProposalModal({
   const balanceLabel =
     creditBalance == null ? '…' : formatLinkCredits(creditBalance, language);
   const categoryTheme = getCategoryFeedTheme(job.category);
+  const categoryLabel = translateCategory(job.category, t);
+  const subcategoryLabel = job.subcategory
+    ? translateServiceSubcategory(job.category, job.subcategory, t)
+    : null;
+  const requestDescription = getRequestDescriptionForViewer(job.description, language);
 
   const helperRemaining = Math.max(0, CHAT_LIMIT - helperMessagesUsed);
   const clientRemaining = Math.max(0, CHAT_LIMIT - clientMessagesUsed);
@@ -154,10 +161,10 @@ export function HelperProposalModal({
               {t('helper_proposal.title')}
             </h2>
             <p className="mt-0.5 truncate text-sm font-semibold" style={{ color: categoryTheme.iconColor }}>
-              {t(`categories.${job.category}`)}
-              {job.subcategory ? <span className="text-slate-400"> • </span> : null}
-              {job.subcategory ? (
-                <span style={{ color: categoryTheme.iconColor }}>{t(`service_subs.${job.category}.${job.subcategory}`)}</span>
+              {categoryLabel}
+              {subcategoryLabel ? <span className="text-slate-400"> • </span> : null}
+              {subcategoryLabel ? (
+                <span style={{ color: categoryTheme.iconColor }}>{subcategoryLabel}</span>
               ) : null}
             </p>
           </div>
@@ -185,9 +192,9 @@ export function HelperProposalModal({
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
                 <Icons.FileText className="h-4 w-4" />
               </span>
-              <span className="flex-1 text-sm font-bold text-slate-800">Detalhes do pedido</span>
+              <span className="flex-1 text-sm font-bold text-slate-800">{t('helper_proposal.request_details')}</span>
               <span className="flex items-center gap-1 text-xs font-semibold text-[#2563EB]">
-                {costsOpen ? t('common.hide') : 'Ver detalhes'}
+                {costsOpen ? t('common.hide') : t('common.show_details')}
                 <Icons.ChevronDown
                   className={clsx('h-4 w-4 transition-transform duration-200', costsOpen && 'rotate-180')}
                 />
@@ -204,13 +211,13 @@ export function HelperProposalModal({
               <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-3">
 
                 {/* Descrição do pedido */}
-                {job.description?.trim() ? (
+                {requestDescription.display ? (
                   <div>
                     <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-slate-400">
                       {t('helper_dashboard.detail_observations')}
                     </p>
                     <p className="whitespace-pre-wrap rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-[13px] font-medium leading-relaxed text-slate-700">
-                      {job.description.trim()}
+                      {requestDescription.display}
                     </p>
                   </div>
                 ) : null}
@@ -281,7 +288,7 @@ export function HelperProposalModal({
               )}
               {!bounded && (
                 <p className="mt-0.5 text-[13px] font-medium text-slate-500">
-                  O cliente não definiu um orçamento para este serviço.
+                  {t('helper_proposal.no_client_budget')}
                 </p>
               )}
             </div>
@@ -290,7 +297,7 @@ export function HelperProposalModal({
           {/* Campo de proposta */}
           <label className="mb-1 block text-sm font-bold text-slate-800">
             {t('helper_proposal.your_proposal')}
-            <span className="ml-1 text-sm font-semibold text-slate-400">/ Preço médio estimado</span>
+            <span className="ml-1 text-sm font-semibold text-slate-400">/ {t('helper_proposal.avg_price_hint')}</span>
           </label>
           <div className="flex min-h-[50px] items-center overflow-hidden rounded-2xl border-2 border-slate-200 bg-white px-4 focus-within:border-[#2563EB] focus-within:ring-4 focus-within:ring-blue-500/10">
             <span className="mr-2 shrink-0 text-base font-bold text-slate-400">{currency} $</span>
@@ -339,8 +346,8 @@ export function HelperProposalModal({
                 <Icons.MessageSquare className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-black text-slate-900">Chat pré-contratação</p>
-                <p className="text-[11px] font-medium text-slate-500">Limite de mensagens antes de contratar</p>
+                <p className="text-[13px] font-black text-slate-900">{t('helper_proposal.prematch_chat_title')}</p>
+                <p className="text-[11px] font-medium text-slate-500">{t('helper_proposal.prematch_chat_sub')}</p>
               </div>
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-100">
                 <Icons.Lock className="h-3.5 w-3.5 text-[#2563EB]" />
@@ -358,7 +365,7 @@ export function HelperProposalModal({
                   className="mb-1.5 text-[10px] font-black uppercase tracking-wide"
                   style={{ color: categoryTheme.iconColor }}
                 >
-                  Você (helper)
+                  {t('helper_proposal.prematch_you_helper')}
                 </p>
                 <div className="flex gap-1">
                   {Array.from({ length: CHAT_LIMIT }).map((_, i) => {
@@ -371,7 +378,7 @@ export function HelperProposalModal({
                           ? { backgroundColor: '#E2E8F0', color: '#94A3B8' }
                           : { backgroundColor: categoryTheme.iconColor, color: '#fff' }
                         }
-                        title={used ? 'Mensagem enviada' : 'Disponível'}
+                        title={used ? t('helper_proposal.prematch_msg_sent') : t('helper_proposal.prematch_msg_available')}
                       >
                         <Icons.MessageCircle className="h-3 w-3" />
                       </span>
@@ -379,7 +386,10 @@ export function HelperProposalModal({
                   })}
                 </div>
                 <p className="mt-1.5 text-[11px] font-semibold text-slate-500">
-                  {helperRemaining}/{CHAT_LIMIT} disponíveis
+                  {t('helper_proposal.prematch_available_count', {
+                    remaining: helperRemaining,
+                    total: CHAT_LIMIT,
+                  })}
                 </p>
               </div>
 
@@ -392,7 +402,7 @@ export function HelperProposalModal({
                   className="mb-1.5 text-[10px] font-black uppercase tracking-wide"
                   style={{ color: `${categoryTheme.iconColor}aa` }}
                 >
-                  Cliente
+                  {t('helper_proposal.prematch_client')}
                 </p>
                 <div className="flex gap-1">
                   {Array.from({ length: CHAT_LIMIT }).map((_, i) => {
@@ -405,7 +415,7 @@ export function HelperProposalModal({
                           ? { backgroundColor: '#E2E8F0', color: '#94A3B8' }
                           : { backgroundColor: `${categoryTheme.iconColor}66`, color: categoryTheme.iconColor }
                         }
-                        title={used ? 'Resposta enviada' : 'Disponível'}
+                        title={used ? t('helper_proposal.prematch_msg_sent') : t('helper_proposal.prematch_msg_available')}
                       >
                         <Icons.MessageCircle className="h-3 w-3" />
                       </span>
@@ -413,7 +423,10 @@ export function HelperProposalModal({
                   })}
                 </div>
                 <p className="mt-1.5 text-[11px] font-semibold text-slate-500">
-                  {clientRemaining}/{CHAT_LIMIT} disponíveis
+                  {t('helper_proposal.prematch_available_count', {
+                    remaining: clientRemaining,
+                    total: CHAT_LIMIT,
+                  })}
                 </p>
               </div>
             </div>
@@ -422,8 +435,7 @@ export function HelperProposalModal({
             <div className="flex items-center gap-2 border-t border-blue-100 px-4 py-2">
               <Icons.Lock className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
               <p className="text-[11px] font-medium text-slate-500">
-                Após o limite, o chat fica <span className="font-bold text-slate-700">bloqueado</span> até o cliente contratar.
-                Contatos externos liberados só após confirmação.
+                {t('helper_proposal.prematch_footer')}
               </p>
             </div>
           </div>
@@ -441,7 +453,7 @@ export function HelperProposalModal({
             >
               <span className="flex items-center gap-1.5">
                 <Icons.Crown className="h-4 w-4 shrink-0 text-amber-500" />
-                <span className="truncate text-[13.5px] font-black text-amber-900">Candidatura exclusiva</span>
+                <span className="truncate text-[13.5px] font-black text-amber-900">{t('helper_proposal.exclusive_apply')}</span>
               </span>
               <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-700/80">
                 <img
@@ -450,7 +462,7 @@ export function HelperProposalModal({
                   aria-hidden
                   className="h-4 w-4 shrink-0 object-contain"
                 />
-                Usará <span className="font-bold ml-0.5">{creditDisplay.totalEstimate} LC</span>
+                {t('helper_proposal.will_use_lc', { count: creditDisplay.totalEstimate })}
               </span>
             </button>
 
@@ -478,15 +490,15 @@ export function HelperProposalModal({
                       aria-hidden
                       className="h-4 w-4 shrink-0 object-contain"
                     />
-                    Usará <span className="font-bold ml-0.5">{creditDisplay.applyCost} LC</span>
+                    {t('helper_proposal.will_use_lc', { count: creditDisplay.applyCost })}
                   </span>
                 </>
               )}
             </button>
           </div>
           <p className="mt-3 text-center text-[11px] font-medium text-slate-400">
-            Ao enviar, você confirma que leu e concorda com os{' '}
-            <span className="font-semibold text-[#2563EB]">termos da plataforma</span>.
+            {t('helper_proposal.terms_footer')}{' '}
+            <span className="font-semibold text-[#2563EB]">{t('helper_proposal.terms_link')}</span>.
           </p>
         </footer>
       </div>

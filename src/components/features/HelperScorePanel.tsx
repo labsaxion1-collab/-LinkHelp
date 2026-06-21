@@ -28,13 +28,13 @@ export function HelperScorePanel({ className = '', collapsible = false, defaultE
           <p className="mt-1 text-3xl font-black tabular-nums text-slate-950">{data.overall}</p>
           <p className="truncate whitespace-nowrap text-xs font-medium text-slate-500">
             {collapsible && !showDetails
-              ? 'Toque para ver os motivos'
+              ? t('helper_score.tap_to_expand')
               : t('helper_score.evolution', { delta: data.evolutionDelta })}
           </p>
         </div>
         <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
           <TrendingUp className="h-3.5 w-3.5" />
-          {data.trendLabel}
+          {t('helper_score.trend_30d')}
           {collapsible ? (
             <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
           ) : null}

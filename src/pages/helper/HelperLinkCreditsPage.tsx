@@ -123,7 +123,7 @@ export default function HelperLinkCreditsPage() {
         <div className="mx-auto mb-7 max-w-2xl px-5 text-center md:px-0">
           <p className={`inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.28em] ${linkCreditGlowClass}`}>
             <Icons.Sparkles className="h-3.5 w-3.5" />
-            LINKCREDITS
+            {t('link_credits_store.brand_eyebrow')}
             <Icons.Sparkles className="h-3.5 w-3.5" />
           </p>
           <h1 className="mt-3 text-4xl font-black leading-[1.02] tracking-tight text-black sm:text-5xl">
@@ -157,6 +157,8 @@ export default function HelperLinkCreditsPage() {
         <div className="mx-auto grid max-w-3xl gap-5">
           {LINK_CREDIT_PACKAGES.map((pkg) => {
             const artwork = packageArtwork(pkg.id);
+            const label = t(`link_credits_store.package_${pkg.id}_label`);
+            const badge = pkg.badgeKey ? t(`link_credits_store.${pkg.badgeKey}`) : null;
 
             return (
               <article
@@ -166,10 +168,10 @@ export default function HelperLinkCreditsPage() {
                 <div className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${packageAccent(pkg.id)} opacity-80`} />
                 <div className="pointer-events-none absolute right-[22%] top-1/2 hidden h-24 w-24 -translate-y-1/2 rounded-full bg-amber-300/10 blur-2xl transition group-hover:bg-amber-300/20 sm:block" />
 
-                {pkg.badge ? (
+                {badge ? (
                   <div className="absolute inset-x-0 top-0 z-20 flex justify-center">
                     <span className="rounded-b-full bg-[#245BFF] px-3 py-1 text-[9px] font-black uppercase tracking-wide text-white shadow-[0_4px_12px_rgba(36,91,255,0.35)]">
-                      {pkg.badge}
+                      {badge}
                     </span>
                   </div>
                 ) : null}
@@ -177,18 +179,18 @@ export default function HelperLinkCreditsPage() {
                 <div className="relative flex flex-col gap-4 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(8.4rem,0.95fr)_minmax(0,1fr)] sm:items-center sm:gap-5">
                   <div className="relative z-10 flex min-w-0 items-end justify-between gap-3 sm:block">
                     <div className="ml-2 min-w-0">
-                      <h2 className={`text-xl font-black sm:text-2xl ${packageTitleClass(pkg.id)}`}>{pkg.label}</h2>
+                      <h2 className={`text-xl font-black sm:text-2xl ${packageTitleClass(pkg.id)}`}>{label}</h2>
                       <p className="mt-2 whitespace-nowrap bg-gradient-to-b from-[#FFE36A] via-[#F3B51B] to-[#C98508] bg-clip-text text-[2.75rem] font-black leading-none tracking-tight text-transparent drop-shadow-[0_0_16px_rgba(217,169,40,0.28)] sm:text-6xl">
                         {pkg.credits}
                       </p>
-                      <p className="mt-1.5 whitespace-nowrap text-[11px] font-black text-black sm:text-sm">LinkCredits</p>
+                      <p className="mt-1.5 whitespace-nowrap text-[11px] font-black text-black sm:text-sm">{t('link_credits_store.brand_name')}</p>
                     </div>
 
                     <div className="relative z-0 flex shrink-0 items-center justify-center overflow-visible sm:hidden">
                       {artwork ? (
                         <img
                           src={artwork}
-                          alt={`Pacote ${pkg.label} LinkCredit`}
+                          alt={t('link_credits_store.package_image_alt', { label })}
                           className={packageArtworkClass(pkg.id)}
                           loading="lazy"
                           decoding="async"
@@ -236,15 +238,15 @@ export default function HelperLinkCreditsPage() {
 
         <section className="mx-auto mt-7 grid max-w-3xl grid-cols-3 divide-x divide-slate-100 rounded-[1.75rem] border border-black/[0.04] bg-white px-4 py-5 shadow-[0_12px_34px_rgba(15,23,42,0.05)]">
           {[
-            { label: 'Seguro e confiável', icon: Icons.ShieldCheck },
-            { label: 'Transações rápidas', icon: Icons.Zap },
-            { label: 'Qualidade premium', icon: Icons.Medal },
+            { labelKey: 'link_credits_store.benefit_secure', icon: Icons.ShieldCheck },
+            { labelKey: 'link_credits_store.benefit_fast', icon: Icons.Zap },
+            { labelKey: 'link_credits_store.benefit_premium', icon: Icons.Medal },
           ].map((benefit) => {
             const Icon = benefit.icon;
             return (
-              <div key={benefit.label} className="flex min-w-0 flex-col items-center px-2 text-center">
+              <div key={benefit.labelKey} className="flex min-w-0 flex-col items-center px-2 text-center">
                 <Icon className="h-5 w-5 text-[#D9A928] drop-shadow-[0_0_10px_rgba(217,169,40,0.28)]" />
-                <p className="mt-1.5 text-[9px] font-black uppercase leading-tight text-black">{benefit.label}</p>
+                <p className="mt-1.5 text-[9px] font-black uppercase leading-tight text-black">{t(benefit.labelKey)}</p>
               </div>
             );
           })}

@@ -177,7 +177,7 @@ export function HelperApplicationCard({ app, job, t, onOpenDetails, onCancel, on
                 STATUS_BADGE[app.status] ?? 'border-slate-200 bg-slate-50 text-slate-500',
               )}
             >
-              {statusText[app.status] ?? app.status}
+              {statusText[app.status] ?? t('common.unknown')}
             </span>
             <InterestedRing
               interestedCount={applicationsCount}

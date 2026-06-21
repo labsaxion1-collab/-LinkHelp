@@ -290,7 +290,7 @@ export function HelperPortfolioPanel({
                         onClick={() => move(item.id, -1)}
                         disabled={index === 0}
                         className="p-1.5 rounded-lg border border-slate-200 text-slate-500 disabled:opacity-30"
-                        aria-label="Move up"
+                        aria-label={t('common.move_up')}
                       >
                         <Icons.ChevronUp className="w-3.5 h-3.5" />
                       </button>
@@ -299,7 +299,7 @@ export function HelperPortfolioPanel({
                         onClick={() => move(item.id, 1)}
                         disabled={index === portfolio.items.length - 1}
                         className="p-1.5 rounded-lg border border-slate-200 text-slate-500 disabled:opacity-30"
-                        aria-label="Move down"
+                        aria-label={t('common.move_down')}
                       >
                         <Icons.ChevronDown className="w-3.5 h-3.5" />
                       </button>

@@ -194,12 +194,12 @@ export default function HelperCreditsPage() {
                       <span className="text-[3.2rem] font-black leading-none tabular-nums text-white drop-shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                         {loading ? '…' : balanceNum}
                       </span>
-                      <span className="text-2xl font-black text-blue-300">LC</span>
+                      <span className="text-2xl font-black text-blue-300">{t('credits.lc_unit')}</span>
                     </div>
                     {/* LinkCredits badge */}
                     <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-blue-700/50 bg-blue-950/60 px-3 py-1 text-[11px] font-bold text-blue-300 backdrop-blur-sm">
                       <Icons.Link2 className="h-3 w-3" />
-                      LinkCredits
+                      {t('credits.linkcredits_brand')}
                     </span>
                   </div>
                 </div>
@@ -246,7 +246,7 @@ export default function HelperCreditsPage() {
             <StatTile
               icon={Icons.Coins}
               label={t('helper_dashboard.credits_used_month')}
-              value={`${creditsUsed} LC`}
+              value={`${creditsUsed} ${t('credits.lc_unit')}`}
               iconColor="text-blue-400"
               iconBg="bg-blue-500/15"
             />
@@ -260,7 +260,7 @@ export default function HelperCreditsPage() {
             <StatTile
               icon={Icons.RefreshCw}
               label={t('credits_usage.lc_returned')}
-              value={`${usageSummary.lcReturned} LC`}
+              value={`${usageSummary.lcReturned} ${t('credits.lc_unit')}`}
               iconColor="text-emerald-400"
               iconBg="bg-emerald-500/15"
             />
@@ -344,7 +344,7 @@ export default function HelperCreditsPage() {
               onSelect={setSelectedTx}
               t={t}
               emptyLabel={t('credits.history_empty')}
-              emptyHint="Quando você usar ou receber créditos, eles aparecerão aqui."
+              emptyHint={t('credits.history_empty_hint')}
               balanceAfterLabel={(count) => t('credits.balance_after', { count })}
             />
           </div>

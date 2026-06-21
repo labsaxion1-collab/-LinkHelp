@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as Icons from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   getPrimaryCategories,
   getSubsForPrimary,
@@ -30,6 +31,7 @@ function ModalChrome({
   onClose: () => void;
   closeOnBackdrop?: boolean;
 }) {
+  const { t } = useLanguage();
   return (
     <div
       className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm animate-in fade-in duration-200"
@@ -49,7 +51,7 @@ function ModalChrome({
             type="button"
             onClick={onClose}
             className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 shrink-0 transition-colors"
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             <Icons.X className="w-5 h-5" />
           </button>

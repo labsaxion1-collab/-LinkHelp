@@ -6,6 +6,14 @@ import { translateJobTitle } from '@/utils/translateCategory';
 import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
 import { HelperCreditCostBlock } from '@/components/helpers/HelperCreditCostBlock';
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
+import type { AppLanguage } from '@/services/translationService';
+import { getRequestDescriptionForViewer } from '@/utils/requestDescriptionDisplay';
+
+function localeToLanguage(locale: string): AppLanguage {
+  if (locale.startsWith('fr')) return 'fr';
+  if (locale.startsWith('en')) return 'en';
+  return 'pt';
+}
 
 type Props = {
   job: Job | null;
@@ -60,6 +68,7 @@ export function HelperOpportunityDetailModal({
             : t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) })
           : job.location?.trim() || t('jobs.remote');
   const schedule = formatJobSchedule(job, t);
+  const requestDescription = getRequestDescriptionForViewer(job.description, localeToLanguage(locale));
 
   return (
     <div
@@ -130,7 +139,7 @@ export function HelperOpportunityDetailModal({
               {t('helper_dashboard.detail_observations')}
             </p>
             <p className="whitespace-pre-wrap rounded-2xl border border-slate-100 bg-white px-3 py-3 text-sm font-medium leading-relaxed text-slate-700">
-              {job.description?.trim() || '—'}
+              {requestDescription.display || '—'}
             </p>
           </div>
 

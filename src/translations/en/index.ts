@@ -192,7 +192,6 @@ export const en = {
     credits: 'Credits',
     activities: 'Activities',
     map: 'Map',
-    profile_menu: 'Profile',
     switch_mode: 'Switch mode to {{target}}',
     switch_to_helper: 'Helper',
     switch_to_client: 'Client',

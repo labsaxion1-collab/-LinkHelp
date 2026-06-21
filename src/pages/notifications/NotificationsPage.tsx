@@ -64,12 +64,12 @@ export default function NotificationsPage() {
   return (
     <div className="min-h-screen bg-gray-50/50 py-8">
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
-        <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <h1 className="flex items-center gap-3 text-3xl font-black tracking-tight text-gray-900">
-              {t('notifications.title')}
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="flex min-w-0 items-center gap-2 text-2xl font-black tracking-tight text-gray-900 sm:gap-3 sm:text-3xl">
+              <span className="truncate whitespace-nowrap">{t('notifications.title')}</span>
               {unreadCount > 0 && (
-                <span className="rounded-full bg-red-500 px-2.5 py-0.5 text-sm font-bold text-white">
+                <span className="shrink-0 rounded-full bg-red-500 px-2.5 py-0.5 text-sm font-bold text-white">
                   {unreadCount}
                 </span>
               )}
@@ -77,7 +77,7 @@ export default function NotificationsPage() {
             <p className="mt-1 text-gray-500">{t('notifications.page_subtitle')}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
             {unreadCount > 0 ? (
               <button
                 type="button"

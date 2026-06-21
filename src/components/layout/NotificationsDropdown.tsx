@@ -141,30 +141,38 @@ function NotificationsDropdownInner({ userId, compact = false }: NotificationsDr
 
   const panelContent = (
     <>
-      <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50/50">
-        <h3 className="font-bold text-gray-900">{t('notifications.title')}</h3>
-        <div className="flex items-center gap-2">
-          {unreadCount > 0 && (
-            <button
-              type="button"
-              onClick={handleMarkAllRead}
-              className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
-            >
-              {t('notifications.mark_all_read')}
-            </button>
-          )}
-          {userNotifications.length > 0 ? (
-            <ClearNotificationsButton userId={userId} variant="dropdown" onCleared={close} />
-          ) : null}
-          {compact ? (
-            <button
-              type="button"
-              onClick={close}
-              className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-              aria-label={t('common.close')}
-            >
-              <X className="h-4 w-4" />
-            </button>
+      <div className="border-b border-gray-100 bg-gray-50/50 p-4">
+        <div className="flex flex-col gap-2.5">
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            <h3 className="min-w-0 truncate whitespace-nowrap text-base font-bold text-gray-900">
+              {t('notifications.title')}
+            </h3>
+            {compact ? (
+              <button
+                type="button"
+                onClick={close}
+                className="shrink-0 rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                aria-label={t('common.close')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
+          {unreadCount > 0 || userNotifications.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              {unreadCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={handleMarkAllRead}
+                  className="shrink-0 text-xs font-bold text-blue-600 transition-colors hover:text-blue-800"
+                >
+                  {t('notifications.mark_all_read')}
+                </button>
+              ) : null}
+              {userNotifications.length > 0 ? (
+                <ClearNotificationsButton userId={userId} variant="dropdown" onCleared={close} />
+              ) : null}
+            </div>
           ) : null}
         </div>
       </div>

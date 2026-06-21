@@ -2283,7 +2283,7 @@ export const fr = {
       body: 'Coordonnez tout par chat et engagez en toute sérénité sur la plateforme.',
     },
     bonus: {
-      title: 'Vous gagnez {{amount}} LinkCredits pour commencer',
+      title: 'Vous avez reçu {{amount}} LinkCredits pour commencer',
       body: 'Terminez ce tour pour débloquer vos crédits. Ils n\'expirent pas et restent sur votre solde.',
       amount_label: '+{{amount}} LC',
     },

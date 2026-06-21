@@ -47,6 +47,8 @@ export function ClientOnboardingCarousel({ open, completing, t, onComplete }: Pr
 
   if (!open) return null;
 
+  const slideVars = { amount: CLIENT_WELCOME_30_LC };
+
   return createPortal(
     <div
       className="fixed inset-0 z-[130] flex flex-col bg-[#F5F7FB]"
@@ -83,16 +85,16 @@ export function ClientOnboardingCarousel({ open, completing, t, onComplete }: Pr
               id="client-onboarding-title"
               className="max-w-sm text-[28px] font-black leading-tight tracking-tight text-[#0B1220] sm:text-3xl"
             >
-              {t(`client_onboarding.${slideKey}.title`)}
+              {t(`client_onboarding.${slideKey}.title`, slideVars)}
             </h1>
             <p className="mt-4 max-w-sm text-[15px] font-medium leading-relaxed text-[#64748B]">
-              {t(`client_onboarding.${slideKey}.body`, { amount: CLIENT_WELCOME_30_LC })}
+              {t(`client_onboarding.${slideKey}.body`, slideVars)}
             </p>
 
             {slideKey === 'bonus' ? (
               <div className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-[#2563FF]/10 px-5 py-3 text-lg font-black text-[#2563FF] ring-1 ring-[#2563FF]/20">
                 <Icons.Coins className="h-6 w-6" />
-                {t('client_onboarding.bonus.amount_label', { amount: CLIENT_WELCOME_30_LC })}
+                {t('client_onboarding.bonus.amount_label', slideVars)}
               </div>
             ) : null}
           </div>

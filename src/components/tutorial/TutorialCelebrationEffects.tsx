@@ -1,21 +1,31 @@
-import { useMemo, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { clsx } from 'clsx';
 
 type Props = {
   active: boolean;
 };
 
-const CONFETTI_COLORS = ['#2563FF', '#60A5FA', '#FBBF24', '#FFFFFF', '#93C5FD'] as const;
+type LiveBurst = {
+  id: string;
+  left: string;
+  top: string;
+  burstIndex: number;
+  showGiftGlow: boolean;
+};
 
-/** Três zonas de explosão — moeda, presente, lateral direita */
-const CELEBRATION_BURSTS = [
-  { id: 'coin', left: '50%', top: '36%', delayOffset: 0 },
-  { id: 'gift', left: '26%', top: '45%', delayOffset: 0.04 },
-  { id: 'spark', left: '74%', top: '40%', delayOffset: 0.07 },
-] as const;
+const CONFETTI_COLORS = ['#2563FF', '#60A5FA', '#FBBF24', '#FFFFFF', '#93C5FD'] as const;
 
 const CONFETTI_PER_BURST = 9;
 const GLITTER_PER_BURST = 5;
+const BURST_LIFETIME_MS = 2300;
+const SPAWN_INTERVAL_MS = 1500;
+
+function randomHeroPoint() {
+  return {
+    left: `${12 + Math.random() * 76}%`,
+    top: `${14 + Math.random() * 44}%`,
+  };
+}
 
 function buildConfettiParticles(burstIndex: number) {
   return Array.from({ length: CONFETTI_PER_BURST }, (_, index) => {
@@ -25,7 +35,7 @@ function buildConfettiParticles(burstIndex: number) {
       drift: ((seed * 13) % 148) - 74,
       lift: -42 - (index % 5) * 16 - burstIndex * 4,
       drop: 32 + (index % 4) * 12 + burstIndex * 6,
-      delay: (index % 6) * 0.025 + CELEBRATION_BURSTS[burstIndex].delayOffset,
+      delay: (index % 6) * 0.025,
       duration: 1.8 + (index % 3) * 0.1,
       spin: ((seed * 23) % 480) - 240,
       size: 4 + ((index + burstIndex) % 5),
@@ -42,7 +52,7 @@ function buildGlitterParticles(burstIndex: number) {
       id: `${burstIndex}-${index}`,
       offsetX: ((seed * 7) % 72) - 36,
       offsetY: ((seed * 5) % 48) - 24,
-      delay: (index % 5) * 0.06 + CELEBRATION_BURSTS[burstIndex].delayOffset,
+      delay: (index % 5) * 0.06,
       duration: 1.25 + (index % 3) * 0.1,
       size: 2 + ((index + burstIndex) % 3),
     };
@@ -138,30 +148,104 @@ function CelebrationBurst({
   );
 }
 
-export function TutorialCelebrationEffects({ active }: Props) {
-  const bursts = useMemo(
-    () =>
-      CELEBRATION_BURSTS.map((origin, burstIndex) => ({
-        ...origin,
-        confetti: buildConfettiParticles(burstIndex),
-        glitter: buildGlitterParticles(burstIndex),
-      })),
-    [],
+function createBurst(): LiveBurst {
+  const point = randomHeroPoint();
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    left: point.left,
+    top: point.top,
+    burstIndex: Math.floor(Math.random() * 3),
+    showGiftGlow: Math.random() > 0.55,
+  };
+}
+
+function BurstInstance({ burst }: { burst: LiveBurst }) {
+  const particles = useMemo(
+    () => ({
+      confetti: buildConfettiParticles(burst.burstIndex),
+      glitter: buildGlitterParticles(burst.burstIndex),
+    }),
+    [burst.burstIndex],
   );
+
+  return (
+    <CelebrationBurst
+      left={burst.left}
+      top={burst.top}
+      confetti={particles.confetti}
+      glitter={particles.glitter}
+      showGiftGlow={burst.showGiftGlow}
+    />
+  );
+}
+
+export function TutorialCelebrationEffects({ active }: Props) {
+  const [bursts, setBursts] = useState<LiveBurst[]>([]);
+
+  useEffect(() => {
+    if (!active) {
+      setBursts([]);
+      return;
+    }
+
+    const timeouts = new Set<ReturnType<typeof setTimeout>>();
+
+    const trackTimeout = (timeout: ReturnType<typeof setTimeout>) => {
+      timeouts.add(timeout);
+      return timeout;
+    };
+
+    const spawnBurst = (delayMs = 0) => {
+      const burst = createBurst();
+
+      const addBurst = () => {
+        setBursts((current) => [...current, burst]);
+        trackTimeout(
+          setTimeout(() => {
+            setBursts((current) => current.filter((item) => item.id !== burst.id));
+          }, BURST_LIFETIME_MS),
+        );
+      };
+
+      if (delayMs === 0) {
+        addBurst();
+        return;
+      }
+
+      trackTimeout(
+        setTimeout(() => {
+          addBurst();
+        }, delayMs),
+      );
+    };
+
+    const spawnBatch = () => {
+      const count = 2 + Math.floor(Math.random() * 2);
+      if (count === 2) {
+        spawnBurst(0);
+        spawnBurst(280);
+        return;
+      }
+      spawnBurst(0);
+      spawnBurst(220);
+      spawnBurst(440);
+    };
+
+    spawnBatch();
+    const interval = setInterval(spawnBatch, SPAWN_INTERVAL_MS);
+
+    return () => {
+      clearInterval(interval);
+      timeouts.forEach(clearTimeout);
+    };
+  }, [active]);
 
   if (!active) return null;
 
   return (
     <div className="pointer-events-none absolute inset-0 z-[15] overflow-hidden" aria-hidden>
       {bursts.map((burst) => (
-        <CelebrationBurst
-          key={burst.id}
-          left={burst.left}
-          top={burst.top}
-          confetti={burst.confetti}
-          glitter={burst.glitter}
-          showGiftGlow={burst.id === 'gift'}
-        />
+        <BurstInstance key={burst.id} burst={burst} />
       ))}
     </div>
   );

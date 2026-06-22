@@ -209,6 +209,432 @@
       transform: translateY(0);
     }
   }
+
+  /* Tutorial card 2 — + button shockwave (1.2s pulse + 3s pause) */
+  @keyframes lhTutorialPlusWave {
+    0% {
+      transform: scale(0);
+      opacity: 0.35;
+    }
+    28.57% {
+      transform: scale(2.5);
+      opacity: 0;
+    }
+    28.58%,
+    100% {
+      transform: scale(0);
+      opacity: 0;
+    }
+  }
+
+  @keyframes lhTutorialPlusButtonPulse {
+    0%,
+    100%,
+    28.58% {
+      transform: scale(1);
+      box-shadow:
+        0 10px 24px rgba(37, 99, 255, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 0 0 rgba(37, 99, 235, 0);
+    }
+    14.29% {
+      transform: scale(1.06);
+      box-shadow:
+        0 10px 24px rgba(37, 99, 255, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 0 24px rgba(37, 99, 235, 0.35);
+    }
+  }
+
+  /* Tutorial card 6 — celebration (one-shot) */
+  @keyframes lhTutorialSceneReveal {
+    0% {
+      transform: scale(0.85) rotate(-8deg);
+      opacity: 0.82;
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes lhTutorialCoinFade {
+    0% {
+      opacity: 0.72;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes lhTutorialConfettiBurst {
+    0% {
+      transform: translate(0, 0) rotate(0deg);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    48% {
+      transform: translate(calc(var(--lh-confetti-drift) * 0.55), var(--lh-confetti-lift)) rotate(calc(var(--lh-confetti-spin) * 0.35));
+      opacity: 1;
+    }
+    100% {
+      transform: translate(var(--lh-confetti-drift), var(--lh-confetti-drop)) rotate(var(--lh-confetti-spin));
+      opacity: 0;
+    }
+  }
+
+  @keyframes lhTutorialGlitter {
+    0%,
+    100% {
+      opacity: 0;
+      transform: scale(0.35);
+    }
+    35% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    65% {
+      opacity: 0.88;
+      transform: scale(1.12);
+    }
+  }
+
+  @keyframes lhTutorialGiftBounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-8px);
+    }
+  }
+
+  @keyframes lhTutorialCtaGlow {
+    0%,
+    100% {
+      box-shadow:
+        0 18px 40px rgba(37, 99, 255, 0.32),
+        0 0 0 rgba(37, 99, 255, 0);
+    }
+    50% {
+      box-shadow:
+        0 18px 40px rgba(37, 99, 255, 0.32),
+        0 0 20px rgba(37, 99, 255, 0.42);
+    }
+  }
+
+  @keyframes lhTutorialBadgePop {
+    0% {
+      transform: scale(0.88);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes lhTutorialSwipeHintNudge {
+    0%,
+    10%,
+    100% {
+      transform: translateX(0);
+    }
+    11% {
+      transform: translateX(-8px);
+    }
+    14% {
+      transform: translateX(-20px);
+    }
+    18% {
+      transform: translateX(0);
+    }
+    28% {
+      transform: translateX(20px);
+    }
+    33% {
+      transform: translateX(0);
+    }
+    63% {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes lhTutorialSwipeHintFinger {
+    0%,
+    10%,
+    100% {
+      opacity: 0;
+      transform: translateX(0);
+    }
+    11% {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    14% {
+      opacity: 1;
+      transform: translateX(-28px);
+    }
+    18% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    25% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    28% {
+      opacity: 1;
+      transform: translateX(28px);
+    }
+    33% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    58% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    63% {
+      opacity: 0;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes lhTutorialSwipeHintRipple {
+    0%,
+    10%,
+    18%,
+    100% {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+    13% {
+      opacity: 0.45;
+      transform: scale(0.5);
+    }
+    14% {
+      opacity: 0.75;
+      transform: scale(0.65);
+    }
+    17% {
+      opacity: 0;
+      transform: scale(2.4);
+    }
+  }
+
+  @keyframes lhTutorialSwipeHintRippleRight {
+    0%,
+    24%,
+    33%,
+    100% {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+    28% {
+      opacity: 0.75;
+      transform: scale(0.65);
+    }
+    32% {
+      opacity: 0;
+      transform: scale(2.4);
+    }
+  }
+
+  @keyframes lhTutorialSwipeTouchCoreLeft {
+    0%,
+    10%,
+    17%,
+    100% {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    13%,
+    16% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+    18% {
+      opacity: 0;
+      transform: scale(1.25);
+    }
+  }
+
+  @keyframes lhTutorialSwipeTouchCoreRight {
+    0%,
+    24%,
+    32%,
+    100% {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    28%,
+    31% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+    33% {
+      opacity: 0;
+      transform: scale(1.25);
+    }
+  }
+
+  /* Sequential swipe arrows — 1200ms burst, 3s loop */
+  @keyframes lhTutorialSwipeSeqLeft1 {
+    0%,
+    40%,
+    100% {
+      opacity: 0;
+      transform: translateX(8px);
+    }
+    4% {
+      opacity: 0.5;
+      transform: translateX(4px);
+    }
+    10% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    32% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    38% {
+      opacity: 0;
+      transform: translateX(-2px);
+    }
+  }
+
+  @keyframes lhTutorialSwipeSeqLeft2 {
+    0%,
+    5%,
+    40%,
+    100% {
+      opacity: 0;
+      transform: translateX(8px);
+    }
+    9% {
+      opacity: 0.5;
+      transform: translateX(0);
+    }
+    15% {
+      opacity: 1;
+      transform: translateX(-14px);
+    }
+    32% {
+      opacity: 1;
+      transform: translateX(-14px);
+    }
+    38% {
+      opacity: 0;
+      transform: translateX(-18px);
+    }
+  }
+
+  @keyframes lhTutorialSwipeSeqLeft3 {
+    0%,
+    10%,
+    40%,
+    100% {
+      opacity: 0;
+      transform: translateX(8px);
+    }
+    14% {
+      opacity: 0.5;
+      transform: translateX(-8px);
+    }
+    20% {
+      opacity: 1;
+      transform: translateX(-28px);
+    }
+    32% {
+      opacity: 1;
+      transform: translateX(-28px);
+    }
+    38% {
+      opacity: 0;
+      transform: translateX(-32px);
+    }
+  }
+
+  @keyframes lhTutorialSwipeSeqRight1 {
+    0%,
+    40%,
+    100% {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    4% {
+      opacity: 0.5;
+      transform: translateX(-4px);
+    }
+    10% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    32% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    38% {
+      opacity: 0;
+      transform: translateX(2px);
+    }
+  }
+
+  @keyframes lhTutorialSwipeSeqRight2 {
+    0%,
+    5%,
+    40%,
+    100% {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    9% {
+      opacity: 0.5;
+      transform: translateX(0);
+    }
+    15% {
+      opacity: 1;
+      transform: translateX(14px);
+    }
+    32% {
+      opacity: 1;
+      transform: translateX(14px);
+    }
+    38% {
+      opacity: 0;
+      transform: translateX(18px);
+    }
+  }
+
+  @keyframes lhTutorialSwipeSeqRight3 {
+    0%,
+    10%,
+    40%,
+    100% {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    14% {
+      opacity: 0.5;
+      transform: translateX(8px);
+    }
+    20% {
+      opacity: 1;
+      transform: translateX(28px);
+    }
+    32% {
+      opacity: 1;
+      transform: translateX(28px);
+    }
+    38% {
+      opacity: 0;
+      transform: translateX(32px);
+    }
+  }
 }
 
 html {
@@ -299,6 +725,156 @@ a {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
+}
+
+/* Tutorial card 2 only — premium + button highlight */
+.lh-tutorial-nav-plus-highlight {
+  overflow: visible;
+  animation: lhTutorialPlusButtonPulse 4.2s ease-in-out infinite;
+}
+
+.lh-tutorial-nav-plus-highlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: rgba(37, 99, 235, 0.25);
+  z-index: -1;
+  pointer-events: none;
+  animation: lhTutorialPlusWave 4.2s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lh-tutorial-nav-plus-highlight,
+  .lh-tutorial-nav-plus-highlight::before {
+    animation: none;
+  }
+}
+
+/* Tutorial card 6 only — celebration layer */
+.lh-tutorial-celebration-scene {
+  transform-origin: 50% 38%;
+  animation: lhTutorialSceneReveal 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.lh-tutorial-celebration-hero-img {
+  animation: lhTutorialCoinFade 600ms ease-out both;
+}
+
+.lh-tutorial-confetti-particle {
+  animation: lhTutorialConfettiBurst 2s ease-out forwards;
+}
+
+.lh-tutorial-glitter-particle {
+  animation: lhTutorialGlitter 1.5s ease-in-out forwards;
+}
+
+.lh-tutorial-gift-bounce {
+  animation: lhTutorialGiftBounce 900ms ease-out 180ms both;
+}
+
+.lh-tutorial-gift-bounce::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.28) 0%, transparent 72%);
+}
+
+.lh-tutorial-celebration-cta-glow {
+  animation: lhTutorialCtaGlow 1.2s ease-out 2s both;
+}
+
+.lh-tutorial-credits-badge-pop {
+  animation: lhTutorialBadgePop 600ms ease-out 350ms both;
+}
+
+/* Tutorial card 1 — swipe hint */
+.lh-tutorial-swipe-hint-nudge {
+  animation: lhTutorialSwipeHintNudge 8s ease-in-out 1s infinite;
+}
+
+.lh-tutorial-swipe-hint-finger {
+  animation: lhTutorialSwipeHintFinger 8s ease-in-out 1s infinite;
+}
+
+.lh-tutorial-swipe-hint-hand img {
+  /* Escapa do img { max-width: 100% } global — pai do toque mede só 32px */
+  max-width: none;
+  width: clamp(11rem, 54vw, 16.875rem);
+  height: auto;
+}
+
+.lh-tutorial-swipe-hint-ripple {
+  opacity: 0;
+  animation: lhTutorialSwipeHintRipple 8s ease-out 1s infinite;
+}
+
+.lh-tutorial-swipe-hint-ripple-right {
+  animation-name: lhTutorialSwipeHintRippleRight;
+}
+
+.lh-tutorial-swipe-hint-touch-core {
+  opacity: 0;
+}
+
+.lh-tutorial-swipe-hint-touch-core-left {
+  animation: lhTutorialSwipeTouchCoreLeft 8s ease-out 1s infinite;
+}
+
+.lh-tutorial-swipe-hint-touch-core-right {
+  animation: lhTutorialSwipeTouchCoreRight 8s ease-out 1s infinite;
+}
+
+.lh-tutorial-swipe-seq-arrow {
+  opacity: 0;
+}
+
+.lh-tutorial-swipe-seq-arrow-left-1 {
+  animation: lhTutorialSwipeSeqLeft1 3s ease-in-out infinite;
+}
+
+.lh-tutorial-swipe-seq-arrow-left-2 {
+  animation: lhTutorialSwipeSeqLeft2 3s ease-in-out infinite;
+}
+
+.lh-tutorial-swipe-seq-arrow-left-3 {
+  animation: lhTutorialSwipeSeqLeft3 3s ease-in-out infinite;
+}
+
+.lh-tutorial-swipe-seq-arrow-right-1 {
+  animation: lhTutorialSwipeSeqRight1 3s ease-in-out infinite;
+}
+
+.lh-tutorial-swipe-seq-arrow-right-2 {
+  animation: lhTutorialSwipeSeqRight2 3s ease-in-out infinite;
+}
+
+.lh-tutorial-swipe-seq-arrow-right-3 {
+  animation: lhTutorialSwipeSeqRight3 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lh-tutorial-celebration-scene,
+  .lh-tutorial-celebration-hero-img,
+  .lh-tutorial-confetti-particle,
+  .lh-tutorial-glitter-particle,
+  .lh-tutorial-gift-bounce,
+  .lh-tutorial-celebration-cta-glow,
+  .lh-tutorial-credits-badge-pop,
+  .lh-tutorial-swipe-hint-nudge,
+  .lh-tutorial-swipe-hint-finger,
+  .lh-tutorial-swipe-hint-ripple,
+  .lh-tutorial-swipe-hint-touch-core-left,
+  .lh-tutorial-swipe-hint-touch-core-right,
+  .lh-tutorial-swipe-seq-arrow-left-1,
+  .lh-tutorial-swipe-seq-arrow-left-2,
+  .lh-tutorial-swipe-seq-arrow-left-3,
+  .lh-tutorial-swipe-seq-arrow-right-1,
+  .lh-tutorial-swipe-seq-arrow-right-2,
+  .lh-tutorial-swipe-seq-arrow-right-3 {
+    animation: none;
+  }
 }
 
 /* Reduce scroll chaining issues on iOS */

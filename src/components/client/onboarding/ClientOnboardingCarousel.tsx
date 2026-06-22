@@ -1,155 +1,162 @@
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import * as Icons from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, ChevronLeft, Loader2, Plus } from 'lucide-react';
 import { clsx } from 'clsx';
-import { LhButton } from '@/components/design-system/LhButton';
 import { CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';
+import { TutorialCompareProposalsHero, TutorialLinkCreditsHero, TutorialNearbyHelpersHero, TutorialPublishStepHero, TutorialSecureChatHero, TutorialWelcomeHero } from '@/components/tutorial/ClientOnboardingTutorialVisuals';
+import { TutorialCenterCard, TutorialSlidePanel } from '@/components/tutorial/TutorialCenterCard';
 import type { ClientOnboardingCompleteAction } from '@/hooks/useClientOnboarding';
 
 type TFn = (key: string, vars?: Record<string, string | number>) => string;
 
-const SLIDE_KEYS = ['welcome', 'publish', 'helpers', 'compare', 'chat', 'bonus'] as const;
-type SlideKey = (typeof SLIDE_KEYS)[number];
-
-const SLIDE_ICONS: Record<SlideKey, typeof Icons.Sparkles> = {
-  welcome: Icons.Sparkles,
-  publish: Icons.FilePlus2,
-  helpers: Icons.MapPin,
-  compare: Icons.Users,
-  chat: Icons.MessageCircle,
-  bonus: Icons.Coins,
-};
+const STEP_COUNT = 6;
 
 type Props = {
   open: boolean;
   completing: boolean;
   t: TFn;
   onComplete: (action: ClientOnboardingCompleteAction) => void | Promise<void>;
+  onSkip?: () => void | Promise<void>;
 };
 
-export function ClientOnboardingCarousel({ open, completing, t, onComplete }: Props) {
-  const [stepIndex, setStepIndex] = useState(0);
-  const isLast = stepIndex === SLIDE_KEYS.length - 1;
-  const slideKey = SLIDE_KEYS[stepIndex];
-  const Icon = SLIDE_ICONS[slideKey];
+export function ClientOnboardingCarousel({ open, completing, t, onComplete, onSkip }: Props) {
+  const [step, setStep] = useState(0);
+  const isLast = step === STEP_COUNT - 1;
+  const slideVars = { amount: CLIENT_WELCOME_30_LC };
 
   useEffect(() => {
-    if (!open) {
-      setStepIndex(0);
+    if (!open) setStep(0);
+  }, [open]);
+
+  const handleSkip = () => {
+    if (onSkip) {
+      void onSkip();
       return;
     }
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+    void onComplete('explore');
+  };
+
+  const slides = useMemo(() => {
+    return Array.from({ length: STEP_COUNT }, (_, index) => {
+      const slideIndex = index + 1;
+      const title = t(`client_onboarding_tutorial.step${slideIndex}_title`);
+      const body = t(`client_onboarding_tutorial.step${slideIndex}_body`);
+
+      const isFullBleedStep = index <= 5;
+      const isFilledStep = isFullBleedStep;
+
+      return (
+        <TutorialSlidePanel key={index} flush={isFullBleedStep} fill={isFilledStep}>
+          {index === 0 ? (
+            <TutorialWelcomeHero
+              titleId={index === step ? 'client-onboarding-title' : undefined}
+              body={t('client_onboarding_tutorial.step1_body')}
+            />
+          ) : index === 1 ? (
+            <TutorialPublishStepHero
+              titleId={index === step ? 'client-onboarding-title' : undefined}
+              title={title}
+              body={body}
+              pulseNavCreate={step === 1}
+            />
+          ) : index === 2 ? (
+            <TutorialNearbyHelpersHero
+              titleId={index === step ? 'client-onboarding-title' : undefined}
+              title={title}
+              body={body}
+            />
+          ) : index === 3 ? (
+            <TutorialCompareProposalsHero
+              titleId={index === step ? 'client-onboarding-title' : undefined}
+              title={title}
+              body={body}
+            />
+          ) : index === 4 ? (
+            <TutorialSecureChatHero
+              titleId={index === step ? 'client-onboarding-title' : undefined}
+              title={title}
+              body={body}
+            />
+          ) : (
+            <TutorialLinkCreditsHero
+              titleId={index === step ? 'client-onboarding-title' : undefined}
+              title={t('client_onboarding.bonus.title', slideVars)}
+              body={t('client_onboarding.bonus.body', slideVars)}
+              creditsLabel={t('client_onboarding.bonus.amount_label', slideVars)}
+              celebrate={step === 5}
+            />
+          )}
+        </TutorialSlidePanel>
+      );
+    });
+  }, [step, t]);
 
   if (!open) return null;
 
-  const slideVars = { amount: CLIENT_WELCOME_30_LC };
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[130] flex flex-col bg-[#F5F7FB]"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="client-onboarding-title"
-    >
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#2563FF]/10 blur-3xl" />
-        <div className="absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
-      </div>
-
-      <div className="relative flex flex-1 flex-col px-6 pb-[max(env(safe-area-inset-bottom),1.25rem)] pt-[max(env(safe-area-inset-top),1.5rem)] sm:px-10">
-        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
-          <div className="flex items-center justify-center gap-2 py-2">
-            {SLIDE_KEYS.map((key, idx) => (
-              <span
-                key={key}
-                className={clsx(
-                  'h-2 rounded-full transition-all duration-300',
-                  idx === stepIndex ? 'w-8 bg-[#2563FF]' : 'w-2 bg-slate-300',
-                )}
-                aria-hidden
-              />
-            ))}
-          </div>
-
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <div className="mb-8 flex h-24 w-24 items-center justify-center rounded-[28px] bg-white shadow-[0_20px_50px_rgba(37,99,255,0.15)] ring-1 ring-blue-100">
-              <Icon className="h-11 w-11 text-[#2563FF]" strokeWidth={1.75} />
-            </div>
-
-            <h1
-              id="client-onboarding-title"
-              className="max-w-sm text-[28px] font-black leading-tight tracking-tight text-[#0B1220] sm:text-3xl"
+  return (
+    <TutorialCenterCard
+      open={open}
+      step={step}
+      stepCount={STEP_COUNT}
+      onStepChange={setStep}
+      onDismiss={handleSkip}
+      onSkip={handleSkip}
+      skipLabel={t('client_onboarding_tutorial.skip')}
+      closeLabel={t('common.close')}
+      zIndex={130}
+      titleId="client-onboarding-title"
+      controlsOnImage={step <= 5}
+      immersiveLayout={step <= 5}
+      swipeHint
+      footerBlurOverlay={false}
+      footer={
+        isLast ? (
+          <>
+            <button
+              type="button"
+              disabled={completing}
+              onClick={() => onComplete('createRequest')}
+              className={clsx(
+                'inline-flex min-h-[62px] w-full items-center justify-center gap-2 rounded-[1.75rem] bg-gradient-to-r from-[#2563FF] via-[#1B8FFF] to-[#4F8CFF] px-6 text-base font-black text-white shadow-[0_18px_40px_rgba(37,99,255,0.32)] transition hover:brightness-105 disabled:opacity-70',
+                'lh-tutorial-celebration-cta-glow',
+              )}
             >
-              {t(`client_onboarding.${slideKey}.title`, slideVars)}
-            </h1>
-            <p className="mt-4 max-w-sm text-[15px] font-medium leading-relaxed text-[#64748B]">
-              {t(`client_onboarding.${slideKey}.body`, slideVars)}
-            </p>
-
-            {slideKey === 'bonus' ? (
-              <div className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-[#2563FF]/10 px-5 py-3 text-lg font-black text-[#2563FF] ring-1 ring-[#2563FF]/20">
-                <Icons.Coins className="h-6 w-6" />
-                {t('client_onboarding.bonus.amount_label', slideVars)}
-              </div>
+              {completing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" strokeWidth={3} />}
+              {t('client_onboarding.cta_create_request')}
+            </button>
+            <button
+              type="button"
+              disabled={completing}
+              onClick={() => onComplete('explore')}
+              className="inline-flex min-h-[48px] w-full items-center justify-center rounded-[1.25rem] text-sm font-black text-[#2563FF] transition hover:bg-[#2563FF]/5 disabled:opacity-70"
+            >
+              {t('client_onboarding.cta_explore')}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => setStep((prev) => Math.min(prev + 1, STEP_COUNT - 1))}
+              className="inline-flex min-h-[62px] w-full items-center justify-center gap-2 rounded-[1.75rem] bg-gradient-to-r from-[#2563FF] via-[#1B8FFF] to-[#4F8CFF] px-6 text-base font-black text-white shadow-[0_18px_40px_rgba(37,99,255,0.32)] transition hover:brightness-105"
+            >
+              {step === 0 ? t('client_onboarding.cta_start') : t('client_onboarding.cta_next')}
+              <ArrowRight className="h-5 w-5" />
+            </button>
+            {step > 0 ? (
+              <button
+                type="button"
+                onClick={() => setStep((prev) => Math.max(prev - 1, 0))}
+                className="inline-flex min-h-[48px] w-full items-center justify-center gap-1 text-sm font-bold text-[#64748B] transition hover:text-[#0B1220]"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                {t('client_onboarding.cta_back')}
+              </button>
             ) : null}
-          </div>
-
-          <div className="mt-auto space-y-3 pb-2">
-            {isLast ? (
-              <>
-                <LhButton
-                  block
-                  disabled={completing}
-                  className="!min-h-[52px] !text-base !font-black"
-                  onClick={() => onComplete('createRequest')}
-                >
-                  {completing ? (
-                    <Icons.Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Icons.Plus className="h-5 w-5" />
-                  )}
-                  {t('client_onboarding.cta_create_request')}
-                </LhButton>
-                <LhButton
-                  variant="secondary"
-                  block
-                  disabled={completing}
-                  className="!min-h-[52px] !text-base !font-bold"
-                  onClick={() => onComplete('explore')}
-                >
-                  {t('client_onboarding.cta_explore')}
-                </LhButton>
-              </>
-            ) : (
-              <>
-                <LhButton
-                  block
-                  className="!min-h-[52px] !text-base !font-black"
-                  onClick={() => setStepIndex((i) => Math.min(i + 1, SLIDE_KEYS.length - 1))}
-                >
-                  {stepIndex === 0 ? t('client_onboarding.cta_start') : t('client_onboarding.cta_next')}
-                  <Icons.ArrowRight className="h-5 w-5" />
-                </LhButton>
-                {stepIndex > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => setStepIndex((i) => Math.max(i - 1, 0))}
-                    className="w-full py-2 text-sm font-bold text-[#64748B] transition-colors hover:text-[#0B1220]"
-                  >
-                    {t('client_onboarding.cta_back')}
-                  </button>
-                ) : null}
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body,
+          </>
+        )
+      }
+    >
+      {slides}
+    </TutorialCenterCard>
   );
 }

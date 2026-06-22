@@ -1,4 +1,4 @@
-﻿import { trainingFr } from '../training/fr';
+import { trainingFr } from '../training/fr';
 import { helperSkillsFr } from '../helperSkillsBlocks';
 
 export const fr = {
@@ -2309,6 +2309,9 @@ export const fr = {
     step2_item3: 'Horaire',
     reopen_hint: 'Vous pouvez rouvrir ce tutoriel à tout moment via le bouton Tutoriel dans la barre supérieure.',
     step1_title: 'Bienvenue sur LinkHelp',
+    step1_title_line1: 'Bienvenue sur',
+    step1_title_link: 'Link',
+    step1_title_help: 'Help',
     step1_body: 'Trouvez des professionnels de confiance pour vos tâches du quotidien.',
     step2_title: 'Publiez votre demande',
     step2_body: 'Décrivez le service, le lieu et le délai en quelques étapes.',

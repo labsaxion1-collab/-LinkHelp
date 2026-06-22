@@ -13,5 +13,12 @@ export const BRAND = {
   linkCreditPopular: '/brand/linkcredit-popular-stack.webp',
   linkCreditPro: '/brand/linkcredit-pro-stack.webp',
   linkCreditPower: '/brand/linkcredit-power-stack.webp',
+  tutorialC1: '/brand/tutorial%20c1.png',
+  tutorialC2: '/brand/tutorial%20c2.png',
+  tutorialC3: '/brand/tutorial%20c3.png',
+  tutorialC4: '/brand/tutorial%20c4.png',
+  tutorialC5: '/brand/tutorial%20c5.png',
+  tutorialC6: '/brand/tutorial%20c6.png',
+  tutorialSwipeDedo: '/brand/dedo1.png',
   introVideo: '/brand/intro.mp4',
 } as const;

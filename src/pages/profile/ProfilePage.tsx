@@ -285,7 +285,9 @@ export default function ProfilePage() {
 
           <div className="relative flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-[12px] font-black uppercase tracking-[0.24em] text-sky-300">Meu perfil</p>
+              <p className="text-[12px] font-black uppercase tracking-[0.24em] text-sky-300">
+                {t('nav.profile_menu_profile')}
+              </p>
               <h1 className="mt-3 max-w-[13rem] text-[34px] font-black leading-none tracking-tight text-white drop-shadow-[0_0_18px_rgba(255,255,255,0.32)] sm:max-w-none sm:text-4xl">
                 {displayName}
               </h1>
@@ -344,7 +346,7 @@ export default function ProfilePage() {
                     className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white px-3 py-2 text-sm font-black text-blue-700 shadow-[0_14px_28px_rgba(255,255,255,0.12),0_10px_24px_rgba(37,99,255,0.18)] ring-1 ring-white/70 transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(255,255,255,0.16),0_14px_30px_rgba(37,99,255,0.24)]"
                   >
                     <span className="pointer-events-none absolute inset-y-0 -left-10 w-10 rotate-12 bg-white/70 blur-md transition-transform duration-700 group-hover:translate-x-40" />
-                    Comprar Pacote
+                    {t('credits.buy_package')}
                     <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                   </Link>
                   <Link
@@ -352,7 +354,7 @@ export default function ProfilePage() {
                     className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.06))] px-3 py-2 text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_12px_24px_rgba(0,0,0,0.12)] ring-1 ring-white/12 backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/16 hover:ring-white/22"
                   >
                     <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/55 to-transparent" />
-                    Carteira
+                    {t('profile_page.wallet')}
                     <Coins className="h-3.5 w-3.5 transition-transform group-hover:rotate-12" />
                   </Link>
                 </>
@@ -389,7 +391,9 @@ export default function ProfilePage() {
             {isHelperMode ? (
               bioEditing ? (
                 <div className="rounded-[1.35rem] border border-blue-200 bg-[#F8FBFF] p-4 shadow-[0_10px_26px_rgba(37,99,255,0.06)]">
-                  <p className="mb-2 text-[11px] font-black uppercase tracking-wide text-[#2563FF]/75">Bio</p>
+                  <p className="mb-2 text-[11px] font-black uppercase tracking-wide text-[#2563FF]/75">
+                    {t('profile_page.bio_label')}
+                  </p>
                   <textarea
                     rows={4}
                     value={bioValue}
@@ -421,7 +425,7 @@ export default function ProfilePage() {
               ) : (
                 <ProfileInfoRow
                   icon={UserRound}
-                  label="Bio"
+                  label={t('profile_page.bio_label')}
                   value={bio || t('profile_page.bio_empty')}
                   onClick={() => { setBioValue(bio); setBioEditing(true); }}
                   actionIcon={Pencil}
@@ -489,8 +493,8 @@ export default function ProfilePage() {
                     <Briefcase className="h-5 w-5" />
                   </span>
                   <div>
-                    <h2 className="text-sm font-black text-slate-950">Categorias do Helper</h2>
-                    <p className="mt-0.5 text-xs font-medium text-slate-500">Especialidades vis?veis no perfil.</p>
+                    <h2 className="text-sm font-black text-slate-950">{t('helper_categories.title')}</h2>
+                    <p className="mt-0.5 text-xs font-medium text-slate-500">{t('profile_page.helper_specialties_subtitle')}</p>
                   </div>
                 </div>
                 <HelperCategoriesManager

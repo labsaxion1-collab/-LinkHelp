@@ -2110,10 +2110,13 @@ export const en = {
     section_public_title: 'Public profile',
     section_public_subtitle: 'Visible to clients when they view your application.',
     edit_in_settings: 'Edit',
+    bio_label: 'Bio',
     bio_placeholder: 'Tell us about yourself...',
     bio_empty: 'Add a bio to complete your profile.',
     spoken_languages: 'Spoken languages',
     spoken_languages_empty: 'Add languages in Settings',
+    wallet: 'Wallet',
+    helper_specialties_subtitle: 'Specialties visible on your profile',
   },
   helper_categories: {
     title: 'Helper categories',

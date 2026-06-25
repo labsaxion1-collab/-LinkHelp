@@ -4,6 +4,7 @@ import { profileRegionFromRow } from '@/utils/profileLocation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import type { QuebecPlace } from '@/data/quebecRegions';
+import { extractErrorMessage, formatAuthFlowErrorMessage } from '@/utils/errorMessage';
 import { parseStoredPhone, validatePhoneNumber } from '@/utils/phoneFormat';
 
 export function useProfileForm() {
@@ -87,7 +88,7 @@ export function useProfileForm() {
     setSaving(false);
 
     if (err) {
-      showToast(t(err.messageKey, err.vars), 'error');
+      showToast(formatAuthFlowErrorMessage(t, err), 'error');
       return false;
     }
 

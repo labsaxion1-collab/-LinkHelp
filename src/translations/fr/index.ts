@@ -45,6 +45,7 @@ export const fr = {
     country_us: 'États-Unis',
     country_pt: 'Portugal',
     country_fr: 'France',
+    phone_privacy_hint: 'Votre numéro n’est visible par le client qu’après l’embauche.',
   },
   presence: {
     helper_available: 'Disponible',
@@ -171,6 +172,8 @@ export const fr = {
     profile_menu_credits: 'Crédits',
     profile_menu_training: 'Centre de formation',
     profile_menu_logout: 'Se déconnecter',
+    profile_menu_favorites: 'Helpers favoris',
+    profile_menu_packages: 'Forfaits',
     tutorial: 'Tutoriel',
     how_it_works: 'Comment ça marche',
     contact: 'Contact',

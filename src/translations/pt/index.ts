@@ -45,6 +45,7 @@ export const pt = {
     country_us: 'Estados Unidos',
     country_pt: 'Portugal',
     country_fr: 'França',
+    phone_privacy_hint: 'Seu telefone só será exibido para o cliente após a contratação.',
   },
   presence: {
     helper_available: 'Disponível',
@@ -172,6 +173,7 @@ export const pt = {
     profile_menu_training: 'Centro de treinamento',
     profile_menu_logout: 'Sair da conta',
     profile_menu_favorites: 'Helpers favoritos',
+    profile_menu_packages: 'Pacotes',
     tutorial: 'Tutorial',
     how_it_works: 'Como funciona',
     contact: 'Contato',

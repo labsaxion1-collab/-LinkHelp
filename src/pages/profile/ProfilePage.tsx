@@ -36,6 +36,7 @@ import { deriveHelperCategoriesFromSkillKeys, getHelperCategoryPreferences } fro
 import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
 import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
 import { cropSquareAvatarFromFile } from '@/utils/portfolioMediaProcessing';
+import { extractErrorMessage, formatAuthFlowErrorMessage } from '@/utils/errorMessage';
 
 function profileInitials(name?: string | null, email?: string | null) {
   const source = name?.trim() || email?.trim() || 'LH';
@@ -114,7 +115,12 @@ export default function ProfilePage() {
   const displayName = profile?.name?.trim() || session?.user.user_metadata?.name || email || 'LinkHelp';
   const initials = profileInitials(displayName, email);
   const avatarUrl = avatarPreviewUrl ?? profile?.avatar_url?.trim() ?? '';
-  const roleLabel = profile?.role === 'helper' ? 'Helper' : profile?.role === 'client' ? 'Cliente' : 'LinkHelp';
+  const roleLabel =
+    profile?.role === 'helper'
+      ? t('app_pages.settings_mode_helper')
+      : profile?.role === 'client'
+        ? t('app_pages.settings_mode_client')
+        : 'LinkHelp';
   const bio = profile?.bio?.trim() || '';
   const isHelperProfile = profile?.role === 'helper';
   const clientCredits = profile?.credits ?? 0;
@@ -189,7 +195,7 @@ export default function ProfilePage() {
         primary_category: primary,
         secondary_categories: secondary,
       });
-      if (err) throw new Error(t(err.messageKey, err.vars));
+      if (err) throw new Error(formatAuthFlowErrorMessage(t, err));
       await refreshProfile();
       const synced = await fetchHelperSkills(session.user.id);
       setHelperSkillIds(synced);
@@ -198,8 +204,7 @@ export default function ProfilePage() {
       setSecondaryCategories(syncedCats.secondary);
       showToast(t('helper_categories.saved_ok'), 'success');
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      showToast(msg || t('helper_categories.save_error'), 'error');
+      showToast(extractErrorMessage(e, t('helper_categories.save_error')), 'error');
       throw e;
     }
   };
@@ -225,7 +230,7 @@ export default function ProfilePage() {
       const { publicUrl } = await uploadAvatarImage(session.user.id, uploadFile);
       const err = await updateProfile({ avatar_url: publicUrl });
       if (err) {
-        showToast(t(err.messageKey, err.vars), 'error');
+        showToast(formatAuthFlowErrorMessage(t, err), 'error');
         return;
       }
       await refreshProfile();
@@ -251,7 +256,7 @@ export default function ProfilePage() {
     const err = await updateProfile({ bio: bioValue.trim() || null });
     setBioSaving(false);
     if (err) {
-      showToast(t(err.messageKey, err.vars), 'error');
+      showToast(formatAuthFlowErrorMessage(t, err), 'error');
       return;
     }
     await refreshProfile();

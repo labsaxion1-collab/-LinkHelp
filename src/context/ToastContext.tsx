@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { extractErrorMessage } from '@/utils/errorMessage';
 
 type ToastKind = 'success' | 'error' | 'info';
 
@@ -6,7 +7,7 @@ export type ToastItem = { id: number; message: string; kind: ToastKind };
 
 type ToastContextValue = {
   toasts: ToastItem[];
-  showToast: (message: string, kind?: ToastKind) => void;
+  showToast: (message: unknown, kind?: ToastKind) => void;
   dismissToast: (id: number) => void;
 };
 
@@ -19,9 +20,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const showToast = useCallback((message: string, kind: ToastKind = 'info') => {
+  const showToast = useCallback((message: unknown, kind: ToastKind = 'info') => {
+    const text =
+      typeof message === 'string'
+        ? message.trim() || extractErrorMessage(message)
+        : extractErrorMessage(message);
     const id = Date.now() + Math.floor(Math.random() * 1000);
-    setToasts((prev) => [...prev.slice(-4), { id, message, kind }]);
+    setToasts((prev) => [...prev.slice(-4), { id, message: text, kind }]);
     window.setTimeout(() => dismissToast(id), 5200);
   }, [dismissToast]);
 

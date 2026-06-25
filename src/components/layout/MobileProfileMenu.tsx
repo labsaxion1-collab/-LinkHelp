@@ -200,7 +200,7 @@ export function MobileProfileMenu({
                   className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
                 >
                   <Package className="h-4 w-4 text-slate-400" />
-                  Pacotes
+                  {t('nav.profile_menu_packages')}
                 </button>
               ) : null}
               {isHelperNav ? (
@@ -251,7 +251,7 @@ export function MobileProfileMenu({
                 className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
               >
                 <Settings className="h-4 w-4 text-slate-400" />
-                Configurações
+                {t('nav.profile_menu_settings')}
               </button>
               <div className="my-1 border-t border-slate-100 px-4 py-3">
                 <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">

@@ -398,7 +398,7 @@ export default function Navbar() {
                     onClick={() => goProfileRoute(ROUTES.helperLinkCredits)}
                     className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
                   >
-                    <Package className="w-4 h-4 text-gray-400" /> Pacotes
+                    <Package className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_packages')}
                   </button>
                 </>
               ) : (
@@ -433,7 +433,7 @@ export default function Navbar() {
                 onClick={() => goProfileRoute(ROUTES.settings)}
                 className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-gray-800 hover:bg-gray-50"
               >
-                <Settings className="w-4 h-4 text-gray-400" /> Configurações
+                <Settings className="w-4 h-4 text-gray-400" /> {t('nav.profile_menu_settings')}
               </button>
               <div className="my-1 border-t border-gray-100" />
               <button

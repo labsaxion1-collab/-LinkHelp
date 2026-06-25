@@ -44,6 +44,7 @@ import {
 } from '@/services/supabase/helperBaseAddressRemote';
 import { PUSH_SUBSCRIPTIONS_TABLE } from '@/config/pushNotifications';
 import { clearStoredAppMode } from '@/utils/appModeStorage';
+import { extractErrorMessage, formatAuthFlowErrorMessage } from '@/utils/errorMessage';
 
 const SPOKEN_LANGUAGE_OPTIONS = [
   { id: 'pt', label: 'Português' },
@@ -232,7 +233,7 @@ export default function SettingsPage() {
     );
     setSaving(false);
     if (err) {
-      showToast(t(err.messageKey, err.vars), 'error');
+      showToast(formatAuthFlowErrorMessage(t, err), 'error');
       return;
     }
     await refreshProfile();
@@ -279,8 +280,7 @@ export default function SettingsPage() {
       if (e instanceof HelperBaseAddressLockedError) {
         showToast(t('app_pages.settings_helper_base_lock_message'), 'error');
       } else {
-        const msg = e instanceof Error ? e.message : String(e);
-        showToast(msg || t('app_pages.settings_helper_base_save_error'), 'error');
+        showToast(extractErrorMessage(e, t('app_pages.settings_helper_base_save_error')), 'error');
       }
     } finally {
       setBaseAddressSaving(false);
@@ -305,7 +305,7 @@ export default function SettingsPage() {
         deleted_at: deletedAt,
       });
       if (profileErr) {
-        showToast(t(profileErr.messageKey, profileErr.vars), 'error');
+        showToast(formatAuthFlowErrorMessage(t, profileErr), 'error');
         return;
       }
 
@@ -368,7 +368,7 @@ export default function SettingsPage() {
       const { publicUrl } = await uploadAvatarImage(session.user.id, uploadFile);
       const err = await updateProfile({ avatar_url: publicUrl });
       if (err) {
-        showToast(t(err.messageKey, err.vars), 'error');
+        showToast(formatAuthFlowErrorMessage(t, err), 'error');
         return;
       }
       await refreshProfile();
@@ -445,9 +445,7 @@ export default function SettingsPage() {
               disabled={!isConfigured || saving}
               t={t}
             />
-            <p className="mt-1 text-[11px] text-gray-400">
-              Seu telefone só será exibido para o cliente após a contratação.
-            </p>
+            <p className="mt-1 text-[11px] text-gray-400">{t('profile_form.phone_privacy_hint')}</p>
 
             {/* Address — helpers: full base address; clients: city with 30-day lock */}
             {isHelper ? (

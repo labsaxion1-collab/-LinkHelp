@@ -186,6 +186,10 @@ export default function SettingsPage() {
       }),
     [profile, helperBaseValue],
   );
+  const deleteConfirmKeyword = useMemo(
+    () => t('app_pages.settings_delete_account_confirm_keyword').trim().toUpperCase(),
+    [t, language],
+  );
 
   const saveAccount = async () => {
     const { countryId, nationalNumber } = parseStoredPhone(phone);
@@ -330,7 +334,7 @@ export default function SettingsPage() {
       await signOut();
       navigate(ROUTES.home, { replace: true });
     } catch {
-      showToast('Erro ao excluir conta. Tente novamente.', 'error');
+      showToast(t('app_pages.settings_delete_account_error'), 'error');
     } finally {
       setDeleting(false);
       setShowDeleteModal(false);
@@ -618,9 +622,9 @@ export default function SettingsPage() {
                 }}
                 className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
               >
-                <option value="en">English</option>
-                <option value="pt">Português</option>
-                <option value="fr">Français</option>
+                <option value="en">{t('app_pages.settings_language_en')}</option>
+                <option value="pt">{t('app_pages.settings_language_pt')}</option>
+                <option value="fr">{t('app_pages.settings_language_fr')}</option>
               </select>
             </label>
 
@@ -733,7 +737,7 @@ export default function SettingsPage() {
                 type="text"
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
-                placeholder="EXCLUIR"
+                placeholder={t('app_pages.settings_delete_account_confirm_keyword')}
                 autoCapitalize="characters"
                 className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-bold tracking-widest"
               />
@@ -741,7 +745,7 @@ export default function SettingsPage() {
             <div className="mt-5 flex flex-col gap-2">
               <button
                 type="button"
-                disabled={deleteConfirmText.trim().toUpperCase() !== 'EXCLUIR' || deleting}
+                disabled={deleteConfirmText.trim().toUpperCase() !== deleteConfirmKeyword || deleting}
                 onClick={() => void deleteAccount()}
                 className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-black text-white hover:bg-red-700 disabled:opacity-50"
               >

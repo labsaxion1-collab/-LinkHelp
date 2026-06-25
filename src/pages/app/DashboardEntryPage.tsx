@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { PageLoader } from '@/components/common/PageLoader';
 import { OAuthRolePicker } from '@/components/auth/OAuthRolePicker';
+import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { ROUTES } from '@/utils/constants';
 import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
@@ -16,6 +17,7 @@ import { writeStoredAppMode } from '@/utils/appModeStorage';
  */
 export default function DashboardEntryPage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { session, profile, authBootstrapped, authLoading, refreshProfile, isConfigured, signOut } = useAuth();
   const attempts = useRef(0);
   const redirected = useRef(false);
@@ -136,7 +138,7 @@ export default function DashboardEntryPage() {
     if (attempts.current >= 5) {
       return (
         <div className="min-h-[40vh] flex flex-col items-center justify-center gap-4 px-4 text-center">
-          <p className="text-sm font-semibold text-slate-700">Could not load your profile.</p>
+          <p className="text-sm font-semibold text-slate-700">{t('auth.profile_load_failed')}</p>
           <button
             type="button"
             className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-black"
@@ -145,7 +147,7 @@ export default function DashboardEntryPage() {
               void refreshProfile(session.user);
             }}
           >
-            Try again
+            {t('common.try_again')}
           </button>
         </div>
       );

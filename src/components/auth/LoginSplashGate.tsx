@@ -1,10 +1,12 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { Logo } from '@/components/ui/Logo';
+import { useLanguage } from '@/context/LanguageContext';
 import { BRAND } from '@/utils/brandAssets';
 
 const SPLASH_DURATION_MS = 1200;
 
 export function LoginSplashGate({ children }: { children: ReactNode }) {
+  const { t } = useLanguage();
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export function LoginSplashGate({ children }: { children: ReactNode }) {
         <div className="mt-9 h-1.5 w-40 overflow-hidden rounded-full bg-white/12">
           <div className="h-full w-1/2 animate-[lh-splash-load_1.2s_ease-in-out_infinite] rounded-full bg-gradient-to-r from-[#33B6FF] to-[#2563FF] shadow-[0_0_22px_rgba(51,182,255,0.8)]" />
         </div>
-        <p className="mt-4 text-xs font-bold uppercase tracking-[0.28em] text-blue-100/80">Carregando</p>
+        <p className="mt-4 text-xs font-bold uppercase tracking-[0.28em] text-blue-100/80">{t('auth.splash_loading')}</p>
       </div>
 
       <style>

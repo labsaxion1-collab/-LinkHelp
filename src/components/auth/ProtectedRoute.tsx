@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { PageLoader } from '@/components/common/PageLoader';
+import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
 import { ROUTES } from '@/utils/constants';
@@ -8,6 +9,7 @@ import { isAuthCallbackPath } from '@/utils/authStorage';
 
 /** Require Supabase env, real session, and a `profiles` row for workspace routes. */
 export function ProtectedRoute() {
+  const { t } = useLanguage();
   const { session, profile, authLoading, authBootstrapped, isConfigured, refreshProfile, attemptSessionRecovery } =
     useAuth();
   const location = useLocation();
@@ -120,7 +122,7 @@ export function ProtectedRoute() {
     });
     return (
       <div className="min-h-[40vh] flex flex-col items-center justify-center gap-4 px-4 text-center">
-        <p className="text-sm font-semibold text-slate-700">Não foi possível carregar o seu perfil.</p>
+        <p className="text-sm font-semibold text-slate-700">{t('auth.profile_load_failed')}</p>
         <button
           type="button"
           className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-black"
@@ -129,7 +131,7 @@ export function ProtectedRoute() {
             void refreshProfile(session.user);
           }}
         >
-          Tentar novamente
+          {t('common.try_again')}
         </button>
       </div>
     );

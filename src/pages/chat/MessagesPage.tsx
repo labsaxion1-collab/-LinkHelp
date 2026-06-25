@@ -336,14 +336,14 @@ export default function MessagesPage() {
           <button
             type="button"
             className="hidden h-12 w-12 items-center justify-center rounded-[16px] bg-white text-[#0B1220] shadow-[0_8px_22px_rgba(15,23,42,0.06)] transition active:scale-95 sm:flex"
-            aria-label="Telefone"
+            aria-label={t('messages_page.aria_phone')}
           >
             <Icons.Phone className="h-5 w-5" />
           </button>
           <button
             type="button"
             className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-white text-[#0B1220] shadow-[0_8px_22px_rgba(15,23,42,0.06)] transition active:scale-95"
-            aria-label="Opções"
+            aria-label={t('messages_page.aria_options')}
           >
             <Icons.MoreVertical className="h-5 w-5" />
           </button>
@@ -391,7 +391,7 @@ export default function MessagesPage() {
         </span>
         <span className="min-w-0 flex-1">
           <span className="inline-flex rounded-full bg-[#EEF3FF] px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-[#2563FF]">
-            Serviço
+            {t('messages_page.current_service')}
           </span>
           <span className="mt-1 block truncate text-[16px] font-black leading-tight text-[#0B1220] sm:text-[17px]">{compactJobLabel}</span>
           <span className="mt-2 flex min-w-0 flex-wrap gap-x-3 gap-y-1 text-[12px] font-semibold text-[#6B7280] sm:text-[13px]">
@@ -401,7 +401,7 @@ export default function MessagesPage() {
         </span>
         <span className="col-span-3 flex shrink-0 items-center justify-end sm:col-span-1">
           <span className="rounded-full border border-[#E9EDF5] bg-white px-3 py-2 text-xs font-black text-[#2563FF] shadow-[0_6px_18px_rgba(15,23,42,0.04)]">
-            Ver detalhes
+            {t('messages_page.view_details')}
           </span>
           <ChevronDown className="ml-1.5 h-4 w-4 text-[#2563FF]" aria-hidden />
         </span>
@@ -534,7 +534,7 @@ export default function MessagesPage() {
         <button
           type="button"
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] text-[#94A3B8] transition-all hover:bg-white hover:text-[#2563FF] hover:shadow-[0_2px_8px_rgba(37,99,255,0.1)]"
-          aria-label="Anexar"
+          aria-label={t('messages_page.aria_attach')}
         >
           <Icons.Paperclip className="h-[19px] w-[19px]" />
         </button>

@@ -100,7 +100,7 @@ async function assertRequestCanReceiveApplication(input: SubmitHelperApplication
   if (lockedViaRpc === null && rows.some((row) => row.helper_id !== input.helperId && row.is_exclusive === true)) {
     throw new Error('EXCLUSIVE_APPLICATION_LOCKED');
   }
-  if (rows.length >= 3) {
+  if (!input.isExclusive && rows.length >= 3) {
     throw new Error('APPLICATION_LIMIT_REACHED');
   }
 }

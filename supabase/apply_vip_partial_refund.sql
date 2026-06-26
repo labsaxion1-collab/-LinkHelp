@@ -6,6 +6,9 @@
 -- Does NOT run retroactive refunds automatically — see STEP 6 comment block.
 -- Does NOT touch Stripe, client profiles.credits, or helper VIP debit logic.
 --
+-- If VIP apply returns FORBIDDEN with 2 normal helpers already on the request,
+-- re-run STEP 2 + STEP 3 below (fixes ensure_helper_credit_wallet auth check).
+--
 -- Prerequisite (schema):
 --   applications.is_exclusive, requests.exclusive_helper_id
 --   (apply_helper_exclusive_application_fix.sql or migration 0041)
@@ -98,7 +101,26 @@ begin
           )
       )
   loop
-    w := public.ensure_helper_credit_wallet(norm.helper_id);
+    -- Do not call ensure_helper_credit_wallet here: it raises FORBIDDEN when
+    -- auth.uid() is the VIP helper crediting displaced helpers' wallets.
+    select * into w
+    from public.credit_wallets
+    where helper_id = norm.helper_id;
+
+    if not found then
+      insert into public.credit_wallets (helper_id)
+      values (norm.helper_id)
+      on conflict (helper_id) do nothing;
+
+      select * into w
+      from public.credit_wallets
+      where helper_id = norm.helper_id;
+
+      if not found then
+        continue;
+      end if;
+    end if;
+
     bal_before := w.balance;
     bal_after := bal_before + refund_amount;
 
@@ -267,7 +289,7 @@ begin
   where request_id = p_request_id
     and status in ('pending', 'viewed', 'accepted');
 
-  if active_count >= 3 then
+  if not coalesce(p_is_exclusive, false) and active_count >= 3 then
     raise exception 'APPLICATION_LIMIT_REACHED';
   end if;
 

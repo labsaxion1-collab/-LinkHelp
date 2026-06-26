@@ -315,7 +315,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       throw new Error('EXCLUSIVE_APPLICATION_LOCKED');
     }
 
-    if (countActiveApplicationsForJob(applicationsRef.current, jobId) >= MAX_JOB_INTERESTED) {
+    if (!options?.isExclusive && countActiveApplicationsForJob(applicationsRef.current, jobId) >= MAX_JOB_INTERESTED) {
       throw new Error('APPLICATION_LIMIT_REACHED');
     }
 

@@ -174,3 +174,27 @@ order by p.proname;
 --   section 7 (duplicates): 0 rows
 --   section 9: balance_delta_ok = true for VIP partial refund rows
 --   helper_submit_application args include boolean (p_is_exclusive)
+
+-- 11) FORBIDDEN fix — process_vip must not call ensure_helper_credit_wallet for displaced helpers
+select 'process_vip avoids ensure_helper_credit_wallet on displaced helpers' as check_name,
+       coalesce(
+         (
+           select not (pg_get_functiondef(p.oid) ~* 'ensure_helper_credit_wallet\s*\(\s*norm\.helper_id\s*\)')
+           from pg_proc p
+           join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'public' and p.proname = 'process_vip_exclusive_partial_refunds'
+         ),
+         false
+       ) as ok;
+
+-- 12) VIP bypasses normal 3-application cap
+select 'helper_submit_application VIP bypasses 3-app limit' as check_name,
+       coalesce(
+         (
+           select pg_get_functiondef(p.oid) ~* 'not coalesce\(p_is_exclusive'
+           from pg_proc p
+           join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'public' and p.proname = 'helper_submit_application'
+         ),
+         false
+       ) as ok;

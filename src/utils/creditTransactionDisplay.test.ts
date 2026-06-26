@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { CreditTransaction } from '@/types/credits';
-import { resolveCreditTransactionAmount } from '@/utils/creditTransactionDisplay';
+import {
+  creditTransactionSummaryKey,
+  resolveCreditTransactionAmount,
+} from '@/utils/creditTransactionDisplay';
 
 const baseTx: CreditTransaction = {
   id: 'tx-1',
@@ -48,5 +51,18 @@ describe('resolveCreditTransactionAmount', () => {
         balanceAfter: 144,
       }),
     ).toBe(21);
+  });
+
+  it('maps VIP partial refund summary key', () => {
+    expect(
+      creditTransactionSummaryKey({
+        ...baseTx,
+        type: 'VIP_EXCLUSIVE_PARTIAL_REFUND',
+        amount: 2,
+        balanceBefore: 10,
+        balanceAfter: 12,
+        description: 'Reembolso parcial por exclusividade VIP',
+      }),
+    ).toBe('credits_tx.type_vip_partial_refund');
   });
 });

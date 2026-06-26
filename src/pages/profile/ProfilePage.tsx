@@ -23,6 +23,7 @@ import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { useAuth } from '@/context/AuthContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { getSpokenLanguageLabel } from '@/data/spokenLanguages';
 import { useToast } from '@/context/ToastContext';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { ROUTES } from '@/utils/constants';
@@ -128,13 +129,8 @@ export default function ProfilePage() {
   const creditsAmount = isHelperProfile ? (balance ?? 0) : clientCredits;
   const balanceLabel = creditsLoading ? '...' : formatLinkCredits(creditsAmount, language);
 
-  const LANGUAGE_LABELS: Record<string, string> = {
-    pt: 'Português', en: 'English', fr: 'Français', es: 'Español',
-    ar: 'Árabe', zh: 'Mandarim', hi: 'Hindi', it: 'Italiano',
-    ht: 'Crioulo Haitiano', pa: 'Punjabi',
-  };
   const spokenLanguageLabels = (profile?.spoken_languages ?? [])
-    .map((id) => LANGUAGE_LABELS[id] ?? id)
+    .map((id) => getSpokenLanguageLabel(id, t))
     .filter(Boolean);
 
   const revokeAvatarObjectUrl = () => {

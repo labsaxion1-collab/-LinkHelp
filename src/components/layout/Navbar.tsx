@@ -14,6 +14,7 @@ import { NotificationsDropdown } from './NotificationsDropdown';
 import { useMobileProfileMenu } from '@/context/MobileProfileMenuContext';
 import { useTutorial } from '@/context/TutorialContext';
 import { clsx } from 'clsx';
+import { APP_UI_LANGUAGES } from '@/data/spokenLanguages';
 
 export default function Navbar() {
   const { open: mobileProfileOpen, toggleMenu: toggleMobileProfileMenu, closeMenu: closeMobileProfileMenu } =
@@ -320,30 +321,17 @@ export default function Navbar() {
               role="menu"
               onMouseDown={(e) => e.stopPropagation()}
             >
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => changeLanguage('en')}
-                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${language === 'en' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
-              >
-                English
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => changeLanguage('pt')}
-                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${language === 'pt' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
-              >
-                Português
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => changeLanguage('fr')}
-                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${language === 'fr' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
-              >
-                Français
-              </button>
+              {APP_UI_LANGUAGES.map((option) => (
+                <button
+                  key={option.code}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => changeLanguage(option.code)}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${language === option.code ? 'font-bold text-blue-600' : 'text-gray-700'}`}
+                >
+                  {t(option.labelKey)}
+                </button>
+              ))}
             </div>,
             document.body,
           )

@@ -23,6 +23,7 @@ import { useAuth } from '@/context/AuthContext';
 import { CityRegionAutocomplete } from '@/components/common/CityRegionAutocomplete';
 import type { QuebecPlace } from '@/data/quebecRegions';
 import { useLanguage } from '@/context/LanguageContext';
+import { APP_UI_LANGUAGES } from '@/data/spokenLanguages';
 import { useToast } from '@/context/ToastContext';
 import { getSupabase } from '@/lib/supabase';
 import { HelperTermsGateModal } from '@/components/auth/HelperTermsGateModal';
@@ -407,9 +408,11 @@ export default function RegisterPage() {
                       disabled={submitting}
                       className="block min-h-[60px] w-full appearance-none rounded-2xl border border-[#E9EEF7] bg-white px-5 py-4 pl-14 text-base font-semibold text-[#0B1220] transition focus:border-[#2563FF] focus:outline-none focus:ring-4 focus:ring-blue-500/10 disabled:opacity-60"
                     >
-                      <option value="pt">Portugues</option>
-                      <option value="en">English</option>
-                      <option value="fr">Francais</option>
+                      {APP_UI_LANGUAGES.map((option) => (
+                        <option key={option.code} value={option.code}>
+                          {t(option.labelKey)}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>

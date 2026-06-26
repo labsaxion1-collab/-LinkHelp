@@ -3,6 +3,7 @@ import type { RequestAddressValue } from '@/components/client/create-request/Req
 import type { MovePropertyType } from '@/components/client/create-request/CreateRequestScheduleStep';
 import type { RequestPriority, TimeWindow } from '@/utils/requestSchedule';
 import { formatPreferredDateTimeLabel } from '@/utils/requestSchedule';
+import { formatTranslationRequestLanguage } from '@/data/spokenLanguages';
 
 type Props = {
   t: (key: string, vars?: Record<string, string | number>) => string;
@@ -84,11 +85,11 @@ export function CreateRequestReviewStep({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.translation_from_language')}</dt>
-              <dd className="font-bold text-gray-900">{translationFromLanguage || '---'}</dd>
+              <dd className="font-bold text-gray-900">{translationFromLanguage ? formatTranslationRequestLanguage(translationFromLanguage, t) : '---'}</dd>
             </div>
             <div>
               <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.translation_to_language')}</dt>
-              <dd className="font-bold text-gray-900">{translationToLanguage || '---'}</dd>
+              <dd className="font-bold text-gray-900">{translationToLanguage ? formatTranslationRequestLanguage(translationToLanguage, t) : '---'}</dd>
             </div>
           </div>
         ) : null}

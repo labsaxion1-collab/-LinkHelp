@@ -26,6 +26,18 @@ export const fr = {
     check_orders: 'Consultez vos demandes',
     try_again: 'Réessayer',
   },
+  languages: {
+    portuguese: 'Portugais',
+    english: 'Anglais',
+    french: 'Français',
+    spanish: 'Espagnol',
+    arabic: 'Arabe',
+    mandarin: 'Mandarin',
+    hindi: 'Hindi',
+    italian: 'Italien',
+    haitian_creole: 'Créole haïtien',
+    punjabi: 'Pendjabi',
+  },
   route_error: {
     title: "Cette page n'a pas pu charger.",
     body: "Essayez de l'ouvrir a nouveau. Si le probleme continue, revenez a l'accueil.",

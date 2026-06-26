@@ -16,6 +16,7 @@ import {
   isConfirmStepComplete,
 } from '@/components/client/create-request/CreateRequestConfirmStep';
 import { emptyRequestAddress, type RequestAddressValue } from '@/components/client/create-request/RequestAddressInput';
+import { TRANSLATION_REQUEST_LANGUAGES, getSpokenLanguageLabel } from '@/data/spokenLanguages';
 import { isValidRequestAddress } from '@/utils/requestAddressValidation';
 import { descriptionContainsContactInfo } from '@/utils/descriptionContactGuard';
 import {
@@ -50,7 +51,6 @@ import {
 
 type ModalStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
 const STEPS: ModalStep[] = ['category', 'subcategory', 'description', 'confirm', 'review'];
-const TRANSLATION_LANGUAGE_OPTIONS = ['Português', 'Inglês', 'Francês', 'Espanhol', 'Italiano', 'Árabe'] as const;
 
 function needsBuildingForMoving(subKey: string) {
   return movingNeedsBuildingDetails(subKey);
@@ -890,8 +890,10 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                       className="w-full min-h-[48px] rounded-xl border-2 border-gray-200 bg-white px-4 text-base font-bold text-slate-800 focus:border-blue-500 focus:outline-none"
                     >
                       <option value="">{t('create_modal.translation_language_placeholder')}</option>
-                      {TRANSLATION_LANGUAGE_OPTIONS.map((language) => (
-                        <option key={language} value={language}>{language}</option>
+                      {TRANSLATION_REQUEST_LANGUAGES.map((language) => (
+                        <option key={language.legacyValue} value={language.legacyValue}>
+                          {getSpokenLanguageLabel(language.code, t)}
+                        </option>
                       ))}
                     </select>
                   </label>
@@ -903,8 +905,10 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                       className="w-full min-h-[48px] rounded-xl border-2 border-gray-200 bg-white px-4 text-base font-bold text-slate-800 focus:border-blue-500 focus:outline-none"
                     >
                       <option value="">{t('create_modal.translation_language_placeholder')}</option>
-                      {TRANSLATION_LANGUAGE_OPTIONS.map((language) => (
-                        <option key={language} value={language}>{language}</option>
+                      {TRANSLATION_REQUEST_LANGUAGES.map((language) => (
+                        <option key={language.legacyValue} value={language.legacyValue}>
+                          {getSpokenLanguageLabel(language.code, t)}
+                        </option>
                       ))}
                     </select>
                   </label>

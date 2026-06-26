@@ -26,6 +26,18 @@ export const pt = {
     check_orders: 'Verifique seus pedidos',
     try_again: 'Tentar novamente',
   },
+  languages: {
+    portuguese: 'Português',
+    english: 'Inglês',
+    french: 'Francês',
+    spanish: 'Espanhol',
+    arabic: 'Árabe',
+    mandarin: 'Mandarim',
+    hindi: 'Hindi',
+    italian: 'Italiano',
+    haitian_creole: 'Crioulo Haitiano',
+    punjabi: 'Punjabi',
+  },
   route_error: {
     title: 'Ops, esta tela nao carregou.',
     body: 'Tente abrir novamente. Se continuar, volte para o inicio e tente outra acao.',

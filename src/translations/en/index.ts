@@ -26,6 +26,18 @@ export const en = {
     check_orders: 'Check your requests',
     try_again: 'Try again',
   },
+  languages: {
+    portuguese: 'Portuguese',
+    english: 'English',
+    french: 'French',
+    spanish: 'Spanish',
+    arabic: 'Arabic',
+    mandarin: 'Mandarin',
+    hindi: 'Hindi',
+    italian: 'Italian',
+    haitian_creole: 'Haitian Creole',
+    punjabi: 'Punjabi',
+  },
   route_error: {
     title: 'This screen could not load.',
     body: 'Try opening it again. If it continues, go back home and choose another action.',

@@ -45,19 +45,7 @@ import {
 import { PUSH_SUBSCRIPTIONS_TABLE } from '@/config/pushNotifications';
 import { clearStoredAppMode } from '@/utils/appModeStorage';
 import { extractErrorMessage, formatAuthFlowErrorMessage } from '@/utils/errorMessage';
-
-const SPOKEN_LANGUAGE_OPTIONS = [
-  { id: 'pt', label: 'Português' },
-  { id: 'en', label: 'English' },
-  { id: 'fr', label: 'Français' },
-  { id: 'es', label: 'Español' },
-  { id: 'ar', label: 'Árabe' },
-  { id: 'zh', label: 'Mandarim' },
-  { id: 'hi', label: 'Hindi' },
-  { id: 'it', label: 'Italiano' },
-  { id: 'ht', label: 'Crioulo Haitiano' },
-  { id: 'pa', label: 'Punjabi' },
-];
+import { APP_UI_LANGUAGES, SPOKEN_LANGUAGES, getSpokenLanguageLabel } from '@/data/spokenLanguages';
 
 function SettingsCard({
   icon,
@@ -622,9 +610,11 @@ export default function SettingsPage() {
                 }}
                 className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm"
               >
-                <option value="en">{t('app_pages.settings_language_en')}</option>
-                <option value="pt">{t('app_pages.settings_language_pt')}</option>
-                <option value="fr">{t('app_pages.settings_language_fr')}</option>
+                {APP_UI_LANGUAGES.map((option) => (
+                  <option key={option.code} value={option.code}>
+                    {t(option.labelKey)}
+                  </option>
+                ))}
               </select>
             </label>
 
@@ -635,17 +625,17 @@ export default function SettingsPage() {
                   {t('app_pages.settings_spoken_languages')}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  {SPOKEN_LANGUAGE_OPTIONS.map((option) => {
-                    const active = spokenLanguages.includes(option.id);
+                  {SPOKEN_LANGUAGES.map((option) => {
+                    const active = spokenLanguages.includes(option.code);
                     return (
                       <button
-                        key={option.id}
+                        key={option.code}
                         type="button"
                         onClick={() =>
                           setSpokenLanguages((prev) =>
-                            prev.includes(option.id)
-                              ? prev.filter((id) => id !== option.id)
-                              : [...prev, option.id],
+                            prev.includes(option.code)
+                              ? prev.filter((id) => id !== option.code)
+                              : [...prev, option.code],
                           )
                         }
                         className={`rounded-xl border px-3 py-2 text-sm font-bold transition-colors ${
@@ -654,7 +644,7 @@ export default function SettingsPage() {
                             : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-white'
                         }`}
                       >
-                        {option.label}
+                        {getSpokenLanguageLabel(option.code, t)}
                       </button>
                     );
                   })}

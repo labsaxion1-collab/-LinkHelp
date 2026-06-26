@@ -1,3 +1,5 @@
+import { getSpokenLanguageLabel } from '@/data/spokenLanguages';
+
 export type AppLanguage = 'en' | 'pt' | 'fr';
 
 export function getNestedValue(obj: unknown, keyPath: string): unknown {
@@ -56,12 +58,5 @@ export function resolveLanguageLabel(
   languageId: string,
   t: (key: string) => string,
 ): string {
-  const map: Record<string, string> = {
-    pt: 'client_dashboard.lang_portuguese',
-    en: 'client_dashboard.lang_english',
-    fr: 'client_dashboard.lang_french',
-    es: 'client_dashboard.lang_spanish',
-  };
-  const key = map[languageId];
-  return key ? t(key) : languageId;
+  return getSpokenLanguageLabel(languageId, t);
 }

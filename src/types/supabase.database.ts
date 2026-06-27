@@ -168,6 +168,7 @@ export type Database = {
         Returns: unknown;
       };
       ensure_client_signup_credits: { Args: { p_client_id: string }; Returns: number };
+      client_publish_request: { Args: { p_request: Json; p_extended?: boolean }; Returns: Json };
       update_helper_base_address: {
         Args: {
           p_address: string;

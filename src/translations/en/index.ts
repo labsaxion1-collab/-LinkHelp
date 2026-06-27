@@ -2282,6 +2282,10 @@ export const en = {
     back_dashboard: 'Back to home',
     buy_cta: 'Buy LinkCredits',
     purchase_coming_soon: 'Client credit purchases will be available soon.',
+    publish_cost_label: 'Cost to publish',
+    publish_cost_value: '1 LC',
+    insufficient_to_publish: 'Not enough credits to publish this request.',
+    request_publish_description: 'Request publication',
   },
   client_onboarding: {
     cta_start: 'Get started',

@@ -2290,6 +2290,10 @@ export const fr = {
     back_dashboard: 'Retour à l\'accueil',
     buy_cta: 'Acheter des LinkCredits',
     purchase_coming_soon: 'L\'achat de crédits pour les clients sera bientôt disponible.',
+    publish_cost_label: 'Coût de publication',
+    publish_cost_value: '1 LC',
+    insufficient_to_publish: 'Solde insuffisant pour publier cette demande.',
+    request_publish_description: 'Publication de demande',
   },
   client_onboarding: {
     cta_start: 'Commencer',

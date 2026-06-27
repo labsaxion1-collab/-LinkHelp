@@ -2293,6 +2293,10 @@ export const pt = {
     back_dashboard: 'Voltar ao início',
     buy_cta: 'Comprar LinkCredits',
     purchase_coming_soon: 'Compra de créditos para clientes estará disponível em breve.',
+    publish_cost_label: 'Custo para publicar',
+    publish_cost_value: '1 LC',
+    insufficient_to_publish: 'Saldo insuficiente para publicar este chamado.',
+    request_publish_description: 'Publicação de chamado',
   },
   client_onboarding: {
     cta_start: 'Começar',

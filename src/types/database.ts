@@ -232,6 +232,7 @@ export type ClientCreditLedgerRow = {
   balance_after: number;
   reward_type: string | null;
   description: string | null;
+  request_id: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
 };

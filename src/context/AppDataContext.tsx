@@ -107,7 +107,7 @@ function migrateJobAvatars(jobs: Job[]): Job[] {
 }
 
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
-  const { session, profile } = useAuth();
+  const { session, profile, refreshProfile } = useAuth();
   const { chargeApplicationInterest, chargeApplicationSelected } = useCredits();
   const useRemote = isSupabaseConfigured() && !!session;
   const userId = session?.user?.id ?? '';
@@ -277,7 +277,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         timezone: jobDetails.timezone ?? jobDetails.createdTimezone ?? null,
         createdTimezone: jobDetails.createdTimezone ?? jobDetails.timezone ?? null,
       });
-      await refreshRemote();
+      await Promise.all([refreshRemote(), refreshProfile()]);
       return;
     }
 

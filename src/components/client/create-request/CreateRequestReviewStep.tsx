@@ -81,6 +81,11 @@ export function CreateRequestReviewStep({
           <dd className="font-bold text-gray-900">{budgetHint.trim() || t('jobs.value_negotiable')}</dd>
         </div>
 
+        <div>
+          <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('client_credits.publish_cost_label')}</dt>
+          <dd className="font-bold text-gray-900">{t('client_credits.publish_cost_value')}</dd>
+        </div>
+
         {selectedCategory === 'translation' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

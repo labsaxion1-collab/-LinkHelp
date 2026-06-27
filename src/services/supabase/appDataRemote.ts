@@ -262,27 +262,60 @@ function buildRequestInsertPayload(input: RemoteCreateRequestInput, extended: bo
   };
 }
 
-export async function remoteCreateRequest(input: RemoteCreateRequestInput): Promise<void> {
+export class InsufficientClientCreditsError extends Error {
+  readonly code = 'INSUFFICIENT_CLIENT_CREDITS';
+
+  constructor() {
+    super('INSUFFICIENT_CLIENT_CREDITS');
+  }
+}
+
+export type ClientPublishRequestResult = {
+  requestId: string;
+  balanceAfter: number;
+};
+
+function isRpcMissingColumnError(error: { message?: string } | null, column: string): boolean {
+  if (!error?.message) return false;
+  const msg = error.message.toLowerCase();
+  return msg.includes(column.toLowerCase()) && (msg.includes('column') || msg.includes('42703'));
+}
+
+export async function remoteCreateRequest(input: RemoteCreateRequestInput): Promise<ClientPublishRequestResult> {
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
 
   let payload = buildRequestInsertPayload(input, true);
-  let { error } = await sb.from('requests').insert(payload);
+  delete payload.client_id;
+  delete payload.status;
 
-  if (error && EXTENDED_REQUEST_COLUMNS.some((col) => isMissingColumnError(error, col))) {
+  let { data, error } = await sb.rpc('client_publish_request', { p_request: payload, p_extended: true });
+
+  if (error && EXTENDED_REQUEST_COLUMNS.some((col) => isRpcMissingColumnError(error, col))) {
     if (import.meta.env.DEV) {
-      console.warn('[LinkHelp] requests insert: retrying without extended location columns', error);
+      console.warn('[LinkHelp] client_publish_request: retrying without extended columns', error);
     }
     payload = buildRequestInsertPayload(input, false);
-    ({ error } = await sb.from('requests').insert(payload));
+    delete payload.client_id;
+    delete payload.status;
+    ({ data, error } = await sb.rpc('client_publish_request', { p_request: payload, p_extended: false }));
   }
 
   if (error) {
     if (import.meta.env.DEV) {
       console.error('[LinkHelp] remoteCreateRequest failed', { code: error.code, message: error.message, details: error.details });
     }
+    if (error.message?.includes('INSUFFICIENT_CLIENT_CREDITS')) {
+      throw new InsufficientClientCreditsError();
+    }
     throw error;
   }
+
+  const row = (data ?? {}) as { request_id?: string; balance_after?: number };
+  return {
+    requestId: row.request_id ?? '',
+    balanceAfter: row.balance_after ?? 0,
+  };
 }
 
 export async function remoteApply(input: {

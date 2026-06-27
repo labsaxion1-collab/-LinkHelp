@@ -48,6 +48,7 @@ import {
   saveCreateRequestDraft,
   type CreateRequestDraft,
 } from '@/utils/createRequestDraft';
+import { InsufficientClientCreditsError } from '@/services/supabase/appDataRemote';
 
 type ModalStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
 const STEPS: ModalStep[] = ['category', 'subcategory', 'description', 'confirm', 'review'];
@@ -521,7 +522,11 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       if (import.meta.env.DEV) {
         console.info('[LinkHelp] create request technical:', technical);
       }
-      showToast(t('create_modal.publish_error'), 'error');
+      if (error instanceof InsufficientClientCreditsError) {
+        showToast(t('client_credits.insufficient_to_publish'), 'error');
+      } else {
+        showToast(t('create_modal.publish_error'), 'error');
+      }
       setPublishing(false);
     }
   };

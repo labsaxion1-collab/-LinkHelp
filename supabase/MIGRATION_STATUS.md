@@ -24,7 +24,7 @@ O LinkHelp evoluiu com **duas vias paralelas**:
 1. **Migrations numeradas** (`0001`–`0042`) — histórico versionado no repo.
 2. **Scripts manuais** (`apply_*`, `verify_*`, `audit_*`) — colados no SQL Editor do Supabase quando algo quebrava em produção.
 
-Produção foi **confirmada via verify read-only** em 2026-06-18 ([checklist](./VERIFY_PRODUCTION_CHECKLIST.md)). Scripts `apply_*` ainda precisam virar migrations numeradas para reprodutibilidade — ver seção de limpeza futura.
+Produção foi **confirmada via verify read-only** em 2026-06-18 ([checklist](./VERIFY_PRODUCTION_CHECKLIST.md)). Scripts `apply_*` ainda precisam virar migrations numeradas para reprodutibilidade — ver **[MIGRATION_CONSOLIDATION_PLAN.md](./MIGRATION_CONSOLIDATION_PLAN.md)** (Etapa 3).
 
 ### Achados críticos
 
@@ -81,6 +81,20 @@ Demais `apply_*`: ainda **⏳ não verify** nesta rodada — ver tabela abaixo.
 **Ainda não verify nesta rodada:** `verify_accept_proposal_flow`, `verify_service_workflow`, `verify_opportunity_unlock_refunds`, `verify_helper_exclusive_application` (tem `NOTIFY`), demais da lista excluída no checklist.
 
 **Scripts verify excluídos** (contêm `NOTIFY pgrst` ou RPC manual): ver checklist.
+
+---
+
+## Plano de consolidação (Etapa 3)
+
+**Documento:** [MIGRATION_CONSOLIDATION_PLAN.md](./MIGRATION_CONSOLIDATION_PLAN.md)
+
+Resumo:
+
+- **Não renomear** migrations `0001`–`0042` nem deletar `apply_*.sql`.
+- **Novas migrations** apenas a partir de **`0043`**, idempotentes, espelhando estado já em prod.
+- **Ordem P0:** stack cliente (`0043`–`0046`) → Stripe helper (`0047`–`0048`) → VIP/exclusive consolidado (`0049`–`0051`).
+- **`supabase db push` em prod:** proibido sem revisar `schema_migrations` e checklist do plano.
+- **Duplicatas 0016 / 0017 / 0032:** contornar com migrations novas; arquivos antigos permanecem.
 
 ---
 
@@ -330,25 +344,24 @@ Manter `verify_*` e `audit_*` como runbook até haver testes automatizados ou CI
 
 ---
 
-## Ordem recomendada para limpeza futura (Etapas 2+)
+## Ordem recomendada para limpeza futura (Etapas 4+)
 
-1. **Etapa 2 — Snapshot prod (read-only)**  
-   Rodar todos os `verify_*.sql` no SQL Editor. Exportar lista de funções (`pg_proc`) e colunas críticas. Comparar com este documento.
+Detalhamento completo em [MIGRATION_CONSOLIDATION_PLAN.md](./MIGRATION_CONSOLIDATION_PLAN.md).
 
-2. **Etapa 3 — Corrigir números duplicados**  
-   Renumerar (ex.: `0016_helper_signup_12_lc` → `0016a` ou `0043` conforme estratégia). **Não renomear ainda** (fora do escopo atual).
+1. **Etapa 4 — Migrations `0043+` (cliente P0)**  
+   `apply_normalize` → welcome → publish → stripe purchase (idempotentes).
 
-3. **Etapa 4 — Migrations novas 0043+**  
-   Um apply = uma migration, na ordem P0→P4 acima. Incluir `notify pgrst, 'reload schema'` onde os applies já fazem.
+2. **Etapa 5 — Helper Stripe + VIP consolidado**  
+   `0047`–`0051`: colunas Stripe, exclusive lock, `helper_submit_application` final.
 
-4. **Etapa 5 — Consolidar `helper_submit_application`**  
-   Uma única migration final que merge 0042 + vip partial + exclusive_helper_id.
+3. **Etapa 6 — Verify restantes + migrations P1/P2**  
+   service workflow, account deletion, application count, triggers.
 
-5. **Etapa 6 — Arquivar applies obsoletos**  
-   Mover para `supabase/archive/manual-applied/` (sem deletar).
+4. **Etapa 7 — Arquivar applies**  
+   `git mv` para `supabase/archive/manual-applied/` (sem deletar).
 
-6. **Etapa 7 — Alinhar `schema_migrations`**  
-   Registrar migrations no histórico Supabase ou documentar que prod foi “baseline + applies”.
+5. **Etapa 8 — Alinhar `schema_migrations`**  
+   Registrar migrations no histórico Supabase ou documentar baseline prod.
 
 ---
 
@@ -385,6 +398,15 @@ Manter `verify_*` e `audit_*` como runbook até haver testes automatizados ou CI
 - [x] Usuário rodou verifies em produção — **10/10 OK**
 - [x] Tabela `apply_*.sql` atualizada com ✅ pós-verify
 
+## Checklist de aceite (Etapa 3)
+
+- [x] Nenhum SQL executado
+- [x] Nenhum arquivo deletado ou renomeado
+- [x] Nenhuma migration `0043+` criada
+- [x] `MIGRATION_CONSOLIDATION_PLAN.md` criado
+- [x] `MIGRATION_STATUS.md` atualizado com link ao plano
+- [ ] Commit — aguardando autorização
+
 ---
 
-*Documento atualizado após verify em produção (2026-06-18). Próximo passo: Etapa 3 — migrations numeradas para applies confirmados.*
+*Documento atualizado após verify em produção (2026-06-18). Próximo passo: [Etapa 4 — migrations `0043+`](./MIGRATION_CONSOLIDATION_PLAN.md#fase-1--migrations-cliente-p0-00430046).*

@@ -1,5 +1,6 @@
 export type ClientCreditLedgerType =
   | 'FREE_BONUS'
+  | 'CREDIT_PURCHASE'
   | 'REQUEST_PUBLISH'
   | 'REQUEST_REFUND'
   | 'REQUEST_CANCEL_REFUND'

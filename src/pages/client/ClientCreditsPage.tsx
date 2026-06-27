@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import * as Icons from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -10,6 +10,7 @@ import { ClientCreditHistoryList } from '@/components/client/ClientCreditHistory
 import { ClientCreditActivityDetailModal } from '@/components/client/ClientCreditActivityDetailModal';
 import { ROUTES } from '@/utils/constants';
 import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
+import { LINK_CREDIT_PACKAGES } from '@/config/linkCreditPackages';
 import { startClientLinkCreditCheckout } from '@/services/clientLinkCreditsCheckout';
 import {
   fetchClientCreditLedger,
@@ -47,9 +48,12 @@ function StatTile({
 export default function ClientCreditsPage() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const cancelled = searchParams.get('cancelled') === 'true';
   const { showToast } = useToast();
   const { profile, authLoading, refreshProfile } = useAuth();
-  const [buyBusy, setBuyBusy] = useState(false);
+  const [buyBusy, setBuyBusy] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [ledgerLoading, setLedgerLoading] = useState(true);
   const [recentEntries, setRecentEntries] = useState<ClientCreditLedgerEntry[]>([]);
   const [monthEntries, setMonthEntries] = useState<ClientCreditLedgerEntry[]>([]);
@@ -89,7 +93,7 @@ export default function ClientCreditsPage() {
     };
   }, [refreshProfile]);
 
-  const handleBuyCredits = async () => {
+  const handleBuyPackage = async (packageId: string, priceId: string) => {
     if (buyBusy) return;
 
     if (!CLIENT_LINKCREDITS_ENABLED) {
@@ -97,14 +101,18 @@ export default function ClientCreditsPage() {
       return;
     }
 
-    setBuyBusy(true);
+    setCheckoutError(null);
+    setBuyBusy(packageId);
     try {
-      const { url } = await startClientLinkCreditCheckout({ packageId: 'default' });
+      const { url } = await startClientLinkCreditCheckout({ packageId, priceId });
       window.location.href = url;
-    } catch {
-      showToast(t('client_credits.purchase_coming_soon'), 'info');
+    } catch (e) {
+      console.error('[LinkHelp] client checkout', e);
+      const message = e instanceof Error ? e.message : t('client_credits.checkout_error');
+      setCheckoutError(message);
+      showToast(t('client_credits.checkout_error'), 'error');
     } finally {
-      setBuyBusy(false);
+      setBuyBusy(null);
     }
   };
 
@@ -185,19 +193,82 @@ export default function ClientCreditsPage() {
             {t('client_linkcredits.after_promo')}
           </p>
 
-          <button
-            type="button"
-            disabled={buyBusy}
-            onClick={() => void handleBuyCredits()}
-            className="mt-6 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition-colors hover:bg-blue-700 disabled:opacity-60"
-          >
-            {buyBusy ? (
-              <Icons.Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-            ) : (
+          {cancelled ? (
+            <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+              {t('client_credits.checkout_cancelled')}
+            </p>
+          ) : null}
+
+          {checkoutError ? (
+            <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">
+              {checkoutError}
+            </p>
+          ) : null}
+
+          {CLIENT_LINKCREDITS_ENABLED ? (
+            <section className="mt-6">
+              <h2 className="text-sm font-black uppercase tracking-wide text-slate-500">
+                {t('client_credits.buy_packages_title')}
+              </h2>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {LINK_CREDIT_PACKAGES.map((pkg) => {
+                  const badge = pkg.badgeKey ? t(`link_credits_store.${pkg.badgeKey}`) : null;
+                  const busy = buyBusy === pkg.id;
+                  return (
+                    <div
+                      key={pkg.id}
+                      className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-wide text-blue-600">
+                            {t(`link_credits_store.package_${pkg.id}_label`)}
+                          </p>
+                          <p className="mt-1 text-2xl font-black tabular-nums text-slate-950">
+                            {pkg.credits} <span className="text-sm">{lcUnit}</span>
+                          </p>
+                        </div>
+                        {badge ? (
+                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-black uppercase text-blue-700">
+                            {badge}
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-2 text-sm font-bold text-slate-600">
+                        {t('client_credits.package_price', {
+                          price: pkg.price.toFixed(2),
+                          currency: pkg.currency,
+                        })}
+                      </p>
+                      <button
+                        type="button"
+                        disabled={Boolean(buyBusy)}
+                        onClick={() => void handleBuyPackage(pkg.id, pkg.priceId)}
+                        className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 text-sm font-black text-white hover:bg-blue-700 disabled:opacity-60"
+                      >
+                        {busy ? (
+                          <Icons.Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Icons.ShoppingCart className="h-4 w-4" />
+                        )}
+                        {t('client_credits.buy_cta')}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ) : (
+            <button
+              type="button"
+              disabled={Boolean(buyBusy)}
+              onClick={() => showToast(t('client_credits.purchase_coming_soon'), 'info')}
+              className="mt-6 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition-colors hover:bg-blue-700 disabled:opacity-60"
+            >
               <Icons.ShoppingCart className="h-4 w-4 shrink-0" />
-            )}
-            {t('client_credits.buy_cta')}
-          </button>
+              {t('client_credits.buy_cta')}
+            </button>
+          )}
 
           <button
             type="button"

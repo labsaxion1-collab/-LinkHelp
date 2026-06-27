@@ -25,6 +25,7 @@ const AuthCallbackPage = lazyPage(() => import('@/pages/auth/AuthCallbackPage'))
 const DashboardEntryPage = lazyPage(() => import('@/pages/app/DashboardEntryPage'));
 const ClientDashboard = lazyPage(() => import('@/pages/client/ClientDashboard'));
 const ClientCreditsPage = lazyPage(() => import('@/pages/client/ClientCreditsPage'));
+const ClientCreditsSuccessPage = lazyPage(() => import('@/pages/client/ClientCreditsSuccessPage'));
 const HelperDashboard = lazyPage(() => import('@/pages/helper/HelperDashboard'));
 const HelperUpcomingJobsPage = lazyPage(() => import('@/pages/helper/HelperUpcomingJobsPage'));
 const HelperTrainingPage = lazyPage(() => import('@/pages/helper/HelperTrainingPage'));
@@ -112,6 +113,7 @@ export function AppRoutes() {
             <Route path={ROUTES.clientDashboard} element={<ClientDashboard />} />
             <Route path={ROUTES.clientJobs} element={<ClientDashboard />} />
             <Route path={ROUTES.clientCredits} element={<ClientCreditsPage />} />
+            <Route path={ROUTES.clientCreditsSuccess} element={<ClientCreditsSuccessPage />} />
             <Route
               path={ROUTES.ideas}
               element={UI_VISIBILITY.ideas ? <IdeasPage /> : <Navigate to={ROUTES.clientDashboard} replace />}

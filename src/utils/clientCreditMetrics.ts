@@ -4,6 +4,8 @@ export function clientCreditLedgerTypeLabelKey(type: ClientCreditLedgerType): st
   switch (type) {
     case 'FREE_BONUS':
       return 'client_credits.type_free_bonus';
+    case 'CREDIT_PURCHASE':
+      return 'client_credits.type_credit_purchase';
     case 'REQUEST_PUBLISH':
       return 'client_credits.type_request_publish';
     case 'REQUEST_REFUND':
@@ -19,6 +21,7 @@ export function clientCreditLedgerTypeLabelKey(type: ClientCreditLedgerType): st
 
 const KNOWN_CLIENT_CREDIT_TYPES = new Set<ClientCreditLedgerType>([
   'FREE_BONUS',
+  'CREDIT_PURCHASE',
   'REQUEST_PUBLISH',
   'REQUEST_REFUND',
   'REQUEST_CANCEL_REFUND',
@@ -63,7 +66,11 @@ export function computeClientCreditMetrics(entries: ClientCreditLedgerEntry[]): 
       requestsPublishedThisMonth += 1;
     }
 
-    if (entry.amount > 0 && entry.type !== 'FREE_BONUS') {
+    if (
+      entry.amount > 0 &&
+      entry.type !== 'FREE_BONUS' &&
+      entry.type !== 'CREDIT_PURCHASE'
+    ) {
       creditsReturned += entry.amount;
     }
   }

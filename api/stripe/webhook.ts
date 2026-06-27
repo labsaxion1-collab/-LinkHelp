@@ -34,7 +34,7 @@ async function callConfirmStripeLinkCreditPurchase(
   const rpcUrl = `${cfg.url}/rest/v1/rpc/confirm_stripe_linkcredit_purchase`;
   const body = JSON.stringify({ payload });
 
-  console.log('[stripe/webhook] calling RPC', {
+  console.log('[stripe/webhook] calling helper RPC', {
     rpcUrl,
     userId: payload.user_id,
     sessionId: payload.stripe_session_id,
@@ -56,13 +56,12 @@ async function callConfirmStripeLinkCreditPurchase(
   const text = await response.text();
 
   if (!response.ok) {
-    console.error('[stripe/webhook] RPC call FAILED', {
+    console.error('[stripe/webhook] helper RPC call FAILED', {
       httpStatus: response.status,
       responseBody: text,
       userId: payload.user_id,
       sessionId: payload.stripe_session_id,
       credits: payload.credits,
-      hint: 'Check if credit_transactions.metadata column exists — run apply_fix_stripe_credit_purchase.sql',
     });
     return { ok: false, status: response.status, body: text };
   }
@@ -76,7 +75,70 @@ async function callConfirmStripeLinkCreditPurchase(
     }
   }
 
-  console.log('[stripe/webhook] RPC success', {
+  console.log('[stripe/webhook] helper RPC success', {
+    userId: payload.user_id,
+    sessionId: payload.stripe_session_id,
+    credits: payload.credits,
+    rpcResult: data,
+  });
+
+  return { ok: true, data };
+}
+
+async function callConfirmClientStripeLinkCreditPurchase(
+  payload: Record<string, unknown>,
+): Promise<{ ok: true; data: unknown } | { ok: false; status: number; body: string }> {
+  const cfg = getSupabaseRpcConfig();
+  if (!cfg) {
+    console.error('[stripe/webhook] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set — cannot call RPC');
+    return { ok: false, status: 503, body: 'Supabase not configured' };
+  }
+
+  const rpcUrl = `${cfg.url}/rest/v1/rpc/confirm_client_stripe_linkcredit_purchase`;
+  const body = JSON.stringify({ payload });
+
+  console.log('[stripe/webhook] calling client RPC', {
+    rpcUrl,
+    userId: payload.user_id,
+    sessionId: payload.stripe_session_id,
+    credits: payload.credits,
+    packageId: payload.package_id,
+  });
+
+  const response = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: {
+      apikey: cfg.serviceKey,
+      Authorization: `Bearer ${cfg.serviceKey}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    },
+    body,
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.error('[stripe/webhook] client RPC call FAILED', {
+      httpStatus: response.status,
+      responseBody: text,
+      userId: payload.user_id,
+      sessionId: payload.stripe_session_id,
+      credits: payload.credits,
+    });
+    return { ok: false, status: response.status, body: text };
+  }
+
+  let data: unknown = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+  }
+
+  console.log('[stripe/webhook] client RPC success', {
     userId: payload.user_id,
     sessionId: payload.stripe_session_id,
     credits: payload.credits,
@@ -174,7 +236,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       raw_event: event,
     };
 
-    const result = await callConfirmStripeLinkCreditPurchase(rpcPayload);
+    const audience = meta.purchase_audience === 'client' ? 'client' : 'helper';
+    const result =
+      audience === 'client'
+        ? await callConfirmClientStripeLinkCreditPurchase(rpcPayload)
+        : await callConfirmStripeLinkCreditPurchase(rpcPayload);
 
     if (result.ok === false) {
       return res.status(result.status >= 400 ? result.status : 500).send(result.body);

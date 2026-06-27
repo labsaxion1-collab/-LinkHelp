@@ -1,7 +1,8 @@
 # LinkHelp — Status de Migrations e Scripts SQL
 
 **Data da auditoria:** 2026-06-18  
-**Escopo:** somente leitura do repositório. Nenhum SQL executado em produção.
+**Última atualização:** 2026-06-18 (verify em produção concluído)  
+**Escopo:** auditoria estática do repo + confirms read-only via `verify_*.sql` em produção.
 
 ---
 
@@ -23,7 +24,7 @@ O LinkHelp evoluiu com **duas vias paralelas**:
 1. **Migrations numeradas** (`0001`–`0042`) — histórico versionado no repo.
 2. **Scripts manuais** (`apply_*`, `verify_*`, `audit_*`) — colados no SQL Editor do Supabase quando algo quebrava em produção.
 
-Produção **não foi inspecionada** nesta etapa. O estado real do banco só pode ser confirmado rodando os `verify_*.sql` (read-only) ou consultando `supabase_migrations.schema_migrations` / definições de funções no Dashboard.
+Produção foi **confirmada via verify read-only** em 2026-06-18 ([checklist](./VERIFY_PRODUCTION_CHECKLIST.md)). Scripts `apply_*` ainda precisam virar migrations numeradas para reprodutibilidade — ver seção de limpeza futura.
 
 ### Achados críticos
 
@@ -34,16 +35,52 @@ Produção **não foi inspecionada** nesta etapa. O estado real do banco só pod
 5. **`refund_opportunity_unlock`** — criada em `0012`, **removida** em `0042` (substituída por job automático `process_expired_unlock_refunds`). Código legado que ainda chame o RPC antigo falhará após 0042.
 6. **`apply_service_workflow.sql`** — workflow de serviço (awaiting confirmation, review +3 LC) **sem migration numerada** no repo.
 
-### Status confirmado em produção (evidência da sessão de desenvolvimento)
+### Status confirmado em produção
 
-| Script | Evidência |
-|--------|-----------|
-| `apply_helper_category_preferences.sql` | Aplicado manualmente; verify OK |
-| `apply_client_publish_request_debit.sql` | Aplicado; `verify_client_publish_request_debit.sql` OK |
-| `apply_vip_partial_refund.sql` | Re-aplicado após fix; VIP + partial refund testado |
-| `apply_client_stripe_credit_purchase.sql` | Aplicado; `verify_client_stripe_credit_purchase.sql` OK |
+**Fonte:** `verify_*.sql` read-only no Supabase SQL Editor, 2026-06-18 — [detalhes](./VERIFY_PRODUCTION_CHECKLIST.md).
 
-Demais scripts: **não confirmados** nesta auditoria — classificados como ⏳ até verify em prod.
+| Script / área | Verify | Evidência |
+|---------------|--------|-----------|
+| `apply_normalize_client_profile_credits.sql` | `verify_client_profile_credits` | ✅ suspect_count = 0; RPCs sem literais legados |
+| `apply_client_welcome_30_onboarding.sql` | `verify_client_welcome_30_onboarding` | ✅ ledger, onboarding RPC, CLIENT_WELCOME_30 |
+| `apply_client_publish_request_debit.sql` | `verify_client_publish_request_debit` | ✅ `client_publish_request`; ledger `REQUEST_PUBLISH` |
+| `apply_client_stripe_credit_purchase.sql` | `verify_client_stripe_credit_purchase` | ✅ `confirm_client_stripe_linkcredit_purchase`; ledger `CREDIT_PURCHASE` |
+| `0036` + `apply_fix_stripe_credit_purchase.sql` | `verify_stripe_purchase` | ✅ `payment_events` paid; colunas Stripe OK (read-only, sem RPC test) |
+| `apply_vip_partial_refund.sql` | `verify_vip_partial_refund` | ✅ partial refund; bypass cap 3 apps |
+| `0022` / `apply_helper_category_preferences.sql` | `verify_helper_category_preferences` | ✅ colunas categoria |
+| `0032+0033` / `apply_update_helper_base_address.sql` | `verify_update_helper_base_address` | ✅ `helper_base_*`, RPC, trigger |
+| `apply_client_reject_vip_application.sql` | `verify_client_reject_vip_application` | ✅ RPC reject + sync trigger; 0 stale locks |
+| `apply_fix_linkcredits_scale.sql` | `verify_no_legacy_linkcredits` | ✅ escala real; wallets helper OK |
+
+**Ledger cliente em produção:** `FREE_BONUS`, `REQUEST_PUBLISH`, `CREDIT_PURCHASE` operacionais.
+
+**Inferido (prereq dos verifies VIP/reject):** `apply_helper_exclusive_application_fix.sql` — `exclusive_helper_id`, `is_exclusive`, `request_has_exclusive_lock` presentes (verify reject + VIP passaram).
+
+Demais `apply_*`: ainda **⏳ não verify** nesta rodada — ver tabela abaixo.
+
+---
+
+## Produção — verify concluído
+
+**Rodada:** 2026-06-18 — **10/10 OK** (read-only).  
+→ **[VERIFY_PRODUCTION_CHECKLIST.md](./VERIFY_PRODUCTION_CHECKLIST.md)**
+
+| Prioridade | Script verify | Resultado | Confirma apply / migration |
+|------------|---------------|-----------|----------------------------|
+| **P0** | `verify_client_profile_credits` | ✅ | `apply_normalize_client_profile_credits` |
+| **P0** | `verify_client_welcome_30_onboarding` | ✅ | `apply_client_welcome_30_onboarding` |
+| **P0** | `verify_client_publish_request_debit` | ✅ | `apply_client_publish_request_debit` |
+| **P0** | `verify_client_stripe_credit_purchase` | ✅ | `apply_client_stripe_credit_purchase` |
+| **P0** | `verify_stripe_purchase` | ✅ | `0036` + `apply_fix_stripe_credit_purchase` |
+| **P0** | `verify_vip_partial_refund` | ✅ | `apply_vip_partial_refund` |
+| **P1** | `verify_helper_category_preferences` | ✅ | `0022` / `apply_helper_category_preferences` |
+| **P1** | `verify_update_helper_base_address` | ✅ | `0032+0033` / `apply_update_helper_base_address` |
+| **P1** | `verify_client_reject_vip_application` | ✅ | `apply_client_reject_vip_application` |
+| **P2** | `verify_no_legacy_linkcredits` | ✅ | `apply_fix_linkcredits_scale` |
+
+**Ainda não verify nesta rodada:** `verify_accept_proposal_flow`, `verify_service_workflow`, `verify_opportunity_unlock_refunds`, `verify_helper_exclusive_application` (tem `NOTIFY`), demais da lista excluída no checklist.
+
+**Scripts verify excluídos** (contêm `NOTIFY pgrst` ou RPC manual): ver checklist.
 
 ---
 
@@ -123,25 +160,25 @@ Ordem alfabética. **⚠️** = número duplicado.
 | `apply_bug1_accepted_amount.sql` | ⏳ | ❌ Substituído | **0023** | Hotfix quando 0023 não tinha sido aplicada |
 | `apply_bug2_profile_role_fix.sql` | ⏳ | 🔁 Virar migration | Parcial **0019/0021** | UPSERT em `confirm_initial_profile_role` |
 | `apply_client_publish_request_debit.sql` | ✅ | 🔁 Virar migration | — | RPC `client_publish_request`; ledger `request_id` |
-| `apply_client_reject_vip_application.sql` | ⏳ | 🔁 Virar migration | — | Rejeição VIP; prereq exclusive fix. **Untracked no git em alguns momentos** |
-| `apply_client_stripe_credit_purchase.sql` | ✅ | 🔁 Virar migration | — | `confirm_client_stripe_linkcredit_purchase` |
-| `apply_client_welcome_30_onboarding.sql` | ⏳* | 🔁 Virar migration | — | `client_onboarding_completed_at`, `client_credit_ledger`, `complete_client_onboarding`. *Prereq dos fluxos ✅ |
+| `apply_client_reject_vip_application.sql` | ✅ | 🔁 Virar migration | — | Verify 2026-06-18: RPC + trigger sync OK |
+| `apply_client_stripe_credit_purchase.sql` | ✅ | 🔁 Virar migration | — | Verify 2026-06-18: CREDIT_PURCHASE no ledger |
+| `apply_client_welcome_30_onboarding.sql` | ✅ | 🔁 Virar migration | — | Verify 2026-06-18: ledger FREE_BONUS + onboarding RPC |
 | `apply_credit_backend_fix.sql` | ⏳ | ❌ Substituído | **0012, 0013** | Hotfix schema cache / RLS wallets |
-| `apply_fix_linkcredits_scale.sql` | ⏳ | 🔁 Virar migration | Corrige **0015** | Normaliza ×1000 em rewards |
-| `apply_fix_stripe_credit_purchase.sql` | ⏳ | 🔁 Virar migration | Estende **0036** | Colunas `metadata`, `balance_before`, `unlock_id` em `credit_transactions` |
+| `apply_fix_linkcredits_scale.sql` | ✅ | 🔁 Virar migration | Corrige **0015** | Verify 2026-06-18: sem suspeitos ×1000 |
+| `apply_fix_stripe_credit_purchase.sql` | ✅ | 🔁 Virar migration | Estende **0036** | Verify 2026-06-18: payment_events paid; colunas OK |
 | `apply_helper_application_flow.sql` | ⏳ | ❌ Substituído | **0039** | Supersedido por 0041/0042/apply_vip |
-| `apply_helper_category_preferences.sql` | ✅ | ❌ Substituído | **0022** | Idêntico à migration |
-| `apply_helper_exclusive_application_fix.sql` | ⏳ | 🔁 Virar migration | Parcial **0041** | Adiciona `exclusive_helper_id`, `request_has_exclusive_lock`, sync trigger — **não está em 0041** |
+| `apply_helper_category_preferences.sql` | ✅ | ❌ Substituído | **0022** | Verify 2026-06-18: colunas OK |
+| `apply_helper_exclusive_application_fix.sql` | ✅* | 🔁 Virar migration | Parcial **0041** | *Inferido: prereq VIP reject + partial refund OK |
 | `apply_indirect_trigger_return_fix.sql` | ⏳ | 🔁 Virar migration | — | Fix RETURN em triggers indiretos (candidatura) |
 | `apply_lead_quality_score_fix.sql` | ⏳ | 🔁 Virar migration | **0031, 0035** | Hotfix quando 0031 não aplicada |
-| `apply_normalize_client_profile_credits.sql` | ⏳* | 🔁 Virar migration | Altera **0015** | Normaliza `profiles.credits` clientes; desativa grant 12000. *Prereq cliente |
+| `apply_normalize_client_profile_credits.sql` | ✅ | 🔁 Virar migration | Altera **0015** | Verify 2026-06-18: escala cliente OK |
 | `apply_profile_account_settings.sql` | ⏳ | 🔁 Virar migration | Parcial **0018** | `address_updated_at` |
 | `apply_profiles_region.sql` | ⏳ | ❌ Substituído | **0010, 0011** | Runbook combinado |
 | `apply_requests_address_budget.sql` | ⏳ | ❌ Substituído | **0017** + **0014** | Hotfix PGRST204 colunas request |
 | `apply_service_workflow.sql` | ⏳ | 🔁 Virar migration | — | Max 3 apps, awaiting confirmation, review +3 LC — **sem migration** |
 | `apply_trigger_return_fix.sql` | ⏳ | 🔁 Virar migration | Parcial **0040** | Fix RETURN triggers push/application |
-| `apply_update_helper_base_address.sql` | ⏳ | ❌ Substituído | **0032, 0033** | Runbook combinado |
-| `apply_vip_partial_refund.sql` | ✅ | 🔁 Virar migration | Estende **0041/0042** | `process_vip_exclusive_partial_refunds` + `helper_submit_application` VIP |
+| `apply_update_helper_base_address.sql` | ✅ | ❌ Substituído | **0032, 0033** | Verify 2026-06-18: colunas + RPC + trigger OK |
+| `apply_vip_partial_refund.sql` | ✅ | 🔁 Virar migration | Estende **0041/0042** | Verify 2026-06-18: partial refund + VIP bypass cap |
 
 **Legenda:** ✅ confirmado aplicado · ⏳ não confirmado · 🔁 precisa virar migration · ❌ obsoleto/substituído (pode arquivar depois)
 
@@ -338,6 +375,16 @@ Manter `verify_*` e `audit_*` como runbook até haver testes automatizados ou CI
 - [x] RPCs e colunas críticas mapeadas
 - [x] Riscos e ordem de limpeza documentados
 
+## Checklist de aceite (Etapa 2)
+
+- [x] Nenhum SQL executado nesta atualização de documentação
+- [x] Nenhum `apply_*.sql` incluído
+- [x] `VERIFY_PRODUCTION_CHECKLIST.md` criado e preenchido
+- [x] `MIGRATION_STATUS.md` atualizado com verify concluído
+- [x] 10 scripts verify prioritários confirmados read-only no repo
+- [x] Usuário rodou verifies em produção — **10/10 OK**
+- [x] Tabela `apply_*.sql` atualizada com ✅ pós-verify
+
 ---
 
-*Documento gerado por auditoria estática do repositório. Atualizar após rodar verifies em produção ou criar migrations na Etapa 2+.*
+*Documento atualizado após verify em produção (2026-06-18). Próximo passo: Etapa 3 — migrations numeradas para applies confirmados.*

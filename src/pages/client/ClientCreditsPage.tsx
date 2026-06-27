@@ -7,6 +7,7 @@ import { useToast } from '@/context/ToastContext';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { ClientCreditHistoryList } from '@/components/client/ClientCreditHistoryList';
+import { ClientCreditActivityDetailModal } from '@/components/client/ClientCreditActivityDetailModal';
 import { ROUTES } from '@/utils/constants';
 import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
 import { startClientLinkCreditCheckout } from '@/services/clientLinkCreditsCheckout';
@@ -52,6 +53,8 @@ export default function ClientCreditsPage() {
   const [ledgerLoading, setLedgerLoading] = useState(true);
   const [recentEntries, setRecentEntries] = useState<ClientCreditLedgerEntry[]>([]);
   const [monthEntries, setMonthEntries] = useState<ClientCreditLedgerEntry[]>([]);
+  const [selectedEntry, setSelectedEntry] = useState<ClientCreditLedgerEntry | null>(null);
+  const [activityDetailOpen, setActivityDetailOpen] = useState(false);
 
   const balance = profile?.credits ?? 0;
   const balanceDisplay = authLoading ? '…' : formatLinkCredits(balance, language);
@@ -227,10 +230,26 @@ export default function ClientCreditsPage() {
               limit={20}
               t={t}
               emptyLabel={t('client_credits.no_history')}
+              onSelect={(entry) => {
+                if (!entry.requestId) return;
+                setSelectedEntry(entry);
+                setActivityDetailOpen(true);
+              }}
             />
           )}
         </section>
       </div>
+
+      <ClientCreditActivityDetailModal
+        entry={selectedEntry}
+        open={activityDetailOpen}
+        onClose={() => {
+          setActivityDetailOpen(false);
+          setSelectedEntry(null);
+        }}
+        onRequestNotFound={() => showToast(t('client_credits.request_not_found'), 'error')}
+        t={t}
+      />
     </AppPageShell>
   );
 }

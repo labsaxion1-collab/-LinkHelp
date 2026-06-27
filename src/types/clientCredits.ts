@@ -24,3 +24,24 @@ export type ClientCreditMetrics = {
   requestsPublishedThisMonth: number;
   creditsReturned: number;
 };
+
+export type ClientLedgerRequestDetail = {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  subcategory: string | null;
+  location: string;
+  preferredDate: string | null;
+  preferredTime: string | null;
+  preferredPeriod: string | null;
+  preferredTimeWindow: string | null;
+  budget: string | null;
+  budgetType: 'fixed' | 'negotiable' | null;
+  budgetAmount: number | null;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  currency: string | null;
+  status: string;
+  createdAt: string;
+};

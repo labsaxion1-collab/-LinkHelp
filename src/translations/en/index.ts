@@ -2273,6 +2273,10 @@ export const en = {
     admin_flag: 'CLIENT_LINKCREDITS_ENABLED=false — clients are not charged to open requests.',
   },
   client_credits: {
+    store_title: 'Choose your LinkCredits',
+    store_subtitle:
+      'Use LinkCredits to post requests and find helpers more easily.',
+    publish_cost_hint: 'Publishing a request costs 1 LC',
     balance: 'Balance: {{amount}} LC',
     buy_title: 'Buy LinkCredits',
     your_credits: 'Your credits',

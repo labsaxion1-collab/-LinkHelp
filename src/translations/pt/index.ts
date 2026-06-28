@@ -2284,6 +2284,10 @@ export const pt = {
     admin_flag: 'CLIENT_LINKCREDITS_ENABLED=false — clientes não são cobrados ao abrir chamados.',
   },
   client_credits: {
+    store_title: 'Escolha seus LinkCredits',
+    store_subtitle:
+      'Use LinkCredits para publicar pedidos e encontrar helpers com mais facilidade.',
+    publish_cost_hint: 'Publicar pedido custa 1 LC',
     balance: 'Saldo: {{amount}} LC',
     buy_title: 'Comprar LinkCredits',
     your_credits: 'Seus créditos',

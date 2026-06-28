@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ElementType, type ReactNode } from 'react';
 import * as Icons from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -8,6 +8,10 @@ import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { ClientCreditHistoryList } from '@/components/client/ClientCreditHistoryList';
 import { ClientCreditActivityDetailModal } from '@/components/client/ClientCreditActivityDetailModal';
+import {
+  LinkCreditPackageStoreCard,
+  LinkCreditStoreTrustSection,
+} from '@/components/credits/LinkCreditPackageStoreCard';
 import { ROUTES } from '@/utils/constants';
 import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
 import { LINK_CREDIT_PACKAGES } from '@/config/linkCreditPackages';
@@ -18,8 +22,21 @@ import {
 } from '@/services/supabase/clientCreditLedgerRemote';
 import type { ClientCreditLedgerEntry } from '@/types/clientCredits';
 import { computeClientCreditMetrics } from '@/utils/clientCreditMetrics';
-import { coerceLegacyLinkCreditsDisplay, formatLinkCredits } from '@/utils/formatLinkCredits';
-import { BRAND } from '@/utils/brandAssets';
+import { coerceLegacyLinkCreditsDisplay } from '@/utils/formatLinkCredits';
+
+const linkCreditGlowClass = 'text-amber-300 drop-shadow-[0_0_14px_rgba(251,191,36,0.55)]';
+
+function highlightLinkCreditText(text: string): ReactNode {
+  return text.split(/(LinkCredits?)/g).map((part, index) =>
+    /^LinkCredits?$/.test(part) ? (
+      <span key={`${part}-${index}`} className={linkCreditGlowClass}>
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  );
+}
 
 function StatTile({
   icon: Icon,
@@ -28,14 +45,14 @@ function StatTile({
   iconColor,
   iconBg,
 }: {
-  icon: React.ElementType;
+  icon: ElementType;
   label: string;
   value: string;
   iconColor: string;
   iconBg: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-2xl border border-slate-200/90 bg-white px-3 py-4 text-center shadow-sm">
+    <div className="flex flex-col items-center gap-2 rounded-2xl border border-white/80 bg-white/85 px-3 py-4 text-center shadow-[0_8px_24px_rgba(15,23,42,0.05)] backdrop-blur-sm">
       <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconBg}`}>
         <Icon className={`h-5 w-5 ${iconColor}`} />
       </span>
@@ -46,7 +63,7 @@ function StatTile({
 }
 
 export default function ClientCreditsPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const cancelled = searchParams.get('cancelled') === 'true';
@@ -61,13 +78,12 @@ export default function ClientCreditsPage() {
   const [activityDetailOpen, setActivityDetailOpen] = useState(false);
 
   const balance = profile?.credits ?? 0;
-  const balanceDisplay = authLoading ? '…' : formatLinkCredits(balance, language);
   const balanceAmount = authLoading ? 0 : coerceLegacyLinkCreditsDisplay(balance);
   const metrics = computeClientCreditMetrics(monthEntries);
   const lcUnit = t('credits.lc_unit');
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelledEffect = false;
 
     const load = async () => {
       setLedgerLoading(true);
@@ -78,18 +94,18 @@ export default function ClientCreditsPage() {
           fetchClientCreditLedger({ limit: 20 }),
           fetchClientCreditLedger({ since: monthStart, limit: 500 }),
         ]);
-        if (!cancelled) {
+        if (!cancelledEffect) {
           setRecentEntries(recent);
           setMonthEntries(month);
         }
       } finally {
-        if (!cancelled) setLedgerLoading(false);
+        if (!cancelledEffect) setLedgerLoading(false);
       }
     };
 
     void load();
     return () => {
-      cancelled = true;
+      cancelledEffect = true;
     };
   }, [refreshProfile]);
 
@@ -116,198 +132,184 @@ export default function ClientCreditsPage() {
     }
   };
 
+  const trustItems = [
+    { label: t('link_credits_store.benefit_secure'), icon: Icons.ShieldCheck },
+    { label: t('link_credits_store.benefit_fast'), icon: Icons.Zap },
+    { label: t('link_credits_store.benefit_premium'), icon: Icons.Medal },
+  ];
+
   return (
-    <AppPageShell className="min-w-0 pb-10">
-      <DesktopBackButton to={ROUTES.clientDashboard} />
+    <AppPageShell
+      wide
+      className="relative min-w-0 overflow-x-hidden bg-[#F8F5EE] bg-[url('/brand/linkcredits-store-background.webp')] bg-cover bg-fixed bg-center px-0 pb-28 pt-5 md:px-7 md:pb-10"
+    >
+      <div className="pointer-events-none absolute inset-0 bg-white/58 backdrop-blur-[1px]" />
+      <div className="pointer-events-none absolute -left-24 top-36 h-64 w-64 rounded-full bg-blue-200/25 blur-3xl" />
+      <div className="pointer-events-none absolute -right-24 top-[32rem] h-72 w-72 rounded-full bg-amber-200/20 blur-3xl" />
 
-      <div className="mx-auto mt-4 max-w-3xl space-y-4">
-        <div className="rounded-3xl border border-slate-200/90 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 p-6 shadow-sm ring-1 ring-slate-100/80 sm:p-8">
-          <div className="flex items-start gap-4">
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-blue-100/80">
-              <img
-                src={BRAND.linkCreditCoin}
-                alt=""
-                className="h-11 w-11 rounded-full object-cover"
-                loading="lazy"
-                decoding="async"
-              />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-600">
-                {t('client_credits.your_credits')}
-              </p>
-              <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-                {t('client_credits.dashboard_title')}
-              </h1>
-            </div>
-          </div>
+      <div className="relative mx-auto max-w-5xl">
+        <div className="px-5 md:px-0">
+          <DesktopBackButton to={ROUTES.clientDashboard} />
+        </div>
 
-          <div className="mt-6 rounded-2xl border border-blue-100/90 bg-white/90 px-5 py-5 text-center shadow-sm">
-            <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-              {t('client_credits.current_balance')}
-            </p>
-            <p className="mt-1 text-4xl font-black tabular-nums text-slate-950">{balanceDisplay}</p>
-            <p className="mt-2 text-sm font-semibold text-slate-600">
-              {authLoading ? '…' : t('client_credits.balance', { amount: balanceAmount })}
-            </p>
-          </div>
-
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <StatTile
-              icon={Icons.Coins}
-              label={t('client_credits.used_this_month')}
-              value={ledgerLoading ? '…' : `${metrics.usedThisMonth} ${lcUnit}`}
-              iconColor="text-blue-600"
-              iconBg="bg-blue-100"
-            />
-            <StatTile
-              icon={Icons.FileText}
-              label={t('client_credits.requests_published')}
-              value={ledgerLoading ? '…' : String(metrics.requestsPublishedThisMonth)}
-              iconColor="text-indigo-600"
-              iconBg="bg-indigo-100"
-            />
-            <StatTile
-              icon={Icons.RefreshCw}
-              label={t('client_credits.credits_returned')}
-              value={ledgerLoading ? '…' : `${metrics.creditsReturned} ${lcUnit}`}
-              iconColor="text-emerald-600"
-              iconBg="bg-emerald-100"
-            />
-          </div>
-
-          {!CLIENT_LINKCREDITS_ENABLED ? (
-            <div className="mt-5 rounded-2xl border border-amber-200/90 bg-amber-50/80 px-4 py-4">
-              <div className="flex items-start gap-3">
-                <span className="inline-flex shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-900">
-                  {t('client_credits.coming_soon_badge')}
-                </span>
-                <p className="text-sm font-medium leading-relaxed text-amber-950">
-                  {t('client_credits.coming_soon')}
-                </p>
-              </div>
-            </div>
-          ) : null}
-
-          <p className="mt-5 text-sm font-medium leading-relaxed text-slate-500">
-            {t('client_linkcredits.after_promo')}
+        <div className="mx-auto mb-7 max-w-2xl px-5 text-center md:px-0">
+          <p
+            className={`inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.28em] ${linkCreditGlowClass}`}
+          >
+            <Icons.Sparkles className="h-3.5 w-3.5" />
+            {t('link_credits_store.brand_eyebrow')}
+            <Icons.Sparkles className="h-3.5 w-3.5" />
           </p>
+          <h1 className="mt-3 text-4xl font-black leading-[1.02] tracking-tight text-black sm:text-5xl">
+            {highlightLinkCreditText(t('client_credits.store_title'))}
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-base font-medium leading-relaxed text-slate-600 sm:text-[17px]">
+            {highlightLinkCreditText(t('client_credits.store_subtitle'))}
+          </p>
+          <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200/90 bg-white/90 px-4 py-2 text-sm font-bold text-slate-700 shadow-sm backdrop-blur-sm">
+            <Icons.Coins className="h-4 w-4 text-[#D9A928]" />
+            {authLoading ? '…' : t('client_credits.balance', { amount: balanceAmount })}
+          </p>
+        </div>
 
-          {cancelled ? (
-            <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-              {t('client_credits.checkout_cancelled')}
-            </p>
-          ) : null}
+        {cancelled ? (
+          <div className="mx-5 mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 md:mx-0">
+            {t('client_credits.checkout_cancelled')}
+          </div>
+        ) : null}
 
-          {checkoutError ? (
-            <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">
-              {checkoutError}
-            </p>
-          ) : null}
+        {checkoutError ? (
+          <div className="mx-5 mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800 md:mx-0">
+            {checkoutError}
+          </div>
+        ) : null}
 
-          {CLIENT_LINKCREDITS_ENABLED ? (
-            <section className="mt-6">
-              <h2 className="text-sm font-black uppercase tracking-wide text-slate-500">
-                {t('client_credits.buy_packages_title')}
-              </h2>
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {LINK_CREDIT_PACKAGES.map((pkg) => {
-                  const badge = pkg.badgeKey ? t(`link_credits_store.${pkg.badgeKey}`) : null;
-                  const busy = buyBusy === pkg.id;
-                  return (
-                    <div
-                      key={pkg.id}
-                      className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="text-xs font-black uppercase tracking-wide text-blue-600">
-                            {t(`link_credits_store.package_${pkg.id}_label`)}
-                          </p>
-                          <p className="mt-1 text-2xl font-black tabular-nums text-slate-950">
-                            {pkg.credits} <span className="text-sm">{lcUnit}</span>
-                          </p>
-                        </div>
-                        {badge ? (
-                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-black uppercase text-blue-700">
-                            {badge}
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-2 text-sm font-bold text-slate-600">
-                        {t('client_credits.package_price', {
-                          price: pkg.price.toFixed(2),
-                          currency: pkg.currency,
-                        })}
-                      </p>
-                      <button
-                        type="button"
-                        disabled={Boolean(buyBusy)}
-                        onClick={() => void handleBuyPackage(pkg.id, pkg.priceId)}
-                        className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 text-sm font-black text-white hover:bg-blue-700 disabled:opacity-60"
-                      >
-                        {busy ? (
-                          <Icons.Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Icons.ShoppingCart className="h-4 w-4" />
-                        )}
-                        {t('client_credits.buy_cta')}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          ) : (
+        <div className="mx-5 mb-7 flex max-w-2xl items-center gap-3 rounded-[1.15rem] border border-blue-600/10 bg-[#F7FAFF]/95 px-4 py-4 text-sm font-bold leading-relaxed text-blue-950 shadow-[0_12px_30px_rgba(37,99,255,0.05)] md:mx-auto">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#245BFF] text-white shadow-[0_8px_18px_rgba(36,91,255,0.22)]">
+            <Icons.Info className="h-5 w-5" />
+          </span>
+          <p>{t('client_credits.publish_cost_hint')}</p>
+        </div>
+
+        {CLIENT_LINKCREDITS_ENABLED ? (
+          <div className="mx-auto grid max-w-3xl gap-5 px-5 md:px-0">
+            {LINK_CREDIT_PACKAGES.map((pkg) => {
+              const label = t(`link_credits_store.package_${pkg.id}_label`);
+              const badge = pkg.badgeKey ? t(`link_credits_store.${pkg.badgeKey}`) : null;
+
+              return (
+                <LinkCreditPackageStoreCard
+                  key={pkg.id}
+                  pkg={pkg}
+                  label={label}
+                  badge={badge}
+                  brandName={t('link_credits_store.brand_name')}
+                  buyLabel={t('link_credits_store.buy_now')}
+                  imageAlt={t('link_credits_store.package_image_alt', { label })}
+                  busy={buyBusy === pkg.id}
+                  disabled={buyBusy != null}
+                  onBuy={() => void handleBuyPackage(pkg.id, pkg.priceId)}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div className="mx-5 max-w-2xl rounded-[1.35rem] border border-amber-200/90 bg-amber-50/90 px-5 py-5 shadow-sm md:mx-auto">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-900">
+                {t('client_credits.coming_soon_badge')}
+              </span>
+              <p className="text-sm font-medium leading-relaxed text-amber-950">
+                {t('client_credits.coming_soon')}
+              </p>
+            </div>
             <button
               type="button"
               disabled={Boolean(buyBusy)}
               onClick={() => showToast(t('client_credits.purchase_coming_soon'), 'info')}
-              className="mt-6 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition-colors hover:bg-blue-700 disabled:opacity-60"
+              className="mt-4 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[1rem] bg-gradient-to-r from-[#071238] to-[#02102D] px-4 text-sm font-black text-white shadow-[0_10px_22px_rgba(7,18,56,0.20)] disabled:opacity-60"
             >
               <Icons.ShoppingCart className="h-4 w-4 shrink-0" />
               {t('client_credits.buy_cta')}
             </button>
-          )}
+          </div>
+        )}
+
+        <div className="mx-auto mt-7 max-w-3xl px-5 md:px-0">
+          <LinkCreditStoreTrustSection items={trustItems} />
+        </div>
+
+        <section className="mx-auto mt-8 max-w-3xl space-y-4 px-5 md:px-0">
+          <div className="rounded-[1.35rem] border border-white/80 bg-white/80 p-5 shadow-[0_10px_28px_rgba(15,23,42,0.06)] backdrop-blur-sm sm:p-6">
+            <h2 className="text-sm font-black uppercase tracking-wide text-slate-500">
+              {t('client_credits.your_credits')}
+            </h2>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <StatTile
+                icon={Icons.Coins}
+                label={t('client_credits.used_this_month')}
+                value={ledgerLoading ? '…' : `${metrics.usedThisMonth} ${lcUnit}`}
+                iconColor="text-blue-600"
+                iconBg="bg-blue-100"
+              />
+              <StatTile
+                icon={Icons.FileText}
+                label={t('client_credits.requests_published')}
+                value={ledgerLoading ? '…' : String(metrics.requestsPublishedThisMonth)}
+                iconColor="text-indigo-600"
+                iconBg="bg-indigo-100"
+              />
+              <StatTile
+                icon={Icons.RefreshCw}
+                label={t('client_credits.credits_returned')}
+                value={ledgerLoading ? '…' : `${metrics.creditsReturned} ${lcUnit}`}
+                iconColor="text-emerald-600"
+                iconBg="bg-emerald-100"
+              />
+            </div>
+            <p className="mt-4 text-center text-sm font-medium leading-relaxed text-slate-500">
+              {t('client_linkcredits.after_promo')}
+            </p>
+          </div>
+
+          <div className="rounded-[1.35rem] border border-white/80 bg-white/85 p-5 shadow-[0_10px_28px_rgba(15,23,42,0.06)] backdrop-blur-sm sm:p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-black tracking-tight text-slate-950">
+                {t('client_credits.recent_activity')}
+              </h2>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                {t('client_credits.credit_history')}
+              </span>
+            </div>
+
+            {ledgerLoading ? (
+              <div className="flex items-center justify-center gap-2 py-10 text-sm font-semibold text-slate-500">
+                <Icons.Loader2 className="h-4 w-4 animate-spin" />
+                …
+              </div>
+            ) : (
+              <ClientCreditHistoryList
+                entries={recentEntries}
+                limit={20}
+                t={t}
+                emptyLabel={t('client_credits.no_history')}
+                onSelect={(entry) => {
+                  if (!entry.requestId) return;
+                  setSelectedEntry(entry);
+                  setActivityDetailOpen(true);
+                }}
+              />
+            )}
+          </div>
 
           <button
             type="button"
             onClick={() => navigate(ROUTES.clientDashboard)}
-            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+            className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[1rem] border border-slate-200/90 bg-white/90 px-4 text-sm font-bold text-slate-700 shadow-sm backdrop-blur-sm transition-colors hover:bg-white"
           >
             <Icons.ArrowLeft className="h-4 w-4 shrink-0" />
             {t('client_credits.back_dashboard')}
           </button>
-        </div>
-
-        <section className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-sm sm:p-6">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-black tracking-tight text-slate-950">
-              {t('client_credits.recent_activity')}
-            </h2>
-            <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-              {t('client_credits.credit_history')}
-            </span>
-          </div>
-
-          {ledgerLoading ? (
-            <div className="flex items-center justify-center gap-2 py-10 text-sm font-semibold text-slate-500">
-              <Icons.Loader2 className="h-4 w-4 animate-spin" />
-              …
-            </div>
-          ) : (
-            <ClientCreditHistoryList
-              entries={recentEntries}
-              limit={20}
-              t={t}
-              emptyLabel={t('client_credits.no_history')}
-              onSelect={(entry) => {
-                if (!entry.requestId) return;
-                setSelectedEntry(entry);
-                setActivityDetailOpen(true);
-              }}
-            />
-          )}
         </section>
       </div>
 

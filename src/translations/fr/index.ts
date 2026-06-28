@@ -2281,6 +2281,10 @@ export const fr = {
     admin_flag: 'CLIENT_LINKCREDITS_ENABLED=false — les clients ne sont pas facturés pour ouvrir des demandes.',
   },
   client_credits: {
+    store_title: 'Choisissez vos LinkCredits',
+    store_subtitle:
+      'Utilisez des LinkCredits pour publier des demandes et trouver des helpers plus facilement.',
+    publish_cost_hint: 'Publier une demande coûte 1 LC',
     balance: 'Solde : {{amount}} LC',
     buy_title: 'Acheter des LinkCredits',
     your_credits: 'Vos crédits',

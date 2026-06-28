@@ -25,6 +25,23 @@ export function formatHireError(error: unknown, t: TranslateFn): string {
   return t('hire_modal.error_toast');
 }
 
+export function formatRejectApplicationError(error: unknown, t: TranslateFn): string {
+  const raw = extractErrorMessage(error, '');
+  const upper = raw.toUpperCase();
+
+  if (upper.includes('NOT_ALLOWED') || upper.includes('AUTH_REQUIRED')) {
+    return t('client_dashboard.reject_not_allowed');
+  }
+  if (upper.includes('INVALID_STATUS') || upper.includes('APPLICATION_NOT_ACTIVE')) {
+    return t('client_dashboard.reject_invalid_status');
+  }
+  if (upper.includes('NOT_FOUND')) {
+    return t('client_dashboard.reject_not_found');
+  }
+  if (raw.trim()) return raw;
+  return t('client_dashboard.reject_error_toast');
+}
+
 export function logAcceptProposalError(context: Record<string, unknown>, error: unknown): void {
   console.log('[Accept proposal] requestId', context.requestId);
   console.log('[Accept proposal] applicationId', context.applicationId);

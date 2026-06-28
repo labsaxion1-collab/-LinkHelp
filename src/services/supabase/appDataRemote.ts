@@ -13,6 +13,7 @@ import {
 } from '@/services/supabase/mappers';
 import { fetchProfilesAsMapperMap } from '@/services/supabase/fetchUserViews';
 import { ensureConversation } from '@/services/supabase/conversationEnsure';
+import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
 
 export async function fetchRemoteJobsAndApps(): Promise<{
   jobs: Job[];
@@ -494,6 +495,30 @@ export async function remoteCancelClientRequest(requestId: string): Promise<void
   });
 }
 
+/** Client rejects a candidate — uses RPC for VIP lock sync + helper notification. */
+export async function remoteClientRejectApplication(applicationId: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+
+  const { error } = await sb.rpc('client_reject_application', {
+    p_application_id: applicationId,
+  });
+
+  if (error) {
+    const isMissingRpc =
+      isPostgrestMissingResource(error) || (error.message ?? '').includes('client_reject_application');
+    if (isMissingRpc) {
+      const { error: upErr } = await sb
+        .from('applications')
+        .update({ status: 'rejected' })
+        .eq('id', applicationId);
+      if (upErr) throw new Error(upErr.message || 'APPLICATION_UPDATE_FAILED');
+      return;
+    }
+    throw new Error(error.message || 'REJECT_FAILED');
+  }
+}
+
 export async function remoteUpdateApplicationStatus(
   applicationId: string,
   status: ApplicationStatus,
@@ -501,6 +526,11 @@ export async function remoteUpdateApplicationStatus(
 ): Promise<void> {
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
+
+  if (status === 'rejected') {
+    await remoteClientRejectApplication(applicationId);
+    return;
+  }
 
   const { data: appRow, error: fetchErr } = await sb.from('applications').select('*').eq('id', applicationId).single();
   if (fetchErr || !appRow) throw fetchErr ?? new Error('NOT_FOUND');

@@ -51,7 +51,7 @@ import {
 import { CancelRequestModal } from '@/components/client/CancelRequestModal';
 import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
 import { extractErrorMessage } from '@/utils/errorMessage';
-import { formatHireError, logAcceptProposalError } from '@/utils/formatHireError';
+import { formatHireError, formatRejectApplicationError, logAcceptProposalError } from '@/utils/formatHireError';
 import { useAuth } from '@/context/AuthContext';
 import { ClientCreditsWalletBadge } from '@/components/client/ClientCreditsWalletBadge';
 import { ClientOnboardingCarousel } from '@/components/client/onboarding/ClientOnboardingCarousel';
@@ -373,6 +373,21 @@ export default function ClientDashboard() {
       showToast(extractErrorMessage(error, t('hire_modal.error_toast')), 'error');
     } finally {
       setCancellingJobId(null);
+    }
+  };
+
+  const handleRejectApplication = async (applicationId: string, isExclusive: boolean) => {
+    try {
+      await updateApplicationStatus(applicationId, 'rejected');
+      showToast(
+        isExclusive
+          ? t('client_dashboard.exclusive_reject_success_toast')
+          : t('client_dashboard.reject_success_toast'),
+        'success',
+      );
+    } catch (error) {
+      console.error('[LinkHelp] reject application', error);
+      showToast(formatRejectApplicationError(error, t), 'error');
     }
   };
 
@@ -733,7 +748,7 @@ export default function ClientDashboard() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => void updateApplicationStatus(app.id, 'rejected').catch(console.error)}
+                              onClick={() => void handleRejectApplication(app.id, app.isExclusive === true)}
                               className={`flex-1 min-w-0 rounded-xl px-2 py-1.5 text-xs font-bold truncate ${app.isExclusive ? 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}
                             >
                               {app.isExclusive ? t('client_dashboard.exclusive_reject_unlock') : t('client_dashboard.reject_helper')}

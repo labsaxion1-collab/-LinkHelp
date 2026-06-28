@@ -4,7 +4,6 @@ const APP_SHELL_PREFIXES = [
   '/messages',
   '/ideas',
   '/notifications',
-  '/payments',
   '/profile',
   '/settings',
   '/map',

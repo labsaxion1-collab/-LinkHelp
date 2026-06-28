@@ -10,6 +10,7 @@ import { RoleRoute } from '@/components/auth/RoleRoute';
 import { AdminProtectedRoute } from '@/components/admin/AdminProtectedRoute';
 import { FluxAdminLayout } from '@/components/admin/FluxAdminLayout';
 import { LoginSplashGate } from '@/components/auth/LoginSplashGate';
+import { LegacyPaymentsRedirect } from '@/routes/LegacyPaymentsRedirect';
 
 function lazyPage<T extends { default: ComponentType<unknown> }>(loader: () => Promise<T>) {
   return lazy(() => importWithRetry(loader));
@@ -33,7 +34,6 @@ const MessagesPage = lazyPage(() => import('@/pages/chat/MessagesPage'));
 const IdeasPage = lazyPage(() => import('@/pages/ideas/IdeasPage'));
 const NotificationsPage = lazyPage(() => import('@/pages/notifications/NotificationsPage'));
 const LiveMapPage = lazyPage(() => import('@/pages/map/LiveMapPage'));
-const PaymentsPage = lazyPage(() => import('@/pages/payments/PaymentsPage'));
 const HelperCreditsPage = lazyPage(() => import('@/pages/helper/HelperCreditsPage'));
 const HelperLinkCreditsPage = lazyPage(() => import('@/pages/helper/HelperLinkCreditsPage'));
 const HelperCreditsSuccessPage = lazyPage(() => import('@/pages/helper/HelperCreditsSuccessPage'));
@@ -120,7 +120,13 @@ export function AppRoutes() {
             />
             <Route
               path={ROUTES.payments}
-              element={UI_VISIBILITY.clientCredits ? <PaymentsPage /> : <Navigate to={ROUTES.clientDashboard} replace />}
+              element={
+                UI_VISIBILITY.clientCredits ? (
+                  <LegacyPaymentsRedirect />
+                ) : (
+                  <Navigate to={ROUTES.clientDashboard} replace />
+                )
+              }
             />
           </Route>
 

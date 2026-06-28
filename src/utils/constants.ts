@@ -30,6 +30,7 @@ export const ROUTES = {
   ideas: '/ideas',
   notifications: '/notifications',
   map: '/map',
+  /** @deprecated Legacy alias — AppRoutes redirects to clientCredits */
   payments: '/payments',
   helperCredits: '/helper/credits',
   helperLinkCredits: '/helper/linkcredits',

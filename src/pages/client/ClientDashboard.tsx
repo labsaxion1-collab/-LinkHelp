@@ -54,6 +54,7 @@ import { extractErrorMessage } from '@/utils/errorMessage';
 import { formatHireError, logAcceptProposalError } from '@/utils/formatHireError';
 import { useAuth } from '@/context/AuthContext';
 import { ClientCreditsWalletBadge } from '@/components/client/ClientCreditsWalletBadge';
+import { ClientDashboardLinkCreditsPanel } from '@/components/client/ClientDashboardLinkCreditsPanel';
 import { ClientOnboardingCarousel } from '@/components/client/onboarding/ClientOnboardingCarousel';
 import { useClientOnboarding } from '@/hooks/useClientOnboarding';
 import { CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';
@@ -1046,6 +1047,12 @@ export default function ClientDashboard() {
             <section className="relative bg-[#F5F7FB] px-0 pb-24 pt-0 sm:px-0 md:px-0">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_5%,rgba(37,99,255,0.12),transparent_28%),radial-gradient(circle_at_86%_20%,rgba(59,130,246,0.10),transparent_28%)]" />
               <div className="relative space-y-7">
+                {UI_VISIBILITY.clientCredits ? (
+                  <section className="px-4 sm:px-6 md:px-8">
+                    <ClientDashboardLinkCreditsPanel />
+                  </section>
+                ) : null}
+
                 <section className="px-4 sm:px-6 md:px-8">
                   <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_how_it_works.title')}</h2>
                   <div className="relative mt-4 grid gap-3 sm:grid-cols-3">

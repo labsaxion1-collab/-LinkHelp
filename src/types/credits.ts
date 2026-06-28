@@ -6,7 +6,8 @@ export type CreditTransactionType =
   | 'ADMIN_ADJUSTMENT'
   | 'APPLICATION_INTEREST'
   | 'APPLICATION_SELECTED'
-  | 'VIP_EXCLUSIVE_PARTIAL_REFUND';
+  | 'VIP_EXCLUSIVE_PARTIAL_REFUND'
+  | 'VIP_APPLICATION_REJECTED_REFUND';
 
 export type UnlockRefundStatus = 'none' | 'pending' | 'processed' | 'rejected';
 

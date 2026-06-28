@@ -65,4 +65,17 @@ describe('resolveCreditTransactionAmount', () => {
       }),
     ).toBe('credits_tx.type_vip_partial_refund');
   });
+
+  it('maps VIP rejected refund summary key', () => {
+    expect(
+      creditTransactionSummaryKey({
+        ...baseTx,
+        type: 'VIP_APPLICATION_REJECTED_REFUND',
+        amount: 10,
+        balanceBefore: 80,
+        balanceAfter: 90,
+        description: 'Candidatura VIP recusada. 50% dos LinkCredits foram reembolsados.',
+      }),
+    ).toBe('credits_tx.type_vip_rejected_refund');
+  });
 });

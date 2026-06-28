@@ -12,6 +12,7 @@ const CREDIT_TYPES: CreditTransactionType[] = [
   'CREDIT_PURCHASE',
   'FREE_BONUS',
   'VIP_EXCLUSIVE_PARTIAL_REFUND',
+  'VIP_APPLICATION_REJECTED_REFUND',
 ];
 
 export function isCreditTransactionDebitType(type: CreditTransactionType): boolean {
@@ -73,6 +74,7 @@ export function creditTransactionSummaryKey(
 ): string {
   if (tx.type === 'REFUND') return 'credits.transaction_refund_no_reply';
   if (tx.type === 'VIP_EXCLUSIVE_PARTIAL_REFUND') return 'credits_tx.type_vip_partial_refund';
+  if (tx.type === 'VIP_APPLICATION_REJECTED_REFUND') return 'credits_tx.type_vip_rejected_refund';
   if (tx.type === 'APPLICATION_INTEREST' && options?.isExclusive) {
     return 'credits_tx.type_exclusive_application';
   }
@@ -110,6 +112,8 @@ export function creditTransactionExplanationKey(
       return 'credits_tx.explain_refund';
     case 'VIP_EXCLUSIVE_PARTIAL_REFUND':
       return 'credits_tx.explain_vip_partial_refund';
+    case 'VIP_APPLICATION_REJECTED_REFUND':
+      return 'credits_tx.explain_vip_rejected_refund';
     case 'CREDIT_PURCHASE':
       return 'credits_tx.explain_purchase';
     case 'FREE_BONUS':
@@ -133,6 +137,8 @@ export function creditTransactionTypeLabelKey(type: CreditTransactionType): stri
       return 'credits_tx.label_refund';
     case 'VIP_EXCLUSIVE_PARTIAL_REFUND':
       return 'credits_tx.label_vip_partial_refund';
+    case 'VIP_APPLICATION_REJECTED_REFUND':
+      return 'credits_tx.label_vip_rejected_refund';
     case 'CREDIT_PURCHASE':
       return 'credits_tx.label_purchase';
     case 'FREE_BONUS':

@@ -17,7 +17,7 @@ import { computeClientCreditMetrics } from '@/utils/clientCreditMetrics';
 import { coerceLegacyLinkCreditsDisplay, formatLinkCredits } from '@/utils/formatLinkCredits';
 import { BRAND } from '@/utils/brandAssets';
 
-function DashboardCreditStatTile({
+function ProfileCreditStatTile({
   icon: Icon,
   label,
   value,
@@ -50,7 +50,8 @@ function DashboardCreditStatTile({
   );
 }
 
-export function ClientDashboardLinkCreditsPanel() {
+/** Cliente — carteira LinkCredits no Perfil (fundo claro). Comprar → /client/credits */
+export function ClientProfileLinkCreditsPanel() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { profile, authLoading, refreshProfile } = useAuth();
@@ -97,11 +98,10 @@ export function ClientDashboardLinkCreditsPanel() {
   const goToCredits = () => navigate(ROUTES.clientCredits);
 
   return (
-    <section className="space-y-4">
-      {/* 1 — Card principal LinkCredits */}
-      <div className="rounded-[1.65rem] border border-blue-100/90 bg-gradient-to-br from-white via-blue-50/40 to-indigo-50/30 p-5 shadow-[0_16px_40px_rgba(37,99,255,0.10)] ring-1 ring-slate-100/80 sm:p-6">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex min-w-0 flex-1 items-start gap-4">
+    <section className="space-y-4 rounded-[1.9rem] border border-slate-100 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.065)] sm:p-6">
+      <div className="rounded-[1.65rem] border border-blue-100/90 bg-gradient-to-br from-white via-blue-50/50 to-indigo-50/30 p-5 ring-1 ring-blue-50/80">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 flex-1 items-center gap-4">
             <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-[0_8px_22px_rgba(37,99,255,0.14)] ring-1 ring-blue-100/80">
               <img
                 src={BRAND.linkCreditCoin}
@@ -111,18 +111,12 @@ export function ClientDashboardLinkCreditsPanel() {
                 decoding="async"
               />
             </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-600">
-                {t('client_credits.your_credits')}
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.20em] text-blue-600">
+                LinkCredit
               </p>
-              <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
-                {t('client_credits.dashboard_title')}
-              </h2>
-              <p className="mt-3 text-4xl font-black tabular-nums leading-none text-slate-950 sm:text-5xl">
+              <p className="mt-2 text-4xl font-black tabular-nums leading-none text-slate-950 sm:text-[2.75rem]">
                 {balanceDisplay}
-              </p>
-              <p className="mt-3 text-sm font-medium leading-relaxed text-slate-600">
-                {t('client_linkcredits.after_promo')}
               </p>
             </div>
           </div>
@@ -137,30 +131,29 @@ export function ClientDashboardLinkCreditsPanel() {
         </div>
       </div>
 
-      {/* 2–5 — Indicadores */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <DashboardCreditStatTile
+        <ProfileCreditStatTile
           icon={Icons.Wallet}
           label={t('client_credits.current_balance')}
           value={authLoading ? '…' : `${balanceAmount} ${lcUnit}`}
           iconColor="text-blue-600"
           iconBg="bg-blue-100"
         />
-        <DashboardCreditStatTile
+        <ProfileCreditStatTile
           icon={Icons.Coins}
           label={t('client_credits.used_this_month')}
           value={ledgerLoading ? '…' : `${metrics.usedThisMonth} ${lcUnit}`}
           iconColor="text-indigo-600"
           iconBg="bg-indigo-100"
         />
-        <DashboardCreditStatTile
+        <ProfileCreditStatTile
           icon={Icons.FileText}
           label={t('client_credits.requests_published')}
           value={ledgerLoading ? '…' : String(metrics.requestsPublishedThisMonth)}
           iconColor="text-violet-600"
           iconBg="bg-violet-100"
         />
-        <DashboardCreditStatTile
+        <ProfileCreditStatTile
           icon={Icons.RefreshCw}
           label={t('client_credits.credits_returned')}
           value={ledgerLoading ? '…' : `${metrics.creditsReturned} ${lcUnit}`}
@@ -169,10 +162,9 @@ export function ClientDashboardLinkCreditsPanel() {
         />
       </div>
 
-      {/* 6 — Atividade recente */}
-      <div className="rounded-[1.55rem] border border-slate-200/90 bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.05)] ring-1 ring-slate-100/80 sm:p-6">
+      <div className="rounded-[1.35rem] border border-slate-100 bg-slate-50/50 p-4 sm:p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="text-lg font-black tracking-tight text-slate-950">
+          <h3 className="text-base font-black tracking-tight text-slate-950">
             {t('client_credits.recent_activity')}
           </h3>
           <button
@@ -186,7 +178,7 @@ export function ClientDashboardLinkCreditsPanel() {
         </div>
 
         {ledgerLoading ? (
-          <div className="flex items-center justify-center gap-2 py-10 text-sm font-semibold text-slate-500">
+          <div className="flex items-center justify-center gap-2 py-8 text-sm font-semibold text-slate-500">
             <Icons.Loader2 className="h-4 w-4 animate-spin" />
             …
           </div>

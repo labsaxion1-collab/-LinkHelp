@@ -38,6 +38,8 @@ import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesMan
 import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
 import { cropSquareAvatarFromFile } from '@/utils/portfolioMediaProcessing';
 import { extractErrorMessage, formatAuthFlowErrorMessage } from '@/utils/errorMessage';
+import { UI_VISIBILITY } from '@/config/uiVisibility';
+import { ClientProfileLinkCreditsPanel } from '@/components/client/ClientProfileLinkCreditsPanel';
 
 function profileInitials(name?: string | null, email?: string | null) {
   const source = name?.trim() || email?.trim() || 'LH';
@@ -124,6 +126,7 @@ export default function ProfilePage() {
         : 'LinkHelp';
   const bio = profile?.bio?.trim() || '';
   const isHelperProfile = profile?.role === 'helper';
+  const isClientProfile = profile?.role === 'client';
   const clientCredits = profile?.credits ?? 0;
   const creditsLoading = isHelperProfile ? walletLoading : authLoading;
   const creditsAmount = isHelperProfile ? (balance ?? 0) : clientCredits;
@@ -321,6 +324,7 @@ export default function ProfilePage() {
             </FilePickerLabel>
           </div>
 
+          {isHelperProfile ? (
           <div className="relative mt-7 overflow-hidden rounded-[1.65rem] border border-white/12 bg-[linear-gradient(145deg,rgba(255,255,255,0.18),rgba(255,255,255,0.06)_45%,rgba(37,99,255,0.12))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_18px_42px_rgba(0,0,0,0.22)] ring-1 ring-white/10 backdrop-blur-xl">
             <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-amber-300/18 blur-2xl" />
             <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
@@ -335,37 +339,28 @@ export default function ProfilePage() {
               <img src={BRAND.linkCreditCoin} alt="" loading="lazy" decoding="async" className="h-16 w-16 rounded-full object-cover drop-shadow-[0_10px_22px_rgba(251,191,36,0.28)]" />
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
-              {isHelperProfile ? (
-                <>
-                  <Link
-                    to={ROUTES.helperLinkCredits}
-                    className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white px-3 py-2 text-sm font-black text-blue-700 shadow-[0_14px_28px_rgba(255,255,255,0.12),0_10px_24px_rgba(37,99,255,0.18)] ring-1 ring-white/70 transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(255,255,255,0.16),0_14px_30px_rgba(37,99,255,0.24)]"
-                  >
-                    <span className="pointer-events-none absolute inset-y-0 -left-10 w-10 rotate-12 bg-white/70 blur-md transition-transform duration-700 group-hover:translate-x-40" />
-                    {t('credits.buy_package')}
-                    <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </Link>
-                  <Link
-                    to={ROUTES.helperCredits}
-                    className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.06))] px-3 py-2 text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_12px_24px_rgba(0,0,0,0.12)] ring-1 ring-white/12 backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/16 hover:ring-white/22"
-                  >
-                    <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/55 to-transparent" />
-                    {t('profile_page.wallet')}
-                    <Coins className="h-3.5 w-3.5 transition-transform group-hover:rotate-12" />
-                  </Link>
-                </>
-              ) : (
-                <Link
-                  to={ROUTES.clientCredits}
-                  className="group relative col-span-2 flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white px-3 py-2 text-sm font-black text-blue-700 shadow-[0_14px_28px_rgba(255,255,255,0.12),0_10px_24px_rgba(37,99,255,0.18)] ring-1 ring-white/70 transition hover:-translate-y-0.5"
-                >
-                  {t('client_credits.buy_title')}
-                  <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                </Link>
-              )}
+              <Link
+                to={ROUTES.helperLinkCredits}
+                className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white px-3 py-2 text-sm font-black text-blue-700 shadow-[0_14px_28px_rgba(255,255,255,0.12),0_10px_24px_rgba(37,99,255,0.18)] ring-1 ring-white/70 transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(255,255,255,0.16),0_14px_30px_rgba(37,99,255,0.24)]"
+              >
+                <span className="pointer-events-none absolute inset-y-0 -left-10 w-10 rotate-12 bg-white/70 blur-md transition-transform duration-700 group-hover:translate-x-40" />
+                {t('credits.buy_package')}
+                <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </Link>
+              <Link
+                to={ROUTES.helperCredits}
+                className="group relative flex min-h-[54px] items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.06))] px-3 py-2 text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_12px_24px_rgba(0,0,0,0.12)] ring-1 ring-white/12 backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/16 hover:ring-white/22"
+              >
+                <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/55 to-transparent" />
+                {t('profile_page.wallet')}
+                <Coins className="h-3.5 w-3.5 transition-transform group-hover:rotate-12" />
+              </Link>
             </div>
           </div>
+          ) : null}
         </section>
+
+        {isClientProfile && UI_VISIBILITY.clientCredits ? <ClientProfileLinkCreditsPanel /> : null}
 
         <section className="rounded-[1.9rem] border border-slate-100 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.065)]">
           <div className="mb-5 flex items-center justify-between gap-3">

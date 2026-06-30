@@ -255,6 +255,21 @@ export type Database = {
         Args: { p_request_id: string };
         Returns: Json;
       };
+      submit_service_review: {
+        Args: {
+          p_request_id: string;
+          p_target_user_id: string;
+          p_rating: number;
+          p_comment?: string | null;
+          p_criteria_scores?: Json | null;
+          p_reviewer_role?: string | null;
+        };
+        Returns: Json;
+      };
+      get_user_reputation_stats: {
+        Args: { p_user_id: string };
+        Returns: Json;
+      };
       complete_client_onboarding: {
         Args: { p_client_id: string; p_device_fingerprint?: string | null };
         Returns: Json;

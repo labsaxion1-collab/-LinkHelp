@@ -1,3 +1,5 @@
+export type ReviewCriteriaScores = Record<string, number>;
+
 export type ServiceReview = {
   id: string;
   requestId: string;
@@ -5,6 +7,8 @@ export type ServiceReview = {
   targetUserId: string;
   rating: number;
   comment: string | null;
+  criteriaScores: ReviewCriteriaScores | null;
+  reviewerRole: 'client' | 'helper' | null;
   createdAt: number;
 };
 

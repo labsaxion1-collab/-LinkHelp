@@ -4,8 +4,11 @@ import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { UpcomingJob, UpcomingWorkflowStatus } from '@/context/AppDataContext';
 import { useAppData } from '@/context/AppDataContext';
+import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
+import { countCompletedForClient } from '@/utils/linkHelpRanking';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { useServiceReview } from '@/context/ServiceReviewContext';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { ensureConversation } from '@/services/supabase/conversationEnsure';
 import { remoteUpdateUpcomingWorkflow } from '@/services/supabase/appDataRemote';
@@ -13,6 +16,7 @@ import type { Job } from '@/types/job';
 import { ROUTES } from '@/utils/constants';
 import { clsx } from 'clsx';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
+import { canHelperRequestCompletion, isAwaitingClientCompletion } from '@/utils/serviceWorkflow';
 
 interface UpcomingJobDetailModalProps {
   job: UpcomingJob | null;
@@ -32,7 +36,10 @@ function statusBadgeClass(s: UpcomingWorkflowStatus): string {
     case 'in_progress':
     case 'arriving':
     case 'awaiting_client_confirmation':
+    case 'completion_requested':
       return 'border-blue-200 bg-[#EFF6FF] text-[#2563EB]';
+    case 'auto_completed':
+      return 'border-amber-200 bg-amber-50 text-amber-800';
     case 'cancelled':
       return 'border-red-200 bg-[#FEF2F2] text-[#DC2626]';
     default:
@@ -43,9 +50,12 @@ function statusBadgeClass(s: UpcomingWorkflowStatus): string {
 function statusLabel(s: UpcomingWorkflowStatus, t: (key: string) => string): string {
   const map: Record<UpcomingWorkflowStatus, string> = {
     scheduled: 'upcoming_jobs.status_scheduled',
+    accepted: 'upcoming_jobs.status_scheduled',
     in_progress: 'upcoming_jobs.status_in_progress',
     arriving: 'upcoming_jobs.status_arriving',
     awaiting_client_confirmation: 'upcoming_jobs.status_awaiting_client_confirmation',
+    completion_requested: 'upcoming_jobs.status_completion_requested',
+    auto_completed: 'upcoming_jobs.status_auto_completed',
     completed: 'upcoming_jobs.status_completed',
     cancelled: 'upcoming_jobs.status_cancelled',
   };
@@ -109,17 +119,24 @@ export function UpcomingJobDetailModal({
   onUpdateWorkflow,
 }: UpcomingJobDetailModalProps) {
   const navigate = useNavigate();
-  const { jobs } = useAppData();
+  const { jobs, updateUpcomingWorkflow } = useAppData();
   const { session } = useAuth();
   const { showToast } = useToast();
+  const { openReviewByRequestId } = useServiceReview();
   const [chatLoading, setChatLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [completeLoading, setCompleteLoading] = useState(false);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
   const requestJob = useMemo(
     () => (job ? jobs.find((j) => j.id === job.jobId) : undefined),
     [job, jobs],
   );
+
+  const clientCompletedCount = requestJob?.clientId
+    ? countCompletedForClient(requestJob.clientId, jobs)
+    : 0;
+  const clientAverageRating = requestJob?.clientRating ?? 0;
 
   if (!open || !job) return null;
 
@@ -131,10 +148,14 @@ export function UpcomingJobDetailModal({
   const categoryLabel = translateCategory(job.category, t);
   const categoryTheme = getCategoryFeedTheme(job.category);
 
+  const canComplete = canHelperRequestCompletion(job.workflowStatus);
+  const awaitingClient = isAwaitingClientCompletion(job.workflowStatus);
+
   const canCancel =
     job.workflowStatus !== 'completed' &&
     job.workflowStatus !== 'cancelled' &&
-    job.workflowStatus !== 'awaiting_client_confirmation';
+    job.workflowStatus !== 'auto_completed' &&
+    !awaitingClient;
 
   const handleOpenChat = async () => {
     if (!requestJob?.clientId || chatLoading) return;
@@ -159,6 +180,21 @@ export function UpcomingJobDetailModal({
       showToast(t('upcoming_jobs.open_chat_error'), 'error');
     } finally {
       setChatLoading(false);
+    }
+  };
+
+  const handleCompleteWork = async () => {
+    if (completeLoading || !requestJob?.clientId) return;
+    setCompleteLoading(true);
+    try {
+      updateUpcomingWorkflow(job.id, 'completion_requested');
+      showToast(t('upcoming_jobs.complete_work_success'), 'success');
+      window.setTimeout(() => openReviewByRequestId(job.jobId), 400);
+    } catch (e) {
+      console.error('[LinkHelp] complete work', e);
+      showToast(t('upcoming_jobs.complete_work_error'), 'error');
+    } finally {
+      setCompleteLoading(false);
     }
   };
 
@@ -234,6 +270,19 @@ export function UpcomingJobDetailModal({
             <p className="mt-1 text-[15px] font-medium text-[#64748B]">
               {t('upcoming_jobs.client_label', { name: job.clientName })}
             </p>
+            {clientCompletedCount > 0 ? (
+              <div className="mt-2">
+                <LinkHelpRankBadgeFromStats
+                  role="client"
+                  completedCount={clientCompletedCount}
+                  averageRating={clientAverageRating}
+                  requireCompleted
+                  size="sm"
+                  showLabel
+                  t={t}
+                />
+              </div>
+            ) : null}
             <span
               className={clsx(
                 'mt-2.5 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold',
@@ -313,10 +362,33 @@ export function UpcomingJobDetailModal({
 
         {/* Footer */}
         {job.workflowStatus !== 'cancelled' ? (
-          <div className={clsx('mt-6 gap-3', canCancel ? 'grid grid-cols-2' : 'grid grid-cols-1')}>
+          <div className="mt-6 space-y-3">
+            {canComplete ? (
+              <button
+                type="button"
+                disabled={completeLoading || chatLoading || cancelLoading}
+                onClick={() => void handleCompleteWork()}
+                className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-3 text-sm font-bold text-white transition-all duration-200 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {completeLoading ? (
+                  <Icons.Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Icons.CheckCircle2 className="h-4 w-4" />
+                )}
+                {t('upcoming_jobs.complete_work')}
+              </button>
+            ) : null}
+
+            {awaitingClient ? (
+              <p className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-center text-xs font-semibold text-blue-800">
+                {t('upcoming_jobs.awaiting_client_note')}
+              </p>
+            ) : null}
+
+            <div className={clsx('gap-3', canCancel ? 'grid grid-cols-2' : 'grid grid-cols-1')}>
             <button
               type="button"
-              disabled={chatLoading || cancelLoading}
+              disabled={chatLoading || cancelLoading || completeLoading}
               onClick={() => void handleOpenChat()}
               className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-[#BFDBFE] bg-white px-3 text-sm font-bold text-[#2563EB] transition-all duration-200 hover:border-[#93C5FD] hover:bg-[#EFF6FF] disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -331,14 +403,15 @@ export function UpcomingJobDetailModal({
             {canCancel ? (
               <button
                 type="button"
-                disabled={chatLoading || cancelLoading}
+                disabled={chatLoading || cancelLoading || completeLoading}
                 onClick={() => setCancelConfirmOpen(true)}
-                className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-red-200 bg-[#FEF2F2] px-3 text-sm font-bold text-[#DC2626] transition-all duration-200 hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-600 transition-all duration-200 hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Icons.XCircle className="h-4 w-4" />
                 {t('upcoming_jobs.cancel_job')}
               </button>
             ) : null}
+            </div>
           </div>
         ) : null}
       </div>

@@ -19,9 +19,11 @@ import { clsx } from 'clsx';
 
 const ACTIVE_WORKFLOW: UpcomingWorkflowStatus[] = [
   'scheduled',
+  'accepted',
   'in_progress',
   'arriving',
   'awaiting_client_confirmation',
+  'completion_requested',
 ];
 
 type TasksTab = 'applications' | 'accepted';

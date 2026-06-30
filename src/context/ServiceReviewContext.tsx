@@ -3,7 +3,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppData } from '@/context/AppDataContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
-import { ServiceReviewModal } from '@/components/reviews/ServiceReviewModal';
+import { MultiCriteriaReviewModal } from '@/components/reviews/MultiCriteriaReviewModal';
+import type { ReviewCriterionKey } from '@/config/reviewCriteria';
 import type { PendingServiceReview } from '@/types/review';
 
 const DISMISS_PREFIX = 'lh_review_skip_';
@@ -73,13 +74,23 @@ export function ServiceReviewProvider({ children }: { children: React.ReactNode 
   }, [active]);
 
   const handleSubmit = useCallback(
-    async ({ rating, comment }: { rating: number; comment: string }) => {
+    async ({
+      rating,
+      comment,
+      criteriaScores,
+    }: {
+      rating: number;
+      comment: string;
+      criteriaScores: Record<ReviewCriterionKey, number>;
+    }) => {
       if (!active || !profile) return;
       await submitServiceReview({
         requestId: active.requestId,
         targetUserId: active.targetUserId,
         rating,
         comment,
+        criteriaScores,
+        reviewerRole: profile.role === 'helper' ? 'helper' : 'client',
       });
       try {
         sessionStorage.removeItem(`${DISMISS_PREFIX}${active.requestId}`);
@@ -87,7 +98,9 @@ export function ServiceReviewProvider({ children }: { children: React.ReactNode 
         /* ignore */
       }
       await refreshProfile();
-      showToast(t('service_review.thanks_with_credits'), 'success');
+      const toastKey =
+        profile.role === 'client' ? 'service_review.thanks_with_credits' : 'service_review.thanks';
+      showToast(t(toastKey), 'success');
       setActive(null);
     },
     [active, profile, submitServiceReview, refreshProfile, showToast, t],
@@ -98,14 +111,16 @@ export function ServiceReviewProvider({ children }: { children: React.ReactNode 
     [pendingServiceReviews, openReview, openReviewByRequestId],
   );
 
+  const reviewerRole = profile?.role === 'helper' ? 'helper' : 'client';
+
   return (
     <ServiceReviewContext.Provider value={value}>
       {children}
-      {profile?.role === 'client' ? (
-        <ServiceReviewModal
+      {profile && (profile.role === 'client' || profile.role === 'helper') ? (
+        <MultiCriteriaReviewModal
           open={Boolean(active)}
           pending={active}
-          reviewerRole="client"
+          reviewerRole={reviewerRole}
           onClose={handleClose}
           onSubmit={handleSubmit}
           t={t}

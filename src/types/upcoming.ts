@@ -2,10 +2,13 @@ import type { JobUrgency } from './job';
 
 export type UpcomingWorkflowStatus =
   | 'scheduled'
+  | 'accepted'
   | 'in_progress'
   | 'arriving'
   | 'awaiting_client_confirmation'
+  | 'completion_requested'
   | 'completed'
+  | 'auto_completed'
   | 'cancelled';
 
 export interface UpcomingJob {
@@ -22,5 +25,7 @@ export interface UpcomingJob {
   urgency: JobUrgency;
   scheduledAt: number;
   workflowStatus: UpcomingWorkflowStatus;
+  completionRequestedAt: number | null;
+  reviewWindowEndsAt: number | null;
   createdAt: number;
 }

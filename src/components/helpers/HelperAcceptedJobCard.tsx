@@ -16,18 +16,24 @@ type Props = {
 
 const WORKFLOW_BADGE: Record<UpcomingWorkflowStatus, string> = {
   scheduled:                    'bg-sky-50 text-sky-700 border-sky-200',
+  accepted:                     'bg-emerald-50 text-emerald-700 border-emerald-200',
   in_progress:                  'bg-amber-50 text-amber-800 border-amber-200',
   arriving:                     'bg-violet-50 text-violet-700 border-violet-200',
   awaiting_client_confirmation: 'bg-blue-50 text-blue-700 border-blue-200',
+  completion_requested: 'bg-blue-50 text-blue-700 border-blue-200',
+  auto_completed: 'bg-amber-50 text-amber-800 border-amber-200',
   completed:                    'bg-emerald-50 text-emerald-700 border-emerald-200',
   cancelled:                    'bg-slate-100 text-slate-500 border-slate-200',
 };
 
 const WORKFLOW_LABEL_KEY: Record<UpcomingWorkflowStatus, string> = {
   scheduled:                    'upcoming_jobs.status_scheduled',
+  accepted:                     'upcoming_jobs.status_scheduled',
   in_progress:                  'upcoming_jobs.status_in_progress',
   arriving:                     'upcoming_jobs.status_arriving',
   awaiting_client_confirmation: 'upcoming_jobs.status_awaiting_client_confirmation',
+  completion_requested: 'upcoming_jobs.status_completion_requested',
+  auto_completed: 'upcoming_jobs.status_auto_completed',
   completed:                    'upcoming_jobs.status_completed',
   cancelled:                    'upcoming_jobs.status_cancelled',
 };

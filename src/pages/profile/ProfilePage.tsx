@@ -20,6 +20,12 @@ import {
 import { FilePickerLabel } from '@/components/common/HiddenFileInput';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
+import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
+import {
+  countCompletedForClient,
+  countCompletedForHelper,
+} from '@/utils/linkHelpRanking';
+import { useAppData } from '@/context/AppDataContext';
 import { useAuth } from '@/context/AuthContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -100,6 +106,7 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, session, updateProfile, refreshProfile, isConfigured, authLoading } = useAuth();
+  const { jobs, applications } = useAppData();
   const { isHelperMode } = useAppMode();
   const { showToast } = useToast();
   const { balance, loading: walletLoading, refresh: refreshWallet } = useWalletBalance();
@@ -126,6 +133,13 @@ export default function ProfilePage() {
         : 'LinkHelp';
   const bio = profile?.bio?.trim() || '';
   const isHelperProfile = profile?.role === 'helper';
+  const profileCompletedCount = profile?.id
+    ? isHelperProfile
+      ? countCompletedForHelper(profile.id, applications)
+      : countCompletedForClient(profile.id, jobs)
+    : 0;
+  const profileAverageRating = profile?.rating ?? 0;
+  const showProfileRank = profileCompletedCount > 0;
   const isClientProfile = profile?.role === 'client';
   const clientCredits = profile?.credits ?? 0;
   const creditsLoading = isHelperProfile ? walletLoading : authLoading;
@@ -300,6 +314,18 @@ export default function ProfilePage() {
                     <Star className="h-3.5 w-3.5 fill-amber-300 text-amber-300" />
                     {profile.rating.toFixed(1)}
                   </span>
+                ) : null}
+                {showProfileRank ? (
+                  <LinkHelpRankBadgeFromStats
+                    role={isHelperProfile ? 'helper' : 'client'}
+                    completedCount={profileCompletedCount}
+                    averageRating={profileAverageRating}
+                    requireCompleted
+                    size="sm"
+                    showLabel
+                    t={t}
+                    className="[&_span]:text-white/90"
+                  />
                 ) : null}
               </div>
             </div>

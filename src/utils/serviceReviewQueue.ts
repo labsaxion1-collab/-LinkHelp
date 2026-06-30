@@ -1,6 +1,8 @@
 import type { Application } from '@/types/application';
 import type { Job } from '@/types/job';
 import type { PendingServiceReview, ServiceReview } from '@/types/review';
+import type { UpcomingJob } from '@/types/upcoming';
+import { isAwaitingClientCompletion } from '@/utils/serviceWorkflow';
 
 function hiredApplication(apps: Application[], jobId: string): Application | undefined {
   return apps.find(
@@ -8,31 +10,59 @@ function hiredApplication(apps: Application[], jobId: string): Application | und
   );
 }
 
-/** Completed jobs where the client still needs to review the hired helper. */
+/** Completed jobs where the user still needs to submit a review. */
 export function buildPendingServiceReviews(
   userId: string,
   role: 'client' | 'helper',
   jobs: Job[],
   applications: Application[],
   reviews: ServiceReview[],
+  upcomingJobs: UpcomingJob[] = [],
 ): PendingServiceReview[] {
-  if (role !== 'client') return [];
-
   const reviewedRequestIds = new Set(
     reviews.filter((r) => r.reviewerId === userId).map((r) => r.requestId),
   );
   const pending: PendingServiceReview[] = [];
 
+  if (role === 'client') {
+    for (const job of jobs) {
+      if (job.clientId !== userId || job.status !== 'completed') continue;
+      if (reviewedRequestIds.has(job.id)) continue;
+      const app = hiredApplication(applications, job.id);
+      if (!app) continue;
+      pending.push({
+        requestId: job.id,
+        targetUserId: app.helperId,
+        targetName: app.helperName,
+        targetAvatar: app.helperAvatar,
+        jobTitle: job.title,
+        jobCategory: job.category,
+      });
+    }
+    return pending;
+  }
+
   for (const job of jobs) {
-    if (job.clientId !== userId || job.status !== 'completed') continue;
-    if (reviewedRequestIds.has(job.id)) continue;
-    const app = hiredApplication(applications, job.id);
+    const app = applications.find(
+      (a) =>
+        a.helperId === userId &&
+        a.jobId === job.id &&
+        (a.status === 'accepted' || a.status === 'completed'),
+    );
     if (!app) continue;
+    if (reviewedRequestIds.has(job.id)) continue;
+
+    const awaitingCompletion = upcomingJobs.some(
+      (u) => u.jobId === job.id && u.helperId === userId && isAwaitingClientCompletion(u.workflowStatus),
+    );
+    const canReview = job.status === 'completed' || awaitingCompletion;
+    if (!canReview) continue;
+
     pending.push({
       requestId: job.id,
-      targetUserId: app.helperId,
-      targetName: app.helperName,
-      targetAvatar: app.helperAvatar,
+      targetUserId: job.clientId,
+      targetName: job.clientName,
+      targetAvatar: job.clientAvatar,
       jobTitle: job.title,
       jobCategory: job.category,
     });

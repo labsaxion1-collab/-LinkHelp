@@ -510,7 +510,8 @@ export default function HelperDashboard() {
       job.scheduledAt < Date.now() &&
       job.workflowStatus !== 'completed' &&
       job.workflowStatus !== 'cancelled' &&
-      job.workflowStatus !== 'awaiting_client_confirmation',
+      job.workflowStatus !== 'awaiting_client_confirmation' &&
+      job.workflowStatus !== 'completion_requested',
   );
 
   const dismissJobWithAnimation = React.useCallback(

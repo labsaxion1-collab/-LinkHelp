@@ -150,6 +150,8 @@ export type ReviewRow = {
   target_user_id: string;
   rating: number;
   comment: string | null;
+  criteria_scores: Record<string, number> | null;
+  reviewer_role: string | null;
   created_at: string;
 };
 
@@ -175,6 +177,8 @@ export type UpcomingJobRow = {
   urgency: string;
   scheduled_at: string;
   workflow_status: string;
+  completion_requested_at: string | null;
+  review_window_ends_at: string | null;
   created_at: string;
 };
 

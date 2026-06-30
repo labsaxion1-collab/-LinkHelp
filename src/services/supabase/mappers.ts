@@ -98,6 +98,8 @@ export function upcomingRowToUpcoming(row: UpcomingJobRow): UpcomingJob {
     urgency: row.urgency === 'high' ? 'high' : 'normal',
     scheduledAt: tsFromIso(row.scheduled_at),
     workflowStatus: row.workflow_status as UpcomingWorkflowStatus,
+    completionRequestedAt: row.completion_requested_at ? tsFromIso(row.completion_requested_at) : null,
+    reviewWindowEndsAt: row.review_window_ends_at ? tsFromIso(row.review_window_ends_at) : null,
     createdAt: tsFromIso(row.created_at),
   };
 }

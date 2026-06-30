@@ -17,6 +17,7 @@ import { ROUTES } from '@/utils/constants';
 import { BRAND } from '@/utils/brandAssets';
 import { avatarUrlForName } from '@/utils/avatarUrl';
 import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
+import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
 import { CreateRequestModal } from '@/components/client/create-request/CreateRequestModal';
 import { TrainingCertBadge } from '@/components/training/TrainingCertBadge';
 import type { TrainingCertLevel } from '@/utils/helperTrainingProgress';
@@ -54,6 +55,8 @@ import { extractErrorMessage } from '@/utils/errorMessage';
 import { formatHireError, formatRejectApplicationError, logAcceptProposalError } from '@/utils/formatHireError';
 import { useAuth } from '@/context/AuthContext';
 import { ClientCreditsWalletBadge } from '@/components/client/ClientCreditsWalletBadge';
+import { CompletionReminderCard } from '@/components/reviews/CompletionReminderCard';
+import { isAwaitingClientCompletion, shouldShowCompletionReminder } from '@/utils/serviceWorkflow';
 import { ClientOnboardingCarousel } from '@/components/client/onboarding/ClientOnboardingCarousel';
 import { useClientOnboarding } from '@/hooks/useClientOnboarding';
 import { CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';
@@ -170,10 +173,19 @@ export default function ClientDashboard() {
           j.clientId === me.id &&
           j.status === 'in_progress' &&
           upcomingJobs.some(
-            (u) => u.jobId === j.id && u.workflowStatus === 'awaiting_client_confirmation',
+            (u) => u.jobId === j.id && isAwaitingClientCompletion(u.workflowStatus),
           ),
       ),
     [jobs, upcomingJobs, me.id],
+  );
+
+  const completionReminderJobs = useMemo(
+    () =>
+      jobsAwaitingServiceConfirm.filter((j) => {
+        const uj = upcomingJobs.find((u) => u.jobId === j.id && isAwaitingClientCompletion(u.workflowStatus));
+        return uj && shouldShowCompletionReminder(uj.workflowStatus, uj.completionRequestedAt);
+      }),
+    [jobsAwaitingServiceConfirm, upcomingJobs],
   );
 
   useEffect(() => {
@@ -541,15 +553,17 @@ export default function ClientDashboard() {
 
   return (
     <div className="relative w-full min-w-0">
-      <div className="pointer-events-none absolute right-3 top-3 z-[2] sm:right-5 sm:top-4">
-        <div className="pointer-events-auto">
-          <ClientCreditsWalletBadge
-            balance={authLoading ? null : clientCreditsBalance}
-            loading={authLoading}
-            t={t}
-          />
+      {activeSidebarTab === 'dashboard' ? (
+        <div className="pointer-events-none absolute right-3 top-3 z-[2] sm:right-5 sm:top-4">
+          <div className="pointer-events-auto">
+            <ClientCreditsWalletBadge
+              balance={authLoading ? null : clientCreditsBalance}
+              loading={authLoading}
+              t={t}
+            />
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {/* Hero — fora de qualquer container com padding para ser verdadeiramente full-width */}
       {activeSidebarTab === 'dashboard' && (
@@ -702,6 +716,14 @@ export default function ClientDashboard() {
                         <p className="flex items-center gap-1.5 text-sm font-black text-slate-950">
                           <span className="truncate">{app.helperName}</span>
                           <HelperPlanBadge tier={helperTierFromApplication(app)} size="sm" />
+                          <LinkHelpRankBadgeFromStats
+                            completedCount={app.helperJobs}
+                            averageRating={app.helperRating}
+                            role="helper"
+                            size="sm"
+                            showLabel={false}
+                            t={t}
+                          />
                         </p>
                         <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
                           <Icons.Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
@@ -1255,27 +1277,15 @@ export default function ClientDashboard() {
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">{t('sidebar.active_services')}</h2>
                 <p className="text-gray-500 text-sm">{t('client_dashboard.active_services_intro')}</p>
               </div>
-              <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50/80 p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-                  <div>
-                    <p className="text-sm font-black text-blue-950 flex items-center gap-2">
-                      <Icons.Sparkles className="w-4 h-4 text-blue-600" />
-                      {t('client_dashboard.qualified_requests_title')}
-                    </p>
-                    <p className="mt-1 text-xs font-medium leading-relaxed text-blue-900">
-                      {t('client_dashboard.qualified_requests_body')}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => openCreateModal()}
-                    className="inline-flex min-h-[40px] shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white hover:bg-blue-700"
-                  >
-                    <Icons.Plus className="h-4 w-4" />
-                    {t('client_dashboard.create_order_now')}
-                  </button>
-                </div>
-              </div>
+
+              {completionReminderJobs.length > 0 ? (
+                <CompletionReminderCard
+                  title={t('completion_reminder.title')}
+                  body={t('completion_reminder.body')}
+                  actionLabel={t('completion_reminder.action')}
+                  onAction={() => setServiceConfirmJob(completionReminderJobs[0])}
+                />
+              ) : null}
 
               {!CLIENT_LINKCREDITS_ENABLED ? (
                 <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-xs leading-relaxed text-slate-600">
@@ -1492,7 +1502,7 @@ export default function ClientDashboard() {
                               className="inline-flex min-h-[36px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-900 hover:bg-emerald-100"
                             >
                               <CheckCircle2 className="h-3.5 w-3.5" />
-                              {t('service_confirm.confirm')}
+                              {t('service_confirm.confirm_completion')}
                             </button>
                           ) : null}
                           <JobTaskActionsBar
@@ -1506,11 +1516,30 @@ export default function ClientDashboard() {
                     );
                   })
                 ) : (
-                  <div className="text-center py-10 bg-gray-50 rounded-2xl border border-gray-200 border-dashed border-2 md:col-span-2 2xl:col-span-3">
-                    <p className="text-gray-500 font-medium">{t('client_dashboard.empty_no_published_requests')}</p>
-                    <button onClick={() => openCreateModal()} className="mt-4 px-5 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">
-                      {t('client_dashboard.create_order_now')}
-                    </button>
+                  <div className="md:col-span-2 2xl:col-span-3 rounded-[28px] border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50/40 px-6 py-14 text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+                      <Icons.Briefcase className="h-8 w-8" />
+                    </div>
+                    <h3 className="text-lg font-black text-slate-900">
+                      {jobsListTab === 'active'
+                        ? t('client_jobs.empty_open_title')
+                        : t('client_jobs.empty_completed_title')}
+                    </h3>
+                    <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-relaxed text-slate-500">
+                      {jobsListTab === 'active'
+                        ? t('client_jobs.empty_open_body')
+                        : t('client_jobs.empty_completed_body')}
+                    </p>
+                    {jobsListTab === 'active' ? (
+                      <button
+                        type="button"
+                        onClick={() => openCreateModal()}
+                        className="mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700"
+                      >
+                        <Plus className="h-4 w-4" />
+                        {t('client_dashboard.hero_cta')}
+                      </button>
+                    ) : null}
                   </div>
                 )}
               </div>

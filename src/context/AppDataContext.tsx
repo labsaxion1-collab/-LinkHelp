@@ -31,6 +31,7 @@ import { notificationRowToApp } from '@/services/supabase/mappers';
 import { submitHelperApplication } from '@/services/supabase/helperApplicationService';
 import { fetchRemoteReviews, remoteSubmitReview } from '@/services/supabase/reviewsRemote';
 import { buildPendingServiceReviews } from '@/utils/serviceReviewQueue';
+import { isAwaitingClientCompletion } from '@/utils/serviceWorkflow';
 import type { PendingServiceReview, ServiceReview } from '@/types/review';
 import { dispatchPushEvent } from '@/services/push/pushEventDispatcher';
 import { useCredits } from '@/context/CreditContext';
@@ -91,6 +92,8 @@ interface AppDataContextData {
     targetUserId: string;
     rating: number;
     comment?: string | null;
+    criteriaScores?: Record<string, number> | null;
+    reviewerRole?: 'client' | 'helper';
   }) => Promise<void>;
 }
 
@@ -527,6 +530,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           urgency: jobSnapshot.urgency,
           scheduledAt,
           workflowStatus: 'scheduled',
+          completionRequestedAt: null,
+          reviewWindowEndsAt: null,
           createdAt: Date.now(),
         };
         return [row, ...prev];
@@ -647,6 +652,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         urgency: jobSnapshot.urgency,
         scheduledAt,
         workflowStatus: 'scheduled',
+        completionRequestedAt: null,
+        reviewWindowEndsAt: null,
         createdAt: Date.now(),
       };
       return [row, ...prev];
@@ -701,7 +708,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     return upcomingJobs
       .filter((u) => {
         if (u.helperId !== helperId) return false;
-        if (u.workflowStatus === 'cancelled' || u.workflowStatus === 'completed') return false;
+        if (u.workflowStatus === 'cancelled' || u.workflowStatus === 'completed' || u.workflowStatus === 'auto_completed') return false;
         const jobStatus = jobStatusById.get(u.jobId);
         return !jobStatus || !isJobCancelled({ status: jobStatus });
       })
@@ -713,7 +720,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const jobSnapshot = upcoming ? jobsRef.current.find((j) => j.id === upcoming.jobId) : undefined;
 
     if (useRemote) {
-      if (workflowStatus === 'awaiting_client_confirmation') {
+      if (workflowStatus === 'awaiting_client_confirmation' || workflowStatus === 'completion_requested') {
         void remoteMarkServiceAwaitingConfirmation(upcomingId)
           .then(() => void refreshRemote())
           .catch((e) => console.error('[LinkHelp] mark service awaiting confirmation', e));
@@ -723,9 +730,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setUpcomingJobs((prev) => prev.map((u) => (u.id === upcomingId ? { ...u, workflowStatus } : u)));
+    setUpcomingJobs((prev) => prev.map((u) => (u.id === upcomingId ? { ...u, workflowStatus, completionRequestedAt: workflowStatus === 'completion_requested' || workflowStatus === 'awaiting_client_confirmation' ? Date.now() : u.completionRequestedAt } : u)));
 
-    if (workflowStatus === 'awaiting_client_confirmation' && upcoming && jobSnapshot?.clientId) {
+    if ((workflowStatus === 'awaiting_client_confirmation' || workflowStatus === 'completion_requested') && upcoming && jobSnapshot?.clientId) {
       addNotification({
         userId: jobSnapshot.clientId,
         type: 'application',
@@ -746,7 +753,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     setJobs((prev) => prev.map((job) => (job.id === requestId ? { ...job, status: 'completed' as JobStatus } : job)));
     setUpcomingJobs((prev) =>
       prev.map((u) =>
-        u.jobId === requestId && u.workflowStatus === 'awaiting_client_confirmation'
+        u.jobId === requestId && isAwaitingClientCompletion(u.workflowStatus)
           ? { ...u, workflowStatus: 'completed' as UpcomingWorkflowStatus }
           : u,
       ),
@@ -763,9 +770,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const pendingServiceReviews = useMemo(
     () =>
       userId
-        ? buildPendingServiceReviews(userId, userRole, jobs, applications, reviews)
+        ? buildPendingServiceReviews(userId, userRole as 'client' | 'helper', jobs, applications, reviews, upcomingJobs)
         : [],
-    [userId, userRole, jobs, applications, reviews],
+    [userId, userRole, jobs, applications, reviews, upcomingJobs],
   );
 
   const submitServiceReview = async (input: {
@@ -773,6 +780,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     targetUserId: string;
     rating: number;
     comment?: string | null;
+    criteriaScores?: Record<string, number> | null;
+    reviewerRole?: 'client' | 'helper';
   }) => {
     if (!userId) throw new Error('NOT_AUTHENTICATED');
     if (useRemote) {
@@ -782,6 +791,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         targetUserId: input.targetUserId,
         rating: input.rating,
         comment: input.comment,
+        criteriaScores: input.criteriaScores,
+        reviewerRole: input.reviewerRole,
       });
       setReviews((prev) => [row, ...prev.filter((r) => r.id !== row.id)]);
       await refreshRemote();
@@ -794,6 +805,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       targetUserId: input.targetUserId,
       rating: input.rating,
       comment: input.comment?.trim() || null,
+      criteriaScores: input.criteriaScores ?? null,
+      reviewerRole: input.reviewerRole ?? null,
       createdAt: Date.now(),
     };
     setReviews((prev) => [local, ...prev]);

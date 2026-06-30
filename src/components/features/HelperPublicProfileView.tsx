@@ -4,6 +4,8 @@ import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { translateCategory } from '@/utils/translateCategory';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 
+import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
+
 export type HelperPublicProfileData = {
   id: string;
   name: string;
@@ -31,10 +33,29 @@ export function HelperPublicProfileView({ helper }: Props) {
         <div className="min-w-0 flex-1">
           <h2 className="text-xl font-black text-slate-950">{helper.name}</h2>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm font-semibold text-amber-600">
-            <Star className="h-4 w-4 fill-amber-400" />
-            {helper.rating.toFixed(1)}
-            <span className="text-slate-400">·</span>
-            <span className="text-slate-600">{t('helper_public.jobs_done', { count: helper.jobsCompleted })}</span>
+            {helper.rating > 0 ? (
+              <>
+                <Star className="h-4 w-4 fill-amber-400" />
+                {helper.rating.toFixed(1)}
+              </>
+            ) : null}
+            {helper.jobsCompleted > 0 ? (
+              <>
+                {helper.rating > 0 ? <span className="text-slate-400">·</span> : null}
+                <span className="text-slate-600">{t('helper_public.jobs_done', { count: helper.jobsCompleted })}</span>
+              </>
+            ) : null}
+          </div>
+          <div className="mt-2">
+            <LinkHelpRankBadgeFromStats
+              role="helper"
+              completedCount={helper.jobsCompleted}
+              averageRating={helper.rating}
+              requireCompleted
+              size="sm"
+              showLabel
+              t={t}
+            />
           </div>
           {helper.city ? (
             <p className="mt-1 flex items-center gap-1 text-xs font-medium text-slate-500">

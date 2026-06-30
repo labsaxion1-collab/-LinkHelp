@@ -33,6 +33,8 @@ import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpe
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
 import { HelperCategoryDropdown } from '@/components/helper/HelperCategoryDropdown';
 import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
+import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
+import { countCompletedForClient } from '@/utils/linkHelpRanking';
 import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
 import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
 import { getApplicationChargeLc } from '@/config/helperCreditCharge';
@@ -1417,6 +1419,11 @@ export default function HelperDashboard() {
         clientReviewCount={
           detailOpportunity ? reviewCountByUserId.get(detailOpportunity.clientId) ?? 0 : 0
         }
+        clientCompletedOrders={
+          detailOpportunity
+            ? jobs.filter((j) => j.clientId === detailOpportunity.clientId && j.status === 'completed').length
+            : 0
+        }
         t={t}
         translateCategory={translateCategory}
         formatJobSchedule={formatJobScheduleDisplay}
@@ -1452,7 +1459,18 @@ export default function HelperDashboard() {
                   ) : (
                     <p className="mt-0.5 text-xs font-semibold text-slate-500">{t('service_review.no_rating_yet')}</p>
                   )}
-                  <p className="truncate text-sm font-bold text-slate-500">
+                  <div className="mt-2">
+                    <LinkHelpRankBadgeFromStats
+                      role="client"
+                      completedCount={countCompletedForClient(clientProfileJob.clientId, jobs)}
+                      averageRating={clientProfileJob.clientRating ?? 0}
+                      requireCompleted
+                      size="sm"
+                      showLabel
+                      t={t}
+                    />
+                  </div>
+                  <p className="mt-1 truncate text-sm font-bold text-slate-500">
                     {[clientProfileJob.city, clientProfileJob.region].filter(Boolean).join(', ') ||
                       clientProfileJob.location ||
                       'Quebec'}

@@ -86,9 +86,6 @@ export function MultiCriteriaReviewModal({ open, pending, reviewerRole, onClose,
           </div>
         </div>
 
-        {reviewerRole === 'client' ? (
-          <p className="text-center text-sm font-semibold text-amber-800">{t('service_review.credits_incentive')}</p>
-        ) : null}
 
         <div className="space-y-4">
           {criteria.map((c) => (

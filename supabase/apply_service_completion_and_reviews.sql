@@ -270,6 +270,15 @@ begin
     raise exception 'NOT_FOUND';
   end if;
 
+  select role into v_role from public.profiles where id = caller;
+
+  if caller <> req.client_id and caller not in (
+    select helper_id from public.applications
+    where request_id = p_request_id and status in ('accepted', 'completed')
+  ) then
+    raise exception 'NOT_ALLOWED';
+  end if;
+
   if req.status <> 'completed' then
     -- Helper may review client once completion is requested
     if v_role = 'helper' and req.status = 'in_progress' then
@@ -285,15 +294,6 @@ begin
       raise exception 'REQUEST_NOT_COMPLETED';
     end if;
   end if;
-
-  if caller <> req.client_id and caller not in (
-    select helper_id from public.applications
-    where request_id = p_request_id and status in ('accepted', 'completed')
-  ) then
-    raise exception 'NOT_ALLOWED';
-  end if;
-
-  select role into v_role from public.profiles where id = caller;
   if p_reviewer_role is not null and p_reviewer_role <> v_role then
     raise exception 'ROLE_MISMATCH';
   end if;

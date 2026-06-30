@@ -63,9 +63,6 @@ export function ServiceReviewModal({ open, pending, reviewerRole, onClose, onSub
           </div>
         </div>
 
-        {reviewerRole === 'client' ? (
-          <p className="text-center text-sm font-semibold text-amber-800">{t('service_review.credits_incentive')}</p>
-        ) : null}
 
         <p className="text-center text-sm font-medium text-slate-600">{t('service_review.prompt')}</p>
 

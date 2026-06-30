@@ -4,6 +4,7 @@ import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { formatJobScheduleDisplay, formatJobOpenedAt } from '@/utils/jobDisplay';
 import { translateJobTitle } from '@/utils/translateCategory';
 import { StarRatingDisplay } from '@/components/reviews/StarRatingInput';
+import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
 import { HelperCreditCostBlock } from '@/components/helpers/HelperCreditCostBlock';
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
 import type { AppLanguage } from '@/services/translationService';
@@ -23,6 +24,7 @@ type Props = {
   hasApplied?: boolean;
   isApplying?: boolean;
   clientReviewCount?: number;
+  clientCompletedOrders?: number;
   t: (key: string, vars?: Record<string, string | number>) => string;
   translateCategory: (raw: string, tf: (k: string) => string) => string;
   formatJobSchedule: (job: Job, tf: (k: string, vars?: Record<string, string | number>) => string) => string;
@@ -41,6 +43,7 @@ export function HelperOpportunityDetailModal({
   hasApplied = false,
   isApplying = false,
   clientReviewCount = 0,
+  clientCompletedOrders = 0,
   t,
   translateCategory,
   formatJobSchedule,
@@ -131,6 +134,17 @@ export function HelperOpportunityDetailModal({
               ) : (
                 <p className="mt-0.5 text-xs font-medium text-slate-500">{t('service_review.no_rating_yet')}</p>
               )}
+              <div className="mt-2">
+                <LinkHelpRankBadgeFromStats
+                  role="client"
+                  completedCount={clientCompletedOrders}
+                  averageRating={job.clientRating ?? 0}
+                  requireCompleted
+                  size="sm"
+                  showLabel
+                  t={t}
+                />
+              </div>
             </div>
           </div>
 

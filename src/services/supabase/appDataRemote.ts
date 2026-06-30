@@ -841,6 +841,41 @@ export async function remoteConfirmServiceCompleted(requestId: string): Promise<
   if (error) throw new Error(error.message || 'CONFIRM_SERVICE_FAILED');
 }
 
+const AWAITING_COMPLETION_STATUSES = ['completion_requested', 'awaiting_client_confirmation'] as const;
+
+/** Request IDs where helper marked completion and client must confirm. */
+export async function remoteFetchClientAwaitingCompletionJobIds(clientId: string): Promise<string[]> {
+  const sb = getSupabase();
+  if (!sb) return [];
+
+  const { data: reqs, error: reqErr } = await sb
+    .from('requests')
+    .select('id')
+    .eq('client_id', clientId)
+    .eq('status', 'in_progress');
+
+  if (reqErr) {
+    console.error('[LinkHelp] fetch in_progress requests for completion', reqErr);
+    return [];
+  }
+
+  const requestIds = ((reqs ?? []) as { id: string }[]).map((r) => r.id);
+  if (requestIds.length === 0) return [];
+
+  const { data: upcoming, error: upErr } = await sb
+    .from('upcoming_jobs')
+    .select('request_id, workflow_status')
+    .in('request_id', requestIds)
+    .in('workflow_status', [...AWAITING_COMPLETION_STATUSES]);
+
+  if (upErr) {
+    console.error('[LinkHelp] fetch awaiting completion upcoming jobs', upErr);
+    return [];
+  }
+
+  return ((upcoming ?? []) as { request_id: string }[]).map((u) => u.request_id);
+}
+
 /**
  * Returns how many messages the given user has sent in the pre-hire conversation
  * for a specific request + helper pair. Returns 0 if no conversation exists or

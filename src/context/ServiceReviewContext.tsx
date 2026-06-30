@@ -98,9 +98,7 @@ export function ServiceReviewProvider({ children }: { children: React.ReactNode 
         /* ignore */
       }
       await refreshProfile();
-      const toastKey =
-        profile.role === 'client' ? 'service_review.thanks_with_credits' : 'service_review.thanks';
-      showToast(t(toastKey), 'success');
+      showToast(t('service_review.thanks'), 'success');
       setActive(null);
     },
     [active, profile, submitServiceReview, refreshProfile, showToast, t],

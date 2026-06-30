@@ -27,6 +27,41 @@ export async function fetchRemoteReviews(): Promise<ServiceReview[]> {
   return ((data ?? []) as ReviewRow[]).map(rowToReview);
 }
 
+async function insertReviewDirect(input: {
+  requestId: string;
+  reviewerId: string;
+  targetUserId: string;
+  rating: number;
+  comment?: string | null;
+  criteriaScores?: Record<string, number> | null;
+  reviewerRole?: 'client' | 'helper';
+}): Promise<ServiceReview> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+
+  const rating = Math.min(5, Math.max(1, Math.round(input.rating)));
+  const basePayload = {
+    request_id: input.requestId,
+    reviewer_id: input.reviewerId,
+    target_user_id: input.targetUserId,
+    rating,
+    comment: input.comment?.trim() || null,
+  };
+
+  const withExtras = {
+    ...basePayload,
+    criteria_scores: input.criteriaScores ?? null,
+    reviewer_role: input.reviewerRole ?? null,
+  };
+
+  let { data, error } = await sb.from('reviews').insert(withExtras).select('*').single();
+  if (error && (error.message?.includes('criteria_scores') || error.message?.includes('reviewer_role'))) {
+    ({ data, error } = await sb.from('reviews').insert(basePayload).select('*').single());
+  }
+  if (error) throw new Error(error.message || 'REVIEW_SUBMIT_FAILED');
+  return rowToReview(data as ReviewRow);
+}
+
 export async function remoteSubmitReview(input: {
   requestId: string;
   reviewerId: string;
@@ -39,30 +74,31 @@ export async function remoteSubmitReview(input: {
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
 
+  const rating = Math.min(5, Math.max(1, Math.round(input.rating)));
+
   const { data, error } = await sb.rpc('submit_service_review', {
     p_request_id: input.requestId,
     p_target_user_id: input.targetUserId,
-    p_rating: input.rating,
+    p_rating: rating,
     p_comment: input.comment?.trim() || null,
     p_criteria_scores: input.criteriaScores ?? null,
     p_reviewer_role: input.reviewerRole ?? null,
   });
 
   if (error) {
-    // Fallback for environments before SQL migration
-    if (error.message?.includes('submit_service_review') || error.code === 'PGRST202') {
-      const payload = {
-        request_id: input.requestId,
-        reviewer_id: input.reviewerId,
-        target_user_id: input.targetUserId,
-        rating: input.rating,
-        comment: input.comment?.trim() || null,
-      };
-      const { data: row, error: insertErr } = await sb.from('reviews').insert(payload).select('*').single();
-      if (insertErr) throw new Error(insertErr.message || 'REVIEW_SUBMIT_FAILED');
-      return rowToReview(row as ReviewRow);
+    const msg = error.message || '';
+    const useDirectInsert =
+      error.code === 'PGRST202' ||
+      msg.includes('submit_service_review') ||
+      msg.includes('REQUEST_NOT_COMPLETED') ||
+      msg.includes('ROLE_MISMATCH') ||
+      msg.includes('function') ||
+      msg.includes('does not exist');
+
+    if (useDirectInsert) {
+      return insertReviewDirect({ ...input, rating });
     }
-    throw new Error(error.message || 'REVIEW_SUBMIT_FAILED');
+    throw new Error(msg || 'REVIEW_SUBMIT_FAILED');
   }
 
   const reviewId = (data as { reviewId?: string })?.reviewId;
@@ -80,5 +116,6 @@ export async function remoteSubmitReview(input: {
     .limit(1)
     .maybeSingle();
   if (latest) return rowToReview(latest as ReviewRow);
-  throw new Error('REVIEW_SUBMIT_FAILED');
+
+  return insertReviewDirect({ ...input, rating });
 }

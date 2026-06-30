@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, Plus, MapPin, Clock, Star, MessageSquare, ChevronRight, CheckCircle2, Bell } from 'lucide-react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
@@ -41,7 +41,8 @@ import {
   resolveClientHelperApplication,
 } from '@/utils/chatHireGate';
 import { ensureConversation } from '@/services/supabase/conversationEnsure';
-import { remoteGetPreMatchClientCount } from '@/services/supabase/appDataRemote';
+import { remoteGetPreMatchClientCount, remoteFetchClientAwaitingCompletionJobIds } from '@/services/supabase/appDataRemote';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import { PRE_HIRE_MESSAGE_LIMIT } from '@/utils/preMatchLimits';
 import {
   isJobExpired,
@@ -85,6 +86,7 @@ type RecommendedHelperCard = {
   skills: readonly string[];
   isOnline: boolean;
   trainingCert: TrainingCertLevel;
+  jobsCompleted?: number;
 };
 
 const RECOMMENDED_HELPERS: RecommendedHelperCard[] = [];
@@ -164,7 +166,26 @@ export default function ClientDashboard() {
   const { openReviewByRequestId } = useServiceReview();
   const me = useSessionViewer();
 
+  const [awaitingCompletionJobIds, setAwaitingCompletionJobIds] = useState<Set<string>>(new Set());
+
   const myJobIds = useMemo(() => jobs.filter((j) => j.clientId === me.id).map((j) => j.id), [jobs, me.id]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    void remoteFetchClientAwaitingCompletionJobIds(me.id).then((ids) => {
+      setAwaitingCompletionJobIds(new Set(ids));
+    });
+  }, [me.id, jobs, upcomingJobs, notifications]);
+
+  const isJobAwaitingCompletion = useCallback(
+    (jobId: string) => {
+      if (awaitingCompletionJobIds.has(jobId)) return true;
+      return upcomingJobs.some(
+        (u) => u.jobId === jobId && isAwaitingClientCompletion(u.workflowStatus),
+      );
+    },
+    [awaitingCompletionJobIds, upcomingJobs],
+  );
 
   const jobsAwaitingServiceConfirm = useMemo(
     () =>
@@ -172,11 +193,9 @@ export default function ClientDashboard() {
         (j) =>
           j.clientId === me.id &&
           j.status === 'in_progress' &&
-          upcomingJobs.some(
-            (u) => u.jobId === j.id && isAwaitingClientCompletion(u.workflowStatus),
-          ),
+          isJobAwaitingCompletion(j.id),
       ),
-    [jobs, upcomingJobs, me.id],
+    [jobs, isJobAwaitingCompletion, me.id],
   );
 
   const completionReminderJobs = useMemo(
@@ -207,6 +226,26 @@ export default function ClientDashboard() {
       /* ignore */
     }
     setServiceConfirmJob(null);
+  };
+
+  const handleReportServiceProblem = async (job: Job) => {
+    dismissServiceConfirm(job);
+    const hiredApp = applications.find(
+      (a) => a.jobId === job.id && (a.status === 'accepted' || a.status === 'completed'),
+    );
+    showToast(t('service_confirm.report_problem_toast'), 'info');
+    if (!hiredApp) return;
+    try {
+      const convId = await ensureConversation({
+        requestId: job.id,
+        clientId: me.id,
+        helperId: hiredApp.helperId,
+        contactUnlocked: true,
+      });
+      navigate(`${ROUTES.messages}?c=${convId}`);
+    } catch {
+      /* chat optional */
+    }
   };
 
   const handleConfirmServiceCompleted = async () => {
@@ -760,7 +799,7 @@ export default function ClientDashboard() {
                               onClick={() => {
                                 setDetailJob(null);
                                 openHelperProfile(
-                                  { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
+                                  { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, jobsCompleted: app.helperJobs, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
                                   app.id,
                                 );
                               }}
@@ -779,12 +818,18 @@ export default function ClientDashboard() {
                         </>
                       ) : (
                         <>
+                          {(app.status === 'accepted' || app.status === 'completed') && detailJob.status === 'in_progress' ? (
+                            <span className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800">
+                              <Icons.CheckCircle2 className="h-3.5 w-3.5" />
+                              {t('messages_page.service_confirmed_badge')}
+                            </span>
+                          ) : null}
                           <button
                             type="button"
                             onClick={() => {
                               setDetailJob(null);
                               openHelperProfile(
-                                { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
+                                { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, jobsCompleted: app.helperJobs, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
                                 app.id,
                               );
                             }}
@@ -814,7 +859,31 @@ export default function ClientDashboard() {
                 ))}
               </div>
               {/* sheet footer */}
-              <div className="shrink-0 border-t border-slate-100 px-5 py-4">
+              <div className="shrink-0 border-t border-slate-100 px-5 py-4 space-y-2">
+                {jobsAwaitingServiceConfirm.some((j) => j.id === detailJob.id) ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDetailJob(null);
+                        setServiceConfirmJob(detailJob);
+                      }}
+                      className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-bold text-white hover:bg-emerald-700"
+                    >
+                      {t('service_confirm.confirm_completion')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleReportServiceProblem(detailJob);
+                        setDetailJob(null);
+                      }}
+                      className="w-full rounded-xl border border-amber-200 bg-amber-50 py-2.5 text-sm font-bold text-amber-900 hover:bg-amber-100"
+                    >
+                      {t('service_confirm.report_problem')}
+                    </button>
+                  </>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => setDetailJob(null)}
@@ -843,6 +912,7 @@ export default function ClientDashboard() {
         busy={serviceConfirmBusy}
         onConfirm={() => void handleConfirmServiceCompleted()}
         onDismiss={() => serviceConfirmJob && dismissServiceConfirm(serviceConfirmJob)}
+        onReportProblem={() => serviceConfirmJob && void handleReportServiceProblem(serviceConfirmJob)}
         t={t}
       />
 
@@ -1452,7 +1522,7 @@ export default function ClientDashboard() {
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         openHelperProfile(
-                                          { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
+                                          { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, jobsCompleted: app.helperJobs, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
                                           app.id,
                                         );
                                       }}
@@ -1496,14 +1566,24 @@ export default function ClientDashboard() {
                             </button>
                           ) : null}
                           {jobsAwaitingServiceConfirm.some((j) => j.id === job.id) ? (
-                            <button
-                              type="button"
-                              onClick={() => setServiceConfirmJob(job)}
-                              className="inline-flex min-h-[36px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-900 hover:bg-emerald-100"
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                              {t('service_confirm.confirm_completion')}
-                            </button>
+                            <div className="flex flex-col gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setServiceConfirmJob(job)}
+                                className="inline-flex min-h-[36px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-900 hover:bg-emerald-100"
+                              >
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                {t('service_confirm.confirm_completion')}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleReportServiceProblem(job)}
+                                className="inline-flex min-h-[36px] w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-900 hover:bg-amber-100"
+                              >
+                                <Icons.AlertTriangle className="h-3.5 w-3.5" />
+                                {t('service_confirm.report_problem')}
+                              </button>
+                            </div>
                           ) : null}
                           <JobTaskActionsBar
                             canCancel={canCancelJob}
@@ -1617,25 +1697,53 @@ export default function ClientDashboard() {
                     id: String(selectedHelper.id),
                     name: selectedHelper.name,
                     avatar: selectedHelper.avatar,
-                    rating: selectedHelper.rating,
-                    jobsCompleted: 120,
-                    bio: t('helper_public.sample_bio'),
-                    city: t('helper_public.sample_city'),
+                    rating: profileApp?.helperRating ?? selectedHelper.rating,
+                    jobsCompleted:
+                      profileApp?.helperJobs ??
+                      selectedHelper.jobsCompleted ??
+                      applications.find((a) => a.helperId === String(selectedHelper.id))?.helperJobs ??
+                      0,
+                    bio: profileApp?.message?.trim() || undefined,
                     categories: selectedHelper.skills?.length ? [...selectedHelper.skills] : ['cleaning'],
                   }}
                 />
               </div>
               <div className="shrink-0 flex flex-col gap-2 border-t border-gray-100 bg-white px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-3 sm:px-6">
                 {(() => {
+                  const isHiredHelper =
+                    profileChatUnlocked ||
+                    profileApp?.status === 'accepted' ||
+                    profileApp?.status === 'completed';
                   const msgsRemaining = profilePreMatchEligible
                     ? Math.max(0, PRE_HIRE_MESSAGE_LIMIT - (profilePreMatchCount ?? 0))
                     : null;
-                  const chatEnabled = profileChatUnlocked || (profilePreMatchEligible && (msgsRemaining ?? 1) > 0);
+                  const chatEnabled =
+                    profileChatUnlocked || (profilePreMatchEligible && (msgsRemaining ?? 1) > 0);
+
+                  if (isHiredHelper) {
+                    return (
+                      <>
+                        <span className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800">
+                          <Icons.CheckCircle2 className="h-4 w-4" />
+                          {t('messages_page.service_confirmed_badge')}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void handleProfileMessageClick()}
+                          className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-800 hover:border-blue-200 hover:bg-blue-50"
+                        >
+                          <Icons.MessageSquare className="w-5 h-5 text-blue-600" />
+                          {t('helper_profile.cta_chat')}
+                        </button>
+                      </>
+                    );
+                  }
+
                   return (
                     <>
                       <button
                         type="button"
-                        onClick={handleProfileMessageClick}
+                        onClick={() => void handleProfileMessageClick()}
                         disabled={!chatEnabled}
                         className={`w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-2xl border-2 text-sm font-bold transition-colors ${
                           chatEnabled
@@ -1662,20 +1770,20 @@ export default function ClientDashboard() {
                           {t('helper_profile.chat_locked_hint')}
                         </p>
                       ) : null}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowHelperProfileModal(false);
+                          setHireModalKind('hire');
+                          setShowHireModal(true);
+                        }}
+                        className="w-full min-h-[48px] rounded-2xl bg-blue-600 text-white text-sm font-black"
+                      >
+                        {t('helper_profile.cta_hire')}
+                      </button>
                     </>
                   );
                 })()}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowHelperProfileModal(false);
-                    setHireModalKind('hire');
-                    setShowHireModal(true);
-                  }}
-                  className="w-full min-h-[48px] rounded-2xl bg-blue-600 text-white text-sm font-black"
-                >
-                  {t('helper_profile.cta_hire')}
-                </button>
               </div>
             </div>
           </div>

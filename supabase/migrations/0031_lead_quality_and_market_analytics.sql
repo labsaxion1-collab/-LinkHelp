@@ -27,6 +27,9 @@ where event is null and signal is not null;
 alter table public.request_market_signals drop constraint if exists request_market_signals_signal_check;
 
 alter table public.request_market_signals
+  drop constraint if exists request_market_signals_event_check;
+
+alter table public.request_market_signals
   add constraint request_market_signals_event_check check (
     event is null
     or event in (

@@ -25,12 +25,18 @@ create table if not exists public.request_market_metrics (
 alter table public.credit_transactions drop constraint if exists credit_transactions_type_check;
 alter table public.credit_transactions add constraint credit_transactions_type_check check (
   type in (
-    'CREDIT_PURCHASE', 'FREE_BONUS', 'OPPORTUNITY_UNLOCK', 'REFUND', 'ADMIN_ADJUSTMENT',
-    'APPLICATION_INTEREST', 'APPLICATION_SELECTED'
+    'CREDIT_PURCHASE',
+    'FREE_BONUS',
+    'OPPORTUNITY_UNLOCK',
+    'REFUND',
+    'ADMIN_ADJUSTMENT',
+    'APPLICATION_INTEREST',
+    'APPLICATION_SELECTED',
+    'VIP_EXCLUSIVE_PARTIAL_REFUND'
   )
 );
 
-create or replace function public.estimate_request_credit_price(req public.requests)
+create or replace function public.estimate_request_credit_price(p_request public.requests)
 returns int
 language plpgsql
 immutable
@@ -38,21 +44,28 @@ as $$
 declare
   v numeric := 0;
 begin
-  if req.budget_type = 'negotiable' or req.budget is null or trim(req.budget) = '' then
+  if p_request.budget_type = 'negotiable' or p_request.budget is null or trim(p_request.budget) = '' then
     v := 0;
-  elsif req.budget_max is not null and req.budget_max > 0 then
-    v := req.budget_max;
-  elsif req.budget_min is not null and req.budget_min > 0 then
-    v := req.budget_min;
+  elsif p_request.budget_max is not null and p_request.budget_max > 0 then
+    v := p_request.budget_max;
+  elsif p_request.budget_min is not null and p_request.budget_min > 0 then
+    v := p_request.budget_min;
   else
     v := 0;
   end if;
-  if v <= 50 then return 2;
-  if v <= 100 then return 4;
-  if v <= 250 then return 6;
-  if v <= 500 then return 10;
-  if v <= 1000 then return 16;
-  return 24;
+  if v <= 50 then
+    return 2;
+  elsif v <= 100 then
+    return 4;
+  elsif v <= 250 then
+    return 6;
+  elsif v <= 500 then
+    return 10;
+  elsif v <= 1000 then
+    return 16;
+  else
+    return 24;
+  end if;
 end;
 $$;
 

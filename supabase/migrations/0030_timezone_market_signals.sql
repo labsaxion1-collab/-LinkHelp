@@ -28,11 +28,17 @@ create index if not exists request_market_signals_category_idx
 
 alter table public.request_market_signals enable row level security;
 
+drop policy if exists request_market_signals_insert_authenticated
+  on public.request_market_signals;
+
 create policy request_market_signals_insert_authenticated
   on public.request_market_signals
   for insert
   to authenticated
   with check (true);
+
+drop policy if exists request_market_signals_select_service
+  on public.request_market_signals;
 
 create policy request_market_signals_select_service
   on public.request_market_signals

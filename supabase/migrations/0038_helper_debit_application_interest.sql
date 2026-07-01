@@ -10,7 +10,7 @@ alter table public.credit_transactions drop constraint if exists credit_transact
 alter table public.credit_transactions add constraint credit_transactions_type_check check (
   type in (
     'CREDIT_PURCHASE', 'FREE_BONUS', 'OPPORTUNITY_UNLOCK', 'REFUND', 'ADMIN_ADJUSTMENT',
-    'APPLICATION_INTEREST', 'APPLICATION_SELECTED'
+    'APPLICATION_INTEREST', 'APPLICATION_SELECTED', 'VIP_EXCLUSIVE_PARTIAL_REFUND'
   )
 );
 

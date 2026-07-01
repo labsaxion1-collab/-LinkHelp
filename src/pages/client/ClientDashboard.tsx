@@ -61,6 +61,7 @@ import { isAwaitingClientCompletion, shouldShowCompletionReminder } from '@/util
 import { ClientOnboardingCarousel } from '@/components/client/onboarding/ClientOnboardingCarousel';
 import { useClientOnboarding } from '@/hooks/useClientOnboarding';
 import { CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';
+import { NewHelperHero } from '@/components/hero/SmartphoneHelperHero';
 
 const SERVICE_CONFIRM_DISMISS_PREFIX = 'lh_service_confirm_skip_';
 import { translateJobTitle } from '@/utils/translateCategory';
@@ -130,6 +131,7 @@ export default function ClientDashboard() {
   const [createInitialCategory, setCreateInitialCategory] = useState('');
   const [createInitialSubcategory, setCreateInitialSubcategory] = useState('');
   const [activeSidebarTab, setActiveSidebarTab] = useState<'dashboard' | 'my-helpers' | 'active-services' | 'saved'>('dashboard');
+  const [activeHowItWorksStep, setActiveHowItWorksStep] = useState(0);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [previousAppCount, setPreviousAppCount] = useState(0);
@@ -334,6 +336,14 @@ export default function ClientDashboard() {
   }, [routerLocation.state]);
 
   useEffect(() => {
+    if (activeSidebarTab !== 'dashboard') return;
+    const timer = window.setInterval(() => {
+      setActiveHowItWorksStep((current) => (current + 1) % 3);
+    }, 3200);
+    return () => window.clearInterval(timer);
+  }, [activeSidebarTab]);
+
+  useEffect(() => {
     const state = routerLocation.state as { openCreate?: boolean } | null;
     if (routerLocation.pathname === ROUTES.clientDashboard && state?.openCreate) {
       setShowCreateModal(true);
@@ -411,6 +421,14 @@ export default function ClientDashboard() {
     () => applications.filter((app) => clientJobs.some((job) => job.id === app.jobId)).length,
     [applications, clientJobs],
   );
+
+  const howItWorksSteps = [
+    { icon: Icons.ClipboardCheck, title: t('client_how_it_works.card1_title'), body: t('client_how_it_works.card1_desc') },
+    { icon: Icons.UsersRound, title: t('client_how_it_works.card2_title'), body: t('client_how_it_works.card2_desc') },
+    { icon: Icons.ShieldCheck, title: t('client_how_it_works.card3_title'), body: t('client_how_it_works.card3_desc') },
+  ];
+  const activeHowItWorks = howItWorksSteps[activeHowItWorksStep] ?? howItWorksSteps[0];
+  const ActiveHowItWorksIcon = activeHowItWorks.icon;
 
   const handleConfirmCancelJob = async () => {
     if (!cancelTargetJobId || cancellingJobId) return;
@@ -594,7 +612,7 @@ export default function ClientDashboard() {
     <div className="relative w-full min-w-0">
       {activeSidebarTab === 'dashboard' ? (
         <div className="pointer-events-none absolute right-3 top-3 z-[2] sm:right-5 sm:top-4">
-          <div className="pointer-events-auto">
+          <div className="pointer-events-auto hidden">
             <ClientCreditsWalletBadge
               balance={authLoading ? null : clientCreditsBalance}
               loading={authLoading}
@@ -606,7 +624,17 @@ export default function ClientDashboard() {
 
       {/* Hero — fora de qualquer container com padding para ser verdadeiramente full-width */}
       {activeSidebarTab === 'dashboard' && (
-        <section className="relative z-0 isolate min-h-[410px] overflow-hidden bg-[#F5F7FB] sm:min-h-[440px]">
+        <NewHelperHero
+          avatarUrl={me.avatar}
+          balance={authLoading ? null : clientCreditsBalance}
+          completedServices={0}
+          satisfactionRate={0}
+          rating={0}
+          connectedProfessionals={0}
+        />
+      )}
+      {activeSidebarTab === 'dashboard' && (
+        <section className="relative z-0 isolate hidden min-h-[410px] overflow-hidden bg-[#F5F7FB] sm:min-h-[440px]">
           <div className="absolute inset-y-0 right-[-4%] w-[85%] overflow-hidden">
             <img
               src={BRAND.clientHomeHero}
@@ -1155,55 +1183,59 @@ export default function ClientDashboard() {
               <div className="relative space-y-7">
                 <section className="px-4 sm:px-6 md:px-8">
                   <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_how_it_works.title')}</h2>
-                  <div className="relative mt-4 grid gap-3 sm:grid-cols-3">
-                    <div className="pointer-events-none absolute left-8 right-8 top-6 hidden border-t border-dashed border-blue-200 sm:block" />
-                    {[
-                      { icon: Icons.ClipboardCheck, title: t('client_how_it_works.card1_title'), body: t('client_how_it_works.card1_desc') },
-                      { icon: Icons.UsersRound, title: t('client_how_it_works.card2_title'), body: t('client_how_it_works.card2_desc') },
-                      { icon: Icons.ShieldCheck, title: t('client_how_it_works.card3_title'), body: t('client_how_it_works.card3_desc') },
-                    ].map((step, index) => {
-                      const Icon = step.icon;
-                      return (
-                        <article key={step.title} className="relative rounded-[1.5rem] bg-white px-3 py-2.5 shadow-[0_12px_32px_rgba(15,23,42,0.045)] ring-1 ring-slate-100">
-                          <span className="absolute right-3 top-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#2563FF] text-[10px] font-black text-white shadow-[0_6px_14px_rgba(37,99,255,0.22)]">{index + 1}</span>
-                          <div className="flex items-center gap-3 pr-7">
-                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF2FF] text-[#2563FF]">
-                              <Icon className="h-5 w-5" />
-                            </span>
-                            <span>
-                              <span className="block text-sm font-black text-[#0B1220]">{step.title}</span>
-                              <span className="mt-0.5 block text-xs font-semibold leading-relaxed text-[#64748B]">{step.body}</span>
-                            </span>
-                          </div>
-                        </article>
-                      );
-                    })}
+                  <div className="mt-4">
+                    <article key={activeHowItWorksStep} className="relative overflow-hidden rounded-[1.6rem] bg-white px-4 py-4 shadow-[0_16px_42px_rgba(15,23,42,0.08)] ring-1 ring-slate-100 transition-all duration-500 animate-in fade-in slide-in-from-right-2">
+                      <span className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full bg-[#2563FF] text-sm font-black text-white shadow-[0_8px_18px_rgba(37,99,255,0.28)]">{activeHowItWorksStep + 1}</span>
+                      <div className="flex items-center gap-4 pr-10">
+                        <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#EAF2FF] text-[#2563FF]">
+                          <ActiveHowItWorksIcon className="h-8 w-8" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-lg font-black leading-tight text-[#0B1220]">{activeHowItWorks.title}</span>
+                          <span className="mt-1 block text-sm font-semibold leading-relaxed text-[#64748B]">{activeHowItWorks.body}</span>
+                        </span>
+                      </div>
+                    </article>
+                    <div className="mt-3 flex justify-center gap-2">
+                      {howItWorksSteps.map((step, index) => (
+                        <button
+                          key={step.title}
+                          type="button"
+                          aria-label={`Ver etapa ${index + 1}`}
+                          onClick={() => setActiveHowItWorksStep(index)}
+                          className={`h-2 rounded-full transition-all ${activeHowItWorksStep === index ? 'w-7 bg-[#2563FF]' : 'w-2 bg-blue-200'}`}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </section>
 
                 <section className="px-4 sm:px-6 md:px-8">
                   <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_dashboard.quick_summary_title')}</h2>
-                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {[
-                      { icon: Icons.ClipboardCheck, value: clientJobs.length, label: t('client_dashboard.stat_orders'), tone: 'text-[#2563FF] bg-blue-50' },
-                      { icon: Icons.UsersRound, value: Math.max(nearbyHelpers.length, clientApplicationCount), label: t('client_dashboard.stat_helpers'), tone: 'text-emerald-600 bg-emerald-50' },
-                      { icon: Icons.ShieldCheck, value: '98%', label: t('client_dashboard.stat_reviews'), tone: 'text-violet-600 bg-violet-50' },
-                      { icon: Icons.Clock3, value: '15 min', label: t('client_dashboard.stat_response_time'), tone: 'text-amber-600 bg-amber-50' },
-                    ].map((stat) => {
-                      const Icon = stat.icon;
-                      return (
-                        <article key={stat.label} className="rounded-[1.55rem] border border-white bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.055)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(37,99,255,0.10)]">
-                          <span className={clsx('flex h-10 w-10 items-center justify-center rounded-2xl', stat.tone)}>
-                            <Icon className="h-5 w-5" />
-                          </span>
-                          <p className="mt-4 text-2xl font-black tracking-tight text-[#0B1220]">{stat.value}</p>
-                          <p className="mt-1 text-xs font-semibold leading-snug text-[#64748B]">{stat.label}</p>
-                        </article>
-                      );
-                    })}
+                  <div className="mt-4 rounded-[1.45rem] border border-lime-500/25 bg-[#020a04] p-3 shadow-[0_18px_46px_rgba(0,20,7,0.22)]">
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { icon: Icons.Star, value: '0', label: 'Servi\u00e7os realizados' },
+                        { icon: Icons.ThumbsUp, value: '0%', label: 'Taxa de satisfa\u00e7\u00e3o' },
+                        { icon: Icons.Star, value: '0,0', label: 'Avalia\u00e7\u00e3o m\u00e9dia' },
+                        { icon: Icons.UsersRound, value: '0', label: 'Conectados' },
+                      ].map((stat) => {
+                        const Icon = stat.icon;
+                        return (
+                          <article key={stat.label} className="flex min-w-0 items-center gap-3 rounded-2xl bg-black/45 px-3 py-4 ring-1 ring-lime-400/[0.03]">
+                            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-lime-400/35 bg-lime-500/10 text-lime-400 shadow-[0_0_18px_rgba(132,204,22,0.12)]">
+                              <Icon className="h-6 w-6" strokeWidth={2.35} />
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-3xl font-black leading-none tracking-tight text-white">{stat.value}</p>
+                              <p className="mt-1 text-sm font-bold leading-tight text-white/68">{stat.label}</p>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
                   </div>
                 </section>
-
                 <section className="relative" style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)' }}>
                   <div className="mb-4 flex items-center justify-between gap-3 px-4 sm:px-6 md:px-8">
                     <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_dashboard.popular_categories_title')}</h2>

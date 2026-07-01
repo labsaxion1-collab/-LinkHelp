@@ -80,6 +80,7 @@ import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboard';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { LhCard } from '@/components/design-system/LhCard';
+import { NewHelperHero } from '@/components/hero/SmartphoneHelperHero';
 
 type HelperHomeInfoSlide = {
   id: string;
@@ -1039,8 +1040,17 @@ export default function HelperDashboard() {
             </div>
           ) : null}
 
+          <NewHelperHero
+            avatarUrl={helperAvatarUrl ?? me.avatar}
+            balance={walletBalance}
+            completedServices={helperMvpStats.completed}
+            satisfactionRate={helperMvpStats.responseRatePct}
+            rating={helperMvpStats.avgRating}
+            connectedProfessionals={helperMvpStats.accepted}
+          />
+
           <section
-              className="relative isolate mb-8 w-screen min-w-[100vw] max-w-none overflow-hidden pb-8 pt-0"
+              className="relative isolate hidden mb-8 w-screen min-w-[100vw] max-w-none overflow-hidden pb-8 pt-0"
               style={{ marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)' }}
             >
               <img
@@ -1146,7 +1156,10 @@ export default function HelperDashboard() {
                 })() : null}
               </div>
 
-              <div className="relative mt-2 mb-3 flex items-center justify-between px-6 sm:px-7">
+          </section>
+
+          <section className="relative mb-8">
+              <div className="relative mb-3 flex items-center justify-between px-1 sm:px-2">
                 <h2 className="text-base font-black tracking-tight text-[#0B1220]">{t('helper_dashboard.categories_heading')}</h2>
                 {selectedCategoryFilters.length ? (
                   <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black text-[#2563FF]">

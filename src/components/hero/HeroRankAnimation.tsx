@@ -5,7 +5,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remo
 import pedestalVerdeImage from '@/assets/hero/pedestal/pedestal-verde.png';
 
 // ─── Color theme system ───────────────────────────────────────────────────────
-export type HeroColorKey = 'verde' | 'azul' | 'dourado' | 'roxo';
+export type HeroColorKey = 'verde' | 'azul' | 'dourado' | 'roxo' | 'magenta';
 
 const COLOR_THEME = {
   verde: {
@@ -47,6 +47,16 @@ const COLOR_THEME = {
     medalRgb: '192,132,252',
     pedestalGlowA: 'rgba(192,132,252,0.65)',
     pedestalGlowB: 'rgba(88,28,135,0.12)',
+  },
+  magenta: {
+    particle: '#f0abfc',
+    particleRgb: '232,121,249',
+    bgGlow: 'rgba(217,70,239,0.15)',
+    mainGlowA: 'rgba(232,121,249,0.50)',
+    mainGlowB: 'rgba(126,34,206,0.09)',
+    medalRgb: '232,121,249',
+    pedestalGlowA: 'rgba(240,171,252,0.68)',
+    pedestalGlowB: 'rgba(126,34,206,0.13)',
   },
 } as const;
 

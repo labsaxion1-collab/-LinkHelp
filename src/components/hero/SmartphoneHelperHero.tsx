@@ -33,22 +33,22 @@ export function NewHelperHero({ accountType = 'helper', balance, completedServic
   const pointsRemaining = isClient ? clientVisual.pointsRemaining : 130;
 
   return (
-    <section className="relative left-1/2 isolate mb-4 w-[100dvw] max-w-none -translate-x-1/2 overflow-hidden border-0 bg-[#020804] text-white shadow-none lg:left-auto lg:w-full lg:translate-x-0 lg:rounded-[1.75rem] lg:shadow-[0_22px_58px_rgba(0,20,7,0.32)]">
+    <section className={`relative left-1/2 isolate mb-4 w-[100dvw] max-w-none -translate-x-1/2 overflow-hidden border-0 bg-[#020804] text-white shadow-none lg:left-auto lg:w-full lg:translate-x-0 lg:rounded-[1.75rem] lg:shadow-[0_22px_58px_rgba(0,20,7,0.32)] ${isClient ? '' : 'lh-helper-hero'}`}>
       <img src={backgroundImage} alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-95" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_25%,rgba(99,230,28,0.2),transparent_34%),linear-gradient(180deg,rgba(0,5,2,0.91),rgba(1,12,4,0.66)_36%,rgba(0,5,2,0.95)_82%)]" />
       <img src={particlesImage} alt="" aria-hidden="true" className="lh-hero-particles pointer-events-none absolute inset-0 h-full w-full object-cover mix-blend-screen" />
 
       <div className="relative z-10 px-3 pb-3 pt-3 sm:px-8 sm:pb-5 sm:pt-5">
         <header className="flex items-center justify-between gap-3">
-          <p className="lh-hero-tag inline-flex min-w-0 items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.13em] text-lime-300 sm:text-xs sm:tracking-[0.18em]">
+          <p className={`lh-hero-tag inline-flex min-w-0 items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.13em] sm:text-xs sm:tracking-[0.18em] ${isClient ? 'text-lime-300' : 'rounded-full border border-white/15 bg-black/55 px-2.5 py-1 text-amber-200 shadow-[0_6px_22px_rgba(0,0,0,0.42)] backdrop-blur-md'}`}>
             <Sparkles className="lh-hero-sparkle-icon h-3.5 w-3.5 shrink-0" /> {journeyEyebrow}
           </p>
           <div className="lh-hero-balance flex min-w-0 items-center">
-            <div className="flex min-w-0 items-center gap-1.5 rounded-full border border-lime-400/20 bg-black/30 px-2 py-1.5 backdrop-blur-md sm:min-w-[15rem] sm:gap-3 sm:px-5 sm:py-2.5">
+            <div className={`flex min-w-0 items-center gap-1.5 rounded-full px-2 py-1.5 backdrop-blur-md sm:min-w-[15rem] sm:gap-3 sm:px-5 sm:py-2.5 ${isClient ? 'border border-lime-400/20 bg-black/30' : 'border border-white/20 bg-black/65 shadow-[0_8px_28px_rgba(0,0,0,0.48)]'}`}>
               <img src={BRAND.linkCreditCoin} alt="" className="h-8 w-8 shrink-0 object-contain sm:h-11 sm:w-11" />
               <div className="min-w-0 sm:flex-1">
                 <p className="hidden text-xs text-white/70 sm:block">{isClient ? clientVisual.balanceLabel : 'Saldo disponível'}</p>
-                <p className="whitespace-nowrap text-sm font-black sm:text-xl">{displayBalance} LC</p>
+                <p className={`whitespace-nowrap text-sm font-black sm:text-xl ${isClient ? '' : 'text-white drop-shadow-[0_1px_5px_rgba(0,0,0,0.9)]'}`}>{displayBalance} LC</p>
               </div>
               <ChevronRight className="hidden h-6 w-6 text-white/35 sm:block" />
             </div>
@@ -56,7 +56,7 @@ export function NewHelperHero({ accountType = 'helper', balance, completedServic
         </header>
 
         <div className="lh-hero-headline mx-auto mt-1 max-w-[25rem] text-center sm:mt-2">
-          <h1 className="text-[1.85rem] font-black leading-[1.04] tracking-[-0.045em] min-[430px]:text-[2.15rem] sm:text-5xl">
+          <h1 className={`text-[1.85rem] font-black leading-[1.04] tracking-[-0.045em] min-[430px]:text-[2.15rem] sm:text-5xl ${isClient ? '' : 'text-white [text-shadow:0_3px_18px_rgba(0,0,0,0.95)]'}`}>
             {isClient ? clientVisual.headline.beforeHighlight : 'Toda grande jornada começa com o'} <span className="lh-hero-highlight-shimmer">{isClient ? clientVisual.headline.highlight : 'primeiro passo.'}</span>
           </h1>
         </div>

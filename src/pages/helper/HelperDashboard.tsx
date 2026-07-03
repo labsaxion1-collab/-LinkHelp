@@ -81,6 +81,8 @@ import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboa
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { LhCard } from '@/components/design-system/LhCard';
 import { NewHelperHero } from '@/components/hero/SmartphoneHelperHero';
+import { HelperInicianteHero } from '@/components/hero/HelperInicianteHero';
+import { HelperProfissionalHero } from '@/components/hero/HelperProfissionalHero';
 
 type HelperHomeInfoSlide = {
   id: string;
@@ -1048,6 +1050,22 @@ export default function HelperDashboard() {
             rating={helperMvpStats.avgRating}
             connectedProfessionals={helperMvpStats.accepted}
           />
+          <HelperInicianteHero
+            balance={walletBalance}
+            completedServices={helperMvpStats.completed}
+            satisfactionRate={helperMvpStats.responseRatePct}
+            rating={helperMvpStats.avgRating}
+            connectedProfessionals={helperMvpStats.accepted}
+          />
+          <HelperProfissionalHero
+            balance={walletBalance}
+            completedServices={helperMvpStats.completed}
+            satisfactionRate={helperMvpStats.responseRatePct}
+            rating={helperMvpStats.avgRating}
+            connectedProfessionals={helperMvpStats.accepted}
+          />
+
+
 
           <section
               className="relative isolate hidden mb-8 w-screen min-w-[100vw] max-w-none overflow-hidden pb-8 pt-0"

@@ -625,6 +625,7 @@ export default function ClientDashboard() {
       {/* Hero — fora de qualquer container com padding para ser verdadeiramente full-width */}
       {activeSidebarTab === 'dashboard' && (
         <NewHelperHero
+          accountType="client"
           avatarUrl={me.avatar}
           balance={authLoading ? null : clientCreditsBalance}
           completedServices={0}
@@ -1212,7 +1213,7 @@ export default function ClientDashboard() {
 
                 <section className="px-4 sm:px-6 md:px-8">
                   <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_dashboard.quick_summary_title')}</h2>
-                  <div className="mt-4 rounded-[1.45rem] border border-lime-500/25 bg-[#020a04] p-3 shadow-[0_18px_46px_rgba(0,20,7,0.22)]">
+                  <div className="mt-4">
                     <div className="grid grid-cols-2 gap-2">
                       {[
                         { icon: Icons.Star, value: '0', label: 'Servi\u00e7os realizados' },
@@ -1222,7 +1223,7 @@ export default function ClientDashboard() {
                       ].map((stat) => {
                         const Icon = stat.icon;
                         return (
-                          <article key={stat.label} className="flex min-w-0 items-center gap-3 rounded-2xl bg-black/45 px-3 py-4 ring-1 ring-lime-400/[0.03]">
+                          <article key={stat.label} className="flex min-w-0 items-center gap-3 rounded-2xl border border-lime-500/20 bg-[#020a04] px-3 py-4 shadow-[0_12px_30px_rgba(0,20,7,0.16)]">
                             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-lime-400/35 bg-lime-500/10 text-lime-400 shadow-[0_0_18px_rgba(132,204,22,0.12)]">
                               <Icon className="h-6 w-6" strokeWidth={2.35} />
                             </span>
@@ -1276,22 +1277,18 @@ export default function ClientDashboard() {
                   </div>
                 </section>
 
-                <section className="mx-4 grid gap-3 rounded-[1.9rem] bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.045)] sm:mx-6 sm:grid-cols-3 md:mx-8">
+                <section className="mx-4 grid grid-cols-3 overflow-hidden rounded-2xl border border-lime-400/15 bg-[#020804] shadow-[0_14px_36px_rgba(0,20,7,0.18)] sm:mx-6 md:mx-8">
                   {[
                     { icon: Icons.ShieldCheck, title: t('client_dashboard.trust_safe_title'), body: t('client_dashboard.trust_safe_body') },
-                    { icon: Icons.MessageSquare, title: t('client_dashboard.trust_chat_title'), body: t('client_dashboard.trust_chat_body') },
-                    { icon: Icons.Sparkle, title: t('client_dashboard.trust_quality_title'), body: t('client_dashboard.trust_quality_body') },
+                    { icon: Icons.Zap, title: t('client_dashboard.trust_chat_title'), body: t('client_dashboard.trust_chat_body') },
+                    { icon: Icons.LockKeyhole, title: t('client_dashboard.trust_quality_title'), body: t('client_dashboard.trust_quality_body') },
                   ].map((item, index) => {
                     const Icon = item.icon;
                     return (
-                      <article key={item.title} className={clsx('flex items-center gap-3 p-2', index > 0 && 'sm:border-l sm:border-slate-100 sm:pl-5')}>
-                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F1F6FF] text-[#2563FF]">
-                          <Icon className="h-5 w-5" />
-                        </span>
-                        <span>
-                          <span className="block text-xs font-black text-[#2563FF]">{item.title}</span>
-                          <span className="mt-1 block text-[11px] font-semibold leading-snug text-[#64748B]">{item.body}</span>
-                        </span>
+                      <article key={item.title} className={clsx('flex min-w-0 flex-col items-center gap-1 px-1 py-3 text-center sm:py-4', index > 0 && 'border-l border-lime-300/10')}>
+                        <Icon className="h-6 w-6 text-lime-500 sm:h-7 sm:w-7" strokeWidth={2.2} />
+                        <span className="mt-0.5 block text-[11px] font-black text-white sm:text-sm">{item.title}</span>
+                        <span className="hidden text-[10px] font-medium text-white/55 min-[390px]:block sm:text-xs">{item.body}</span>
                       </article>
                     );
                   })}

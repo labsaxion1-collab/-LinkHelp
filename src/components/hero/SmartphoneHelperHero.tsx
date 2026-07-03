@@ -2,7 +2,7 @@
 
 import backgroundImage from '@/assets/hero/backgrounds/helper/bg-verde.png';
 import medalImage from '@/assets/hero/medals/helper/novo helper.png';
-import clientMedalImage from '@/assets/hero/medals/client/iniciante.png';
+import clientMedalImage from '@/assets/hero/medals/client/novo cliente.png';
 import particlesImage from '@/assets/hero/particles/particulas.png';
 import { HeroRankAnimation } from '@/components/hero/HeroRankAnimation';
 import { BRAND } from '@/utils/brandAssets';

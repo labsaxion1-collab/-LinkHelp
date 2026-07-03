@@ -1,0 +1,48 @@
+---
+description: Hero "Cliente Confiável" (Nível 2) congelado — não alterar layout nem animações
+alwaysApply: true
+---
+
+# LinkHelp — Hero Nível 2 Cliente Confiável congelado
+
+**Decisão do usuário (jul/2026):** a hero do nível 2 (Cliente Confiável) está finalizada e **não deve ser alterada**.
+
+## Regra absoluta
+
+Mesmo que o usuário peça mudanças nessa área, **recusar** e lembrar que ele pediu para congelar. Sugerir trabalhar em outro rank ou página se necessário.
+
+## Arquivos congelados
+
+| Arquivo | Escopo protegido |
+|---|---|
+| `src/components/hero/ClientConfiavelhero.tsx` | Todo o JSX, classes, composição azul |
+| `src/config/clientConfiavelLevelVisual.ts` | Copy, percentuais, posição do halo, motionIntensity |
+| `src/styles/globals.css` | Classes `lh-hero-highlight-blue`, `lh-hero-nivel-badge-blue`, `lh-hero-halo-*`, `lh-hero-blue-sparkle` |
+| `src/assets/hero/backgrounds/client/bg-roxo.png` | Background base (overlay azul por cima) |
+| `src/assets/hero/halos/halo-azul.png` | Halo girando atrás da medalha |
+| `src/assets/hero/pedestal/pedestal-azul.png` | Pedestal azul |
+| `src/assets/hero/medals/client/confiavel.png` | Medalha Cliente Confiável |
+
+## Composição congelada — camadas
+
+```
+[ bg-roxo.png + overlay azul ]
+[ CLIENT_CONFIAVEL_SPARKLES — brilhos aleatórios ]
+[ particulas.png — mix-blend-screen ]
+[ halo-azul.png — rotação 44s + pulso 1.025 ]
+[ HeroRankAnimation colorKey=azul motionIntensity=0.58 ]
+[ textos com animações lhHero* + lh-hero-highlight-blue ]
+```
+
+## Valores travados
+
+- **Halo**: `top: 30%`, `width: 90%`, rotação 44s, pulso 7s
+- **Medalha**: `motionIntensity: 0.58`, tema azul
+- **Pílula**: centralizada entre headline e medalha (`py-5 sm:py-7`)
+- **Progresso**: 35%, próximo nível "3. Cliente Ouro", 280 pontos restantes
+
+## Pode alterar
+
+- Hero Nível 1 (Novo Helper / Iniciante) — congelada separadamente
+- Outros ranks (Ouro, Elite, VIP, etc.)
+- Cards, feed, navbar — exceto brand

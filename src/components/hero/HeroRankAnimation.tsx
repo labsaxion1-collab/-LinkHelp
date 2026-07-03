@@ -2,17 +2,49 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Player, type PlayerRef } from '@remotion/player';
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 
-import pedestalImage from '@/assets/hero/pedestal/pedestal-verde.png';
+import pedestalVerdeImage from '@/assets/hero/pedestal/pedestal-verde.png';
+
+// ─── Color theme system ───────────────────────────────────────────────────────
+export type HeroColorKey = 'verde' | 'azul';
+
+const COLOR_THEME = {
+  verde: {
+    particle: '#a3ff45',
+    particleRgb: '145,255,66',
+    bgGlow: 'rgba(113,255,32,0.12)',
+    mainGlowA: 'rgba(130,255,48,0.48)',
+    mainGlowB: 'rgba(73,186,22,0.08)',
+    medalRgb: '126,255,43',
+    pedestalGlowA: 'rgba(153,255,79,0.65)',
+    pedestalGlowB: 'rgba(71,177,24,0.12)',
+  },
+  azul: {
+    particle: '#7cb9ff',
+    particleRgb: '66,145,255',
+    bgGlow: 'rgba(28,99,255,0.14)',
+    mainGlowA: 'rgba(48,130,255,0.48)',
+    mainGlowB: 'rgba(22,73,186,0.08)',
+    medalRgb: '43,126,255',
+    pedestalGlowA: 'rgba(79,153,255,0.65)',
+    pedestalGlowB: 'rgba(22,71,177,0.12)',
+  },
+} as const;
 
 type CompositionProps = {
   medalSrc: string;
   medalAlt: string;
+  pedestalSrc?: string;
+  colorKey?: HeroColorKey;
+  motionIntensity?: number;
   reducedMotion?: boolean;
 };
 
 type HeroRankAnimationProps = {
   medalSrc: string;
   medalAlt: string;
+  pedestalSrc?: string;
+  colorKey?: HeroColorKey;
+  motionIntensity?: number;
   className?: string;
 };
 
@@ -44,12 +76,14 @@ function usePrefersReducedMotion() {
   return reduced;
 }
 
-export function HeroRankComposition({ medalSrc, medalAlt, reducedMotion = false }: CompositionProps) {
+export function HeroRankComposition({ medalSrc, medalAlt, pedestalSrc, colorKey = 'verde', motionIntensity = 1, reducedMotion = false }: CompositionProps) {
+  const theme = COLOR_THEME[colorKey];
+  const pedestal = pedestalSrc ?? pedestalVerdeImage;
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const progress = frame / durationInFrames;
   const phase = progress * Math.PI * 2;
-  const motionScale = reducedMotion ? 0.18 : 1;
+  const motionScale = reducedMotion ? 0.18 : motionIntensity;
 
   // Integer harmonics only — guarantee perfect loop with no position jump on restart
   const floatY = (Math.sin(phase) * 15 + Math.sin(phase * 3) * 4) * motionScale;
@@ -87,7 +121,7 @@ export function HeroRankComposition({ medalSrc, medalAlt, reducedMotion = false 
     <AbsoluteFill
       style={{
         overflow: 'hidden',
-        background: 'radial-gradient(circle at 50% 42%, rgba(113, 255, 32, 0.12), transparent 33%)',
+        background: `radial-gradient(circle at 50% 42%, ${theme.bgGlow}, transparent 33%)`,
       }}
     >
       <div
@@ -101,7 +135,7 @@ export function HeroRankComposition({ medalSrc, medalAlt, reducedMotion = false 
           opacity: glowOpacity * 0.48,
           filter: 'blur(22px)',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(130,255,48,0.48), rgba(73,186,22,0.08) 48%, transparent 70%)',
+          background: `radial-gradient(circle, ${theme.mainGlowA}, ${theme.mainGlowB} 48%, transparent 70%)`,
           willChange: 'transform, opacity',
         }}
       />
@@ -118,8 +152,8 @@ export function HeroRankComposition({ medalSrc, medalAlt, reducedMotion = false 
             height: particle.size,
             borderRadius: '50%',
             opacity: particle.opacity,
-            background: '#a3ff45',
-            boxShadow: `0 0 ${particle.size * 2}px rgba(145,255,66,0.85)`,
+            background: theme.particle,
+            boxShadow: `0 0 ${particle.size * 2}px rgba(${theme.particleRgb},0.85)`,
             transform: 'translate(-50%, -50%)',
           }}
         />
@@ -133,7 +167,7 @@ export function HeroRankComposition({ medalSrc, medalAlt, reducedMotion = false 
           top: '38%',
           width: '64%',
           transform: `translate(-50%, -50%) translateX(${floatX}px) translateY(${floatY}px) perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`,
-          filter: `drop-shadow(0 0 ${24 + glowOpacity * 22}px rgba(126,255,43,${glowOpacity}))`,
+          filter: `drop-shadow(0 0 ${24 + glowOpacity * 22}px rgba(${theme.medalRgb},${glowOpacity}))`,
           transformStyle: 'preserve-3d',
           willChange: 'transform, filter',
           zIndex: 3,
@@ -154,11 +188,11 @@ export function HeroRankComposition({ medalSrc, medalAlt, reducedMotion = false 
           borderRadius: '50%',
           opacity: pedestalGlow,
           filter: 'blur(18px)',
-          background: 'radial-gradient(ellipse, rgba(153,255,79,0.65), rgba(71,177,24,0.12) 48%, transparent 72%)',
+          background: `radial-gradient(ellipse, ${theme.pedestalGlowA}, ${theme.pedestalGlowB} 48%, transparent 72%)`,
         }}
       />
       <img
-        src={pedestalImage}
+        src={pedestal}
         alt=""
         aria-hidden="true"
         className="sm:!w-[102%]"
@@ -178,7 +212,7 @@ export function HeroRankComposition({ medalSrc, medalAlt, reducedMotion = false 
   );
 }
 
-export function HeroRankAnimation({ medalSrc, medalAlt, className }: HeroRankAnimationProps) {
+export function HeroRankAnimation({ medalSrc, medalAlt, pedestalSrc, colorKey = 'verde', motionIntensity = 1, className }: HeroRankAnimationProps) {
   const reducedMotion = usePrefersReducedMotion();
   const playerRef = useRef<PlayerRef>(null);
 
@@ -203,7 +237,7 @@ export function HeroRankAnimation({ medalSrc, medalAlt, className }: HeroRankAni
       <Player
         ref={playerRef}
         component={HeroRankComposition}
-        inputProps={{ medalSrc, medalAlt, reducedMotion }}
+        inputProps={{ medalSrc, medalAlt, pedestalSrc, colorKey, motionIntensity, reducedMotion }}
         durationInFrames={180}
         compositionWidth={720}
         compositionHeight={620}

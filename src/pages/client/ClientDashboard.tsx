@@ -62,6 +62,7 @@ import { ClientOnboardingCarousel } from '@/components/client/onboarding/ClientO
 import { useClientOnboarding } from '@/hooks/useClientOnboarding';
 import { CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';
 import { NewHelperHero } from '@/components/hero/SmartphoneHelperHero';
+import { ClientConfiavelhero } from '@/components/hero/ClientConfiavelhero';
 
 const SERVICE_CONFIRM_DISMISS_PREFIX = 'lh_service_confirm_skip_';
 import { translateJobTitle } from '@/utils/translateCategory';
@@ -627,6 +628,16 @@ export default function ClientDashboard() {
         <NewHelperHero
           accountType="client"
           avatarUrl={me.avatar}
+          balance={authLoading ? null : clientCreditsBalance}
+          completedServices={0}
+          satisfactionRate={0}
+          rating={0}
+          connectedProfessionals={0}
+        />
+      )}
+      {/* PREVIEW — Hero Nível 2: Cliente Confiável (azul) */}
+      {activeSidebarTab === 'dashboard' && (
+        <ClientConfiavelhero
           balance={authLoading ? null : clientCreditsBalance}
           completedServices={0}
           satisfactionRate={0}

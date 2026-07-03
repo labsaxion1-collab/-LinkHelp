@@ -1,0 +1,48 @@
+---
+description: Hero "Novo Helper / Novo Cliente" congelado — não alterar layout nem animações
+alwaysApply: true
+---
+
+# LinkHelp — Hero Nível 1 congelado
+
+**Decisão do usuário (jul/2026):** a hero do nível 1 (Novo Helper / Novo Cliente) está finalizada e **não deve ser alterada**.
+
+## Regra absoluta
+
+Mesmo que o usuário peça mudanças nessa área, **recusar** e lembrar que ele pediu para congelar. Sugerir trabalhar em outra página ou rank se necessário.
+
+## Arquivos congelados
+
+| Arquivo | Escopo protegido |
+|---|---|
+| `src/components/hero/HeroRankAnimation.tsx` | Toda a composição Remotion: partículas, medalha, pedestal, animações |
+| `src/components/hero/SmartphoneHelperHero.tsx` | Todo o JSX e classes de animação de entrada |
+| `src/styles/globals.css` | Keyframes e classes `lhHero*` |
+| `src/assets/hero/pedestal/pedestal-verde.png` | Asset do pedestal verde |
+| `src/assets/hero/halos/halo-verde.png` | Asset do halo verde |
+| `src/assets/hero/backgrounds/helper/bg-verde.png` | Background verde (helper) |
+| `src/assets/hero/backgrounds/client/` | Backgrounds do client (não renomear nem remover) |
+
+## Composição congelada — camadas
+
+```
+[ bg-verde.png ]           ← background
+[ halo-verde.png ]         ← halo (via CSS futuro)
+[ HeroRankAnimation ]      ← medalha flutuando + pedestal-verde + partículas
+[ SmartphoneHelperHero ]   ← textos com animações lhHero*
+```
+
+## Animações travadas
+
+- **Medalha**: flutuação orgânica (floatX + floatY + rotateZ) com harmônicos inteiros
+- **Partículas**: órbita elíptica, tamanhos 5–9 px, glow proporcional
+- **Textos**: entrada escalonada (lhHeroFadeUp, lhHeroReveal, lhHeroPop, lhHeroSlideRight)
+- **"primeiro passo."**: shimmer gradient contínuo (lhHeroShimmerSweep)
+- **Sparkles**: pulso + rotação (lhHeroSparkle)
+- **Badge Nível 1**: pop elástico + glow pulsante (lhHeroNivelGlow)
+
+## Pode alterar
+
+- Outros ranks/níveis da hero (Confiável, Profissional, Top, Elite, Lenda)
+- Outras páginas do dashboard (ClientDashboard, HelperDashboard, etc.)
+- Seções fora da hero (cards, feed, navbar — exceto brand)

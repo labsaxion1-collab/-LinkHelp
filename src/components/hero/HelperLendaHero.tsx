@@ -1,14 +1,14 @@
-import { ChevronRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { ChevronRight, Crown, Sparkles } from 'lucide-react';
 
 import backgroundImage from '@/assets/hero/backgrounds/helper/bg-dourado-flare.png';
-import medalImage from '@/assets/hero/medals/helper/profissional.png';
-import pedestalImage from '@/assets/hero/pedestal/pedestal-dourado.png';
+import medalImage from '@/assets/hero/medals/helper/lenda.png';
+import pedestalImage from '@/assets/hero/pedestal/pedestal-dourado-elite.png';
 import particlesImage from '@/assets/hero/particles/particulas.png';
 import { HeroRankAnimation } from '@/components/hero/HeroRankAnimation';
 import {
-  HELPER_PROFISSIONAL_LEVEL_VISUAL,
-  HELPER_PROFISSIONAL_SPARKLES,
-} from '@/config/helperProfissionalLevelVisual';
+  HELPER_LENDA_LEVEL_VISUAL,
+  HELPER_LENDA_SPARKLES,
+} from '@/config/helperLendaLevelVisual';
 import { BRAND } from '@/utils/brandAssets';
 
 type Props = {
@@ -19,8 +19,8 @@ type Props = {
   satisfactionRate?: number | null;
 };
 
-export function HelperProfissionalHero({ balance }: Props) {
-  const visual = HELPER_PROFISSIONAL_LEVEL_VISUAL;
+export function HelperLendaHero({ balance }: Props) {
+  const visual = HELPER_LENDA_LEVEL_VISUAL;
   const displayBalance =
     balance == null ? '—' : Math.max(0, Math.round(balance)).toLocaleString('pt-BR');
 
@@ -34,7 +34,7 @@ export function HelperProfissionalHero({ balance }: Props) {
       />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_24%,rgba(251,191,36,0.30),transparent_40%),linear-gradient(180deg,rgba(8,5,0,0.92),rgba(28,16,0,0.64)_38%,rgba(5,3,0,0.97)_84%)]" />
       <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden" aria-hidden="true">
-        {HELPER_PROFISSIONAL_SPARKLES.map((sparkle, index) => (
+        {HELPER_LENDA_SPARKLES.map((sparkle, index) => (
           <span
             key={index}
             className="lh-hero-gold-sparkle"
@@ -102,6 +102,7 @@ export function HelperProfissionalHero({ balance }: Props) {
               colorKey="dourado"
               motionIntensity={visual.motionIntensity}
               className="absolute inset-0 z-[2]"
+              legendMode
             />
           </div>
         </div>
@@ -119,7 +120,7 @@ export function HelperProfissionalHero({ balance }: Props) {
         <div className="lh-hero-progress mx-auto mt-3 max-w-[45rem] rounded-2xl border border-amber-300/20 bg-black/55 px-3 py-2.5 shadow-[0_8px_34px_rgba(251,191,36,0.12)] backdrop-blur-lg sm:px-5">
           <div className="flex items-center gap-2.5">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-amber-300/30 bg-amber-400/15 text-amber-200">
-              <ShieldCheck className="h-5 w-5" />
+              <Crown className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[10px] text-white/65 sm:text-xs">{visual.nextLevelLabel}</p>
@@ -135,8 +136,11 @@ export function HelperProfissionalHero({ balance }: Props) {
               style={{ width: `${visual.progressPercent}%` }}
             />
           </div>
-          <p className="mt-1.5 text-center text-[10px] text-white/55 sm:text-xs">
+          <p className="hidden">
             Mais {visual.pointsRemaining} pontos para alcançar o próximo nível
+          </p>
+          <p className="mt-1.5 text-center text-[10px] font-semibold text-amber-100/80 sm:text-xs">
+            Parabens! Voce atingiu o nivel maximo de excelencia.
           </p>
         </div>
       </div>

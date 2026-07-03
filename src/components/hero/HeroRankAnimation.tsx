@@ -62,6 +62,7 @@ const COLOR_THEME = {
 
 type CompositionProps = {
   medalSrc: string;
+  legendMode?: boolean;
   medalAlt: string;
   pedestalSrc?: string;
   colorKey?: HeroColorKey;
@@ -71,6 +72,7 @@ type CompositionProps = {
 
 type HeroRankAnimationProps = {
   medalSrc: string;
+  legendMode?: boolean;
   medalAlt: string;
   pedestalSrc?: string;
   colorKey?: HeroColorKey;
@@ -106,7 +108,7 @@ function usePrefersReducedMotion() {
   return reduced;
 }
 
-export function HeroRankComposition({ medalSrc, medalAlt, pedestalSrc, colorKey = 'verde', motionIntensity = 1, reducedMotion = false }: CompositionProps) {
+export function HeroRankComposition({ medalSrc, medalAlt, pedestalSrc, colorKey = 'verde', motionIntensity = 1, legendMode = false, reducedMotion = false }: CompositionProps) {
   const theme = COLOR_THEME[colorKey];
   const pedestal = pedestalSrc ?? pedestalVerdeImage;
   const frame = useCurrentFrame();
@@ -119,6 +121,10 @@ export function HeroRankComposition({ medalSrc, medalAlt, pedestalSrc, colorKey 
   const floatY = (Math.sin(phase) * 15 + Math.sin(phase * 3) * 4) * motionScale;
   const floatX = (Math.cos(phase) * 8 + Math.sin(phase * 2) * 3) * motionScale;
   const rotateY = (Math.sin(phase) * 6 + Math.sin(phase * 2) * 2.5) * motionScale;
+  const legendRotation = reducedMotion ? 0 : progress * 360;
+  const legendPulse = interpolate(Math.sin(phase * 2) * 0.5 + 0.5, [0, 1], [0.78, 1]);
+  const legendAuraOpacity = interpolate(Math.sin(phase) * 0.5 + 0.5, [0, 1], [0.18, 0.42]);
+
   const rotateX = (Math.cos(phase) * 3 + Math.cos(phase * 2) * 1.2) * motionScale;
   const rotateZ = Math.sin(phase * 2 + 1.0) * 2.2 * motionScale;
   const glowOpacity = interpolate(
@@ -150,10 +156,62 @@ export function HeroRankComposition({ medalSrc, medalAlt, pedestalSrc, colorKey 
   return (
     <AbsoluteFill
       style={{
+
         overflow: 'hidden',
         background: `radial-gradient(circle at 50% 42%, ${theme.bgGlow}, transparent 33%)`,
       }}
     >
+      {legendMode ? (
+        <>
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '40%',
+              width: '78%',
+              aspectRatio: '1',
+              borderRadius: '50%',
+              border: '2px solid rgba(255,196,57,0.24)',
+              boxShadow: '0 0 24px rgba(255,145,0,0.20), inset 0 0 32px rgba(255,196,57,0.10)',
+              opacity: legendAuraOpacity,
+              transform: `translate(-50%, -50%) rotate(${legendRotation}deg) scale(${legendPulse})`,
+              willChange: 'transform, opacity',
+            }}
+          />
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '40%',
+              width: '62%',
+              aspectRatio: '1',
+              borderRadius: '50%',
+              border: '1px dashed rgba(255,225,138,0.42)',
+              opacity: legendAuraOpacity * 0.9,
+              transform: `translate(-50%, -50%) rotate(${-legendRotation * 0.72}deg)`,
+              willChange: 'transform, opacity',
+            }}
+          />
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '40%',
+              width: '86%',
+              aspectRatio: '1',
+              borderRadius: '50%',
+              background: 'conic-gradient(from 0deg, transparent 0deg, rgba(255,176,32,0.20) 12deg, transparent 28deg, transparent 92deg, rgba(255,225,138,0.16) 105deg, transparent 124deg, transparent 210deg, rgba(255,126,0,0.18) 224deg, transparent 244deg)',
+              filter: 'blur(5px)',
+              opacity: legendAuraOpacity,
+              transform: `translate(-50%, -50%) rotate(${legendRotation * 0.45}deg) scale(${0.98 + legendPulse * 0.04})`,
+              willChange: 'transform, opacity',
+            }}
+          />
+        </>
+      ) : null}
       <div
         style={{
           position: 'absolute',
@@ -197,7 +255,7 @@ export function HeroRankComposition({ medalSrc, medalAlt, pedestalSrc, colorKey 
           top: '38%',
           width: '64%',
           transform: `translate(-50%, -50%) translateX(${floatX}px) translateY(${floatY}px) perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`,
-          filter: `drop-shadow(0 0 ${24 + glowOpacity * 22}px rgba(${theme.medalRgb},${glowOpacity}))`,
+          filter: `drop-shadow(0 0 ${24 + glowOpacity * (legendMode ? 34 : 22)}px rgba(${theme.medalRgb},${Math.min(1, glowOpacity + (legendMode ? 0.12 : 0))}))`,
           transformStyle: 'preserve-3d',
           willChange: 'transform, filter',
           zIndex: 3,
@@ -242,7 +300,7 @@ export function HeroRankComposition({ medalSrc, medalAlt, pedestalSrc, colorKey 
   );
 }
 
-export function HeroRankAnimation({ medalSrc, medalAlt, pedestalSrc, colorKey = 'verde', motionIntensity = 1, className }: HeroRankAnimationProps) {
+export function HeroRankAnimation({ medalSrc, medalAlt, pedestalSrc, colorKey = 'verde', motionIntensity = 1, legendMode = false, className }: HeroRankAnimationProps) {
   const reducedMotion = usePrefersReducedMotion();
   const playerRef = useRef<PlayerRef>(null);
 
@@ -267,7 +325,7 @@ export function HeroRankAnimation({ medalSrc, medalAlt, pedestalSrc, colorKey = 
       <Player
         ref={playerRef}
         component={HeroRankComposition}
-        inputProps={{ medalSrc, medalAlt, pedestalSrc, colorKey, motionIntensity, reducedMotion }}
+        inputProps={{ medalSrc, medalAlt, pedestalSrc, colorKey, motionIntensity, legendMode, reducedMotion }}
         durationInFrames={180}
         compositionWidth={720}
         compositionHeight={620}

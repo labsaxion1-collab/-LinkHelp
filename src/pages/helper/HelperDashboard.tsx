@@ -83,6 +83,9 @@ import { LhCard } from '@/components/design-system/LhCard';
 import { NewHelperHero } from '@/components/hero/SmartphoneHelperHero';
 import { HelperInicianteHero } from '@/components/hero/HelperInicianteHero';
 import { HelperProfissionalHero } from '@/components/hero/HelperProfissionalHero';
+import { HelperEliteHero } from '@/components/hero/HelperEliteHero';
+import { TopHelperHero } from '@/components/hero/TopHelperHero';
+import { HelperLendaHero } from '@/components/hero/HelperLendaHero';
 
 type HelperHomeInfoSlide = {
   id: string;
@@ -1064,6 +1067,30 @@ export default function HelperDashboard() {
             rating={helperMvpStats.avgRating}
             connectedProfessionals={helperMvpStats.accepted}
           />
+          <HelperEliteHero
+            balance={walletBalance}
+            completedServices={helperMvpStats.completed}
+            satisfactionRate={helperMvpStats.responseRatePct}
+            rating={helperMvpStats.avgRating}
+            connectedProfessionals={helperMvpStats.accepted}
+          />
+          <TopHelperHero
+            balance={walletBalance}
+            completedServices={helperMvpStats.completed}
+            satisfactionRate={helperMvpStats.responseRatePct}
+            rating={helperMvpStats.avgRating}
+            connectedProfessionals={helperMvpStats.accepted}
+          />
+          <HelperLendaHero
+            balance={walletBalance}
+            completedServices={helperMvpStats.completed}
+            satisfactionRate={helperMvpStats.responseRatePct}
+            rating={helperMvpStats.avgRating}
+            connectedProfessionals={helperMvpStats.accepted}
+          />
+
+
+
 
 
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Player, type PlayerRef } from '@remotion/player';
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 
-import pedestalImage from '@/assets/hero/pedestal/pedestal.png';
+import pedestalImage from '@/assets/hero/pedestal/pedestal-verde.png';
 
 type CompositionProps = {
   medalSrc: string;
@@ -17,16 +17,16 @@ type HeroRankAnimationProps = {
 };
 
 const PARTICLES = [
-  { angle: 0.1, radiusX: 31, radiusY: 22, size: 4, depth: 0.8 },
-  { angle: 0.8, radiusX: 39, radiusY: 27, size: 3, depth: 1.2 },
-  { angle: 1.55, radiusX: 34, radiusY: 24, size: 5, depth: 0.65 },
-  { angle: 2.2, radiusX: 42, radiusY: 30, size: 3, depth: 0.95 },
-  { angle: 2.9, radiusX: 29, radiusY: 20, size: 4, depth: 1.35 },
-  { angle: 3.6, radiusX: 38, radiusY: 26, size: 2, depth: 0.75 },
-  { angle: 4.25, radiusX: 44, radiusY: 31, size: 4, depth: 1.1 },
-  { angle: 4.95, radiusX: 33, radiusY: 23, size: 3, depth: 0.9 },
-  { angle: 5.55, radiusX: 41, radiusY: 28, size: 5, depth: 1.25 },
-  { angle: 6.05, radiusX: 28, radiusY: 19, size: 2, depth: 0.7 },
+  { angle: 0.1, radiusX: 31, radiusY: 22, size: 7, depth: 0.8 },
+  { angle: 0.8, radiusX: 39, radiusY: 27, size: 6, depth: 1.2 },
+  { angle: 1.55, radiusX: 34, radiusY: 24, size: 9, depth: 0.65 },
+  { angle: 2.2, radiusX: 42, radiusY: 30, size: 6, depth: 0.95 },
+  { angle: 2.9, radiusX: 29, radiusY: 20, size: 7, depth: 1.35 },
+  { angle: 3.6, radiusX: 38, radiusY: 26, size: 5, depth: 0.75 },
+  { angle: 4.25, radiusX: 44, radiusY: 31, size: 8, depth: 1.1 },
+  { angle: 4.95, radiusX: 33, radiusY: 23, size: 6, depth: 0.9 },
+  { angle: 5.55, radiusX: 41, radiusY: 28, size: 9, depth: 1.25 },
+  { angle: 6.05, radiusX: 28, radiusY: 19, size: 5, depth: 0.7 },
 ] as const;
 
 function usePrefersReducedMotion() {
@@ -51,9 +51,12 @@ export function HeroRankComposition({ medalSrc, medalAlt, reducedMotion = false 
   const phase = progress * Math.PI * 2;
   const motionScale = reducedMotion ? 0.18 : 1;
 
-  const floatY = Math.sin(phase) * 24 * motionScale;
-  const rotateY = Math.sin(phase) * 8 * motionScale;
-  const rotateX = Math.cos(phase) * 4 * motionScale;
+  // Integer harmonics only — guarantee perfect loop with no position jump on restart
+  const floatY = (Math.sin(phase) * 15 + Math.sin(phase * 3) * 4) * motionScale;
+  const floatX = (Math.cos(phase) * 8 + Math.sin(phase * 2) * 3) * motionScale;
+  const rotateY = (Math.sin(phase) * 6 + Math.sin(phase * 2) * 2.5) * motionScale;
+  const rotateX = (Math.cos(phase) * 3 + Math.cos(phase * 2) * 1.2) * motionScale;
+  const rotateZ = Math.sin(phase * 2 + 1.0) * 2.2 * motionScale;
   const glowOpacity = interpolate(
     Math.sin(phase) * 0.5 + 0.5,
     [0, 1],
@@ -116,7 +119,7 @@ export function HeroRankComposition({ medalSrc, medalAlt, reducedMotion = false 
             borderRadius: '50%',
             opacity: particle.opacity,
             background: '#a3ff45',
-            boxShadow: '0 0 10px rgba(145,255,66,0.9)',
+            boxShadow: `0 0 ${particle.size * 2}px rgba(145,255,66,0.85)`,
             transform: 'translate(-50%, -50%)',
           }}
         />
@@ -129,7 +132,7 @@ export function HeroRankComposition({ medalSrc, medalAlt, reducedMotion = false 
           left: '50%',
           top: '38%',
           width: '64%',
-          transform: `translate(-50%, -50%) translateY(${floatY}px) perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
+          transform: `translate(-50%, -50%) translateX(${floatX}px) translateY(${floatY}px) perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`,
           filter: `drop-shadow(0 0 ${24 + glowOpacity * 22}px rgba(126,255,43,${glowOpacity}))`,
           transformStyle: 'preserve-3d',
           willChange: 'transform, filter',

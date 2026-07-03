@@ -1185,15 +1185,15 @@ export default function ClientDashboard() {
                 <section className="px-4 sm:px-6 md:px-8">
                   <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_how_it_works.title')}</h2>
                   <div className="mt-4">
-                    <article key={activeHowItWorksStep} className="relative overflow-hidden rounded-[1.6rem] bg-white px-4 py-4 shadow-[0_16px_42px_rgba(15,23,42,0.08)] ring-1 ring-slate-100 transition-all duration-500 animate-in fade-in slide-in-from-right-2">
+                    <article key={activeHowItWorksStep} className="relative h-[7.75rem] overflow-hidden rounded-[1.6rem] bg-white px-4 py-3 shadow-[0_16px_42px_rgba(15,23,42,0.08)] ring-1 ring-slate-100 transition-all duration-500 animate-in fade-in slide-in-from-right-2 sm:h-32">
                       <span className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full bg-[#2563FF] text-sm font-black text-white shadow-[0_8px_18px_rgba(37,99,255,0.28)]">{activeHowItWorksStep + 1}</span>
-                      <div className="flex items-center gap-4 pr-10">
+                      <div className="flex h-full items-center gap-4 pr-10">
                         <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#EAF2FF] text-[#2563FF]">
                           <ActiveHowItWorksIcon className="h-8 w-8" />
                         </span>
                         <span className="min-w-0">
-                          <span className="block text-lg font-black leading-tight text-[#0B1220]">{activeHowItWorks.title}</span>
-                          <span className="mt-1 block text-sm font-semibold leading-relaxed text-[#64748B]">{activeHowItWorks.body}</span>
+                          <span className="line-clamp-2 block text-[clamp(1rem,4.6vw,1.125rem)] font-black leading-tight text-[#0B1220]">{activeHowItWorks.title}</span>
+                          <span className="mt-1 line-clamp-2 block text-[clamp(0.72rem,3.3vw,0.8125rem)] font-semibold leading-snug text-[#64748B]">{activeHowItWorks.body}</span>
                         </span>
                       </div>
                     </article>
@@ -1223,14 +1223,9 @@ export default function ClientDashboard() {
                       ].map((stat) => {
                         const Icon = stat.icon;
                         return (
-                          <article key={stat.label} className="flex min-w-0 items-center gap-3 rounded-2xl border border-lime-500/20 bg-[#020a04] px-3 py-4 shadow-[0_12px_30px_rgba(0,20,7,0.16)]">
-                            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-lime-400/35 bg-lime-500/10 text-lime-400 shadow-[0_0_18px_rgba(132,204,22,0.12)]">
-                              <Icon className="h-6 w-6" strokeWidth={2.35} />
-                            </span>
-                            <div className="min-w-0">
-                              <p className="text-3xl font-black leading-none tracking-tight text-white">{stat.value}</p>
-                              <p className="mt-1 text-sm font-bold leading-tight text-white/68">{stat.label}</p>
-                            </div>
+                          <article key={stat.label} className="flex flex-col items-center rounded-2xl border border-lime-500/20 bg-[#020a04] px-3 py-5 text-center shadow-[0_12px_30px_rgba(0,20,7,0.16)]">
+                            <p className="text-xs font-semibold leading-snug text-lime-400">{stat.label}</p>
+                            <p className="mt-1.5 text-[2rem] font-black leading-none tracking-tight text-white">{stat.value}</p>
                           </article>
                         );
                       })}

@@ -652,6 +652,62 @@
     50%      { box-shadow: 0 0 42px rgba(59,130,246,0.68), 0 0 14px rgba(96,165,250,0.5); }
   }
 
+  @keyframes lhHeroNivelPurpleGlow {
+    0%, 100% { box-shadow: 0 0 22px rgba(147,51,234,0.32); }
+    50%      { box-shadow: 0 0 42px rgba(147,51,234,0.68), 0 0 14px rgba(192,132,252,0.5); }
+  }
+
+  @keyframes lhHeroNivelEliteGlow {
+    0%, 100% { box-shadow: 0 0 24px rgba(251,191,36,0.38), 0 0 8px rgba(255,255,255,0.12); }
+    50%      { box-shadow: 0 0 52px rgba(251,191,36,0.82), 0 0 22px rgba(255,247,200,0.55), 0 0 6px rgba(255,255,255,0.35); }
+  }
+
+  @keyframes lhHeroEliteShockwave {
+    0% {
+      transform: translate(-50%, -50%) scale(0.6);
+      opacity: 0.58;
+    }
+    20% {
+      opacity: 0.52;
+    }
+    55% {
+      opacity: 0.28;
+    }
+    85% {
+      opacity: 0.08;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1.46);
+      opacity: 0;
+    }
+  }
+
+  @keyframes lhHeroEliteCorePulse {
+    0%, 100% {
+      transform: translate(-50%, -50%) scale(0.92);
+      opacity: 0.38;
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.08);
+      opacity: 0.62;
+    }
+  }
+
+  @keyframes lhHeroEliteSparkle {
+    0%, 62%, 100% { opacity: 0; transform: scale(0.3); }
+    28%, 44%      { opacity: 1; transform: scale(1.15); }
+  }
+
+  @keyframes lhHeroEliteOrbDrift {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.35; }
+    50%      { transform: translate(6px, -10px) scale(1.12); opacity: 0.75; }
+  }
+
+  @keyframes lhHeroEliteHaloGlow {
+    0%, 100% { filter: drop-shadow(0 0 18px rgba(251,191,36,0.35)); }
+    50%      { filter: drop-shadow(0 0 36px rgba(255,230,120,0.65)); }
+  }
+
   @keyframes lhHeroHaloSpin {
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
@@ -981,6 +1037,126 @@ a {
   will-change: opacity, transform;
 }
 
+/* ??? Gold variant (Ouro) ??? */
+.lh-hero-highlight-gold {
+  background: linear-gradient(90deg, #fcd34d 0%, #fff7c2 34%, #d99b18 52%, #fde68a 70%, #fbbf24 100%);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: lhHeroShimmerSweep 4.6s linear 1.4s infinite;
+}
+.lh-hero-nivel-badge-gold {
+  animation:
+    lhHeroPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.58s both,
+    lhHeroNivelGlow 3s ease-in-out 1.6s infinite;
+}
+.lh-hero-gold-sparkle {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff1a8;
+  box-shadow: 0 0 7px 1px rgba(253,230,138,0.9), 0 0 16px 4px rgba(245,158,11,0.46);
+  animation: lhHeroBlueSparkle ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+/* ─── Purple variant (VIP) ─── */
+.lh-hero-highlight-purple {
+  background: linear-gradient(90deg, #d8b4fe 0%, #f3e8ff 36%, #a855f7 52%, #c084fc 68%, #d8b4fe 100%);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: lhHeroShimmerSweep 4.2s linear 1.4s infinite;
+}
+.lh-hero-nivel-badge-purple {
+  animation:
+    lhHeroPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.58s both,
+    lhHeroNivelPurpleGlow 2.8s ease-in-out 1.6s infinite;
+}
+.lh-hero-purple-sparkle {
+  position: absolute;
+  border-radius: 50%;
+  background: #e9d5ff;
+  box-shadow: 0 0 6px 1px rgba(216,180,254,0.9), 0 0 14px 3px rgba(147,51,234,0.45);
+  animation: lhHeroBlueSparkle ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+/* ─── Elite variant (Nível máximo) ─── */
+.lh-hero-highlight-elite {
+  background: linear-gradient(90deg, #fde68a 0%, #fffef0 28%, #f59e0b 48%, #fff8dc 62%, #fbbf24 78%, #fde68a 100%);
+  background-size: 320% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: lhHeroShimmerSweep 3.8s linear 1.2s infinite;
+}
+.lh-hero-nivel-badge-elite {
+  animation:
+    lhHeroPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.58s both,
+    lhHeroNivelEliteGlow 2.4s ease-in-out 1.4s infinite;
+}
+.lh-hero-elite-sparkle {
+  position: absolute;
+  border-radius: 50%;
+  background: #fffbeb;
+  box-shadow: 0 0 8px 2px rgba(255,247,200,0.95), 0 0 18px 4px rgba(245,158,11,0.5);
+  animation: lhHeroEliteSparkle ease-in-out infinite;
+  will-change: opacity, transform;
+}
+.lh-hero-elite-orb {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,247,200,0.9) 0%, rgba(251,191,36,0.45) 42%, transparent 72%);
+  animation: lhHeroEliteOrbDrift ease-in-out infinite;
+  will-change: opacity, transform;
+}
+.lh-hero-elite-shockwave-wrap {
+  position: absolute;
+  left: 50%;
+  top: 35.5%;
+  z-index: 2;
+  width: 56%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.lh-hero-elite-shockwave {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3.5px solid rgba(251, 191, 36, 0.58);
+  box-shadow: 0 0 32px rgba(251, 191, 36, 0.28), inset 0 0 24px rgba(255, 230, 120, 0.12);
+  transform: translate(-50%, -50%);
+  animation: lhHeroEliteShockwave 16s linear infinite;
+  will-change: transform, opacity;
+}
+.lh-hero-elite-core-pulse {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  z-index: 1;
+  width: 38%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 247, 200, 0.42) 0%, rgba(251, 191, 36, 0.18) 38%, transparent 72%);
+  animation: lhHeroEliteCorePulse 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
+.lh-hero-elite-halo-glow {
+  animation:
+    lhHeroHaloPulse 6.5s ease-in-out infinite,
+    lhHeroEliteHaloGlow 3.8s ease-in-out infinite;
+}
+.lh-hero-elite-halo-glow .lh-hero-halo-spin {
+  animation: lhHeroHaloSpin 52s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lh-hero-tag,
   .lh-hero-balance,
@@ -1002,7 +1178,15 @@ a {
   }
   .lh-hero-halo-wrap,
   .lh-hero-halo-spin,
-  .lh-hero-blue-sparkle {
+  .lh-hero-blue-sparkle,
+  .lh-hero-gold-sparkle,
+  .lh-hero-purple-sparkle,
+  .lh-hero-elite-sparkle,
+  .lh-hero-elite-orb,
+  .lh-hero-elite-shockwave,
+  .lh-hero-elite-core-pulse,
+  .lh-hero-elite-halo-glow,
+  .lh-hero-elite-halo-glow .lh-hero-halo-spin {
     animation: none;
   }
 }

@@ -286,10 +286,10 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={openTutorialFromNav}
-                className={`rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${usePremiumNav ? 'text-white/90 hover:bg-white/10' : 'text-slate-600 hover:bg-slate-100'}`}
+                className="relative rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 aria-label={t('nav.tutorial')}
               >
-                <GraduationCap className="h-5 w-5" />
+                <GraduationCap className="h-4 w-4" />
               </button>
             ) : null}
             {isConnected ? <NotificationsDropdown userId={userId} compact /> : null}

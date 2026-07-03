@@ -63,6 +63,9 @@ import { useClientOnboarding } from '@/hooks/useClientOnboarding';
 import { CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';
 import { NewHelperHero } from '@/components/hero/SmartphoneHelperHero';
 import { ClientConfiavelhero } from '@/components/hero/ClientConfiavelhero';
+import { ClientOuroHero } from '@/components/hero/ClientOuroHero';
+import { ClientVipHero } from '@/components/hero/ClientVipHero';
+import { ClientEliteHero } from '@/components/hero/ClientEliteHero';
 
 const SERVICE_CONFIRM_DISMISS_PREFIX = 'lh_service_confirm_skip_';
 import { translateJobTitle } from '@/utils/translateCategory';
@@ -638,6 +641,36 @@ export default function ClientDashboard() {
       {/* PREVIEW — Hero Nível 2: Cliente Confiável (azul) */}
       {activeSidebarTab === 'dashboard' && (
         <ClientConfiavelhero
+          balance={authLoading ? null : clientCreditsBalance}
+          completedServices={0}
+          satisfactionRate={0}
+          rating={0}
+          connectedProfessionals={0}
+        />
+      )}
+      {/* PREVIEW ? Hero N?vel 3: Cliente Ouro (dourado) */}
+      {activeSidebarTab === 'dashboard' && (
+        <ClientOuroHero
+          balance={authLoading ? null : clientCreditsBalance}
+          completedServices={0}
+          satisfactionRate={0}
+          rating={0}
+          connectedProfessionals={0}
+        />
+      )}
+      {/* PREVIEW — Hero Nível 4: Cliente VIP (roxo) */}
+      {activeSidebarTab === 'dashboard' && (
+        <ClientVipHero
+          balance={authLoading ? null : clientCreditsBalance}
+          completedServices={0}
+          satisfactionRate={0}
+          rating={0}
+          connectedProfessionals={0}
+        />
+      )}
+      {/* PREVIEW — Hero Nível 5: Cliente Elite (dourado máximo) */}
+      {activeSidebarTab === 'dashboard' && (
+        <ClientEliteHero
           balance={authLoading ? null : clientCreditsBalance}
           completedServices={0}
           satisfactionRate={0}

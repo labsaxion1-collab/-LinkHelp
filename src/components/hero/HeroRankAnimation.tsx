@@ -5,7 +5,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remo
 import pedestalVerdeImage from '@/assets/hero/pedestal/pedestal-verde.png';
 
 // ─── Color theme system ───────────────────────────────────────────────────────
-export type HeroColorKey = 'verde' | 'azul';
+export type HeroColorKey = 'verde' | 'azul' | 'dourado' | 'roxo';
 
 const COLOR_THEME = {
   verde: {
@@ -27,6 +27,26 @@ const COLOR_THEME = {
     medalRgb: '43,126,255',
     pedestalGlowA: 'rgba(79,153,255,0.65)',
     pedestalGlowB: 'rgba(22,71,177,0.12)',
+  },
+  dourado: {
+    particle: '#ffe08a',
+    particleRgb: '255,205,92',
+    bgGlow: 'rgba(251,191,36,0.15)',
+    mainGlowA: 'rgba(255,214,94,0.52)',
+    mainGlowB: 'rgba(180,105,12,0.10)',
+    medalRgb: '255,193,43',
+    pedestalGlowA: 'rgba(255,218,112,0.70)',
+    pedestalGlowB: 'rgba(177,103,15,0.14)',
+  },
+  roxo: {
+    particle: '#c4b5fd',
+    particleRgb: '167,139,250',
+    bgGlow: 'rgba(147,51,234,0.14)',
+    mainGlowA: 'rgba(168,85,247,0.48)',
+    mainGlowB: 'rgba(88,28,135,0.08)',
+    medalRgb: '192,132,252',
+    pedestalGlowA: 'rgba(192,132,252,0.65)',
+    pedestalGlowB: 'rgba(88,28,135,0.12)',
   },
 } as const;
 

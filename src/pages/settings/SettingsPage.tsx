@@ -531,17 +531,6 @@ export default function SettingsPage() {
                 />
               </label>
             ) : null}
-
-            {/* Delete account */}
-            <div className="border-t border-gray-100 pt-4">
-              <button
-                type="button"
-                onClick={() => { setDeleteConfirmText(''); setShowDeleteModal(true); }}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-100"
-              >
-                {t('app_pages.settings_delete_account')}
-              </button>
-            </div>
           </div>
         </SettingsCard>
 
@@ -705,6 +694,14 @@ export default function SettingsPage() {
         >
           <LogOut className="h-4 w-4" />
           {t('app_pages.settings_logout')}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { setDeleteConfirmText(''); setShowDeleteModal(true); }}
+          className="flex w-full min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm font-bold text-red-600 hover:bg-red-100"
+        >
+          {t('app_pages.settings_delete_account')}
         </button>
       </div>
 

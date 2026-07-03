@@ -70,7 +70,7 @@ export function HelperProfissionalHero({ balance }: Props) {
                 className="h-8 w-8 shrink-0 object-contain sm:h-11 sm:w-11"
               />
               <div className="min-w-0 sm:flex-1">
-                <p className="hidden text-xs text-white/70 sm:block">{visual.balanceLabel}</p>
+                <p className="hidden text-xs text-white sm:block">{visual.balanceLabel}</p>
                 <p className="whitespace-nowrap text-sm font-black sm:text-xl">{displayBalance} LC</p>
               </div>
               <ChevronRight className="hidden h-6 w-6 text-white/35 sm:block" />
@@ -112,7 +112,7 @@ export function HelperProfissionalHero({ balance }: Props) {
           </span>
         </div>
 
-        <p className="lh-hero-description mx-auto -mt-1 max-w-[22rem] text-center text-sm font-medium leading-relaxed text-white/68 sm:max-w-[34rem] sm:text-base">
+        <p className="lh-hero-description mx-auto -mt-1 max-w-[22rem] text-center text-sm font-medium leading-relaxed text-white sm:max-w-[34rem] sm:text-base">
           {visual.description}
         </p>
 
@@ -122,7 +122,7 @@ export function HelperProfissionalHero({ balance }: Props) {
               <ShieldCheck className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] text-white/65 sm:text-xs">{visual.nextLevelLabel}</p>
+              <p className="text-[10px] text-white sm:text-xs">{visual.nextLevelLabel}</p>
               <p className="truncate text-xs font-black uppercase text-amber-300 sm:text-base">
                 {visual.nextLevel}
               </p>
@@ -135,7 +135,7 @@ export function HelperProfissionalHero({ balance }: Props) {
               style={{ width: `${visual.progressPercent}%` }}
             />
           </div>
-          <p className="mt-1.5 text-center text-[10px] text-white/55 sm:text-xs">
+          <p className="mt-1.5 text-center text-[10px] text-white sm:text-xs">
             Mais {visual.pointsRemaining} pontos para alcançar o próximo nível
           </p>
         </div>

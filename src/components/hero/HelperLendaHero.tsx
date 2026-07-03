@@ -108,7 +108,7 @@ export function HelperLendaHero({ balance }: Props) {
         </div>
 
         <div className="mx-auto w-fit -translate-y-2">
-          <span className="lh-hero-nivel-badge-gold inline-flex min-w-[7.5rem] justify-center rounded-full border border-amber-200/50 bg-gradient-to-b from-yellow-200 via-amber-400 to-amber-800 px-4 py-1 text-sm font-black text-amber-950 shadow-[0_0_20px_rgba(251,191,36,0.30)] sm:min-w-[9rem] sm:text-base">
+          <span className="lh-hero-nivel-badge-gold inline-flex min-w-[7.5rem] justify-center rounded-full border border-amber-200/50 bg-gradient-to-b from-yellow-200 via-amber-400 to-amber-800 px-4 py-1 text-sm font-black text-white [text-shadow:0_1px_5px_rgba(75,35,0,0.9)] shadow-[0_0_20px_rgba(251,191,36,0.30)] sm:min-w-[9rem] sm:text-base">
             {visual.levelLabel}
           </span>
         </div>

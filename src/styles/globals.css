@@ -990,7 +990,7 @@ a {
   animation: lhHeroShimmerSweep 4.2s linear 1.4s infinite;
 }
 .lh-helper-hero .lh-hero-highlight-shimmer {
-  background: linear-gradient(90deg, #fde68a 0%, #ffffff 36%, #fbbf24 54%, #fcd34d 72%, #fde68a 100%);
+  background: linear-gradient(90deg, #86efac 0%, #ecfccb 34%, #84cc16 54%, #a3e635 72%, #86efac 100%);
   background-size: 300% auto;
   -webkit-background-clip: text;
   background-clip: text;

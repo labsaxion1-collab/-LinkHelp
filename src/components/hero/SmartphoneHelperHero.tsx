@@ -40,7 +40,7 @@ export function NewHelperHero({ accountType = 'helper', balance, completedServic
 
       <div className="relative z-10 px-3 pb-3 pt-3 sm:px-8 sm:pb-5 sm:pt-5">
         <header className="flex items-center justify-between gap-3">
-          <p className={`lh-hero-tag inline-flex min-w-0 items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.13em] sm:text-xs sm:tracking-[0.18em] ${isClient ? 'text-lime-300' : 'rounded-full border border-white/15 bg-black/55 px-2.5 py-1 text-amber-200 shadow-[0_6px_22px_rgba(0,0,0,0.42)] backdrop-blur-md'}`}>
+          <p className={`lh-hero-tag inline-flex min-w-0 items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.13em] sm:text-xs sm:tracking-[0.18em] ${isClient ? 'text-lime-300' : 'rounded-full border border-lime-300/20 bg-black/55 px-2.5 py-1 text-lime-300 shadow-[0_6px_22px_rgba(0,0,0,0.42),0_0_16px_rgba(163,230,53,0.12)] backdrop-blur-md'}`}>
             <Sparkles className="lh-hero-sparkle-icon h-3.5 w-3.5 shrink-0" /> {journeyEyebrow}
           </p>
           <div className="lh-hero-balance flex min-w-0 items-center">

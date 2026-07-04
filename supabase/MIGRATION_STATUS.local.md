@@ -1,6 +1,6 @@
 # Migration Status — LinkHelp
 
-> Gerado em: 2026-06-24  
+> Atualizado em: 2026-07-04  
 > Projeto remoto: `mttjbaiiaeiqqmnwnzwr` (`supabase/config.toml`)
 
 ---
@@ -9,7 +9,7 @@
 
 | Pasta | Arquivos | Papel |
 |-------|----------|-------|
-| `supabase/migrations/` | **42** | Chain ativo — processado pelo Supabase CLI |
+| `supabase/migrations/` | **45** | Chain ativo — uma migration por versão, de 0001 a 0045 |
 | `supabase/deprecated_migrations/` | **3** | Arquivo histórico — **não** processado pelo CLI |
 
 ### `supabase/migrations/` (ativo)
@@ -58,6 +58,9 @@
 | 0040 | `0040_push_notification_triggers.sql` | ativo |
 | 0041 | `0041_exclusive_helper_applications.sql` | ativo |
 | 0042 | `0042_opportunity_unlock_refunds.sql` | ativo |
+| 0043 | `0043_user_gamification.sql` | ativo — gamificação |
+| 0044 | `0044_user_gamification_hero_progress.sql` | ativo — gamificação |
+| 0045 | `0045_user_gamification_realtime.sql` | ativo — gamificação |
 
 ### `supabase/deprecated_migrations/` (fora do CLI)
 
@@ -94,11 +97,9 @@
 
 ---
 
-## Ações realizadas
+## Reconciliação local concluída — 2026-07-04
 
-### 1. Renomeação (2026-06-24)
-
-Duplicatas incorretas renomeadas com sufixo `_DEPRECATED` (não deletadas):
+As três migrations obsoletas ainda estavam duplicadas em `supabase/migrations/`, apesar de já existirem cópias idênticas em `supabase/deprecated_migrations/`. Nesta reconciliação, elas foram removidas somente do chain ativo:
 
 ```
 0016_helper_signup_12_lc.sql
@@ -106,11 +107,7 @@ Duplicatas incorretas renomeadas com sufixo `_DEPRECATED` (não deletadas):
 0032_reconcile_helper_signup_bonus_20_lc.sql
 ```
 
-### 2. Arquivamento fora de `migrations/` (2026-06-24)
-
-**Verificação Supabase CLI:** arquivos `*_DEPRECATED.sql` dentro de `supabase/migrations/` **ainda seriam executados**. O CLI aplica todo `.sql` na pasta que corresponda ao padrão `<versão>_<nome>.sql` (ex.: `0016_helper_signup_12_lc_DEPRECATED.sql` casa com `0016_*`). Subpastas de `migrations/` não são escaneadas; o sufixo `_DEPRECATED` **não** desativa a migration.
-
-**Ação:** os 3 arquivos foram **movidos** para `supabase/deprecated_migrations/` — pasta fora do escopo do CLI, preservando o SQL para referência histórica.
+As cópias históricas permanecem preservadas fora do alcance do Supabase CLI:
 
 ```
 supabase/deprecated_migrations/
@@ -119,18 +116,7 @@ supabase/deprecated_migrations/
 └── 0032_reconcile_helper_signup_bonus_20_lc_DEPRECATED.sql
 ```
 
-`supabase/migrations/` ficou com **42 arquivos** (um por prefixo, sem duplicatas).
-
-**Produção já migrada:** se o remoto registrou os nomes **originais** (sem `_DEPRECATED`) em `supabase_migrations.schema_migrations`, o estado remoto não muda só por mover arquivos locais. Verificar com:
-
-```sql
-select version, name from supabase_migrations.schema_migrations
-where name like '%0016%' or name like '%0017%' or name like '%0032%'
-order by version;
-```
-
----
-
+As migrations canônicas 0016, 0017 e 0032 não foram alteradas. O chain ativo ficou com 45 arquivos, um por versão de 0001 a 0045. As versões 0043–0045 pertencem à gamificação; consolidações futuras devem começar em 0046 ou número superior livre.
 ## `supabase db diff` — resultado
 
 ### Status: **NÃO EXECUTADO** neste ambiente
@@ -259,7 +245,7 @@ Estes arquivos **não** entram no chain automático do CLI. Podem representar dr
 - `apply_lead_quality_score_fix.sql`, `apply_requests_address_budget.sql`
 - … e outros em `supabase/apply_*.sql`
 
-**Ação recomendada:** após obter `db diff`, consolidar patches `apply_*` já aplicados em produção numa migration `0043_*` ou marcar como histórico.
+**Ação recomendada:** após obter `db diff`, consolidar patches `apply_*` já aplicados em produção numa migration `0046_*` ou número superior livre ou marcar como histórico.
 
 ---
 
@@ -268,5 +254,5 @@ Estes arquivos **não** entram no chain automático do CLI. Podem representar dr
 1. Rodar `supabase db diff --linked` numa máquina com CLI funcional + credenciais.
 2. Colar saída em `supabase/db_diff_output.sql` e atualizar esta seção.
 3. Confirmar `schema_migrations` remoto vs. nomes `_DEPRECATED`.
-4. ~~Mover arquivos `_DEPRECATED` para pasta archive~~ — **feito** (`supabase/deprecated_migrations/`).
+4. Duplicatas removidas do chain ativo e preservadas em `supabase/deprecated_migrations/` — **feito em 2026-07-04**.
 5. Se `reconcile_helper_signup_bonus` existir só no remoto, decidir: manter função via nova migration ou dropar após backfill confirmado.

@@ -12,13 +12,13 @@ Produção está **funcional e confirmada** (10/10 verifies read-only, 2026-06-1
 
 **Estratégia aprovada para esta fase:**
 
-1. **Não renomear, não deletar, não reescrever** migrations `0001`–`0042` já versionadas.
-2. **Não rodar `supabase db push` em produção** até haver plano de `schema_migrations` e migrations idempotentes `0043+`.
-3. **Consolidar para frente** — novas migrations numeradas a partir de **`0043`**, copiando o estado **já aplicado** em prod (DDL/RPC idempotentes).
-4. **Arquivar `apply_*.sql` só depois** que a migration equivalente existir, verify passar em staging e prod estiver marcada como “baseline + 0043+”.
-5. **Duplicatas 0016 / 0017 / 0032** — documentar e contornar com migrations novas; **não corrigir renomeando arquivos antigos**.
+1. **Não renomear, não deletar, não reescrever** as migrations canônicas `0001`–`0042`. As três duplicatas obsoletas 0016/0017/0032 foram removidas do chain ativo e preservadas em `supabase/deprecated_migrations/`.
+2. **Não rodar `supabase db push` em produção** sem dry-run, staging e revisão do histórico remoto.
+3. **Gamificação ocupa `0043`–`0045`**. Futuras migrations de consolidação devem começar em **`0046`** ou no próximo número superior livre, sempre idempotentes.
+4. **Arquivar `apply_*.sql` só depois** que a migration equivalente existir, verify passar em staging e prod estiver marcada no baseline correto.
+5. **Duplicatas 0016 / 0017 / 0032 reconciliadas localmente** — somente os arquivos canônicos permanecem em `supabase/migrations`; os SQLs obsoletos foram preservados fora do chain.
 
-**Próximo passo executável (Etapa 4):** criar `0043+` em ordem de dependência, começando pelo stack cliente (P0).
+**Próximo passo executável de consolidação:** usar `0046` ou número superior livre; `0043`–`0045` pertencem à gamificação.
 
 ---
 
@@ -61,7 +61,7 @@ Fonte: [VERIFY_PRODUCTION_CHECKLIST.md](./VERIFY_PRODUCTION_CHECKLIST.md) — ro
 | **Virar migration?** | **Sim** — P0 |
 | **Prioridade** | **P0** |
 
-**Notas:** Nenhuma migration `0001`–`0042` cobre o stack completo. Futuras `0043`–`0046` devem ser **idempotentes** (`add column if not exists`, `create or replace function`). **Não** incluir migração de dados destrutiva em prod (normalize já rodou).
+**Notas:** Nenhuma migration `0001`–`0042` cobre o stack completo. Futuras migrations de consolidação a partir de `0046` devem ser **idempotentes** (`add column if not exists`, `create or replace function`). **Não** incluir migração de dados destrutiva em prod (normalize já rodou).
 
 ---
 
@@ -85,7 +85,7 @@ Fonte: [VERIFY_PRODUCTION_CHECKLIST.md](./VERIFY_PRODUCTION_CHECKLIST.md) — ro
 
 | Item | Detalhe |
 |------|---------|
-| **Migrations antigas** | `0022`, `0032` (⚠️ dup), `0033` |
+| **Migrations antigas** | `0022`, `0032`, `0033` |
 | **Apply confirmados** | `apply_helper_category_preferences` (dup 0022), `apply_update_helper_base_address` (dup 0032+0033) |
 | **Verify** | `verify_helper_category_preferences`, `verify_update_helper_base_address` |
 | **Objetos-chave** | `primary_category`, `secondary_categories`, `helper_base_*`, `update_helper_base_address`, trigger `profiles_protect_helper_base_fields` |
@@ -93,7 +93,7 @@ Fonte: [VERIFY_PRODUCTION_CHECKLIST.md](./VERIFY_PRODUCTION_CHECKLIST.md) — ro
 | **Virar migration?** | **Opcional** — migration `004x` pode ser “noop idempotente” ou omitida se 0022+0033 bastam para greenfield |
 | **Prioridade** | **P2** |
 
-**Notas:** Para greenfield, `0022` + `0032_helper_base_address` + `0033` (ordem alfabética no dup 0032) já cobrem schema. Apply scripts podem ser arquivados **antes** dos outros grupos.
+**Notas:** Para greenfield, `0022` + `0032_helper_base_address` + `0033` já cobrem schema. Apply scripts podem ser arquivados **antes** dos outros grupos.
 
 ---
 
@@ -185,21 +185,21 @@ Fonte: [VERIFY_PRODUCTION_CHECKLIST.md](./VERIFY_PRODUCTION_CHECKLIST.md) — ro
 
 ---
 
-## Duplicatas de número — análise e proposta (sem renomear)
+## Duplicatas de número — reconciliação local concluída
 
-| Número | Arquivos | Ordem alfabética CLI | Conteúdo | Proposta segura |
-|--------|----------|----------------------|----------|-----------------|
-| **0016** | `0016_fix_applications_insert_rls` · `0016_helper_signup_12_lc` | fix → signup | RLS applications · grant 12 LC | **Manter arquivos.** Prod já tem ambos. Greenfield: CLI pode **falhar** (versão duplicada) ou aplicar os dois em ordem alfabética — **não confiar** sem teste em projeto vazio. Novos envs: baseline de prod ou migrations `0043+` idempotentes que não dependem de replay de 0016. |
-| **0017** | `0017_requests_address_budget_columns` · `0017_signup_profile_recovery` | requests → signup | Colunas request · recovery signup | Idem. Ordem alfabética é razoável (schema antes de trigger recovery). |
-| **0032** | `0032_helper_base_address` · `0032_reconcile_helper_signup_bonus_20_lc` | base → reconcile | Colunas base · reconcile wallet 20 LC | Idem. Base address deve vir antes do reconcile — alfabético ajuda. |
+| Número | Migration canônica no chain ativo | SQL obsoleto preservado fora do chain |
+|--------|------------------------------------|----------------------------------------|
+| **0016** | `0016_fix_applications_insert_rls.sql` | `deprecated_migrations/0016_helper_signup_12_lc_DEPRECATED.sql` |
+| **0017** | `0017_requests_address_budget_columns.sql` | `deprecated_migrations/0017_signup_profile_recovery_DEPRECATED.sql` |
+| **0032** | `0032_helper_base_address.sql` | `deprecated_migrations/0032_reconcile_helper_signup_bonus_20_lc_DEPRECATED.sql` |
 
-**Regra de ouro:** não renumerar `0016`/`0017`/`0032` existentes. Qualquer correção formal = **novo arquivo `0043+`** com comentário `-- consolidates manual state; safe on prod (idempotent)`.
+Em 2026-07-04, os três arquivos obsoletos foram removidos de `supabase/migrations/`. O SQL histórico continua preservado em `supabase/deprecated_migrations/`, que não é processado pelo Supabase CLI. Nenhuma migration canônica foi renomeada ou alterada.
 
 **`supabase db push` em produção:** **proibido** até:
 
 - `select * from supabase_migrations.schema_migrations` revisado;
-- migrations `0043+` testadas em **staging** clonado;
-- duplicatas entendidas (CLI pode recusar push completo do zero).
+- migrations pendentes testadas em **staging** clonado;
+- `migration list` e `db push --dry-run` mostram somente as migrations realmente pendentes.
 
 ---
 
@@ -207,9 +207,9 @@ Fonte: [VERIFY_PRODUCTION_CHECKLIST.md](./VERIFY_PRODUCTION_CHECKLIST.md) — ro
 
 | ID | Risco | Impacto | Mitigação no plano |
 |----|-------|---------|-------------------|
-| C1 | Replay de migrations em prod já manual | Quebra RPC / dados | Só `0043+` idempotentes; nunca re-aplicar 0001–0042 em prod |
+| C1 | Replay de migrations em prod já manual | Quebra RPC / dados | Nunca re-aplicar 0001–0042 em prod |
 | C2 | `helper_submit_application` versão errada | Candidatura/VIP mortos | Exportar `pg_get_functiondef` de prod antes de escrever `004x` VIP |
-| C3 | Duplicatas 0016/0017/0032 | `db push` falha em greenfield | Documentar baseline; não renomear; testar em projeto Supabase vazio |
+| C3 | Reintrodução das duplicatas 0016/0017/0032 | `db push` volta a exigir `--include-all` | Manter os SQLs obsoletos somente em `deprecated_migrations` |
 | C4 | Data migration escala ×1000 | Corrompe saldos | `apply_fix_linkcredits_scale` **não** re-executar em prod; migration futura só `create or replace` RPCs |
 | C5 | `schema_migrations` drift | CLI tenta re-aplicar tudo | Baseline manual: marcar 0001–0042 como applied OU usar `db pull` |
 | C6 | Arquivar apply cedo demais | Perda de runbook | Arquivar só após migration + verify em staging |
@@ -228,46 +228,46 @@ Fonte: [VERIFY_PRODUCTION_CHECKLIST.md](./VERIFY_PRODUCTION_CHECKLIST.md) — ro
 - [ ] Rodar verifies P1 restantes: accept proposal, service workflow (staging ou omitir NOTIFY)
 - [ ] Export read-only: `pg_proc` para `helper_submit_application`, `client_publish_request`, `confirm_client_stripe_linkcredit_purchase`
 
-### Fase 1 — Migrations cliente P0 (`0043`–`0046`)
+### Fase 1 — Migrations cliente P0 (`0046`–`0049`)
 
 Criar arquivos **novos**, idempotentes, espelhando applies já em prod:
 
 | Migration futura | Fonte | Verify pós-staging |
 |------------------|-------|-------------------|
-| `0043_client_profile_credits_normalize.sql` | `apply_normalize_client_profile_credits` | `verify_client_profile_credits` |
-| `0044_client_welcome_onboarding.sql` | `apply_client_welcome_30_onboarding` | `verify_client_welcome_30_onboarding` |
-| `0045_client_publish_request_debit.sql` | `apply_client_publish_request_debit` | `verify_client_publish_request_debit` |
-| `0046_client_stripe_credit_purchase.sql` | `apply_client_stripe_credit_purchase` | `verify_client_stripe_credit_purchase` |
+| `0046_client_profile_credits_normalize.sql` | `apply_normalize_client_profile_credits` | `verify_client_profile_credits` |
+| `0047_client_welcome_onboarding.sql` | `apply_client_welcome_30_onboarding` | `verify_client_welcome_30_onboarding` |
+| `0048_client_publish_request_debit.sql` | `apply_client_publish_request_debit` | `verify_client_publish_request_debit` |
+| `0049_client_stripe_credit_purchase.sql` | `apply_client_stripe_credit_purchase` | `verify_client_stripe_credit_purchase` |
 
 **Prod:** registrar como applied sem re-executar SQL (insert em `schema_migrations` **somente** após revisão humana).
 
-### Fase 2 — Helper Stripe + escala (`0047`–`0048`)
+### Fase 2 — Helper Stripe + escala (`0050`–`0051`)
 
 | Migration futura | Fonte | Notas |
 |------------------|-------|-------|
-| `0047_stripe_credit_transaction_columns.sql` | `apply_fix_stripe_credit_purchase` | Só DDL colunas + grants |
-| `0048_linkcredits_scale_rpc_guard.sql` | `apply_fix_linkcredits_scale` | **Sem** UPDATE em massa; só RPC/constraints |
+| `0050_stripe_credit_transaction_columns.sql` | `apply_fix_stripe_credit_purchase` | Só DDL colunas + grants |
+| `0051_linkcredits_scale_rpc_guard.sql` | `apply_fix_linkcredits_scale` | **Sem** UPDATE em massa; só RPC/constraints |
 
-### Fase 3 — VIP / exclusive consolidado (`0049`–`0051`)
+### Fase 3 — VIP / exclusive consolidado (`0052`–`0054`)
 
 | Migration futura | Fonte | Notas |
 |------------------|-------|-------|
-| `0049_exclusive_helper_lock.sql` | `apply_helper_exclusive_application_fix` | `exclusive_helper_id`, triggers, `request_has_exclusive_lock` |
-| `0050_vip_partial_refund.sql` | `apply_vip_partial_refund` | Inclui `helper_submit_application` **final** |
-| `0051_client_reject_vip_application.sql` | `apply_client_reject_vip_application` | Depende de 0049 |
+| `0052_exclusive_helper_lock.sql` | `apply_helper_exclusive_application_fix` | `exclusive_helper_id`, triggers, `request_has_exclusive_lock` |
+| `0053_vip_partial_refund.sql` | `apply_vip_partial_refund` | Inclui `helper_submit_application` **final** |
+| `0054_client_reject_vip_application.sql` | `apply_client_reject_vip_application` | Depende de 0052 |
 
 **Crítico:** uma única definição de `helper_submit_application` no final da Fase 3.
 
-### Fase 4 — Fluxos não verify (`0052`+)
+### Fase 4 — Fluxos não verify (`0055`+)
 
 | Migration futura | Fonte | Prioridade |
 |------------------|-------|------------|
-| `0052_service_workflow.sql` | `apply_service_workflow` | P1 — após verify |
-| `0053_account_deletion.sql` | `apply_account_deletion_fix` + `apply_bug2_profile_role_fix` | P1 |
-| `0054_application_count.sql` | `apply_application_count_fix` | P2 |
-| `0055_profile_account_settings.sql` | `apply_profile_account_settings` | P2 |
-| `0056_trigger_return_fixes.sql` | `apply_trigger_return_fix` + indirect | P2 |
-| `0057_lead_quality_fix.sql` | `apply_lead_quality_score_fix` | P2 |
+| `0055_service_workflow.sql` | `apply_service_workflow` | P1 — após verify |
+| `0056_account_deletion.sql` | `apply_account_deletion_fix` + `apply_bug2_profile_role_fix` | P1 |
+| `0057_application_count.sql` | `apply_application_count_fix` | P2 |
+| `0058_profile_account_settings.sql` | `apply_profile_account_settings` | P2 |
+| `0059_trigger_return_fixes.sql` | `apply_trigger_return_fix` + indirect | P2 |
+| `0060_lead_quality_fix.sql` | `apply_lead_quality_score_fix` | P2 |
 
 ### Fase 5 — Arquivamento (não deletar)
 
@@ -279,7 +279,7 @@ Criar arquivos **novos**, idempotentes, espelhando applies já em prod:
 ### Fase 6 — Greenfield / staging
 
 - Opção A: `supabase db pull` de prod → diff
-- Opção B: projeto novo com migrations 0001–0042 (resolver dup manualmente) + 0043+
+- Opção B: projeto novo com chain canônico 0001–0045, sem duplicatas
 - Opção C: dump schema-only de prod como baseline documentado
 
 ---
@@ -287,36 +287,39 @@ Criar arquivos **novos**, idempotentes, espelhando applies já em prod:
 ## Ordem sugerida de futuras migrations (resumo)
 
 ```
-0043 client normalize (RPC guards only, no data)
-0044 client welcome + ledger
-0045 client publish debit
-0046 client stripe purchase
-0047 helper stripe columns
-0048 linkcredits RPC guards (no data)
-0049 exclusive helper lock
-0050 vip partial refund (+ helper_submit_application final)
-0051 client reject vip
-0052 service workflow          [verify first]
-0053 account deletion          [verify first]
-0054 application count
-0055 profile account settings
-0056 trigger fixes
-0057 lead quality
+0043 user gamification                 [já criada]
+0044 gamification hero/progress        [já criada]
+0045 gamification realtime             [já criada]
+0046 client normalize (RPC guards only, no data)
+0047 client welcome + ledger
+0048 client publish debit
+0049 client stripe purchase
+0050 helper stripe columns
+0051 linkcredits RPC guards (no data)
+0052 exclusive helper lock
+0053 vip partial refund (+ helper_submit_application final)
+0054 client reject vip
+0055 service workflow                  [verify first]
+0056 account deletion                  [verify first]
+0057 application count
+0058 profile account settings
+0059 trigger fixes
+0060 lead quality
 ```
 
-**Não criar estes arquivos na Etapa 3** — apenas planejamento.
+**Sequência de consolidação futura** — iniciar somente após staging e escolher sempre o próximo número livre.
 
 ---
 
 ## Arquivos que NÃO devem ser apagados (ainda)
 
-### Migrations `0001`–`0042`
+### Migrations `0001`–`0045`
 
-Todo o diretório `supabase/migrations/` — histórico versionado; duplicatas inclusas.
+Todo o diretório `supabase/migrations/` — histórico canônico versionado, agora sem duplicatas.
 
 ### Todos os `apply_*.sql` (25)
 
-Especialmente os ✅ em prod — fonte de verdade até existir `0043+` equivalente:
+Especialmente os ✅ em prod — fonte de verdade até existir migration de consolidação `0046+` equivalente:
 
 - `apply_normalize_client_profile_credits.sql`
 - `apply_client_welcome_30_onboarding.sql`
@@ -356,8 +359,8 @@ Runbook de diagnóstico; necessários para regressão pós-staging.
 1. `apply_helper_category_preferences` (dup 0022)
 2. `apply_update_helper_base_address` (dup 0032+0033)
 3. Runbooks obsoletos (G9)
-4. Stack cliente (após 0043–0046)
-5. VIP stack (após 0049–0051) — **por último entre os críticos**
+4. Stack cliente (após 0046–0049)
+5. VIP stack (após 0052–0054) — **por último entre os críticos**
 
 **Nunca deletar** — apenas `git mv` para `archive/manual-applied/`.
 
@@ -370,8 +373,8 @@ Use esta lista **antes** de qualquer push em staging ou prod:
 - [ ] Li [MIGRATION_STATUS.md](./MIGRATION_STATUS.md) e este plano
 - [ ] Sei que **prod não deve receber replay** de 0001–0042
 - [ ] Consultei `supabase_migrations.schema_migrations` no alvo
-- [ ] Duplicatas 0016/0017/0032 entendidas — push **from scratch** pode falhar
-- [ ] Novas migrations são `0043+` e **idempotentes**
+- [ ] Chain ativo contém apenas as migrations canônicas 0016/0017/0032
+- [ ] Novas migrations de consolidação começam em `0046` ou número superior livre e são **idempotentes**
 - [ ] Nenhuma migration contém `UPDATE`/`DELETE` em massa de créditos
 - [ ] `helper_submit_application` foi comparada com `pg_proc` de prod
 - [ ] Verify read-only passou em **staging** após push
@@ -386,14 +389,14 @@ Use esta lista **antes** de qualquer push em staging ou prod:
 ## Checklist de aceite (Etapa 3)
 
 - [x] Nenhum SQL executado
-- [x] Nenhum arquivo deletado ou renomeado
-- [x] Nenhuma migration `0043+` criada
+- [x] Duplicatas obsoletas removidas do chain ativo e preservadas em `deprecated_migrations`
+- [x] `0043`–`0045` reservadas e criadas para gamificação
 - [x] `MIGRATION_CONSOLIDATION_PLAN.md` criado
 - [x] `MIGRATION_STATUS.md` atualizado com link
 - [x] Grupos, riscos, fases e ordem documentados
-- [x] Duplicatas analisadas sem renomear
+- [x] Duplicatas reconciliadas sem alterar migrations canônicas
 - [ ] Commit — aguardando autorização
 
 ---
 
-*Plano gerado por auditoria estática do repositório. Etapa 4: implementar migrations `0043+` conforme Fase 1.*
+*Plano atualizado após a reconciliação local. Consolidações futuras começam em `0046` ou número superior livre.*

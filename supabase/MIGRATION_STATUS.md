@@ -1,7 +1,7 @@
 # LinkHelp — Status de Migrations e Scripts SQL
 
 **Data da auditoria:** 2026-06-18  
-**Última atualização:** 2026-06-18 (verify em produção concluído)  
+**Última atualização:** 2026-07-04 (reconciliação local concluída; banco remoto não alterado)  
 **Escopo:** auditoria estática do repo + confirms read-only via `verify_*.sql` em produção.
 
 ---
@@ -10,25 +10,25 @@
 
 | Métrica | Valor |
 |--------|-------|
-| Arquivos em `supabase/migrations/` | **45** (42 números únicos: 0001–0042) |
-| Números duplicados | **3** pares: `0016`, `0017`, `0032` |
+| Arquivos em `supabase/migrations/` | **45** (45 números únicos: 0001–0045) |
+| Números duplicados no chain ativo | **0** |
 | Scripts `apply_*.sql` | **25** |
 | Scripts `verify_*.sql` | **20** |
 | Scripts `audit_*.sql` | **6** |
-| Última migration numerada | `0042_opportunity_unlock_refunds.sql` |
+| Última migration numerada | `0045_user_gamification_realtime.sql` |
 
 ### Situação geral
 
 O LinkHelp evoluiu com **duas vias paralelas**:
 
-1. **Migrations numeradas** (`0001`–`0042`) — histórico versionado no repo.
+1. **Migrations numeradas** (`0001`–`0045`) — histórico versionado no repo.
 2. **Scripts manuais** (`apply_*`, `verify_*`, `audit_*`) — colados no SQL Editor do Supabase quando algo quebrava em produção.
 
 Produção foi **confirmada via verify read-only** em 2026-06-18 ([checklist](./VERIFY_PRODUCTION_CHECKLIST.md)). Scripts `apply_*` ainda precisam virar migrations numeradas para reprodutibilidade — ver **[MIGRATION_CONSOLIDATION_PLAN.md](./MIGRATION_CONSOLIDATION_PLAN.md)** (Etapa 3).
 
 ### Achados críticos
 
-1. **Números de migration duplicados** — `supabase db push` / CLI não sabe qual arquivo aplicar primeiro dentro do mesmo número.
+1. **Duplicatas antigas reconciliadas localmente** — 0016/0017/0032 obsoletas foram removidas do chain ativo e preservadas em `deprecated_migrations`.
 2. **`helper_submit_application` redefinida 6+ vezes** no repo (0039 → 0041 → 0042 → vários `apply_*`). Em produção vale a **última versão aplicada manualmente**, não necessariamente a migration mais alta.
 3. **0041 vs `apply_helper_exclusive_application_fix`** — a migration adiciona `is_exclusive` e estende o RPC; o apply adiciona também `requests.exclusive_helper_id`, `request_has_exclusive_lock` e trigger de sync. **Divergência de schema.**
 4. **Fluxos de cliente recentes só existem em `apply_*`** — `client_publish_request`, `confirm_client_stripe_linkcredit_purchase`, `complete_client_onboarding`, ledger `client_credit_ledger`. Não há migration numerada equivalente.
@@ -91,16 +91,16 @@ Demais `apply_*`: ainda **⏳ não verify** nesta rodada — ver tabela abaixo.
 Resumo:
 
 - **Não renomear** migrations `0001`–`0042` nem deletar `apply_*.sql`.
-- **Novas migrations** apenas a partir de **`0043`**, idempotentes, espelhando estado já em prod.
-- **Ordem P0:** stack cliente (`0043`–`0046`) → Stripe helper (`0047`–`0048`) → VIP/exclusive consolidado (`0049`–`0051`).
+- **Gamificação:** `0043`–`0045`. Futuras migrations de consolidação devem começar em **`0046`** ou número superior livre.
+- **Ordem P0 revisada:** stack cliente (`0046`–`0049`) → Stripe helper (`0050`–`0051`) → VIP/exclusive consolidado (`0052`–`0054`).
 - **`supabase db push` em prod:** proibido sem revisar `schema_migrations` e checklist do plano.
-- **Duplicatas 0016 / 0017 / 0032:** contornar com migrations novas; arquivos antigos permanecem.
+- **Duplicatas 0016 / 0017 / 0032:** resolvidas no chain local; SQLs históricos permanecem somente em `supabase/deprecated_migrations/`.
 
 ---
 
 ## Tabela de migrations (`supabase/migrations/`)
 
-Ordem alfabética. **⚠️** = número duplicado.
+Ordem numérica. O chain ativo contém uma migration canônica por versão.
 
 | # | Arquivo | Conteúdo principal |
 |---|---------|-------------------|
@@ -119,10 +119,9 @@ Ordem alfabética. **⚠️** = número duplicado.
 | 0013 | `0013_helper_credit_foundation.sql` | Fundação créditos helper |
 | 0014 | `0014_request_address_columns.sql` | Colunas endereço request |
 | 0015 | `0015_onboarding_linkcredits_rewards.sql` | `grant_user_reward`, signup credits (valores legados ×1000) |
-| ⚠️ 0016 | `0016_fix_applications_insert_rls.sql` | Fix RLS insert applications |
-| ⚠️ 0016 | `0016_helper_signup_12_lc.sql` | Bônus signup 12 LC |
-| ⚠️ 0017 | `0017_requests_address_budget_columns.sql` | `address`, `budget_min/max` em requests |
-| ⚠️ 0017 | `0017_signup_profile_recovery.sql` | Recovery signup profile |
+| 0016 | `0016_fix_applications_insert_rls.sql` | Fix RLS insert applications |
+| 0017 | `0017_requests_address_budget_columns.sql` | `address`, coordenadas e orçamento em requests |
+
 | 0018 | `0018_profile_spoken_languages.sql` | `spoken_languages` |
 | 0019 | `0019_fix_signup_profile_trigger.sql` | Fix trigger signup |
 | 0020 | `0020_push_subscriptions.sql` | Push subscriptions |
@@ -137,8 +136,7 @@ Ordem alfabética. **⚠️** = número duplicado.
 | 0029 | `0029_request_preferred_period.sql` | Período preferido |
 | 0030 | `0030_timezone_market_signals.sql` | Timezone + sinais |
 | 0031 | `0031_lead_quality_and_market_analytics.sql` | Lead quality |
-| ⚠️ 0032 | `0032_helper_base_address.sql` | `helper_base_*` colunas |
-| ⚠️ 0032 | `0032_reconcile_helper_signup_bonus_20_lc.sql` | Reconcile bônus 20 LC |
+| 0032 | `0032_helper_base_address.sql` | `helper_base_*` colunas |
 | 0033 | `0033_helper_base_address_lock.sql` | Lock base address + `update_helper_base_address` |
 | 0034 | `0034_fix_client_hire_helper_flow.sql` | `client_accept_proposal`, `charge_helper_on_client_hire` |
 | 0035 | `0035_fix_lead_quality_budget_columns.sql` | Fix lead quality budget |
@@ -149,16 +147,21 @@ Ordem alfabética. **⚠️** = número duplicado.
 | 0040 | `0040_push_notification_triggers.sql` | Triggers push |
 | 0041 | `0041_exclusive_helper_applications.sql` | `is_exclusive` + `helper_submit_application` (8 args) |
 | 0042 | `0042_opportunity_unlock_refunds.sql` | Unlock refunds job, `helper_submit_application` (com unlock), drop `refund_opportunity_unlock` |
+| 0043 | `0043_user_gamification.sql` | Snapshot e RLS da gamificação |
+| 0044 | `0044_user_gamification_hero_progress.sql` | Hero, progresso e policies de escrita |
+| 0045 | `0045_user_gamification_realtime.sql` | Publicação Realtime da gamificação |
 
-### Conflitos nos números solicitados
+### Reconciliação dos números duplicados — concluída
 
-| Número | Arquivos | Risco |
-|--------|----------|-------|
-| **0016** | `fix_applications_insert_rls` + `helper_signup_12_lc` | Ordem de aplicação indefinida na CLI |
-| **0017** | `requests_address_budget_columns` + `signup_profile_recovery` | Idem |
-| **0032** | `helper_base_address` + `reconcile_helper_signup_bonus_20_lc` | Idem; colunas base vs reconcile bônus |
+| Número | Migration canônica ativa | SQL obsoleto preservado fora do chain |
+|--------|--------------------------|----------------------------------------|
+| **0016** | `0016_fix_applications_insert_rls.sql` | `deprecated_migrations/0016_helper_signup_12_lc_DEPRECATED.sql` |
+| **0017** | `0017_requests_address_budget_columns.sql` | `deprecated_migrations/0017_signup_profile_recovery_DEPRECATED.sql` |
+| **0032** | `0032_helper_base_address.sql` | `deprecated_migrations/0032_reconcile_helper_signup_bonus_20_lc_DEPRECATED.sql` |
 | **0041** | Único arquivo | OK — mas incompleto vs `apply_helper_exclusive_application_fix` |
 | **0042** | Único arquivo | OK — redefine `helper_submit_application` de novo |
+
+Os três arquivos obsoletos foram removidos de `supabase/migrations/` em 2026-07-04. Nenhuma migration canônica ou migration SQL de gamificação foi alterada.
 
 ---
 
@@ -296,7 +299,7 @@ Scripts de investigação de triggers (read-only / diagnóstico).
 | R2 | Drift prod vs `supabase/migrations` — applies manuais não registrados na tabela de migrations | Alta | Snapshot schema prod + diff com repo |
 | R3 | `helper_submit_application` — última definição desconhecida sem query em prod | Alta | `verify_vip_partial_refund` + inspecionar `pg_proc` |
 | R4 | 0041 sem `exclusive_helper_id` mas apply VIP/exclusive depende da coluna | Alta | Consolidar em migration 0043+ |
-| R5 | Fluxos cliente (publish, stripe, onboarding) só em apply — novo ambiente não reproduzível só com migrations | Média | Migrations 0043–0046 em ordem de dependência |
+| R5 | Fluxos cliente (publish, stripe, onboarding) só em apply — novo ambiente não reproduzível só com migrations | Média | Migrations 0046–0049 em ordem de dependência |
 | R6 | `0015` grant ×1000 vs escala real 1 LC — mitigado por `apply_normalize_client_profile_credits` | Média | Migration que substitui grants legados |
 | R7 | `refund_opportunity_unlock` removida em 0042 | Baixa | Confirmar que nenhum código chama o RPC |
 | R8 | `apply_client_reject_vip_application` fora do tracking git em momentos | Média | Adicionar ao repo e verify em prod |
@@ -310,7 +313,7 @@ Ordem sugerida por dependência (não executar ainda — planejamento):
 
 | Prioridade | Script(s) | Motivo |
 |------------|-----------|--------|
-| P0 | Resolver duplicatas **0016, 0017, 0032** | Desbloquear CLI/migrations |
+| Concluído | Duplicatas **0016, 0017, 0032** removidas do chain ativo | Dry-run deve listar somente 0043–0045 |
 | P1 | `apply_normalize_client_profile_credits` | Base escala cliente |
 | P1 | `apply_client_welcome_30_onboarding` | Ledger + onboarding RPC |
 | P1 | `apply_client_publish_request_debit` | ✅ já em prod |
@@ -348,11 +351,11 @@ Manter `verify_*` e `audit_*` como runbook até haver testes automatizados ou CI
 
 Detalhamento completo em [MIGRATION_CONSOLIDATION_PLAN.md](./MIGRATION_CONSOLIDATION_PLAN.md).
 
-1. **Etapa 4 — Migrations `0043+` (cliente P0)**  
+1. **Etapa 4 — Migrations `0046+` (cliente P0)**  
    `apply_normalize` → welcome → publish → stripe purchase (idempotentes).
 
 2. **Etapa 5 — Helper Stripe + VIP consolidado**  
-   `0047`–`0051`: colunas Stripe, exclusive lock, `helper_submit_application` final.
+   `0050`–`0054`: colunas Stripe, exclusive lock, `helper_submit_application` final.
 
 3. **Etapa 6 — Verify restantes + migrations P1/P2**  
    service workflow, account deletion, application count, triggers.
@@ -368,8 +371,8 @@ Detalhamento completo em [MIGRATION_CONSOLIDATION_PLAN.md](./MIGRATION_CONSOLIDA
 ## O que NÃO deve ser mexido agora
 
 - **Banco de produção** — nenhum `apply`/`verify` executado nesta etapa de auditoria
-- **Deletar ou renomear** arquivos SQL existentes
-- **Criar migrations novas** (0043+)
+- **Não alterar migrations canônicas**; duplicatas obsoletas ficam preservadas em `deprecated_migrations`
+- **Criar consolidações futuras** somente em 0046 ou número superior livre
 - **Frontend**, **Stripe** (`api/stripe/`), **webhooks**
 - **`stash@{0}`** — não aplicar
 - **Navbar brand** (regra congelada do projeto)
@@ -401,12 +404,12 @@ Detalhamento completo em [MIGRATION_CONSOLIDATION_PLAN.md](./MIGRATION_CONSOLIDA
 ## Checklist de aceite (Etapa 3)
 
 - [x] Nenhum SQL executado
-- [x] Nenhum arquivo deletado ou renomeado
-- [x] Nenhuma migration `0043+` criada
+- [x] Duplicatas obsoletas removidas do chain ativo e preservadas fora dele
+- [x] `0043`–`0045` criadas exclusivamente para gamificação
 - [x] `MIGRATION_CONSOLIDATION_PLAN.md` criado
 - [x] `MIGRATION_STATUS.md` atualizado com link ao plano
 - [ ] Commit — aguardando autorização
 
 ---
 
-*Documento atualizado após verify em produção (2026-06-18). Próximo passo: [Etapa 4 — migrations `0043+`](./MIGRATION_CONSOLIDATION_PLAN.md#fase-1--migrations-cliente-p0-00430046).*
+*Documento atualizado em 2026-07-04 após reconciliação local. Consolidações futuras começam em `0046` ou número superior livre.*

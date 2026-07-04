@@ -80,12 +80,9 @@ import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboard';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { LhCard } from '@/components/design-system/LhCard';
-import { NewHelperHero } from '@/components/hero/SmartphoneHelperHero';
-import { HelperInicianteHero } from '@/components/hero/HelperInicianteHero';
-import { HelperProfissionalHero } from '@/components/hero/HelperProfissionalHero';
-import { HelperEliteHero } from '@/components/hero/HelperEliteHero';
-import { TopHelperHero } from '@/components/hero/TopHelperHero';
-import { HelperLendaHero } from '@/components/hero/HelperLendaHero';
+import { DynamicHeroRenderer } from '@/gamification/components/DynamicHeroRenderer';
+import { GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
+import { useGamification } from '@/gamification/hooks/useGamification';
 
 type HelperHomeInfoSlide = {
   id: string;
@@ -123,6 +120,7 @@ export default function HelperDashboard() {
   const [activeInfoSlide, setActiveInfoSlide] = useState(0);
   const [heroParallaxOffset, setHeroParallaxOffset] = useState(0);
   const feedTabsRef = React.useRef<HTMLDivElement | null>(null);
+  const helperGamification = useGamification('helper');
 
   // Modals state
   const [profileSettings, setProfileSettings] = useState<HelperProfileSettings>(() => loadHelperProfileSettings());
@@ -1045,7 +1043,10 @@ export default function HelperDashboard() {
             </div>
           ) : null}
 
-          <NewHelperHero
+          {/* Hero dinâmica: gamification.heroKey é a única fonte da verdade */}
+          <DynamicHeroRenderer
+            userType="helper"
+            gamification={helperGamification.record}
             avatarUrl={helperAvatarUrl ?? me.avatar}
             balance={walletBalance}
             completedServices={helperMvpStats.completed}
@@ -1053,45 +1054,7 @@ export default function HelperDashboard() {
             rating={helperMvpStats.avgRating}
             connectedProfessionals={helperMvpStats.accepted}
           />
-          <HelperInicianteHero
-            balance={walletBalance}
-            completedServices={helperMvpStats.completed}
-            satisfactionRate={helperMvpStats.responseRatePct}
-            rating={helperMvpStats.avgRating}
-            connectedProfessionals={helperMvpStats.accepted}
-          />
-          <HelperProfissionalHero
-            balance={walletBalance}
-            completedServices={helperMvpStats.completed}
-            satisfactionRate={helperMvpStats.responseRatePct}
-            rating={helperMvpStats.avgRating}
-            connectedProfessionals={helperMvpStats.accepted}
-          />
-          <HelperEliteHero
-            balance={walletBalance}
-            completedServices={helperMvpStats.completed}
-            satisfactionRate={helperMvpStats.responseRatePct}
-            rating={helperMvpStats.avgRating}
-            connectedProfessionals={helperMvpStats.accepted}
-          />
-          <TopHelperHero
-            balance={walletBalance}
-            completedServices={helperMvpStats.completed}
-            satisfactionRate={helperMvpStats.responseRatePct}
-            rating={helperMvpStats.avgRating}
-            connectedProfessionals={helperMvpStats.accepted}
-          />
-          <HelperLendaHero
-            balance={walletBalance}
-            completedServices={helperMvpStats.completed}
-            satisfactionRate={helperMvpStats.responseRatePct}
-            rating={helperMvpStats.avgRating}
-            connectedProfessionals={helperMvpStats.accepted}
-          />
-
-
-
-
+          <GamificationProgressCard userType="helper" className="mb-4" />
 
 
           <section

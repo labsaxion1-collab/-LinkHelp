@@ -250,3 +250,26 @@ export type CreditPackageRow = {
   highlight_label: string | null;
   created_at: string;
 };
+
+/** Snapshot de gamificação — `supabase/migrations/0043` + `0044`. */
+export type UserGamificationRow = {
+  id: string;
+  user_id: string;
+  user_type: UserType;
+  score_1000: number;
+  level_key: string;
+  hero_key: string | null;
+  total_completed: number;
+  avg_rating: number;
+  response_rate: number;
+  cancel_count: number;
+  complaint_count: number;
+  profile_pct: number;
+  applications_count: number;
+  published_orders_count: number;
+  hire_rate: number;
+  progress_percent: number | null;
+  points_to_next_level: number | null;
+  missing_requirements: string[] | null;
+  updated_at: string;
+};

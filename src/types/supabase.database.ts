@@ -15,7 +15,8 @@ import type {
   RequestRow,
   ReviewRow,
   UpcomingJobRow,
-} from '@/types/database';
+  UserGamificationRow,
+} from './database';
 
 type Json = Record<string, unknown> | string | number | boolean | null;
 
@@ -117,6 +118,12 @@ export type Database = {
         Row: ClientCreditLedgerRow;
         Insert: Record<string, unknown>;
         Update: Partial<ClientCreditLedgerRow>;
+        Relationships: [];
+      };
+      user_gamification: {
+        Row: UserGamificationRow;
+        Insert: Partial<UserGamificationRow> & Pick<UserGamificationRow, 'user_id' | 'user_type'>;
+        Update: Partial<UserGamificationRow>;
         Relationships: [];
       };
       push_subscriptions: {

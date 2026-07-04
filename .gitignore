@@ -8,6 +8,8 @@ coverage/
 .env*
 !.env.example
 supabase/.temp/
+.tools/
+.codex-remote-attachments/
 public/brand/*.before-*.png
 .vercel
 vapid-secrets.txt

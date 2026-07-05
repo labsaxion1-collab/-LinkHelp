@@ -639,7 +639,7 @@ export default function ClientDashboard() {
           connectedProfessionals={0}
         />
       )}
-      {activeSidebarTab === 'dashboard' && (
+      {activeSidebarTab === 'dashboard' && clientGamification.heroKey !== 'client_novo' && (
         <GamificationProgressCard userType="client" className="mb-4" />
       )}
       {activeSidebarTab === 'dashboard' && (

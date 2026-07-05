@@ -7,6 +7,7 @@ import particlesImage from '@/assets/hero/particles/particulas.png';
 import { HeroRankAnimation } from '@/components/hero/HeroRankAnimation';
 import { BRAND } from '@/utils/brandAssets';
 import { CLIENT_BEGINNER_LEVEL_VISUAL } from '@/config/clientBeginnerLevelVisual';
+import { GamificationLevelButton, GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
 
 type Props = {
   accountType?: 'helper' | 'client';
@@ -61,20 +62,39 @@ export function NewHelperHero({ accountType = 'helper', balance, completedServic
           </h1>
         </div>
 
-        <div className="lh-hero-level-pill mx-auto mt-3 w-fit rounded-full border border-lime-300/30 bg-lime-400/10 px-5 py-1.5 backdrop-blur-md">
-          <p className="text-sm font-black uppercase tracking-[0.08em] text-lime-200 sm:text-base">{currentLevel}</p>
-        </div>
-        <div className="relative mx-auto min-h-[17.5rem] w-full max-w-[27rem] sm:min-h-[23rem] sm:max-w-[33rem]">
-          <HeroRankAnimation medalSrc={isClient ? clientMedalImage : medalImage} medalAlt={isClient ? 'Medalha Novo Cliente' : 'Medalha Novo Helper'} className="absolute inset-0" />
-        </div>
-        <div className="mx-auto w-fit -translate-y-2">
-          <span className="lh-hero-nivel-badge inline-flex min-w-[7.5rem] justify-center rounded-full border border-lime-300/35 bg-gradient-to-b from-lime-400 to-green-800 px-4 py-1 text-sm font-black sm:min-w-[9rem] sm:text-base">{levelLabel}</span>
-        </div>
+        {!isClient ? (
+          <div className="lh-hero-level-pill mx-auto mt-3 w-fit rounded-full border border-lime-300/30 bg-lime-400/10 px-5 py-1.5 backdrop-blur-md">
+            <p className="text-sm font-black uppercase tracking-[0.08em] text-lime-200 sm:text-base">{currentLevel}</p>
+          </div>
+        ) : null}
+        {isClient ? (
+          <div className="mx-auto -mt-2 grid w-full max-w-[41rem] grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] items-center gap-1 sm:-mt-1 sm:gap-5">
+            <div className="relative min-h-[9.75rem] min-w-0 min-[390px]:min-h-[11rem] sm:min-h-[14.5rem]">
+              <HeroRankAnimation medalSrc={clientMedalImage} medalAlt="Medalha Novo Cliente" className="absolute inset-0 scale-[1.12] sm:scale-[1.09]" />
+            </div>
+            <p className="lh-hero-description min-w-0 pr-1 text-left text-[11px] font-medium leading-[1.7] text-white/68 min-[390px]:text-xs sm:pr-3 sm:text-base sm:leading-relaxed">
+              {journeyDescription}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="relative mx-auto min-h-[17.5rem] w-full max-w-[27rem] sm:min-h-[23rem] sm:max-w-[33rem]">
+              <HeroRankAnimation medalSrc={medalImage} medalAlt="Medalha Novo Helper" className="absolute inset-0" />
+            </div>
+            <div className="mx-auto w-fit -translate-y-2">
+              <span className="lh-hero-nivel-badge inline-flex min-w-[7.5rem] justify-center rounded-full border border-lime-300/35 bg-gradient-to-b from-lime-400 to-green-800 px-4 py-1 text-sm font-black sm:min-w-[9rem] sm:text-base">{levelLabel}</span>
+            </div>
+            <p className="lh-hero-description mx-auto -mt-1 max-w-[22rem] text-center text-sm font-medium leading-relaxed text-white/68 sm:max-w-[34rem] sm:text-base">
+              {journeyDescription}
+            </p>
+          </>
+        )}
 
-        <p className="lh-hero-description mx-auto -mt-1 max-w-[22rem] text-center text-sm font-medium leading-relaxed text-white/68 sm:max-w-[34rem] sm:text-base">
-          {journeyDescription}
-        </p>
+        {isClient ? <GamificationLevelButton userType="client" label={currentLevel} /> : null}
 
+        {isClient ? (
+          <GamificationProgressCard userType="client" variant="hero" className="lh-hero-progress mx-auto mt-3 max-w-[45rem]" />
+        ) : (
         <div className="lh-hero-progress mx-auto mt-3 max-w-[45rem] rounded-2xl border border-lime-400/15 bg-black/40 px-3 py-2.5 backdrop-blur-lg sm:px-5">
           <div className="flex items-center gap-2.5">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-blue-300/20 bg-blue-500/15 text-blue-300"><ShieldCheck className="h-5 w-5" /></span>
@@ -84,6 +104,7 @@ export function NewHelperHero({ accountType = 'helper', balance, completedServic
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/[0.07]"><span className="block h-full rounded-full bg-gradient-to-r from-lime-500 to-lime-300 shadow-[0_0_14px_rgba(163,230,53,0.36)]" style={{ width: `${progressPercent}%` }} /></div>
           <p className="mt-1.5 text-center text-[10px] text-white/55 sm:text-xs">Mais {pointsRemaining} pontos para alcançar o próximo nível</p>
         </div>
+        )}
       </div>
     </section>
   );

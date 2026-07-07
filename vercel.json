@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/gamification/*.ts": {
+      "includeFiles": "src/gamification/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/((?!api/).*)",

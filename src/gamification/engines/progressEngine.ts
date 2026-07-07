@@ -82,3 +82,21 @@ export function getProgressToNextLevel(
     missingRequirements,
   };
 }
+
+/** Texto curto da barra quando pontos já bastam mas ainda faltam requisitos. */
+export function formatProgressSubtitle(
+  progress: Pick<ProgressToNextLevel, 'pointsToNext' | 'missingRequirements'>,
+  variant: 'hero' | 'card' = 'hero',
+): string {
+  const { pointsToNext, missingRequirements } = progress;
+
+  if (pointsToNext === 0 && missingRequirements.length > 0) {
+    return `Pontos ok — falta: ${missingRequirements.join(', ')}`;
+  }
+
+  if (variant === 'card') {
+    return `${pointsToNext} pts restantes`;
+  }
+
+  return `Mais ${pointsToNext} pontos para alcançar o próximo nível`;
+}

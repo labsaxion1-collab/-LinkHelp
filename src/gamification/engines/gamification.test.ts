@@ -9,7 +9,7 @@ import {
   meetsRequirements,
 } from '@/gamification/engines/levelEngine';
 import { CLIENT_LEVELS } from '@/gamification/config/clientLevels';
-import { getProgressToNextLevel } from '@/gamification/engines/progressEngine';
+import { formatProgressSubtitle, getProgressToNextLevel } from '@/gamification/engines/progressEngine';
 
 const baseStats: GamificationStats = {
   totalCompleted: 0,
@@ -266,5 +266,33 @@ describe('getProgressToNextLevel', () => {
     const stats = { ...baseStats, profilePct: 80, applicationsCount: 1 };
     const result = getProgressToNextLevel('helper', 200, stats, 'confiavel');
     expect(result.pointsToNext).toBe(50);
+  });
+});
+
+describe('formatProgressSubtitle', () => {
+  it('mostra pontos ok e requisito faltante quando pointsToNext é 0', () => {
+    const progress = {
+      pointsToNext: 0,
+      missingRequirements: ['1 pedido(s) publicado(s) restante(s)'],
+    };
+
+    expect(formatProgressSubtitle(progress, 'hero')).toBe(
+      'Pontos ok — falta: 1 pedido(s) publicado(s) restante(s)',
+    );
+    expect(formatProgressSubtitle(progress, 'card')).toBe(
+      'Pontos ok — falta: 1 pedido(s) publicado(s) restante(s)',
+    );
+  });
+
+  it('mantém texto de pontos quando ainda faltam pontos', () => {
+    const progress = {
+      pointsToNext: 130,
+      missingRequirements: ['1 pedido(s) publicado(s) restante(s)'],
+    };
+
+    expect(formatProgressSubtitle(progress, 'hero')).toBe(
+      'Mais 130 pontos para alcançar o próximo nível',
+    );
+    expect(formatProgressSubtitle(progress, 'card')).toBe('130 pts restantes');
   });
 });

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { TrendingUp, CheckCircle, AlertCircle, Loader2, HelpCircle, ShieldCheck } from 'lucide-react';
 import { LhCard } from '@/components/design-system/LhCard';
 import { useGamification } from '@/gamification/hooks/useGamification';
-import { getProgressToNextLevel } from '@/gamification/engines/progressEngine';
+import { formatProgressSubtitle, getProgressToNextLevel } from '@/gamification/engines/progressEngine';
 import { EMPTY_GAMIFICATION_STATS } from '@/gamification/services/gamificationStatsAdapter';
 import type { UserType } from '@/gamification/types/gamification';
 import { MEDAL_MAP } from '@/gamification/config/gamificationMedals';
@@ -257,7 +257,7 @@ export function GamificationProgressCard({ userType, className = '', variant = '
           />
         </div>
         <p className="mt-1.5 text-center text-[10px] text-white/55 sm:text-xs">
-          {isMax ? 'Nível máximo alcançado' : `Mais ${progress.pointsToNext} pontos para alcançar o próximo nível`}
+          {isMax ? 'Nível máximo alcançado' : formatProgressSubtitle(progress, 'hero')}
         </p>
       </div>
     );
@@ -321,8 +321,8 @@ export function GamificationProgressCard({ userType, className = '', variant = '
                 aria-label={`Progresso para ${progress.nextLevel?.name}`}
               />
             </div>
-            <p className="mt-1 text-right tabular-nums text-[11px] font-semibold text-slate-400">
-              {progress.pointsToNext} pts restantes
+            <p className="mt-1 text-right text-[11px] font-semibold text-slate-400">
+              {formatProgressSubtitle(progress, 'card')}
             </p>
           </div>
 

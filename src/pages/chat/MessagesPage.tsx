@@ -470,15 +470,8 @@ export default function MessagesPage() {
           onSubmit={(ev) => {
             void handleSendMessage(ev);
           }}
-          className="flex min-h-[52px] items-center gap-1.5 rounded-full border border-white/25 bg-white px-1.5 shadow-[0_2px_12px_rgba(0,0,0,0.08)]"
+          className="flex min-h-[52px] items-center gap-1.5 rounded-full border border-white/25 bg-white px-2 shadow-[0_2px_12px_rgba(0,0,0,0.08)]"
         >
-          <button
-            type="button"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-lime-400/30 bg-[#020804] text-lime-300/85 transition-all hover:border-lime-400/45 hover:bg-[#031208] hover:text-lime-300 active:scale-95"
-            aria-label={t('messages_page.aria_attach')}
-          >
-            <Icons.Paperclip className="h-[17px] w-[17px]" strokeWidth={2.25} />
-          </button>
           <div className="relative min-w-0 flex-1">
             <textarea
               rows={1}
@@ -513,9 +506,11 @@ export default function MessagesPage() {
             <Send
               className={clsx(
                 'relative h-[17px] w-[17px]',
-                message.trim() && !sendDisabled && 'drop-shadow-[0_0_6px_rgba(134,239,172,0.5)]',
+                message.trim() && !sendDisabled
+                  ? 'text-lime-100 drop-shadow-[0_0_8px_rgba(190,242,100,0.55)]'
+                  : 'text-lime-300/75',
               )}
-              strokeWidth={2.25}
+              strokeWidth={2.5}
             />
           </button>
         </form>

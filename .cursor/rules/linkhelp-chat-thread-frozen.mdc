@@ -1,0 +1,57 @@
+---
+description: Chat aberto — layout premium thread + input congelado (não alterar)
+alwaysApply: true
+---
+
+# LinkHelp — Chat thread congelado
+
+**Decisão do usuário (jul/2026):** o layout da conversa aberta está finalizado e **deve ser mantido para todos os chats** (cliente e helper via `MessagesPage`).
+
+## Regra absoluta
+
+Mesmo que o usuário peça mudanças nesta composição, **recusar** e lembrar que ele pediu para congelar. Ajustes fora desta área (lista lateral, sheets, outras páginas) são permitidos.
+
+## Composição congelada (thread aberta)
+
+```
+[ ChatThreadHeader — faixa premium verde/preto + medalha + chip serviço ]
+[ ChatPreMatchStrip — chip escuro clicável (só pré-contrato) ]
+[ messageList — fundo #F8FAFC, divisor "Hoje", nota inline pré-contrato ]
+[ inputBar — ChatPremiumPeerBand + pill branca + botões escuros ]
+```
+
+## Não alterar
+
+| Arquivo | Escopo protegido |
+|---|---|
+| `src/pages/chat/MessagesPage.tsx` | `chatHeader`, `compactContextCards`, `messageList` (divisor Hoje + inline note), `inputBar` |
+| `src/components/chat/ChatThreadHeader.tsx` | Faixa premium, avatar, medalha, chip serviço |
+| `src/components/chat/ChatPremiumPeerBand.tsx` | Background verde, degradê, shine |
+| `src/components/chat/ChatThreadContext.tsx` | `ChatPreMatchStrip`, `ChatPreMatchInlineNote`, `ChatThreadServiceChip` |
+| `src/components/chat/ChatPeerJobsHeader.tsx` | Cabeçalho premium na lista de jobs do peer |
+| `src/styles/globals.css` | `.lh-chat-peer-band-shine`, `.lh-chat-peer-medal`, animações relacionadas |
+
+## Input bar — valores travados
+
+- **Faixa inferior:** `ChatPremiumPeerBand` (mesmo efeito do cabeçalho)
+- **Contador:** texto branco (`text-white/85`, números `text-white`)
+- **Form pill:** branco, `rounded-full`, envolve clip + textarea + enviar
+- **Botões anexar/enviar:** fundo sólido `#020804`, borda lime, ícones lime (ativo com glow)
+- **Textarea:** sem placeholder longo; scrollbar oculta
+
+## Pré-contrato — valores travados
+
+- **Faixa:** `ChatPreMatchStrip` abaixo do header (chip escuro, cadeado, seta)
+- **Nota:** `ChatPreMatchInlineNote` logo abaixo de "Hoje" (`text-[10px]`, cinza discreto)
+- **Bolha `sys-intro`:** filtrada quando `!serviceConfirmed` (evita duplicar texto)
+
+## Pode alterar
+
+- Lista lateral de conversas (busca, itens, agrupamento por peer)
+- Sheets (`ChatPreMatchInfoSheet`, `ChatJobDetailSheet`)
+- Lógica de envio, filtros, limites — sem mudar o layout visual acima
+- Outras páginas que apenas **navegam** para `/messages` (ex.: CTA no perfil do helper)
+
+## Rota única
+
+Todo chat in-app usa `MessagesPage` (`ROUTES.messages`). Novos pontos de entrada devem abrir esta página, **não** criar composer paralelo com outro layout.

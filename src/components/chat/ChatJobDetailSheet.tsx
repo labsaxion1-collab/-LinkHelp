@@ -1,6 +1,7 @@
 import * as Icons from 'lucide-react';
 import type { Job } from '@/types/job';
 import { useLanguage } from '@/context/LanguageContext';
+import { ChatThreadSheetFrame } from '@/components/chat/ChatThreadSheetFrame';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 import { translateCategory, translateJobTitle } from '@/utils/translateCategory';
@@ -85,19 +86,8 @@ export function ChatJobDetailSheet({ job, open, onClose }: Props) {
   const photos = (job as Job & { photos?: string[] }).photos?.filter(Boolean) ?? [];
 
   return (
-    <div
-      className="fixed inset-0 z-[120] flex items-end justify-center bg-slate-900/55 p-0 backdrop-blur-sm sm:items-center sm:p-4"
-      role="presentation"
-      onClick={onClose}
-    >
-      <section
-        className="flex max-h-[min(88dvh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="chat-job-detail-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="flex shrink-0 items-center justify-between border-b border-blue-100/80 bg-gradient-to-r from-[#EAF7FF] via-white to-[#DFF4FF] px-4 py-3">
+    <ChatThreadSheetFrame open={open} onClose={onClose} titleId="chat-job-detail-title">
+      <header className="flex shrink-0 items-center justify-between border-b border-blue-100/80 bg-gradient-to-r from-[#EAF7FF] via-white to-[#DFF4FF] px-4 py-3">
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-wider text-blue-700">
               {t('messages_page.job_detail_modal_title')}
@@ -169,7 +159,6 @@ export function ChatJobDetailSheet({ job, open, onClose }: Props) {
             {t('messages_page.understood')}
           </button>
         </footer>
-      </section>
-    </div>
+    </ChatThreadSheetFrame>
   );
 }

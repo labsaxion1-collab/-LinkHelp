@@ -76,7 +76,6 @@ import {
   sortJobsByHelperCategoryPreference,
 } from '@/utils/helperCategoryPreferences';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
-import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboard';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { LhCard } from '@/components/design-system/LhCard';
@@ -1009,7 +1008,7 @@ export default function HelperDashboard() {
           {isPerformancePage ? (
             <div className="space-y-3">
               <HelperStatsStrip dataLoading={dataLoading} stats={helperMvpStats} t={t} />
-              <HelperScorePanel />
+              <GamificationProgressCard userType="helper" />
               {UI_VISIBILITY.helperCredits ? (
                 <CreditsUsageDashboard unlocks={unlocks} transactions={creditTransactions} />
               ) : null}
@@ -1054,7 +1053,9 @@ export default function HelperDashboard() {
             rating={helperMvpStats.avgRating}
             connectedProfessionals={helperMvpStats.accepted}
           />
-          <GamificationProgressCard userType="helper" className="mb-4" />
+          {helperGamification.heroKey === 'helper_novo' ? (
+            <GamificationProgressCard userType="helper" className="mb-4" />
+          ) : null}
 
 
           <section

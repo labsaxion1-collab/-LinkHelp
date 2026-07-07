@@ -35,7 +35,7 @@ import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { ROUTES } from '@/utils/constants';
 import { BRAND } from '@/utils/brandAssets';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
-import { HelperScorePanel } from '@/components/features/HelperScorePanel';
+import { GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
 import { type ServiceCategoryId } from '@/data/serviceCategories';
 import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import { filterValidSkillKeys } from '@/data/helperSkillsCatalog';
@@ -529,9 +529,8 @@ export default function ProfilePage() {
                 />
               </section>
 
-            <HelperScorePanel
-              collapsible
-              defaultExpanded={false}
+            <GamificationProgressCard
+              userType="helper"
               className="rounded-[1.75rem] border border-slate-100 bg-white shadow-[0_18px_42px_rgba(15,23,42,0.06)]"
             />
             </section>

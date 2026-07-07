@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import type { GamificationStats } from '@/gamification/types/gamification';
 import { computeClientScore, computeHelperScore } from '@/gamification/engines/scoreEngine';
-import { determineLevel } from '@/gamification/engines/levelEngine';
+import { determineLevel, determineSequentialLevel } from '@/gamification/engines/levelEngine';
 import { getProgressToNextLevel } from '@/gamification/engines/progressEngine';
 import { HELPER_LEVELS } from '@/gamification/config/helperLevels';
 import { CLIENT_LEVELS } from '@/gamification/config/clientLevels';
@@ -35,6 +35,7 @@ describe('Etapa 6 — progressão de níveis do helper', () => {
   it('1. helper novo começa como "novo"', () => {
     const score = computeHelperScore(emptyStats);
     expect(determineLevel('helper', score, emptyStats)).toBe('novo');
+    expect(score).toBe(0);
   });
 
   it('2. helper com score 100 e requisitos vira "confiavel"', () => {
@@ -48,7 +49,7 @@ describe('Etapa 6 — progressão de níveis do helper', () => {
     expect(determineLevel('helper', 250, stats)).toBe('confiavel');
   });
 
-  it('4. helper com score 500 e requisitos vira "elite"', () => {
+  it('4. helper com score 500 e requisitos vira "elite" (a partir de profissional)', () => {
     const stats = {
       ...emptyStats,
       totalCompleted: 10,
@@ -56,10 +57,10 @@ describe('Etapa 6 — progressão de níveis do helper', () => {
       responseRate: 80,
       complaintCount: 0,
     };
-    expect(determineLevel('helper', 500, stats)).toBe('elite');
+    expect(determineSequentialLevel('helper', 'profissional', 500, stats)).toBe('elite');
   });
 
-  it('5. helper com score 900 e requisitos vira "lenda"', () => {
+  it('5. helper com score 900 e requisitos vira "lenda" (a partir de top_helper)', () => {
     const stats = {
       ...emptyStats,
       totalCompleted: 50,
@@ -67,7 +68,7 @@ describe('Etapa 6 — progressão de níveis do helper', () => {
       responseRate: 90,
       complaintCount: 0,
     };
-    expect(determineLevel('helper', 900, stats)).toBe('lenda');
+    expect(determineSequentialLevel('helper', 'top_helper', 900, stats)).toBe('lenda');
   });
 });
 
@@ -75,6 +76,7 @@ describe('Etapa 6 — progressão de níveis do cliente', () => {
   it('6. cliente novo começa como "novo"', () => {
     const score = computeClientScore(emptyStats);
     expect(determineLevel('client', score, emptyStats)).toBe('novo');
+    expect(score).toBe(0);
   });
 
   it('7. cliente com score 100 e requisitos vira "confiavel"', () => {
@@ -82,20 +84,21 @@ describe('Etapa 6 — progressão de níveis do cliente', () => {
     expect(determineLevel('client', 100, stats)).toBe('confiavel');
   });
 
-  it('8. cliente com score 250 e requisitos vira "ouro"', () => {
+  it('8. cliente com score 250 e requisitos vira "ouro" (a partir de confiável)', () => {
     const stats = { ...emptyStats, totalCompleted: 3, avgRating: 4.5, cancelCount: 0 };
-    expect(determineLevel('client', 250, stats)).toBe('ouro');
+    expect(determineSequentialLevel('client', 'confiavel', 250, stats)).toBe('ouro');
   });
 
-  it('9. cliente com score 750 e requisitos vira "elite"', () => {
+  it('9. cliente com score 750 e requisitos vira "elite" (a partir de vip)', () => {
     const stats = {
       ...emptyStats,
       totalCompleted: 25,
       avgRating: 4.9,
       complaintCount: 0,
       cancelCount: 1,
+      responseRate: 80,
     };
-    expect(determineLevel('client', 750, stats)).toBe('elite');
+    expect(determineSequentialLevel('client', 'vip', 750, stats)).toBe('elite');
   });
 });
 
@@ -138,7 +141,7 @@ describe('Etapa 6 — requisitos faltantes (ProgressCard)', () => {
   it('12. lista corretamente o que falta para o próximo nível', () => {
     // Helper confiável (score 200) sem serviços concluídos nem nota.
     const stats = { ...emptyStats, profilePct: 80, applicationsCount: 1 };
-    const progress = getProgressToNextLevel('helper', 200, stats);
+    const progress = getProgressToNextLevel('helper', 200, stats, 'confiavel');
 
     expect(progress.currentLevel.key).toBe('confiavel');
     expect(progress.nextLevel?.key).toBe('profissional');
@@ -155,7 +158,7 @@ describe('Etapa 6 — requisitos faltantes (ProgressCard)', () => {
       totalCompleted: 3,
       avgRating: 4.6,
     };
-    const progress = getProgressToNextLevel('helper', 200, stats);
+    const progress = getProgressToNextLevel('helper', 200, stats, 'confiavel');
     expect(progress.missingRequirements).not.toContain('3 serviço(s) restante(s)');
     expect(progress.missingRequirements).not.toContain('Nota mínima 4.5');
     expect(progress.missingRequirements).toContain('Taxa de resposta 70%');
@@ -171,7 +174,7 @@ describe('Etapa 6 — requisitos faltantes (ProgressCard)', () => {
       profilePct: 100,
       applicationsCount: 10,
     };
-    const progress = getProgressToNextLevel('helper', 950, stats);
+    const progress = getProgressToNextLevel('helper', 950, stats, 'lenda');
     expect(progress.nextLevel).toBeNull();
     expect(progress.missingRequirements).toHaveLength(0);
   });

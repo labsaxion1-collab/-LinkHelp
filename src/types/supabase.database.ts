@@ -15,6 +15,7 @@ import type {
   RequestRow,
   ReviewRow,
   UpcomingJobRow,
+  UserComplaintRow,
   UserGamificationRow,
 } from './database';
 
@@ -124,6 +125,12 @@ export type Database = {
         Row: UserGamificationRow;
         Insert: Partial<UserGamificationRow> & Pick<UserGamificationRow, 'user_id' | 'user_type'>;
         Update: Partial<UserGamificationRow>;
+        Relationships: [];
+      };
+      user_complaints: {
+        Row: UserComplaintRow;
+        Insert: Record<string, unknown>;
+        Update: Partial<UserComplaintRow>;
         Relationships: [];
       };
       push_subscriptions: {

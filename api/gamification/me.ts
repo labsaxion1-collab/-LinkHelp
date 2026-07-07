@@ -1,17 +1,19 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getAuthedUserId, getSupabaseAdmin } from '../stripe/supabaseAdmin.js';
-import { ensureUserGamification } from '../../src/gamification/services/gamificationService.js';
+import {
+  getGamificationMeForUser,
+  recalculateGamificationForUser,
+  resolveGamificationUser,
+} from '../../src/gamification/services/recalculateGamification.js';
 import type { GamificationDb } from '../../src/gamification/services/gamificationStatsAdapter.js';
-import type { UserType } from '../../src/gamification/types/gamification.js';
 
-function parseUserType(value: unknown): UserType | null {
-  return value === 'helper' || value === 'client' ? value : null;
+function parseUserTypeQuery(value: unknown) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 /**
  * GET /api/gamification/me?userType=helper|client
- * Retorna (criando se necessário) a gamificação do usuário autenticado.
- * O user_id vem sempre da sessão — nunca do frontend.
+ * Retorna gamificação do usuário autenticado. user_id vem do token.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') {
@@ -26,35 +28,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const userId = await getAuthedUserId(req.headers.authorization);
-  if (!userId) {
-    return res.status(401).json({ error: 'AUTH_REQUIRED' });
-  }
-
-  const userType = parseUserType(req.query.userType);
-  if (!userType) {
-    return res.status(400).json({ error: 'INVALID_USER_TYPE' });
-  }
-
   const admin = getSupabaseAdmin();
   if (!admin) {
     return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
   }
 
+  const resolved = await resolveGamificationUser(
+    admin as GamificationDb,
+    userId,
+    parseUserTypeQuery(req.query.userType),
+  );
+  if ('error' in resolved) {
+    return res.status(resolved.status).json({ error: resolved.error });
+  }
+
   try {
-    const record = await ensureUserGamification(admin as GamificationDb, userId, userType);
-    if (!record) {
+    const payload = await getGamificationMeForUser(
+      admin as GamificationDb,
+      resolved.userId,
+      resolved.userType,
+    );
+    if (!payload) {
       return res.status(500).json({ error: 'GAMIFICATION_UNAVAILABLE' });
     }
 
-    return res.status(200).json({
-      score: record.score,
-      levelKey: record.levelKey,
-      heroKey: record.heroKey,
-      progressPercent: record.progressPercent,
-      pointsToNextLevel: record.pointsToNextLevel,
-      missingRequirements: record.missingRequirements,
-      updatedAt: record.updatedAt,
-    });
+    return res.status(200).json(payload);
   } catch (err) {
     console.error('[gamification/me]', err instanceof Error ? err.message : err);
     return res.status(500).json({ error: 'INTERNAL_ERROR' });

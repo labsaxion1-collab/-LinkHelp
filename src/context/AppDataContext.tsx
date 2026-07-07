@@ -48,6 +48,10 @@ import {
   countActiveApplicationsForJob,
   isRequestExclusiveLockedForViewer,
 } from '@/utils/applicationInterest';
+import {
+  resolveReviewTargetUserType,
+  triggerGamificationRecalculate,
+} from '@/gamification/services/triggerGamificationRecalculate';
 
 export type { Job, JobStatus, JobUrgency, Application, ApplicationStatus, UpcomingJob, UpcomingWorkflowStatus };
 export type { AppNotification, NotificationType };
@@ -281,6 +285,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         createdTimezone: jobDetails.createdTimezone ?? jobDetails.timezone ?? null,
       });
       await Promise.all([refreshRemote(), refreshProfile()]);
+      triggerGamificationRecalculate('request_published', 'client');
       return;
     }
 
@@ -354,6 +359,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         url: ROUTES.clientDashboard,
       });
       await refreshRemote();
+      triggerGamificationRecalculate('application_submitted', 'helper');
       return;
     }
 
@@ -433,6 +439,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         await remoteUpdateRequestStatus(jobId, status);
       }
       await refreshRemote();
+      if (isJobCancelled({ status })) {
+        triggerGamificationRecalculate('request_cancelled', 'client');
+      }
       return;
     }
 
@@ -747,6 +756,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     if (useRemote) {
       await remoteConfirmServiceCompleted(requestId);
       await refreshRemote();
+      const completedApp = applicationsRef.current.find(
+        (app) => app.jobId === requestId && app.status === 'completed',
+      );
+      triggerGamificationRecalculate('service_completed', 'client');
+      if (completedApp) {
+        triggerGamificationRecalculate('service_completed', 'helper');
+      }
       return;
     }
 
@@ -796,6 +812,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       });
       setReviews((prev) => [row, ...prev.filter((r) => r.id !== row.id)]);
       await refreshRemote();
+      triggerGamificationRecalculate(
+        'review_received',
+        resolveReviewTargetUserType(input.reviewerRole),
+      );
       return;
     }
     const local: ServiceReview = {

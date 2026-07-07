@@ -6,11 +6,10 @@ import type { Database } from '@/types/supabase.database';
 import type { LevelKey, UserType } from '@/gamification/types/gamification';
 import { getCurrentLevelConfig } from '@/gamification/engines/levelEngine';
 import {
-  ensureUserGamification,
-  getUserGamification,
-  recalculateUserGamification,
-  type UserGamificationRecord,
-} from '@/gamification/services/gamificationService';
+  fetchGamificationMe,
+  requestGamificationRecalculate,
+} from '@/gamification/services/gamificationApiClient';
+import type { UserGamificationRecord } from '@/gamification/services/gamificationService';
 
 export interface UseGamificationResult {
   levelKey: LevelKey;
@@ -19,14 +18,6 @@ export interface UseGamificationResult {
   loading: boolean;
 }
 
-/**
- * Registry module-level: garante UMA assinatura realtime por userId+userType,
- * mesmo com vários componentes usando o hook ao mesmo tempo (hero + card).
- *
- * Motivo: `supabase.channel(nome)` reutiliza o canal se o tópico já existe.
- * Um segundo `.on('postgres_changes')` após `.subscribe()` dispara
- * "cannot add postgres_changes callbacks after subscribe()".
- */
 type ChannelEntry = {
   channel: RealtimeChannel;
   listeners: Set<() => void>;
@@ -46,7 +37,6 @@ function acquireGamificationChannel(
 
   if (!entry) {
     const listeners = new Set<() => void>();
-    // Ordem obrigatória: .channel() → .on() → .subscribe(). Nunca .on() depois.
     const channel = db
       .channel(key)
       .on(
@@ -89,12 +79,10 @@ function acquireGamificationChannel(
 /**
  * Gamificação do usuário autenticado para o papel dado.
  *
- * - Garante o registro em `user_gamification` (cria zerado se não existe);
- * - Recalcula em background com os dados reais do banco;
- * - Assina realtime (compartilhado): quando `level_key`/`hero_key` muda no
- *   banco, o record muda e a hero troca junto;
- * - Fallback seguro: sem sessão, sem Supabase, sem tabela ou realtime fora
- *   do ar → mantém o estado atual (nível 'novo' por padrão), sem erro na UI.
+ * - Lê e recalcula via API (/api/gamification/me + /recalculate);
+ * - Nunca faz upsert/update direto em user_gamification no navegador;
+ * - Realtime dispara novo GET /me quando o snapshot muda no banco;
+ * - Fallback seguro: sem sessão ou API indisponível → nível 'novo', sem erro na UI.
  */
 export function useGamification(userType: UserType): UseGamificationResult {
   const { user } = useAuth();
@@ -120,10 +108,10 @@ export function useGamification(userType: UserType): UseGamificationResult {
 
     (async () => {
       try {
-        const ensured = await ensureUserGamification(db, userId, userType);
-        if (!cancelled && ensured) setRecord(ensured);
+        const ensured = await fetchGamificationMe(userType);
+        if (!cancelled) setRecord(ensured);
 
-        const fresh = await recalculateUserGamification(db, userId, userType);
+        const fresh = await requestGamificationRecalculate(userType);
         if (!cancelled && fresh) setRecord(fresh);
       } catch {
         // Fallback seguro: mantém estado atual.
@@ -133,9 +121,9 @@ export function useGamification(userType: UserType): UseGamificationResult {
     })();
 
     const releaseChannel = acquireGamificationChannel(db, userId, userType, () => {
-      getUserGamification(db, userId, userType)
+      fetchGamificationMe(userType)
         .then((next) => {
-          if (!cancelled && next) setRecord(next);
+          if (!cancelled) setRecord(next);
         })
         .catch(() => undefined);
     });

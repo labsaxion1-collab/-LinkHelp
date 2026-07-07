@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { TrendingUp, CheckCircle, AlertCircle, Loader2, HelpCircle, ShieldCheck } from 'lucide-react';
 import { LhCard } from '@/components/design-system/LhCard';
 import { useGamification } from '@/gamification/hooks/useGamification';
 import { getProgressToNextLevel } from '@/gamification/engines/progressEngine';
+import { EMPTY_GAMIFICATION_STATS } from '@/gamification/services/gamificationStatsAdapter';
 import type { UserType } from '@/gamification/types/gamification';
 import { MEDAL_MAP } from '@/gamification/config/gamificationMedals';
 import { GAMIFICATION_TUTORIAL_TITLE } from '@/gamification/config/gamificationTutorialContent';
@@ -29,24 +31,161 @@ type Props = {
   variant?: 'card' | 'hero';
 };
 
+export type HeroBadgeVariant = 'verde' | 'blue' | 'gold' | 'purple' | 'magenta' | 'elite';
+
+const BADGE_BUTTON_CLASS: Record<HeroBadgeVariant, string> = {
+  verde:
+    'lh-hero-nivel-badge inline-flex min-w-[7.5rem] items-center justify-center gap-2 rounded-full border border-lime-300/35 bg-gradient-to-b from-lime-400 to-green-800 px-4 py-1 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-300 sm:min-w-[9rem] sm:text-base',
+  blue:
+    'lh-hero-nivel-badge-blue inline-flex min-w-[7.5rem] items-center justify-center gap-2 rounded-full border border-blue-300/35 bg-gradient-to-b from-blue-400 to-blue-900 px-4 py-1 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 sm:min-w-[9rem] sm:text-base',
+  gold:
+    'lh-hero-nivel-badge-gold inline-flex min-w-[7.5rem] items-center justify-center gap-2 rounded-full border border-amber-200/50 bg-gradient-to-b from-amber-300 via-amber-500 to-amber-900 px-4 py-1 text-sm font-black text-amber-950 shadow-[0_0_18px_rgba(251,191,36,0.24)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 sm:min-w-[9rem] sm:text-base',
+  purple:
+    'lh-hero-nivel-badge-purple inline-flex min-w-[7.5rem] items-center justify-center gap-2 rounded-full border border-purple-200/45 bg-gradient-to-b from-purple-300 via-violet-500 to-purple-950 px-4 py-1 text-sm font-black shadow-[0_0_22px_rgba(168,85,247,0.34)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 sm:min-w-[9rem] sm:text-base',
+  magenta:
+    'lh-hero-nivel-badge-magenta inline-flex min-w-[7.5rem] items-center justify-center gap-2 rounded-full border border-pink-200/45 bg-gradient-to-b from-pink-300 via-fuchsia-500 to-pink-950 px-4 py-1 text-sm font-black shadow-[0_0_22px_rgba(236,72,153,0.38)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300 sm:min-w-[9rem] sm:text-base',
+  elite:
+    'lh-hero-nivel-badge-elite inline-flex min-w-[7.5rem] items-center justify-center gap-2 rounded-full border border-amber-100/50 bg-gradient-to-b from-amber-200 via-amber-400 to-amber-900 px-4 py-1 text-sm font-black text-amber-950 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 sm:min-w-[9rem] sm:text-base',
+};
+
 type GamificationLevelButtonProps = {
   userType: UserType;
   label: string;
+  badgeVariant?: HeroBadgeVariant;
 };
 
-export function GamificationLevelButton({ userType, label }: GamificationLevelButtonProps) {
+export function GamificationLevelButton({
+  userType,
+  label,
+  badgeVariant = 'verde',
+}: GamificationLevelButtonProps) {
   const { record, loading } = useGamification(userType);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
-  const progress = record ? getProgressToNextLevel(userType, record.score, record.stats) : null;
+  const [panelStyle, setPanelStyle] = useState<{ top: number; left: number; width: number } | null>(null);
+  const progress = record
+    ? getProgressToNextLevel(
+        userType,
+        record.score,
+        record.stats ?? EMPTY_GAMIFICATION_STATS,
+        record.levelKey,
+      )
+    : null;
   const missingRequirements = progress?.missingRequirements ?? [];
+
+  useLayoutEffect(() => {
+    if (!expanded || !buttonRef.current) {
+      setPanelStyle(null);
+      return;
+    }
+
+    const updatePanelPosition = () => {
+      if (!buttonRef.current) return;
+      const rect = buttonRef.current.getBoundingClientRect();
+      const width = Math.min(352, window.innerWidth - 32);
+      setPanelStyle({
+        top: rect.bottom + 9,
+        left: rect.left + rect.width / 2,
+        width,
+      });
+    };
+
+    updatePanelPosition();
+    window.addEventListener('resize', updatePanelPosition);
+    window.addEventListener('scroll', updatePanelPosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePanelPosition);
+      window.removeEventListener('scroll', updatePanelPosition, true);
+    };
+  }, [expanded]);
+
+  useEffect(() => {
+    if (!expanded) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (buttonRef.current?.contains(target) || panelRef.current?.contains(target)) return;
+      setExpanded(false);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setExpanded(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [expanded]);
+
+  const levelPanel =
+    expanded && panelStyle
+      ? createPortal(
+          <div
+            ref={panelRef}
+            id="client-level-details"
+            className="fixed z-[1000] -translate-x-1/2 rounded-2xl border border-lime-300/25 bg-[#061008]/95 p-3 text-left shadow-[0_18px_45px_rgba(0,0,0,0.72)] backdrop-blur-xl sm:p-4"
+            style={{ top: panelStyle.top, left: panelStyle.left, width: panelStyle.width }}
+          >
+            <span
+              className="absolute left-1/2 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-lime-300/25 bg-[#061008]"
+              aria-hidden="true"
+            />
+            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] text-lime-300">
+              O que falta para o próximo nível
+            </p>
+
+            {loading && !record ? (
+              <div className="flex items-center gap-2 rounded-xl bg-white/[0.06] px-3 py-2.5 text-xs text-white/65">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Carregando seu progresso...
+              </div>
+            ) : missingRequirements.length > 0 ? (
+              <ul className="space-y-1.5">
+                {missingRequirements.map((requirement) => (
+                  <li
+                    key={requirement}
+                    className="flex items-start gap-2 rounded-xl border border-amber-300/10 bg-amber-300/10 px-3 py-2 text-xs font-semibold text-amber-100"
+                  >
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" />
+                    <span>{requirement}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="flex items-center gap-2 rounded-xl border border-emerald-300/10 bg-emerald-300/10 px-3 py-2.5">
+                <CheckCircle className="h-4 w-4 shrink-0 text-emerald-300" />
+                <p className="text-xs font-bold text-emerald-100">Todos os requisitos deste nível foram concluídos.</p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setExpanded(false);
+                setTutorialOpen(true);
+              }}
+              className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-lime-300/25 bg-lime-400/15 px-3 py-2.5 text-xs font-black text-lime-200 transition hover:bg-lime-400/25"
+            >
+              <HelpCircle className="h-4 w-4" />
+              {GAMIFICATION_TUTORIAL_TITLE}
+            </button>
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div className="relative z-30 mx-auto -mt-3 w-fit sm:-mt-4">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setExpanded((current) => !current)}
-        className="lh-hero-nivel-badge inline-flex min-w-[7.5rem] items-center justify-center gap-2 rounded-full border border-lime-300/35 bg-gradient-to-b from-lime-400 to-green-800 px-4 py-1 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-300 sm:min-w-[9rem] sm:text-base"
+        className={BADGE_BUTTON_CLASS[badgeVariant]}
         aria-expanded={expanded}
         aria-controls="client-level-details"
       >
@@ -54,50 +193,7 @@ export function GamificationLevelButton({ userType, label }: GamificationLevelBu
         <HelpCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
       </button>
 
-      {expanded ? (
-        <div
-          id="client-level-details"
-          className="absolute left-1/2 top-[calc(100%+0.55rem)] z-40 w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl border border-lime-300/25 bg-[#061008]/95 p-3 text-left shadow-[0_18px_45px_rgba(0,0,0,0.72)] backdrop-blur-xl sm:p-4"
-        >
-          <span className="absolute left-1/2 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-lime-300/25 bg-[#061008]" aria-hidden="true" />
-          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] text-lime-300">
-            O que falta para o próximo nível
-          </p>
-
-          {loading && !record ? (
-            <div className="flex items-center gap-2 rounded-xl bg-white/[0.06] px-3 py-2.5 text-xs text-white/65">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Carregando seu progresso...
-            </div>
-          ) : missingRequirements.length > 0 ? (
-            <ul className="space-y-1.5">
-              {missingRequirements.map((requirement) => (
-                <li key={requirement} className="flex items-start gap-2 rounded-xl border border-amber-300/10 bg-amber-300/10 px-3 py-2 text-xs font-semibold text-amber-100">
-                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" />
-                  <span>{requirement}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="flex items-center gap-2 rounded-xl border border-emerald-300/10 bg-emerald-300/10 px-3 py-2.5">
-              <CheckCircle className="h-4 w-4 shrink-0 text-emerald-300" />
-              <p className="text-xs font-bold text-emerald-100">Todos os requisitos deste nível foram concluídos.</p>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={() => {
-              setExpanded(false);
-              setTutorialOpen(true);
-            }}
-            className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-lime-300/25 bg-lime-400/15 px-3 py-2.5 text-xs font-black text-lime-200 transition hover:bg-lime-400/25"
-          >
-            <HelpCircle className="h-4 w-4" />
-            {GAMIFICATION_TUTORIAL_TITLE}
-          </button>
-        </div>
-      ) : null}
+      {levelPanel}
 
       <GamificationTutorialModal open={tutorialOpen} onClose={() => setTutorialOpen(false)} userType={userType} />
     </div>
@@ -121,9 +217,14 @@ export function GamificationProgressCard({ userType, className = '', variant = '
     );
   }
 
-  if (!record) return null;
+  if (!record?.levelKey) return null;
 
-  const progress = getProgressToNextLevel(userType, record.score, record.stats);
+  const progress = getProgressToNextLevel(
+    userType,
+    record.score,
+    record.stats ?? EMPTY_GAMIFICATION_STATS,
+    record.levelKey,
+  );
   const heroKey = record.heroKey;
   const medalSrc = MEDAL_MAP[heroKey] ?? MEDAL_MAP[`${userType}_novo`];
   const barColor = BAR_COLOR[heroKey] ?? '#2563FF';

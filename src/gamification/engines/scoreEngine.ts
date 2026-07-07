@@ -38,6 +38,24 @@ function computePenalties(stats: GamificationStats): number {
   return Math.min(stats.complaintCount * 20, 100);
 }
 
+/** Só concede pontos de baixo cancelamento após pelo menos 1 serviço concluído. */
+function computeCancellationScore(cancelCount: number, max: number, totalCompleted: number): number {
+  if (totalCompleted <= 0) return 0;
+
+  if (max === 100) {
+    if (cancelCount >= 6) return 0;
+    if (cancelCount >= 3) return 40;
+    if (cancelCount >= 1) return 70;
+    return 100;
+  }
+
+  if (cancelCount >= 6) return 0;
+  if (cancelCount >= 4) return 35;
+  if (cancelCount >= 2) return 70;
+  if (cancelCount === 1) return 110;
+  return 150;
+}
+
 function clampScore(score: number): number {
   return Math.max(0, Math.min(SCORE_MAX, Math.round(score)));
 }
@@ -53,10 +71,7 @@ export function computeHelperScore(stats: GamificationStats): number {
   const responseScore = computeResponseScore(stats.responseRate, 150);
   const profileScore = computeProfileScore(stats.profilePct, 100);
 
-  let cancellationScore = 100;
-  if (stats.cancelCount >= 1 && stats.cancelCount <= 2) cancellationScore = 70;
-  else if (stats.cancelCount >= 3 && stats.cancelCount <= 5) cancellationScore = 40;
-  else if (stats.cancelCount >= 6) cancellationScore = 0;
+  const cancellationScore = computeCancellationScore(stats.cancelCount, 100, stats.totalCompleted);
 
   // Uso saudável simples: baseado em candidaturas enviadas.
   let healthyUsageScore = 0;
@@ -86,11 +101,7 @@ export function computeClientScore(stats: GamificationStats): number {
   const responseScore = computeResponseScore(stats.responseRate, 100);
   const profileScore = computeProfileScore(stats.profilePct, 100);
 
-  let cancellationScore = 150;
-  if (stats.cancelCount === 1) cancellationScore = 110;
-  else if (stats.cancelCount >= 2 && stats.cancelCount <= 3) cancellationScore = 70;
-  else if (stats.cancelCount >= 4 && stats.cancelCount <= 5) cancellationScore = 35;
-  else if (stats.cancelCount >= 6) cancellationScore = 0;
+  const cancellationScore = computeCancellationScore(stats.cancelCount, 150, stats.totalCompleted);
 
   // Histórico positivo: baseado em pedidos publicados.
   let historyScore = 0;

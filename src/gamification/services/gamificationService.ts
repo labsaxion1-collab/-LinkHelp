@@ -6,7 +6,7 @@ import type {
   UserType,
 } from '../types/gamification';
 import { computeScore } from '../engines/scoreEngine';
-import { determineLevel, getCurrentLevelConfig, getLevelsFor } from '../engines/levelEngine';
+import { determineSequentialLevel, getCurrentLevelConfig, getLevelsFor } from '../engines/levelEngine';
 import { getProgressToNextLevel } from '../engines/progressEngine';
 import {
   EMPTY_GAMIFICATION_STATS,
@@ -18,9 +18,9 @@ import {
 /**
  * Camada de serviço da gamificação (Etapa 2).
  *
- * O client Supabase é sempre injetado:
- * - no browser, passe `getSupabase()` (RLS garante acesso apenas aos próprios dados);
- * - nas API routes (Vercel), passe o client admin criado no servidor —
+ * O client Supabase é injetado pelo chamador:
+ * - no browser: usar gamificationApiClient (GET/POST API) — sem escrita direta;
+ * - nas API routes (Vercel): passe o client admin (service role);
  *   o `user_id` NUNCA vem do frontend, sempre da sessão autenticada.
  */
 
@@ -64,11 +64,16 @@ function rowToRecord(row: UserGamificationRow): UserGamificationRecord {
   };
 }
 
-function buildRowPayload(userId: string, userType: UserType, stats: GamificationStats) {
+function buildRowPayload(
+  userId: string,
+  userType: UserType,
+  stats: GamificationStats,
+  existingLevelKey?: LevelKey,
+) {
   const score = computeScore(userType, stats);
-  const levelKey = determineLevel(userType, score, stats);
+  const levelKey = determineSequentialLevel(userType, existingLevelKey ?? 'novo', score, stats);
   const levelConfig = getCurrentLevelConfig(userType, levelKey);
-  const progress = getProgressToNextLevel(userType, score, stats);
+  const progress = getProgressToNextLevel(userType, score, stats, levelKey);
 
   return {
     user_id: userId,
@@ -110,8 +115,8 @@ export async function getUserGamification(
 }
 
 /**
- * Atualiza (upsert) o snapshot a partir das stats fornecidas:
- * recalcula score, nível, hero e progresso via engines e persiste tudo.
+ * Atualiza (upsert) o snapshot a partir das stats fornecidas.
+ * Requer client com permissão de escrita (service role / API server).
  */
 export async function updateUserGamification(
   db: GamificationDb,
@@ -119,7 +124,8 @@ export async function updateUserGamification(
   userType: UserType,
   stats: GamificationStats,
 ): Promise<UserGamificationRecord | null> {
-  const payload = buildRowPayload(userId, userType, stats);
+  const existing = await getUserGamification(db, userId, userType);
+  const payload = buildRowPayload(userId, userType, stats, existing?.levelKey);
 
   const { data, error } = await db
     .from('user_gamification')
@@ -133,8 +139,7 @@ export async function updateUserGamification(
 
 /**
  * Garante que exista registro para user_id + user_type.
- * Se não existir, cria zerado: score 0, level 'novo', hero inicial do
- * config e progresso calculado a partir do estado inicial.
+ * Requer client com permissão de escrita (service role / API server).
  */
 export async function ensureUserGamification(
   db: GamificationDb,
@@ -219,5 +224,5 @@ export async function getUserProgress(
 ): Promise<ProgressToNextLevel | null> {
   const record = await ensureUserGamification(db, userId, userType);
   if (!record) return null;
-  return getProgressToNextLevel(userType, record.score, record.stats);
+  return getProgressToNextLevel(userType, record.score, record.stats, record.levelKey);
 }

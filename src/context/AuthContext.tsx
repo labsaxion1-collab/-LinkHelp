@@ -20,6 +20,7 @@ import type { AuthFlowError } from '@/types/authFlowError';
 import { mapProfileWriteError, mapSupabaseAuthError } from '@/services/authErrorMap';
 import { getOAuthRedirectToUrl } from '@/utils/oauthRedirect';
 import { readKeepSignedIn } from '@/utils/rememberSession';
+import { triggerGamificationRecalculate } from '@/gamification/services/triggerGamificationRecalculate';
 
 export type AuthProfile = ProfileRow;
 export type AuthError = AuthFlowError;
@@ -917,6 +918,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         await refreshProfile();
       }
+      triggerGamificationRecalculate('profile_updated', role);
       return null;
     },
     [profile, refreshProfile],

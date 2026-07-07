@@ -24,6 +24,9 @@ type Seed = {
   profile?: SeedProfile;
   applications?: Array<{ helper_id: string; status: string }>;
   requests?: Array<{ client_id: string; status: string }>;
+  conversations?: Array<{ id: string; client_id: string; helper_id: string }>;
+  messages?: Array<{ id: string; conversation_id: string; sender_id: string; created_at: string }>;
+  complaints?: Array<{ id: string; reported_user_id: string; status: string }>;
 };
 
 /** Mock em memória cobrindo as queries usadas pelo service e pelo adapter. */
@@ -35,6 +38,7 @@ function createMockDb(seed: Seed = {}) {
   class MockQuery {
     private filters: Record<string, unknown> = {};
     private statuses: string[] | null = null;
+    private inFilters: Record<string, unknown[]> = {};
     private upserted: Record<string, unknown> | null = null;
 
     constructor(private table: string) {}
@@ -48,8 +52,12 @@ function createMockDb(seed: Seed = {}) {
       return this;
     }
 
-    in(_column: string, values: string[]) {
-      this.statuses = values;
+    in(column: string, values: unknown[]) {
+      if (column === 'status') {
+        this.statuses = values as string[];
+      } else {
+        this.inFilters[column] = values;
+      }
       return this;
     }
 
@@ -84,19 +92,31 @@ function createMockDb(seed: Seed = {}) {
       return { data: null, error: null };
     }
 
-    /** Torna a query "awaitable" para as contagens do adapter. */
-    then<T>(onFulfilled: (value: { count: number; error: null }) => T) {
+    /** Torna a query "awaitable" para contagens e listagens do adapter. */
+    then<T>(
+      onFulfilled: (value: { count?: number; data?: unknown[]; error: null }) => T,
+    ) {
       let rows: Array<Record<string, unknown>> = [];
       if (this.table === 'applications') rows = seed.applications ?? [];
       if (this.table === 'requests') rows = seed.requests ?? [];
+      if (this.table === 'conversations') rows = seed.conversations ?? [];
+      if (this.table === 'messages') rows = seed.messages ?? [];
+      if (this.table === 'user_complaints') rows = seed.complaints ?? [];
 
       const filtered = rows.filter((row) => {
         for (const [column, value] of Object.entries(this.filters)) {
           if (row[column] !== value) return false;
         }
         if (this.statuses && !this.statuses.includes(String(row.status))) return false;
+        for (const [column, values] of Object.entries(this.inFilters)) {
+          if (!values.includes(row[column])) return false;
+        }
         return true;
       });
+
+      if (this.table === 'conversations' || this.table === 'messages') {
+        return Promise.resolve({ data: filtered, error: null }).then(onFulfilled);
+      }
 
       return Promise.resolve({ count: filtered.length, error: null }).then(onFulfilled);
     }
@@ -185,7 +205,7 @@ describe('recalculateUserGamification — helper', () => {
     expect(record!.stats.profilePct).toBe(100);
     expect(record!.stats.hireRate).toBe(75);
     expect(record!.score).toBeGreaterThan(0);
-    // Requisitos gate: sem responseRate real ainda, não passa de confiável.
+    // Sem conversas no mock → responseRate 0; requisitos gate impedem profissional.
     expect(record!.levelKey).toBe('confiavel');
     expect(record!.heroKey).toBe('helper_confiavel');
   });
@@ -224,7 +244,7 @@ describe('recalculateUserGamification — client', () => {
 });
 
 describe('updateUserGamification — troca automática de nível', () => {
-  it('sobe para profissional quando score e requisitos permitem', async () => {
+  it('sobe para profissional quando score e requisitos permitem (progressão sequencial)', async () => {
     const db = createMockDb();
     const stats: GamificationStats = {
       totalCompleted: 3,
@@ -237,6 +257,14 @@ describe('updateUserGamification — troca automática de nível', () => {
       publishedOrdersCount: 0,
       hireRate: 40,
     };
+
+    const confiavel = await updateUserGamification(db, HELPER_ID, 'helper', {
+      ...stats,
+      totalCompleted: 0,
+      avgRating: 0,
+      responseRate: 0,
+    });
+    expect(confiavel!.levelKey).toBe('confiavel');
 
     const record = await updateUserGamification(db, HELPER_ID, 'helper', stats);
 
@@ -286,6 +314,7 @@ describe('getUserProgress', () => {
     const progress = await getUserProgress(db, HELPER_ID, 'helper');
 
     expect(progress).not.toBeNull();
+    expect(progress!.currentLevel.key).toBe('confiavel');
     expect(progress!.nextLevel?.key).toBe('profissional');
     expect(progress!.pointsToNext).toBe(250 - record!.score);
     expect(record!.progressPercent).toBeGreaterThan(0);

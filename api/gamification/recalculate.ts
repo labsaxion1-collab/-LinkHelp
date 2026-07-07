@@ -1,21 +1,21 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getAuthedUserId, getSupabaseAdmin } from '../stripe/supabaseAdmin.js';
-import { recalculateUserGamification } from '../../src/gamification/services/gamificationService.js';
+import {
+  recalculateGamificationForUser,
+  resolveGamificationUser,
+} from '../../src/gamification/services/recalculateGamification.js';
 import type { GamificationDb } from '../../src/gamification/services/gamificationStatsAdapter.js';
-import type { UserType } from '../../src/gamification/types/gamification.js';
 
 type Body = {
   userType?: string;
+  userId?: string;
+  score?: number;
+  levelKey?: string;
 };
-
-function parseUserType(value: unknown): UserType | null {
-  return value === 'helper' || value === 'client' ? value : null;
-}
 
 /**
  * POST /api/gamification/recalculate { userType: 'helper' | 'client' }
- * Recalcula score, nível, hero e progresso do usuário autenticado a partir
- * dos dados reais do banco. O user_id vem sempre da sessão — nunca do frontend.
+ * Recalcula e persiste gamificação via service role. user_id vem do token.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') {
@@ -30,8 +30,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const userId = await getAuthedUserId(req.headers.authorization);
-  if (!userId) {
-    return res.status(401).json({ error: 'AUTH_REQUIRED' });
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
   }
 
   let body: Body;
@@ -41,32 +42,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'INVALID_PAYLOAD' });
   }
 
-  const userType = parseUserType(body.userType);
-  if (!userType) {
-    return res.status(400).json({ error: 'INVALID_USER_TYPE' });
-  }
+  // Ignora campos do front que poderiam tentar forjar identidade/score/nível.
+  void body.userId;
+  void body.score;
+  void body.levelKey;
 
-  const admin = getSupabaseAdmin();
-  if (!admin) {
-    return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
+  const resolved = await resolveGamificationUser(admin as GamificationDb, userId, body.userType);
+  if ('error' in resolved) {
+    return res.status(resolved.status).json({ error: resolved.error });
   }
 
   try {
-    const record = await recalculateUserGamification(admin as GamificationDb, userId, userType);
-    if (!record) {
+    const payload = await recalculateGamificationForUser(
+      admin as GamificationDb,
+      resolved.userId,
+      resolved.userType,
+    );
+    if (!payload) {
       return res.status(500).json({ error: 'RECALCULATE_FAILED' });
     }
 
-    return res.status(200).json({
-      score: record.score,
-      levelKey: record.levelKey,
-      heroKey: record.heroKey,
-      stats: record.stats,
-      progressPercent: record.progressPercent,
-      pointsToNextLevel: record.pointsToNextLevel,
-      missingRequirements: record.missingRequirements,
-      updatedAt: record.updatedAt,
-    });
+    return res.status(200).json(payload);
   } catch (err) {
     console.error('[gamification/recalculate]', err instanceof Error ? err.message : err);
     return res.status(500).json({ error: 'INTERNAL_ERROR' });

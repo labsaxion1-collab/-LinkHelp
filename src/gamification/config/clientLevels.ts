@@ -55,6 +55,7 @@ export const CLIENT_LEVELS: GamificationLevel[] = [
     requirements: {
       minTotalCompleted: 25,
       minAvgRating: 4.9,
+      minResponseRate: 80,
       maxComplaints: 0,
       maxCancels: 1,
     },

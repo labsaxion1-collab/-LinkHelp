@@ -11,7 +11,14 @@ type Props = {
   footer?: ReactNode;
   /** Accent for primary confirm button: default blue, cancel uses amber */
   variant?: 'default' | 'danger';
+  /** Camada do overlay — use "elevated" para ficar acima de heroes/composições */
+  layer?: 'default' | 'elevated';
 };
+
+const OVERLAY_LAYER_CLASS = {
+  default: 'z-[120]',
+  elevated: 'z-[1000]',
+} as const;
 
 export function PremiumResponsiveModal({
   open,
@@ -20,6 +27,7 @@ export function PremiumResponsiveModal({
   children,
   footer,
   variant = 'default',
+  layer = 'default',
 }: Props) {
   useEffect(() => {
     if (!open) return;
@@ -34,7 +42,10 @@ export function PremiumResponsiveModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[120] flex items-end justify-center bg-slate-900/55 backdrop-blur-sm md:items-center md:p-4"
+      className={clsx(
+        'fixed inset-0 flex items-end justify-center bg-slate-900/55 backdrop-blur-sm md:items-center md:p-4',
+        OVERLAY_LAYER_CLASS[layer],
+      )}
       onClick={onClose}
       role="presentation"
     >

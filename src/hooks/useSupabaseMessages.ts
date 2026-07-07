@@ -11,6 +11,7 @@ import {
   subscribeConversationChannel,
   type ChatConversationSummary,
 } from '@/services/supabase/chatRemote';
+import { triggerGamificationRecalculate } from '@/gamification/services/triggerGamificationRecalculate';
 
 export type RemoteChatRow =
   | { id: string | number; kind: 'system'; text: string; time: string; variant?: 'info' | 'warn' }
@@ -223,6 +224,7 @@ export function useSupabaseMessages(opts: UseSupabaseMessagesOpts) {
           senderName: userDisplayName,
           conversationId: selectedId,
         });
+        triggerGamificationRecalculate('message_responded');
       } catch (e) {
         setSendError(e instanceof Error ? e.message : 'Send failed');
         throw e;

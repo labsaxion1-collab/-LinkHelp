@@ -1,6 +1,5 @@
 import { Star, MapPin, Clock, Shield } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import { HelperScorePanel } from '@/components/features/HelperScorePanel';
 import { translateCategory } from '@/utils/translateCategory';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 
@@ -71,8 +70,6 @@ export function HelperPublicProfileView({ helper }: Props) {
           {helper.bio}
         </p>
       ) : null}
-
-      <HelperScorePanel />
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
         <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{t('helper_public.categories')}</p>

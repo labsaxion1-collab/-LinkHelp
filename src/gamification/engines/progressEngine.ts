@@ -1,10 +1,11 @@
 import type {
   GamificationStats,
+  LevelKey,
   LevelRequirements,
   ProgressToNextLevel,
   UserType,
 } from '../types/gamification';
-import { determineLevel, getCurrentLevelConfig, getLevelsFor } from './levelEngine';
+import { determineSequentialLevel, getCurrentLevelConfig, getLevelsFor } from './levelEngine';
 
 function listMissingRequirements(stats: GamificationStats, requirements: LevelRequirements): string[] {
   const missing: string[] = [];
@@ -48,9 +49,10 @@ export function getProgressToNextLevel(
   userType: UserType,
   score: number,
   stats: GamificationStats,
+  currentLevelKey: LevelKey = 'novo',
 ): ProgressToNextLevel {
   const levels = getLevelsFor(userType);
-  const currentKey = determineLevel(userType, score, stats);
+  const currentKey = determineSequentialLevel(userType, currentLevelKey, score, stats);
   const currentLevel = getCurrentLevelConfig(userType, currentKey);
   const currentIdx = levels.findIndex((level) => level.key === currentKey);
   const nextLevel = levels[currentIdx + 1] ?? null;

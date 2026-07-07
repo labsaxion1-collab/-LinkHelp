@@ -251,6 +251,17 @@ export type CreditPackageRow = {
   created_at: string;
 };
 
+/** Reclamação entre usuários — `supabase/migrations/0046`. */
+export type UserComplaintRow = {
+  id: string;
+  reporter_id: string;
+  reported_user_id: string;
+  reported_user_type: UserType;
+  reason: string | null;
+  status: 'open' | 'confirmed' | 'rejected';
+  created_at: string;
+};
+
 /** Snapshot de gamificação — `supabase/migrations/0043` + `0044`. */
 export type UserGamificationRow = {
   id: string;

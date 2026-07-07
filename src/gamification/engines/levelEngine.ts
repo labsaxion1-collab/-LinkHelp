@@ -25,11 +25,12 @@ export function meetsRequirements(stats: GamificationStats, requirements: LevelR
   return true;
 }
 
-/**
- * Nível mais alto cujo score mínimo foi atingido E cujos requisitos
- * mínimos estão satisfeitos. Fallback: 'novo'.
- */
-export function determineLevel(userType: UserType, score: number, stats: GamificationStats): LevelKey {
+/** Nível mais alto cujo score mínimo foi atingido E cujos requisitos estão satisfeitos. */
+export function findHighestEligibleLevel(
+  userType: UserType,
+  score: number,
+  stats: GamificationStats,
+): LevelKey {
   const levels = getLevelsFor(userType);
   for (let i = levels.length - 1; i >= 0; i--) {
     const level = levels[i];
@@ -38,6 +39,42 @@ export function determineLevel(userType: UserType, score: number, stats: Gamific
     }
   }
   return 'novo';
+}
+
+/**
+ * Progressão sequencial: só permite subir para o próximo nível imediato.
+ * Se o próximo não for elegível, mantém o nível atual (fallback: `novo`).
+ */
+export function determineSequentialLevel(
+  userType: UserType,
+  currentLevelKey: LevelKey | string | null | undefined,
+  score: number,
+  stats: GamificationStats,
+): LevelKey {
+  const levels = getLevelsFor(userType);
+  const resolvedCurrent = getCurrentLevelConfig(userType, (currentLevelKey ?? 'novo') as LevelKey);
+  const currentIdx = levels.findIndex((level) => level.key === resolvedCurrent.key);
+  const safeIdx = currentIdx >= 0 ? currentIdx : 0;
+  const currentLevel = levels[safeIdx];
+  const nextLevel = levels[safeIdx + 1];
+
+  if (
+    nextLevel &&
+    score >= nextLevel.scoreMin &&
+    meetsRequirements(stats, nextLevel.requirements)
+  ) {
+    return nextLevel.key;
+  }
+
+  return currentLevel.key;
+}
+
+/**
+ * Determina o nível assumindo partida de `novo` (apenas uma subida por chamada).
+ * Preferir `determineSequentialLevel` com o nível persistido do usuário.
+ */
+export function determineLevel(userType: UserType, score: number, stats: GamificationStats): LevelKey {
+  return determineSequentialLevel(userType, 'novo', score, stats);
 }
 
 export function getCurrentLevelConfig(userType: UserType, levelKey: LevelKey): GamificationLevel {

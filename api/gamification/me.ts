@@ -4,7 +4,7 @@ import {
   getGamificationMeForUser,
   recalculateGamificationForUser,
   resolveGamificationUser,
-} from '../../src/gamification/services/recalculateGamification.js';
+} from '../lib/gamification.server.mjs';
 import type { GamificationDb } from '../../src/gamification/services/gamificationStatsAdapter.js';
 
 function parseUserTypeQuery(value: unknown) {

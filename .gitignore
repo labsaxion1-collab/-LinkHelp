@@ -1,6 +1,7 @@
 node_modules/
 build/
 dist/
+api/lib/*.mjs
 .vercel/
 coverage/
 .DS_Store

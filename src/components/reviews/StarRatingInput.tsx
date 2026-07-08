@@ -5,14 +5,40 @@ type Props = {
   value: number;
   onChange: (value: number) => void;
   disabled?: boolean;
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
+  align?: 'start' | 'center' | 'end';
 };
 
-export function StarRatingInput({ value, onChange, disabled = false, size = 'md' }: Props) {
-  const iconClass = size === 'sm' ? 'h-6 w-6' : 'h-9 w-9';
+const iconSizeClass: Record<NonNullable<Props['size']>, string> = {
+  xs: 'h-5 w-5',
+  sm: 'h-6 w-6',
+  md: 'h-9 w-9',
+};
+
+const alignClass: Record<NonNullable<Props['align']>, string> = {
+  start: 'justify-start',
+  center: 'justify-center',
+  end: 'justify-end',
+};
+
+export function StarRatingInput({
+  value,
+  onChange,
+  disabled = false,
+  size = 'md',
+  align = 'center',
+}: Props) {
+  const iconClass = iconSizeClass[size];
+  const gapClass = size === 'xs' ? 'gap-0' : size === 'sm' ? 'gap-1' : 'gap-1.5';
+  const groupTightClass = size === 'xs' ? '-space-x-1' : '';
+  const padClass = size === 'xs' ? 'p-0.5' : 'p-1';
 
   return (
-    <div className="flex items-center justify-center gap-1.5" role="radiogroup" aria-label="Rating">
+    <div
+      className={clsx('flex shrink-0 items-center', gapClass, groupTightClass, alignClass[align])}
+      role="radiogroup"
+      aria-label="Rating"
+    >
       {[1, 2, 3, 4, 5].map((star) => {
         const active = star <= value;
         return (
@@ -22,7 +48,8 @@ export function StarRatingInput({ value, onChange, disabled = false, size = 'md'
             disabled={disabled}
             onClick={() => onChange(star)}
             className={clsx(
-              'rounded-lg p-1 transition-transform active:scale-95 disabled:opacity-50',
+              'rounded-md transition-transform active:scale-95 disabled:opacity-50',
+              padClass,
               active ? 'text-amber-400' : 'text-slate-300 hover:text-amber-300',
             )}
             aria-label={`${star}`}

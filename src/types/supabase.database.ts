@@ -284,6 +284,10 @@ export type Database = {
         Args: { p_user_id: string };
         Returns: Json;
       };
+      get_public_reputation_dossier: {
+        Args: { p_user_id: string };
+        Returns: Json;
+      };
       complete_client_onboarding: {
         Args: { p_client_id: string; p_device_fingerprint?: string | null };
         Returns: Json;

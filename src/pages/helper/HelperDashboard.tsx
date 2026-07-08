@@ -33,8 +33,7 @@ import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpe
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
 import { HelperCategoryDropdown } from '@/components/helper/HelperCategoryDropdown';
 import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
-import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
-import { countCompletedForClient } from '@/utils/linkHelpRanking';
+import { ClientPublicProfileView } from '@/components/features/ClientPublicProfileView';
 import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
 import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
 import { getApplicationChargeLc } from '@/config/helperCreditCharge';
@@ -1464,41 +1463,7 @@ export default function HelperDashboard() {
             onClick={() => setClientProfileJob(null)}
           />
           <section className="relative z-10 w-full max-w-md max-h-[min(88dvh,640px)] overflow-y-auto overscroll-contain rounded-3xl border border-slate-100 bg-white p-5 shadow-2xl">
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <img
-                  src={clientProfileJob.clientAvatar}
-                  alt=""
-                  className="h-16 w-16 rounded-2xl border-2 border-white object-cover shadow-md ring-1 ring-slate-100"
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-xl font-black text-slate-950">{clientProfileJob.clientName}</p>
-                  {clientProfileJob.clientRating != null && clientProfileJob.clientRating > 0 ? (
-                    <p className="mt-0.5 flex items-center gap-1 text-sm font-bold text-amber-600">
-                      <Icons.Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                      {t('helper_public.avg_rating', { rating: clientProfileJob.clientRating.toFixed(1) })}
-                    </p>
-                  ) : (
-                    <p className="mt-0.5 text-xs font-semibold text-slate-500">{t('service_review.no_rating_yet')}</p>
-                  )}
-                  <div className="mt-2">
-                    <LinkHelpRankBadgeFromStats
-                      role="client"
-                      completedCount={countCompletedForClient(clientProfileJob.clientId, jobs)}
-                      averageRating={clientProfileJob.clientRating ?? 0}
-                      requireCompleted
-                      size="sm"
-                      showLabel
-                      t={t}
-                    />
-                  </div>
-                  <p className="mt-1 truncate text-sm font-bold text-slate-500">
-                    {[clientProfileJob.city, clientProfileJob.region].filter(Boolean).join(', ') ||
-                      clientProfileJob.location ||
-                      'Quebec'}
-                  </p>
-                </div>
-              </div>
+            <div className="mb-3 flex items-start justify-end">
               <button
                 type="button"
                 onClick={() => setClientProfileJob(null)}
@@ -1507,39 +1472,7 @@ export default function HelperDashboard() {
                 <Icons.X className="h-5 w-5" />
               </button>
             </div>
-
-            <div className="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-              <p className="text-xs font-black uppercase tracking-wide text-emerald-700">
-                {t('helper_dashboard.client_public_profile_title')}
-              </p>
-              <p className="mt-1 text-sm font-semibold leading-relaxed text-emerald-950">
-                {t('helper_dashboard.client_public_profile_body')}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                [t('helper_dashboard.client_stat_score'), '92%'],
-                [
-                  t('helper_dashboard.client_stat_previous_requests'),
-                  jobs.filter((job) => job.clientId === clientProfileJob.clientId).length,
-                ],
-                [t('helper_dashboard.client_stat_response_rate'), t('helper_dashboard.client_stat_response_high')],
-                [t('helper_dashboard.client_stat_reviews'), t('helper_dashboard.client_stat_reviews_positive')],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                  <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>
-                  <p className="mt-1 text-lg font-black text-slate-950">{value}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-slate-100 bg-white p-4">
-              <p className="text-sm font-black text-slate-950">{t('helper_dashboard.client_reviews_from_helpers')}</p>
-              <p className="mt-1 text-sm font-semibold leading-relaxed text-slate-600">
-                {t('helper_dashboard.client_reviews_sample')}
-              </p>
-            </div>
+            <ClientPublicProfileView job={clientProfileJob} />
           </section>
         </div>
       ) : null}

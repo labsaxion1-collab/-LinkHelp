@@ -1,3 +1,17 @@
+import type { Job } from '@/types/job';
+import type { UpcomingJob } from '@/types/upcoming';
+
+/** Copy subcategory from the linked request when upcoming_jobs has no column for it. */
+export function enrichUpcomingJobsWithSubcategories(upcoming: UpcomingJob[], jobs: Job[]): UpcomingJob[] {
+  if (upcoming.length === 0 || jobs.length === 0) return upcoming;
+  const subByRequestId = new Map(jobs.map((j) => [j.id, j.subcategory ?? null]));
+  return upcoming.map((row) => {
+    if (row.subcategory) return row;
+    const subcategory = subByRequestId.get(row.jobId) ?? null;
+    return subcategory ? { ...row, subcategory } : row;
+  });
+}
+
 /** Minimal shape — avoids circular imports with AppDataContext */
 export function estimateScheduledAtFromJob(job: { date: string }): number {
   const now = Date.now();

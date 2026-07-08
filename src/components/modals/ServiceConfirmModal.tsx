@@ -1,5 +1,6 @@
 import { LhModal } from '@/components/design-system/LhModal';
 import type { Job } from '@/types/job';
+import { translateJobTitle } from '@/utils/translateCategory';
 
 type Props = {
   open: boolean;
@@ -17,7 +18,9 @@ export function ServiceConfirmModal({ open, job, busy, onConfirm, onDismiss, onR
   return (
     <LhModal open={open} onClose={busy ? () => undefined : onDismiss} title={t('service_confirm.title')} size="md">
       <p className="text-sm font-medium leading-relaxed text-slate-600">{t('service_confirm.body')}</p>
-      <p className="mt-2 text-sm font-bold text-slate-900">{job.title}</p>
+      <p className="mt-2 text-sm font-bold text-slate-900">
+        {translateJobTitle(job.title, job.category, job.subcategory, t)}
+      </p>
       <div className="mt-6 flex flex-col gap-2">
         <button
           type="button"

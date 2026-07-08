@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { avatarUrlForName } from '@/utils/avatarUrl';
 import { clearDemoLocalData } from '@/utils/clearDemoLocalData';
-import { estimateScheduledAtFromJob } from '@/utils/upcomingJobUtils';
+import { enrichUpcomingJobsWithSubcategories, estimateScheduledAtFromJob } from '@/utils/upcomingJobUtils';
 import { ROUTES } from '@/utils/constants';
 import type { Job, JobStatus, JobUrgency } from '@/types/job';
 import type { Application, ApplicationStatus } from '@/types/application';
@@ -533,6 +533,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           clientAvatar: jobSnapshot.clientAvatar,
           title: jobSnapshot.title,
           category: jobSnapshot.category,
+          subcategory: jobSnapshot.subcategory ?? null,
           description: jobSnapshot.description,
           location: jobSnapshot.location,
           value: jobSnapshot.value,
@@ -655,6 +656,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         clientAvatar: jobSnapshot.clientAvatar,
         title: jobSnapshot.title,
         category: jobSnapshot.category,
+        subcategory: jobSnapshot.subcategory ?? null,
         description: jobSnapshot.description,
         location: jobSnapshot.location,
         value: jobSnapshot.value,
@@ -834,12 +836,17 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     setReviews((prev) => [local, ...prev]);
   };
 
+  const upcomingJobsEnriched = useMemo(
+    () => enrichUpcomingJobsWithSubcategories(upcomingJobs, jobs),
+    [upcomingJobs, jobs],
+  );
+
   return (
     <AppDataContext.Provider
       value={{
         jobs,
         applications,
-        upcomingJobs,
+        upcomingJobs: upcomingJobsEnriched,
         notifications,
         dataLoading,
         createJob,

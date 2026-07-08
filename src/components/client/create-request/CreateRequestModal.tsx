@@ -49,6 +49,7 @@ import {
   type CreateRequestDraft,
 } from '@/utils/createRequestDraft';
 import { InsufficientClientCreditsError } from '@/services/supabase/appDataRemote';
+import { buildCanonicalJobTitle } from '@/utils/translateCategory';
 
 type ModalStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
 const STEPS: ModalStep[] = ['category', 'subcategory', 'description', 'confirm', 'review'];
@@ -471,16 +472,12 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     const addr = selectedCategory === 'moving' ? movePickupAddress : requestAddress;
     const locationParts = [addr.display.trim(), addr.city, addr.region].filter(Boolean);
     const locationLabel = locationParts.join(', ') || t('jobs.remote');
-    const categoryLabel = selectedCategory ? t(`categories.${selectedCategory}`) : t('client_dashboard.create_order_title');
-    const subKey = selectedSubcategory ? `service_subs.${selectedCategory}.${selectedSubcategory}` : '';
-    const subLabel = subKey ? t(subKey) : '';
-    const titleLabel = subLabel && subLabel !== subKey ? subLabel : categoryLabel;
     try {
       await createJob({
         clientId: me.id,
         clientName: me.name,
         clientAvatar: me.avatar,
-        title: `${categoryLabel}: ${titleLabel}`,
+        title: buildCanonicalJobTitle(selectedCategory, selectedSubcategory || null),
         description: fullDescription,
         category: selectedCategory,
         subcategory: selectedSubcategory || null,

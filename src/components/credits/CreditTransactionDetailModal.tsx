@@ -9,7 +9,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
 import { fetchCreditTransactionDetail } from '@/services/supabase/creditTransactionDetailRemote';
 import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
-import { translateCategory } from '@/utils/translateCategory';
+import { translateCategory, translateJobTitle } from '@/utils/translateCategory';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
@@ -164,7 +164,15 @@ export function CreditTransactionDetailModal({ tx, unlocks, open, onClose }: Pro
               />
               {context?.request ? (
                 <>
-                  <DetailRow label={t('credits_tx.field_request')} value={context.request.title} />
+                  <DetailRow
+                    label={t('credits_tx.field_request')}
+                    value={translateJobTitle(
+                      context.request.title,
+                      context.request.category,
+                      jobs.find((j) => j.id === context.request?.id)?.subcategory ?? null,
+                      t,
+                    )}
+                  />
                   <DetailRow
                     label={t('credits_tx.field_category')}
                     value={translateCategory(context.request.category, t)}

@@ -19,6 +19,8 @@ export interface UpcomingJob {
   clientAvatar: string;
   title: string;
   category: string;
+  /** Enriched from linked request when absent on upcoming_jobs row */
+  subcategory?: string | null;
   description: string;
   location: string;
   value: string;

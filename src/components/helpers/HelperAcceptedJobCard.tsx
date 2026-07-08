@@ -90,7 +90,7 @@ export function HelperAcceptedJobCard({ job, locale, t, onOpenDetails, onOpenCha
         {/* row 2: title + client */}
         <div>
           <h3 className="truncate text-sm font-black leading-snug text-gray-900">
-            {translateJobTitle(job.title, job.category, null, t)}
+            {translateJobTitle(job.title, job.category, job.subcategory ?? null, t)}
           </h3>
           <div className="mt-0.5 flex items-center gap-1.5">
             <img

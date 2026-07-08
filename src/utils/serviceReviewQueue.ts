@@ -37,6 +37,7 @@ export function buildPendingServiceReviews(
         targetAvatar: app.helperAvatar,
         jobTitle: job.title,
         jobCategory: job.category,
+        jobSubcategory: job.subcategory,
       });
     }
     return pending;
@@ -65,6 +66,7 @@ export function buildPendingServiceReviews(
       targetAvatar: job.clientAvatar,
       jobTitle: job.title,
       jobCategory: job.category,
+      jobSubcategory: job.subcategory,
     });
   }
 

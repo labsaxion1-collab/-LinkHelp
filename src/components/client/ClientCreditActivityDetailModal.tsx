@@ -11,6 +11,7 @@ import {
   resolveClientCreditEntryLabel,
 } from '@/utils/clientCreditMetrics';
 import { requestStatusLabelKey } from '@/utils/creditTransactionDisplay';
+import { translateJobTitle } from '@/utils/translateCategory';
 
 type Props = {
   entry: ClientCreditLedgerEntry | null;
@@ -155,7 +156,10 @@ export function ClientCreditActivityDetailModal({
             </h3>
             <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4">
               <DetailRow label={t('create_modal.service_category')} value={categoryLabel(request, t)} />
-              <DetailRow label={t('client_credits.request_title')} value={request.title} />
+              <DetailRow
+                label={t('client_credits.request_title')}
+                value={translateJobTitle(request.title, request.category, request.subcategory, t)}
+              />
               {request.description.trim() ? (
                 <div className="border-b border-slate-100 py-3 last:border-b-0">
                   <p className="text-xs font-bold text-slate-500">{t('create_modal.description')}</p>

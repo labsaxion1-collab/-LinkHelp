@@ -19,4 +19,5 @@ export type PendingServiceReview = {
   targetAvatar: string;
   jobTitle: string;
   jobCategory: string;
+  jobSubcategory?: string | null;
 };

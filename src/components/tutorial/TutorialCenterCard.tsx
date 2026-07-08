@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState, type MouseEvent, type ReactNode, type TouchEvent } from 'react';
+import { useCallback, useEffect, useState, type MouseEvent, type ReactNode, type TouchEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -19,7 +19,7 @@ type Props = {
   controlsOnImage?: boolean;
   footerBlurOverlay?: boolean;
   immersiveLayout?: boolean;
-  /** Card 1 â€” hint de swipe horizontal (somente cliente) */
+  /** Card 1 — hint de swipe horizontal (somente cliente) */
   swipeHint?: boolean;
   children: ReactNode;  footer: ReactNode;
 };

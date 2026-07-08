@@ -1,4 +1,4 @@
-﻿import {
+import {
   AlertCircle,
   Award,
   CheckCircle,
@@ -160,8 +160,8 @@ function CurrentProgressSlide({ card, titleId }: Props) {
   return (
     <div className="pb-2 text-center">
       <div className="relative mx-auto w-fit">
-        <span className="absolute -left-5 top-7 text-lg text-amber-300">âœ¦</span>
-        <span className="absolute -right-5 top-3 text-sm text-amber-300">âœ¦</span>
+        <span className="absolute -left-5 top-7 text-lg text-amber-300">✦</span>
+        <span className="absolute -right-5 top-3 text-sm text-amber-300">✦</span>
         {currentMedal ? (
           <img
             src={currentMedal}
@@ -173,7 +173,7 @@ function CurrentProgressSlide({ card, titleId }: Props) {
       </div>
 
       <span className={`mt-1 inline-flex rounded-full bg-gradient-to-r ${currentBadgeClass} px-4 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow-sm`}>
-        NÃ­vel atual
+        Nível atual
       </span>
       <h2 id={titleId} className={`mt-2 text-[1.55rem] font-black uppercase leading-tight tracking-tight ${currentTitleClass}`}>
         {currentNumber ? `${currentNumber}. ` : ''}{card.currentLevelName}
@@ -182,7 +182,7 @@ function CurrentProgressSlide({ card, titleId }: Props) {
 
       <section className="mt-4 rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-[0_16px_45px_rgba(37,99,235,0.08)]">
         <span className={`inline-flex rounded-full ${nextBadgeClass} px-4 py-1 text-[10px] font-black uppercase tracking-wide text-white`}>
-          PrÃ³ximo nÃ­vel
+          Próximo nível
         </span>
         <h3 className="mt-2 text-lg font-black leading-tight text-slate-950">
           {card.title.split(card.nextLevelName ?? '')[0]}
@@ -220,7 +220,7 @@ function CurrentProgressSlide({ card, titleId }: Props) {
           ) : (
             <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-3 text-left text-xs font-bold text-emerald-800">
               <CheckCircle className="h-5 w-5 shrink-0" />
-              Todos os requisitos foram concluÃ­dos.
+              Todos os requisitos foram concluídos.
             </div>
           )}
         </div>
@@ -228,7 +228,7 @@ function CurrentProgressSlide({ card, titleId }: Props) {
         <div className="mt-3 flex items-start gap-2 rounded-xl bg-blue-50 px-3 py-2.5 text-left">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#2563FF]" />
           <p className="text-[10px] font-medium leading-relaxed text-slate-600">
-            Ao cumprir todos os requisitos, seu nÃ­vel serÃ¡ <strong className="text-[#2563FF]">atualizado automaticamente.</strong>
+            Ao cumprir todos os requisitos, seu nível será <strong className="text-[#2563FF]">atualizado automaticamente.</strong>
           </p>
         </div>
       </section>
@@ -238,7 +238,7 @@ function CurrentProgressSlide({ card, titleId }: Props) {
           <ShieldCheck className="h-7 w-7" />
         </span>
         <div>
-          <p className={`text-xs font-black ${isGoldTransition ? 'text-amber-600' : (isVipTransition || isEliteTransition) ? 'text-violet-700' : 'text-emerald-700'}`}>BenefÃ­cio de alcanÃ§ar o prÃ³ximo nÃ­vel</p>
+          <p className={`text-xs font-black ${isGoldTransition ? 'text-amber-600' : (isVipTransition || isEliteTransition) ? 'text-violet-700' : 'text-emerald-700'}`}>Benefício de alcançar o próximo nível</p>
           <p className="mt-1 text-[10px] font-medium leading-relaxed text-slate-600">{card.benefit}</p>
         </div>
       </section>
@@ -246,7 +246,7 @@ function CurrentProgressSlide({ card, titleId }: Props) {
   );
 }
 
-/** ConteÃºdo de um slide do tutorial de nÃ­veis. */
+/** Conteúdo de um slide do tutorial de níveis. */
 export function GamificationTutorialSlide({ card, titleId }: Props) {
   if (card.isLevelSummary) {
     return <LevelSummarySlide card={card} titleId={titleId} />;
@@ -290,7 +290,7 @@ export function GamificationTutorialSlide({ card, titleId }: Props) {
           ) : (
             <div className="mx-auto mt-4 flex max-w-[340px] items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-left text-xs font-bold text-emerald-800">
               <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600" />
-              Todos os requisitos foram concluÃ­dos.
+              Todos os requisitos foram concluídos.
             </div>
           )
         ) : null}

@@ -6,6 +6,18 @@ export interface GamificationTutorialCard {
   body: string;
   /** Medalha exibida no card (chave do MEDAL_MAP); sem heroKey usa ícone genérico. */
   heroKey?: string;
+  requirements?: string[];
+  currentLevelName?: string;
+  nextLevelName?: string;
+  nextHeroKey?: string;
+  benefit?: string;
+  isCurrentProgress?: boolean;
+  statusCopy?: string;
+  isMaxLevel?: boolean;
+  exclusiveBenefits?: Array<{ title: string; body: string }>;
+  maintenanceTips?: string[];
+  recognitionCopy?: string;
+  isLevelSummary?: boolean;
 }
 
 const HELPER_TUTORIAL_CARDS: GamificationTutorialCard[] = [

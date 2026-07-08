@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, ChevronLeft } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useLanguage } from '@/context/LanguageContext';
@@ -7,16 +7,146 @@ import type { UserType } from '@/gamification/types/gamification';
 import { getGamificationTutorialCards } from '@/gamification/config/gamificationTutorialContent';
 import { GamificationTutorialSlide } from '@/gamification/components/GamificationTutorial';
 
+import { useGamification } from '@/gamification/hooks/useGamification';
+import { getProgressToNextLevel, listMissingRequirements } from '@/gamification/engines/progressEngine';
+import { EMPTY_GAMIFICATION_STATS } from '@/gamification/services/gamificationStatsAdapter';
+import { CLIENT_LEVELS } from '@/gamification/config/clientLevels';
 type Props = {
   open: boolean;
   onClose: () => void;
   userType: UserType;
 };
 
-/** Tutorial de gamificação — mesmo card central do tutorial da barra superior. */
+/** Tutorial de gamificaÃƒÂ§ÃƒÂ£o Ã¢â‚¬â€ mesmo card central do tutorial da barra superior. */
 export function GamificationTutorialModal({ open, onClose, userType }: Props) {
   const { t } = useLanguage();
-  const cards = getGamificationTutorialCards(userType);
+  const { record } = useGamification(userType);
+  const progress = record?.levelKey
+    ? getProgressToNextLevel(userType, record.score, record.stats ?? EMPTY_GAMIFICATION_STATS, record.levelKey)
+    : null;
+  const staticCards = getGamificationTutorialCards(userType);
+  const currentCard = progress && record ? {
+    id: 'current-progress',
+    title: progress.nextLevel ? `Como virar ${progress.nextLevel.name}?` : 'NÃ­vel mÃ¡ximo alcanÃ§ado',
+    body: progress.nextLevel
+      ? 'Para conquistar seu prÃ³ximo nÃ­vel, vocÃª precisa:'
+      : 'VocÃª jÃ¡ chegou Ã  medalha mais alta desta jornada.',
+    heroKey: record.heroKey,
+    nextHeroKey: progress.nextLevel?.heroKey,
+    currentLevelName: progress.currentLevel.name,
+    nextLevelName: progress.nextLevel?.name,
+    statusCopy: userType === 'client' ? 'VocÃª comeÃ§ou sua jornada na LinkHelp!' : 'Sua jornada profissional comeÃ§a aqui!',
+    requirements: progress.nextLevel
+      ? [
+          ...(progress.pointsToNext > 0 ? [`AlcanÃ§ar mais ${progress.pointsToNext} pontos`] : []),
+          ...progress.missingRequirements,
+        ]
+      : [],
+    benefit: userType === 'client'
+      ? 'Aumente sua credibilidade e atraia helpers mais qualificados para seus pedidos.'
+      : 'Ganhe mais credibilidade e destaque para conquistar novas oportunidades.',
+    isCurrentProgress: true,
+  } : null;
+  const clientOuroLevel = CLIENT_LEVELS.find((level) => level.key === 'ouro');
+  const clientOuroCard = userType === 'client' && record && clientOuroLevel ? {
+    id: 'client-confiavel-ouro',
+    title: 'Como virar Cliente Ouro?',
+    body: 'Para alcanÃ§ar o prÃ³ximo nÃ­vel, vocÃª precisa:',
+    heroKey: 'client_confiavel',
+    nextHeroKey: 'client_ouro',
+    currentLevelName: 'Cliente ConfiÃ¡vel',
+    nextLevelName: 'Cliente Ouro',
+    statusCopy: 'VocÃª jÃ¡ estÃ¡ construindo uma Ã³tima reputaÃ§Ã£o!',
+    requirements: [
+      ...(record.score < clientOuroLevel.scoreMin
+        ? [`AlcanÃ§ar mais ${clientOuroLevel.scoreMin - record.score} pontos`]
+        : []),
+      ...listMissingRequirements(
+        record.stats ?? EMPTY_GAMIFICATION_STATS,
+        clientOuroLevel.requirements,
+      ),
+    ],
+    benefit: 'Tenha mais destaque e reconhecimento na LinkHelp. Helpers confiarÃ£o ainda mais em vocÃª.',
+    isCurrentProgress: true,
+  } : null;
+  const clientVipLevel = CLIENT_LEVELS.find((level) => level.key === 'vip');
+  const clientVipCard = userType === 'client' && record && clientVipLevel ? {
+    id: 'client-ouro-vip',
+    title: 'Como virar Cliente VIP?',
+    body: 'Para alcanÃ§ar o prÃ³ximo nÃ­vel, vocÃª precisa:',
+    heroKey: 'client_ouro',
+    nextHeroKey: 'client_vip',
+    currentLevelName: 'Cliente Ouro',
+    nextLevelName: 'Cliente VIP',
+    statusCopy: 'VocÃª jÃ¡ tem um Ã³timo histÃ³rico na LinkHelp!',
+    requirements: [
+      ...(record.score < clientVipLevel.scoreMin
+        ? [`AlcanÃ§ar mais ${clientVipLevel.scoreMin - record.score} pontos`]
+        : []),
+      ...listMissingRequirements(
+        record.stats ?? EMPTY_GAMIFICATION_STATS,
+        clientVipLevel.requirements,
+      ),
+    ],
+    benefit: 'Seu perfil ganha ainda mais destaque. VocÃª se torna um cliente VIP e atrai os melhores helpers.',
+    isCurrentProgress: true,
+  } : null;
+  const clientEliteLevel = CLIENT_LEVELS.find((level) => level.key === 'elite');
+  const clientEliteCard = userType === 'client' && record && clientEliteLevel ? {
+    id: 'client-vip-elite',
+    title: 'Como virar Cliente Elite?',
+    body: 'Para alcançar o próximo nível, você precisa:',
+    heroKey: 'client_vip',
+    nextHeroKey: 'client_elite',
+    currentLevelName: 'Cliente VIP',
+    nextLevelName: 'Cliente Elite',
+    statusCopy: 'Você é um cliente de alto nível na LinkHelp!',
+    requirements: [
+      ...(record.score < clientEliteLevel.scoreMin
+        ? [`Alcançar mais ${clientEliteLevel.scoreMin - record.score} pontos`]
+        : []),
+      ...listMissingRequirements(
+        record.stats ?? EMPTY_GAMIFICATION_STATS,
+        clientEliteLevel.requirements,
+      ),
+    ],
+    benefit: 'Você se torna uma referência na LinkHelp. Os melhores helpers querem trabalhar com você.',
+    isCurrentProgress: true,
+  } : null;
+  const clientMaxCard = userType === 'client' ? {
+    id: 'client-elite-max',
+    title: 'Cliente Elite',
+    body: 'Você alcançou o topo da LinkHelp!',
+    heroKey: 'client_elite',
+    currentLevelName: 'Cliente Elite',
+    statusCopy: 'Você é referência entre os clientes da plataforma.',
+    isMaxLevel: true,
+    exclusiveBenefits: [
+      { title: 'Máximo destaque', body: 'Seu perfil recebe o maior reconhecimento na plataforma.' },
+      { title: 'Atendimento prioritário', body: 'Suporte e respostas mais rápidas.' },
+      { title: 'Condições exclusivas', body: 'Acesso aos benefícios disponíveis para clientes Elite.' },
+      { title: 'Confiança máxima', body: 'Histórico e reputação que inspiram confiança.' },
+    ],
+    maintenanceTips: [
+      'Avalie os helpers após cada serviço',
+      'Responda rapidamente às mensagens',
+      'Conclua seus pedidos pela plataforma',
+      'Evite cancelamentos desnecessários',
+      'Mantenha um excelente histórico',
+    ],
+    recognitionCopy: 'Seu compromisso e suas boas escolhas ajudam a construir uma comunidade melhor para todos.',
+  } : null;
+  const clientSummaryCard = userType === 'client' ? {
+    id: 'client-level-summary',
+    title: 'Parabéns! Você chegou ao final',
+    body: 'Conheça todos os níveis para clientes e as vantagens conquistadas na LinkHelp.',
+    isLevelSummary: true,
+  } : null;
+  const cards = currentCard
+    ? userType === 'client' && clientOuroCard
+      ? [currentCard, clientOuroCard, ...(clientVipCard ? [clientVipCard] : []), ...(clientEliteCard ? [clientEliteCard] : []), ...(clientMaxCard ? [clientMaxCard] : []), ...(clientSummaryCard ? [clientSummaryCard] : [])]
+      : [currentCard, ...staticCards.slice(1)]
+    : staticCards;
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -60,8 +190,7 @@ export function GamificationTutorialModal({ open, onClose, userType }: Props) {
       stepCount={cards.length}
       onStepChange={setStep}
       onDismiss={onClose}
-      onSkip={onClose}
-      skipLabel={t('client_onboarding_tutorial.skip')}
+      headerLabel="Tutorial de nÃ­veis"
       closeLabel={t('common.close')}
       titleId="gamification-tutorial-title"
       zIndex={1000}

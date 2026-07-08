@@ -1,4 +1,4 @@
-import { ChevronRight, ShieldCheck, Sparkles } from 'lucide-react';
+﻿import { ChevronRight, Sparkles } from 'lucide-react';
 
 import backgroundImage from '@/assets/hero/backgrounds/client/bg-roxo.png';
 import haloImage from '@/assets/hero/halos/halo-azul.png';
@@ -11,6 +11,7 @@ import {
   CLIENT_CONFIAVEL_SPARKLES,
 } from '@/config/clientConfiavelLevelVisual';
 import { BRAND } from '@/utils/brandAssets';
+import { GamificationLevelButton, GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
 
 type Props = {
   balance?: number | null;
@@ -23,7 +24,7 @@ type Props = {
 export function ClientConfiavelhero({ balance }: Props) {
   const visual = CLIENT_CONFIAVEL_LEVEL_VISUAL;
   const displayBalance =
-    balance == null ? '—' : Math.max(0, Math.round(balance)).toLocaleString('pt-BR');
+    balance == null ? 'â€”' : Math.max(0, Math.round(balance)).toLocaleString('pt-BR');
 
   return (
     <section className="relative left-1/2 isolate mb-4 w-[100dvw] max-w-none -translate-x-1/2 overflow-hidden border-0 bg-[#02040a] text-white shadow-none ring-1 ring-blue-500/10 lg:left-auto lg:w-full lg:translate-x-0 lg:rounded-[1.75rem] lg:shadow-[0_22px_58px_rgba(0,7,30,0.32)]">
@@ -118,40 +119,15 @@ export function ClientConfiavelhero({ balance }: Props) {
           </div>
         </div>
 
-        <div className="mx-auto w-fit -translate-y-2">
-          <span className="lh-hero-nivel-badge-blue inline-flex min-w-[7.5rem] justify-center rounded-full border border-blue-300/35 bg-gradient-to-b from-blue-400 to-blue-900 px-4 py-1 text-sm font-black sm:min-w-[9rem] sm:text-base">
-            {visual.levelLabel}
-          </span>
-        </div>
 
         <p className="lh-hero-description mx-auto -mt-1 max-w-[22rem] text-center text-sm font-medium leading-relaxed text-white/68 sm:max-w-[34rem] sm:text-base">
           {visual.description}
         </p>
 
-        <div className="lh-hero-progress mx-auto mt-3 max-w-[45rem] rounded-2xl border border-blue-400/20 bg-blue-950/35 px-3 py-2.5 shadow-[0_8px_32px_rgba(37,99,255,0.12)] backdrop-blur-lg sm:px-5">
-          <div className="flex items-center gap-2.5">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-blue-300/25 bg-blue-500/15 text-blue-300">
-              <ShieldCheck className="h-5 w-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] text-white/65 sm:text-xs">{visual.nextLevelLabel}</p>
-              <p className="truncate text-xs font-black uppercase text-blue-400 sm:text-base">
-                {visual.nextLevel}
-              </p>
-            </div>
-            <span className="text-lg font-black sm:text-xl">{visual.progressPercent}%</span>
-          </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/[0.07]">
-            <span
-              className="block h-full rounded-full bg-gradient-to-r from-blue-600 via-blue-400 to-blue-300 shadow-[0_0_14px_rgba(59,130,246,0.36)]"
-              style={{ width: `${visual.progressPercent}%` }}
-            />
-          </div>
-          <p className="mt-1.5 text-center text-[10px] text-white/55 sm:text-xs">
-            Mais {visual.pointsRemaining} pontos para alcançar o próximo nível
-          </p>
-        </div>
+        <GamificationLevelButton userType="client" label={visual.currentLevel} badgeVariant="blue" />
+        <GamificationProgressCard userType="client" variant="hero" className="lh-hero-progress mx-auto mt-3 max-w-[45rem]" />
       </div>
     </section>
   );
 }
+

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type MouseEvent, type ReactNode, type TouchEvent } from 'react';
+﻿import { useCallback, useEffect, useState, type MouseEvent, type ReactNode, type TouchEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -12,13 +12,14 @@ type Props = {
   onDismiss: () => void;
   onSkip?: () => void;
   skipLabel?: string;
+  headerLabel?: string;
   closeLabel: string;
   zIndex?: number;
   titleId?: string;
   controlsOnImage?: boolean;
   footerBlurOverlay?: boolean;
   immersiveLayout?: boolean;
-  /** Card 1 — hint de swipe horizontal (somente cliente) */
+  /** Card 1 â€” hint de swipe horizontal (somente cliente) */
   swipeHint?: boolean;
   children: ReactNode;  footer: ReactNode;
 };
@@ -50,6 +51,7 @@ export function TutorialCenterCard({
   closeLabel,
   zIndex = 120,
   titleId = 'tutorial-center-title',
+  headerLabel,
   controlsOnImage = false,
   footerBlurOverlay = false,
   immersiveLayout = false,
@@ -129,6 +131,11 @@ export function TutorialCenterCard({
         )}
         onClick={(event) => event.stopPropagation()}
       >
+        {headerLabel ? (
+          <p className="absolute left-5 top-5 z-40 text-sm font-semibold text-[#475569]">
+            {headerLabel}
+          </p>
+        ) : null}
         {onSkip && skipLabel ? (
           <button
             type="button"

@@ -7,7 +7,7 @@ import type {
 } from '../types/gamification';
 import { determineSequentialLevel, getCurrentLevelConfig, getLevelsFor } from './levelEngine';
 
-function listMissingRequirements(stats: GamificationStats, requirements: LevelRequirements): string[] {
+export function listMissingRequirements(stats: GamificationStats, requirements: LevelRequirements): string[] {
   const missing: string[] = [];
 
   if (requirements.minProfilePct !== undefined && stats.profilePct < requirements.minProfilePct) {

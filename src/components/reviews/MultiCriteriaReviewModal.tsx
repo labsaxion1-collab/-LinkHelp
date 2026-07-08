@@ -8,6 +8,8 @@ import {
   type ReviewCriterionKey,
 } from '@/config/reviewCriteria';
 import type { PendingServiceReview } from '@/types/review';
+import { translateJobTitle } from '@/utils/translateCategory';
+import { resolveReviewSubmitErrorMessage } from '@/utils/reviewSubmitErrors';
 
 type Props = {
   open: boolean;
@@ -64,8 +66,9 @@ export function MultiCriteriaReviewModal({ open, pending, reviewerRole, onClose,
       await onSubmit({ rating, comment: comment.trim(), criteriaScores });
       reset();
       onClose();
-    } catch {
-      setError(t('service_review.submit_error'));
+    } catch (error) {
+      console.error('[LinkHelp] review modal submit', error);
+      setError(resolveReviewSubmitErrorMessage(error, t));
       setSubmitting(false);
     }
   };
@@ -82,7 +85,9 @@ export function MultiCriteriaReviewModal({ open, pending, reviewerRole, onClose,
           <img src={pending.targetAvatar} alt="" className="h-12 w-12 rounded-xl object-cover ring-2 ring-white" />
           <div className="min-w-0">
             <p className="truncate text-sm font-black text-slate-950">{pending.targetName}</p>
-            <p className="truncate text-xs font-semibold text-slate-500">{pending.jobTitle}</p>
+            <p className="truncate text-xs font-semibold text-slate-500">
+              {translateJobTitle(pending.jobTitle, pending.jobCategory, pending.jobSubcategory ?? null, t)}
+            </p>
           </div>
         </div>
 

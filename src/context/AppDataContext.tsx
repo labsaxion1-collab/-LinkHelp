@@ -811,7 +811,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         reviewerRole: input.reviewerRole,
       });
       setReviews((prev) => [row, ...prev.filter((r) => r.id !== row.id)]);
-      await refreshRemote();
+      void refreshRemote().catch((e) => {
+        console.warn('[LinkHelp] refresh after review submit', e);
+      });
       triggerGamificationRecalculate(
         'review_received',
         resolveReviewTargetUserType(input.reviewerRole),

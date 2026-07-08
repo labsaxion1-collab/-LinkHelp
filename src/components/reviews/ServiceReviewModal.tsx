@@ -3,6 +3,8 @@ import { Loader2 } from 'lucide-react';
 import { LhModal } from '@/components/design-system/LhModal';
 import { StarRatingInput } from '@/components/reviews/StarRatingInput';
 import type { PendingServiceReview } from '@/types/review';
+import { resolveReviewSubmitErrorMessage } from '@/utils/reviewSubmitErrors';
+import { translateJobTitle } from '@/utils/translateCategory';
 
 type Props = {
   open: boolean;
@@ -42,8 +44,9 @@ export function ServiceReviewModal({ open, pending, reviewerRole, onClose, onSub
       await onSubmit({ rating, comment: comment.trim() });
       reset();
       onClose();
-    } catch {
-      setError(t('service_review.submit_error'));
+    } catch (error) {
+      console.error('[LinkHelp] review modal submit', error);
+      setError(resolveReviewSubmitErrorMessage(error, t));
       setSubmitting(false);
     }
   };
@@ -59,7 +62,9 @@ export function ServiceReviewModal({ open, pending, reviewerRole, onClose, onSub
           <img src={pending.targetAvatar} alt="" className="h-12 w-12 rounded-xl object-cover ring-2 ring-white" />
           <div className="min-w-0">
             <p className="truncate text-sm font-black text-slate-950">{pending.targetName}</p>
-            <p className="truncate text-xs font-semibold text-slate-500">{pending.jobTitle}</p>
+            <p className="truncate text-xs font-semibold text-slate-500">
+              {translateJobTitle(pending.jobTitle, pending.jobCategory, pending.jobSubcategory ?? null, t)}
+            </p>
           </div>
         </div>
 

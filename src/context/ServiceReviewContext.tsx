@@ -97,7 +97,9 @@ export function ServiceReviewProvider({ children }: { children: React.ReactNode 
       } catch {
         /* ignore */
       }
-      await refreshProfile();
+      void refreshProfile().catch((e) => {
+        console.warn('[LinkHelp] refresh profile after review', e);
+      });
       showToast(t('service_review.thanks'), 'success');
       setActive(null);
     },

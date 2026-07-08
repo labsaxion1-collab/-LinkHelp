@@ -1,6 +1,12 @@
 import { getSupabase } from '@/lib/supabase';
 import type { ReviewRow } from '@/types/database';
 import type { ServiceReview } from '@/types/review';
+import {
+  logReviewSubmitFailure,
+  ReviewSubmitError,
+  shouldFallbackToDirectReviewInsert,
+  toReviewSubmitError,
+} from '@/utils/reviewSubmitErrors';
 
 function rowToReview(row: ReviewRow): ServiceReview {
   return {
@@ -55,10 +61,27 @@ async function insertReviewDirect(input: {
   };
 
   let { data, error } = await sb.from('reviews').insert(withExtras).select('*').single();
-  if (error && (error.message?.includes('criteria_scores') || error.message?.includes('reviewer_role'))) {
-    ({ data, error } = await sb.from('reviews').insert(basePayload).select('*').single());
+  if (error) {
+    const missingExtrasColumn =
+      error.code === '42703' ||
+      error.message?.includes('criteria_scores') ||
+      error.message?.includes('reviewer_role');
+    if (missingExtrasColumn) {
+      ({ data, error } = await sb.from('reviews').insert(basePayload).select('*').single());
+    }
   }
-  if (error) throw new Error(error.message || 'REVIEW_SUBMIT_FAILED');
+
+  if (error) {
+    logReviewSubmitFailure('insert', error, {
+      requestId: input.requestId,
+      reviewerId: input.reviewerId,
+    });
+    if (error.code === '23505') {
+      throw new ReviewSubmitError('ALREADY_REVIEWED', 'ALREADY_REVIEWED');
+    }
+    throw toReviewSubmitError(error);
+  }
+
   return rowToReview(data as ReviewRow);
 }
 
@@ -72,7 +95,7 @@ export async function remoteSubmitReview(input: {
   reviewerRole?: 'client' | 'helper';
 }): Promise<ServiceReview> {
   const sb = getSupabase();
-  if (!sb) throw new Error('NO_SUPABASE');
+  if (!sb) throw new ReviewSubmitError('NO_SUPABASE', 'AUTH_REQUIRED');
 
   const rating = Math.min(5, Math.max(1, Math.round(input.rating)));
 
@@ -86,28 +109,29 @@ export async function remoteSubmitReview(input: {
   });
 
   if (error) {
-    const msg = error.message || '';
-    const useDirectInsert =
-      error.code === 'PGRST202' ||
-      msg.includes('submit_service_review') ||
-      msg.includes('REQUEST_NOT_COMPLETED') ||
-      msg.includes('ROLE_MISMATCH') ||
-      msg.includes('function') ||
-      msg.includes('does not exist');
+    logReviewSubmitFailure('rpc', error, {
+      requestId: input.requestId,
+      targetUserId: input.targetUserId,
+      reviewerRole: input.reviewerRole ?? null,
+    });
 
-    if (useDirectInsert) {
+    if (shouldFallbackToDirectReviewInsert(error)) {
       return insertReviewDirect({ ...input, rating });
     }
-    throw new Error(msg || 'REVIEW_SUBMIT_FAILED');
+
+    throw toReviewSubmitError(error);
   }
 
   const reviewId = (data as { reviewId?: string })?.reviewId;
   if (reviewId) {
-    const { data: row } = await sb.from('reviews').select('*').eq('id', reviewId).single();
+    const { data: row, error: selectError } = await sb.from('reviews').select('*').eq('id', reviewId).single();
+    if (selectError) {
+      logReviewSubmitFailure('select', selectError, { reviewId });
+    }
     if (row) return rowToReview(row as ReviewRow);
   }
 
-  const { data: latest } = await sb
+  const { data: latest, error: latestError } = await sb
     .from('reviews')
     .select('*')
     .eq('request_id', input.requestId)
@@ -115,6 +139,10 @@ export async function remoteSubmitReview(input: {
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  if (latestError) {
+    logReviewSubmitFailure('select', latestError, { requestId: input.requestId });
+  }
   if (latest) return rowToReview(latest as ReviewRow);
 
   return insertReviewDirect({ ...input, rating });

@@ -42,7 +42,9 @@ export function extractReviewErrorCode(message: string): ReviewSubmitErrorCode |
   return null;
 }
 
-/** When the RPC is missing or incompatible, fall back to a direct RLS insert. */
+/**
+ * Only fall back when the RPC or review columns are missing/incompatible — never on business-rule errors.
+ */
 export function shouldFallbackToDirectReviewInsert(error: PostgrestLikeError | null | undefined): boolean {
   if (!error) return false;
   if (isPostgrestMissingResource(error)) return true;
@@ -52,26 +54,58 @@ export function shouldFallbackToDirectReviewInsert(error: PostgrestLikeError | n
 
   if (code === '42703' || code === '42883') return true;
 
-  const markers = [
+  const structuralMarkers = [
+    'could not find the function public.submit_service_review',
     'submit_service_review',
-    'request_not_completed',
-    'role_mismatch',
-    'criteria_scores',
-    'reviewer_role',
-    'does not exist',
-    'could not find the function',
-    'column',
+    'schema cache',
     'undefined_column',
-    'function',
+    'column "criteria_scores"',
+    'column "reviewer_role"',
   ];
 
-  return markers.some((marker) => blob.includes(marker));
+  return structuralMarkers.some((marker) => blob.includes(marker));
 }
 
 export function toReviewSubmitError(error: PostgrestLikeError): ReviewSubmitError {
   const message = error.message?.trim() || 'REVIEW_SUBMIT_FAILED';
-  const code = extractReviewErrorCode(message) ?? 'REVIEW_SUBMIT_FAILED';
-  return new ReviewSubmitError(message, code);
+  const extracted = extractReviewErrorCode(message);
+
+  if (extracted) {
+    return new ReviewSubmitError(message, extracted);
+  }
+
+  if (error.code === '23505') {
+    return new ReviewSubmitError('ALREADY_REVIEWED', 'ALREADY_REVIEWED');
+  }
+
+  if (error.code === '23503') {
+    return new ReviewSubmitError(message, 'NOT_FOUND');
+  }
+
+  if (error.code === '42501') {
+    return new ReviewSubmitError(message, 'NOT_ALLOWED');
+  }
+
+  return new ReviewSubmitError(message, 'REVIEW_SUBMIT_FAILED');
+}
+
+export function formatReviewSubmitDebugDetail(error: unknown): string | null {
+  if (error instanceof ReviewSubmitError) {
+    const parts = [error.code, error.message].filter((part) => part && part !== 'REVIEW_SUBMIT_FAILED');
+    return parts.length > 0 ? parts.join(': ') : error.code;
+  }
+
+  if (error && typeof error === 'object') {
+    const row = error as PostgrestLikeError;
+    const parts = [row.code, row.message, row.details, row.hint].filter(Boolean);
+    if (parts.length > 0) return parts.join(' — ');
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return null;
 }
 
 export function logReviewSubmitFailure(
@@ -116,9 +150,12 @@ export function resolveReviewSubmitErrorMessage(
     }
   }
 
-  if (import.meta.env.DEV && error instanceof Error && error.message) {
-    return `${t('service_review.submit_error')} (${error.message})`;
+  const base = t('service_review.submit_error');
+  const detail = formatReviewSubmitDebugDetail(error);
+  if (detail) {
+    console.error('[LinkHelp] review submit surfaced detail', detail);
+    return `${base} (${detail.slice(0, 180)})`;
   }
 
-  return t('service_review.submit_error');
+  return base;
 }

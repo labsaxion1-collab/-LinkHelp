@@ -84,24 +84,34 @@ export function ServiceReviewProvider({ children }: { children: React.ReactNode 
       criteriaScores: Record<ReviewCriterionKey, number>;
     }) => {
       if (!active || !profile) return;
-      await submitServiceReview({
-        requestId: active.requestId,
-        targetUserId: active.targetUserId,
-        rating,
-        comment,
-        criteriaScores,
-        reviewerRole: profile.role === 'helper' ? 'helper' : 'client',
-      });
       try {
-        sessionStorage.removeItem(`${DISMISS_PREFIX}${active.requestId}`);
-      } catch {
-        /* ignore */
+        await submitServiceReview({
+          requestId: active.requestId,
+          targetUserId: active.targetUserId,
+          rating,
+          comment,
+          criteriaScores,
+          reviewerRole: profile.role === 'helper' ? 'helper' : 'client',
+        });
+        try {
+          sessionStorage.removeItem(`${DISMISS_PREFIX}${active.requestId}`);
+        } catch {
+          /* ignore */
+        }
+        void refreshProfile().catch((e) => {
+          console.warn('[LinkHelp] refresh profile after review', e);
+        });
+        showToast(t('service_review.thanks'), 'success');
+        setActive(null);
+      } catch (error) {
+        console.error('[LinkHelp] service review submit failed', {
+          requestId: active.requestId,
+          targetUserId: active.targetUserId,
+          reviewerRole: profile.role,
+          error,
+        });
+        throw error;
       }
-      void refreshProfile().catch((e) => {
-        console.warn('[LinkHelp] refresh profile after review', e);
-      });
-      showToast(t('service_review.thanks'), 'success');
-      setActive(null);
     },
     [active, profile, submitServiceReview, refreshProfile, showToast, t],
   );

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   extractReviewErrorCode,
+  formatReviewSubmitDebugDetail,
+  resolveReviewSubmitErrorMessage,
+  ReviewSubmitError,
   shouldFallbackToDirectReviewInsert,
   toReviewSubmitError,
 } from '@/utils/reviewSubmitErrors';
@@ -24,13 +27,22 @@ describe('shouldFallbackToDirectReviewInsert', () => {
     ).toBe(true);
   });
 
-  it('falls back for REQUEST_NOT_COMPLETED', () => {
+  it('does not fall back for REQUEST_NOT_COMPLETED', () => {
     expect(
       shouldFallbackToDirectReviewInsert({
         code: 'P0001',
         message: 'REQUEST_NOT_COMPLETED',
       }),
-    ).toBe(true);
+    ).toBe(false);
+  });
+
+  it('does not fall back for ROLE_MISMATCH', () => {
+    expect(
+      shouldFallbackToDirectReviewInsert({
+        code: 'P0001',
+        message: 'ROLE_MISMATCH',
+      }),
+    ).toBe(false);
   });
 
   it('does not fall back for NOT_ALLOWED', () => {
@@ -63,5 +75,31 @@ describe('toReviewSubmitError', () => {
   it('maps postgres exception text to ReviewSubmitError code', () => {
     const err = toReviewSubmitError({ message: 'NOT_ALLOWED' });
     expect(err.code).toBe('NOT_ALLOWED');
+  });
+
+  it('maps unique violation to ALREADY_REVIEWED', () => {
+    const err = toReviewSubmitError({ code: '23505', message: 'duplicate key value' });
+    expect(err.code).toBe('ALREADY_REVIEWED');
+  });
+});
+
+describe('resolveReviewSubmitErrorMessage', () => {
+  const t = (key: string) => key;
+
+  it('surfaces debug detail for unknown failures', () => {
+    const message = resolveReviewSubmitErrorMessage(
+      new ReviewSubmitError('relation "request_review_rewards" does not exist', 'REVIEW_SUBMIT_FAILED'),
+      t,
+    );
+    expect(message).toContain('service_review.submit_error');
+    expect(message).toContain('request_review_rewards');
+  });
+});
+
+describe('formatReviewSubmitDebugDetail', () => {
+  it('formats ReviewSubmitError with code', () => {
+    expect(formatReviewSubmitDebugDetail(new ReviewSubmitError('NOT_ALLOWED', 'NOT_ALLOWED'))).toBe(
+      'NOT_ALLOWED: NOT_ALLOWED',
+    );
   });
 });

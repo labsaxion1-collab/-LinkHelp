@@ -22,6 +22,53 @@ function rowToReview(row: ReviewRow): ServiceReview {
   };
 }
 
+function parseRpcReviewId(data: unknown): string | null {
+  if (!data || typeof data !== 'object') return null;
+  const row = data as Record<string, unknown>;
+  const id = row.reviewId ?? row.review_id;
+  return typeof id === 'string' && id.length > 0 ? id : null;
+}
+
+function synthesizeReviewFromSubmit(
+  input: {
+    requestId: string;
+    reviewerId: string;
+    targetUserId: string;
+    rating: number;
+    comment?: string | null;
+    criteriaScores?: Record<string, number> | null;
+    reviewerRole?: 'client' | 'helper';
+  },
+  reviewId?: string | null,
+): ServiceReview {
+  return {
+    id: reviewId ?? `review_${input.requestId}_${input.reviewerId}`,
+    requestId: input.requestId,
+    reviewerId: input.reviewerId,
+    targetUserId: input.targetUserId,
+    rating: input.rating,
+    comment: input.comment?.trim() || null,
+    criteriaScores: input.criteriaScores ?? null,
+    reviewerRole: input.reviewerRole ?? null,
+    createdAt: Date.now(),
+  };
+}
+
+async function resolveAuthenticatedReviewerId(sb: NonNullable<ReturnType<typeof getSupabase>>): Promise<string> {
+  const {
+    data: { session },
+    error,
+  } = await sb.auth.getSession();
+  if (error) {
+    logReviewSubmitFailure('rpc', error, { phaseNote: 'getSession' });
+  }
+  const sessionUserId = session?.user?.id;
+  if (!sessionUserId) {
+    throw new ReviewSubmitError('AUTH_REQUIRED', 'AUTH_REQUIRED');
+  }
+  return sessionUserId;
+}
+
 export async function fetchRemoteReviews(): Promise<ServiceReview[]> {
   const sb = getSupabase();
   if (!sb) return [];
@@ -43,7 +90,7 @@ async function insertReviewDirect(input: {
   reviewerRole?: 'client' | 'helper';
 }): Promise<ServiceReview> {
   const sb = getSupabase();
-  if (!sb) throw new Error('NO_SUPABASE');
+  if (!sb) throw new ReviewSubmitError('NO_SUPABASE', 'AUTH_REQUIRED');
 
   const rating = Math.min(5, Math.max(1, Math.round(input.rating)));
   const basePayload = {
@@ -75,6 +122,8 @@ async function insertReviewDirect(input: {
     logReviewSubmitFailure('insert', error, {
       requestId: input.requestId,
       reviewerId: input.reviewerId,
+      targetUserId: input.targetUserId,
+      reviewerRole: input.reviewerRole ?? null,
     });
     if (error.code === '23505') {
       throw new ReviewSubmitError('ALREADY_REVIEWED', 'ALREADY_REVIEWED');
@@ -85,44 +134,19 @@ async function insertReviewDirect(input: {
   return rowToReview(data as ReviewRow);
 }
 
-export async function remoteSubmitReview(input: {
-  requestId: string;
-  reviewerId: string;
-  targetUserId: string;
-  rating: number;
-  comment?: string | null;
-  criteriaScores?: Record<string, number> | null;
-  reviewerRole?: 'client' | 'helper';
-}): Promise<ServiceReview> {
-  const sb = getSupabase();
-  if (!sb) throw new ReviewSubmitError('NO_SUPABASE', 'AUTH_REQUIRED');
-
-  const rating = Math.min(5, Math.max(1, Math.round(input.rating)));
-
-  const { data, error } = await sb.rpc('submit_service_review', {
-    p_request_id: input.requestId,
-    p_target_user_id: input.targetUserId,
-    p_rating: rating,
-    p_comment: input.comment?.trim() || null,
-    p_criteria_scores: input.criteriaScores ?? null,
-    p_reviewer_role: input.reviewerRole ?? null,
-  });
-
-  if (error) {
-    logReviewSubmitFailure('rpc', error, {
-      requestId: input.requestId,
-      targetUserId: input.targetUserId,
-      reviewerRole: input.reviewerRole ?? null,
-    });
-
-    if (shouldFallbackToDirectReviewInsert(error)) {
-      return insertReviewDirect({ ...input, rating });
-    }
-
-    throw toReviewSubmitError(error);
-  }
-
-  const reviewId = (data as { reviewId?: string })?.reviewId;
+async function loadSubmittedReview(
+  sb: NonNullable<ReturnType<typeof getSupabase>>,
+  input: {
+    requestId: string;
+    reviewerId: string;
+    targetUserId: string;
+    rating: number;
+    comment?: string | null;
+    criteriaScores?: Record<string, number> | null;
+    reviewerRole?: 'client' | 'helper';
+  },
+  reviewId: string | null,
+): Promise<ServiceReview> {
   if (reviewId) {
     const { data: row, error: selectError } = await sb.from('reviews').select('*').eq('id', reviewId).single();
     if (selectError) {
@@ -141,9 +165,76 @@ export async function remoteSubmitReview(input: {
     .maybeSingle();
 
   if (latestError) {
-    logReviewSubmitFailure('select', latestError, { requestId: input.requestId });
+    logReviewSubmitFailure('select', latestError, {
+      requestId: input.requestId,
+      reviewerId: input.reviewerId,
+    });
   }
   if (latest) return rowToReview(latest as ReviewRow);
 
-  return insertReviewDirect({ ...input, rating });
+  console.warn('[LinkHelp] review saved but row not readable — using synthesized local row', {
+    requestId: input.requestId,
+    reviewerId: input.reviewerId,
+    reviewId,
+  });
+  return synthesizeReviewFromSubmit(input, reviewId);
+}
+
+export async function remoteSubmitReview(input: {
+  requestId: string;
+  reviewerId: string;
+  targetUserId: string;
+  rating: number;
+  comment?: string | null;
+  criteriaScores?: Record<string, number> | null;
+  reviewerRole?: 'client' | 'helper';
+}): Promise<ServiceReview> {
+  const sb = getSupabase();
+  if (!sb) throw new ReviewSubmitError('NO_SUPABASE', 'AUTH_REQUIRED');
+
+  const sessionReviewerId = await resolveAuthenticatedReviewerId(sb);
+  const normalizedInput = {
+    ...input,
+    reviewerId: sessionReviewerId,
+  };
+  const rating = Math.min(5, Math.max(1, Math.round(normalizedInput.rating)));
+
+  const rpcPayload = {
+    p_request_id: normalizedInput.requestId,
+    p_target_user_id: normalizedInput.targetUserId,
+    p_rating: rating,
+    p_comment: normalizedInput.comment?.trim() || null,
+    p_criteria_scores: normalizedInput.criteriaScores ?? null,
+  };
+
+  console.info('[LinkHelp] submit review attempt', {
+    requestId: rpcPayload.p_request_id,
+    targetUserId: rpcPayload.p_target_user_id,
+    reviewerId: normalizedInput.reviewerId,
+    reviewerRoleHint: normalizedInput.reviewerRole ?? null,
+    rating,
+  });
+
+  const { data, error } = await sb.rpc('submit_service_review', rpcPayload);
+
+  if (error) {
+    logReviewSubmitFailure('rpc', error, {
+      requestId: normalizedInput.requestId,
+      targetUserId: normalizedInput.targetUserId,
+      reviewerId: normalizedInput.reviewerId,
+      reviewerRole: normalizedInput.reviewerRole ?? null,
+      rpcPayload,
+    });
+
+    if (shouldFallbackToDirectReviewInsert(error)) {
+      console.warn('[LinkHelp] submit review RPC unavailable — direct insert fallback');
+      return insertReviewDirect({ ...normalizedInput, rating });
+    }
+
+    throw toReviewSubmitError(error);
+  }
+
+  const reviewId = parseRpcReviewId(data);
+  console.info('[LinkHelp] submit review RPC ok', { reviewId, data });
+  return loadSubmittedReview(sb, { ...normalizedInput, rating }, reviewId);
 }

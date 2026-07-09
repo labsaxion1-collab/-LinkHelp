@@ -1458,15 +1458,28 @@ export default function HelperDashboard() {
       {clientProfileJob ? (
         <PublicProfileSheetFrame
           open
+          mobileAlign="bottom"
           onClose={() => setClientProfileJob(null)}
-          panelClassName="rounded-3xl border border-slate-100 bg-white shadow-2xl"
+          panelClassName="h-full max-h-full rounded-t-[1.75rem] border border-slate-100 bg-white shadow-2xl md:rounded-3xl"
         >
+          <div className="relative shrink-0 overflow-hidden rounded-t-[1.75rem] bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-800 md:rounded-t-3xl">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,white,transparent_55%)] opacity-15 pointer-events-none" />
+            <button
+              type="button"
+              onClick={() => setClientProfileJob(null)}
+              className="absolute top-3 right-3 z-20 rounded-full bg-black/20 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/30"
+              aria-label={t('common.close')}
+            >
+              <Icons.X className="h-5 w-5" />
+            </button>
+            <div className="h-12" aria-hidden />
+          </div>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div
               {...{ [PUBLIC_PROFILE_SCROLL_ATTR]: '' }}
-              className="ios-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-5"
+              className="ios-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2 sm:p-4"
             >
-              <ClientPublicProfileView job={clientProfileJob} onClose={() => setClientProfileJob(null)} />
+              <ClientPublicProfileView job={clientProfileJob} />
             </div>
           </div>
         </PublicProfileSheetFrame>

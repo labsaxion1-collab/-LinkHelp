@@ -2291,6 +2291,7 @@ export const fr = {
     recent_reviews_title: 'Derniers avis',
     empty_reviews: 'Pas encore assez d’avis.',
     avg_rating_of_max: '{{rating}} / 5.0',
+    score_of_max: '{{score}} / 100',
   },
   service_confirm: {
     title: 'Confirmer le service',

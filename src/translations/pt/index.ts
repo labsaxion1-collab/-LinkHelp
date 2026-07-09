@@ -2294,6 +2294,7 @@ export const pt = {
     recent_reviews_title: 'Últimas avaliações',
     empty_reviews: 'Ainda sem avaliações suficientes.',
     avg_rating_of_max: '{{rating}} / 5.0',
+    score_of_max: '{{score}} / 100',
   },
   service_confirm: {
     title: 'Confirmar serviço',

@@ -3,7 +3,6 @@ import { useLanguage } from '@/context/LanguageContext';
 import { translateCategory } from '@/utils/translateCategory';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { ReputationDossierPanel } from '@/components/reputation/ReputationDossierPanel';
-import { PublicProfileCloseBar } from '@/components/reputation/PublicProfileCloseBar';
 
 export type HelperPublicProfileData = {
   id: string;
@@ -18,15 +17,13 @@ export type HelperPublicProfileData = {
 
 type Props = {
   helper: HelperPublicProfileData;
-  onClose: () => void;
 };
 
-export function HelperPublicProfileView({ helper, onClose }: Props) {
+export function HelperPublicProfileView({ helper }: Props) {
   const { t } = useLanguage();
 
   return (
-    <div className="space-y-4">
-      <PublicProfileCloseBar onClose={onClose} closeLabel={t('common.close')} />
+    <div className="space-y-3">
       <ReputationDossierPanel
         userId={helper.id}
         role="helper"

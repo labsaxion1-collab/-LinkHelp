@@ -2282,6 +2282,7 @@ export const en = {
     recent_reviews_title: 'Recent reviews',
     empty_reviews: 'Not enough reviews yet.',
     avg_rating_of_max: '{{rating}} / 5.0',
+    score_of_max: '{{score}} / 100',
   },
   service_confirm: {
     title: 'Confirm service',

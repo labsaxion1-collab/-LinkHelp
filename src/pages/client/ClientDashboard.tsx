@@ -1698,10 +1698,10 @@ export default function ClientDashboard() {
           open
           mobileAlign="bottom"
           onClose={() => setShowHelperProfileModal(false)}
-          panelClassName="rounded-t-3xl border border-gray-100/80 bg-white shadow-2xl transition-opacity duration-200 ease-out sm:rounded-3xl"
+          panelClassName="h-full max-h-full rounded-t-[1.75rem] border border-gray-100/80 bg-white shadow-2xl transition-opacity duration-200 ease-out sm:rounded-3xl"
         >
           <div className="shrink-0 relative rounded-t-3xl sm:rounded-t-3xl">
-              <div className="h-28 sm:h-36 bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-800 sm:rounded-t-3xl relative overflow-hidden">
+              <div className="h-24 sm:h-32 bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-800 sm:rounded-t-3xl relative overflow-hidden">
                 <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_30%_20%,white,transparent_55%)] pointer-events-none" />
                 <button
                   type="button"
@@ -1713,7 +1713,7 @@ export default function ClientDashboard() {
                 </button>
               </div>
 
-              <div className="flex justify-center px-4 sm:px-6 -mt-14 sm:-mt-16 relative z-10 pointer-events-none">
+              <div className="flex justify-center px-4 sm:px-6 -mt-12 sm:-mt-14 relative z-10 pointer-events-none">
                 <div className="pointer-events-auto relative">
                   <img
                     src={selectedHelper.avatar}
@@ -1730,10 +1730,9 @@ export default function ClientDashboard() {
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <div
                 {...{ [PUBLIC_PROFILE_SCROLL_ATTR]: '' }}
-                className="ios-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-3 pt-3 sm:px-6 sm:pt-4"
+                className="ios-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-2 pt-1 sm:px-5 sm:pt-2"
               >
                 <HelperPublicProfileView
-                  onClose={() => setShowHelperProfileModal(false)}
                   helper={{
                     id: String(selectedHelper.id),
                     name: selectedHelper.name,

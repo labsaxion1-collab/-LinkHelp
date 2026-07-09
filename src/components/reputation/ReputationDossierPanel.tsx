@@ -4,6 +4,7 @@ import { clsx } from 'clsx';
 import { useLanguage } from '@/context/LanguageContext';
 import { LinkHelpRankBadge } from '@/components/ranking/LinkHelpRankBadge';
 import { RatingScoreBar } from '@/components/reputation/RatingScoreBar';
+import { TrustScoreBar } from '@/components/reputation/TrustScoreBar';
 import { usePublicReputationDossier } from '@/hooks/usePublicReputationDossier';
 import { criteriaConfigForTargetRole } from '@/utils/reputationDossier';
 import type { ClientRankDef, HelperRankDef } from '@/utils/linkHelpRanking';
@@ -92,7 +93,10 @@ export function ReputationDossierPanel({
               <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
                 {t('reputation_dossier.score')}
               </p>
-              <p className="text-xl font-black tabular-nums text-blue-700">{dossier.trustScore}</p>
+              <p className="text-sm font-black tabular-nums text-blue-700">
+                {t('reputation_dossier.score_of_max', { score: dossier.trustScore })}
+              </p>
+              <TrustScoreBar score={dossier.trustScore} className="mt-1.5" heightClass="h-1" />
             </div>
           ) : null}
         </div>

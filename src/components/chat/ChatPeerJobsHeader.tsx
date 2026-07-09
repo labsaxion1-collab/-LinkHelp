@@ -1,12 +1,15 @@
 import { ChevronLeft } from 'lucide-react';
+import { clsx } from 'clsx';
 import { MEDAL_MAP } from '@/gamification/config/gamificationMedals';
 import type { UserType } from '@/gamification/types/gamification';
 import { ChatPremiumPeerBand } from '@/components/chat/ChatPremiumPeerBand';
+import { getChatHeroAccentTheme } from '@/components/chat/chatHeroTheme';
 
 type Props = {
   peerName: string;
   peerAvatar: string;
   heroKey?: string | null;
+  accentHeroKey?: string | null;
   peerUserType: UserType;
   onBack: () => void;
   backLabel: string;
@@ -17,6 +20,7 @@ export function ChatPeerJobsHeader({
   peerName,
   peerAvatar,
   heroKey,
+  accentHeroKey,
   peerUserType,
   onBack,
   backLabel,
@@ -25,9 +29,11 @@ export function ChatPeerJobsHeader({
   const shortName = peerName.split(' ')[0] || peerName;
   const resolvedHeroKey = heroKey ?? `${peerUserType}_novo`;
   const medalSrc = MEDAL_MAP[resolvedHeroKey] ?? MEDAL_MAP[`${peerUserType}_novo`];
+  const themeHeroKey = accentHeroKey ?? resolvedHeroKey;
+  const theme = getChatHeroAccentTheme(themeHeroKey);
 
   return (
-    <ChatPremiumPeerBand className="shrink-0">
+    <ChatPremiumPeerBand className="shrink-0" heroKey={themeHeroKey}>
       <div className="flex items-center gap-2 px-3 pb-1 pt-1.5 md:px-3.5 md:pt-2">
         <button
           type="button"
@@ -48,7 +54,7 @@ export function ChatPeerJobsHeader({
           />
           <div className="min-w-0">
             <h2 className="truncate text-[15px] font-bold leading-tight tracking-tight text-white">{shortName}</h2>
-            <p className="text-[11px] font-medium leading-tight text-lime-300/75">{jobsCountLabel}</p>
+            <p className={clsx('text-[11px] font-medium leading-tight', theme.statusText)}>{jobsCountLabel}</p>
           </div>
         </div>
 

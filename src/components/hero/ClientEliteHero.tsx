@@ -97,7 +97,7 @@ export function ClientEliteHero({ balance }: Props) {
           levelLabel={visual.currentLevel}
           description={visual.description}
           badgeVariant="elite"
-          medalMinHeightClass="min-h-[11rem] min-[390px]:min-h-[13rem] sm:min-h-[16rem]"
+
           headline={
             <h1 className="text-[1.85rem] font-black leading-[1.04] tracking-[-0.045em] min-[430px]:text-[2.15rem] sm:text-5xl">
               {visual.headline.beforeHighlight}{' '}

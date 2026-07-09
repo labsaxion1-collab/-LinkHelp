@@ -1,8 +1,10 @@
 import { ChevronLeft } from 'lucide-react';
+import { clsx } from 'clsx';
 import { MEDAL_MAP } from '@/gamification/config/gamificationMedals';
 import type { UserType } from '@/gamification/types/gamification';
 import { ChatPremiumPeerBand } from '@/components/chat/ChatPremiumPeerBand';
 import { ChatThreadServiceChip } from '@/components/chat/ChatThreadContext';
+import { getChatHeroAccentTheme } from '@/components/chat/chatHeroTheme';
 
 type ServiceProps = {
   title: string;
@@ -18,6 +20,7 @@ type Props = {
   peerName: string;
   peerAvatar: string;
   heroKey?: string | null;
+  accentHeroKey?: string | null;
   peerUserType: UserType;
   statusLabel: string;
   showBack?: boolean;
@@ -30,6 +33,7 @@ export function ChatThreadHeader({
   peerName,
   peerAvatar,
   heroKey,
+  accentHeroKey,
   peerUserType,
   statusLabel,
   showBack = false,
@@ -40,9 +44,11 @@ export function ChatThreadHeader({
   const shortName = peerName.split(' ')[0] || peerName;
   const resolvedHeroKey = heroKey ?? `${peerUserType}_novo`;
   const medalSrc = MEDAL_MAP[resolvedHeroKey] ?? MEDAL_MAP[`${peerUserType}_novo`];
+  const themeHeroKey = accentHeroKey ?? resolvedHeroKey;
+  const theme = getChatHeroAccentTheme(themeHeroKey);
 
   return (
-    <ChatPremiumPeerBand className="relative z-30 shrink-0">
+    <ChatPremiumPeerBand className="relative z-30 shrink-0" heroKey={themeHeroKey}>
       <div className="flex items-center gap-2 px-3 pb-0.5 pt-1.5 sm:px-4 sm:pt-2">
         {showBack && onBack ? (
           <button
@@ -65,7 +71,7 @@ export function ChatThreadHeader({
           />
           <div className="min-w-0">
             <h2 className="truncate text-[15px] font-bold leading-tight tracking-tight text-white">{shortName}</h2>
-            <p className="text-[11px] font-medium leading-tight text-lime-300/75">{statusLabel}</p>
+            <p className={clsx('text-[11px] font-medium leading-tight', theme.statusText)}>{statusLabel}</p>
           </div>
         </div>
 
@@ -80,7 +86,7 @@ export function ChatThreadHeader({
 
       {service ? (
         <div className="relative -mt-1.5 px-3 pb-2 pt-0 sm:px-4">
-          <ChatThreadServiceChip {...service} />
+          <ChatThreadServiceChip {...service} heroKey={themeHeroKey} />
         </div>
       ) : null}
     </ChatPremiumPeerBand>

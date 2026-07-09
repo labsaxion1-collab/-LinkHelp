@@ -63,7 +63,6 @@ import { ClientOnboardingCarousel } from '@/components/client/onboarding/ClientO
 import { useClientOnboarding } from '@/hooks/useClientOnboarding';
 import { CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';
 import { DynamicHeroRenderer } from '@/gamification/components/DynamicHeroRenderer';
-import { GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
 import { useGamification } from '@/gamification/hooks/useGamification';
 
 const SERVICE_CONFIRM_DISMISS_PREFIX = 'lh_service_confirm_skip_';
@@ -95,6 +94,74 @@ type RecommendedHelperCard = {
 
 const RECOMMENDED_HELPERS: RecommendedHelperCard[] = [];
 
+type ClientDashboardAccentTheme = {
+  summaryCard: string;
+  summaryLabel: string;
+  categoryIcon: string;
+  categoryHover: string;
+  actionLink: string;
+  trustPanel: string;
+  trustDivider: string;
+  trustIcon: string;
+};
+
+const CLIENT_DASHBOARD_ACCENT_THEMES: Record<string, ClientDashboardAccentTheme> = {
+  client_novo: {
+    summaryCard: 'border-lime-500/20 bg-[#020a04] shadow-[0_12px_30px_rgba(0,20,7,0.16)]',
+    summaryLabel: 'text-lime-400',
+    categoryIcon: 'text-lime-500 bg-lime-50 shadow-lime-500/10',
+    categoryHover: 'hover:border-lime-100 hover:shadow-[0_18px_42px_rgba(132,204,22,0.12)]',
+    actionLink: 'text-lime-600',
+    trustPanel: 'border-lime-400/15 bg-[#020804] shadow-[0_14px_36px_rgba(0,20,7,0.18)]',
+    trustDivider: 'border-lime-300/10',
+    trustIcon: 'text-lime-500',
+  },
+  client_confiavel: {
+    summaryCard: 'border-blue-500/20 bg-[#020817] shadow-[0_12px_30px_rgba(15,70,160,0.18)]',
+    summaryLabel: 'text-blue-300',
+    categoryIcon: 'text-blue-600 bg-blue-50 shadow-blue-500/10',
+    categoryHover: 'hover:border-blue-100 hover:shadow-[0_18px_42px_rgba(37,99,255,0.12)]',
+    actionLink: 'text-[#2563FF]',
+    trustPanel: 'border-blue-400/15 bg-[#020817] shadow-[0_14px_36px_rgba(15,70,160,0.18)]',
+    trustDivider: 'border-blue-300/10',
+    trustIcon: 'text-blue-500',
+  },
+  client_ouro: {
+    summaryCard: 'border-amber-400/20 bg-[#100902] shadow-[0_12px_30px_rgba(120,72,0,0.18)]',
+    summaryLabel: 'text-amber-300',
+    categoryIcon: 'text-amber-600 bg-amber-50 shadow-amber-500/10',
+    categoryHover: 'hover:border-amber-100 hover:shadow-[0_18px_42px_rgba(245,158,11,0.14)]',
+    actionLink: 'text-amber-600',
+    trustPanel: 'border-amber-400/15 bg-[#100902] shadow-[0_14px_36px_rgba(120,72,0,0.18)]',
+    trustDivider: 'border-amber-300/10',
+    trustIcon: 'text-amber-500',
+  },
+  client_vip: {
+    summaryCard: 'border-violet-400/20 bg-[#080314] shadow-[0_12px_30px_rgba(90,35,170,0.20)]',
+    summaryLabel: 'text-violet-300',
+    categoryIcon: 'text-violet-600 bg-violet-50 shadow-violet-500/10',
+    categoryHover: 'hover:border-violet-100 hover:shadow-[0_18px_42px_rgba(124,58,237,0.14)]',
+    actionLink: 'text-violet-600',
+    trustPanel: 'border-violet-400/15 bg-[#080314] shadow-[0_14px_36px_rgba(90,35,170,0.20)]',
+    trustDivider: 'border-violet-300/10',
+    trustIcon: 'text-violet-500',
+  },
+  client_elite: {
+    summaryCard: 'border-amber-300/25 bg-[#120b02] shadow-[0_12px_30px_rgba(160,95,0,0.20)]',
+    summaryLabel: 'text-amber-200',
+    categoryIcon: 'text-amber-600 bg-amber-50 shadow-amber-500/10',
+    categoryHover: 'hover:border-amber-100 hover:shadow-[0_18px_42px_rgba(217,119,6,0.16)]',
+    actionLink: 'text-amber-700',
+    trustPanel: 'border-amber-300/20 bg-[#120b02] shadow-[0_14px_36px_rgba(160,95,0,0.20)]',
+    trustDivider: 'border-amber-200/10',
+    trustIcon: 'text-amber-400',
+  },
+};
+
+function getClientDashboardAccentTheme(heroKey: string): ClientDashboardAccentTheme {
+  return CLIENT_DASHBOARD_ACCENT_THEMES[heroKey] ?? CLIENT_DASHBOARD_ACCENT_THEMES.client_novo;
+}
+
 function estimateClientLeadQuality(description: string, location: string, budget: string, applicationsCount: number): number {
   let score = 52;
   if (description.trim().length > 120) score += 16;
@@ -106,6 +173,7 @@ function estimateClientLeadQuality(description: string, location: string, budget
 
 export default function ClientDashboard() {
   const clientGamification = useGamification('client');
+  const clientDashboardAccent = getClientDashboardAccentTheme(clientGamification.heroKey);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -639,9 +707,6 @@ export default function ClientDashboard() {
           rating={0}
           connectedProfessionals={0}
         />
-      )}
-      {activeSidebarTab === 'dashboard' && clientGamification.heroKey === 'client_confiavel' && (
-        <GamificationProgressCard userType="client" className="mb-4" />
       )}
       {activeSidebarTab === 'dashboard' && (
         <section className="relative z-0 isolate hidden min-h-[410px] overflow-hidden bg-[#F5F7FB] sm:min-h-[440px]">
@@ -1232,8 +1297,8 @@ export default function ClientDashboard() {
                       ].map((stat) => {
                         const Icon = stat.icon;
                         return (
-                          <article key={stat.label} className="flex flex-col items-center rounded-2xl border border-lime-500/20 bg-[#020a04] px-3 py-5 text-center shadow-[0_12px_30px_rgba(0,20,7,0.16)]">
-                            <p className="text-xs font-semibold leading-snug text-lime-400">{stat.label}</p>
+                          <article key={stat.label} className={clsx('flex flex-col items-center rounded-2xl border px-3 py-5 text-center', clientDashboardAccent.summaryCard)}>
+                            <p className={clsx('text-xs font-semibold leading-snug', clientDashboardAccent.summaryLabel)}>{stat.label}</p>
                             <p className="mt-1.5 text-[2rem] font-black leading-none tracking-tight text-white">{stat.value}</p>
                           </article>
                         );
@@ -1244,7 +1309,7 @@ export default function ClientDashboard() {
                 <section className="relative" style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)' }}>
                   <div className="mb-4 flex items-center justify-between gap-3 px-4 sm:px-6 md:px-8">
                     <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_dashboard.popular_categories_title')}</h2>
-                    <button type="button" onClick={() => openCreateModal()} className="inline-flex items-center gap-1 text-sm font-black text-[#2563FF]">
+                    <button type="button" onClick={() => openCreateModal()} className={clsx('inline-flex items-center gap-1 text-sm font-black', clientDashboardAccent.actionLink)}>
                       {t('client_dashboard.view_all_categories')} <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
@@ -1252,22 +1317,13 @@ export default function ClientDashboard() {
                     <div className="flex min-w-max gap-3 px-4 sm:px-6 md:px-8">
                     {SERVICE_CATEGORIES.slice(0, 8).map((cat, index) => {
                       const IconComponent = getCategoryLucideIcon(cat.icon);
-                      const palette = [
-                        'text-cyan-500 bg-cyan-50 shadow-cyan-500/10',
-                        'text-emerald-500 bg-emerald-50 shadow-emerald-500/10',
-                        'text-blue-600 bg-blue-50 shadow-blue-500/10',
-                        'text-violet-600 bg-violet-50 shadow-violet-500/10',
-                        'text-pink-500 bg-pink-50 shadow-pink-500/10',
-                        'text-sky-600 bg-sky-50 shadow-sky-500/10',
-                        'text-orange-500 bg-orange-50 shadow-orange-500/10',
-                        'text-slate-600 bg-slate-50 shadow-slate-500/10',
-                      ][index % 8];
+                      const palette = clientDashboardAccent.categoryIcon;
                       return (
                         <button
                           key={cat.id}
                           type="button"
                           onClick={() => openCreateModal(cat.id)}
-                          className="group min-h-[132px] w-[128px] shrink-0 rounded-[1.55rem] border border-white bg-white/92 p-4 text-center shadow-[0_12px_32px_rgba(15,23,42,0.055)] ring-1 ring-slate-100/70 backdrop-blur transition hover:-translate-y-0.5 hover:border-blue-100 hover:shadow-[0_18px_42px_rgba(37,99,255,0.10)] [scroll-snap-align:start] sm:w-[150px]"
+                          className={clsx('group min-h-[132px] w-[128px] shrink-0 rounded-[1.55rem] border border-white bg-white/92 p-4 text-center shadow-[0_12px_32px_rgba(15,23,42,0.055)] ring-1 ring-slate-100/70 backdrop-blur transition hover:-translate-y-0.5 [scroll-snap-align:start] sm:w-[150px]', clientDashboardAccent.categoryHover)}
                         >
                           <span className={clsx('mx-auto flex h-14 w-14 items-center justify-center rounded-[1.25rem] shadow-lg transition group-hover:scale-105', palette)}>
                             <IconComponent className="h-7 w-7" />
@@ -1281,7 +1337,7 @@ export default function ClientDashboard() {
                   </div>
                 </section>
 
-                <section className="mx-4 grid grid-cols-3 overflow-hidden rounded-2xl border border-lime-400/15 bg-[#020804] shadow-[0_14px_36px_rgba(0,20,7,0.18)] sm:mx-6 md:mx-8">
+                <section className={clsx('mx-4 grid grid-cols-3 overflow-hidden rounded-2xl border sm:mx-6 md:mx-8', clientDashboardAccent.trustPanel)}>
                   {[
                     { icon: Icons.ShieldCheck, title: t('client_dashboard.trust_safe_title'), body: t('client_dashboard.trust_safe_body') },
                     { icon: Icons.Zap, title: t('client_dashboard.trust_chat_title'), body: t('client_dashboard.trust_chat_body') },
@@ -1289,8 +1345,8 @@ export default function ClientDashboard() {
                   ].map((item, index) => {
                     const Icon = item.icon;
                     return (
-                      <article key={item.title} className={clsx('flex min-w-0 flex-col items-center gap-1 px-1 py-3 text-center sm:py-4', index > 0 && 'border-l border-lime-300/10')}>
-                        <Icon className="h-6 w-6 text-lime-500 sm:h-7 sm:w-7" strokeWidth={2.2} />
+                      <article key={item.title} className={clsx('flex min-w-0 flex-col items-center gap-1 px-1 py-3 text-center sm:py-4', index > 0 && 'border-l', index > 0 && clientDashboardAccent.trustDivider)}>
+                        <Icon className={clsx('h-6 w-6 sm:h-7 sm:w-7', clientDashboardAccent.trustIcon)} strokeWidth={2.2} />
                         <span className="mt-0.5 block text-[11px] font-black text-white sm:text-sm">{item.title}</span>
                         <span className="hidden text-[10px] font-medium text-white/55 min-[390px]:block sm:text-xs">{item.body}</span>
                       </article>

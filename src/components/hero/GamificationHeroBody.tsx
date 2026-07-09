@@ -17,8 +17,8 @@ type Props = {
 };
 
 /**
- * Corpo padrão das heroes com gamificação — mesmo layout da hero Cliente Iniciante:
- * headline centralizado, medalha à esquerda + descrição à direita, botão de nível e card de progresso.
+ * Corpo padrão das heroes com gamificação:
+ * headline centralizado, medalha à esquerda + descrição à direita, botão de nível e barra de progresso abaixo.
  */
 export function GamificationHeroBody({
   userType,

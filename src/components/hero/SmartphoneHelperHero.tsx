@@ -1,13 +1,13 @@
-﻿import { ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronRight, Sparkles } from 'lucide-react';
 
 import backgroundImage from '@/assets/hero/backgrounds/helper/bg-verde.png';
 import medalImage from '@/assets/hero/medals/helper/novo helper.png';
 import clientMedalImage from '@/assets/hero/medals/client/novo cliente.png';
 import particlesImage from '@/assets/hero/particles/particulas.png';
 import { HeroRankAnimation } from '@/components/hero/HeroRankAnimation';
+import { GamificationHeroBody } from '@/components/hero/GamificationHeroBody';
 import { BRAND } from '@/utils/brandAssets';
 import { CLIENT_BEGINNER_LEVEL_VISUAL } from '@/config/clientBeginnerLevelVisual';
-import { GamificationLevelButton, GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
 
 type Props = {
   accountType?: 'helper' | 'client';
@@ -19,7 +19,7 @@ type Props = {
   satisfactionRate?: number | null;
 };
 
-export function NewHelperHero({ accountType = 'helper', balance, completedServices, connectedProfessionals, rating, satisfactionRate }: Props) {
+export function NewHelperHero({ accountType = 'helper', balance }: Props) {
   const displayBalance = balance == null ? '—' : Math.max(0, Math.round(balance)).toLocaleString('pt-BR');
   const isClient = accountType === 'client';
   const clientVisual = CLIENT_BEGINNER_LEVEL_VISUAL;
@@ -52,45 +52,26 @@ export function NewHelperHero({ accountType = 'helper', balance, completedServic
           </div>
         </header>
 
-        <div className="lh-hero-headline mx-auto mt-1 max-w-[25rem] text-center sm:mt-2">
-          <h1 className={`text-[1.85rem] font-black leading-[1.04] tracking-[-0.045em] min-[430px]:text-[2.15rem] sm:text-5xl ${isClient ? '' : 'text-white [text-shadow:0_3px_18px_rgba(0,0,0,0.95)]'}`}>
-            {isClient ? clientVisual.headline.beforeHighlight : 'Toda grande jornada começa com o'} <span className="lh-hero-highlight-shimmer">{isClient ? clientVisual.headline.highlight : 'primeiro passo.'}</span>
-          </h1>
-        </div>
-
-        {!isClient ? (
-          <div className="lh-hero-level-pill mx-auto mt-3 w-fit rounded-full border border-lime-300/30 bg-lime-400/10 px-5 py-1.5 backdrop-blur-md">
-            <p className="text-sm font-black uppercase tracking-[0.08em] text-lime-200 sm:text-base">{currentLevel}</p>
-          </div>
-        ) : null}
-        {isClient ? (
-          <div className="mx-auto -mt-2 grid w-full max-w-[41rem] grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] items-center gap-1 sm:-mt-1 sm:gap-5">
-            <div className="relative min-h-[9.75rem] min-w-0 min-[390px]:min-h-[11rem] sm:min-h-[14.5rem]">
-              <HeroRankAnimation medalSrc={clientMedalImage} medalAlt="Medalha Novo Cliente" className="absolute inset-0 scale-[1.12] sm:scale-[1.09]" />
-            </div>
-            <p className="lh-hero-description min-w-0 pr-1 text-left text-[11px] font-medium leading-[1.7] text-white/68 min-[390px]:text-xs sm:pr-3 sm:text-base sm:leading-relaxed">
-              {journeyDescription}
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="relative mx-auto min-h-[17.5rem] w-full max-w-[27rem] sm:min-h-[23rem] sm:max-w-[33rem]">
-              <HeroRankAnimation medalSrc={medalImage} medalAlt="Medalha Novo Helper" className="absolute inset-0" />
-            </div>
-            <p className="lh-hero-description mx-auto -mt-1 max-w-[22rem] text-center text-sm font-medium leading-relaxed text-white/68 sm:max-w-[34rem] sm:text-base">
-              {journeyDescription}
-            </p>
-            <div className="mx-auto w-fit">
-              <GamificationLevelButton userType="helper" label={currentLevel} />
-            </div>
-          </>
-        )}
-
-        {isClient ? <GamificationLevelButton userType="client" label={currentLevel} /> : null}
-
-        <GamificationProgressCard userType={accountType} variant="hero" className="lh-hero-progress mx-auto mt-3 max-w-[45rem]" />
+        <GamificationHeroBody
+          userType={accountType}
+          levelLabel={currentLevel}
+          description={journeyDescription}
+          badgeVariant="verde"
+          headline={
+            <h1 className={`text-[1.85rem] font-black leading-[1.04] tracking-[-0.045em] min-[430px]:text-[2.15rem] sm:text-5xl ${isClient ? '' : 'text-white [text-shadow:0_3px_18px_rgba(0,0,0,0.95)]'}`}>
+              {isClient ? clientVisual.headline.beforeHighlight : 'Toda grande jornada começa com o'}{' '}
+              <span className="lh-hero-highlight-shimmer">{isClient ? clientVisual.headline.highlight : 'primeiro passo.'}</span>
+            </h1>
+          }
+          medal={
+            <HeroRankAnimation
+              medalSrc={isClient ? clientMedalImage : medalImage}
+              medalAlt={isClient ? 'Medalha Novo Cliente' : 'Medalha Novo Helper'}
+              className="absolute inset-0 scale-[1.12] sm:scale-[1.09]"
+            />
+          }
+        />
       </div>
     </section>
   );
 }
-

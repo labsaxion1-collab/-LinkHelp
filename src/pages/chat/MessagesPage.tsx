@@ -24,6 +24,8 @@ import { ChatPreMatchInlineNote, ChatPreMatchStrip } from '@/components/chat/Cha
 import { dedupeConversationSummaries } from '@/services/supabase/chatRemote';
 import { groupConversationsByPeer } from '@/utils/groupConversationsByPeer';
 import { usePeerGamificationHeroKeys } from '@/gamification/hooks/usePeerGamificationHeroKeys';
+import { useGamification } from '@/gamification/hooks/useGamification';
+import { getChatHeroAccentTheme } from '@/components/chat/chatHeroTheme';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 
 type ChatRow =
@@ -55,6 +57,9 @@ export default function MessagesPage() {
   });
 
   const effectiveClientMode = useRemoteChat ? me.userType === 'client' : isClientMode;
+  const viewerGamification = useGamification(effectiveClientMode ? 'client' : 'helper');
+  const chatAccentHeroKey = viewerGamification.heroKey;
+  const chatAccentTheme = getChatHeroAccentTheme(chatAccentHeroKey);
 
   const myTier = me.subscriptionTier ?? 'BASIC';
 
@@ -315,6 +320,7 @@ export default function MessagesPage() {
       peerName={remote.peerName}
       peerAvatar={peerAvatar}
       heroKey={threadPeerHeroKey}
+      accentHeroKey={chatAccentHeroKey}
       peerUserType={peerUserType}
       statusLabel={t('messages_page.status_online')}
       showBack={!isMd}
@@ -339,6 +345,7 @@ export default function MessagesPage() {
       title={t('messages_page.pre_match_compact_title')}
       hint={t('messages_page.pre_match_compact_body')}
       onExpand={() => setShowPreMatchInfo(true)}
+      heroKey={chatAccentHeroKey}
     />
   ) : null;
 
@@ -458,7 +465,7 @@ export default function MessagesPage() {
     useRemoteChat && (!remote.selectedId || remote.threadLoading || !remote.peerId);
 
   const inputBar = (
-    <ChatPremiumPeerBand className="relative z-20 shrink-0">
+    <ChatPremiumPeerBand className="relative z-20 shrink-0" heroKey={chatAccentHeroKey}>
       <div className="px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2.5 sm:px-4 md:pb-3">
         {counterLabel ? (
           <p className="mb-2 text-center text-[11px] font-medium text-white/85 tabular-nums">
@@ -484,7 +491,7 @@ export default function MessagesPage() {
                 }
               }}
               placeholder=""
-              className="max-h-28 min-h-[40px] w-full resize-none overflow-y-auto border-none bg-transparent px-0.5 py-2 text-[14px] text-[#0B1220] outline-none placeholder:text-[#B0BAC9] focus:outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className={clsx('max-h-28 min-h-[40px] w-full resize-none overflow-y-auto border-none bg-transparent px-0.5 py-2 text-[14px] text-[#0B1220] outline-none placeholder:text-[#B0BAC9] focus:outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden', chatAccentTheme.focusRing)}
             />
           </div>
           <button
@@ -493,13 +500,13 @@ export default function MessagesPage() {
             className={clsx(
               'relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full transition-all duration-200',
               message.trim() && !sendDisabled
-                ? 'border border-lime-400/40 bg-[#020804] text-lime-300 shadow-[0_4px_18px_rgba(34,197,94,0.42),inset_0_1px_0_rgba(255,255,255,0.12)] active:scale-95'
-                : 'border border-lime-400/25 bg-[#020804] text-lime-300/45',
+                ? chatAccentTheme.sendActive
+                : chatAccentTheme.sendInactive,
             )}
           >
             {message.trim() && !sendDisabled ? (
               <span
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_28%_18%,rgba(134,239,172,0.28),transparent_58%)]"
+                className={clsx('pointer-events-none absolute inset-0', chatAccentTheme.sendGlow)}
                 aria-hidden
               />
             ) : null}
@@ -507,8 +514,8 @@ export default function MessagesPage() {
               className={clsx(
                 'relative h-[17px] w-[17px]',
                 message.trim() && !sendDisabled
-                  ? 'text-lime-100 drop-shadow-[0_0_8px_rgba(190,242,100,0.55)]'
-                  : 'text-lime-300/75',
+                  ? chatAccentTheme.sendIconActive
+                  : chatAccentTheme.sendIconInactive,
               )}
               strokeWidth={2.5}
             />
@@ -599,6 +606,7 @@ export default function MessagesPage() {
               peerName={selectedPeerGroup.peerName}
               peerAvatar={selectedPeerGroup.peerAvatar}
               heroKey={peerHeroKeys.get(selectedPeerGroup.peerId)}
+              accentHeroKey={chatAccentHeroKey}
               peerUserType={peerUserType}
               onBack={backToPeerList}
               backLabel={t('messages_page.back_to_clients')}
@@ -650,7 +658,7 @@ export default function MessagesPage() {
                         className="h-10 w-10 rounded-full object-cover ring-1 ring-[#E9EDF5]"
                         loading="lazy"
                       />
-                      <div className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white bg-emerald-500" />
+                      <div className={clsx('absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white', chatAccentTheme.onlineDot)} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">

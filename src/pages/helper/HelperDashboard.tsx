@@ -34,6 +34,7 @@ import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportun
 import { HelperCategoryDropdown } from '@/components/helper/HelperCategoryDropdown';
 import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
 import { ClientPublicProfileView } from '@/components/features/ClientPublicProfileView';
+import { PublicProfileSheetFrame, PUBLIC_PROFILE_SCROLL_ATTR } from '@/components/reputation/PublicProfileSheetFrame';
 import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
 import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
 import { getApplicationChargeLc } from '@/config/helperCreditCharge';
@@ -1455,26 +1456,20 @@ export default function HelperDashboard() {
       />
 
       {clientProfileJob ? (
-        <div className="fixed inset-0 z-[85] flex items-center justify-center p-4">
-          <button
-            type="button"
-            className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
-            aria-label={t('common.close')}
-            onClick={() => setClientProfileJob(null)}
-          />
-          <section className="relative z-10 w-full max-w-md max-h-[min(88dvh,640px)] overflow-y-auto overscroll-contain rounded-3xl border border-slate-100 bg-white p-5 shadow-2xl">
-            <div className="mb-3 flex items-start justify-end">
-              <button
-                type="button"
-                onClick={() => setClientProfileJob(null)}
-                className="rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200"
-              >
-                <Icons.X className="h-5 w-5" />
-              </button>
+        <PublicProfileSheetFrame
+          open
+          onClose={() => setClientProfileJob(null)}
+          panelClassName="rounded-3xl border border-slate-100 bg-white shadow-2xl"
+        >
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div
+              {...{ [PUBLIC_PROFILE_SCROLL_ATTR]: '' }}
+              className="ios-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-5"
+            >
+              <ClientPublicProfileView job={clientProfileJob} onClose={() => setClientProfileJob(null)} />
             </div>
-            <ClientPublicProfileView job={clientProfileJob} />
-          </section>
-        </div>
+          </div>
+        </PublicProfileSheetFrame>
       ) : null}
 
     </AppPageShell>

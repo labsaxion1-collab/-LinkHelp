@@ -1324,6 +1324,18 @@ a {
   }
 }
 
+/* Public profile sheet — sole scroll region while dossier is open */
+[data-public-profile-scroll] {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+body[data-public-profile-open] {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
 /* Softer repaint when language changes (realtime i18n) */
 [data-linkhelp-lang] main,
 [data-linkhelp-lang] nav {

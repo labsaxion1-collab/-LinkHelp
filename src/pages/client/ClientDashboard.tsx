@@ -33,6 +33,7 @@ import { useToast } from '@/context/ToastContext';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
 import { JobTaskActionsBar } from '@/components/features/JobTaskActionsBar';
 import { HelperPublicProfileView } from '@/components/features/HelperPublicProfileView';
+import { PublicProfileSheetFrame, PUBLIC_PROFILE_SCROLL_ATTR } from '@/components/reputation/PublicProfileSheetFrame';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { formatMoneyAmount, jobHasBoundedBudget } from '@/utils/jobProposal';
 import {
@@ -1693,9 +1694,13 @@ export default function ClientDashboard() {
       </div>
 
       {showHelperProfileModal && selectedHelper && (
-        <div className="fixed inset-0 z-[120] flex items-end justify-center bg-slate-900/55 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-          <div className="mb-[calc(env(safe-area-inset-bottom)+4.5rem)] flex max-h-[min(88dvh,calc(100dvh-5.5rem))] w-full flex-col overflow-hidden rounded-t-3xl border border-gray-100/80 bg-white shadow-2xl transition-opacity duration-200 ease-out sm:mb-0 sm:max-h-[90vh] sm:max-w-lg sm:rounded-3xl">
-            <div className="shrink-0 relative rounded-t-3xl sm:rounded-t-3xl">
+        <PublicProfileSheetFrame
+          open
+          mobileAlign="bottom"
+          onClose={() => setShowHelperProfileModal(false)}
+          panelClassName="rounded-t-3xl border border-gray-100/80 bg-white shadow-2xl transition-opacity duration-200 ease-out sm:rounded-3xl"
+        >
+          <div className="shrink-0 relative rounded-t-3xl sm:rounded-t-3xl">
               <div className="h-28 sm:h-36 bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-800 sm:rounded-t-3xl relative overflow-hidden">
                 <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_30%_20%,white,transparent_55%)] pointer-events-none" />
                 <button
@@ -1723,8 +1728,12 @@ export default function ClientDashboard() {
             </div>
 
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-3 pt-3 sm:px-6 sm:pt-4">
+              <div
+                {...{ [PUBLIC_PROFILE_SCROLL_ATTR]: '' }}
+                className="ios-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-3 pt-3 sm:px-6 sm:pt-4"
+              >
                 <HelperPublicProfileView
+                  onClose={() => setShowHelperProfileModal(false)}
                   helper={{
                     id: String(selectedHelper.id),
                     name: selectedHelper.name,
@@ -1740,7 +1749,7 @@ export default function ClientDashboard() {
                   }}
                 />
               </div>
-              <div className="shrink-0 flex flex-col gap-2 border-t border-gray-100 bg-white px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-3 sm:px-6">
+              <div className="shrink-0 flex flex-col gap-2 border-t border-gray-100 bg-white px-4 pb-3 pt-3 sm:px-6">
                 {(() => {
                   const isHiredHelper =
                     profileChatUnlocked ||
@@ -1818,8 +1827,7 @@ export default function ClientDashboard() {
                 })()}
               </div>
             </div>
-          </div>
-        </div>
+        </PublicProfileSheetFrame>
       )}
 
       {showHireModal && selectedHelper && (

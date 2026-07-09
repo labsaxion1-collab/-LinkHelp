@@ -139,6 +139,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const jobsRef = useRef(jobs);
   const applicationsRef = useRef(applications);
   const upcomingJobsRef = useRef(upcomingJobs);
+  const remoteRefreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   jobsRef.current = jobs;
   applicationsRef.current = applications;
   upcomingJobsRef.current = upcomingJobs;
@@ -166,9 +167,21 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     if (!useRemote) return;
     void refreshRemote();
     const unsub = subscribeRemoteData(() => {
-      void refreshRemote();
+      if (remoteRefreshDebounceRef.current) {
+        clearTimeout(remoteRefreshDebounceRef.current);
+      }
+      remoteRefreshDebounceRef.current = setTimeout(() => {
+        remoteRefreshDebounceRef.current = null;
+        void refreshRemote();
+      }, 500);
     });
-    return unsub;
+    return () => {
+      if (remoteRefreshDebounceRef.current) {
+        clearTimeout(remoteRefreshDebounceRef.current);
+        remoteRefreshDebounceRef.current = null;
+      }
+      unsub();
+    };
   }, [useRemote, refreshRemote]);
 
   // Granular realtime subscription for notifications — updates state
@@ -284,7 +297,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         timezone: jobDetails.timezone ?? jobDetails.createdTimezone ?? null,
         createdTimezone: jobDetails.createdTimezone ?? jobDetails.timezone ?? null,
       });
-      await Promise.all([refreshRemote(), refreshProfile()]);
+      await refreshProfile();
       triggerGamificationRecalculate('request_published', 'client');
       return;
     }
@@ -358,7 +371,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         body: proposalText,
         url: ROUTES.clientDashboard,
       });
-      await refreshRemote();
       triggerGamificationRecalculate('application_submitted', 'helper');
       return;
     }
@@ -438,7 +450,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       } else {
         await remoteUpdateRequestStatus(jobId, status);
       }
-      await refreshRemote();
       if (isJobCancelled({ status })) {
         triggerGamificationRecalculate('request_cancelled', 'client');
       }
@@ -505,7 +516,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             : app,
         ),
       );
-      await refreshRemote();
       return;
     }
 
@@ -619,7 +629,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           url: conversationId ? `${ROUTES.messages}?c=${conversationId}` : ROUTES.messages,
         });
 
-        await refreshRemote();
         return conversationId;
       } catch (error) {
         await refreshRemote();
@@ -732,12 +741,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
     if (useRemote) {
       if (workflowStatus === 'awaiting_client_confirmation' || workflowStatus === 'completion_requested') {
-        void remoteMarkServiceAwaitingConfirmation(upcomingId)
-          .then(() => void refreshRemote())
-          .catch((e) => console.error('[LinkHelp] mark service awaiting confirmation', e));
+        void remoteMarkServiceAwaitingConfirmation(upcomingId).catch((e) =>
+          console.error('[LinkHelp] mark service awaiting confirmation', e),
+        );
         return;
       }
-      void remoteUpdateUpcomingWorkflow(upcomingId, workflowStatus).then(() => void refreshRemote());
+      void remoteUpdateUpcomingWorkflow(upcomingId, workflowStatus);
       return;
     }
 
@@ -813,9 +822,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         reviewerRole: input.reviewerRole,
       });
       setReviews((prev) => [row, ...prev.filter((r) => r.id !== row.id)]);
-      void refreshRemote().catch((e) => {
-        console.warn('[LinkHelp] refresh after review submit', e);
-      });
       triggerGamificationRecalculate(
         'review_received',
         resolveReviewTargetUserType(input.reviewerRole),

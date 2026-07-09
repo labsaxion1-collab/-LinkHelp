@@ -93,11 +93,10 @@ export function subscribeRemoteData(onChange: () => void): () => void {
   const ch = sb
     .channel('linkhelp-app-data')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'upcoming_jobs' }, onChange)
-    // notifications is handled by subscribeNotificationsChannel (granular, per-user)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, onChange)
+    // notifications: subscribeNotificationsChannel (granular, per-user)
+    // messages / conversations: subscribeConversationChannel in chatRemote (per-thread)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, onChange)
     .subscribe();
 

@@ -103,6 +103,16 @@ type ClientDashboardAccentTheme = {
   trustPanel: string;
   trustDivider: string;
   trustIcon: string;
+  activityColor: string;
+  activityGradient: string;
+  activityAccentBar: string;
+  activityText: string;
+  activitySoftBg: string;
+  activitySoftBorder: string;
+  activityTabBadge: string;
+  activityBudgetChip: string;
+  activityIconBubble: string;
+  activityTipPanel: string;
 };
 
 const CLIENT_DASHBOARD_ACCENT_THEMES: Record<string, ClientDashboardAccentTheme> = {
@@ -115,6 +125,16 @@ const CLIENT_DASHBOARD_ACCENT_THEMES: Record<string, ClientDashboardAccentTheme>
     trustPanel: 'border-lime-400/15 bg-[#020804] shadow-[0_14px_36px_rgba(0,20,7,0.18)]',
     trustDivider: 'border-lime-300/10',
     trustIcon: 'text-lime-500',
+    activityColor: '#84cc16',
+    activityGradient: 'bg-gradient-to-r from-lime-500 to-green-500 shadow-lime-500/25',
+    activityAccentBar: 'bg-gradient-to-b from-lime-300 via-lime-500 to-green-500',
+    activityText: 'text-lime-600',
+    activitySoftBg: 'bg-lime-50',
+    activitySoftBorder: 'border-lime-100',
+    activityTabBadge: 'bg-white/20 text-white',
+    activityBudgetChip: 'border-lime-100 bg-lime-50 text-lime-700',
+    activityIconBubble: 'bg-lime-50 text-lime-600 shadow-lime-500/10',
+    activityTipPanel: 'border-lime-100 bg-gradient-to-r from-lime-50 via-white to-green-50',
   },
   client_confiavel: {
     summaryCard: 'border-blue-500/20 bg-[#020817] shadow-[0_12px_30px_rgba(15,70,160,0.18)]',
@@ -125,6 +145,16 @@ const CLIENT_DASHBOARD_ACCENT_THEMES: Record<string, ClientDashboardAccentTheme>
     trustPanel: 'border-blue-400/15 bg-[#020817] shadow-[0_14px_36px_rgba(15,70,160,0.18)]',
     trustDivider: 'border-blue-300/10',
     trustIcon: 'text-blue-500',
+    activityColor: '#2563ff',
+    activityGradient: 'bg-gradient-to-r from-blue-600 to-sky-500 shadow-blue-500/25',
+    activityAccentBar: 'bg-gradient-to-b from-sky-300 via-blue-500 to-blue-700',
+    activityText: 'text-blue-600',
+    activitySoftBg: 'bg-blue-50',
+    activitySoftBorder: 'border-blue-100',
+    activityTabBadge: 'bg-white/20 text-white',
+    activityBudgetChip: 'border-blue-100 bg-blue-50 text-blue-700',
+    activityIconBubble: 'bg-blue-50 text-blue-600 shadow-blue-500/10',
+    activityTipPanel: 'border-blue-100 bg-gradient-to-r from-blue-50 via-white to-sky-50',
   },
   client_ouro: {
     summaryCard: 'border-amber-400/20 bg-[#100902] shadow-[0_12px_30px_rgba(120,72,0,0.18)]',
@@ -135,6 +165,16 @@ const CLIENT_DASHBOARD_ACCENT_THEMES: Record<string, ClientDashboardAccentTheme>
     trustPanel: 'border-amber-400/15 bg-[#100902] shadow-[0_14px_36px_rgba(120,72,0,0.18)]',
     trustDivider: 'border-amber-300/10',
     trustIcon: 'text-amber-500',
+    activityColor: '#d97706',
+    activityGradient: 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-amber-500/25',
+    activityAccentBar: 'bg-gradient-to-b from-yellow-300 via-amber-500 to-orange-600',
+    activityText: 'text-amber-600',
+    activitySoftBg: 'bg-amber-50',
+    activitySoftBorder: 'border-amber-100',
+    activityTabBadge: 'bg-white/20 text-white',
+    activityBudgetChip: 'border-amber-100 bg-amber-50 text-amber-700',
+    activityIconBubble: 'bg-amber-50 text-amber-600 shadow-amber-500/10',
+    activityTipPanel: 'border-amber-100 bg-gradient-to-r from-amber-50 via-white to-yellow-50',
   },
   client_vip: {
     summaryCard: 'border-violet-400/20 bg-[#080314] shadow-[0_12px_30px_rgba(90,35,170,0.20)]',
@@ -145,6 +185,16 @@ const CLIENT_DASHBOARD_ACCENT_THEMES: Record<string, ClientDashboardAccentTheme>
     trustPanel: 'border-violet-400/15 bg-[#080314] shadow-[0_14px_36px_rgba(90,35,170,0.20)]',
     trustDivider: 'border-violet-300/10',
     trustIcon: 'text-violet-500',
+    activityColor: '#7c3aed',
+    activityGradient: 'bg-gradient-to-r from-violet-600 to-fuchsia-500 shadow-violet-500/25',
+    activityAccentBar: 'bg-gradient-to-b from-fuchsia-300 via-violet-500 to-purple-700',
+    activityText: 'text-violet-600',
+    activitySoftBg: 'bg-violet-50',
+    activitySoftBorder: 'border-violet-100',
+    activityTabBadge: 'bg-white/20 text-white',
+    activityBudgetChip: 'border-violet-100 bg-violet-50 text-violet-700',
+    activityIconBubble: 'bg-violet-50 text-violet-600 shadow-violet-500/10',
+    activityTipPanel: 'border-violet-100 bg-gradient-to-r from-violet-50 via-white to-fuchsia-50',
   },
   client_elite: {
     summaryCard: 'border-amber-300/25 bg-[#120b02] shadow-[0_12px_30px_rgba(160,95,0,0.20)]',
@@ -155,6 +205,16 @@ const CLIENT_DASHBOARD_ACCENT_THEMES: Record<string, ClientDashboardAccentTheme>
     trustPanel: 'border-amber-300/20 bg-[#120b02] shadow-[0_14px_36px_rgba(160,95,0,0.20)]',
     trustDivider: 'border-amber-200/10',
     trustIcon: 'text-amber-400',
+    activityColor: '#b77905',
+    activityGradient: 'bg-gradient-to-r from-amber-600 to-yellow-500 shadow-amber-500/25',
+    activityAccentBar: 'bg-gradient-to-b from-yellow-200 via-amber-500 to-yellow-700',
+    activityText: 'text-amber-700',
+    activitySoftBg: 'bg-yellow-50',
+    activitySoftBorder: 'border-yellow-100',
+    activityTabBadge: 'bg-white/20 text-white',
+    activityBudgetChip: 'border-yellow-100 bg-yellow-50 text-amber-800',
+    activityIconBubble: 'bg-yellow-50 text-amber-700 shadow-amber-500/10',
+    activityTipPanel: 'border-yellow-100 bg-gradient-to-r from-yellow-50 via-white to-amber-50',
   },
 };
 
@@ -489,6 +549,11 @@ export default function ClientDashboard() {
     () => clientJobs.filter((j) => isJobVisibleToClient(j, hiddenJobIds) && (j.status === 'open' || j.status === 'in_progress')),
     [clientJobs, hiddenJobIds],
   );
+  const completedClientJobs = useMemo(
+    () => clientJobs.filter((j) => !isJobCancelled(j) && (hiddenJobIds.has(j.id) || j.status === 'completed' || isJobExpired(j))),
+    [clientJobs, hiddenJobIds],
+  );
+  const activityTabJobs = jobsListTab === 'history' ? completedClientJobs : activeClientJobs;
   const clientApplicationCount = useMemo(
     () => applications.filter((app) => clientJobs.some((job) => job.id === app.jobId)).length,
     [applications, clientJobs],
@@ -1431,76 +1496,80 @@ export default function ClientDashboard() {
         {activeSidebarTab === 'active-services' && (
           <div className="w-full animate-in fade-in duration-300">
             {isClientJobsPage ? <DesktopBackButton className="mb-4" /> : null}
-            <LhCard className="mb-6 overflow-hidden">
-              <div className="mb-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">{t('sidebar.active_services')}</h2>
-                <p className="text-gray-500 text-sm">{t('client_dashboard.active_services_intro')}</p>
+            <LhCard className="mb-6 overflow-hidden rounded-[2rem] border border-slate-100 bg-white/95 p-5 shadow-[0_18px_54px_rgba(15,23,42,0.08)] sm:p-7">
+              <div className="mb-6 flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="flex items-center gap-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                    {t('mobile_nav.activities')}
+                    <Icons.Sparkles className={clsx('h-5 w-5 sm:h-6 sm:w-6', clientDashboardAccent.activityText)} />
+                  </h2>
+                  <p className="mt-3 max-w-md text-sm font-medium leading-relaxed text-slate-500 sm:text-base">
+                    {t('client_dashboard.active_services_intro')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50"
+                >
+                  <Icons.SlidersHorizontal className={clsx('h-4 w-4', clientDashboardAccent.activityText)} />
+                  Filtros
+                </button>
               </div>
 
               {completionReminderJobs.length > 0 ? (
-                <CompletionReminderCard
-                  title={t('completion_reminder.title')}
-                  body={t('completion_reminder.body')}
-                  actionLabel={t('completion_reminder.action')}
-                  onAction={() => setServiceConfirmJob(completionReminderJobs[0])}
-                />
+                <div className="mb-4">
+                  <CompletionReminderCard
+                    title={t('completion_reminder.title')}
+                    body={t('completion_reminder.body')}
+                    actionLabel={t('completion_reminder.action')}
+                    onAction={() => setServiceConfirmJob(completionReminderJobs[0])}
+                  />
+                </div>
               ) : null}
 
               {!CLIENT_LINKCREDITS_ENABLED ? (
-                <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-xs leading-relaxed text-slate-600">
+                <div className={clsx('mb-4 rounded-2xl border px-4 py-3 text-xs font-semibold leading-relaxed text-slate-600', clientDashboardAccent.activitySoftBg, clientDashboardAccent.activitySoftBorder)}>
                   <p>{t('client_linkcredits.launch_promo')}</p>
                   <p className="mt-1 text-slate-500">{t('client_linkcredits.after_promo')}</p>
                 </div>
               ) : null}
-              
-              <div className="mb-4 flex flex-wrap gap-2">
+
+              <div className="mb-5 grid grid-cols-2 gap-2 rounded-[1.35rem] bg-slate-50 p-1.5 shadow-inner shadow-slate-200/50">
                 <button
                   type="button"
                   onClick={() => setJobsListTab('active')}
-                  className={`rounded-xl px-4 py-2 text-sm font-bold ${jobsListTab === 'active' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}`}
+                  className={clsx(
+                    'inline-flex min-h-[54px] items-center justify-center gap-2 rounded-[1rem] px-3 text-sm font-black transition-all',
+                    jobsListTab === 'active'
+                      ? clsx('text-white shadow-lg', clientDashboardAccent.activityGradient)
+                      : 'bg-white text-slate-600 shadow-sm hover:text-slate-900',
+                  )}
                 >
                   {t('client_jobs.tab_active')}
+                  <span className={clsx('inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-xs font-black', jobsListTab === 'active' ? clientDashboardAccent.activityTabBadge : 'bg-slate-100 text-slate-500')}>
+                    {activeClientJobs.length}
+                  </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setJobsListTab('history')}
-                  className={`rounded-xl px-4 py-2 text-sm font-bold ${jobsListTab === 'history' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}`}
+                  className={clsx(
+                    'inline-flex min-h-[54px] items-center justify-center gap-2 rounded-[1rem] px-3 text-sm font-black transition-all',
+                    jobsListTab === 'history'
+                      ? clsx('text-white shadow-lg', clientDashboardAccent.activityGradient)
+                      : 'bg-white text-slate-600 shadow-sm hover:text-slate-900',
+                  )}
                 >
                   {t('client_jobs.tab_history')}
+                  <span className={clsx('inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-xs font-black', jobsListTab === 'history' ? clientDashboardAccent.activityTabBadge : 'bg-slate-100 text-slate-500')}>
+                    {completedClientJobs.length}
+                  </span>
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
-                {jobs
-                  .filter((j) => j.clientId === me.id)
-                  .filter((j) => {
-                    const visible = isJobVisibleToClient(j, hiddenJobIds, {
-                      includeHistory: jobsListTab === 'history',
-                    });
-                    if (jobsListTab === 'history') {
-                      return (
-                        !isJobCancelled(j) &&
-                        (hiddenJobIds.has(j.id) || j.status === 'completed' || isJobExpired(j))
-                      );
-                    }
-                    return visible && (j.status === 'open' || j.status === 'in_progress');
-                  })
-                  .length > 0 ? (
-                  jobs
-                    .filter((j) => j.clientId === me.id)
-                    .filter((j) => {
-                      if (jobsListTab === 'history') {
-                        return (
-                          !isJobCancelled(j) &&
-                          (hiddenJobIds.has(j.id) || j.status === 'completed' || isJobExpired(j))
-                        );
-                      }
-                      return (
-                        isJobVisibleToClient(j, hiddenJobIds) &&
-                        (j.status === 'open' || j.status === 'in_progress')
-                      );
-                    })
-                    .map((job) => {
+              <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                {activityTabJobs.length > 0 ? (
+                  activityTabJobs.map((job) => {
                     const jobApps = applications
                       .filter(
                         (a) =>
@@ -1530,163 +1599,195 @@ export default function ClientDashboard() {
                           : jobApps.length === 1
                             ? t('client_dashboard.candidates_count_one')
                             : t('client_dashboard.candidates_count_other', { count: jobApps.length });
-                    const accent = getCategoryAccent(job.category);
                     const CategoryIcon = getCategoryLucideIcon(job.category) ?? Icons.Briefcase;
-                    const theme = getCategoryFeedTheme(job.category);
+                    const createdAtLabel = new Date(job.createdAt).toLocaleString(undefined, {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    });
 
                     return (
-                      <div
+                      <article
                         key={job.id}
                         role="button"
                         tabIndex={0}
                         onClick={() => setDetailJob(job)}
                         onKeyDown={(e) => e.key === 'Enter' && setDetailJob(job)}
-                        className="group cursor-pointer min-w-0 border border-slate-200 bg-white rounded-2xl p-4 relative overflow-hidden flex flex-col gap-3 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-150"
+                        className="group relative min-w-0 cursor-pointer overflow-hidden rounded-[1.65rem] border border-slate-100 bg-white p-4 shadow-[0_14px_42px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_55px_rgba(15,23,42,0.12)] sm:p-5"
                       >
-                        {/* left accent bar */}
-                        <div className={`absolute top-0 left-0 w-1 h-full ${job.status === 'open' ? 'bg-yellow-400' : 'bg-green-500'}`} />
+                        <div className={clsx('absolute left-0 top-0 h-full w-1.5', clientDashboardAccent.activityAccentBar)} />
+                        <button
+                          type="button"
+                          aria-label={t('common.more_options')}
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute right-4 top-4 rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
+                        >
+                          <Icons.MoreVertical className="h-5 w-5" />
+                        </button>
 
-                        {/* top row: icon + content + chevron */}
-                        <div className="flex items-start gap-3 pr-1">
-                          {/* category icon */}
-                          <div
-                            className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
-                            style={{ backgroundColor: theme.iconBg }}
-                          >
-                            <CategoryIcon className="w-5 h-5" style={{ color: theme.iconColor }} />
+                        <div className="flex items-start gap-3 pr-8">
+                          <div className={clsx('flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-lg', clientDashboardAccent.activityIconBubble)}>
+                            <CategoryIcon className="h-6 w-6" />
                           </div>
-
                           <div className="min-w-0 flex-1">
-                            {/* status + budget badges */}
-                            <div className="flex items-center justify-between gap-2 mb-1 min-w-0">
-                              <div className="shrink-0">
-                                {isExclusiveLocked ? (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200">
-                                    👑 {t('client_dashboard.exclusive_application_badge')}
-                                  </span>
-                                ) : (
-                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${job.status === 'open' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                                    {job.status === 'open' ? t('client_dashboard.status_waiting_helpers') : t('client_dashboard.status_in_progress')}
-                                  </span>
-                                )}
-                              </div>
-                              <span className="shrink-0 text-[11px] font-black text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">{formatJobBudgetDisplay(job, t)}</span>
+                            <div className="mb-2 flex flex-wrap items-center gap-2">
+                              {isExclusiveLocked ? (
+                                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-800">
+                                  <Icons.Crown className="h-3.5 w-3.5" />
+                                  {t('client_dashboard.exclusive_application_badge')}
+                                </span>
+                              ) : (
+                                <span className={clsx('inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-black', clientDashboardAccent.activitySoftBg, clientDashboardAccent.activitySoftBorder, clientDashboardAccent.activityText)}>
+                                  <Icons.Clock3 className="h-3.5 w-3.5" />
+                                  {job.status === 'open' ? t('client_dashboard.status_waiting_helpers') : t('client_dashboard.status_in_progress')}
+                                </span>
+                              )}
+                              <span className={clsx('inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-black', clientDashboardAccent.activityBudgetChip)}>
+                                {formatJobBudgetDisplay(job, t)}
+                              </span>
                             </div>
-
-                            {/* title */}
-                            <h3 className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 pr-4">{translateJobTitle(job.title, job.category, job.subcategory, t)}</h3>
-
-                            {/* address */}
-                            <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 min-w-0">
-                              <Icons.MapPin className="w-3 h-3 shrink-0 text-slate-400" />
-                              <span className="truncate">{job.address || job.city || job.location}</span>
+                            <h3 className="text-lg font-black leading-tight text-slate-950 sm:text-xl">
+                              {translateJobTitle(job.title, job.category, job.subcategory, t)}
+                            </h3>
+                            <p className="mt-3 flex items-start gap-1.5 text-sm font-semibold text-slate-500">
+                              <Icons.MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                              <span className="line-clamp-1">{job.address || job.city || job.location}</span>
+                            </p>
+                            <p className="mt-1 text-xs font-semibold text-slate-500">
+                              Criado em {createdAtLabel}
                             </p>
                           </div>
-
-                          <ChevronRight className="shrink-0 w-4 h-4 text-slate-300 group-hover:text-blue-400 transition-colors mt-0.5" />
                         </div>
 
-                        {/* quality + avatar row */}
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">
-                            <Icons.BadgeCheck className="w-3.5 h-3.5 text-emerald-500" />
-                            {t('client_dashboard.request_quality', { pct: qualityScore })}
-                          </span>
+                        <div className="mt-5 grid grid-cols-2 gap-3 rounded-[1.25rem] border border-slate-100 bg-white p-3 shadow-inner shadow-slate-100/80">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="flex h-[74px] w-[74px] shrink-0 items-center justify-center rounded-full p-1"
+                              style={{ background: `conic-gradient(${clientDashboardAccent.activityColor} ${qualityScore}%, #e8edf5 0)` }}
+                            >
+                              <div className="flex h-full w-full items-center justify-center rounded-full bg-white text-lg font-black text-slate-950">
+                                {qualityScore}%
+                              </div>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-slate-500">Qualidade do pedido</p>
+                              <p className={clsx('text-sm font-black', clientDashboardAccent.activityText)}>
+                                {qualityScore >= 75 ? 'Excelente' : qualityScore >= 60 ? 'Boa' : 'Em melhoria'}
+                              </p>
+                              <p className="mt-1 hidden text-[11px] font-semibold leading-snug text-slate-500 min-[390px]:block">
+                                Mais chances de receber propostas.
+                              </p>
+                            </div>
+                          </div>
 
-                          {/* avatar stack + count */}
-                          <div
-                            className="flex items-center gap-2"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {displayApps.length === 0 ? (
-                              <span className="text-[11px] font-medium text-slate-400">{t('client_dashboard.candidates_count_zero')}</span>
-                            ) : (
-                              <>
-                                <div className="flex items-center">
-                                  {displayApps.map((app, i) => app && (
-                                    <button
-                                      key={app.id}
-                                      type="button"
-                                      title={app.helperName}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openHelperProfile(
-                                          { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, jobsCompleted: app.helperJobs, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
-                                          app.id,
-                                        );
-                                      }}
-                                      className="relative focus:outline-none focus:ring-2 focus:ring-blue-400 rounded-full"
-                                      style={{ marginLeft: i === 0 ? 0 : -10 }}
-                                    >
-                                      {app.isExclusive ? (
-                                        <span className="absolute -top-1 -right-1 z-10 text-[10px] leading-none">👑</span>
-                                      ) : null}
-                                      <img
-                                        src={app.helperAvatar}
-                                        alt={app.helperName}
-                                        loading="lazy"
-                                        className="w-8 h-8 rounded-full object-cover"
-                                        style={app.isExclusive
-                                          ? { border: '3px solid #F5C542', boxShadow: '0 0 10px rgba(245,197,66,.4)' }
-                                          : { border: '2px solid white', boxShadow: '0 1px 3px rgba(0,0,0,.12)' }
-                                        }
-                                      />
-                                    </button>
-                                  ))}
-                                </div>
-                                <span className={`text-[11px] font-bold ${isExclusiveLocked ? 'text-amber-700' : isFull ? 'text-emerald-700' : 'text-slate-600'}`}>
-                                  {candidatesLabel}
-                                </span>
-                              </>
-                            )}
+                          <div className="flex min-w-0 items-center gap-3 border-l border-slate-100 pl-3">
+                            <div className={clsx('flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl', clientDashboardAccent.activitySoftBg, clientDashboardAccent.activityText)}>
+                              <Icons.UsersRound className="h-6 w-6" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-slate-500">Candidatos</p>
+                              <p className="text-2xl font-black leading-none text-slate-950">{jobApps.length}</p>
+                              <p className="mt-1 line-clamp-2 text-[11px] font-semibold leading-snug text-slate-500">{candidatesLabel}</p>
+                            </div>
                           </div>
                         </div>
 
-                        {/* action bar: review / confirm / cancel — stopPropagation so card click doesn't fire */}
-                        <div onClick={(e) => e.stopPropagation()} className="empty:hidden">
-                          {jobsListTab === 'history' && job.status === 'completed' && pendingServiceReviews.some((p) => p.requestId === job.id) ? (
-                            <button
-                              type="button"
-                              onClick={() => openReviewByRequestId(job.id)}
-                              className="inline-flex min-h-[36px] w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-900 hover:bg-amber-100"
-                            >
-                              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                              {t('service_review.rate_now')}
-                            </button>
-                          ) : null}
-                          {jobsAwaitingServiceConfirm.some((j) => j.id === job.id) ? (
-                            <div className="flex flex-col gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setServiceConfirmJob(job)}
-                                className="inline-flex min-h-[36px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-900 hover:bg-emerald-100"
-                              >
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                {t('service_confirm.confirm_completion')}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void handleReportServiceProblem(job)}
-                                className="inline-flex min-h-[36px] w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-900 hover:bg-amber-100"
-                              >
-                                <Icons.AlertTriangle className="h-3.5 w-3.5" />
-                                {t('service_confirm.report_problem')}
-                              </button>
+                        <div className="mt-4 flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+                          {displayApps.length > 0 ? (
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center">
+                                {displayApps.map((app, i) => app && (
+                                  <button
+                                    key={app.id}
+                                    type="button"
+                                    title={app.helperName}
+                                    onClick={() =>
+                                      openHelperProfile(
+                                        { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, jobsCompleted: app.helperJobs, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
+                                        app.id,
+                                      )
+                                    }
+                                    className="relative rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                    style={{ marginLeft: i === 0 ? 0 : -10 }}
+                                  >
+                                    {app.isExclusive ? (
+                                      <span className="absolute -right-1 -top-1 z-10 text-[10px] leading-none">👑</span>
+                                    ) : null}
+                                    <img
+                                      src={app.helperAvatar}
+                                      alt={app.helperName}
+                                      loading="lazy"
+                                      className="h-8 w-8 rounded-full object-cover"
+                                      style={app.isExclusive
+                                        ? { border: '3px solid #F5C542', boxShadow: '0 0 10px rgba(245,197,66,.4)' }
+                                        : { border: '2px solid white', boxShadow: '0 1px 3px rgba(0,0,0,.12)' }
+                                      }
+                                    />
+                                  </button>
+                                ))}
+                              </div>
+                              <span className="text-xs font-bold text-slate-500">{candidatesLabel}</span>
                             </div>
                           ) : null}
-                          <JobTaskActionsBar
-                            canCancel={canCancelJob}
-                            canRepublish={job.status === 'cancelled' || isJobExpired(job)}
-                            onCancel={() => setCancelTargetJobId(job.id)}
-                            onRepublish={() => openCreateModal(job.category, job.subcategory ?? '')}
-                          />
+
+                          <div className="grid grid-cols-1 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setDetailJob(job)}
+                              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50"
+                            >
+                              <Icons.Target className={clsx('h-4 w-4', clientDashboardAccent.activityText)} />
+                              Ver detalhes
+                            </button>
+
+                            {jobsListTab === 'history' && job.status === 'completed' && pendingServiceReviews.some((p) => p.requestId === job.id) ? (
+                              <button
+                                type="button"
+                                onClick={() => openReviewByRequestId(job.id)}
+                                className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-900 hover:bg-amber-100"
+                              >
+                                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                                {t('service_review.rate_now')}
+                              </button>
+                            ) : null}
+
+                            {jobsAwaitingServiceConfirm.some((j) => j.id === job.id) ? (
+                              <div className="grid grid-cols-1 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setServiceConfirmJob(job)}
+                                  className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-900 hover:bg-emerald-100"
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  {t('service_confirm.confirm_completion')}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleReportServiceProblem(job)}
+                                  className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-900 hover:bg-amber-100"
+                                >
+                                  <Icons.AlertTriangle className="h-3.5 w-3.5" />
+                                  {t('service_confirm.report_problem')}
+                                </button>
+                              </div>
+                            ) : null}
+
+                            <JobTaskActionsBar
+                              canCancel={canCancelJob}
+                              canRepublish={job.status === 'cancelled' || isJobExpired(job)}
+                              onCancel={() => setCancelTargetJobId(job.id)}
+                              onRepublish={() => openCreateModal(job.category, job.subcategory ?? '')}
+                            />
+                          </div>
                         </div>
-                      </div>
+                      </article>
                     );
                   })
                 ) : (
-                  <div className="md:col-span-2 2xl:col-span-3 rounded-[28px] border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50/40 px-6 py-14 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+                  <div className="rounded-[1.75rem] border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50/40 px-6 py-14 text-center xl:col-span-2">
+                    <div className={clsx('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl', clientDashboardAccent.activitySoftBg, clientDashboardAccent.activityText)}>
                       <Icons.Briefcase className="h-8 w-8" />
                     </div>
                     <h3 className="text-lg font-black text-slate-900">
@@ -1703,7 +1804,7 @@ export default function ClientDashboard() {
                       <button
                         type="button"
                         onClick={() => openCreateModal()}
-                        className="mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700"
+                        className={clsx('mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-6 text-sm font-bold text-white shadow-lg', clientDashboardAccent.activityGradient)}
                       >
                         <Plus className="h-4 w-4" />
                         {t('client_dashboard.hero_cta')}
@@ -1712,10 +1813,21 @@ export default function ClientDashboard() {
                   </div>
                 )}
               </div>
+
+              <div className={clsx('mt-6 flex items-center gap-4 rounded-[1.5rem] border p-4', clientDashboardAccent.activityTipPanel)}>
+                <div className={clsx('flex h-14 w-14 shrink-0 items-center justify-center rounded-full', clientDashboardAccent.activitySoftBg, clientDashboardAccent.activityText)}>
+                  <Icons.Crown className="h-7 w-7" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className={clsx('text-sm font-black', clientDashboardAccent.activityText)}>Dica de destaque</h3>
+                  <p className="mt-1 text-sm font-semibold leading-relaxed text-slate-600">
+                    Pedidos com informações completas recebem respostas melhores e ajudam os helpers a entenderem exatamente o que você precisa.
+                  </p>
+                </div>
+              </div>
             </LhCard>
           </div>
         )}
-
         {/* Saved Tab */}
         {activeSidebarTab === 'saved' && (
           <div className="w-full max-w-[680px] mx-auto animate-in fade-in duration-300">

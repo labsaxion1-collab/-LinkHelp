@@ -11,134 +11,18 @@ import { MEDAL_MAP } from '@/gamification/config/gamificationMedals';
 import { GAMIFICATION_TUTORIAL_TITLE } from '@/gamification/config/gamificationTutorialContent';
 import { GamificationTutorialModal } from '@/gamification/components/GamificationTutorialModal';
 
-type ProgressAccentTheme = {
-  textClass: string;
-  iconClass: string;
-  heroBorderClass: string;
-  heroTrackClass: string;
-  heroBarClass: string;
-  cardTrackClass: string;
-  cardBarClass: string;
-  tutorialButtonClass: string;
-};
-
-/** Tema compartilhado da barra de próximo nível por hero/medalha. */
-const PROGRESS_ACCENT_THEME: Record<string, ProgressAccentTheme> = {
-  helper_novo: {
-    textClass: 'text-lime-400',
-    iconClass: 'border-lime-300/20 bg-lime-500/15 text-lime-300',
-    heroBorderClass: 'border-lime-400/15',
-    heroTrackClass: 'bg-lime-950/50',
-    heroBarClass: 'bg-gradient-to-r from-lime-500 to-lime-300 shadow-[0_0_14px_rgba(163,230,53,0.36)]',
-    cardTrackClass: 'bg-lime-50',
-    cardBarClass: 'bg-gradient-to-r from-lime-600 to-lime-400 shadow-[0_0_12px_rgba(132,204,22,0.24)]',
-    tutorialButtonClass: 'border-lime-100 bg-lime-50/70 text-lime-700 hover:bg-lime-100/80',
-  },
-  helper_confiavel: {
-    textClass: 'text-[#3B82FF]',
-    iconClass: 'border-[#006DFF]/45 bg-[#001E5A]/70 text-[#2F7DFF]',
-    heroBorderClass: 'border-[#0047FF]/35',
-    heroTrackClass: 'bg-[#020A24]/85',
-    heroBarClass: 'bg-gradient-to-r from-[#001BFF] via-[#0047FF] to-[#006DFF] shadow-[0_0_20px_rgba(0,71,255,0.72)]',
-    cardTrackClass: 'bg-[#E7EEFF]',
-    cardBarClass: 'bg-gradient-to-r from-[#001BFF] via-[#0047FF] to-[#006DFF] shadow-[0_0_16px_rgba(0,71,255,0.58)]',
-    tutorialButtonClass: 'border-[#B8CAFF] bg-[#E7EEFF]/85 text-[#003BFF] hover:bg-[#DCE6FF]',
-  },
-  helper_profissional: {
-    textClass: 'text-amber-300',
-    iconClass: 'border-amber-300/20 bg-amber-500/15 text-amber-300',
-    heroBorderClass: 'border-amber-400/15',
-    heroTrackClass: 'bg-amber-950/45',
-    heroBarClass: 'bg-gradient-to-r from-amber-600 to-yellow-300 shadow-[0_0_14px_rgba(251,191,36,0.32)]',
-    cardTrackClass: 'bg-amber-50',
-    cardBarClass: 'bg-gradient-to-r from-amber-700 to-yellow-400 shadow-[0_0_12px_rgba(217,119,6,0.24)]',
-    tutorialButtonClass: 'border-amber-100 bg-amber-50/70 text-amber-700 hover:bg-amber-100/80',
-  },
-  helper_elite: {
-    textClass: 'text-[#3B82FF]',
-    iconClass: 'border-[#006DFF]/45 bg-[#001E5A]/70 text-[#2F7DFF]',
-    heroBorderClass: 'border-[#0047FF]/35',
-    heroTrackClass: 'bg-[#020A24]/85',
-    heroBarClass: 'bg-gradient-to-r from-[#001BFF] via-[#0047FF] to-[#006DFF] shadow-[0_0_20px_rgba(0,71,255,0.72)]',
-    cardTrackClass: 'bg-[#E7EEFF]',
-    cardBarClass: 'bg-gradient-to-r from-[#001BFF] via-[#0047FF] to-[#006DFF] shadow-[0_0_16px_rgba(0,71,255,0.58)]',
-    tutorialButtonClass: 'border-[#B8CAFF] bg-[#E7EEFF]/85 text-[#003BFF] hover:bg-[#DCE6FF]',
-  },
-  helper_top_helper: {
-    textClass: 'text-violet-300',
-    iconClass: 'border-violet-300/20 bg-violet-500/15 text-violet-300',
-    heroBorderClass: 'border-violet-400/15',
-    heroTrackClass: 'bg-violet-950/45',
-    heroBarClass: 'bg-gradient-to-r from-violet-600 to-fuchsia-300 shadow-[0_0_14px_rgba(168,85,247,0.34)]',
-    cardTrackClass: 'bg-violet-50',
-    cardBarClass: 'bg-gradient-to-r from-violet-700 to-fuchsia-400 shadow-[0_0_12px_rgba(124,58,237,0.24)]',
-    tutorialButtonClass: 'border-violet-100 bg-violet-50/70 text-violet-700 hover:bg-violet-100/80',
-  },
-  helper_lenda: {
-    textClass: 'text-amber-300',
-    iconClass: 'border-amber-200/20 bg-amber-500/15 text-amber-200',
-    heroBorderClass: 'border-amber-300/15',
-    heroTrackClass: 'bg-amber-950/45',
-    heroBarClass: 'bg-gradient-to-r from-amber-700 to-yellow-300 shadow-[0_0_14px_rgba(251,191,36,0.34)]',
-    cardTrackClass: 'bg-yellow-50',
-    cardBarClass: 'bg-gradient-to-r from-amber-800 to-yellow-400 shadow-[0_0_12px_rgba(180,83,9,0.24)]',
-    tutorialButtonClass: 'border-yellow-100 bg-yellow-50/70 text-amber-800 hover:bg-yellow-100/80',
-  },
-  client_novo: {
-    textClass: 'text-lime-400',
-    iconClass: 'border-lime-300/20 bg-lime-500/15 text-lime-300',
-    heroBorderClass: 'border-lime-400/15',
-    heroTrackClass: 'bg-lime-950/50',
-    heroBarClass: 'bg-gradient-to-r from-lime-500 to-lime-300 shadow-[0_0_14px_rgba(163,230,53,0.36)]',
-    cardTrackClass: 'bg-lime-50',
-    cardBarClass: 'bg-gradient-to-r from-lime-600 to-lime-400 shadow-[0_0_12px_rgba(132,204,22,0.24)]',
-    tutorialButtonClass: 'border-lime-100 bg-lime-50/70 text-lime-700 hover:bg-lime-100/80',
-  },
-  client_confiavel: {
-    textClass: 'text-[#3B82FF]',
-    iconClass: 'border-[#006DFF]/45 bg-[#001E5A]/70 text-[#2F7DFF]',
-    heroBorderClass: 'border-[#0047FF]/35',
-    heroTrackClass: 'bg-[#020A24]/85',
-    heroBarClass: 'bg-gradient-to-r from-[#001BFF] via-[#0047FF] to-[#006DFF] shadow-[0_0_20px_rgba(0,71,255,0.72)]',
-    cardTrackClass: 'bg-[#E7EEFF]',
-    cardBarClass: 'bg-gradient-to-r from-[#001BFF] via-[#0047FF] to-[#006DFF] shadow-[0_0_16px_rgba(0,71,255,0.58)]',
-    tutorialButtonClass: 'border-[#B8CAFF] bg-[#E7EEFF]/85 text-[#003BFF] hover:bg-[#DCE6FF]',
-  },
-  client_ouro: {
-    textClass: 'text-amber-300',
-    iconClass: 'border-amber-300/20 bg-amber-500/15 text-amber-300',
-    heroBorderClass: 'border-amber-400/15',
-    heroTrackClass: 'bg-amber-950/45',
-    heroBarClass: 'bg-gradient-to-r from-amber-600 to-yellow-300 shadow-[0_0_14px_rgba(251,191,36,0.32)]',
-    cardTrackClass: 'bg-amber-50',
-    cardBarClass: 'bg-gradient-to-r from-amber-700 to-yellow-400 shadow-[0_0_12px_rgba(217,119,6,0.24)]',
-    tutorialButtonClass: 'border-amber-100 bg-amber-50/70 text-amber-700 hover:bg-amber-100/80',
-  },
-  client_vip: {
-    textClass: 'text-violet-300',
-    iconClass: 'border-violet-300/20 bg-violet-500/15 text-violet-300',
-    heroBorderClass: 'border-violet-400/15',
-    heroTrackClass: 'bg-violet-950/45',
-    heroBarClass: 'bg-gradient-to-r from-violet-600 to-fuchsia-300 shadow-[0_0_14px_rgba(168,85,247,0.34)]',
-    cardTrackClass: 'bg-violet-50',
-    cardBarClass: 'bg-gradient-to-r from-violet-700 to-fuchsia-400 shadow-[0_0_12px_rgba(124,58,237,0.24)]',
-    tutorialButtonClass: 'border-violet-100 bg-violet-50/70 text-violet-700 hover:bg-violet-100/80',
-  },
-  client_elite: {
-    textClass: 'text-amber-300',
-    iconClass: 'border-amber-200/20 bg-amber-500/15 text-amber-200',
-    heroBorderClass: 'border-amber-300/15',
-    heroTrackClass: 'bg-amber-950/45',
-    heroBarClass: 'bg-gradient-to-r from-amber-700 to-yellow-300 shadow-[0_0_14px_rgba(251,191,36,0.34)]',
-    cardTrackClass: 'bg-yellow-50',
-    cardBarClass: 'bg-gradient-to-r from-amber-800 to-yellow-400 shadow-[0_0_12px_rgba(180,83,9,0.24)]',
-    tutorialButtonClass: 'border-yellow-100 bg-yellow-50/70 text-amber-800 hover:bg-yellow-100/80',
-  },
-};
-
-function getProgressAccentTheme(heroKey: string, userType: UserType): ProgressAccentTheme {
-  return PROGRESS_ACCENT_THEME[heroKey] ?? PROGRESS_ACCENT_THEME[`${userType}_novo`];
-}
+/** Accentos da barra/progresso via CSS vars `--medal-*` (tema global da medalha). */
+const PROGRESS_MEDAL_ACCENT = {
+  textClass: 'lh-medal-primary',
+  iconClass: 'lh-medal-icon border lh-medal-border',
+  heroBorderClass: 'lh-medal-border lh-medal-card-active',
+  heroTrackClass: 'lh-medal-progress-track',
+  heroBarClass: 'lh-medal-progress-bar',
+  cardTrackClass: 'lh-medal-light-bg',
+  cardBarClass: 'lh-medal-progress-bar',
+  tutorialButtonClass:
+    'border lh-medal-border lh-medal-light-bg lh-medal-text hover:opacity-90',
+} as const;
 
 type Props = {
   userType: UserType;
@@ -243,14 +127,14 @@ export function GamificationLevelButton({
           <div
             ref={panelRef}
             id="client-level-details"
-            className="fixed z-[1000] -translate-x-1/2 rounded-2xl border border-lime-300/25 bg-[#061008]/95 p-3 text-left shadow-[0_18px_45px_rgba(0,0,0,0.72)] backdrop-blur-xl sm:p-4"
+            className="fixed z-[1000] -translate-x-1/2 rounded-2xl border bg-[#061008]/95 p-3 text-left shadow-[0_18px_45px_rgba(0,0,0,0.72)] backdrop-blur-xl lh-medal-border sm:p-4"
             style={{ top: panelStyle.top, left: panelStyle.left, width: panelStyle.width }}
           >
             <span
-              className="absolute left-1/2 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-lime-300/25 bg-[#061008]"
+              className="absolute left-1/2 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t bg-[#061008] lh-medal-border"
               aria-hidden="true"
             />
-            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] text-lime-300">
+            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] lh-medal-primary">
               O que falta para o próximo nível
             </p>
 
@@ -284,7 +168,7 @@ export function GamificationLevelButton({
                 setExpanded(false);
                 setTutorialOpen(true);
               }}
-              className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-lime-300/25 bg-lime-400/15 px-3 py-2.5 text-xs font-black text-lime-200 transition hover:bg-lime-400/25"
+              className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-black transition lh-medal-border lh-medal-soft-bg lh-medal-primary hover:opacity-90"
             >
               <HelpCircle className="h-4 w-4" />
               {GAMIFICATION_TUTORIAL_TITLE}
@@ -321,7 +205,7 @@ export function GamificationProgressCard({ userType, className = '', variant = '
   // Estado de carregamento
   if (loading && !record) {
     if (variant === 'hero') {
-      return <div className={'h-[5.75rem] animate-pulse rounded-2xl border border-lime-400/15 bg-black/40 ' + className} />;
+      return <div className={'h-[5.75rem] animate-pulse rounded-2xl border bg-black/40 lh-medal-border ' + className} />;
     }
 
     return (
@@ -342,7 +226,7 @@ export function GamificationProgressCard({ userType, className = '', variant = '
   );
   const heroKey = record.heroKey;
   const medalSrc = MEDAL_MAP[heroKey] ?? MEDAL_MAP[`${userType}_novo`];
-  const accentTheme = getProgressAccentTheme(heroKey, userType);
+  const accentTheme = PROGRESS_MEDAL_ACCENT;
   const isMax = progress.nextLevel === null;
 
   if (variant === 'hero') {

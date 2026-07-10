@@ -94,133 +94,27 @@ type RecommendedHelperCard = {
 
 const RECOMMENDED_HELPERS: RecommendedHelperCard[] = [];
 
-type ClientDashboardAccentTheme = {
-  summaryCard: string;
-  summaryLabel: string;
-  categoryIcon: string;
-  categoryHover: string;
-  actionLink: string;
-  trustPanel: string;
-  trustDivider: string;
-  trustIcon: string;
-  activityColor: string;
-  activityGradient: string;
-  activityAccentBar: string;
-  activityText: string;
-  activitySoftBg: string;
-  activitySoftBorder: string;
-  activityTabBadge: string;
-  activityBudgetChip: string;
-  activityIconBubble: string;
-  activityTipPanel: string;
-};
-
-const CLIENT_DASHBOARD_ACCENT_THEMES: Record<string, ClientDashboardAccentTheme> = {
-  client_novo: {
-    summaryCard: 'border-lime-500/20 bg-[#020a04] shadow-[0_12px_30px_rgba(0,20,7,0.16)]',
-    summaryLabel: 'text-lime-400',
-    categoryIcon: 'text-lime-500 bg-lime-50 shadow-lime-500/10',
-    categoryHover: 'hover:border-lime-100 hover:shadow-[0_18px_42px_rgba(132,204,22,0.12)]',
-    actionLink: 'text-lime-600',
-    trustPanel: 'border-lime-400/15 bg-[#020804] shadow-[0_14px_36px_rgba(0,20,7,0.18)]',
-    trustDivider: 'border-lime-300/10',
-    trustIcon: 'text-lime-500',
-    activityColor: '#84cc16',
-    activityGradient: 'bg-gradient-to-r from-lime-500 to-green-500 shadow-lime-500/25',
-    activityAccentBar: 'bg-gradient-to-b from-lime-300 via-lime-500 to-green-500',
-    activityText: 'text-lime-600',
-    activitySoftBg: 'bg-lime-50',
-    activitySoftBorder: 'border-lime-100',
-    activityTabBadge: 'bg-white/20 text-white',
-    activityBudgetChip: 'border-lime-100 bg-lime-50 text-lime-700',
-    activityIconBubble: 'bg-lime-50 text-lime-600 shadow-lime-500/10',
-    activityTipPanel: 'border-lime-100 bg-gradient-to-r from-lime-50 via-white to-green-50',
-  },
-  client_confiavel: {
-    summaryCard: 'border-[#0047FF]/35 bg-[#020817] shadow-[0_12px_36px_rgba(0,71,255,0.32)]',
-    summaryLabel: 'text-[#3B82FF]',
-    categoryIcon: 'text-[#0047FF] bg-[#E7EEFF] shadow-[0_14px_30px_rgba(0,71,255,0.22)]',
-    categoryHover: 'hover:border-[#B8CAFF] hover:shadow-[0_18px_42px_rgba(0,71,255,0.24)]',
-    actionLink: 'text-[#0047FF]',
-    trustPanel: 'border-[#0047FF]/30 bg-[#020817] shadow-[0_14px_42px_rgba(0,71,255,0.30)]',
-    trustDivider: 'border-[#3B82FF]/20',
-    trustIcon: 'text-[#005BFF]',
-    activityColor: '#0047FF',
-    activityGradient: 'bg-gradient-to-r from-[#001BFF] via-[#0047FF] to-[#006DFF] shadow-[0_18px_42px_rgba(0,71,255,0.46)]',
-    activityAccentBar: 'bg-gradient-to-b from-[#3B82FF] via-[#0047FF] to-[#001BFF]',
-    activityText: 'text-[#0047FF]',
-    activitySoftBg: 'bg-[#E7EEFF]',
-    activitySoftBorder: 'border-[#B8CAFF]',
-    activityTabBadge: 'bg-white/20 text-white',
-    activityBudgetChip: 'border-[#B8CAFF] bg-[#E7EEFF] text-[#003BFF]',
-    activityIconBubble: 'bg-[#E7EEFF] text-[#0047FF] shadow-[0_14px_30px_rgba(0,71,255,0.22)]',
-    activityTipPanel: 'border-[#B8CAFF] bg-gradient-to-r from-[#E7EEFF] via-white to-[#DCE6FF]',
-  },
-  client_ouro: {
-    summaryCard: 'border-amber-400/20 bg-[#100902] shadow-[0_12px_30px_rgba(120,72,0,0.18)]',
-    summaryLabel: 'text-amber-300',
-    categoryIcon: 'text-amber-600 bg-amber-50 shadow-amber-500/10',
-    categoryHover: 'hover:border-amber-100 hover:shadow-[0_18px_42px_rgba(245,158,11,0.14)]',
-    actionLink: 'text-amber-600',
-    trustPanel: 'border-amber-400/15 bg-[#100902] shadow-[0_14px_36px_rgba(120,72,0,0.18)]',
-    trustDivider: 'border-amber-300/10',
-    trustIcon: 'text-amber-500',
-    activityColor: '#d97706',
-    activityGradient: 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-amber-500/25',
-    activityAccentBar: 'bg-gradient-to-b from-yellow-300 via-amber-500 to-orange-600',
-    activityText: 'text-amber-600',
-    activitySoftBg: 'bg-amber-50',
-    activitySoftBorder: 'border-amber-100',
-    activityTabBadge: 'bg-white/20 text-white',
-    activityBudgetChip: 'border-amber-100 bg-amber-50 text-amber-700',
-    activityIconBubble: 'bg-amber-50 text-amber-600 shadow-amber-500/10',
-    activityTipPanel: 'border-amber-100 bg-gradient-to-r from-amber-50 via-white to-yellow-50',
-  },
-  client_vip: {
-    summaryCard: 'border-violet-400/20 bg-[#080314] shadow-[0_12px_30px_rgba(90,35,170,0.20)]',
-    summaryLabel: 'text-violet-300',
-    categoryIcon: 'text-violet-600 bg-violet-50 shadow-violet-500/10',
-    categoryHover: 'hover:border-violet-100 hover:shadow-[0_18px_42px_rgba(124,58,237,0.14)]',
-    actionLink: 'text-violet-600',
-    trustPanel: 'border-violet-400/15 bg-[#080314] shadow-[0_14px_36px_rgba(90,35,170,0.20)]',
-    trustDivider: 'border-violet-300/10',
-    trustIcon: 'text-violet-500',
-    activityColor: '#7c3aed',
-    activityGradient: 'bg-gradient-to-r from-violet-600 to-fuchsia-500 shadow-violet-500/25',
-    activityAccentBar: 'bg-gradient-to-b from-fuchsia-300 via-violet-500 to-purple-700',
-    activityText: 'text-violet-600',
-    activitySoftBg: 'bg-violet-50',
-    activitySoftBorder: 'border-violet-100',
-    activityTabBadge: 'bg-white/20 text-white',
-    activityBudgetChip: 'border-violet-100 bg-violet-50 text-violet-700',
-    activityIconBubble: 'bg-violet-50 text-violet-600 shadow-violet-500/10',
-    activityTipPanel: 'border-violet-100 bg-gradient-to-r from-violet-50 via-white to-fuchsia-50',
-  },
-  client_elite: {
-    summaryCard: 'border-amber-300/25 bg-[#120b02] shadow-[0_12px_30px_rgba(160,95,0,0.20)]',
-    summaryLabel: 'text-amber-200',
-    categoryIcon: 'text-amber-600 bg-amber-50 shadow-amber-500/10',
-    categoryHover: 'hover:border-amber-100 hover:shadow-[0_18px_42px_rgba(217,119,6,0.16)]',
-    actionLink: 'text-amber-700',
-    trustPanel: 'border-amber-300/20 bg-[#120b02] shadow-[0_14px_36px_rgba(160,95,0,0.20)]',
-    trustDivider: 'border-amber-200/10',
-    trustIcon: 'text-amber-400',
-    activityColor: '#b77905',
-    activityGradient: 'bg-gradient-to-r from-amber-600 to-yellow-500 shadow-amber-500/25',
-    activityAccentBar: 'bg-gradient-to-b from-yellow-200 via-amber-500 to-yellow-700',
-    activityText: 'text-amber-700',
-    activitySoftBg: 'bg-yellow-50',
-    activitySoftBorder: 'border-yellow-100',
-    activityTabBadge: 'bg-white/20 text-white',
-    activityBudgetChip: 'border-yellow-100 bg-yellow-50 text-amber-800',
-    activityIconBubble: 'bg-yellow-50 text-amber-700 shadow-amber-500/10',
-    activityTipPanel: 'border-yellow-100 bg-gradient-to-r from-yellow-50 via-white to-amber-50',
-  },
-};
-
-function getClientDashboardAccentTheme(heroKey: string): ClientDashboardAccentTheme {
-  return CLIENT_DASHBOARD_ACCENT_THEMES[heroKey] ?? CLIENT_DASHBOARD_ACCENT_THEMES.client_novo;
-}
+/** Accentos do dashboard via CSS vars `--medal-*` (tema global da medalha). */
+const CLIENT_DASHBOARD_MEDAL_ACCENT = {
+  summaryCard: 'lh-medal-card-active border bg-[#0a0c0a]/92',
+  summaryLabel: 'lh-medal-primary',
+  categoryIcon: 'lh-medal-icon shadow-sm',
+  categoryHover: 'hover:opacity-95',
+  actionLink: 'lh-medal-text',
+  trustPanel: 'lh-medal-card-active border bg-[#0a0c0a]/92',
+  trustDivider: 'lh-medal-border',
+  trustIcon: 'lh-medal-primary',
+  activityColor: 'var(--medal-primary)',
+  activityGradient: 'lh-medal-btn-primary',
+  activityAccentBar: 'lh-medal-accent-bar',
+  activityText: 'lh-medal-text',
+  activitySoftBg: 'lh-medal-light-bg',
+  activitySoftBorder: 'lh-medal-border',
+  activityTabBadge: 'bg-white/20 text-white',
+  activityBudgetChip: 'lh-medal-border lh-medal-light-bg lh-medal-text border',
+  activityIconBubble: 'lh-medal-icon shadow-sm',
+  activityTipPanel: 'lh-medal-border lh-medal-light-bg border',
+} as const;
 
 function estimateClientLeadQuality(description: string, location: string, budget: string, applicationsCount: number): number {
   let score = 52;
@@ -233,7 +127,7 @@ function estimateClientLeadQuality(description: string, location: string, budget
 
 export default function ClientDashboard() {
   const clientGamification = useGamification('client');
-  const clientDashboardAccent = getClientDashboardAccentTheme(clientGamification.heroKey);
+  const clientDashboardAccent = CLIENT_DASHBOARD_MEDAL_ACCENT;
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -1403,21 +1297,58 @@ export default function ClientDashboard() {
                   </div>
                 </section>
 
-                <section className={clsx('mx-4 grid grid-cols-3 overflow-hidden rounded-2xl border sm:mx-6 md:mx-8', clientDashboardAccent.trustPanel)}>
-                  {[
-                    { icon: Icons.ShieldCheck, title: t('client_dashboard.trust_safe_title'), body: t('client_dashboard.trust_safe_body') },
-                    { icon: Icons.Zap, title: t('client_dashboard.trust_chat_title'), body: t('client_dashboard.trust_chat_body') },
-                    { icon: Icons.LockKeyhole, title: t('client_dashboard.trust_quality_title'), body: t('client_dashboard.trust_quality_body') },
-                  ].map((item, index) => {
-                    const Icon = item.icon;
-                    return (
-                      <article key={item.title} className={clsx('flex min-w-0 flex-col items-center gap-1 px-1 py-3 text-center sm:py-4', index > 0 && 'border-l', index > 0 && clientDashboardAccent.trustDivider)}>
-                        <Icon className={clsx('h-6 w-6 sm:h-7 sm:w-7', clientDashboardAccent.trustIcon)} strokeWidth={2.2} />
-                        <span className="mt-0.5 block text-[11px] font-black text-white sm:text-sm">{item.title}</span>
-                        <span className="hidden text-[10px] font-medium text-white/55 min-[390px]:block sm:text-xs">{item.body}</span>
-                      </article>
-                    );
-                  })}
+                <section className="relative mx-4 mt-2 sm:mx-6 md:mx-8">
+                  {/* Max Quebec (thumbs-up) à esquerda + dica rápida à direita, atrás da barra */}
+                  <div className="relative z-0 mb-[-1.35rem] flex items-end justify-between gap-2 sm:mb-[-1.6rem] sm:gap-3">
+                    <div
+                      className="pointer-events-none flex h-[12.5rem] w-[11.5rem] shrink-0 items-end justify-start overflow-hidden sm:h-[17.5rem] sm:w-[16.75rem]"
+                      aria-hidden="true"
+                    >
+                      <img
+                        src="/assets/characters/max-quebec/thumbs-up-bust.png"
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="h-[12.5rem] w-auto max-w-none select-none object-contain object-bottom sm:h-[17.5rem]"
+                      />
+                    </div>
+                    <div className="mb-9 min-w-0 flex-1 self-center sm:mb-11">
+                      <div className="relative rounded-2xl border border-slate-200/90 bg-white px-3.5 py-3 shadow-[0_10px_28px_rgba(15,23,42,0.08)] sm:px-4 sm:py-3.5">
+                        <span
+                          className="absolute -left-1.5 bottom-6 h-3 w-3 rotate-45 border-b border-l border-slate-200/90 bg-white"
+                          aria-hidden="true"
+                        />
+                        <p className={clsx('text-[10px] font-black uppercase tracking-[0.14em]', clientDashboardAccent.activityText)}>
+                          {t('client_dashboard.max_tip_label')}
+                        </p>
+                        <p className="mt-1.5 font-display text-[14px] font-extrabold leading-[1.35] tracking-tight text-slate-900 sm:text-[1.15rem] sm:leading-[1.35]">
+                          {t('client_dashboard.max_tip_body')
+                            .split('\n')
+                            .map((line) => (
+                              <span key={line} className="block whitespace-nowrap">
+                                {line}
+                              </span>
+                            ))}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className={clsx('relative z-10 grid grid-cols-3 overflow-hidden rounded-2xl border', clientDashboardAccent.trustPanel)}>
+                    {[
+                      { icon: Icons.ShieldCheck, title: t('client_dashboard.trust_safe_title'), body: t('client_dashboard.trust_safe_body') },
+                      { icon: Icons.Zap, title: t('client_dashboard.trust_chat_title'), body: t('client_dashboard.trust_chat_body') },
+                      { icon: Icons.LockKeyhole, title: t('client_dashboard.trust_quality_title'), body: t('client_dashboard.trust_quality_body') },
+                    ].map((item, index) => {
+                      const Icon = item.icon;
+                      return (
+                        <article key={item.title} className={clsx('flex min-w-0 flex-col items-center gap-1 px-1 py-3 text-center sm:py-4', index > 0 && 'border-l', index > 0 && clientDashboardAccent.trustDivider)}>
+                          <Icon className={clsx('h-6 w-6 sm:h-7 sm:w-7', clientDashboardAccent.trustIcon)} strokeWidth={2.2} />
+                          <span className="mt-0.5 block text-[11px] font-black text-white sm:text-sm">{item.title}</span>
+                          <span className="hidden text-[10px] font-medium text-white/55 min-[390px]:block sm:text-xs">{item.body}</span>
+                        </article>
+                      );
+                    })}
+                  </div>
                 </section>
 
               </div>

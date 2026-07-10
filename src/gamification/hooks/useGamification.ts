@@ -47,7 +47,9 @@ function acquireGamificationChannel(
           table: 'user_gamification',
           filter: `user_id=eq.${userId}`,
         },
-        () => {
+        (payload) => {
+          const row = (payload.new ?? payload.old) as { user_type?: string } | null;
+          if (row?.user_type && row.user_type !== userType) return;
           listeners.forEach((listener) => listener());
         },
       )

@@ -1454,6 +1454,8 @@ export const pt = {
     trust_chat_body: 'Em minutos',
     trust_quality_title: 'Confiável',
     trust_quality_body: 'Avaliações reais',
+    max_tip_label: 'Dica rápida',
+    max_tip_body: 'Lembre-se,\ndescreva bem\no seu serviço\ne publique\no seu pedido.',
   },
   upcoming_jobs: {
     section_title: 'Próximos Trabalhos',

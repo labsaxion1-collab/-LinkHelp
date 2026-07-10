@@ -1012,16 +1012,16 @@ export default function HelperDashboard() {
               {UI_VISIBILITY.helperCredits ? (
                 <CreditsUsageDashboard unlocks={unlocks} transactions={creditTransactions} />
               ) : null}
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="lh-medal-card-active rounded-xl border bg-white p-4 shadow-sm">
                 <h2 className="text-xl font-black text-slate-950">{t('helper_dashboard.stats_strip_title')}</h2>
-                <p className="mt-1 text-sm font-medium text-slate-500">{t('helper_dashboard.score_section_performance')}</p>
+                <p className="lh-medal-text mt-1 text-sm font-medium">{t('helper_dashboard.score_section_performance')}</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-400">{t('helper_dashboard.nav_applications')}</p>
+                  <div className="rounded-xl border lh-medal-border lh-medal-light-bg p-4">
+                    <p className="lh-medal-text text-xs font-black uppercase tracking-wide">{t('helper_dashboard.nav_applications')}</p>
                     <p className="mt-1 text-xl sm:text-2xl font-black text-slate-950">{helperMvpStats.sent}</p>
                   </div>
-                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-400">{t('helper_dashboard.score_metric_response_rate')}</p>
+                  <div className="rounded-xl border lh-medal-border lh-medal-light-bg p-4">
+                    <p className="lh-medal-text text-xs font-black uppercase tracking-wide">{t('helper_dashboard.score_metric_response_rate')}</p>
                     <p className="mt-1 text-xl sm:text-2xl font-black text-slate-950">
                       {helperMvpStats.responseRatePct == null ? '—' : `${helperMvpStats.responseRatePct}%`}
                     </p>

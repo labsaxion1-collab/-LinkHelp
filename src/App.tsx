@@ -24,6 +24,7 @@ import { ServiceReviewProvider } from '@/context/ServiceReviewContext';
 import { AppRoutes } from '@/routes/AppRoutes';
 import { TutorialProvider } from '@/context/TutorialContext';
 import { AppTutorialModal } from '@/components/tutorial/AppTutorialModal';
+import { MedalThemeBridge } from '@/theme/MedalThemeBridge';
 import { checkSupabaseConnection, isSupabaseConfigured } from '@/lib/supabase';
 import { authDevLog } from '@/lib/authDebug';
 
@@ -45,6 +46,7 @@ export default function App() {
     <ThemeProvider>
       <LanguageProvider>
         <AuthProvider>
+          <MedalThemeBridge />
           <ToastProvider>
             <DevSupabasePing />
             <CreditProvider>

@@ -1445,6 +1445,8 @@ export const en = {
     trust_chat_body: 'In minutes',
     trust_quality_title: 'Trustworthy',
     trust_quality_body: 'Real reviews',
+    max_tip_label: 'Quick tip',
+    max_tip_body: 'Remember,\ndescribe your\nservice well\nand publish\nyour request.',
   },
   upcoming_jobs: {
     section_title: 'Upcoming Jobs',

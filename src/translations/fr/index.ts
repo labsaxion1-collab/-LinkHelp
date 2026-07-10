@@ -1451,6 +1451,8 @@ export const fr = {
     trust_chat_body: 'En quelques minutes',
     trust_quality_title: 'Fiable',
     trust_quality_body: 'Avis réels',
+    max_tip_label: 'Astuce rapide',
+    max_tip_body: 'Rappelez-vous,\ndécrivez bien\nvotre service\net publiez\nvotre demande.',
   },
   upcoming_jobs: {
     section_title: 'Prochains Travaux',

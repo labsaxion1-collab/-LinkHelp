@@ -32,38 +32,47 @@ function StatCard({
   labelKey: string;
   value: string;
   sub?: string;
-  accent: 'sky' | 'emerald' | 'violet' | 'amber' | 'rose' | 'slate' | 'indigo' | 'cyan';
+  accent: 'sky' | 'emerald' | 'violet' | 'amber' | 'rose' | 'slate' | 'indigo' | 'cyan' | 'medal';
   t: TFn;
 }) {
+  const isMedal = accent === 'medal';
   const ring =
-    accent === 'sky'
-      ? 'from-sky-500/15 to-blue-600/5 ring-sky-200/80'
-      : accent === 'emerald'
-        ? 'from-emerald-500/15 to-teal-600/5 ring-emerald-200/80'
-        : accent === 'violet'
-          ? 'from-violet-500/15 to-purple-600/5 ring-violet-200/80'
-          : accent === 'amber'
-            ? 'from-amber-500/15 to-orange-600/5 ring-amber-200/80'
-            : accent === 'rose'
-              ? 'from-rose-500/15 to-pink-600/5 ring-rose-200/80'
-              : accent === 'indigo'
-                ? 'from-indigo-500/15 to-blue-700/5 ring-indigo-200/80'
-                : accent === 'cyan'
-                  ? 'from-cyan-500/15 to-sky-600/5 ring-cyan-200/80'
-                  : 'from-slate-500/10 to-slate-600/5 ring-slate-200/80';
+    accent === 'medal'
+      ? 'lh-medal-soft-bg lh-medal-border lh-medal-card-active'
+      : accent === 'sky'
+        ? 'from-sky-500/15 to-blue-600/5 ring-sky-200/80'
+        : accent === 'emerald'
+          ? 'from-emerald-500/15 to-teal-600/5 ring-emerald-200/80'
+          : accent === 'violet'
+            ? 'from-violet-500/15 to-purple-600/5 ring-violet-200/80'
+            : accent === 'amber'
+              ? 'from-amber-500/15 to-orange-600/5 ring-amber-200/80'
+              : accent === 'rose'
+                ? 'from-rose-500/15 to-pink-600/5 ring-rose-200/80'
+                : accent === 'indigo'
+                  ? 'from-indigo-500/15 to-blue-700/5 ring-indigo-200/80'
+                  : accent === 'cyan'
+                    ? 'from-cyan-500/15 to-sky-600/5 ring-cyan-200/80'
+                    : 'from-slate-500/10 to-slate-600/5 ring-slate-200/80';
 
   return (
     <div
       className={clsx(
-        'group relative shrink-0 w-[132px] sm:w-[148px] rounded-2xl border border-white/80 bg-gradient-to-br p-3 shadow-sm ring-1 transition-all duration-300',
+        'group relative shrink-0 w-[132px] sm:w-[148px] rounded-2xl border border-white/80 p-3 shadow-sm transition-all duration-300',
         'hover:-translate-y-0.5 hover:shadow-md hover:shadow-slate-900/10 motion-reduce:transform-none',
-        ring,
+        isMedal ? ring : clsx('bg-gradient-to-br ring-1', ring),
       )}
     >
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/80 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
       <div className="relative flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-        <Icon className="h-3.5 w-3.5 text-slate-400 transition-colors group-hover:text-slate-600" aria-hidden />
-        <span className="truncate">{t(labelKey)}</span>
+        <Icon
+          className={clsx(
+            'h-3.5 w-3.5 transition-colors',
+            isMedal ? 'lh-medal-primary' : 'text-slate-400 group-hover:text-slate-600',
+          )}
+          aria-hidden
+        />
+        <span className={clsx('truncate', isMedal && 'lh-medal-text')}>{t(labelKey)}</span>
       </div>
       <p className="relative mt-1.5 text-lg font-black tabular-nums text-slate-900 tracking-tight">{value}</p>
       {sub ? <p className="relative mt-0.5 text-[10px] font-medium text-slate-500 leading-snug line-clamp-2">{sub}</p> : null}
@@ -100,9 +109,9 @@ export function HelperStatsStrip({ dataLoading, stats, t }: Props) {
   const rr = stats.responseRatePct !== null ? `${stats.responseRatePct}%` : '—';
 
   return (
-    <div className="mb-4 rounded-2xl border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/60 p-3 shadow-sm ring-1 ring-slate-100/80">
+    <div className="lh-medal-card-active mb-4 rounded-2xl border bg-gradient-to-b from-white to-slate-50/60 p-3 shadow-sm">
       <div className="mb-2 flex items-center justify-between gap-2 px-0.5">
-        <h3 className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">{t('helper_dashboard.stats_strip_title')}</h3>
+        <h3 className="lh-medal-text text-xs font-black uppercase tracking-[0.14em]">{t('helper_dashboard.stats_strip_title')}</h3>
         <span className="text-[10px] font-semibold text-slate-400">{t('helper_dashboard.stats_strip_live')}</span>
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1 pt-0.5 hide-scrollbar scroll-smooth">
@@ -129,7 +138,7 @@ export function HelperStatsStrip({ dataLoading, stats, t }: Props) {
           labelKey="helper_dashboard.stat_reputation"
           value={`${stats.reputation}`}
           sub={t('helper_dashboard.stat_reputation_sub')}
-          accent="slate"
+          accent="medal"
           t={t}
         />
         <StatCard
@@ -137,7 +146,7 @@ export function HelperStatsStrip({ dataLoading, stats, t }: Props) {
           labelKey="helper_dashboard.stat_match"
           value={`${stats.matchScore}`}
           sub={t('helper_dashboard.stat_match_sub')}
-          accent="rose"
+          accent="medal"
           t={t}
         />
       </div>

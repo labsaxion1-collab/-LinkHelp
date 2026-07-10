@@ -47,6 +47,101 @@
   --lh-shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
   --lh-shadow-card: 0 1px 3px rgb(15 23 42 / 0.06), 0 1px 2px rgb(15 23 42 / 0.04);
   --lh-shadow-md: 0 4px 12px rgb(15 23 42 / 0.08);
+
+  /* Medal theme tokens (fallback = verde / nível Novo). Applied by applyMedalTheme(). */
+  --medal-primary: #84cc16;
+  --medal-primary-soft: rgba(132, 204, 22, 0.18);
+  --medal-primary-light: #ecfccb;
+  --medal-gradient: linear-gradient(90deg, #65a30d 0%, #84cc16 45%, #a3e635 100%);
+  --medal-glow: 0 0 18px rgba(163, 230, 53, 0.36);
+  --medal-border: rgba(163, 230, 53, 0.35);
+  --medal-text: #65a30d;
+  --medal-badge-bg: linear-gradient(180deg, #a3e635 0%, #166534 100%);
+}
+
+/* Smooth medal theme transitions — does not override light/dark surface tokens. */
+.lh-medal-surface,
+.lh-medal-border,
+.lh-medal-text,
+.lh-medal-glow,
+.lh-medal-progress-bar,
+.lh-medal-badge,
+.lh-medal-icon,
+.lh-medal-card-active {
+  transition:
+    background-color 250ms ease,
+    border-color 250ms ease,
+    color 250ms ease,
+    box-shadow 250ms ease;
+}
+
+.lh-medal-text {
+  color: var(--medal-text);
+}
+
+.lh-medal-primary {
+  color: var(--medal-primary);
+}
+
+.lh-medal-border {
+  border-color: var(--medal-border);
+}
+
+.lh-medal-glow {
+  box-shadow: var(--medal-glow);
+}
+
+.lh-medal-progress-track {
+  background-color: var(--medal-primary-soft);
+}
+
+.lh-medal-progress-bar {
+  background: var(--medal-gradient);
+  box-shadow: var(--medal-glow);
+}
+
+.lh-medal-badge {
+  background: var(--medal-badge-bg);
+  border-color: var(--medal-border);
+}
+
+.lh-medal-icon {
+  color: var(--medal-primary);
+  background-color: var(--medal-primary-light);
+}
+
+.lh-medal-card-active {
+  border-color: var(--medal-border);
+  box-shadow: var(--medal-glow);
+}
+
+.lh-medal-soft-bg {
+  background-color: var(--medal-primary-soft);
+}
+
+.lh-medal-light-bg {
+  background-color: var(--medal-primary-light);
+}
+
+.lh-medal-accent-bar {
+  background: var(--medal-gradient);
+}
+
+.lh-medal-btn-primary {
+  background: var(--medal-gradient);
+  color: #fff;
+  border: 1px solid var(--medal-border);
+  box-shadow: var(--medal-glow);
+  transition:
+    background-color 250ms ease,
+    border-color 250ms ease,
+    color 250ms ease,
+    box-shadow 250ms ease,
+    transform 200ms ease;
+}
+
+.lh-medal-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.05);
 }
 
 @layer utilities {

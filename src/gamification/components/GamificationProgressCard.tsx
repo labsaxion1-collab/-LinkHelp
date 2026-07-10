@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { clsx } from 'clsx';
 import { createPortal } from 'react-dom';
 import { TrendingUp, CheckCircle, AlertCircle, Loader2, HelpCircle, ShieldCheck } from 'lucide-react';
 import { LhCard } from '@/components/design-system/LhCard';
@@ -10,20 +11,134 @@ import { MEDAL_MAP } from '@/gamification/config/gamificationMedals';
 import { GAMIFICATION_TUTORIAL_TITLE } from '@/gamification/config/gamificationTutorialContent';
 import { GamificationTutorialModal } from '@/gamification/components/GamificationTutorialModal';
 
-/** Cor da barra de progresso por hero key. */
-const BAR_COLOR: Record<string, string> = {
-  helper_novo: '#3B6D11',
-  helper_confiavel: '#185FA5',
-  helper_profissional: '#854F0B',
-  helper_elite: '#185FA5',
-  helper_top_helper: '#3C3489',
-  helper_lenda: '#633806',
-  client_novo: '#3B6D11',
-  client_confiavel: '#185FA5',
-  client_ouro: '#854F0B',
-  client_vip: '#3C3489',
-  client_elite: '#633806',
+type ProgressAccentTheme = {
+  textClass: string;
+  iconClass: string;
+  heroBorderClass: string;
+  heroTrackClass: string;
+  heroBarClass: string;
+  cardTrackClass: string;
+  cardBarClass: string;
+  tutorialButtonClass: string;
 };
+
+/** Tema compartilhado da barra de próximo nível por hero/medalha. */
+const PROGRESS_ACCENT_THEME: Record<string, ProgressAccentTheme> = {
+  helper_novo: {
+    textClass: 'text-lime-400',
+    iconClass: 'border-lime-300/20 bg-lime-500/15 text-lime-300',
+    heroBorderClass: 'border-lime-400/15',
+    heroTrackClass: 'bg-lime-950/50',
+    heroBarClass: 'bg-gradient-to-r from-lime-500 to-lime-300 shadow-[0_0_14px_rgba(163,230,53,0.36)]',
+    cardTrackClass: 'bg-lime-50',
+    cardBarClass: 'bg-gradient-to-r from-lime-600 to-lime-400 shadow-[0_0_12px_rgba(132,204,22,0.24)]',
+    tutorialButtonClass: 'border-lime-100 bg-lime-50/70 text-lime-700 hover:bg-lime-100/80',
+  },
+  helper_confiavel: {
+    textClass: 'text-[#3B82FF]',
+    iconClass: 'border-[#006DFF]/45 bg-[#001E5A]/70 text-[#2F7DFF]',
+    heroBorderClass: 'border-[#0047FF]/35',
+    heroTrackClass: 'bg-[#020A24]/85',
+    heroBarClass: 'bg-gradient-to-r from-[#001BFF] via-[#0047FF] to-[#006DFF] shadow-[0_0_20px_rgba(0,71,255,0.72)]',
+    cardTrackClass: 'bg-[#E7EEFF]',
+    cardBarClass: 'bg-gradient-to-r from-[#001BFF] via-[#0047FF] to-[#006DFF] shadow-[0_0_16px_rgba(0,71,255,0.58)]',
+    tutorialButtonClass: 'border-[#B8CAFF] bg-[#E7EEFF]/85 text-[#003BFF] hover:bg-[#DCE6FF]',
+  },
+  helper_profissional: {
+    textClass: 'text-amber-300',
+    iconClass: 'border-amber-300/20 bg-amber-500/15 text-amber-300',
+    heroBorderClass: 'border-amber-400/15',
+    heroTrackClass: 'bg-amber-950/45',
+    heroBarClass: 'bg-gradient-to-r from-amber-600 to-yellow-300 shadow-[0_0_14px_rgba(251,191,36,0.32)]',
+    cardTrackClass: 'bg-amber-50',
+    cardBarClass: 'bg-gradient-to-r from-amber-700 to-yellow-400 shadow-[0_0_12px_rgba(217,119,6,0.24)]',
+    tutorialButtonClass: 'border-amber-100 bg-amber-50/70 text-amber-700 hover:bg-amber-100/80',
+  },
+  helper_elite: {
+    textClass: 'text-[#3B82FF]',
+    iconClass: 'border-[#006DFF]/45 bg-[#001E5A]/70 text-[#2F7DFF]',
+    heroBorderClass: 'border-[#0047FF]/35',
+    heroTrackClass: 'bg-[#020A24]/85',
+    heroBarClass: 'bg-gradient-to-r from-[#001BFF] via-[#0047FF] to-[#006DFF] shadow-[0_0_20px_rgba(0,71,255,0.72)]',
+    cardTrackClass: 'bg-[#E7EEFF]',
+    cardBarClass: 'bg-gradient-to-r from-[#001BFF] via-[#0047FF] to-[#006DFF] shadow-[0_0_16px_rgba(0,71,255,0.58)]',
+    tutorialButtonClass: 'border-[#B8CAFF] bg-[#E7EEFF]/85 text-[#003BFF] hover:bg-[#DCE6FF]',
+  },
+  helper_top_helper: {
+    textClass: 'text-violet-300',
+    iconClass: 'border-violet-300/20 bg-violet-500/15 text-violet-300',
+    heroBorderClass: 'border-violet-400/15',
+    heroTrackClass: 'bg-violet-950/45',
+    heroBarClass: 'bg-gradient-to-r from-violet-600 to-fuchsia-300 shadow-[0_0_14px_rgba(168,85,247,0.34)]',
+    cardTrackClass: 'bg-violet-50',
+    cardBarClass: 'bg-gradient-to-r from-violet-700 to-fuchsia-400 shadow-[0_0_12px_rgba(124,58,237,0.24)]',
+    tutorialButtonClass: 'border-violet-100 bg-violet-50/70 text-violet-700 hover:bg-violet-100/80',
+  },
+  helper_lenda: {
+    textClass: 'text-amber-300',
+    iconClass: 'border-amber-200/20 bg-amber-500/15 text-amber-200',
+    heroBorderClass: 'border-amber-300/15',
+    heroTrackClass: 'bg-amber-950/45',
+    heroBarClass: 'bg-gradient-to-r from-amber-700 to-yellow-300 shadow-[0_0_14px_rgba(251,191,36,0.34)]',
+    cardTrackClass: 'bg-yellow-50',
+    cardBarClass: 'bg-gradient-to-r from-amber-800 to-yellow-400 shadow-[0_0_12px_rgba(180,83,9,0.24)]',
+    tutorialButtonClass: 'border-yellow-100 bg-yellow-50/70 text-amber-800 hover:bg-yellow-100/80',
+  },
+  client_novo: {
+    textClass: 'text-lime-400',
+    iconClass: 'border-lime-300/20 bg-lime-500/15 text-lime-300',
+    heroBorderClass: 'border-lime-400/15',
+    heroTrackClass: 'bg-lime-950/50',
+    heroBarClass: 'bg-gradient-to-r from-lime-500 to-lime-300 shadow-[0_0_14px_rgba(163,230,53,0.36)]',
+    cardTrackClass: 'bg-lime-50',
+    cardBarClass: 'bg-gradient-to-r from-lime-600 to-lime-400 shadow-[0_0_12px_rgba(132,204,22,0.24)]',
+    tutorialButtonClass: 'border-lime-100 bg-lime-50/70 text-lime-700 hover:bg-lime-100/80',
+  },
+  client_confiavel: {
+    textClass: 'text-[#3B82FF]',
+    iconClass: 'border-[#006DFF]/45 bg-[#001E5A]/70 text-[#2F7DFF]',
+    heroBorderClass: 'border-[#0047FF]/35',
+    heroTrackClass: 'bg-[#020A24]/85',
+    heroBarClass: 'bg-gradient-to-r from-[#001BFF] via-[#0047FF] to-[#006DFF] shadow-[0_0_20px_rgba(0,71,255,0.72)]',
+    cardTrackClass: 'bg-[#E7EEFF]',
+    cardBarClass: 'bg-gradient-to-r from-[#001BFF] via-[#0047FF] to-[#006DFF] shadow-[0_0_16px_rgba(0,71,255,0.58)]',
+    tutorialButtonClass: 'border-[#B8CAFF] bg-[#E7EEFF]/85 text-[#003BFF] hover:bg-[#DCE6FF]',
+  },
+  client_ouro: {
+    textClass: 'text-amber-300',
+    iconClass: 'border-amber-300/20 bg-amber-500/15 text-amber-300',
+    heroBorderClass: 'border-amber-400/15',
+    heroTrackClass: 'bg-amber-950/45',
+    heroBarClass: 'bg-gradient-to-r from-amber-600 to-yellow-300 shadow-[0_0_14px_rgba(251,191,36,0.32)]',
+    cardTrackClass: 'bg-amber-50',
+    cardBarClass: 'bg-gradient-to-r from-amber-700 to-yellow-400 shadow-[0_0_12px_rgba(217,119,6,0.24)]',
+    tutorialButtonClass: 'border-amber-100 bg-amber-50/70 text-amber-700 hover:bg-amber-100/80',
+  },
+  client_vip: {
+    textClass: 'text-violet-300',
+    iconClass: 'border-violet-300/20 bg-violet-500/15 text-violet-300',
+    heroBorderClass: 'border-violet-400/15',
+    heroTrackClass: 'bg-violet-950/45',
+    heroBarClass: 'bg-gradient-to-r from-violet-600 to-fuchsia-300 shadow-[0_0_14px_rgba(168,85,247,0.34)]',
+    cardTrackClass: 'bg-violet-50',
+    cardBarClass: 'bg-gradient-to-r from-violet-700 to-fuchsia-400 shadow-[0_0_12px_rgba(124,58,237,0.24)]',
+    tutorialButtonClass: 'border-violet-100 bg-violet-50/70 text-violet-700 hover:bg-violet-100/80',
+  },
+  client_elite: {
+    textClass: 'text-amber-300',
+    iconClass: 'border-amber-200/20 bg-amber-500/15 text-amber-200',
+    heroBorderClass: 'border-amber-300/15',
+    heroTrackClass: 'bg-amber-950/45',
+    heroBarClass: 'bg-gradient-to-r from-amber-700 to-yellow-300 shadow-[0_0_14px_rgba(251,191,36,0.34)]',
+    cardTrackClass: 'bg-yellow-50',
+    cardBarClass: 'bg-gradient-to-r from-amber-800 to-yellow-400 shadow-[0_0_12px_rgba(180,83,9,0.24)]',
+    tutorialButtonClass: 'border-yellow-100 bg-yellow-50/70 text-amber-800 hover:bg-yellow-100/80',
+  },
+};
+
+function getProgressAccentTheme(heroKey: string, userType: UserType): ProgressAccentTheme {
+  return PROGRESS_ACCENT_THEME[heroKey] ?? PROGRESS_ACCENT_THEME[`${userType}_novo`];
+}
 
 type Props = {
   userType: UserType;
@@ -227,27 +342,27 @@ export function GamificationProgressCard({ userType, className = '', variant = '
   );
   const heroKey = record.heroKey;
   const medalSrc = MEDAL_MAP[heroKey] ?? MEDAL_MAP[`${userType}_novo`];
-  const barColor = BAR_COLOR[heroKey] ?? '#2563FF';
+  const accentTheme = getProgressAccentTheme(heroKey, userType);
   const isMax = progress.nextLevel === null;
 
   if (variant === 'hero') {
     return (
-      <div className={'rounded-2xl border border-lime-400/15 bg-black/40 px-3 py-2.5 text-white backdrop-blur-lg sm:px-5 ' + className}>
+      <div className={clsx('rounded-2xl border bg-black/40 px-3 py-2.5 text-white backdrop-blur-lg sm:px-5', accentTheme.heroBorderClass, className)}>
         <div className="flex items-center gap-2.5">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-blue-300/20 bg-blue-500/15 text-blue-300">
+          <span className={clsx('grid h-10 w-10 shrink-0 place-items-center rounded-full border', accentTheme.iconClass)}>
             <ShieldCheck className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] text-white/65 sm:text-xs">{isMax ? 'Nível atual' : 'Próximo nível'}</p>
-            <p className="truncate text-xs font-black uppercase text-lime-400 sm:text-base">
+            <p className={clsx('truncate text-xs font-black uppercase sm:text-base', accentTheme.textClass)}>
               {isMax ? progress.currentLevel.name : progress.nextLevel?.name}
             </p>
           </div>
           <span className="text-lg font-black tabular-nums sm:text-xl">{progress.progressPercent}%</span>
         </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/[0.07]">
+        <div className={clsx('mt-2 h-2 overflow-hidden rounded-full bg-white/[0.07]', accentTheme.heroTrackClass)}>
           <span
-            className="block h-full rounded-full bg-gradient-to-r from-lime-500 to-lime-300 shadow-[0_0_14px_rgba(163,230,53,0.36)] transition-[width] duration-500 ease-out"
+            className={clsx('block h-full rounded-full transition-[width] duration-500 ease-out', accentTheme.heroBarClass)}
             style={{ width: `${progress.progressPercent}%` }}
             role="progressbar"
             aria-valuenow={progress.progressPercent}
@@ -310,10 +425,10 @@ export function GamificationProgressCard({ userType, className = '', variant = '
                 {progress.progressPercent}%
               </span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+            <div className={clsx('h-2 w-full overflow-hidden rounded-full', accentTheme.cardTrackClass)}>
               <div
-                className="h-full rounded-full transition-[width] duration-500 ease-out"
-                style={{ width: `${progress.progressPercent}%`, background: barColor }}
+                className={clsx('h-full rounded-full transition-[width] duration-500 ease-out', accentTheme.cardBarClass)}
+                style={{ width: `${progress.progressPercent}%` }}
                 role="progressbar"
                 aria-valuenow={progress.progressPercent}
                 aria-valuemin={0}
@@ -352,7 +467,7 @@ export function GamificationProgressCard({ userType, className = '', variant = '
       <button
         type="button"
         onClick={() => setTutorialOpen(true)}
-        className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2.5 text-xs font-black text-blue-700 transition hover:bg-blue-100/80"
+        className={clsx('mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-black transition', accentTheme.tutorialButtonClass)}
       >
         <HelpCircle className="h-4 w-4" />
         {GAMIFICATION_TUTORIAL_TITLE}

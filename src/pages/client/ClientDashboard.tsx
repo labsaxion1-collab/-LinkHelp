@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, Plus, MapPin, Clock, Star, MessageSquare, ChevronRight, CheckCircle2, Bell } from 'lucide-react';
+import { Plus, Star, MessageSquare, ChevronRight, Bell } from 'lucide-react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import * as Icons from 'lucide-react';
@@ -31,7 +31,6 @@ import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useToast } from '@/context/ToastContext';
 import { UserProfileModal } from '@/components/profile/UserProfileModal';
-import { JobTaskActionsBar } from '@/components/features/JobTaskActionsBar';
 import { HelperPublicProfileView } from '@/components/features/HelperPublicProfileView';
 import { PublicProfileSheetFrame, PUBLIC_PROFILE_SCROLL_ATTR } from '@/components/reputation/PublicProfileSheetFrame';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
@@ -63,6 +62,7 @@ import { ClientOnboardingCarousel } from '@/components/client/onboarding/ClientO
 import { useClientOnboarding } from '@/hooks/useClientOnboarding';
 import { CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';
 import { DynamicHeroRenderer } from '@/gamification/components/DynamicHeroRenderer';
+import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { useGamification } from '@/gamification/hooks/useGamification';
 
 const SERVICE_CONFIRM_DISMISS_PREFIX = 'lh_service_confirm_skip_';
@@ -137,24 +137,24 @@ const CLIENT_DASHBOARD_ACCENT_THEMES: Record<string, ClientDashboardAccentTheme>
     activityTipPanel: 'border-lime-100 bg-gradient-to-r from-lime-50 via-white to-green-50',
   },
   client_confiavel: {
-    summaryCard: 'border-blue-500/20 bg-[#020817] shadow-[0_12px_30px_rgba(15,70,160,0.18)]',
-    summaryLabel: 'text-blue-300',
-    categoryIcon: 'text-blue-600 bg-blue-50 shadow-blue-500/10',
-    categoryHover: 'hover:border-blue-100 hover:shadow-[0_18px_42px_rgba(37,99,255,0.12)]',
-    actionLink: 'text-[#2563FF]',
-    trustPanel: 'border-blue-400/15 bg-[#020817] shadow-[0_14px_36px_rgba(15,70,160,0.18)]',
-    trustDivider: 'border-blue-300/10',
-    trustIcon: 'text-blue-500',
-    activityColor: '#2563ff',
-    activityGradient: 'bg-gradient-to-r from-blue-600 to-sky-500 shadow-blue-500/25',
-    activityAccentBar: 'bg-gradient-to-b from-sky-300 via-blue-500 to-blue-700',
-    activityText: 'text-blue-600',
-    activitySoftBg: 'bg-blue-50',
-    activitySoftBorder: 'border-blue-100',
+    summaryCard: 'border-[#0047FF]/35 bg-[#020817] shadow-[0_12px_36px_rgba(0,71,255,0.32)]',
+    summaryLabel: 'text-[#3B82FF]',
+    categoryIcon: 'text-[#0047FF] bg-[#E7EEFF] shadow-[0_14px_30px_rgba(0,71,255,0.22)]',
+    categoryHover: 'hover:border-[#B8CAFF] hover:shadow-[0_18px_42px_rgba(0,71,255,0.24)]',
+    actionLink: 'text-[#0047FF]',
+    trustPanel: 'border-[#0047FF]/30 bg-[#020817] shadow-[0_14px_42px_rgba(0,71,255,0.30)]',
+    trustDivider: 'border-[#3B82FF]/20',
+    trustIcon: 'text-[#005BFF]',
+    activityColor: '#0047FF',
+    activityGradient: 'bg-gradient-to-r from-[#001BFF] via-[#0047FF] to-[#006DFF] shadow-[0_18px_42px_rgba(0,71,255,0.46)]',
+    activityAccentBar: 'bg-gradient-to-b from-[#3B82FF] via-[#0047FF] to-[#001BFF]',
+    activityText: 'text-[#0047FF]',
+    activitySoftBg: 'bg-[#E7EEFF]',
+    activitySoftBorder: 'border-[#B8CAFF]',
     activityTabBadge: 'bg-white/20 text-white',
-    activityBudgetChip: 'border-blue-100 bg-blue-50 text-blue-700',
-    activityIconBubble: 'bg-blue-50 text-blue-600 shadow-blue-500/10',
-    activityTipPanel: 'border-blue-100 bg-gradient-to-r from-blue-50 via-white to-sky-50',
+    activityBudgetChip: 'border-[#B8CAFF] bg-[#E7EEFF] text-[#003BFF]',
+    activityIconBubble: 'bg-[#E7EEFF] text-[#0047FF] shadow-[0_14px_30px_rgba(0,71,255,0.22)]',
+    activityTipPanel: 'border-[#B8CAFF] bg-gradient-to-r from-[#E7EEFF] via-white to-[#DCE6FF]',
   },
   client_ouro: {
     summaryCard: 'border-amber-400/20 bg-[#100902] shadow-[0_12px_30px_rgba(120,72,0,0.18)]',
@@ -275,6 +275,7 @@ export default function ClientDashboard() {
   const [hireModalKind, setHireModalKind] = useState<'hire' | 'proposal'>('hire');
   const [inviteMessage, setInviteMessage] = useState('');
   const [jobsListTab, setJobsListTab] = useState<'active' | 'history'>('active');
+  const [expandedActivityJobId, setExpandedActivityJobId] = useState<string | null>(null);
   const [hiddenJobIds, setHiddenJobIds] = useState<Set<string>>(() => new Set());
   const [acceptingApplicationId, setAcceptingApplicationId] = useState<string | null>(null);
   const [cancelTargetJobId, setCancelTargetJobId] = useState<string | null>(null);
@@ -1582,23 +1583,10 @@ export default function ClientDashboard() {
                           : a.status !== 'rejected',
                       )
                       .sort((a, b) => a.createdAt - b.createdAt);
-                    const canCancelJob = job.status === 'open' || job.status === 'in_progress';
-                    const qualityScore = estimateClientLeadQuality(job.description, job.location, job.value, jobApps.length);
                     const exclusiveApp = job.exclusiveHelperId
                       ? jobApps.find((a) => a.helperId === job.exclusiveHelperId && a.isExclusive)
                       : null;
                     const isExclusiveLocked = exclusiveApp != null;
-                    const displayApps = isExclusiveLocked ? [exclusiveApp] : jobApps.slice(0, 3);
-                    const isFull = !isExclusiveLocked && jobApps.length >= 3;
-                    const candidatesLabel = isExclusiveLocked
-                      ? t('client_dashboard.candidates_count_exclusive')
-                      : jobApps.length === 0
-                        ? t('client_dashboard.candidates_count_zero')
-                        : isFull
-                          ? t('client_dashboard.candidates_count_full', { count: jobApps.length })
-                          : jobApps.length === 1
-                            ? t('client_dashboard.candidates_count_one')
-                            : t('client_dashboard.candidates_count_other', { count: jobApps.length });
                     const CategoryIcon = getCategoryLucideIcon(job.category) ?? Icons.Briefcase;
                     const createdAtLabel = new Date(job.createdAt).toLocaleString(undefined, {
                       day: '2-digit',
@@ -1607,15 +1595,12 @@ export default function ClientDashboard() {
                       hour: '2-digit',
                       minute: '2-digit',
                     });
+                    const isActivityExpanded = expandedActivityJobId === job.id;
 
                     return (
                       <article
                         key={job.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setDetailJob(job)}
-                        onKeyDown={(e) => e.key === 'Enter' && setDetailJob(job)}
-                        className="group relative min-w-0 cursor-pointer overflow-hidden rounded-[1.65rem] border border-slate-100 bg-white p-4 shadow-[0_14px_42px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_55px_rgba(15,23,42,0.12)] sm:p-5"
+                        className={clsx('group relative min-w-0 overflow-visible rounded-[1.35rem] border border-slate-100 bg-white p-3 shadow-[0_10px_30px_rgba(15,23,42,0.07)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_42px_rgba(15,23,42,0.11)] sm:p-4', isActivityExpanded ? 'z-30' : 'z-0')}
                       >
                         <div className={clsx('absolute left-0 top-0 h-full w-1.5', clientDashboardAccent.activityAccentBar)} />
                         <button
@@ -1627,9 +1612,9 @@ export default function ClientDashboard() {
                           <Icons.MoreVertical className="h-5 w-5" />
                         </button>
 
-                        <div className="flex items-start gap-3 pr-8">
-                          <div className={clsx('flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-lg', clientDashboardAccent.activityIconBubble)}>
-                            <CategoryIcon className="h-6 w-6" />
+                        <div className="flex items-start gap-3 pr-7">
+                          <div className={clsx('flex h-11 w-11 shrink-0 items-center justify-center rounded-[1rem] shadow-lg', clientDashboardAccent.activityIconBubble)}>
+                            <CategoryIcon className="h-5 w-5" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -1644,143 +1629,74 @@ export default function ClientDashboard() {
                                   {job.status === 'open' ? t('client_dashboard.status_waiting_helpers') : t('client_dashboard.status_in_progress')}
                                 </span>
                               )}
-                              <span className={clsx('inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-black', clientDashboardAccent.activityBudgetChip)}>
-                                {formatJobBudgetDisplay(job, t)}
-                              </span>
                             </div>
-                            <h3 className="text-lg font-black leading-tight text-slate-950 sm:text-xl">
+                            <h3 className="text-base font-black leading-tight text-slate-950 sm:text-lg">
                               {translateJobTitle(job.title, job.category, job.subcategory, t)}
                             </h3>
-                            <p className="mt-3 flex items-start gap-1.5 text-sm font-semibold text-slate-500">
-                              <Icons.MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-                              <span className="line-clamp-1">{job.address || job.city || job.location}</span>
-                            </p>
-                            <p className="mt-1 text-xs font-semibold text-slate-500">
-                              Criado em {createdAtLabel}
-                            </p>
                           </div>
                         </div>
 
-                        <div className="mt-5 grid grid-cols-2 gap-3 rounded-[1.25rem] border border-slate-100 bg-white p-3 shadow-inner shadow-slate-100/80">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className="flex h-[74px] w-[74px] shrink-0 items-center justify-center rounded-full p-1"
-                              style={{ background: `conic-gradient(${clientDashboardAccent.activityColor} ${qualityScore}%, #e8edf5 0)` }}
-                            >
-                              <div className="flex h-full w-full items-center justify-center rounded-full bg-white text-lg font-black text-slate-950">
-                                {qualityScore}%
-                              </div>
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-semibold text-slate-500">Qualidade do pedido</p>
-                              <p className={clsx('text-sm font-black', clientDashboardAccent.activityText)}>
-                                {qualityScore >= 75 ? 'Excelente' : qualityScore >= 60 ? 'Boa' : 'Em melhoria'}
-                              </p>
-                              <p className="mt-1 hidden text-[11px] font-semibold leading-snug text-slate-500 min-[390px]:block">
-                                Mais chances de receber propostas.
-                              </p>
-                            </div>
-                          </div>
+                        <div className="relative mt-3" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedActivityJobId((current) => (current === job.id ? null : job.id))}
+                            className="flex min-h-[60px] w-full items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 px-3 py-2 text-left transition-all hover:border-slate-200 hover:bg-white hover:shadow-sm"
+                            aria-expanded={isActivityExpanded}
+                          >
+                            <span className="flex min-w-0 items-center gap-3">
+                              <InterestedRing
+                                interestedCount={jobApps.length}
+                                label="candidaturas"
+                                size={48}
+                                hideLabel
+                              />
+                              <span className="min-w-0">
+                                <span className="block text-[11px] font-bold text-slate-500">Candidaturas</span>
+                                <span className="block truncate text-sm font-black text-slate-950">
+                                  {Math.min(jobApps.length, 3)}/3
+                                </span>
+                              </span>
+                            </span>
+                            <span className="flex shrink-0 items-center gap-2 text-sm font-black text-slate-800">
+                              Descrição
+                              <Icons.ChevronDown className={clsx('h-4 w-4 transition-transform', isActivityExpanded && 'rotate-180', clientDashboardAccent.activityText)} />
+                            </span>
+                          </button>
 
-                          <div className="flex min-w-0 items-center gap-3 border-l border-slate-100 pl-3">
-                            <div className={clsx('flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl', clientDashboardAccent.activitySoftBg, clientDashboardAccent.activityText)}>
-                              <Icons.UsersRound className="h-6 w-6" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-semibold text-slate-500">Candidatos</p>
-                              <p className="text-2xl font-black leading-none text-slate-950">{jobApps.length}</p>
-                              <p className="mt-1 line-clamp-2 text-[11px] font-semibold leading-snug text-slate-500">{candidatesLabel}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-4 flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
-                          {displayApps.length > 0 ? (
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center">
-                                {displayApps.map((app, i) => app && (
-                                  <button
-                                    key={app.id}
-                                    type="button"
-                                    title={app.helperName}
-                                    onClick={() =>
-                                      openHelperProfile(
-                                        { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, jobsCompleted: app.helperJobs, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
-                                        app.id,
-                                      )
-                                    }
-                                    className="relative rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                    style={{ marginLeft: i === 0 ? 0 : -10 }}
-                                  >
-                                    {app.isExclusive ? (
-                                      <span className="absolute -right-1 -top-1 z-10 text-[10px] leading-none">👑</span>
-                                    ) : null}
-                                    <img
-                                      src={app.helperAvatar}
-                                      alt={app.helperName}
-                                      loading="lazy"
-                                      className="h-8 w-8 rounded-full object-cover"
-                                      style={app.isExclusive
-                                        ? { border: '3px solid #F5C542', boxShadow: '0 0 10px rgba(245,197,66,.4)' }
-                                        : { border: '2px solid white', boxShadow: '0 1px 3px rgba(0,0,0,.12)' }
-                                      }
-                                    />
-                                  </button>
-                                ))}
+                          {isActivityExpanded ? (
+                            <div className={clsx('absolute left-0 right-0 top-full z-50 mt-2 rounded-2xl border p-2 shadow-[0_18px_50px_rgba(15,23,42,0.18)]', clientDashboardAccent.activitySoftBg, clientDashboardAccent.activitySoftBorder)}>
+                              <div className="rounded-2xl border border-white/80 bg-white/95 px-2.5 py-2.5 text-xs font-semibold leading-snug text-slate-700 shadow-sm backdrop-blur">
+                                <div className="mb-2 grid grid-cols-1 gap-1.5 text-[11px] sm:grid-cols-2">
+                                  <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
+                                    <span className="block font-black uppercase tracking-[0.06em] text-slate-400">Orçamento</span>
+                                    <span className="block font-bold text-slate-800">{formatJobBudgetDisplay(job, t)}</span>
+                                  </div>
+                                  <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
+                                    <span className="block font-black uppercase tracking-[0.06em] text-slate-400">Criado em</span>
+                                    <span className="block font-bold text-slate-800">{createdAtLabel}</span>
+                                  </div>
+                                  <div className="rounded-xl bg-slate-50 px-2.5 py-1.5 sm:col-span-2">
+                                    <span className="block font-black uppercase tracking-[0.06em] text-slate-400">Endereço</span>
+                                    <span className="block font-bold text-slate-800">{job.address || job.city || job.location}</span>
+                                  </div>
+                                </div>
+                                <p className="whitespace-pre-line text-[12px] leading-snug">
+                                  {job.description || 'Sem descrição adicional.'}
+                                </p>
                               </div>
-                              <span className="text-xs font-bold text-slate-500">{candidatesLabel}</span>
+
+                              {jobsListTab === 'history' && job.status === 'completed' && pendingServiceReviews.some((p) => p.requestId === job.id) ? (
+                                <button
+                                  type="button"
+                                  onClick={() => openReviewByRequestId(job.id)}
+                                  className="mt-2 inline-flex min-h-[38px] w-full items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 text-xs font-bold text-amber-900 hover:bg-amber-100"
+                                >
+                                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                                  {t('service_review.rate_now')}
+                                </button>
+                              ) : null}
                             </div>
                           ) : null}
-
-                          <div className="grid grid-cols-1 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setDetailJob(job)}
-                              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50"
-                            >
-                              <Icons.Target className={clsx('h-4 w-4', clientDashboardAccent.activityText)} />
-                              Ver detalhes
-                            </button>
-
-                            {jobsListTab === 'history' && job.status === 'completed' && pendingServiceReviews.some((p) => p.requestId === job.id) ? (
-                              <button
-                                type="button"
-                                onClick={() => openReviewByRequestId(job.id)}
-                                className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-900 hover:bg-amber-100"
-                              >
-                                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                                {t('service_review.rate_now')}
-                              </button>
-                            ) : null}
-
-                            {jobsAwaitingServiceConfirm.some((j) => j.id === job.id) ? (
-                              <div className="grid grid-cols-1 gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setServiceConfirmJob(job)}
-                                  className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-900 hover:bg-emerald-100"
-                                >
-                                  <CheckCircle2 className="h-3.5 w-3.5" />
-                                  {t('service_confirm.confirm_completion')}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => void handleReportServiceProblem(job)}
-                                  className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-900 hover:bg-amber-100"
-                                >
-                                  <Icons.AlertTriangle className="h-3.5 w-3.5" />
-                                  {t('service_confirm.report_problem')}
-                                </button>
-                              </div>
-                            ) : null}
-
-                            <JobTaskActionsBar
-                              canCancel={canCancelJob}
-                              canRepublish={job.status === 'cancelled' || isJobExpired(job)}
-                              onCancel={() => setCancelTargetJobId(job.id)}
-                              onRepublish={() => openCreateModal(job.category, job.subcategory ?? '')}
-                            />
-                          </div>
                         </div>
                       </article>
                     );

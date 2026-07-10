@@ -207,7 +207,7 @@ export default function LoginPage() {
 
     }
 
-    writeKeepSignedIn(keepSignedIn);
+    writeKeepSignedIn(true);
 
     setSubmitting(true);
 
@@ -247,7 +247,7 @@ export default function LoginPage() {
 
     }
 
-    writeKeepSignedIn(keepSignedIn);
+    writeKeepSignedIn(true);
 
     setGoogleLoading(true);
 

@@ -1370,7 +1370,7 @@ export const fr = {
     home_feed_title: 'Vos demandes',
     home_feed_sub: 'Gérez les candidatures et les suivis — rester concentré sur l’essentiel.',
     helpers_interest_neutral: 'Intérêt des assistants',
-    active_services_intro: 'Suivez les candidatures et le statut de chaque demande ici.',
+    active_services_intro: 'Suivez candidatures et statut\nde chaque demande.',
     qualified_requests_title: 'Mode demande qualifiee actif',
     qualified_requests_body:
       'Les demandes collectent maintenant categorie, acces, horaire, details et budget indicatif pour montrer de meilleurs leads aux helpers.',
@@ -1452,7 +1452,7 @@ export const fr = {
     trust_quality_title: 'Fiable',
     trust_quality_body: 'Avis réels',
     max_tip_label: 'Astuce rapide',
-    max_tip_body: 'Rappelez-vous,\ndécrivez bien\nvotre service\net publiez\nvotre demande.',
+    max_tip_body: 'Rappelez-vous,\ndécrivez bien le service\net publiez la demande.',
   },
   upcoming_jobs: {
     section_title: 'Prochains Travaux',

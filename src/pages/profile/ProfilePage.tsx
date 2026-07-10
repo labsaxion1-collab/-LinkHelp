@@ -20,6 +20,7 @@ import {
 import { FilePickerLabel } from '@/components/common/HiddenFileInput';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
+import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
 import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
 import {
   countCompletedForClient,
@@ -279,16 +280,22 @@ export default function ProfilePage() {
 
   return (
     <AppPageShell className="w-full">
-      <DesktopBackButton className="mb-3" />
+      <div className="mb-3 hidden items-center justify-between gap-3 lg:flex">
+        <DesktopBackButton alwaysVisible />
+        <CloseToHomeButton />
+      </div>
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-1 pb-28 md:pb-8">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-slate-900 md:hidden"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {t('nav.back')}
-        </button>
+        <div className="flex items-center justify-between gap-2 lg:hidden">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-slate-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t('nav.back')}
+          </button>
+          <CloseToHomeButton />
+        </div>
 
         <section className="relative overflow-hidden rounded-[2.15rem] bg-[#06143B] p-5 text-white shadow-[0_26px_70px_rgba(7,18,56,0.28)]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_17%_0%,rgba(37,99,255,0.58),transparent_30%),linear-gradient(140deg,rgba(37,99,255,0.62)_0%,rgba(4,18,58,0.38)_42%,rgba(2,8,31,0.95)_100%)]" />

@@ -12,6 +12,7 @@ import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import { getCategoryAccent, getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { clsx } from 'clsx';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
+import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
 import { formatJobScheduleDisplay, isBeautyScheduledJob } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
 import { BRAND } from '@/utils/brandAssets';
@@ -1297,11 +1298,11 @@ export default function ClientDashboard() {
                   </div>
                 </section>
 
-                <section className="relative mx-4 mt-2 sm:mx-6 md:mx-8">
+                <section className="relative mx-4 mt-2 overflow-visible sm:mx-6 md:mx-8">
                   {/* Max Quebec (thumbs-up) à esquerda + dica rápida à direita, atrás da barra */}
-                  <div className="relative z-0 mb-[-1.35rem] flex items-end justify-between gap-2 sm:mb-[-1.6rem] sm:gap-3">
+                  <div className="relative z-0 mb-[-1.35rem] h-[11.5rem] overflow-visible sm:mb-[-1.6rem] sm:h-[17.5rem]">
                     <div
-                      className="pointer-events-none flex h-[12.5rem] w-[11.5rem] shrink-0 items-end justify-start overflow-hidden sm:h-[17.5rem] sm:w-[16.75rem]"
+                      className="pointer-events-none absolute bottom-0 left-0 z-0 flex h-[11.5rem] w-[9.5rem] items-end justify-start overflow-hidden sm:h-[17.5rem] sm:w-[16.75rem]"
                       aria-hidden="true"
                     >
                       <img
@@ -1309,19 +1310,19 @@ export default function ClientDashboard() {
                         alt=""
                         loading="lazy"
                         decoding="async"
-                        className="h-[12.5rem] w-auto max-w-none select-none object-contain object-bottom sm:h-[17.5rem]"
+                        className="h-[11.5rem] w-auto max-w-none select-none object-contain object-bottom sm:h-[17.5rem]"
                       />
                     </div>
-                    <div className="mb-9 min-w-0 flex-1 self-center sm:mb-11">
-                      <div className="relative rounded-2xl border border-slate-200/90 bg-white px-3.5 py-3 shadow-[0_10px_28px_rgba(15,23,42,0.08)] sm:px-4 sm:py-3.5">
+                    <div className="absolute bottom-[3.5rem] left-[8.85rem] right-0 z-[1] sm:bottom-[4.25rem] sm:left-[16.1rem]">
+                      <div className="relative w-full rounded-[1.75rem] border border-slate-200/90 bg-white px-4 py-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.08)] sm:rounded-[2rem] sm:px-5 sm:py-4">
                         <span
-                          className="absolute -left-1.5 bottom-6 h-3 w-3 rotate-45 border-b border-l border-slate-200/90 bg-white"
+                          className="absolute -left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 border-b border-l border-slate-200/90 bg-white"
                           aria-hidden="true"
                         />
                         <p className={clsx('text-[10px] font-black uppercase tracking-[0.14em]', clientDashboardAccent.activityText)}>
                           {t('client_dashboard.max_tip_label')}
                         </p>
-                        <p className="mt-1.5 font-display text-[14px] font-extrabold leading-[1.35] tracking-tight text-slate-900 sm:text-[1.15rem] sm:leading-[1.35]">
+                        <p className="mt-2 font-display text-[clamp(0.72rem,3.45vw,0.95rem)] font-extrabold leading-[1.4] tracking-tight text-slate-900 sm:text-[1.1rem] sm:leading-[1.4]">
                           {t('client_dashboard.max_tip_body')
                             .split('\n')
                             .map((line) => (
@@ -1429,23 +1430,22 @@ export default function ClientDashboard() {
           <div className="w-full animate-in fade-in duration-300">
             {isClientJobsPage ? <DesktopBackButton className="mb-4" /> : null}
             <LhCard className="mb-6 overflow-hidden rounded-[2rem] border border-slate-100 bg-white/95 p-5 shadow-[0_18px_54px_rgba(15,23,42,0.08)] sm:p-7">
-              <div className="mb-6 flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <h2 className="flex items-center gap-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-                    {t('mobile_nav.activities')}
-                    <Icons.Sparkles className={clsx('h-5 w-5 sm:h-6 sm:w-6', clientDashboardAccent.activityText)} />
-                  </h2>
-                  <p className="mt-3 max-w-md text-sm font-medium leading-relaxed text-slate-500 sm:text-base">
-                    {t('client_dashboard.active_services_intro')}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50"
-                >
-                  <Icons.SlidersHorizontal className={clsx('h-4 w-4', clientDashboardAccent.activityText)} />
-                  Filtros
-                </button>
+              <div className="relative mb-6 px-10 text-center">
+                <CloseToHomeButton className="absolute right-0 top-0" />
+                <h2 className="flex w-full items-center justify-center gap-2 whitespace-nowrap text-2xl font-black tracking-tight text-slate-950 sm:text-3xl md:text-4xl">
+                  {t('mobile_nav.activities')}
+                  <Icons.Sparkles className={clsx('h-5 w-5 shrink-0 sm:h-6 sm:w-6', clientDashboardAccent.activityText)} />
+                </h2>
+                <p className="mt-3 w-full text-center text-[11px] font-medium leading-snug text-slate-500 sm:text-sm md:text-base">
+                  {t('client_dashboard.active_services_intro')
+                    .split('\n')
+                    .map((line) => (
+                      <span key={line} className="block whitespace-nowrap sm:inline sm:whitespace-normal">
+                        {line}
+                        <span className="hidden sm:inline"> </span>
+                      </span>
+                    ))}
+                </p>
               </div>
 
               {completionReminderJobs.length > 0 ? (

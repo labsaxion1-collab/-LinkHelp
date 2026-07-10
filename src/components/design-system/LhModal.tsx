@@ -1,8 +1,8 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { premium } from './premiumClasses';
+import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
 
 type Props = {
   open: boolean;
@@ -50,14 +50,10 @@ export function LhModal({ open, onClose, title, children, footer, size = 'md', c
         {title ? (
           <header className={premium.modalHeader}>
             <div className="min-w-0 flex-1 text-lg font-black text-slate-950">{title}</div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full border border-sky-100 bg-white/70 p-2 text-slate-500 transition-colors hover:bg-white hover:text-slate-900"
-              aria-label="Close"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <CloseToHomeButton
+              onBeforeNavigate={onClose}
+              className="border border-sky-100 bg-white/70 hover:bg-white hover:text-slate-900"
+            />
           </header>
         ) : null}
         <div ref={bodyRef} className={premium.modalBody}>

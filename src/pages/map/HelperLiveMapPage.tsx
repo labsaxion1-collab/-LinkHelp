@@ -32,6 +32,7 @@ import {
 import { loadHelperProfileSettings } from '@/utils/helperProfileSettings';
 import { useHelperDismissedRequests } from '@/hooks/useHelperDismissedRequests';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
+import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
 import { HelperMapCanvas } from '@/components/map/HelperMapCanvas';
 
 type JobMapPoint = {
@@ -217,14 +218,17 @@ export default function HelperLiveMapPage() {
               </span>
               <span className="font-bold text-sm text-[#0D1B2A]">{t('live_map.title_helper_radar')}</span>
             </div>
-            <button
-              type="button"
-              onClick={() => setDesktopListOpen((v) => !v)}
-              className="hidden lg:flex pointer-events-auto items-center gap-1 rounded-xl border border-gray-200 bg-white/95 px-3 py-2 text-xs font-bold text-gray-700 shadow-md"
-            >
-              <Icons.List className="h-4 w-4" />
-              {filteredPoints.length}
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setDesktopListOpen((v) => !v)}
+                className="hidden lg:flex pointer-events-auto items-center gap-1 rounded-xl border border-gray-200 bg-white/95 px-3 py-2 text-xs font-bold text-gray-700 shadow-md"
+              >
+                <Icons.List className="h-4 w-4" />
+                {filteredPoints.length}
+              </button>
+              <CloseToHomeButton className="shadow-md bg-white/95 border border-gray-200" />
+            </div>
           </div>
           <div className="pointer-events-auto max-w-full">{filterChips}</div>
         </div>

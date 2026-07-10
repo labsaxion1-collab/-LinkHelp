@@ -13,6 +13,7 @@ import { formatScheduledClock, formatScheduledDay } from '@/utils/upcomingJobUti
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 import { ROUTES } from '@/utils/constants';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
+import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import type { Job } from '@/types/job';
 import { clsx } from 'clsx';
@@ -117,8 +118,9 @@ export default function HelperUpcomingJobsPage() {
         </Link>
 
         <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
-          <div className="border-b border-gray-100 bg-gradient-to-r from-slate-50 to-white p-6 sm:p-8">
-            <h1 className="text-2xl font-black tracking-tight text-gray-900 sm:text-3xl">
+          <div className="relative border-b border-gray-100 bg-gradient-to-r from-slate-50 to-white p-6 sm:p-8">
+            <CloseToHomeButton className="absolute right-4 top-4 sm:right-6 sm:top-6" />
+            <h1 className="pr-12 text-2xl font-black tracking-tight text-gray-900 sm:text-3xl">
               {t('upcoming_jobs.my_tasks_title')}
             </h1>
             <p className="mt-2 text-sm font-medium text-gray-500">{t('upcoming_jobs.my_tasks_subtitle')}</p>

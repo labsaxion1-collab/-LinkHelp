@@ -10,6 +10,7 @@ import { useSupabaseMessages } from '@/hooks/useSupabaseMessages';
 import { ROUTES } from '@/utils/constants';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
+import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
 import { useLanguage } from '@/context/LanguageContext';
 import { clsx } from 'clsx';
 import { sanitizePreMatchMessage } from '@/utils/preMatchChatFilter';
@@ -615,8 +616,9 @@ export default function MessagesPage() {
               })}
             />
           ) : (
-            <div className="shrink-0 bg-white px-3 pb-1 pt-3 md:px-3.5">
-              <h2 className="text-[15px] font-bold tracking-tight text-[#0B1220]">{t('messages_page.title')}</h2>
+            <div className="flex shrink-0 items-center justify-between gap-2 bg-white px-3 pb-1 pt-3 md:px-3.5">
+              <h2 className="min-w-0 truncate text-[15px] font-bold tracking-tight text-[#0B1220]">{t('messages_page.title')}</h2>
+              <CloseToHomeButton />
             </div>
           )}
           <div className="relative shrink-0 bg-white px-3 pb-2 pt-2 md:px-3.5">

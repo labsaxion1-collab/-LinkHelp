@@ -17,7 +17,10 @@ type Props = {
   onClose?: () => void;
 };
 
-/** Desktop back: navigates to dashboard on pages; closes modal when `onClose` is passed. */
+/**
+ * Voltar em páginas: vai para a home do papel.
+ * Em modais (`onClose`): só fecha o overlay (o X usa CloseToHomeButton para ir à home).
+ */
 export function DesktopBackButton({ className = '', to, alwaysVisible = false, onClose }: Props) {
   const navigate = useNavigate();
   const { isHelperMode } = useAppMode();
@@ -32,7 +35,7 @@ export function DesktopBackButton({ className = '', to, alwaysVisible = false, o
           onClose();
           return;
         }
-        navigate(target);
+        navigate(target, { replace: true });
       }}
       className={`${alwaysVisible ? 'inline-flex' : 'hidden lg:inline-flex'} items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-800 ${className}`}
     >

@@ -1373,7 +1373,7 @@ export const pt = {
     home_feed_title: 'Seus pedidos',
     home_feed_sub: 'Gerencie candidaturas e acompanhamentos — foco em resolver o que você precisa.',
     helpers_interest_neutral: 'Interesse de helpers',
-    active_services_intro: 'Acompanhe candidaturas e status de cada pedido aqui.',
+    active_services_intro: 'Acompanhe candidaturas e status\nde cada pedido.',
     qualified_requests_title: 'Modo de pedido qualificado ativo',
     qualified_requests_body:
       'Os pedidos agora coletam categoria, acesso, horario, detalhes e faixa de valor para mostrar leads melhores aos helpers.',
@@ -1455,7 +1455,7 @@ export const pt = {
     trust_quality_title: 'Confiável',
     trust_quality_body: 'Avaliações reais',
     max_tip_label: 'Dica rápida',
-    max_tip_body: 'Lembre-se,\ndescreva bem\no seu serviço\ne publique\no seu pedido.',
+    max_tip_body: 'Lembre-se,\ndescreva bem o serviço\ne publique o pedido.',
   },
   upcoming_jobs: {
     section_title: 'Próximos Trabalhos',

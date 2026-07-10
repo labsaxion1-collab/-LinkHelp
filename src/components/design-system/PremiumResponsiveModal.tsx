@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
 import { clsx } from 'clsx';
+import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
 
 type Props = {
   open: boolean;
@@ -69,14 +69,10 @@ export function PremiumResponsiveModal({
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-black leading-snug text-slate-950">{title}</h2>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="shrink-0 rounded-full border border-slate-200 bg-slate-50 p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <CloseToHomeButton
+            onBeforeNavigate={onClose}
+            className="border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:text-slate-800"
+          />
         </header>
 
         <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>

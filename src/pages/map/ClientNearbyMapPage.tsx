@@ -13,6 +13,7 @@ import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
 import { parseSkillKey, skillSubLabelKey } from '@/data/helperSkillsCatalog';
 import { getGoogleMapsApiKey, isGoogleMapsConfigured } from '@/utils/googleMapsConfig';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
+import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
 
 export default function ClientNearbyMapPage() {
   const navigate = useNavigate();
@@ -192,14 +193,17 @@ export default function ClientNearbyMapPage() {
                 <span className="font-bold text-sm text-[#0D1B2A]">{t('live_map.title_client_nearby')}</span>
               </div>
             )}
-            <button
-              type="button"
-              onClick={() => setDesktopListOpen((v) => !v)}
-              className="hidden lg:flex pointer-events-auto items-center gap-1 rounded-xl border border-gray-200 bg-white/95 px-3 py-2 text-xs font-bold text-gray-700 shadow-md"
-            >
-              <Icons.List className="h-4 w-4" />
-              {nearbyCount}
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setDesktopListOpen((v) => !v)}
+                className="hidden lg:flex pointer-events-auto items-center gap-1 rounded-xl border border-gray-200 bg-white/95 px-3 py-2 text-xs font-bold text-gray-700 shadow-md"
+              >
+                <Icons.List className="h-4 w-4" />
+                {nearbyCount}
+              </button>
+              <CloseToHomeButton className="shadow-md bg-white/95 border border-gray-200" />
+            </div>
           </div>
         </div>
 

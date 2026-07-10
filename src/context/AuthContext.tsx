@@ -19,7 +19,6 @@ import type { ProfileRow, UserType } from '@/types/database';
 import type { AuthFlowError } from '@/types/authFlowError';
 import { mapProfileWriteError, mapSupabaseAuthError } from '@/services/authErrorMap';
 import { getOAuthRedirectToUrl } from '@/utils/oauthRedirect';
-import { readKeepSignedIn } from '@/utils/rememberSession';
 import { triggerGamificationRecalculate } from '@/gamification/services/triggerGamificationRecalculate';
 
 export type AuthProfile = ProfileRow;
@@ -773,18 +772,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const onLeave = () => {
-      if (isOAuthCallbackActive()) return;
-      if (!readKeepSignedIn() && sessionRef.current) {
-        void signOut();
-      }
-    };
-    window.addEventListener('beforeunload', onLeave);
-    return () => window.removeEventListener('beforeunload', onLeave);
-  }, [signOut]);
-
+  // Sessão persiste em localStorage até o usuário clicar em Sair.
+  // Não usar beforeunload/signOut no refresh — isso expulsava o usuário no smartphone/PWA.
   const updateProfile = useCallback(
     async (patch: Partial<AuthProfile>): Promise<AuthError> => {
       const sb = getSupabase();

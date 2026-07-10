@@ -1364,7 +1364,7 @@ export const en = {
     home_feed_title: 'Your requests',
     home_feed_sub: 'Manage applications and follow-ups — focused on getting help.',
     helpers_interest_neutral: 'Interest from helpers',
-    active_services_intro: 'Track applications and status for each request.',
+    active_services_intro: 'Track applications and status\nfor each request.',
     qualified_requests_title: 'Qualified request mode is active',
     qualified_requests_body:
       'Requests now collect category, access, timing, details, and budget hints so helpers see better leads before applying.',
@@ -1446,7 +1446,7 @@ export const en = {
     trust_quality_title: 'Trustworthy',
     trust_quality_body: 'Real reviews',
     max_tip_label: 'Quick tip',
-    max_tip_body: 'Remember,\ndescribe your\nservice well\nand publish\nyour request.',
+    max_tip_body: 'Remember,\ndescribe the service well\nand publish the request.',
   },
   upcoming_jobs: {
     section_title: 'Upcoming Jobs',

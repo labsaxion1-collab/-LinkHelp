@@ -9,6 +9,7 @@ import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import { getCategoryAccent } from '@/utils/categoryFeedTheme';
 import { clsx } from 'clsx';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
+import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
 import { CreateRequestScheduleStep, type MovePropertyType } from '@/components/client/create-request/CreateRequestScheduleStep';
 import { CreateRequestReviewStep } from '@/components/client/create-request/CreateRequestReviewStep';
 import {
@@ -636,9 +637,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
             <Icons.PlusCircle className="w-5 h-5 text-blue-600 shrink-0" />
             <span className="truncate">{t('client_dashboard.create_order_title')}</span>
           </h3>
-          <button type="button" onClick={requestClose} className="shrink-0 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500">
-            <Icons.X className="w-5 h-5" />
-          </button>
+          <CloseToHomeButton onBeforeNavigate={performClose} />
         </div>
         <div className="px-4 sm:px-6 pt-4 pb-2 shrink-0 min-w-0">
           <div className="relative grid w-full max-w-full grid-cols-5 gap-1">

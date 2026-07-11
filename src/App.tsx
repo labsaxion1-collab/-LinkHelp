@@ -18,7 +18,7 @@ import { JobReminderBridge } from '@/components/notifications/JobReminderBridge'
 import { AuthProvider } from '@/context/AuthContext';
 import { ToastProvider } from '@/context/ToastContext';
 import { ThemeProvider } from '@/context/ThemeContext';
-import { AppModeProvider } from '@/context/AppModeContext';
+import { AppModeProvider, AppModeRouterBridge } from '@/context/AppModeContext';
 import { CreditProvider } from '@/context/CreditContext';
 import { ServiceReviewProvider } from '@/context/ServiceReviewContext';
 import { AppRoutes } from '@/routes/AppRoutes';
@@ -52,16 +52,17 @@ export default function App() {
             <CreditProvider>
               <AppDataProvider>
                 <JobReminderBridge />
-                <ServiceReviewProvider>
-                  <BrowserRouter>
+                <BrowserRouter>
+                  <ServiceReviewProvider>
                     <AppModeProvider>
+                      <AppModeRouterBridge />
                       <TutorialProvider>
                         <AppRoutes />
                         <AppTutorialModal />
                       </TutorialProvider>
                     </AppModeProvider>
-                  </BrowserRouter>
-                </ServiceReviewProvider>
+                  </ServiceReviewProvider>
+                </BrowserRouter>
               </AppDataProvider>
             </CreditProvider>
           </ToastProvider>

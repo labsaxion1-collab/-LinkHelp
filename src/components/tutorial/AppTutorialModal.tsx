@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Banknote, BriefcaseBusiness, ChevronLeft, Plus, UserRound } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useLanguage } from '@/context/LanguageContext';
@@ -21,7 +20,6 @@ export function AppTutorialModal() {
   const { t } = useLanguage();
   const { isHelperMode } = useAppMode();
   const me = useSessionViewer();
-  const navigate = useNavigate();
   const [step, setStep] = useState(0);
 
   const isClientFlow = !isHelperMode;
@@ -190,7 +188,7 @@ export function AppTutorialModal() {
               type="button"
               onClick={() => {
                 dismiss();
-                navigate(ROUTES.howItWorks);
+                window.location.assign(ROUTES.howItWorks);
               }}
               className="inline-flex min-h-[48px] w-full items-center justify-center rounded-[1.25rem] text-sm font-bold text-[#64748B] transition hover:text-[#0B1220]"
             >

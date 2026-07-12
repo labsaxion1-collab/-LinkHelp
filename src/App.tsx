@@ -52,17 +52,17 @@ export default function App() {
             <CreditProvider>
               <AppDataProvider>
                 <JobReminderBridge />
-                <BrowserRouter>
-                  <ServiceReviewProvider>
-                    <AppModeProvider>
+                <AppModeProvider>
+                  <BrowserRouter>
+                    <ServiceReviewProvider>
                       <AppModeRouterBridge />
                       <TutorialProvider>
                         <AppRoutes />
                         <AppTutorialModal />
                       </TutorialProvider>
-                    </AppModeProvider>
-                  </ServiceReviewProvider>
-                </BrowserRouter>
+                    </ServiceReviewProvider>
+                  </BrowserRouter>
+                </AppModeProvider>
               </AppDataProvider>
             </CreditProvider>
           </ToastProvider>

@@ -6,7 +6,7 @@ import { ROUTES } from '@/utils/constants';
 import type { Application } from '@/types/application';
 import type { Job } from '@/types/job';
 import type { AppNotification } from '@/types/notification';
-import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
+import type { NearbyHelperMapPoint } from '@/types/nearbyHelper';
 
 type Props = {
   t: (key: string, vars?: Record<string, string | number>) => string;
@@ -14,13 +14,22 @@ type Props = {
   jobs: Job[];
   applications: Application[];
   notifications: AppNotification[];
+  nearbyHelpers: NearbyHelperMapPoint[];
+  nearbyHelpersLoading: boolean;
 };
 
-export function ClientMapWidget({ t, clientId, jobs, applications, notifications }: Props) {
+export function ClientMapWidget({
+  t,
+  clientId,
+  jobs,
+  applications,
+  notifications,
+  nearbyHelpers,
+  nearbyHelpersLoading,
+}: Props) {
   const navigate = useNavigate();
-  const relatedCategories = [...new Set(jobs.filter((j) => j.status === 'open').map((j) => j.category).filter(Boolean))];
-  const { helpers, loading } = useNearbyHelpers({ relatedCategoryIds: relatedCategories });
-  const helperCount = helpers.length;
+  const helperCount = nearbyHelpers.length;
+  const loading = nearbyHelpersLoading;
   const goToMap = () => navigate(ROUTES.map);
 
   const mapLabel =

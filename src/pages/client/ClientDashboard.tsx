@@ -1697,6 +1697,8 @@ export default function ClientDashboard() {
             jobs={jobs}
             applications={applications}
             notifications={notifications}
+            nearbyHelpers={nearbyHelpers}
+            nearbyHelpersLoading={nearbyHelpersLoading}
           />
           <ClientNearbyHelpersList
             helpers={nearbyHelpers}

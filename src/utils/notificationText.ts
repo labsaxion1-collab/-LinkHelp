@@ -247,3 +247,31 @@ export function getNotificationRequestId(notification: AppNotification): string 
     return null;
   }
 }
+
+/** Builds deep-link fields for in-app notifications (actionUrl only — no notificationRoutes dependency). */
+export function buildNotificationPayload(input: {
+  audience: 'client' | 'helper';
+  requestId?: string;
+  conversationId?: string;
+  /** Client service notifications open `/client/jobs`, not dashboard home. */
+  clientTarget?: 'dashboard' | 'jobs';
+}): Pick<AppNotification, 'actionUrl'> {
+  if (input.conversationId) {
+    return {
+      actionUrl: `${ROUTES.messages}?c=${encodeURIComponent(input.conversationId)}`,
+    };
+  }
+  if (input.requestId) {
+    if (input.audience === 'client') {
+      const useJobsScreen = input.clientTarget === 'jobs';
+      return {
+        actionUrl: useJobsScreen
+          ? `${ROUTES.clientJobs}?request=${encodeURIComponent(input.requestId)}`
+          : `${ROUTES.clientDashboard}?request=${encodeURIComponent(input.requestId)}`,
+      };
+    }
+    const params = new URLSearchParams({ request: input.requestId, tab: 'accepted' });
+    return { actionUrl: `${ROUTES.helperJobs}?${params.toString()}` };
+  }
+  return {};
+}

@@ -1629,8 +1629,10 @@ export default function ClientDashboard() {
                     const isDescriptionOpen =
                       isActivityPanelOpen && expandedActivityPanel?.panel === 'description';
                     const displayJobApps = jobApps.slice(0, 3);
-                    const canManageJob =
-                      job.status === 'open' || job.status === 'paused' || job.status === 'in_progress';
+                    const showActivityMenu =
+                      jobsListTab === 'active' &&
+                      job.status !== 'completed' &&
+                      (job.status === 'open' || job.status === 'paused' || job.status === 'in_progress');
 
                     return (
                       <article
@@ -1642,6 +1644,8 @@ export default function ClientDashboard() {
                           ref={activityMenuJobId === job.id ? activityMenuRef : undefined}
                           className="absolute right-4 top-4 z-20"
                         >
+                          {showActivityMenu ? (
+                            <>
                           <button
                             type="button"
                             aria-label={t('common.more_options')}
@@ -1654,7 +1658,7 @@ export default function ClientDashboard() {
                           >
                             <Icons.MoreVertical className="h-5 w-5" />
                           </button>
-                          {activityMenuJobId === job.id && canManageJob ? (
+                          {activityMenuJobId === job.id ? (
                             <div className="absolute right-0 top-full z-50 mt-1 min-w-[11rem] overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-[0_12px_32px_rgba(15,23,42,0.14)]">
                               {job.status === 'paused' ? (
                                 <button
@@ -1691,9 +1695,11 @@ export default function ClientDashboard() {
                               </button>
                             </div>
                           ) : null}
+                            </>
+                          ) : null}
                         </div>
 
-                        <div className="flex items-start gap-3 pr-7">
+                        <div className={clsx('flex items-start gap-3', showActivityMenu && 'pr-7')}>
                           <div className={clsx('flex h-11 w-11 shrink-0 items-center justify-center rounded-[1rem] shadow-lg', clientDashboardAccent.activityIconBubble)}>
                             <CategoryIcon className="h-5 w-5" />
                           </div>

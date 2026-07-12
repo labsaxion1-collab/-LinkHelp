@@ -1,4 +1,4 @@
-export type JobStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
+export type JobStatus = 'open' | 'paused' | 'in_progress' | 'completed' | 'cancelled';
 export type JobUrgency = 'normal' | 'high';
 
 export interface Job {

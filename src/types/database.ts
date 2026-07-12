@@ -2,7 +2,7 @@
 
 export type ProfileRole = 'client' | 'helper';
 export type UserType = ProfileRole;
-export type RequestStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
+export type RequestStatus = 'open' | 'paused' | 'in_progress' | 'completed' | 'cancelled';
 export type DbApplicationStatus = 'pending' | 'viewed' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
 
 export type ProfileRow = {

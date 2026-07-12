@@ -587,62 +587,59 @@ export async function remoteUpdateRequestStatus(requestId: string, status: Reque
   if (error) throw new Error(error.message || 'REQUEST_UPDATE_FAILED');
 }
 
-/** Client cancels an open/in-progress request — hides it from feeds and notifies helpers. */
-export async function remoteCancelClientRequest(requestId: string): Promise<void> {
+export type RequestLifecycleRpcResult = {
+  requestId?: string;
+  status?: string;
+  expiredWhilePaused?: boolean;
+  alreadyCancelled?: boolean;
+};
+
+function mapLifecycleRpcError(error: { message?: string }): never {
+  const msg = error.message ?? '';
+  if (msg.includes('REQUEST_NOT_PAUSABLE')) throw new Error('REQUEST_NOT_PAUSABLE');
+  if (msg.includes('REQUEST_NOT_PAUSED')) throw new Error('REQUEST_NOT_PAUSED');
+  if (msg.includes('REQUEST_NOT_CANCELLABLE')) throw new Error('REQUEST_NOT_CANCELLABLE');
+  if (msg.includes('NOT_ALLOWED') || msg.includes('AUTH_REQUIRED')) throw new Error('NOT_ALLOWED');
+  throw new Error(msg || 'REQUEST_LIFECYCLE_FAILED');
+}
+
+function lifecycleBackendNotReady(): never {
+  throw new Error('REQUEST_LIFECYCLE_BACKEND_NOT_READY');
+}
+
+async function callLifecycleRpc(
+  fn: string,
+  args: Record<string, unknown>,
+): Promise<RequestLifecycleRpcResult> {
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
-
-  const { data: req, error: reqErr } = await sb
-    .from('requests')
-    .select('title, client_id')
-    .eq('id', requestId)
-    .single();
-  if (reqErr || !req) throw new Error(reqErr?.message || 'NOT_FOUND');
-
-  const title = (req as { title?: string }).title ?? 'Request';
-  const clientId = (req as { client_id: string }).client_id;
-
-  const { error: upErr } = await sb.from('requests').update({ status: 'cancelled' }).eq('id', requestId);
-  if (upErr) throw new Error(upErr.message || 'REQUEST_UPDATE_FAILED');
-
-  const { data: apps } = await sb
-    .from('applications')
-    .select('id, helper_id')
-    .eq('request_id', requestId)
-    .neq('status', 'cancelled');
-
-  if (apps?.length) {
-    const { error: appErr } = await sb
-      .from('applications')
-      .update({ status: 'cancelled' })
-      .eq('request_id', requestId)
-      .neq('status', 'cancelled');
-    if (appErr) throw new Error(appErr.message || 'APPLICATION_UPDATE_FAILED');
-
-    for (const app of apps as { id: string; helper_id: string }[]) {
-      await sb.from('notifications').insert({
-        user_id: app.helper_id,
-        type: 'application',
-        title: 'Request cancelled',
-        description: `The client cancelled the request "${title}".`,
-        action_url: notificationHelperJobsUrl(requestId),
-        read: false,
-      });
-    }
+  const { data, error } = await sb.rpc(fn as never, args as never);
+  if (error) {
+    if (isPostgrestMissingResource(error)) lifecycleBackendNotReady();
+    mapLifecycleRpcError(error);
   }
+  return (data ?? {}) as RequestLifecycleRpcResult;
+}
 
-  await sb
-    .from('upcoming_jobs')
-    .update({ workflow_status: 'cancelled' })
-    .eq('request_id', requestId);
+/** Pause open request — server notifies stakeholders, preserves credits/applications. */
+export async function remotePauseClientRequest(requestId: string): Promise<RequestLifecycleRpcResult> {
+  return callLifecycleRpc('client_pause_request', { p_request_id: requestId });
+}
 
-  await sb.from('notifications').insert({
-    user_id: clientId,
-    type: 'application',
-    title: 'Request cancelled',
-    description: `Your request "${title}" was cancelled.`,
-    action_url: `/client/dashboard?request=${requestId}`,
-    read: false,
+/** Resume paused request — server cancels instead when schedule expired. */
+export async function remoteResumeClientRequest(requestId: string): Promise<RequestLifecycleRpcResult> {
+  const result = await callLifecycleRpc('client_resume_request', { p_request_id: requestId });
+  if (result.status === 'cancelled') {
+    return { ...result, expiredWhilePaused: true };
+  }
+  return result;
+}
+
+/** Client cancels request with full helper credit refunds — RPC required. */
+export async function remoteCancelClientRequest(requestId: string): Promise<RequestLifecycleRpcResult> {
+  return callLifecycleRpc('client_cancel_request', {
+    p_request_id: requestId,
+    p_reason: 'client_cancelled',
   });
 }
 

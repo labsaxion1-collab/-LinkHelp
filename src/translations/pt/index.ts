@@ -454,6 +454,7 @@ export const pt = {
     application_not_found: 'Candidatura não encontrada. Atualize a página e tente novamente.',
     application_mismatch: 'Os dados da candidatura não conferem. Atualize a página.',
     application_not_active: 'Esta candidatura não está mais ativa.',
+    request_not_hirable: 'Este chamado não pode receber contratação no status atual.',
   },
   helper_badges: {
     pro_helper: 'Pro Helper',
@@ -471,6 +472,7 @@ export const pt = {
   },
   jobs: {
     request_status_open: 'Aberto',
+    request_status_paused: 'Pausado',
     request_status_in_progress: 'Em andamento',
     date_now: 'Agora',
     date_today: 'Hoje',
@@ -748,6 +750,7 @@ export const pt = {
   },
   helper_dashboard: {
     app_pending: 'Pendente',
+    request_paused_badge: 'Chamado pausado',
     app_your_proposal: 'Sua proposta: {{amount}}',
     app_viewed: 'Visualizado',
     app_accepted: 'Aceito',
@@ -1400,6 +1403,13 @@ export const pt = {
     client_budget_range: 'Faixa do cliente: {{currency}} ${{min}} - {{currency}} ${{max}}',
     helper_hired_success_toast: 'Helper contratado com sucesso.',
     request_cancelled_toast: 'Chamado cancelado.',
+    lifecycle_backend_not_ready:
+      'Pausar, retomar ou cancelar ainda não está disponível no servidor. Aplique a migração de pause no Supabase antes de usar esta ação.',
+    lifecycle_not_pausable: 'Este chamado não pode ser pausado no status atual.',
+    lifecycle_not_paused: 'Este chamado não está pausado.',
+    lifecycle_not_cancellable: 'Este chamado não pode ser cancelado no status atual.',
+    lifecycle_not_allowed: 'Você não tem permissão para alterar este chamado.',
+    lifecycle_error: 'Não foi possível atualizar o chamado. Tente novamente.',
     chat_locked_until_accept: 'Chat após aceitar',
     reject_helper: 'Recusar',
     reject_success_toast: 'Candidatura recusada.',

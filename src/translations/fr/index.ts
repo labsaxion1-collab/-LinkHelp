@@ -450,6 +450,7 @@ export const fr = {
     application_not_found: 'Candidature introuvable. Actualisez la page et réessayez.',
     application_mismatch: 'Les données de candidature ne correspondent pas. Actualisez la page.',
     application_not_active: 'Cette candidature n’est plus active.',
+    request_not_hirable: 'Cette demande ne peut pas être embauchée dans son état actuel.',
   },
   helper_badges: {
     pro_helper: 'Pro Helper',
@@ -467,6 +468,7 @@ export const fr = {
   },
   jobs: {
     request_status_open: 'Ouvert',
+    request_status_paused: 'En pause',
     request_status_in_progress: 'En cours',
     date_now: 'Maintenant',
     date_today: 'Aujourd’hui',
@@ -744,6 +746,7 @@ export const fr = {
   },
   helper_dashboard: {
     app_pending: 'En attente',
+    request_paused_badge: 'Demande en pause',
     app_your_proposal: 'Votre proposition : {{amount}}',
     app_viewed: 'Vu',
     app_accepted: 'Accepté',
@@ -1397,6 +1400,13 @@ export const fr = {
     client_budget_range: 'Fourchette client : {{currency}} ${{min}} - {{currency}} ${{max}}',
     helper_hired_success_toast: 'Assistant embauché avec succès.',
     request_cancelled_toast: 'Demande annulée.',
+    lifecycle_backend_not_ready:
+      'Mettre en pause, reprendre ou annuler n’est pas encore disponible sur le serveur. Appliquez d’abord la migration pause dans Supabase.',
+    lifecycle_not_pausable: 'Cette demande ne peut pas être mise en pause dans son état actuel.',
+    lifecycle_not_paused: 'Cette demande n’est pas en pause.',
+    lifecycle_not_cancellable: 'Cette demande ne peut pas être annulée dans son état actuel.',
+    lifecycle_not_allowed: 'Vous n’avez pas la permission de modifier cette demande.',
+    lifecycle_error: 'Impossible de mettre à jour la demande. Réessayez.',
     chat_locked_until_accept: 'Chat après acceptation',
     reject_helper: 'Refuser',
     reject_success_toast: 'Candidature refusée.',

@@ -3,6 +3,7 @@ import type { JobStatus } from '@/types/job';
 
 const REQUEST_STATUS_ALIASES: Record<string, JobStatus> = {
   open: 'open',
+  paused: 'paused',
   pending: 'open',
   matched: 'in_progress',
   scheduled: 'in_progress',

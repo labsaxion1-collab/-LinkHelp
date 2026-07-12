@@ -22,6 +22,8 @@ import {
   remoteMarkNotificationRead,
   remoteUpdateRequestStatus,
   remoteCancelClientRequest,
+  remotePauseClientRequest,
+  remoteResumeClientRequest,
   remoteOfficiallyHireHelper,
   remoteUpdateApplicationStatus,
   remoteUpdateUpcomingWorkflow,
@@ -94,7 +96,7 @@ interface AppDataContextData {
     proposedAmount?: number | null,
     options?: { distanceKm?: number | null; message?: string | null; isExclusive?: boolean },
   ) => Promise<void>;
-  updateJobStatus: (jobId: string, status: JobStatus) => Promise<void>;
+  updateJobStatus: (jobId: string, status: JobStatus) => Promise<{ expiredWhilePaused?: boolean } | void>;
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => Promise<void>;
   officiallyHireHelper: (payload: OfficialHirePayload, initialMessage?: string) => Promise<string | null>;
   getHelperApplications: (helperId: string) => Application[];
@@ -715,28 +717,50 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateJobStatus = async (jobId: string, status: JobStatus) => {
+  const updateJobStatus = async (jobId: string, status: JobStatus): Promise<{ expiredWhilePaused?: boolean } | void> => {
     const jobSnapshot = jobsRef.current.find((j) => j.id === jobId);
+    const previousStatus = jobSnapshot?.status;
 
     if (useRemote) {
       if (isJobCancelled({ status })) {
-        const relatedApps = applicationsRef.current.filter(
-          (a) => a.jobId === jobId && a.status !== 'cancelled',
-        );
         await remoteCancelClientRequest(jobId);
-        if (jobSnapshot) {
-          for (const app of relatedApps) {
-            dispatchPushEvent({
-              kind: 'request_cancelled',
-              userId: app.helperId,
-              title: 'Chamado cancelado',
-              body: `O cliente cancelou o chamado "${jobSnapshot.title}".`,
-              url: notificationHelperJobsUrl(jobId),
-            });
+        setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status: 'cancelled' } : job)));
+        setApplications((prev) =>
+          prev.map((app) =>
+            app.jobId === jobId && app.status !== 'cancelled'
+              ? { ...app, status: 'cancelled' as ApplicationStatus }
+              : app,
+          ),
+        );
+        setUpcomingJobs((prev) =>
+          prev.map((u) => (u.jobId === jobId ? { ...u, workflowStatus: 'cancelled' as UpcomingWorkflowStatus } : u)),
+        );
+      } else if (status === 'paused' && previousStatus === 'open') {
+        await remotePauseClientRequest(jobId);
+        setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status: 'paused' } : job)));
+      } else if (status === 'open' && previousStatus === 'paused') {
+        const result = await remoteResumeClientRequest(jobId);
+        if (result.expiredWhilePaused || result.status === 'cancelled') {
+          setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status: 'cancelled' } : job)));
+          setApplications((prev) =>
+            prev.map((app) =>
+              app.jobId === jobId && app.status !== 'cancelled'
+                ? { ...app, status: 'cancelled' as ApplicationStatus }
+                : app,
+            ),
+          );
+          setUpcomingJobs((prev) =>
+            prev.map((u) => (u.jobId === jobId ? { ...u, workflowStatus: 'cancelled' as UpcomingWorkflowStatus } : u)),
+          );
+          if (isJobCancelled({ status: 'cancelled' })) {
+            triggerGamificationRecalculate('request_cancelled', 'client');
           }
+          return { expiredWhilePaused: true };
         }
+        setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status: 'open' } : job)));
       } else {
         await remoteUpdateRequestStatus(jobId, status);
+        setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status } : job)));
       }
       if (isJobCancelled({ status })) {
         triggerGamificationRecalculate('request_cancelled', 'client');

@@ -448,6 +448,7 @@ export const en = {
     application_not_found: 'Application not found. Refresh the page and try again.',
     application_mismatch: 'Application data does not match. Refresh the page.',
     application_not_active: 'This application is no longer active.',
+    request_not_hirable: 'This request cannot be hired in its current status.',
   },
   helper_badges: {
     pro_helper: 'Pro Helper',
@@ -465,6 +466,7 @@ export const en = {
   },
   jobs: {
     request_status_open: 'Open',
+    request_status_paused: 'Paused',
     request_status_in_progress: 'In progress',
     date_now: 'Now',
     date_today: 'Today',
@@ -742,6 +744,7 @@ export const en = {
   },
   helper_dashboard: {
     app_pending: 'Pending',
+    request_paused_badge: 'Request paused',
     app_your_proposal: 'Your proposal: {{amount}}',
     app_viewed: 'Viewed',
     app_accepted: 'Accepted',
@@ -1391,6 +1394,13 @@ export const en = {
     client_budget_range: 'Client range: {{currency}} ${{min}} - {{currency}} ${{max}}',
     helper_hired_success_toast: 'Helper hired successfully.',
     request_cancelled_toast: 'Request cancelled.',
+    lifecycle_backend_not_ready:
+      'Pause, resume, and cancel are not available on the server yet. Apply the pause migration in Supabase before using this action.',
+    lifecycle_not_pausable: 'This request cannot be paused in its current status.',
+    lifecycle_not_paused: 'This request is not paused.',
+    lifecycle_not_cancellable: 'This request cannot be cancelled in its current status.',
+    lifecycle_not_allowed: 'You are not allowed to change this request.',
+    lifecycle_error: 'Could not update the request. Please try again.',
     chat_locked_until_accept: 'Chat after acceptance',
     reject_helper: 'Reject',
     reject_success_toast: 'Application rejected.',

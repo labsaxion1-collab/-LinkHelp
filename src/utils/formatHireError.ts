@@ -21,6 +21,9 @@ export function formatHireError(error: unknown, t: TranslateFn): string {
   if (upper.includes('APPLICATION_NOT_ACTIVE')) {
     return t('hire_modal.application_not_active');
   }
+  if (upper.includes('REQUEST_NOT_HIRABLE')) {
+    return t('hire_modal.request_not_hirable');
+  }
   if (raw.trim()) return raw;
   return t('hire_modal.error_toast');
 }

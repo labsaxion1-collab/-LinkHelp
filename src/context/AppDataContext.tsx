@@ -57,12 +57,6 @@ import { isJobCancelled } from '@/utils/jobVisibility';
 import { markNotificationsCleared } from '@/utils/notificationVisibility';
 import { buildNotificationPayload } from '@/utils/notificationText';
 import {
-  notificationClientJobsUrl,
-  notificationClientRequestUrl,
-  notificationHelperJobsUrl,
-  notificationMessagesUrl,
-} from '@/utils/notificationRoutes';
-import {
   MAX_JOB_INTERESTED,
   countActiveApplicationsForJob,
   isRequestExclusiveLockedForViewer,
@@ -71,6 +65,26 @@ import {
   resolveReviewTargetUserType,
   triggerGamificationRecalculate,
 } from '@/gamification/services/triggerGamificationRecalculate';
+
+function notificationMessagesUrl(conversationId: string): string {
+  return `${ROUTES.messages}?c=${encodeURIComponent(conversationId)}`;
+}
+
+function notificationClientRequestUrl(requestId: string): string {
+  return `${ROUTES.clientDashboard}?request=${encodeURIComponent(requestId)}`;
+}
+
+function notificationClientJobsUrl(requestId: string): string {
+  return `${ROUTES.clientJobs}?request=${encodeURIComponent(requestId)}`;
+}
+
+function notificationHelperJobsUrl(
+  requestId: string,
+  tab: 'accepted' | 'applications' = 'accepted',
+): string {
+  const params = new URLSearchParams({ request: requestId, tab });
+  return `${ROUTES.helperJobs}?${params.toString()}`;
+}
 
 export type { Job, JobStatus, JobUrgency, Application, ApplicationStatus, UpcomingJob, UpcomingWorkflowStatus };
 export type { AppNotification, NotificationType };

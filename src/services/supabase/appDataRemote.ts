@@ -14,7 +14,7 @@ import {
 import { fetchProfilesAsMapperMap } from '@/services/supabase/fetchUserViews';
 import { ensureConversation } from '@/services/supabase/conversationEnsure';
 import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
-import { notificationHelperJobsUrl } from '@/utils/notificationRoutes';
+import { ROUTES } from '@/utils/constants';
 
 /** Columns required by mappers — avoids select('*') egress on bootstrap. */
 export const REQUEST_SELECT =
@@ -726,7 +726,7 @@ export async function remoteUpdateApplicationStatus(
     await notifyHelper({
       title: 'Application accepted',
       description: `The client accepted your application for "${jobSnapshot.title}".`,
-      action_url: notificationHelperJobsUrl(app.request_id, 'accepted'),
+      action_url: `${ROUTES.helperJobs}?${new URLSearchParams({ request: app.request_id, tab: 'accepted' }).toString()}`,
     });
   }
 }

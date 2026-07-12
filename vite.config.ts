@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => {
           'icons/linkhelp-app-512.png',
         ],
         manifest: {
+          id: '/',
           name: 'LinkHelp',
           short_name: 'LinkHelp',
           description: 'Local services marketplace for helpers and clients.',
@@ -27,8 +28,10 @@ export default defineConfig(({ mode }) => {
           background_color: '#f6fbff',
           display: 'standalone',
           orientation: 'portrait-primary',
+          // Relative paths — install identity follows the origin (www.linkhelp.app).
           scope: '/',
           start_url: '/',
+          lang: 'en',
           categories: ['business', 'lifestyle'],
           icons: [
             {
@@ -57,7 +60,9 @@ export default defineConfig(({ mode }) => {
             '**/brand/*.jpg',
             '**/brand/*.jpeg',
           ],
-          maximumFileSizeToCacheInBytes: 1024 * 1024,
+          // Main JS chunk is ~1.05 MB; keep precache cap bounded (not unbounded).
+          // Consider code-splitting if the bundle grows much beyond this limit.
+          maximumFileSizeToCacheInBytes: 1.25 * 1024 * 1024,
           navigateFallback: '/index.html',
           navigateFallbackDenylist: [/^\/api\//],
           runtimeCaching: [

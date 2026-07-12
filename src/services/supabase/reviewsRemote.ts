@@ -8,7 +8,10 @@ import {
   toReviewSubmitError,
 } from '@/utils/reviewSubmitErrors';
 
-function rowToReview(row: ReviewRow): ServiceReview {
+const REVIEW_SELECT =
+  'id, request_id, reviewer_id, target_user_id, rating, comment, criteria_scores, reviewer_role, created_at';
+
+export function reviewRowToServiceReview(row: ReviewRow): ServiceReview {
   return {
     id: row.id,
     requestId: row.request_id,
@@ -72,12 +75,12 @@ async function resolveAuthenticatedReviewerId(sb: NonNullable<ReturnType<typeof 
 export async function fetchRemoteReviews(): Promise<ServiceReview[]> {
   const sb = getSupabase();
   if (!sb) return [];
-  const { data, error } = await sb.from('reviews').select('*').order('created_at', { ascending: false });
+  const { data, error } = await sb.from('reviews').select(REVIEW_SELECT).order('created_at', { ascending: false });
   if (error) {
     console.error('[LinkHelp] fetch reviews', error);
     return [];
   }
-  return ((data ?? []) as ReviewRow[]).map(rowToReview);
+  return ((data ?? []) as ReviewRow[]).map(reviewRowToServiceReview);
 }
 
 async function insertReviewDirect(input: {
@@ -131,7 +134,7 @@ async function insertReviewDirect(input: {
     throw toReviewSubmitError(error);
   }
 
-  return rowToReview(data as ReviewRow);
+  return reviewRowToServiceReview(data as ReviewRow);
 }
 
 async function loadSubmittedReview(
@@ -152,7 +155,7 @@ async function loadSubmittedReview(
     if (selectError) {
       logReviewSubmitFailure('select', selectError, { reviewId });
     }
-    if (row) return rowToReview(row as ReviewRow);
+    if (row) return reviewRowToServiceReview(row as ReviewRow);
   }
 
   const { data: latest, error: latestError } = await sb
@@ -170,7 +173,7 @@ async function loadSubmittedReview(
       reviewerId: input.reviewerId,
     });
   }
-  if (latest) return rowToReview(latest as ReviewRow);
+  if (latest) return reviewRowToServiceReview(latest as ReviewRow);
 
   console.warn('[LinkHelp] review saved but row not readable — using synthesized local row', {
     requestId: input.requestId,

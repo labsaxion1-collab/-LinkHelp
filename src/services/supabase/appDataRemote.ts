@@ -3,7 +3,7 @@ import type { Job } from '@/types/job';
 import type { Application, ApplicationStatus } from '@/types/application';
 import type { UpcomingJob } from '@/types/upcoming';
 import type { AppNotification } from '@/types/notification';
-import type { ApplicationRow, NotificationRow, RequestRow, RequestStatus, UpcomingJobRow } from '@/types/database';
+import type { ApplicationRow, MapperProfile, NotificationRow, RequestRow, RequestStatus, ReviewRow, UpcomingJobRow } from '@/types/database';
 export type { NotificationRow };
 import {
   applicationRowToApp,
@@ -14,40 +14,103 @@ import {
 import { fetchProfilesAsMapperMap } from '@/services/supabase/fetchUserViews';
 import { ensureConversation } from '@/services/supabase/conversationEnsure';
 import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
+import { notificationHelperJobsUrl } from '@/utils/notificationRoutes';
 
-export async function fetchRemoteJobsAndApps(): Promise<{
+/** Columns required by mappers — avoids select('*') egress on bootstrap. */
+export const REQUEST_SELECT =
+  'id, client_id, title, description, category, subcategory, urgency, budget, location, address, city, region, postal_code, latitude, longitude, preferred_date, preferred_time_window, preferred_time, budget_type, budget_amount, currency, budget_min, budget_max, accepted_amount, application_count, exclusive_helper_id, status, created_at';
+
+export const APPLICATION_SELECT =
+  'id, request_id, helper_id, client_id, status, message, proposed_amount, is_exclusive, created_at';
+
+export const UPCOMING_JOB_SELECT =
+  'id, request_id, helper_id, client_name, client_avatar, title, category, description, location, value_hint, urgency, scheduled_at, workflow_status, completion_requested_at, review_window_ends_at, created_at';
+
+export const NOTIFICATION_SELECT =
+  'id, user_id, type, title, description, read, action_url, created_at';
+
+export function emptyMapperProfile(): MapperProfile {
+  return { name: null, avatar_url: null, rating: null, jobs_completed: null, plan_type: null };
+}
+
+export type AppDataBootstrapResult = {
   jobs: Job[];
   applications: Application[];
   upcomingJobs: UpcomingJob[];
-  notifications: AppNotification[];
-}> {
+  profilesMap: Map<string, MapperProfile>;
+  chatUnlockedKeys: Set<string>;
+};
+
+export async function mergeProfilesIntoCache(
+  ids: string[],
+  cache: Map<string, MapperProfile>,
+): Promise<void> {
+  const missing = [...new Set(ids.filter((id) => id && !cache.has(id)))];
+  if (missing.length === 0) return;
+  const fetched = await fetchProfilesAsMapperMap(missing);
+  for (const [id, profile] of fetched) {
+    cache.set(id, profile);
+  }
+}
+
+function buildChatUnlockedKeys(
+  convRows: { request_id: string; helper_id: string; contact_unlocked: boolean }[] | null,
+): Set<string> {
+  return new Set(
+    (convRows ?? [])
+      .filter((c) => c.contact_unlocked)
+      .map((c) => `${c.request_id}:${c.helper_id}`),
+  );
+}
+
+function mapApplicationsWithProfiles(
+  applicationsRaw: ApplicationRow[],
+  profilesMap: Map<string, MapperProfile>,
+  chatUnlockedKeys: Set<string>,
+): Application[] {
+  return applicationsRaw.map((a) => {
+    const app = applicationRowToApp(a, profilesMap.get(a.helper_id) ?? emptyMapperProfile());
+    return {
+      ...app,
+      chatUnlocked: chatUnlockedKeys.has(`${a.request_id}:${a.helper_id}`) || app.status === 'accepted',
+    };
+  });
+}
+
+/** Initial authenticated bootstrap — no notifications (granular channel) or reviews (lazy load). */
+export async function fetchRemoteAppDataBootstrap(): Promise<AppDataBootstrapResult> {
   const sb = getSupabase();
   if (!sb) {
-    return { jobs: [], applications: [], upcomingJobs: [], notifications: [] };
+    return {
+      jobs: [],
+      applications: [],
+      upcomingJobs: [],
+      profilesMap: new Map(),
+      chatUnlockedKeys: new Set(),
+    };
   }
 
   const [
     { data: reqRows, error: reqErr },
     { data: appRows, error: appErr },
     { data: upRows },
-    { data: notifRows, error: nErr },
     { data: convRows },
   ] = await Promise.all([
-    sb.from('requests').select('*').order('created_at', { ascending: false }),
-    sb.from('applications').select('*').order('created_at', { ascending: false }),
-    sb.from('upcoming_jobs').select('*').order('scheduled_at', { ascending: true }),
-    sb.from('notifications').select('*').order('created_at', { ascending: false }),
+    sb.from('requests').select(REQUEST_SELECT).order('created_at', { ascending: false }),
+    sb.from('applications').select(APPLICATION_SELECT).order('created_at', { ascending: false }),
+    sb.from('upcoming_jobs').select(UPCOMING_JOB_SELECT).order('scheduled_at', { ascending: true }),
     sb.from('conversations').select('request_id, helper_id, contact_unlocked'),
   ]);
 
-  if (reqErr) console.error(reqErr);
-  if (appErr) console.error(appErr);
-  if (nErr) console.error(nErr);
+  if (reqErr) console.error('[LinkHelp] bootstrap requests', reqErr);
+  if (appErr) console.error('[LinkHelp] bootstrap applications', appErr);
 
   const requests = (reqRows ?? []) as RequestRow[];
   const applicationsRaw = (appRows ?? []) as ApplicationRow[];
   const upcomingRaw = (upRows ?? []) as UpcomingJobRow[];
-  const notifsRaw = (notifRows ?? []) as NotificationRow[];
+  const chatUnlockedKeys = buildChatUnlockedKeys(
+    (convRows ?? []) as { request_id: string; helper_id: string; contact_unlocked: boolean }[],
+  );
 
   const userIds = new Set<string>();
   for (const r of requests) userIds.add(r.client_id);
@@ -57,35 +120,126 @@ export async function fetchRemoteJobsAndApps(): Promise<{
   }
   const profilesMap = await fetchProfilesAsMapperMap([...userIds]);
 
-  const jobs: Job[] = requests.map((r) => {
-    const c = profilesMap.get(r.client_id);
-    return requestRowToJob(r, c ?? { name: null, avatar_url: null, rating: null, jobs_completed: null, plan_type: null });
-  });
-
-  const chatUnlockedKeys = new Set(
-    ((convRows ?? []) as { request_id: string; helper_id: string; contact_unlocked: boolean }[])
-      .filter((c) => c.contact_unlocked)
-      .map((c) => `${c.request_id}:${c.helper_id}`),
+  const jobs: Job[] = requests.map((r) =>
+    requestRowToJob(r, profilesMap.get(r.client_id) ?? emptyMapperProfile()),
   );
-
-  const applications: Application[] = applicationsRaw.map((a) => {
-    const h = profilesMap.get(a.helper_id);
-    const app = applicationRowToApp(
-      a,
-      h ?? { name: null, avatar_url: null, rating: null, jobs_completed: null, plan_type: null },
-    );
-    return {
-      ...app,
-      chatUnlocked: chatUnlockedKeys.has(`${a.request_id}:${a.helper_id}`),
-    };
-  });
-
+  const applications = mapApplicationsWithProfiles(applicationsRaw, profilesMap, chatUnlockedKeys);
   const upcomingJobs = upcomingRaw.map(upcomingRowToUpcoming);
-  const notifications = notifsRaw.map(notificationRowToApp);
 
-  return { jobs, applications, upcomingJobs, notifications };
+  return { jobs, applications, upcomingJobs, profilesMap, chatUnlockedKeys };
 }
 
+/** @deprecated Use fetchRemoteAppDataBootstrap — kept for docs/audit references only. */
+export async function fetchRemoteJobsAndApps(): Promise<{
+  jobs: Job[];
+  applications: Application[];
+  upcomingJobs: UpcomingJob[];
+  notifications: AppNotification[];
+}> {
+  const bootstrap = await fetchRemoteAppDataBootstrap();
+  return {
+    jobs: bootstrap.jobs,
+    applications: bootstrap.applications,
+    upcomingJobs: bootstrap.upcomingJobs,
+    notifications: [],
+  };
+}
+
+/** One-time notifications bootstrap per login — realtime channel handles deltas. */
+export async function fetchRemoteNotifications(userId: string): Promise<AppNotification[]> {
+  const sb = getSupabase();
+  if (!sb || !userId) return [];
+  const { data, error } = await sb
+    .from('notifications')
+    .select(NOTIFICATION_SELECT)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error('[LinkHelp] fetch notifications bootstrap', error);
+    return [];
+  }
+  return ((data ?? []) as NotificationRow[]).map(notificationRowToApp);
+}
+
+export type AppDataTableHandlers<T> = {
+  onInsert: (row: T) => void;
+  onUpdate: (row: T) => void;
+  onDelete: (id: string) => void;
+};
+
+export type AppDataRealtimeHandlers = {
+  requests: AppDataTableHandlers<RequestRow>;
+  applications: AppDataTableHandlers<ApplicationRow>;
+  upcomingJobs: AppDataTableHandlers<UpcomingJobRow>;
+  reviews: AppDataTableHandlers<ReviewRow>;
+};
+
+/**
+ * Granular realtime for marketplace tables — patches local state per row
+ * instead of debounced full snapshot refetch.
+ */
+export function subscribeAppDataChanges(handlers: AppDataRealtimeHandlers): () => void {
+  const sb = getSupabase();
+  if (!sb) return () => {};
+
+  const ch = sb
+    .channel('linkhelp-app-data-granular')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests' }, (payload) => {
+      const row = payload.new as RequestRow;
+      if (row?.id) handlers.requests.onInsert(row);
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests' }, (payload) => {
+      const row = payload.new as RequestRow;
+      if (row?.id) handlers.requests.onUpdate(row);
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'requests' }, (payload) => {
+      const id = (payload.old as { id?: string })?.id;
+      if (id) handlers.requests.onDelete(id);
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'applications' }, (payload) => {
+      const row = payload.new as ApplicationRow;
+      if (row?.id) handlers.applications.onInsert(row);
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'applications' }, (payload) => {
+      const row = payload.new as ApplicationRow;
+      if (row?.id) handlers.applications.onUpdate(row);
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'applications' }, (payload) => {
+      const id = (payload.old as { id?: string })?.id;
+      if (id) handlers.applications.onDelete(id);
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'upcoming_jobs' }, (payload) => {
+      const row = payload.new as UpcomingJobRow;
+      if (row?.id) handlers.upcomingJobs.onInsert(row);
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'upcoming_jobs' }, (payload) => {
+      const row = payload.new as UpcomingJobRow;
+      if (row?.id) handlers.upcomingJobs.onUpdate(row);
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'upcoming_jobs' }, (payload) => {
+      const id = (payload.old as { id?: string })?.id;
+      if (id) handlers.upcomingJobs.onDelete(id);
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reviews' }, (payload) => {
+      const row = payload.new as ReviewRow;
+      if (row?.id) handlers.reviews.onInsert(row);
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'reviews' }, (payload) => {
+      const row = payload.new as ReviewRow;
+      if (row?.id) handlers.reviews.onUpdate(row);
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'reviews' }, (payload) => {
+      const id = (payload.old as { id?: string })?.id;
+      if (id) handlers.reviews.onDelete(id);
+    })
+    .subscribe();
+
+  return () => {
+    sb.removeChannel(ch);
+  };
+}
+
+/** @deprecated Use subscribeAppDataChanges — triggers full refetch on every event. */
 export function subscribeRemoteData(onChange: () => void): () => void {
   const sb = getSupabase();
   if (!sb) return () => {};
@@ -95,8 +249,6 @@ export function subscribeRemoteData(onChange: () => void): () => void {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'upcoming_jobs' }, onChange)
-    // notifications: subscribeNotificationsChannel (granular, per-user)
-    // messages / conversations: subscribeConversationChannel in chatRemote (per-thread)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, onChange)
     .subscribe();
 
@@ -473,7 +625,7 @@ export async function remoteCancelClientRequest(requestId: string): Promise<void
         type: 'application',
         title: 'Request cancelled',
         description: `The client cancelled the request "${title}".`,
-        action_url: '/helper/jobs',
+        action_url: notificationHelperJobsUrl(requestId),
         read: false,
       });
     }
@@ -577,7 +729,7 @@ export async function remoteUpdateApplicationStatus(
     await notifyHelper({
       title: 'Application accepted',
       description: `The client accepted your application for "${jobSnapshot.title}".`,
-      action_url: '/helper/jobs',
+      action_url: notificationHelperJobsUrl(app.request_id, 'accepted'),
     });
   }
 }

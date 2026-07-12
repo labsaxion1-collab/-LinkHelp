@@ -41,16 +41,37 @@ Deno.serve(async (req) => {
   const { data, error } = await sb.rpc("process_expired_unlock_refunds");
 
   if (error) {
-    console.error("[process-credit-refunds]", error);
+    console.error("[process-credit-refunds] unlock refunds", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
-  console.log("[process-credit-refunds] result", data);
+  const { data: pausedData, error: pausedError } = await sb.rpc("process_expired_paused_requests");
 
-  return new Response(JSON.stringify({ ok: true, result: data }), {
+  if (pausedError) {
+    const missingPausedRpc =
+      pausedError.code === "PGRST202" ||
+      (pausedError.message ?? "").includes("process_expired_paused_requests");
+    if (missingPausedRpc) {
+      console.warn("[process-credit-refunds] paused expiry RPC not deployed yet", pausedError.message);
+    } else {
+      console.error("[process-credit-refunds] paused expiry", pausedError);
+    }
+  } else {
+    console.log("[process-credit-refunds] paused expiry", pausedData);
+  }
+
+  console.log("[process-credit-refunds] unlock refunds", data);
+
+  return new Response(
+    JSON.stringify({
+      ok: true,
+      unlockRefunds: data,
+      pausedExpiry: pausedError ? { skipped: true, error: pausedError.message } : pausedData,
+    }),
+    {
     status: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });

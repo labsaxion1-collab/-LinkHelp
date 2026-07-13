@@ -37,6 +37,16 @@ export function normalizeApplicationStatus(raw: string | null | undefined): Appl
   return APPLICATION_STATUS_ALIASES[key] ?? 'pending';
 }
 
+const TERMINAL_REQUEST_STATUSES = new Set<JobStatus>(['cancelled', 'completed']);
+
+/** Realtime patches must not revert a terminal request status to an active one. */
+export function resolveRequestStatusPatch(existing: JobStatus, incoming: JobStatus): JobStatus {
+  if (TERMINAL_REQUEST_STATUSES.has(existing) && !TERMINAL_REQUEST_STATUSES.has(incoming)) {
+    return existing;
+  }
+  return incoming;
+}
+
 export function isActiveApplicationStatus(status: ApplicationStatus): boolean {
   return status === 'pending' || status === 'viewed' || status === 'accepted';
 }

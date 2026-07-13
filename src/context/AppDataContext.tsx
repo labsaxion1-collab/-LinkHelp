@@ -734,6 +734,14 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const updateJobStatus = async (jobId: string, status: JobStatus): Promise<{ expiredWhilePaused?: boolean } | void> => {
     const jobSnapshot = jobsRef.current.find((j) => j.id === jobId);
     const previousStatus = jobSnapshot?.status;
+    const isLifecycleChange =
+      isJobCancelled({ status }) ||
+      (status === 'paused' && previousStatus === 'open') ||
+      (status === 'open' && previousStatus === 'paused');
+
+    if (isLifecycleChange && isSupabaseConfigured() && !session) {
+      throw new Error('AUTH_REQUIRED');
+    }
 
     if (useRemote) {
       if (isJobCancelled({ status })) {
@@ -780,6 +788,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         triggerGamificationRecalculate('request_cancelled', 'client');
       }
       return;
+    }
+
+    if (isLifecycleChange && isSupabaseConfigured()) {
+      throw new Error('REQUEST_LIFECYCLE_BACKEND_NOT_READY');
     }
 
     setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status } : job)));
@@ -1103,6 +1115,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const confirmServiceCompleted = async (requestId: string) => {
+    if (isSupabaseConfigured() && !session) {
+      throw new Error('AUTH_REQUIRED');
+    }
     if (useRemote) {
       await remoteConfirmServiceCompleted(requestId);
       setJobs((prev) =>
@@ -1130,6 +1145,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         triggerGamificationRecalculate('service_completed', 'helper');
       }
       return;
+    }
+
+    if (isSupabaseConfigured()) {
+      throw new Error('REQUEST_LIFECYCLE_BACKEND_NOT_READY');
     }
 
     setJobs((prev) => prev.map((job) => (job.id === requestId ? { ...job, status: 'completed' as JobStatus } : job)));

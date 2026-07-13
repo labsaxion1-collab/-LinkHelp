@@ -9,6 +9,7 @@ import {
   REQUEST_SELECT,
   UPCOMING_JOB_SELECT,
 } from '@/services/supabase/appDataRemote';
+import { resolveRequestStatusPatch } from '@/utils/statusNormalize';
 
 const REVIEW_SELECT =
   'id, request_id, reviewer_id, target_user_id, rating, comment, criteria_scores, reviewer_role, created_at';
@@ -95,7 +96,7 @@ export function mergeRequestRowWithJob(partial: Partial<RequestRow>, existing: J
     application_count: partial.application_count ?? existing.applicantCount ?? 0,
     exclusive_helper_id:
       partial.exclusive_helper_id !== undefined ? partial.exclusive_helper_id : existing.exclusiveHelperId ?? null,
-    status: (partial.status ?? existing.status) as RequestRow['status'],
+    status: resolveRequestStatusPatch(existing.status, (partial.status ?? existing.status) as Job['status']) as RequestRow['status'],
     created_at: partial.created_at ?? new Date(existing.createdAt).toISOString(),
     updated_at: partial.updated_at ?? new Date(existing.createdAt).toISOString(),
   };

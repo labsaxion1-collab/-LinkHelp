@@ -50,6 +50,7 @@ import {
   isJobCancelled,
   isJobPaused,
   isJobVisibleToClient,
+  hideJobForUser,
   readHiddenJobIds,
 } from '@/utils/jobVisibility';
 import { CancelRequestModal } from '@/components/client/CancelRequestModal';
@@ -58,6 +59,13 @@ import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
 import { extractErrorMessage } from '@/utils/errorMessage';
 import { formatHireError, formatRejectApplicationError, logAcceptProposalError } from '@/utils/formatHireError';
 import { formatRequestLifecycleError } from '@/utils/formatRequestLifecycleError';
+import {
+  activityCandidateCount,
+  findHiredApplicationForJob,
+  isHiredActivityJob,
+  isPreHireActivityJob,
+  listCandidateApplicationsForJob,
+} from '@/utils/clientActivityApplications';
 import { useAuth } from '@/context/AuthContext';
 import { ClientCreditsWalletBadge } from '@/components/client/ClientCreditsWalletBadge';
 import { CompletionReminderCard } from '@/components/reviews/CompletionReminderCard';
@@ -301,6 +309,7 @@ export default function ClientDashboard() {
         /* ignore */
       }
       setServiceConfirmJob(null);
+      setJobsListTab('history');
       showToast(t('service_confirm.success_toast'), 'success');
       window.setTimeout(() => openReviewByRequestId(requestId), 400);
     } catch (error) {
@@ -552,9 +561,12 @@ export default function ClientDashboard() {
 
   const handleConfirmCancelJob = async () => {
     if (!cancelTargetJobId || cancellingJobId) return;
-    setCancellingJobId(cancelTargetJobId);
+    const jobId = cancelTargetJobId;
+    setCancellingJobId(jobId);
     try {
-      await updateJobStatus(cancelTargetJobId, 'cancelled');
+      await updateJobStatus(jobId, 'cancelled');
+      hideJobForUser(me.id, jobId);
+      setHiddenJobIds((prev) => new Set(prev).add(jobId));
       showToast(t('client_dashboard.request_cancelled_toast'), 'success');
       setCancelTargetJobId(null);
     } catch (error) {
@@ -1599,20 +1611,23 @@ export default function ClientDashboard() {
               <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
                 {activityTabJobs.length > 0 ? (
                   activityTabJobs.map((job) => {
-                    const jobApps = applications
-                      .filter(
-                        (a) =>
-                          a.jobId === job.id &&
-                          (a.status === 'pending' || a.status === 'viewed' || a.status === 'accepted'),
-                      )
-                      .filter((a) =>
-                        job.status === 'in_progress'
-                          ? a.status === 'accepted'
-                          : a.status !== 'rejected',
-                      )
-                      .sort((a, b) => a.createdAt - b.createdAt);
+                    const isHiredActivity = isHiredActivityJob(job.status);
+                    const isPreHireActivity = isPreHireActivityJob(job.status);
+                    const candidateApps = isPreHireActivity
+                      ? listCandidateApplicationsForJob(job.id, applications)
+                      : [];
+                    const hiredApplication = isHiredActivity
+                      ? findHiredApplicationForJob(job, applications, upcomingJobs)
+                      : undefined;
+                    const displayCandidateApps = candidateApps.slice(0, 3);
                     const exclusiveApp = job.exclusiveHelperId
-                      ? jobApps.find((a) => a.helperId === job.exclusiveHelperId && a.isExclusive)
+                      ? applications.find(
+                          (a) =>
+                            a.jobId === job.id &&
+                            a.helperId === job.exclusiveHelperId &&
+                            a.isExclusive &&
+                            (a.status === 'pending' || a.status === 'viewed'),
+                        )
                       : null;
                     const isExclusiveLocked = exclusiveApp != null;
                     const CategoryIcon = getCategoryLucideIcon(job.category) ?? Icons.Briefcase;
@@ -1628,7 +1643,6 @@ export default function ClientDashboard() {
                       isActivityPanelOpen && expandedActivityPanel?.panel === 'applications';
                     const isDescriptionOpen =
                       isActivityPanelOpen && expandedActivityPanel?.panel === 'description';
-                    const displayJobApps = jobApps.slice(0, 3);
                     const showActivityMenu =
                       jobsListTab === 'active' &&
                       job.status !== 'completed' &&
@@ -1680,6 +1694,19 @@ export default function ClientDashboard() {
                                 >
                                   <Icons.Pause className="h-4 w-4 text-blue-600" />
                                   Pausar
+                                </button>
+                              ) : null}
+                              {job.status === 'in_progress' && isJobAwaitingCompletion(job.id) ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setServiceConfirmJob(job);
+                                    setActivityMenuJobId(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-emerald-800 hover:bg-emerald-50"
+                                >
+                                  <Icons.CircleCheck className="h-4 w-4 text-emerald-600" />
+                                  {t('service_confirm.confirm_completion')}
                                 </button>
                               ) : null}
                               <button
@@ -1741,16 +1768,20 @@ export default function ClientDashboard() {
                               aria-expanded={isApplicationsOpen}
                             >
                               <InterestedRing
-                                interestedCount={jobApps.length}
-                                label="candidaturas"
+                                interestedCount={isHiredActivity ? 1 : candidateApps.length}
+                                label={isHiredActivity ? 'contratado' : 'candidatos'}
                                 size={48}
                                 hideLabel
                               />
                               <span className="min-w-0 flex-1">
-                                <span className="block text-[11px] font-bold text-slate-500">Candidaturas</span>
-                                <span className="block truncate text-sm font-black text-slate-950">
-                                  {Math.min(jobApps.length, 3)}/3
+                                <span className="block whitespace-nowrap text-[11px] font-bold leading-tight text-slate-500">
+                                  {isHiredActivity ? 'Contratado' : 'Candidatos'}
                                 </span>
+                                {isPreHireActivity ? (
+                                  <span className="block truncate text-sm font-black text-slate-950">
+                                    {activityCandidateCount(candidateApps)}/3
+                                  </span>
+                                ) : null}
                               </span>
                               <Icons.ChevronDown
                                 className={clsx(
@@ -1790,13 +1821,82 @@ export default function ClientDashboard() {
                                 clientDashboardAccent.activitySoftBorder,
                               )}
                             >
-                              {displayJobApps.length === 0 ? (
+                              {isHiredActivity ? (
+                                hiredApplication ? (
+                                  <div
+                                    className={clsx(
+                                      'rounded-2xl border bg-white/95 p-3 shadow-sm',
+                                      hiredApplication.isExclusive ? 'border-amber-200' : 'border-slate-100',
+                                    )}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <button
+                                        type="button"
+                                        onClick={() => openHelperProfileFromApplication(job, hiredApplication)}
+                                        className="relative shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                                      >
+                                        <img
+                                          src={hiredApplication.helperAvatar}
+                                          alt={hiredApplication.helperName}
+                                          className="h-11 w-11 rounded-full object-cover ring-2 ring-white"
+                                        />
+                                      </button>
+                                      <div className="min-w-0 flex-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => openHelperProfileFromApplication(job, hiredApplication)}
+                                          className="flex max-w-full items-center gap-1.5 text-left"
+                                        >
+                                          <span className="truncate text-sm font-black text-slate-950">
+                                            {hiredApplication.helperName}
+                                          </span>
+                                          <HelperPlanBadge tier={helperTierFromApplication(hiredApplication)} size="sm" />
+                                        </button>
+                                        <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
+                                          <Icons.Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                                          <span>{hiredApplication.helperRating}</span>
+                                          <LinkHelpRankBadgeFromStats
+                                            completedCount={hiredApplication.helperJobs}
+                                            averageRating={hiredApplication.helperRating}
+                                            role="helper"
+                                            size="sm"
+                                            showLabel={false}
+                                            t={t}
+                                          />
+                                        </p>
+                                        {(() => {
+                                          const hiredAmount =
+                                            hiredApplication.proposedAmount ?? job.acceptedAmount ?? null;
+                                          return hiredAmount != null ? (
+                                            <p className="mt-1 text-xs font-black text-slate-900">
+                                              {t('client_dashboard.helper_proposal_amount', {
+                                                amount: formatMoneyAmount(
+                                                  hiredAmount,
+                                                  job.currency || 'CAD',
+                                                ),
+                                              })}
+                                            </p>
+                                          ) : (
+                                            <p className="mt-1 text-xs font-semibold text-slate-600">
+                                              {t('client_dashboard.helper_proposal_negotiable')}
+                                            </p>
+                                          );
+                                        })()}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="rounded-2xl border border-white/80 bg-white/95 px-3 py-6 text-center text-xs font-semibold text-slate-500">
+                                    Helper contratado
+                                  </div>
+                                )
+                              ) : displayCandidateApps.length === 0 ? (
                                 <div className="rounded-2xl border border-white/80 bg-white/95 px-3 py-6 text-center text-xs font-semibold text-slate-500">
-                                  {t('client_dashboard.candidates_count_zero')}
+                                  Nenhum candidato ainda
                                 </div>
                               ) : (
                                 <div className="space-y-2">
-                                  {displayJobApps.map((app) => (
+                                  {displayCandidateApps.map((app) => (
                                     <div
                                       key={app.id}
                                       className={clsx(
@@ -1856,7 +1956,7 @@ export default function ClientDashboard() {
                                         </div>
                                       </div>
                                       {(app.status === 'pending' || app.status === 'viewed') &&
-                                      job.status !== 'completed' ? (
+                                      isPreHireActivity ? (
                                         <button
                                           type="button"
                                           disabled={acceptingApplicationId === app.id}

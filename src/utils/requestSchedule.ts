@@ -1,3 +1,5 @@
+import type { Job } from '@/types/job';
+
 export type RequestPriority = 'emergency' | 'urgent' | 'today' | 'flexible';
 /** @deprecated Legacy quick-pick modes; new requests use preferredDateIso only */
 export type PreferredDateMode = 'today' | 'tomorrow' | 'pick';
@@ -117,4 +119,54 @@ export function formatPreferredDateTimeLabel(
     return t('jobs.schedule_date_with_period', { date: datePart, period: periodLabel });
   }
   return datePart;
+}
+
+type JobScheduleInput = Pick<
+  Job,
+  'preferredDate' | 'preferredTime' | 'preferredTimeWindow' | 'preferredPeriod' | 'timezone' | 'createdTimezone'
+>;
+
+function periodEndTime(windowKey: string): { hours: number; minutes: number; seconds: number; ms: number } {
+  const key = windowKey.toLowerCase();
+  if (key === 'morning' || key.includes('manh')) return { hours: 12, minutes: 0, seconds: 0, ms: 0 };
+  if (key === 'afternoon' || key.includes('tarde')) return { hours: 18, minutes: 0, seconds: 0, ms: 0 };
+  if (key === 'evening' || key.includes('noite')) return { hours: 23, minutes: 59, seconds: 59, ms: 999 };
+  return { hours: 23, minutes: 59, seconds: 59, ms: 999 };
+}
+
+function parseExplicitTime(raw: string | null | undefined): { hours: number; minutes: number } | null {
+  if (!raw?.trim()) return null;
+  const match = raw.trim().match(/(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  return { hours: Number(match[1]), minutes: Number(match[2]) };
+}
+
+/**
+ * Client-side mirror of DB `request_service_deadline_at` (approximate when tz differs from browser).
+ * Authoritative expiry/resume blocking is enforced by `client_resume_request` / cron RPCs.
+ */
+export function getRequestServiceDeadlineMs(job: JobScheduleInput): number | null {
+  if (!job.preferredDate) return null;
+
+  const parts = job.preferredDate.split('-').map(Number);
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return null;
+
+  const explicit = parseExplicitTime(job.preferredTime);
+  const windowKey = job.preferredTimeWindow?.trim() || job.preferredPeriod?.trim() || '';
+  const end = explicit
+    ? { hours: explicit.hours, minutes: explicit.minutes, seconds: 59, ms: 999 }
+    : periodEndTime(windowKey);
+
+  const deadline = new Date(parts[0], parts[1] - 1, parts[2], end.hours, end.minutes, end.seconds, end.ms);
+  return deadline.getTime();
+}
+
+export function isRequestServiceDeadlinePassed(job: JobScheduleInput, nowMs = Date.now()): boolean {
+  const deadline = getRequestServiceDeadlineMs(job);
+  if (deadline == null) return false;
+  return nowMs > deadline;
+}
+
+export function canResumePausedRequest(job: JobScheduleInput, nowMs = Date.now()): boolean {
+  return !isRequestServiceDeadlinePassed(job, nowMs);
 }

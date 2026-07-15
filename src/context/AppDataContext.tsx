@@ -9,8 +9,12 @@ import type { Job, JobStatus, JobUrgency } from '@/types/job';
 import type { Application, ApplicationStatus } from '@/types/application';
 import type { UpcomingJob, UpcomingWorkflowStatus } from '@/types/upcoming';
 import type { AppNotification, NotificationType } from '@/types/notification';
+import type { ApplicationRow, MapperProfile, RequestRow, ReviewRow, UpcomingJobRow } from '@/types/database';
 import {
-  fetchRemoteJobsAndApps,
+  emptyMapperProfile,
+  fetchRemoteAppDataBootstrap,
+  fetchRemoteNotifications,
+  mergeProfilesIntoCache,
   remoteCreateRequest,
   remoteInsertNotification,
   remoteMarkAllNotificationsRead,
@@ -18,18 +22,26 @@ import {
   remoteMarkNotificationRead,
   remoteUpdateRequestStatus,
   remoteCancelClientRequest,
+  remotePauseClientRequest,
+  remoteResumeClientRequest,
   remoteOfficiallyHireHelper,
   remoteUpdateApplicationStatus,
   remoteUpdateUpcomingWorkflow,
   remoteMarkServiceAwaitingConfirmation,
   remoteConfirmServiceCompleted,
-  subscribeRemoteData,
+  subscribeAppDataChanges,
   subscribeNotificationsChannel,
   type NotificationRow,
 } from '@/services/supabase/appDataRemote';
-import { notificationRowToApp } from '@/services/supabase/mappers';
+import {
+  resolveApplicationRowForPatch,
+  resolveRequestRowForPatch,
+  resolveReviewRowForPatch,
+  resolveUpcomingJobRowForPatch,
+} from '@/services/supabase/appDataRealtimePatch';
+import { applicationRowToApp, notificationRowToApp, requestRowToJob, upcomingRowToUpcoming } from '@/services/supabase/mappers';
 import { submitHelperApplication } from '@/services/supabase/helperApplicationService';
-import { fetchRemoteReviews, remoteSubmitReview } from '@/services/supabase/reviewsRemote';
+import { fetchRemoteReviews, remoteSubmitReview, reviewRowToServiceReview } from '@/services/supabase/reviewsRemote';
 import { buildPendingServiceReviews } from '@/utils/serviceReviewQueue';
 import { isAwaitingClientCompletion } from '@/utils/serviceWorkflow';
 import type { PendingServiceReview, ServiceReview } from '@/types/review';
@@ -43,21 +55,7 @@ import {
 } from '@/services/helperLeadCredits';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import { markNotificationsCleared } from '@/utils/notificationVisibility';
-import { createRefreshCycleId, recordSupabaseOperation, setActiveRefreshCycle } from '@/lib/dev/supabaseMetrics';
-import {
-  eventRowId,
-  measureGranularHandler,
-  newestFirst,
-  removeById,
-  resolveApplicationEvent,
-  resolveRequestEvent,
-  resolveReviewEvent,
-  resolveUpcomingEvent,
-  scheduledFirst,
-  shouldApplyRealtimeVersion,
-  upsertSorted,
-  type AppDataRealtimeEvent,
-} from '@/services/supabase/appDataRealtime';
+import { buildNotificationPayload } from '@/utils/notificationText';
 import {
   MAX_JOB_INTERESTED,
   countActiveApplicationsForJob,
@@ -67,6 +65,26 @@ import {
   resolveReviewTargetUserType,
   triggerGamificationRecalculate,
 } from '@/gamification/services/triggerGamificationRecalculate';
+
+function notificationMessagesUrl(conversationId: string): string {
+  return `${ROUTES.messages}?c=${encodeURIComponent(conversationId)}`;
+}
+
+function notificationClientRequestUrl(requestId: string): string {
+  return `${ROUTES.clientDashboard}?request=${encodeURIComponent(requestId)}`;
+}
+
+function notificationClientJobsUrl(requestId: string): string {
+  return `${ROUTES.clientJobs}?request=${encodeURIComponent(requestId)}`;
+}
+
+function notificationHelperJobsUrl(
+  requestId: string,
+  tab: 'accepted' | 'applications' = 'accepted',
+): string {
+  const params = new URLSearchParams({ request: requestId, tab });
+  return `${ROUTES.helperJobs}?${params.toString()}`;
+}
 
 export type { Job, JobStatus, JobUrgency, Application, ApplicationStatus, UpcomingJob, UpcomingWorkflowStatus };
 export type { AppNotification, NotificationType };
@@ -92,7 +110,7 @@ interface AppDataContextData {
     proposedAmount?: number | null,
     options?: { distanceKm?: number | null; message?: string | null; isExclusive?: boolean },
   ) => Promise<void>;
-  updateJobStatus: (jobId: string, status: JobStatus) => Promise<void>;
+  updateJobStatus: (jobId: string, status: JobStatus) => Promise<{ expiredWhilePaused?: boolean } | void>;
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => Promise<void>;
   officiallyHireHelper: (payload: OfficialHirePayload, initialMessage?: string) => Promise<string | null>;
   getHelperApplications: (helperId: string) => Application[];
@@ -117,6 +135,30 @@ interface AppDataContextData {
 }
 
 const AppDataContext = createContext<AppDataContextData>({} as AppDataContextData);
+
+function upsertJob(list: Job[], job: Job): Job[] {
+  const next = list.filter((j) => j.id !== job.id);
+  next.unshift(job);
+  return next.sort((a, b) => b.createdAt - a.createdAt);
+}
+
+function upsertApplication(list: Application[], app: Application): Application[] {
+  const next = list.filter((a) => a.id !== app.id);
+  next.unshift(app);
+  return next.sort((a, b) => b.createdAt - a.createdAt);
+}
+
+function upsertUpcoming(list: UpcomingJob[], row: UpcomingJob): UpcomingJob[] {
+  const next = list.filter((u) => u.id !== row.id);
+  next.push(row);
+  return next.sort((a, b) => a.scheduledAt - b.scheduledAt);
+}
+
+function upsertReview(list: ServiceReview[], review: ServiceReview): ServiceReview[] {
+  const next = list.filter((r) => r.id !== review.id);
+  next.unshift(review);
+  return next.sort((a, b) => b.createdAt - a.createdAt);
+}
 
 function migrateJobAvatars(jobs: Job[]): Job[] {
   return jobs.map((j) => ({
@@ -154,41 +196,185 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const jobsRef = useRef(jobs);
   const applicationsRef = useRef(applications);
   const upcomingJobsRef = useRef(upcomingJobs);
-  const realtimeVersionsRef = useRef(new Map<string, number>());
+  const profilesCacheRef = useRef<Map<string, MapperProfile>>(new Map());
+  const chatUnlockedKeysRef = useRef<Set<string>>(new Set());
+  const bootstrapLockRef = useRef(false);
+  const pendingRealtimePatchesRef = useRef<Array<() => void>>([]);
+  const reviewsRef = useRef(reviews);
   jobsRef.current = jobs;
   applicationsRef.current = applications;
   upcomingJobsRef.current = upcomingJobs;
+  reviewsRef.current = reviews;
 
   useEffect(() => {
     clearDemoLocalData();
   }, []);
 
-  const refreshRemote = useCallback(async (source = 'manual-refresh') => {
-    if (!useRemote) return;
-    const refreshCycleId = createRefreshCycleId(source);
-    const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    setActiveRefreshCycle(refreshCycleId);
+  useEffect(() => {
+    if (useRemote && userId) return;
+    setJobs([]);
+    setApplications([]);
+    setUpcomingJobs([]);
+    setNotifications([]);
+    setReviews([]);
+    profilesCacheRef.current = new Map();
+    chatUnlockedKeysRef.current = new Set();
+    pendingRealtimePatchesRef.current = [];
+    bootstrapLockRef.current = false;
+  }, [useRemote, userId]);
+
+  const runOrQueueRealtimePatch = useCallback((patch: () => void) => {
+    if (bootstrapLockRef.current) {
+      pendingRealtimePatchesRef.current.push(patch);
+      return;
+    }
+    patch();
+  }, []);
+
+  const refreshRemoteBootstrap = useCallback(async () => {
+    if (!useRemote || !userId) return;
+    const loadUserId = userId;
+    bootstrapLockRef.current = true;
     setDataLoading(true);
     try {
-      const [d, reviewRows] = await Promise.all([fetchRemoteJobsAndApps(), fetchRemoteReviews()]);
-      setJobs(d.jobs);
-      setApplications(d.applications);
-      setUpcomingJobs(filterUpcomingByRequestStatus(d.upcomingJobs, d.jobs));
-      setNotifications(d.notifications);
-      setReviews(reviewRows);
-      recordSupabaseOperation(
-        { operationName: 'refresh-remote', domain: 'app-data', table: 'multiple', action: 'refresh', sourceLabel: source, refreshCycleId },
-        {
-          startedAt,
-          data: { jobs: d.jobs, applications: d.applications, upcomingJobs: d.upcomingJobs, notifications: d.notifications, reviews: reviewRows },
-          rowCount: d.jobs.length + d.applications.length + d.upcomingJobs.length + d.notifications.length + reviewRows.length,
-        },
-      );
+      const bootstrap = await fetchRemoteAppDataBootstrap();
+      if (loadUserId !== userId) return;
+      profilesCacheRef.current = bootstrap.profilesMap;
+      chatUnlockedKeysRef.current = bootstrap.chatUnlockedKeys;
+      const migratedJobs = migrateJobAvatars(bootstrap.jobs);
+      setJobs(migratedJobs);
+      setApplications(bootstrap.applications);
+      setUpcomingJobs(filterUpcomingByRequestStatus(bootstrap.upcomingJobs, migratedJobs));
     } finally {
-      setActiveRefreshCycle(null);
+      if (loadUserId === userId) {
+        bootstrapLockRef.current = false;
+        const pending = pendingRealtimePatchesRef.current.splice(0);
+        pending.forEach((fn) => fn());
+      } else {
+        bootstrapLockRef.current = false;
+        pendingRealtimePatchesRef.current = [];
+      }
       setDataLoading(false);
     }
-  }, [useRemote, filterUpcomingByRequestStatus]);
+  }, [useRemote, userId, filterUpcomingByRequestStatus]);
+
+  const refreshRemoteFull = useCallback(async () => {
+    if (!useRemote || !userId) return;
+    const loadUserId = userId;
+    bootstrapLockRef.current = true;
+    setDataLoading(true);
+    try {
+      const [bootstrap, notifs, reviewRows] = await Promise.all([
+        fetchRemoteAppDataBootstrap(),
+        fetchRemoteNotifications(userId),
+        fetchRemoteReviews(),
+      ]);
+      if (loadUserId !== userId) return;
+      profilesCacheRef.current = bootstrap.profilesMap;
+      chatUnlockedKeysRef.current = bootstrap.chatUnlockedKeys;
+      const migratedJobs = migrateJobAvatars(bootstrap.jobs);
+      setJobs(migratedJobs);
+      setApplications(bootstrap.applications);
+      setUpcomingJobs(filterUpcomingByRequestStatus(bootstrap.upcomingJobs, migratedJobs));
+      setNotifications(notifs);
+      setReviews(reviewRows);
+    } finally {
+      if (loadUserId === userId) {
+        bootstrapLockRef.current = false;
+        const pending = pendingRealtimePatchesRef.current.splice(0);
+        pending.forEach((fn) => fn());
+      } else {
+        bootstrapLockRef.current = false;
+        pendingRealtimePatchesRef.current = [];
+      }
+      setDataLoading(false);
+    }
+  }, [useRemote, userId, filterUpcomingByRequestStatus]);
+
+  const patchRequestRow = useCallback(
+    async (partial: Partial<RequestRow>) => {
+      const existing = partial.id ? jobsRef.current.find((j) => j.id === partial.id) : undefined;
+      const row = await resolveRequestRowForPatch(partial, existing);
+      if (!row) return;
+      await mergeProfilesIntoCache([row.client_id], profilesCacheRef.current);
+      const job = requestRowToJob(row, profilesCacheRef.current.get(row.client_id) ?? emptyMapperProfile());
+      const mergedJob = existing
+        ? {
+            ...existing,
+            ...migrateJobAvatars([job])[0]!,
+            clientName:
+              job.clientName !== 'Client' || existing.clientName === 'Client'
+                ? job.clientName
+                : existing.clientName,
+            clientAvatar: job.clientAvatar || existing.clientAvatar,
+          }
+        : migrateJobAvatars([job])[0]!;
+      setJobs((prev) => {
+        const next = upsertJob(prev, mergedJob);
+        if (isJobCancelled({ status: mergedJob.status })) {
+          setUpcomingJobs((up) => filterUpcomingByRequestStatus(up, next));
+        }
+        return next;
+      });
+    },
+    [filterUpcomingByRequestStatus],
+  );
+
+  const patchApplicationRow = useCallback(async (partial: Partial<ApplicationRow>) => {
+    const existing = partial.id ? applicationsRef.current.find((a) => a.id === partial.id) : undefined;
+    const row = await resolveApplicationRowForPatch(partial, existing);
+    if (!row) return;
+    await mergeProfilesIntoCache([row.helper_id], profilesCacheRef.current);
+    const unlockKey = `${row.request_id}:${row.helper_id}`;
+    if (row.status === 'accepted') {
+      chatUnlockedKeysRef.current.add(unlockKey);
+    }
+    const mapped = applicationRowToApp(row, profilesCacheRef.current.get(row.helper_id) ?? emptyMapperProfile());
+    const app: Application = {
+      ...(existing ?? mapped),
+      ...mapped,
+      chatUnlocked:
+        chatUnlockedKeysRef.current.has(unlockKey) ||
+        mapped.status === 'accepted' ||
+        existing?.chatUnlocked === true,
+    };
+    setApplications((prev) => upsertApplication(prev, app));
+  }, []);
+
+  const patchUpcomingRow = useCallback(
+    async (partial: Partial<UpcomingJobRow>) => {
+      const existing = partial.id ? upcomingJobsRef.current.find((u) => u.id === partial.id) : undefined;
+      const row = await resolveUpcomingJobRowForPatch(partial, existing);
+      if (!row) return;
+      const upcoming = upcomingRowToUpcoming(row);
+      setUpcomingJobs((prev) => {
+        const merged = upsertUpcoming(prev, existing ? { ...existing, ...upcoming } : upcoming);
+        return filterUpcomingByRequestStatus(merged, jobsRef.current);
+      });
+    },
+    [filterUpcomingByRequestStatus],
+  );
+
+  const patchReviewRow = useCallback(async (partial: Partial<ReviewRow>) => {
+    const existing = partial.id ? reviewsRef.current.find((r) => r.id === partial.id) : undefined;
+    const row = await resolveReviewRowForPatch(partial, existing);
+    if (!row) return;
+    const review = reviewRowToServiceReview(row);
+    setReviews((prev) => {
+      const duplicate = prev.some(
+        (r) => r.id === review.id || (r.requestId === review.requestId && r.reviewerId === review.reviewerId),
+      );
+      if (duplicate) {
+        return upsertReview(
+          prev.filter(
+            (r) => !(r.requestId === review.requestId && r.reviewerId === review.reviewerId && r.id !== review.id),
+          ),
+          review,
+        );
+      }
+      return upsertReview(prev, review);
+    });
+  }, []);
 
   const handleGranularRealtimeEvent = useCallback(async (event: AppDataRealtimeEvent) => {
     const id = eventRowId(event);
@@ -242,12 +428,116 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!useRemote) return;
-    void refreshRemote('initial-auth-load');
-    return subscribeRemoteData((event) => {
-      void handleGranularRealtimeEvent(event);
+    if (!useRemote || !userId) return;
+    void refreshRemoteBootstrap();
+    const unsub = subscribeAppDataChanges({
+      requests: {
+        onInsert: (row) => {
+          runOrQueueRealtimePatch(() => {
+            void patchRequestRow(row);
+          });
+        },
+        onUpdate: (row) => {
+          runOrQueueRealtimePatch(() => {
+            void patchRequestRow(row);
+          });
+        },
+        onDelete: (id) => {
+          runOrQueueRealtimePatch(() => {
+            setJobs((prev) => prev.filter((j) => j.id !== id));
+            setApplications((prev) => prev.filter((a) => a.jobId !== id));
+            setUpcomingJobs((prev) => prev.filter((u) => u.jobId !== id));
+          });
+        },
+      },
+      applications: {
+        onInsert: (row) => {
+          runOrQueueRealtimePatch(() => {
+            void patchApplicationRow(row);
+          });
+        },
+        onUpdate: (row) => {
+          runOrQueueRealtimePatch(() => {
+            void patchApplicationRow(row);
+          });
+        },
+        onDelete: (id) => {
+          runOrQueueRealtimePatch(() => {
+            setApplications((prev) => prev.filter((a) => a.id !== id));
+          });
+        },
+      },
+      upcomingJobs: {
+        onInsert: (row) => {
+          runOrQueueRealtimePatch(() => {
+            void patchUpcomingRow(row);
+          });
+        },
+        onUpdate: (row) => {
+          runOrQueueRealtimePatch(() => {
+            void patchUpcomingRow(row);
+          });
+        },
+        onDelete: (id) => {
+          runOrQueueRealtimePatch(() => {
+            setUpcomingJobs((prev) => prev.filter((u) => u.id !== id));
+          });
+        },
+      },
+      reviews: {
+        onInsert: (row) => {
+          runOrQueueRealtimePatch(() => {
+            void patchReviewRow(row);
+          });
+        },
+        onUpdate: (row) => {
+          runOrQueueRealtimePatch(() => {
+            void patchReviewRow(row);
+          });
+        },
+        onDelete: (id) => {
+          runOrQueueRealtimePatch(() => {
+            setReviews((prev) => prev.filter((r) => r.id !== id));
+          });
+        },
+      },
     });
-  }, [useRemote, refreshRemote, handleGranularRealtimeEvent]);
+    return () => {
+      unsub();
+      pendingRealtimePatchesRef.current = [];
+    };
+  }, [
+    useRemote,
+    userId,
+    refreshRemoteBootstrap,
+    patchRequestRow,
+    patchApplicationRow,
+    patchUpcomingRow,
+    patchReviewRow,
+    runOrQueueRealtimePatch,
+  ]);
+
+  useEffect(() => {
+    if (!useRemote || !userId) return;
+    let cancelled = false;
+    void fetchRemoteNotifications(userId).then((rows) => {
+      if (!cancelled) setNotifications(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [useRemote, userId]);
+
+  useEffect(() => {
+    if (!useRemote || !userId) return;
+    let cancelled = false;
+    void fetchRemoteReviews().then((rows) => {
+      if (!cancelled) setReviews(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [useRemote, userId]);
 
   // Granular realtime subscription for notifications — updates state
   // directly without a full app-data refetch, making the bell icon
@@ -434,7 +724,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         userId: job.clientId,
         title,
         body: proposalText,
-        url: ROUTES.clientDashboard,
+        url: notificationClientRequestUrl(job.id),
       });
       triggerGamificationRecalculate('application_submitted', 'helper');
       return;
@@ -480,45 +770,79 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         type: 'application',
         title,
         message,
-        actionUrl: ROUTES.clientDashboard,
+        ...buildNotificationPayload({ audience: 'client', requestId: job.id }),
       });
       dispatchPushEvent({
         kind: 'helper_applied',
         userId: job.clientId,
         title,
         body: message,
-        url: ROUTES.clientDashboard,
+        url: notificationClientRequestUrl(job.id),
       });
     }
   };
 
-  const updateJobStatus = async (jobId: string, status: JobStatus) => {
+  const updateJobStatus = async (jobId: string, status: JobStatus): Promise<{ expiredWhilePaused?: boolean } | void> => {
     const jobSnapshot = jobsRef.current.find((j) => j.id === jobId);
+    const previousStatus = jobSnapshot?.status;
+    const isLifecycleChange =
+      isJobCancelled({ status }) ||
+      (status === 'paused' && previousStatus === 'open') ||
+      (status === 'open' && previousStatus === 'paused');
+
+    if (isLifecycleChange && isSupabaseConfigured() && !session) {
+      throw new Error('AUTH_REQUIRED');
+    }
 
     if (useRemote) {
       if (isJobCancelled({ status })) {
-        const relatedApps = applicationsRef.current.filter(
-          (a) => a.jobId === jobId && a.status !== 'cancelled',
-        );
         await remoteCancelClientRequest(jobId);
-        if (jobSnapshot) {
-          for (const app of relatedApps) {
-            dispatchPushEvent({
-              kind: 'request_cancelled',
-              userId: app.helperId,
-              title: 'Chamado cancelado',
-              body: `O cliente cancelou o chamado "${jobSnapshot.title}".`,
-              url: ROUTES.helperJobs,
-            });
+        setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status: 'cancelled' } : job)));
+        setApplications((prev) =>
+          prev.map((app) =>
+            app.jobId === jobId && app.status !== 'cancelled'
+              ? { ...app, status: 'cancelled' as ApplicationStatus }
+              : app,
+          ),
+        );
+        setUpcomingJobs((prev) =>
+          prev.map((u) => (u.jobId === jobId ? { ...u, workflowStatus: 'cancelled' as UpcomingWorkflowStatus } : u)),
+        );
+      } else if (status === 'paused' && previousStatus === 'open') {
+        await remotePauseClientRequest(jobId);
+        setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status: 'paused' } : job)));
+      } else if (status === 'open' && previousStatus === 'paused') {
+        const result = await remoteResumeClientRequest(jobId);
+        if (result.expiredWhilePaused || result.status === 'cancelled') {
+          setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status: 'cancelled' } : job)));
+          setApplications((prev) =>
+            prev.map((app) =>
+              app.jobId === jobId && app.status !== 'cancelled'
+                ? { ...app, status: 'cancelled' as ApplicationStatus }
+                : app,
+            ),
+          );
+          setUpcomingJobs((prev) =>
+            prev.map((u) => (u.jobId === jobId ? { ...u, workflowStatus: 'cancelled' as UpcomingWorkflowStatus } : u)),
+          );
+          if (isJobCancelled({ status: 'cancelled' })) {
+            triggerGamificationRecalculate('request_cancelled', 'client');
           }
+          return { expiredWhilePaused: true };
         }
+        setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status: 'open' } : job)));
       } else {
         await remoteUpdateRequestStatus(jobId, status);
+        setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status } : job)));
       }
       if (isJobCancelled({ status })) {
         triggerGamificationRecalculate('request_cancelled', 'client');
       }
       return;
+    }
+
+    if (isLifecycleChange && isSupabaseConfigured()) {
+      throw new Error('REQUEST_LIFECYCLE_BACKEND_NOT_READY');
     }
 
     setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status } : job)));
@@ -547,14 +871,14 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             type: 'application',
             title: cancelTitle,
             message: cancelMessage,
-            actionUrl: ROUTES.helperJobs,
+            ...buildNotificationPayload({ audience: 'helper', requestId: jobId }),
           });
           dispatchPushEvent({
             kind: 'request_cancelled',
             userId: app.helperId,
             title: cancelTitle,
             body: cancelMessage,
-            url: ROUTES.helperJobs,
+            url: notificationHelperJobsUrl(jobId),
           });
         }
         addNotification({
@@ -562,7 +886,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           type: 'application',
           title: 'Chamado cancelado',
           message: `Seu pedido "${jobSnapshot.title}" foi cancelado.`,
-          actionUrl: ROUTES.clientDashboard,
+          ...buildNotificationPayload({ audience: 'client', requestId: jobId }),
         });
       }
     }
@@ -624,19 +948,20 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
       const acceptTitle = 'Application accepted! 🎉';
       const acceptMessage = `The client accepted your application. Next job: "${jobSnapshot.title}".`;
+      const helperJobLink = buildNotificationPayload({ audience: 'helper', requestId: targetApp.jobId });
       addNotification({
         userId: targetApp.helperId,
         type: 'application',
         title: acceptTitle,
         message: acceptMessage,
-        actionUrl: ROUTES.helperJobsUpcoming,
+        ...helperJobLink,
       });
       dispatchPushEvent({
         kind: 'helper_accepted',
         userId: targetApp.helperId,
         title: acceptTitle,
         body: acceptMessage,
-        url: ROUTES.helperJobsUpcoming,
+        url: helperJobLink.actionUrl ?? `${ROUTES.helperJobs}?tab=accepted`,
       });
     }
   };
@@ -657,6 +982,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const selectedCost = leadCostsForJob(jobSnapshot, { distanceKm: selectedDistanceKm }).selectedCost;
 
     const applyOptimisticHire = () => {
+      chatUnlockedKeysRef.current.add(`${requestId}:${helperId}`);
       setApplications((prev) =>
         prev.map((app) => {
           if (app.id === applicationId) {
@@ -691,12 +1017,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           userId: targetApp.helperId,
           title: hireHelperTitle,
           body: hireHelperMessage,
-          url: conversationId ? `${ROUTES.messages}?c=${conversationId}` : ROUTES.messages,
+          url: conversationId ? notificationMessagesUrl(conversationId) : notificationHelperJobsUrl(requestId),
         });
 
         return conversationId;
       } catch (error) {
-        await refreshRemote();
+        await refreshRemoteFull();
         throw error;
       }
     }
@@ -746,35 +1072,41 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
     const hireHelperTitle = 'Contratação oficial';
     const hireHelperMessage = `O cliente contratou você para "${jobSnapshot.title}". O chat está liberado.`;
+    const helperHireLink = buildNotificationPayload({ audience: 'helper', requestId });
     addNotification({
       userId: targetApp.helperId,
       type: 'application',
       title: hireHelperTitle,
       message: hireHelperMessage,
-      actionUrl: ROUTES.messages,
+      ...helperHireLink,
     });
     dispatchPushEvent({
       kind: 'service_confirmed',
       userId: targetApp.helperId,
       title: hireHelperTitle,
       body: hireHelperMessage,
-      url: ROUTES.messages,
+      url: helperHireLink.actionUrl ?? `${ROUTES.helperJobs}?tab=accepted`,
     });
     const hireClientTitle = 'Helper contratado';
     const hireClientMessage = `Você pode conversar com ${targetApp.helperName} sobre "${jobSnapshot.title}".`;
+    const clientHireLink = buildNotificationPayload({
+      audience: 'client',
+      requestId,
+      clientTarget: 'jobs',
+    });
     addNotification({
       userId: jobSnapshot.clientId,
       type: 'application',
       title: hireClientTitle,
       message: hireClientMessage,
-      actionUrl: ROUTES.messages,
+      ...clientHireLink,
     });
     dispatchPushEvent({
       kind: 'service_confirmed',
       userId: jobSnapshot.clientId,
       title: hireClientTitle,
       body: hireClientMessage,
-      url: ROUTES.messages,
+      url: clientHireLink.actionUrl ?? notificationClientJobsUrl(requestId),
     });
 
     return null;
@@ -818,28 +1150,56 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     setUpcomingJobs((prev) => prev.map((u) => (u.id === upcomingId ? { ...u, workflowStatus, completionRequestedAt: workflowStatus === 'completion_requested' || workflowStatus === 'awaiting_client_confirmation' ? Date.now() : u.completionRequestedAt } : u)));
 
     if ((workflowStatus === 'awaiting_client_confirmation' || workflowStatus === 'completion_requested') && upcoming && jobSnapshot?.clientId) {
+      const completionLink = buildNotificationPayload({
+        audience: 'client',
+        requestId: upcoming.jobId,
+        clientTarget: 'jobs',
+      });
       addNotification({
         userId: jobSnapshot.clientId,
         type: 'application',
         title: 'Serviço concluído',
         message: `Seu Help informou que o trabalho "${jobSnapshot.title}" foi concluído. Confirme se o serviço foi feito.`,
-        actionUrl: ROUTES.clientDashboard,
+        ...completionLink,
       });
     }
   };
 
   const confirmServiceCompleted = async (requestId: string) => {
+    if (isSupabaseConfigured() && !session) {
+      throw new Error('AUTH_REQUIRED');
+    }
     if (useRemote) {
       await remoteConfirmServiceCompleted(requestId);
-      await refreshRemote();
+      setJobs((prev) =>
+        prev.map((job) => (job.id === requestId ? { ...job, status: 'completed' as JobStatus } : job)),
+      );
+      setUpcomingJobs((prev) =>
+        prev.map((u) =>
+          u.jobId === requestId && isAwaitingClientCompletion(u.workflowStatus)
+            ? { ...u, workflowStatus: 'completed' as UpcomingWorkflowStatus }
+            : u,
+        ),
+      );
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.jobId === requestId && app.status === 'accepted'
+            ? { ...app, status: 'completed' as ApplicationStatus }
+            : app,
+        ),
+      );
       const completedApp = applicationsRef.current.find(
-        (app) => app.jobId === requestId && app.status === 'completed',
+        (app) => app.jobId === requestId && app.status === 'accepted',
       );
       triggerGamificationRecalculate('service_completed', 'client');
       if (completedApp) {
         triggerGamificationRecalculate('service_completed', 'helper');
       }
       return;
+    }
+
+    if (isSupabaseConfigured()) {
+      throw new Error('REQUEST_LIFECYCLE_BACKEND_NOT_READY');
     }
 
     setJobs((prev) => prev.map((job) => (job.id === requestId ? { ...job, status: 'completed' as JobStatus } : job)));

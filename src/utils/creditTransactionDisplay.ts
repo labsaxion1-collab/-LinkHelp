@@ -165,6 +165,8 @@ export function requestStatusLabelKey(status: string | null | undefined): string
   switch (status) {
     case 'open':
       return 'jobs.request_status_open';
+    case 'paused':
+      return 'jobs.request_status_paused';
     case 'in_progress':
       return 'jobs.request_status_in_progress';
     case 'cancelled':

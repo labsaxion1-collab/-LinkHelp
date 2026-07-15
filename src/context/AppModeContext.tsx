@@ -1,4 +1,12 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
@@ -23,11 +31,19 @@ type Ctx = {
 
 const AppModeContext = createContext<Ctx | null>(null);
 
+type AppModeInternals = {
+  setModeState: React.Dispatch<React.SetStateAction<AppMode>>;
+  userId: string | null;
+  mode: AppMode;
+  profileRole: AppMode;
+  bindNavigate: (navigate: (dest: string) => void) => void;
+};
+
+const AppModeInternalsContext = createContext<AppModeInternals | null>(null);
+
 /** Active workspace mode (Client/Help) — persisted per user; defaults to Client. */
 export function AppModeProvider({ children }: { children: React.ReactNode }) {
   const { profile, session, user } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
   const userId = session?.user?.id ?? null;
   const profileRole = profile?.deleted_at ? 'client' : normalizeProfileRole(profile?.role);
 
@@ -36,7 +52,75 @@ export function AppModeProvider({ children }: { children: React.ReactNode }) {
     return resolveEffectiveRole(profile, user ?? session?.user, stored);
   });
 
+  const navigateRef = useRef<(dest: string) => void>((dest) => {
+    if (typeof window !== 'undefined') window.location.assign(dest);
+  });
+
+  const bindNavigate = useCallback((navigate: (dest: string) => void) => {
+    navigateRef.current = navigate;
+  }, []);
+
+  const setMode = useCallback(
+    (next: AppMode) => {
+      if (!userId) return;
+      modeSwitchLog('switch', { from: mode, to: next, profileRole, userId });
+      authFlowLog('User switched workspace mode', { from: mode, to: next, profileRole, userId });
+      writeStoredAppMode(next, userId);
+      setModeState(next);
+      const last = readLastPathForMode(next);
+      const dest = last ?? dashboardPathForRole(next);
+      authFlowLog('Post-switch navigation', { dest, mode: next });
+      navigateRef.current(dest);
+    },
+    [mode, profileRole, userId],
+  );
+
+  const value = useMemo<Ctx>(
+    () => ({
+      mode,
+      isClientMode: mode === 'client',
+      isHelperMode: mode === 'helper',
+      profileRole,
+      setMode,
+    }),
+    [mode, profileRole, setMode],
+  );
+
+  const internals = useMemo<AppModeInternals>(
+    () => ({
+      setModeState,
+      userId,
+      mode,
+      profileRole,
+      bindNavigate,
+    }),
+    [userId, mode, profileRole, bindNavigate],
+  );
+
+  return (
+    <AppModeInternalsContext.Provider value={internals}>
+      <AppModeContext.Provider value={value}>{children}</AppModeContext.Provider>
+    </AppModeInternalsContext.Provider>
+  );
+}
+
+/** Must render inside BrowserRouter — route sync + SPA navigation for setMode. */
+export function AppModeRouterBridge() {
+  const internals = useContext(AppModeInternalsContext);
+  const { profile, session, user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
   useEffect(() => {
+    if (!internals) return;
+    internals.bindNavigate((dest) => navigate(dest, { replace: true }));
+  }, [internals, navigate]);
+
+  useEffect(() => {
+    if (!internals) return;
+
+    const { setModeState, userId, profileRole } = internals;
+
     if (!userId) {
       setModeState('client');
       return;
@@ -107,35 +191,9 @@ export function AppModeProvider({ children }: { children: React.ReactNode }) {
       return effective;
     });
     if (!stored || stored !== effective) writeStoredAppMode(effective, userId);
-  }, [userId, profile?.role, location.pathname, profile, user, session?.user, profileRole]);
+  }, [internals, location.pathname, profile, user, session?.user]);
 
-  const setMode = useCallback(
-    (next: AppMode) => {
-      if (!userId) return;
-      modeSwitchLog('switch', { from: mode, to: next, profileRole, userId });
-      authFlowLog('User switched workspace mode', { from: mode, to: next, profileRole, userId });
-      writeStoredAppMode(next, userId);
-      setModeState(next);
-      const last = readLastPathForMode(next);
-      const dest = last ?? dashboardPathForRole(next);
-      authFlowLog('Post-switch navigation', { dest, mode: next });
-      navigate(dest, { replace: true });
-    },
-    [mode, navigate, profileRole, userId],
-  );
-
-  const value = useMemo<Ctx>(
-    () => ({
-      mode,
-      isClientMode: mode === 'client',
-      isHelperMode: mode === 'helper',
-      profileRole,
-      setMode,
-    }),
-    [mode, profileRole, setMode],
-  );
-
-  return <AppModeContext.Provider value={value}>{children}</AppModeContext.Provider>;
+  return null;
 }
 
 export function useAppMode(): Ctx {

@@ -48,13 +48,24 @@ import { PRE_HIRE_MESSAGE_LIMIT } from '@/utils/preMatchLimits';
 import {
   isJobExpired,
   isJobCancelled,
+  isJobPaused,
   isJobVisibleToClient,
+  hideJobForUser,
   readHiddenJobIds,
 } from '@/utils/jobVisibility';
 import { CancelRequestModal } from '@/components/client/CancelRequestModal';
+import { PauseRequestModal } from '@/components/client/PauseRequestModal';
 import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
 import { extractErrorMessage } from '@/utils/errorMessage';
 import { formatHireError, formatRejectApplicationError, logAcceptProposalError } from '@/utils/formatHireError';
+import { formatRequestLifecycleError } from '@/utils/formatRequestLifecycleError';
+import {
+  activityCandidateCount,
+  findHiredApplicationForJob,
+  isHiredActivityJob,
+  isPreHireActivityJob,
+  listCandidateApplicationsForJob,
+} from '@/utils/clientActivityApplications';
 import { useAuth } from '@/context/AuthContext';
 import { ClientCreditsWalletBadge } from '@/components/client/ClientCreditsWalletBadge';
 import { CompletionReminderCard } from '@/components/reviews/CompletionReminderCard';
@@ -170,11 +181,19 @@ export default function ClientDashboard() {
   const [hireModalKind, setHireModalKind] = useState<'hire' | 'proposal'>('hire');
   const [inviteMessage, setInviteMessage] = useState('');
   const [jobsListTab, setJobsListTab] = useState<'active' | 'history'>('active');
-  const [expandedActivityJobId, setExpandedActivityJobId] = useState<string | null>(null);
+  const [expandedActivityPanel, setExpandedActivityPanel] = useState<{
+    jobId: string;
+    panel: 'applications' | 'description';
+  } | null>(null);
+  const [activityMenuJobId, setActivityMenuJobId] = useState<string | null>(null);
+  const [profileContextRequestId, setProfileContextRequestId] = useState<string | null>(null);
+  const activityMenuRef = useRef<HTMLDivElement | null>(null);
   const [hiddenJobIds, setHiddenJobIds] = useState<Set<string>>(() => new Set());
   const [acceptingApplicationId, setAcceptingApplicationId] = useState<string | null>(null);
   const [cancelTargetJobId, setCancelTargetJobId] = useState<string | null>(null);
   const [cancellingJobId, setCancellingJobId] = useState<string | null>(null);
+  const [pauseTargetJobId, setPauseTargetJobId] = useState<string | null>(null);
+  const [pausingJobId, setPausingJobId] = useState<string | null>(null);
   const [detailJob, setDetailJob] = useState<Job | null>(null);
   const [serviceConfirmJob, setServiceConfirmJob] = useState<Job | null>(null);
   const [serviceConfirmBusy, setServiceConfirmBusy] = useState(false);
@@ -290,6 +309,7 @@ export default function ClientDashboard() {
         /* ignore */
       }
       setServiceConfirmJob(null);
+      setJobsListTab('history');
       showToast(t('service_confirm.success_toast'), 'success');
       window.setTimeout(() => openReviewByRequestId(requestId), 400);
     } catch (error) {
@@ -304,9 +324,9 @@ export default function ClientDashboard() {
     if (!selectedHelper) return undefined;
     return resolveClientHelperApplication(String(selectedHelper.id), myJobIds, applications, {
       applicationId: selectedApplicationId,
-      requestId: detailJob?.id ?? null,
+      requestId: detailJob?.id ?? profileContextRequestId ?? null,
     });
-  }, [selectedHelper, selectedApplicationId, detailJob?.id, myJobIds, applications]);
+  }, [selectedHelper, selectedApplicationId, detailJob?.id, profileContextRequestId, myJobIds, applications]);
 
   const profileChatUnlocked = useMemo(() => {
     return profileApp ? isChatUnlockedApplication(profileApp) : false;
@@ -417,10 +437,21 @@ export default function ClientDashboard() {
     setPreviousAppCount(myApps.length);
   }, [applications, jobs, previousAppCount, t]);
 
-  const openHelperProfile = (helper: RecommendedHelperCard, applicationId?: string) => {
+  const openHelperProfile = (
+    helper: RecommendedHelperCard,
+    applicationId?: string,
+    requestId?: string | null,
+  ) => {
     setSelectedHelper(helper);
     setSelectedApplicationId(applicationId ?? null);
+    setProfileContextRequestId(requestId ?? null);
     setShowHelperProfileModal(true);
+  };
+
+  const toggleActivityPanel = (jobId: string, panel: 'applications' | 'description') => {
+    setExpandedActivityPanel((current) =>
+      current?.jobId === jobId && current.panel === panel ? null : { jobId, panel },
+    );
   };
 
   const myOpenJobCategories = useMemo(
@@ -442,7 +473,12 @@ export default function ClientDashboard() {
     [jobs, me.id],
   );
   const activeClientJobs = useMemo(
-    () => clientJobs.filter((j) => isJobVisibleToClient(j, hiddenJobIds) && (j.status === 'open' || j.status === 'in_progress')),
+    () =>
+      clientJobs.filter(
+        (j) =>
+          isJobVisibleToClient(j, hiddenJobIds) &&
+          (j.status === 'open' || j.status === 'paused' || j.status === 'in_progress'),
+      ),
     [clientJobs, hiddenJobIds],
   );
   const completedClientJobs = useMemo(
@@ -463,16 +499,79 @@ export default function ClientDashboard() {
   const activeHowItWorks = howItWorksSteps[activeHowItWorksStep] ?? howItWorksSteps[0];
   const ActiveHowItWorksIcon = activeHowItWorks.icon;
 
+  const handleConfirmPauseJob = async () => {
+    if (!pauseTargetJobId || pausingJobId) return;
+    setPausingJobId(pauseTargetJobId);
+    try {
+      await updateJobStatus(pauseTargetJobId, 'paused');
+      showToast('Chamado pausado.', 'success');
+      setPauseTargetJobId(null);
+    } catch (error) {
+      console.error(error);
+      showToast(formatRequestLifecycleError(error, t), 'error');
+    } finally {
+      setPausingJobId(null);
+    }
+  };
+
+  const handleResumeJob = async (jobId: string) => {
+    try {
+      const outcome = await updateJobStatus(jobId, 'open');
+      if (outcome && 'expiredWhilePaused' in outcome && outcome.expiredWhilePaused) {
+        showToast('Chamado cancelado porque a data prevista passou durante a pausa.', 'info');
+      } else {
+        showToast('Chamado retomado.', 'success');
+      }
+      setActivityMenuJobId(null);
+    } catch (error) {
+      console.error(error);
+      showToast(formatRequestLifecycleError(error, t), 'error');
+    }
+  };
+
+  const openHelperProfileFromApplication = (job: Job, app: Application) => {
+    openHelperProfile(
+      {
+        id: app.helperId,
+        name: app.helperName,
+        avatar: app.helperAvatar,
+        rating: app.helperRating,
+        jobsCompleted: app.helperJobs,
+        roleKey: 'pro_helper',
+        roleColor: '',
+        skills: [],
+        isOnline: true,
+        trainingCert: 'none',
+      },
+      app.id,
+      job.id,
+    );
+  };
+
+  useEffect(() => {
+    if (!activityMenuJobId) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!activityMenuRef.current?.contains(event.target as Node)) {
+        setActivityMenuJobId(null);
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [activityMenuJobId]);
+
   const handleConfirmCancelJob = async () => {
     if (!cancelTargetJobId || cancellingJobId) return;
-    setCancellingJobId(cancelTargetJobId);
+    const jobId = cancelTargetJobId;
+    setCancellingJobId(jobId);
     try {
-      await updateJobStatus(cancelTargetJobId, 'cancelled');
+      await updateJobStatus(jobId, 'cancelled');
+      hideJobForUser(me.id, jobId);
+      setHiddenJobIds((prev) => new Set(prev).add(jobId));
       showToast(t('client_dashboard.request_cancelled_toast'), 'success');
       setCancelTargetJobId(null);
     } catch (error) {
       console.error(error);
-      showToast(extractErrorMessage(error, t('hire_modal.error_toast')), 'error');
+      showToast(formatRequestLifecycleError(error, t), 'error');
     } finally {
       setCancellingJobId(null);
     }
@@ -503,6 +602,7 @@ export default function ClientDashboard() {
       isOnline: helper.onlineStatus === 'available',
     });
     setSelectedApplicationId(null);
+    setProfileContextRequestId(null);
     setShowHelperProfileModal(true);
   };
 
@@ -968,6 +1068,15 @@ export default function ClientDashboard() {
         }}
         onConfirm={() => void handleConfirmCancelJob()}
         confirming={cancellingJobId != null}
+      />
+
+      <PauseRequestModal
+        open={pauseTargetJobId != null}
+        onClose={() => {
+          if (!pausingJobId) setPauseTargetJobId(null);
+        }}
+        onConfirm={() => void handleConfirmPauseJob()}
+        confirming={pausingJobId != null}
       />
 
       <ServiceConfirmModal
@@ -1502,20 +1611,23 @@ export default function ClientDashboard() {
               <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
                 {activityTabJobs.length > 0 ? (
                   activityTabJobs.map((job) => {
-                    const jobApps = applications
-                      .filter(
-                        (a) =>
-                          a.jobId === job.id &&
-                          (a.status === 'pending' || a.status === 'viewed' || a.status === 'accepted'),
-                      )
-                      .filter((a) =>
-                        job.status === 'in_progress'
-                          ? a.status === 'accepted'
-                          : a.status !== 'rejected',
-                      )
-                      .sort((a, b) => a.createdAt - b.createdAt);
+                    const isHiredActivity = isHiredActivityJob(job.status);
+                    const isPreHireActivity = isPreHireActivityJob(job.status);
+                    const candidateApps = isPreHireActivity
+                      ? listCandidateApplicationsForJob(job.id, applications)
+                      : [];
+                    const hiredApplication = isHiredActivity
+                      ? findHiredApplicationForJob(job, applications, upcomingJobs)
+                      : undefined;
+                    const displayCandidateApps = candidateApps.slice(0, 3);
                     const exclusiveApp = job.exclusiveHelperId
-                      ? jobApps.find((a) => a.helperId === job.exclusiveHelperId && a.isExclusive)
+                      ? applications.find(
+                          (a) =>
+                            a.jobId === job.id &&
+                            a.helperId === job.exclusiveHelperId &&
+                            a.isExclusive &&
+                            (a.status === 'pending' || a.status === 'viewed'),
+                        )
                       : null;
                     const isExclusiveLocked = exclusiveApp != null;
                     const CategoryIcon = getCategoryLucideIcon(job.category) ?? Icons.Briefcase;
@@ -1526,24 +1638,95 @@ export default function ClientDashboard() {
                       hour: '2-digit',
                       minute: '2-digit',
                     });
-                    const isActivityExpanded = expandedActivityJobId === job.id;
+                    const isActivityPanelOpen = expandedActivityPanel?.jobId === job.id;
+                    const isApplicationsOpen =
+                      isActivityPanelOpen && expandedActivityPanel?.panel === 'applications';
+                    const isDescriptionOpen =
+                      isActivityPanelOpen && expandedActivityPanel?.panel === 'description';
+                    const showActivityMenu =
+                      jobsListTab === 'active' &&
+                      job.status !== 'completed' &&
+                      (job.status === 'open' || job.status === 'paused' || job.status === 'in_progress');
 
                     return (
                       <article
                         key={job.id}
-                        className={clsx('group relative min-w-0 overflow-visible rounded-[1.35rem] border border-slate-100 bg-white p-3 shadow-[0_10px_30px_rgba(15,23,42,0.07)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_42px_rgba(15,23,42,0.11)] sm:p-4', isActivityExpanded ? 'z-30' : 'z-0')}
+                        className={clsx('group relative min-w-0 overflow-visible rounded-[1.35rem] border border-slate-100 bg-white p-3 shadow-[0_10px_30px_rgba(15,23,42,0.07)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_42px_rgba(15,23,42,0.11)] sm:p-4', isActivityPanelOpen ? 'z-30' : 'z-0')}
                       >
                         <div className={clsx('absolute left-0 top-0 h-full w-1.5', clientDashboardAccent.activityAccentBar)} />
-                        <button
-                          type="button"
-                          aria-label={t('common.more_options')}
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute right-4 top-4 rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
+                        <div
+                          ref={activityMenuJobId === job.id ? activityMenuRef : undefined}
+                          className="absolute right-4 top-4 z-20"
                         >
-                          <Icons.MoreVertical className="h-5 w-5" />
-                        </button>
+                          {showActivityMenu ? (
+                            <>
+                          <button
+                            type="button"
+                            aria-label={t('common.more_options')}
+                            aria-expanded={activityMenuJobId === job.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActivityMenuJobId((current) => (current === job.id ? null : job.id));
+                            }}
+                            className="rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
+                          >
+                            <Icons.MoreVertical className="h-5 w-5" />
+                          </button>
+                          {activityMenuJobId === job.id ? (
+                            <div className="absolute right-0 top-full z-50 mt-1 min-w-[11rem] overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-[0_12px_32px_rgba(15,23,42,0.14)]">
+                              {job.status === 'paused' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleResumeJob(job.id)}
+                                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-slate-800 hover:bg-slate-50"
+                                >
+                                  <Icons.Play className="h-4 w-4 text-blue-600" />
+                                  Retorna
+                                </button>
+                              ) : job.status === 'open' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPauseTargetJobId(job.id);
+                                    setActivityMenuJobId(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-slate-800 hover:bg-slate-50"
+                                >
+                                  <Icons.Pause className="h-4 w-4 text-blue-600" />
+                                  Pausar
+                                </button>
+                              ) : null}
+                              {job.status === 'in_progress' && isJobAwaitingCompletion(job.id) ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setServiceConfirmJob(job);
+                                    setActivityMenuJobId(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-emerald-800 hover:bg-emerald-50"
+                                >
+                                  <Icons.CircleCheck className="h-4 w-4 text-emerald-600" />
+                                  {t('service_confirm.confirm_completion')}
+                                </button>
+                              ) : null}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCancelTargetJobId(job.id);
+                                  setActivityMenuJobId(null);
+                                }}
+                                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-amber-800 hover:bg-amber-50"
+                              >
+                                <Icons.Ban className="h-4 w-4 text-amber-600" />
+                                Cancelar
+                              </button>
+                            </div>
+                          ) : null}
+                            </>
+                          ) : null}
+                        </div>
 
-                        <div className="flex items-start gap-3 pr-7">
+                        <div className={clsx('flex items-start gap-3', showActivityMenu && 'pr-7')}>
                           <div className={clsx('flex h-11 w-11 shrink-0 items-center justify-center rounded-[1rem] shadow-lg', clientDashboardAccent.activityIconBubble)}>
                             <CategoryIcon className="h-5 w-5" />
                           </div>
@@ -1557,7 +1740,11 @@ export default function ClientDashboard() {
                               ) : (
                                 <span className={clsx('inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-black', clientDashboardAccent.activitySoftBg, clientDashboardAccent.activitySoftBorder, clientDashboardAccent.activityText)}>
                                   <Icons.Clock3 className="h-3.5 w-3.5" />
-                                  {job.status === 'open' ? t('client_dashboard.status_waiting_helpers') : t('client_dashboard.status_in_progress')}
+                                  {isJobPaused(job)
+                                    ? 'Pausado'
+                                    : job.status === 'open'
+                                      ? t('client_dashboard.status_waiting_helpers')
+                                      : t('client_dashboard.status_in_progress')}
                                 </span>
                               )}
                             </div>
@@ -1568,34 +1755,232 @@ export default function ClientDashboard() {
                         </div>
 
                         <div className="relative mt-3" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            type="button"
-                            onClick={() => setExpandedActivityJobId((current) => (current === job.id ? null : job.id))}
-                            className="flex min-h-[60px] w-full items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 px-3 py-2 text-left transition-all hover:border-slate-200 hover:bg-white hover:shadow-sm"
-                            aria-expanded={isActivityExpanded}
-                          >
-                            <span className="flex min-w-0 items-center gap-3">
+                          <div className="flex min-h-[60px] w-full items-stretch gap-1 rounded-2xl border border-slate-100 bg-slate-50/70 p-1">
+                            <button
+                              type="button"
+                              onClick={() => toggleActivityPanel(job.id, 'applications')}
+                              className={clsx(
+                                'flex min-w-0 flex-1 items-center gap-3 rounded-[0.9rem] px-2 py-2 text-left transition-all',
+                                isApplicationsOpen
+                                  ? 'border border-slate-200 bg-white shadow-sm'
+                                  : 'hover:bg-white/80',
+                              )}
+                              aria-expanded={isApplicationsOpen}
+                            >
                               <InterestedRing
-                                interestedCount={jobApps.length}
-                                label="candidaturas"
+                                interestedCount={isHiredActivity ? 1 : candidateApps.length}
+                                label={isHiredActivity ? 'contratado' : 'candidatos'}
                                 size={48}
                                 hideLabel
                               />
-                              <span className="min-w-0">
-                                <span className="block text-[11px] font-bold text-slate-500">Candidaturas</span>
-                                <span className="block truncate text-sm font-black text-slate-950">
-                                  {Math.min(jobApps.length, 3)}/3
+                              <span className="min-w-0 flex-1">
+                                <span className="block whitespace-nowrap text-[11px] font-bold leading-tight text-slate-500">
+                                  {isHiredActivity ? 'Contratado' : 'Candidatos'}
                                 </span>
+                                {isPreHireActivity ? (
+                                  <span className="block truncate text-sm font-black text-slate-950">
+                                    {activityCandidateCount(candidateApps)}/3
+                                  </span>
+                                ) : null}
                               </span>
-                            </span>
-                            <span className="flex shrink-0 items-center gap-2 text-sm font-black text-slate-800">
+                              <Icons.ChevronDown
+                                className={clsx(
+                                  'h-4 w-4 shrink-0 transition-transform duration-200',
+                                  isApplicationsOpen && 'rotate-180',
+                                  clientDashboardAccent.activityText,
+                                )}
+                              />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => toggleActivityPanel(job.id, 'description')}
+                              className={clsx(
+                                'flex shrink-0 items-center gap-2 rounded-[0.9rem] px-3 py-2 text-sm font-black text-slate-800 transition-all',
+                                isDescriptionOpen
+                                  ? 'border border-slate-200 bg-white shadow-sm'
+                                  : 'hover:bg-white/80',
+                              )}
+                              aria-expanded={isDescriptionOpen}
+                            >
                               Descrição
-                              <Icons.ChevronDown className={clsx('h-4 w-4 transition-transform', isActivityExpanded && 'rotate-180', clientDashboardAccent.activityText)} />
-                            </span>
-                          </button>
+                              <Icons.ChevronDown
+                                className={clsx(
+                                  'h-4 w-4 transition-transform duration-200',
+                                  isDescriptionOpen && 'rotate-180',
+                                  clientDashboardAccent.activityText,
+                                )}
+                              />
+                            </button>
+                          </div>
 
-                          {isActivityExpanded ? (
-                            <div className={clsx('absolute left-0 right-0 top-full z-50 mt-2 rounded-2xl border p-2 shadow-[0_18px_50px_rgba(15,23,42,0.18)]', clientDashboardAccent.activitySoftBg, clientDashboardAccent.activitySoftBorder)}>
+                          {isApplicationsOpen ? (
+                            <div
+                              className={clsx(
+                                'mt-2 animate-in fade-in slide-in-from-top-1 duration-200 rounded-2xl border p-2 shadow-[0_18px_50px_rgba(15,23,42,0.12)]',
+                                clientDashboardAccent.activitySoftBg,
+                                clientDashboardAccent.activitySoftBorder,
+                              )}
+                            >
+                              {isHiredActivity ? (
+                                hiredApplication ? (
+                                  <div
+                                    className={clsx(
+                                      'rounded-2xl border bg-white/95 p-3 shadow-sm',
+                                      hiredApplication.isExclusive ? 'border-amber-200' : 'border-slate-100',
+                                    )}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <button
+                                        type="button"
+                                        onClick={() => openHelperProfileFromApplication(job, hiredApplication)}
+                                        className="relative shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                                      >
+                                        <img
+                                          src={hiredApplication.helperAvatar}
+                                          alt={hiredApplication.helperName}
+                                          className="h-11 w-11 rounded-full object-cover ring-2 ring-white"
+                                        />
+                                      </button>
+                                      <div className="min-w-0 flex-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => openHelperProfileFromApplication(job, hiredApplication)}
+                                          className="flex max-w-full items-center gap-1.5 text-left"
+                                        >
+                                          <span className="truncate text-sm font-black text-slate-950">
+                                            {hiredApplication.helperName}
+                                          </span>
+                                          <HelperPlanBadge tier={helperTierFromApplication(hiredApplication)} size="sm" />
+                                        </button>
+                                        <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
+                                          <Icons.Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                                          <span>{hiredApplication.helperRating}</span>
+                                          <LinkHelpRankBadgeFromStats
+                                            completedCount={hiredApplication.helperJobs}
+                                            averageRating={hiredApplication.helperRating}
+                                            role="helper"
+                                            size="sm"
+                                            showLabel={false}
+                                            t={t}
+                                          />
+                                        </p>
+                                        {(() => {
+                                          const hiredAmount =
+                                            hiredApplication.proposedAmount ?? job.acceptedAmount ?? null;
+                                          return hiredAmount != null ? (
+                                            <p className="mt-1 text-xs font-black text-slate-900">
+                                              {t('client_dashboard.helper_proposal_amount', {
+                                                amount: formatMoneyAmount(
+                                                  hiredAmount,
+                                                  job.currency || 'CAD',
+                                                ),
+                                              })}
+                                            </p>
+                                          ) : (
+                                            <p className="mt-1 text-xs font-semibold text-slate-600">
+                                              {t('client_dashboard.helper_proposal_negotiable')}
+                                            </p>
+                                          );
+                                        })()}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="rounded-2xl border border-white/80 bg-white/95 px-3 py-6 text-center text-xs font-semibold text-slate-500">
+                                    Helper contratado
+                                  </div>
+                                )
+                              ) : displayCandidateApps.length === 0 ? (
+                                <div className="rounded-2xl border border-white/80 bg-white/95 px-3 py-6 text-center text-xs font-semibold text-slate-500">
+                                  Nenhum candidato ainda
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  {displayCandidateApps.map((app) => (
+                                    <div
+                                      key={app.id}
+                                      className={clsx(
+                                        'rounded-2xl border bg-white/95 p-3 shadow-sm',
+                                        app.isExclusive ? 'border-amber-200' : 'border-slate-100',
+                                      )}
+                                    >
+                                      <div className="flex items-start gap-3">
+                                        <button
+                                          type="button"
+                                          onClick={() => openHelperProfileFromApplication(job, app)}
+                                          className="relative shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                                        >
+                                          <img
+                                            src={app.helperAvatar}
+                                            alt={app.helperName}
+                                            className="h-11 w-11 rounded-full object-cover ring-2 ring-white"
+                                          />
+                                        </button>
+                                        <div className="min-w-0 flex-1">
+                                          <button
+                                            type="button"
+                                            onClick={() => openHelperProfileFromApplication(job, app)}
+                                            className="flex max-w-full items-center gap-1.5 text-left"
+                                          >
+                                            <span className="truncate text-sm font-black text-slate-950">
+                                              {app.helperName}
+                                            </span>
+                                            <HelperPlanBadge tier={helperTierFromApplication(app)} size="sm" />
+                                          </button>
+                                          <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
+                                            <Icons.Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                                            <span>{app.helperRating}</span>
+                                            <LinkHelpRankBadgeFromStats
+                                              completedCount={app.helperJobs}
+                                              averageRating={app.helperRating}
+                                              role="helper"
+                                              size="sm"
+                                              showLabel={false}
+                                              t={t}
+                                            />
+                                          </p>
+                                          {app.proposedAmount != null ? (
+                                            <p className="mt-1 text-xs font-black text-slate-900">
+                                              {t('client_dashboard.helper_proposal_amount', {
+                                                amount: formatMoneyAmount(
+                                                  app.proposedAmount,
+                                                  job.currency || 'CAD',
+                                                ),
+                                              })}
+                                            </p>
+                                          ) : (
+                                            <p className="mt-1 text-xs font-semibold text-slate-600">
+                                              {t('client_dashboard.helper_proposal_negotiable')}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                      {(app.status === 'pending' || app.status === 'viewed') &&
+                                      isPreHireActivity ? (
+                                        <button
+                                          type="button"
+                                          disabled={acceptingApplicationId === app.id}
+                                          onClick={() => void handleAcceptProposal(job, app)}
+                                          className="mt-3 inline-flex min-h-[38px] w-full items-center justify-center rounded-xl bg-green-600 px-3 text-xs font-black text-white hover:bg-green-700 disabled:opacity-60"
+                                        >
+                                          Aceitar
+                                        </button>
+                                      ) : null}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
+
+                          {isDescriptionOpen ? (
+                            <div
+                              className={clsx(
+                                'mt-2 animate-in fade-in slide-in-from-top-1 duration-200 rounded-2xl border p-2 shadow-[0_18px_50px_rgba(15,23,42,0.12)]',
+                                clientDashboardAccent.activitySoftBg,
+                                clientDashboardAccent.activitySoftBorder,
+                              )}
+                            >
                               <div className="rounded-2xl border border-white/80 bg-white/95 px-2.5 py-2.5 text-xs font-semibold leading-snug text-slate-700 shadow-sm backdrop-blur">
                                 <div className="mb-2 grid grid-cols-1 gap-1.5 text-[11px] sm:grid-cols-2">
                                   <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
@@ -1697,6 +2082,8 @@ export default function ClientDashboard() {
             jobs={jobs}
             applications={applications}
             notifications={notifications}
+            nearbyHelpers={nearbyHelpers}
+            nearbyHelpersLoading={nearbyHelpersLoading}
           />
           <ClientNearbyHelpersList
             helpers={nearbyHelpers}
@@ -1712,7 +2099,10 @@ export default function ClientDashboard() {
         <PublicProfileSheetFrame
           open
           mobileAlign="bottom"
-          onClose={() => setShowHelperProfileModal(false)}
+          onClose={() => {
+            setShowHelperProfileModal(false);
+            setProfileContextRequestId(null);
+          }}
           panelClassName="h-full max-h-full rounded-t-[1.75rem] border border-gray-100/80 bg-white shadow-2xl transition-opacity duration-200 ease-out sm:rounded-3xl"
         >
           <div className="shrink-0 relative rounded-t-3xl sm:rounded-t-3xl">

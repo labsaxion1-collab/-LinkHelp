@@ -8,6 +8,7 @@ import { getCategoryIconById } from '@/utils/categoryIcons';
 import { formatJobOpenedAt } from '@/utils/jobDisplay';
 import { formatJobBudgetAmount } from '@/utils/formatJobBudget';
 import { formatMoneyAmount } from '@/utils/jobProposal';
+import { isJobPaused } from '@/utils/jobVisibility';
 import { LhCard } from '@/components/design-system/LhCard';
 import { InterestedRing } from '@/components/opportunities/InterestedRing';
 
@@ -125,6 +126,12 @@ export function HelperApplicationCard({ app, job, t, onOpenDetails, onCancel, on
                 <span className="mt-0.5 flex shrink-0 items-center gap-0.5 rounded-md border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-black text-amber-700">
                   <Icons.Crown className="h-2.5 w-2.5" />
                   {t('upcoming_jobs.app_exclusive_badge')}
+                </span>
+              ) : null}
+              {isJobPaused(job) ? (
+                <span className="mt-0.5 flex shrink-0 items-center gap-0.5 rounded-md border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-[10px] font-black text-slate-700">
+                  <Icons.Pause className="h-2.5 w-2.5" />
+                  {t('helper_dashboard.request_paused_badge')}
                 </span>
               ) : null}
             </div>

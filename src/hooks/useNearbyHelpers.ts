@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useUserLocation, type UserLocationSource } from '@/hooks/useUserLocation';
-import { fetchNearbyHelpers } from '@/services/supabase/nearbyHelpersRemote';
-import type { NearbyHelperMapPoint } from '@/types/nearbyHelper';
+import { fetchNearbyHelpersCached } from '@/services/supabase/nearbyHelpersCache';
+import type { NearbyHelper, NearbyHelperMapPoint } from '@/types/nearbyHelper';
 import {
   enrichNearbyHelpersForMap,
   filterNearbyHelpers,
@@ -14,53 +14,77 @@ type Options = {
   relatedCategoryIds?: string[];
 };
 
+function processNearbyHelpers(
+  rows: NearbyHelper[],
+  options: {
+    coords: { lat: number; lng: number };
+    locationSource: UserLocationSource | string;
+    profile: ReturnType<typeof useAuth>['profile'];
+    relatedCategoryIds?: string[];
+  },
+): NearbyHelperMapPoint[] {
+  const hasKnownOrigin = options.locationSource === 'gps' || options.locationSource === 'profile';
+  const sortCtx = {
+    origin: options.coords,
+    clientCity: options.profile?.city,
+    clientRegion: profileRegionFromRow(options.profile),
+    clientCountry: options.profile?.country,
+    relatedCategoryIds: options.relatedCategoryIds,
+    hasGpsOrigin: options.locationSource === 'gps',
+  };
+
+  const nearby = filterNearbyHelpers(rows, { ...sortCtx, hasKnownOrigin });
+  const sorted = sortNearbyHelpers(nearby, sortCtx);
+  return enrichNearbyHelpersForMap(sorted, options.coords);
+}
+
 export function useNearbyHelpers(options: Options = {}) {
   const { profile, session } = useAuth();
   const { coords, ready: locationReady, source: locationSource } = useUserLocation();
-  const [helpers, setHelpers] = useState<NearbyHelperMapPoint[]>([]);
+  const [rawHelpers, setRawHelpers] = useState<NearbyHelper[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const relatedKey = options.relatedCategoryIds?.join('|') ?? '';
+  const viewerId = session?.user?.id;
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
 
-    void (async () => {
-      const rows = await fetchNearbyHelpers(session?.user?.id);
-      if (cancelled) return;
-
-      const hasKnownOrigin = locationSource === 'gps' || locationSource === 'profile';
-      const sortCtx = {
-        origin: coords,
-        clientCity: profile?.city,
-        clientRegion: profileRegionFromRow(profile),
-        clientCountry: profile?.country,
-        relatedCategoryIds: options.relatedCategoryIds,
-        hasGpsOrigin: locationSource === 'gps',
-      };
-
-      const nearby = filterNearbyHelpers(rows, { ...sortCtx, hasKnownOrigin });
-      const sorted = sortNearbyHelpers(nearby, sortCtx);
-
-      setHelpers(enrichNearbyHelpersForMap(sorted, coords));
-      setLoading(false);
-    })();
+    void fetchNearbyHelpersCached(viewerId)
+      .then((rows) => {
+        if (!cancelled) setRawHelpers(rows);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [
-    session?.user?.id,
-    coords.lat,
-    coords.lng,
-    locationSource,
-    profile?.city,
-    profile?.region,
-    profile?.country,
-    relatedKey,
-    options.relatedCategoryIds,
-  ]);
+  }, [viewerId]);
+
+  const relatedKey = options.relatedCategoryIds?.join('|') ?? '';
+
+  const helpers = useMemo(
+    () =>
+      processNearbyHelpers(rawHelpers, {
+        coords,
+        locationSource,
+        profile,
+        relatedCategoryIds: options.relatedCategoryIds,
+      }),
+    [
+      rawHelpers,
+      coords.lat,
+      coords.lng,
+      locationSource,
+      locationReady,
+      profile?.city,
+      profile?.region,
+      profile?.country,
+      relatedKey,
+    ],
+  );
 
   const withCoords = useMemo(() => helpers.filter((h) => h.mapPosition != null), [helpers]);
 
@@ -68,7 +92,7 @@ export function useNearbyHelpers(options: Options = {}) {
     helpers,
     helpersWithMapPosition: withCoords,
     nearbyCount: helpers.length,
-    loading,
+    loading: loading || !locationReady,
     locationReady,
     locationSource: locationSource as UserLocationSource,
     clientCenter: coords,

@@ -6,6 +6,10 @@ export function isJobCancelled(job: Pick<Job, 'status'>): boolean {
   return CANCELLED_STATUSES.has(job.status);
 }
 
+export function isJobPaused(job: Pick<Job, 'status'>): boolean {
+  return job.status === 'paused';
+}
+
 /**
  * Client-side soft hide for requests (remove from list UI only).
  *

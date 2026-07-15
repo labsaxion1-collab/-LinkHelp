@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveApplicationEvent, resolveRequestEvent, resolveReviewEvent, resolveUpcomingEvent, type AppDataRealtimeEvent } from './appDataRealtime';
 
 const getSupabase = vi.fn();
@@ -7,13 +7,14 @@ vi.mock('./fetchUserViews', () => ({ fetchProfilesAsMapperMap: vi.fn(async () =>
 
 const event = (table: AppDataRealtimeEvent['table'], row: Record<string, unknown>): AppDataRealtimeEvent => ({ table, eventType: 'UPDATE', newRow: row, oldRow: {} });
 const request = {
-  id: 'r1', client_id: 'c1', title: 'Job', description: 'Desc', category: 'cleaning', subcategory: null, urgency: 'normal', budget: '$20', location: 'Toronto', address: null, city: null, region: null, postal_code: null, latitude: null, longitude: null, preferred_date: null, preferred_time_window: null, preferred_time: null, budget_type: null, budget_amount: null, currency: null, budget_min: null, budget_max: null, accepted_amount: null, application_count: 0, status: 'open', created_at: '2026-07-14T10:00:00Z', updated_at: '2026-07-14T11:00:00Z',
+  id: 'r1', client_id: 'c1', title: 'Job', description: 'Desc', category: 'cleaning', subcategory: null, urgency: 'normal', budget: '$20', location: 'Toronto', address: null, city: null, region: null, postal_code: null, latitude: null, longitude: null, preferred_date: null, preferred_time_window: null, preferred_time: null, budget_type: null, budget_amount: null, currency: null, budget_min: null, budget_max: null, accepted_amount: null, application_count: 0, exclusive_helper_id: null, status: 'open', created_at: '2026-07-14T10:00:00Z', updated_at: '2026-07-14T11:00:00Z',
 };
 const application = { id: 'a1', request_id: 'r1', helper_id: 'h1', client_id: 'c1', status: 'pending', message: null, proposed_amount: null, is_exclusive: false, created_at: '2026-07-14T10:00:00Z', updated_at: '2026-07-14T11:00:00Z' };
 const upcoming = { id: 'u1', request_id: 'r1', helper_id: 'h1', client_name: 'Client', client_avatar: null, title: 'Job', category: 'cleaning', description: 'Desc', location: 'Toronto', value_hint: '$20', urgency: 'normal', scheduled_at: '2026-07-15T10:00:00Z', workflow_status: 'scheduled', completion_requested_at: null, review_window_ends_at: null, created_at: '2026-07-14T10:00:00Z' };
 const review = { id: 'v1', request_id: 'r1', reviewer_id: 'c1', target_user_id: 'h1', rating: 5, comment: null, criteria_scores: null, reviewer_role: 'client', created_at: '2026-07-14T10:00:00Z' };
 
 describe('granular payload resolution', () => {
+  beforeEach(() => getSupabase.mockClear());
   it('updates a request from payload without any Supabase query', async () => {
     const current = { id: 'r1', clientName: 'Client', clientAvatar: 'avatar', clientRating: 5 } as never;
     const result = await resolveRequestEvent(event('requests', request), current);

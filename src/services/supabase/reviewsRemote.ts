@@ -8,7 +8,7 @@ import {
   toReviewSubmitError,
 } from '@/utils/reviewSubmitErrors';
 
-function rowToReview(row: ReviewRow): ServiceReview {
+export function reviewRowToReview(row: ReviewRow): ServiceReview {
   return {
     id: row.id,
     requestId: row.request_id,
@@ -77,7 +77,7 @@ export async function fetchRemoteReviews(): Promise<ServiceReview[]> {
     console.error('[LinkHelp] fetch reviews', error);
     return [];
   }
-  return ((data ?? []) as ReviewRow[]).map(rowToReview);
+  return ((data ?? []) as ReviewRow[]).map(reviewRowToReview);
 }
 
 async function insertReviewDirect(input: {
@@ -131,7 +131,7 @@ async function insertReviewDirect(input: {
     throw toReviewSubmitError(error);
   }
 
-  return rowToReview(data as ReviewRow);
+  return reviewRowToReview(data as ReviewRow);
 }
 
 async function loadSubmittedReview(
@@ -152,7 +152,7 @@ async function loadSubmittedReview(
     if (selectError) {
       logReviewSubmitFailure('select', selectError, { reviewId });
     }
-    if (row) return rowToReview(row as ReviewRow);
+    if (row) return reviewRowToReview(row as ReviewRow);
   }
 
   const { data: latest, error: latestError } = await sb
@@ -170,7 +170,7 @@ async function loadSubmittedReview(
       reviewerId: input.reviewerId,
     });
   }
-  if (latest) return rowToReview(latest as ReviewRow);
+  if (latest) return reviewRowToReview(latest as ReviewRow);
 
   console.warn('[LinkHelp] review saved but row not readable — using synthesized local row', {
     requestId: input.requestId,

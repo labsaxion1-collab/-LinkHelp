@@ -15,6 +15,8 @@ import { fetchProfilesAsMapperMap } from '@/services/supabase/fetchUserViews';
 import { ensureConversation } from '@/services/supabase/conversationEnsure';
 import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
 import { recordRealtimeChannelCreated, recordRealtimeChannelRemoved, recordRealtimeEvent, recordRealtimeSubscriptionStatus } from '@/lib/dev/supabaseMetrics';
+import type { AppDataEventType, AppDataRealtimeEvent, AppDataTable } from './appDataRealtime';
+export type { AppDataRealtimeEvent } from './appDataRealtime';
 
 export async function fetchRemoteJobsAndApps(): Promise<{
   jobs: Job[];
@@ -87,17 +89,16 @@ export async function fetchRemoteJobsAndApps(): Promise<{
   return { jobs, applications, upcomingJobs, notifications };
 }
 
-export type AppDataRealtimeEvent = { table: 'requests' | 'applications' | 'upcoming_jobs' | 'reviews'; eventType: string };
-
 export function subscribeRemoteData(onChange: (event: AppDataRealtimeEvent) => void): () => void {
   const sb = getSupabase();
   if (!sb) return () => {};
 
   const logicalName = 'linkhelp-app-data';
-  const handleEvent = (table: AppDataRealtimeEvent['table']) => (payload: { eventType?: string }) => {
-    const eventType = payload.eventType ?? 'UNKNOWN';
+  const handleEvent = (table: AppDataTable) => (payload: { eventType?: string; new?: Record<string, unknown>; old?: Record<string, unknown> }) => {
+    const eventType = payload.eventType as AppDataEventType;
+    if (eventType !== 'INSERT' && eventType !== 'UPDATE' && eventType !== 'DELETE') return;
     recordRealtimeEvent(logicalName, table, eventType);
-    onChange({ table, eventType });
+    onChange({ table, eventType, newRow: payload.new ?? {}, oldRow: payload.old ?? {} });
   };
   recordRealtimeChannelCreated({ channelName: logicalName, tables: ['requests', 'applications', 'upcoming_jobs', 'reviews'], listenerCount: 4 });
   const ch = sb

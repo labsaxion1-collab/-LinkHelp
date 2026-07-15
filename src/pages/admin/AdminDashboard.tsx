@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Briefcase, Users, Zap, DollarSign, Activity } from 'lucide-react';
-import { useAppData } from '@/context/AppDataContext';
+import { Briefcase, Users, Zap, DollarSign, Activity, RefreshCw } from 'lucide-react';
+import { useAdminDashboardSummary } from '@/admin/hooks/useAdminDashboardSummary';
 import { useLanguage } from '@/context/LanguageContext';
 import { FluxMetricCard } from '@/components/admin/FluxMetricCard';
 import { FluxAiInsightsPanel } from '@/components/admin/FluxAiInsightsPanel';
@@ -16,34 +16,22 @@ export type FluxAdminOutletContext = {
 
 export default function AdminDashboard() {
   const { t } = useLanguage();
-  const { jobs, applications } = useAppData();
+  const { data: summary, loading, error, reload } = useAdminDashboardSummary();
   const { activeSection } = useOutletContext<FluxAdminOutletContext>();
 
-  const metrics = useMemo(() => {
-    const openJobs = jobs.filter((j) => j.status === 'open').length;
-    const inProgress = jobs.filter((j) => j.status === 'in_progress').length;
-    const pendingApps = applications.filter((a) => a.status === 'pending' || a.status === 'viewed').length;
-    const hiredApps = applications.filter((a) => a.status === 'accepted').length;
-    const hireRate = applications.length
-      ? Math.round((hiredApps / Math.max(applications.length, 1)) * 100)
-      : 0;
-    return { openJobs, inProgress, pendingApps, hiredApps, hireRate };
-  }, [jobs, applications]);
+  const metrics = {
+    openJobs: summary?.openRequests ?? 0,
+    inProgress: summary?.inProgressRequests ?? 0,
+    pendingApps: summary?.pendingApplications ?? 0,
+    hiredApps: summary?.hiredApplications ?? 0,
+    hireRate: summary?.hireRate ?? 0,
+  };
 
   const categoryRows = useMemo((): CategoryIntelRow[] => {
+    const byCategory = new Map((summary?.categories ?? []).map((row) => [row.category, row]));
     return SERVICE_CATEGORIES.map((cat) => {
-      const catJobs = jobs.filter((j) => j.category === cat.id);
-      const openRequests = catJobs.filter((j) => j.status === 'open').length;
-      const catApps = applications.filter((a) => catJobs.some((j) => j.id === a.jobId));
-      const hired = catApps.filter((a) => a.status === 'accepted').length;
-      const hireRate = catApps.length ? Math.round((hired / catApps.length) * 100) : 0;
-      const budgets = catJobs
-        .map((j) => j.budgetMax ?? j.budgetAmount ?? j.budgetMin)
-        .filter((v): v is number => v != null && v > 0);
-      const avgBudget =
-        budgets.length > 0
-          ? `CAD $${Math.round(budgets.reduce((s, v) => s + v, 0) / budgets.length)}`
-          : t('flux_admin.budget_na');
+      const aggregate = byCategory.get(cat.id);
+      const openRequests = aggregate?.openRequests ?? 0;
       const trend: CategoryIntelRow['trend'] =
         openRequests >= 3 ? 'up' : openRequests === 0 ? 'down' : 'flat';
       return {
@@ -51,13 +39,15 @@ export default function AdminDashboard() {
         label: t(`categories.${cat.id}`),
         icon: cat.icon,
         openRequests,
-        applications: catApps.length,
-        hireRate,
-        avgBudget,
+        applications: aggregate?.applications ?? 0,
+        hireRate: aggregate?.hireRate ?? 0,
+        avgBudget: aggregate?.averageBudget != null
+          ? `CAD $${Math.round(aggregate.averageBudget)}`
+          : t('flux_admin.budget_na'),
         trend,
       };
     }).sort((a, b) => b.openRequests - a.openRequests);
-  }, [jobs, applications, t]);
+  }, [summary, t]);
 
   const aiInsights = useMemo(
     () => [
@@ -91,6 +81,21 @@ export default function AdminDashboard() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
+      {loading && !summary ? (
+        <div className="flex min-h-40 items-center justify-center text-sm font-semibold text-slate-400">
+          <RefreshCw className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+          {t('common.loading')}
+        </div>
+      ) : null}
+      {error ? (
+        <div className="flex items-center justify-between gap-4 border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+          <span>{t('common.error')}</span>
+          <button type="button" onClick={reload} className="inline-flex h-9 items-center gap-2 border border-rose-300/30 px-3 font-bold hover:bg-white/10">
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            {t('common.retry')}
+          </button>
+        </div>
+      ) : null}
       {showOverview && (
         <>
           <div>

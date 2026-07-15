@@ -97,3 +97,22 @@ ser interpretado como egress real faturado pelo Supabase.
 - teste do canal cobre os quatro listeners, eventos tipados, descarte de evento desconhecido e cleanup;
 - buscas granulares usam colunas explÃ­citas e nunca consultam notifications ou domÃ­nios nÃ£o relacionados;
 - notifications, chat e gamificaÃ§Ã£o nÃ£o foram alterados nesta etapa.
+
+## Etapa 3A.1 - Resumo administrativo agregado
+
+**ESTIMATIVA ESTRUTURAL:** o painel administrativo deixou de depender da carga global do
+`AppDataContext`. A rota server-side valida sessÃ£o e papel antes de executar uma Ãºnica
+RPC com `service_role`. A RPC retorna apenas contagens, taxas e agregados por categoria;
+nenhum request, application, profile ou budget individual Ã© transferido ao navegador.
+
+| Fluxo | Antes | Depois | ReduÃ§Ã£o estrutural |
+|---|---|---|---|
+| Abrir AdminDashboard | carga global de 7 operaÃ§Ãµes do AppDataContext | 1 endpoint + 1 RPC agregada | elimina listas completas do fluxo admin |
+| MÃ©tricas de requests | requests completos no navegador | contagens no PostgreSQL | zero linhas individuais |
+| MÃ©tricas de applications | applications completas no navegador | contagens e taxas no PostgreSQL | zero linhas individuais |
+| InteligÃªncia por categoria | requests, applications e budgets individuais | agregados por categoria | zero budgets individuais |
+| Profiles e demais domÃ­nios | carregados como efeito colateral | nÃ£o consultados pelo summary | domÃ­nios nÃ£o usados excluÃ­dos |
+
+As linhas acima descrevem operaÃ§Ãµes e formato de payload, nÃ£o egress real faturado. A
+migration `0051_admin_dashboard_summary_rpc.sql` permanece local e precisa ser aplicada
+antes de o endpoint funcionar em um ambiente Supabase.

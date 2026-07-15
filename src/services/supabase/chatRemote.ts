@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/supabase';
+import { recordRealtimeChannelCreated, recordRealtimeChannelRemoved, recordRealtimeEvent, recordRealtimeSubscriptionStatus } from '@/lib/dev/supabaseMetrics';
 import type { ConversationRow, MessageRow } from '@/types/database';
 import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import { avatarUrlForName } from '@/utils/avatarUrl';
@@ -222,6 +223,8 @@ export function subscribeConversationChannel(
   const sb = getSupabase();
   if (!sb) return () => {};
 
+  const logicalName = 'linkhelp-conversation';
+  recordRealtimeChannelCreated({ channelName: logicalName, tables: ['messages', 'conversations'], filters: ['conversation_id=eq.[redacted]', 'id=eq.[redacted]'], listenerCount: 2 });
   const ch = sb
     .channel(`linkhelp-conv-${conversationId}`)
     .on(
@@ -233,6 +236,7 @@ export function subscribeConversationChannel(
         filter: `conversation_id=eq.${conversationId}`,
       },
       (payload) => {
+        recordRealtimeEvent(logicalName, 'messages', 'INSERT');
         handlers.onInsertMessage(payload.new as MessageRow);
       },
     )
@@ -245,12 +249,14 @@ export function subscribeConversationChannel(
         filter: `id=eq.${conversationId}`,
       },
       (payload) => {
+        recordRealtimeEvent(logicalName, 'conversations', 'UPDATE');
         handlers.onConversationUpdated(payload.new as ConversationRow);
       },
     )
-    .subscribe();
+    .subscribe((status) => recordRealtimeSubscriptionStatus(logicalName, status));
 
   return () => {
+    recordRealtimeChannelRemoved(logicalName);
     sb.removeChannel(ch);
   };
 }

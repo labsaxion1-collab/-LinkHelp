@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase.database';
 import { authDevLog } from '@/lib/authDebug';
+import { instrumentedSupabaseFetch } from '@/lib/dev/supabaseMetrics';
 
 let browserClient: SupabaseClient<Database> | null = null;
 let envLogged = false;
@@ -112,6 +113,7 @@ export function getSupabase(): SupabaseClient<Database> | null {
   if (browserClient) return browserClient;
 
   browserClient = createClient<Database>(env.url, env.anonKey, {
+    ...(import.meta.env.DEV ? { global: { fetch: instrumentedSupabaseFetch } } : {}),
     auth: {
       /** One namespace for session + PKCE verifier (`${storageKey}-code-verifier`) site-wide */
       storageKey: LINKHELP_AUTH_STORAGE_KEY,

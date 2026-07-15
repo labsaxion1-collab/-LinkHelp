@@ -43,6 +43,7 @@ import {
 } from '@/services/helperLeadCredits';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import { markNotificationsCleared } from '@/utils/notificationVisibility';
+import { createRefreshCycleId, recordSupabaseOperation, setActiveRefreshCycle } from '@/lib/dev/supabaseMetrics';
 import {
   MAX_JOB_INTERESTED,
   countActiveApplicationsForJob,
@@ -148,8 +149,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     clearDemoLocalData();
   }, []);
 
-  const refreshRemote = useCallback(async () => {
+  const refreshRemote = useCallback(async (source = 'manual-refresh') => {
     if (!useRemote) return;
+    const refreshCycleId = createRefreshCycleId(source);
+    const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    setActiveRefreshCycle(refreshCycleId);
     setDataLoading(true);
     try {
       const [d, reviewRows] = await Promise.all([fetchRemoteJobsAndApps(), fetchRemoteReviews()]);
@@ -158,21 +162,30 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       setUpcomingJobs(filterUpcomingByRequestStatus(d.upcomingJobs, d.jobs));
       setNotifications(d.notifications);
       setReviews(reviewRows);
+      recordSupabaseOperation(
+        { operationName: 'refresh-remote', domain: 'app-data', table: 'multiple', action: 'refresh', sourceLabel: source, refreshCycleId },
+        {
+          startedAt,
+          data: { jobs: d.jobs, applications: d.applications, upcomingJobs: d.upcomingJobs, notifications: d.notifications, reviews: reviewRows },
+          rowCount: d.jobs.length + d.applications.length + d.upcomingJobs.length + d.notifications.length + reviewRows.length,
+        },
+      );
     } finally {
+      setActiveRefreshCycle(null);
       setDataLoading(false);
     }
   }, [useRemote, filterUpcomingByRequestStatus]);
 
   useEffect(() => {
     if (!useRemote) return;
-    void refreshRemote();
-    const unsub = subscribeRemoteData(() => {
+    void refreshRemote('initial-auth-load');
+    const unsub = subscribeRemoteData((event) => {
       if (remoteRefreshDebounceRef.current) {
         clearTimeout(remoteRefreshDebounceRef.current);
       }
       remoteRefreshDebounceRef.current = setTimeout(() => {
         remoteRefreshDebounceRef.current = null;
-        void refreshRemote();
+        void refreshRemote('realtime-' + event.table + '-' + event.eventType.toLowerCase());
       }, 500);
     });
     return () => {

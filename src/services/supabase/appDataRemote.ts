@@ -14,6 +14,7 @@ import {
 import { fetchProfilesAsMapperMap } from '@/services/supabase/fetchUserViews';
 import { ensureConversation } from '@/services/supabase/conversationEnsure';
 import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
+import { recordRealtimeChannelCreated, recordRealtimeChannelRemoved, recordRealtimeEvent, recordRealtimeSubscriptionStatus } from '@/lib/dev/supabaseMetrics';
 
 export async function fetchRemoteJobsAndApps(): Promise<{
   jobs: Job[];
@@ -86,21 +87,31 @@ export async function fetchRemoteJobsAndApps(): Promise<{
   return { jobs, applications, upcomingJobs, notifications };
 }
 
-export function subscribeRemoteData(onChange: () => void): () => void {
+export type AppDataRealtimeEvent = { table: 'requests' | 'applications' | 'upcoming_jobs' | 'reviews'; eventType: string };
+
+export function subscribeRemoteData(onChange: (event: AppDataRealtimeEvent) => void): () => void {
   const sb = getSupabase();
   if (!sb) return () => {};
 
+  const logicalName = 'linkhelp-app-data';
+  const handleEvent = (table: AppDataRealtimeEvent['table']) => (payload: { eventType?: string }) => {
+    const eventType = payload.eventType ?? 'UNKNOWN';
+    recordRealtimeEvent(logicalName, table, eventType);
+    onChange({ table, eventType });
+  };
+  recordRealtimeChannelCreated({ channelName: logicalName, tables: ['requests', 'applications', 'upcoming_jobs', 'reviews'], listenerCount: 4 });
   const ch = sb
     .channel('linkhelp-app-data')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'upcoming_jobs' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, handleEvent('requests'))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, handleEvent('applications'))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'upcoming_jobs' }, handleEvent('upcoming_jobs'))
     // notifications: subscribeNotificationsChannel (granular, per-user)
     // messages / conversations: subscribeConversationChannel in chatRemote (per-thread)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, onChange)
-    .subscribe();
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, handleEvent('reviews'))
+    .subscribe((status) => recordRealtimeSubscriptionStatus(logicalName, status));
 
   return () => {
+    recordRealtimeChannelRemoved(logicalName);
     sb.removeChannel(ch);
   };
 }
@@ -124,6 +135,8 @@ export function subscribeNotificationsChannel(
   const sb = getSupabase();
   if (!sb || !userId) return () => {};
 
+  const logicalName = 'linkhelp-notifs-user';
+  recordRealtimeChannelCreated({ channelName: logicalName, tables: ['notifications'], filters: ['user_id=eq.[redacted]'], listenerCount: 3 });
   const ch = sb
     .channel(`linkhelp-notifs-${userId}`)
     .on(
@@ -134,7 +147,10 @@ export function subscribeNotificationsChannel(
         table: 'notifications',
         filter: `user_id=eq.${userId}`,
       },
-      (payload) => handlers.onInsert(payload.new as NotificationRow),
+      (payload) => {
+        recordRealtimeEvent(logicalName, 'notifications', 'INSERT');
+        handlers.onInsert(payload.new as NotificationRow);
+      },
     )
     .on(
       'postgres_changes',
@@ -144,7 +160,10 @@ export function subscribeNotificationsChannel(
         table: 'notifications',
         filter: `user_id=eq.${userId}`,
       },
-      (payload) => handlers.onUpdate(payload.new as NotificationRow),
+      (payload) => {
+        recordRealtimeEvent(logicalName, 'notifications', 'UPDATE');
+        handlers.onUpdate(payload.new as NotificationRow);
+      },
     )
     .on(
       'postgres_changes',
@@ -158,13 +177,15 @@ export function subscribeNotificationsChannel(
         filter: `user_id=eq.${userId}`,
       },
       (payload) => {
+        recordRealtimeEvent(logicalName, 'notifications', 'DELETE');
         const oldRow = payload.old as { id?: string };
         if (oldRow?.id) handlers.onDelete(oldRow.id);
       },
     )
-    .subscribe();
+    .subscribe((status) => recordRealtimeSubscriptionStatus(logicalName, status));
 
   return () => {
+    recordRealtimeChannelRemoved(logicalName);
     sb.removeChannel(ch);
   };
 }

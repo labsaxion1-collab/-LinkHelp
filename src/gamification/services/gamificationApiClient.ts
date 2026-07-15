@@ -3,6 +3,7 @@ import type { UserType } from '@/gamification/types/gamification';
 import type { GamificationApiResponse } from '@/gamification/services/recalculateGamification';
 import { getUserGamification, type UserGamificationRecord } from '@/gamification/services/gamificationService';
 import { EMPTY_GAMIFICATION_STATS } from '@/gamification/services/gamificationStatsAdapter';
+import { measureLocalOperation } from '@/lib/dev/supabaseMetrics';
 
 async function getAccessToken(): Promise<string> {
   const sb = getSupabase();
@@ -71,10 +72,16 @@ async function parseApiResponse(res: Response): Promise<GamificationApiResponse>
 export async function fetchGamificationMe(userType: UserType): Promise<UserGamificationRecord> {
   try {
     const token = await getAccessToken();
-    const res = await fetch(`/api/gamification/me?userType=${encodeURIComponent(userType)}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return apiResponseToRecord(await parseApiResponse(res));
+    const payload = await measureLocalOperation(
+      { operationName: 'gamification-me', domain: 'gamification', table: 'api/gamification/me', action: 'api', sourceLabel: 'gamificationApiClient.fetchGamificationMe' },
+      async () => {
+        const res = await fetch(`/api/gamification/me?userType=${encodeURIComponent(userType)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        return parseApiResponse(res);
+      },
+    );
+    return apiResponseToRecord(payload);
   } catch {
     const snapshot = await readGamificationViaSupabase(userType);
     if (snapshot) return snapshot;
@@ -88,15 +95,21 @@ export async function requestGamificationRecalculate(
 ): Promise<UserGamificationRecord | null> {
   try {
     const token = await getAccessToken();
-    const res = await fetch('/api/gamification/recalculate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+    const payload = await measureLocalOperation(
+      { operationName: 'gamification-recalculate', domain: 'gamification', table: 'api/gamification/recalculate', action: 'api', sourceLabel: 'gamificationApiClient.requestGamificationRecalculate' },
+      async () => {
+        const res = await fetch('/api/gamification/recalculate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ userType }),
+        });
+        return parseApiResponse(res);
       },
-      body: JSON.stringify({ userType }),
-    });
-    return apiResponseToRecord(await parseApiResponse(res));
+    );
+    return apiResponseToRecord(payload);
   } catch {
     return null;
   }

@@ -10,6 +10,7 @@ import {
   requestGamificationRecalculate,
 } from '@/gamification/services/gamificationApiClient';
 import type { UserGamificationRecord } from '@/gamification/services/gamificationService';
+import { recordRealtimeChannelCreated, recordRealtimeChannelRemoved, recordRealtimeEvent, recordRealtimeSubscriptionStatus } from '@/lib/dev/supabaseMetrics';
 
 export interface UseGamificationResult {
   levelKey: LevelKey;
@@ -37,6 +38,8 @@ function acquireGamificationChannel(
 
   if (!entry) {
     const listeners = new Set<() => void>();
+    const logicalName = 'gamification-user-type';
+    recordRealtimeChannelCreated({ channelName: logicalName, tables: ['user_gamification'], filters: ['user_id=eq.[redacted]'], listenerCount: 1 });
     const channel = db
       .channel(key)
       .on(
@@ -50,10 +53,11 @@ function acquireGamificationChannel(
         (payload) => {
           const row = (payload.new ?? payload.old) as { user_type?: string } | null;
           if (row?.user_type && row.user_type !== userType) return;
+          recordRealtimeEvent('gamification-user-type', 'user_gamification', payload.eventType ?? 'UNKNOWN');
           listeners.forEach((listener) => listener());
         },
       )
-      .subscribe();
+      .subscribe((status) => recordRealtimeSubscriptionStatus('gamification-user-type', status));
 
     entry = { channel, listeners, refCount: 0 };
     channelRegistry.set(key, entry);
@@ -70,6 +74,7 @@ function acquireGamificationChannel(
     if (current.refCount <= 0) {
       channelRegistry.delete(key);
       try {
+        recordRealtimeChannelRemoved('gamification-user-type');
         void db.removeChannel(current.channel);
       } catch {
         // Realtime pode já ter caído; nunca quebrar a UI por isso.

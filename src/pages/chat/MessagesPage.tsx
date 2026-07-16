@@ -24,7 +24,7 @@ import { ChatThreadHeader } from '@/components/chat/ChatThreadHeader';
 import { ChatPreMatchInlineNote, ChatPreMatchStrip } from '@/components/chat/ChatThreadContext';
 import { dedupeConversationSummaries } from '@/services/supabase/chatRemote';
 import { groupConversationsByPeer } from '@/utils/groupConversationsByPeer';
-import { usePeerGamificationHeroKeys } from '@/gamification/hooks/usePeerGamificationHeroKeys';
+import { usePublicGamificationHeroKeys } from '@/gamification/hooks/usePublicGamificationProfile';
 import { useGamification } from '@/gamification/hooks/useGamification';
 import { getChatHeroAccentTheme } from '@/components/chat/chatHeroTheme';
 import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
@@ -146,7 +146,7 @@ export default function MessagesPage() {
   const peerGroups = useMemo(() => groupConversationsByPeer(filteredSummaries), [filteredSummaries]);
 
   const peerUserType = effectiveClientMode ? 'helper' : 'client';
-  const peerHeroKeys = usePeerGamificationHeroKeys(
+  const peerHeroKeys = usePublicGamificationHeroKeys(
     [...new Set([selectedPeerId, remote.peerId].filter(Boolean) as string[])],
     peerUserType,
   );
@@ -778,3 +778,4 @@ export default function MessagesPage() {
     </AppPageShell>
   );
 }
+

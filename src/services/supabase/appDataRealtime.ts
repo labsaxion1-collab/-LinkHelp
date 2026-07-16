@@ -6,7 +6,7 @@ import type { Job } from '@/types/job';
 import type { ServiceReview } from '@/types/review';
 import type { UpcomingJob } from '@/types/upcoming';
 import { applicationRowToApp, requestRowToJob, upcomingRowToUpcoming } from './mappers';
-import { reviewRowToReview } from './reviewsRemote';
+import { reviewRowToServiceReview } from './reviewsRemote';
 import { fetchProfilesAsMapperMap } from './fetchUserViews';
 
 export type AppDataTable = 'requests' | 'applications' | 'upcoming_jobs' | 'reviews';
@@ -121,7 +121,7 @@ export async function resolveReviewEvent(event: AppDataRealtimeEvent): Promise<G
   if (event.eventType === 'DELETE' || !id) return { item: null, id, usedPayload: true, queries: [] };
   const complete = hasFields(event.newRow, REVIEW_FIELDS);
   const row = complete ? event.newRow as ReviewRow : await selectOne<ReviewRow>('reviews', REVIEW_FIELDS, id);
-  return { item: row ? reviewRowToReview(row) : null, id, usedPayload: complete, queries: complete ? [] : ['reviews:id'] };
+  return { item: row ? reviewRowToServiceReview(row) : null, id, usedPayload: complete, queries: complete ? [] : ['reviews:id'] };
 }
 
 export async function measureGranularHandler<T>(event: AppDataRealtimeEvent, handler: () => Promise<GranularResult<T>>): Promise<GranularResult<T>> {

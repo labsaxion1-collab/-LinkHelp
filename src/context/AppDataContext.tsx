@@ -376,56 +376,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const handleGranularRealtimeEvent = useCallback(async (event: AppDataRealtimeEvent) => {
-    const id = eventRowId(event);
-    if (!id) {
-      if (import.meta.env.DEV) console.warn('[LinkHelp] granular realtime event without id', event.table, event.eventType);
-      return;
-    }
-    if (event.eventType !== 'DELETE' && !shouldApplyRealtimeVersion(realtimeVersionsRef.current, `${event.table}:${id}`, event.newRow.updated_at)) return;
-    if (event.eventType === 'DELETE') {
-      await measureGranularHandler(event, async () => ({ item: null, id, usedPayload: true, queries: [] }));
-    }
-
-    if (event.table === 'requests') {
-      if (event.eventType === 'DELETE') {
-        setJobs((prev) => removeById(prev, id));
-        return;
-      }
-      const current = jobsRef.current.find((row) => row.id === id);
-      const result = await measureGranularHandler(event, () => resolveRequestEvent(event, current));
-      if (result.item) setJobs((prev) => upsertSorted(prev, result.item!, newestFirst));
-      return;
-    }
-
-    if (event.table === 'applications') {
-      if (event.eventType === 'DELETE') {
-        setApplications((prev) => removeById(prev, id));
-        return;
-      }
-      const current = applicationsRef.current.find((row) => row.id === id);
-      const result = await measureGranularHandler(event, () => resolveApplicationEvent(event, current));
-      if (result.item) setApplications((prev) => upsertSorted(prev, result.item!, newestFirst));
-      return;
-    }
-
-    if (event.table === 'upcoming_jobs') {
-      if (event.eventType === 'DELETE') {
-        setUpcomingJobs((prev) => removeById(prev, id));
-        return;
-      }
-      const result = await measureGranularHandler(event, () => resolveUpcomingEvent(event));
-      if (result.item) setUpcomingJobs((prev) => upsertSorted(prev, result.item!, scheduledFirst));
-      return;
-    }
-
-    if (event.eventType === 'DELETE') {
-      setReviews((prev) => removeById(prev, id));
-      return;
-    }
-    const result = await measureGranularHandler(event, () => resolveReviewEvent(event));
-    if (result.item) setReviews((prev) => upsertSorted(prev, result.item!, newestFirst));
-  }, []);
 
   useEffect(() => {
     if (!useRemote || !userId) return;

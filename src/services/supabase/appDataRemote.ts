@@ -1,4 +1,11 @@
 import { getSupabase } from '@/lib/supabase';
+import {
+  recordRealtimeChannelCreated,
+  recordRealtimeChannelRemoved,
+  recordRealtimeEvent,
+  recordRealtimeSubscriptionStatus,
+} from '@/lib/dev/supabaseMetrics';
+import type { AppDataEventType, AppDataTable } from '@/services/supabase/appDataRealtime';
 import type { Job } from '@/types/job';
 import type { Application, ApplicationStatus } from '@/types/application';
 import type { UpcomingJob } from '@/types/upcoming';
@@ -240,7 +247,7 @@ export function subscribeAppDataChanges(handlers: AppDataRealtimeHandlers): () =
 }
 
 /** @deprecated Use subscribeAppDataChanges — triggers full refetch on every event. */
-export function subscribeRemoteData(onChange: () => void): () => void {
+export function subscribeRemoteData(onChange: (event?: { table: AppDataTable; eventType: AppDataEventType; newRow: Record<string, unknown>; oldRow: Record<string, unknown> }) => void): () => void {
   const sb = getSupabase();
   if (!sb) return () => {};
 
@@ -254,10 +261,10 @@ export function subscribeRemoteData(onChange: () => void): () => void {
   recordRealtimeChannelCreated({ channelName: logicalName, tables: ['requests', 'applications', 'upcoming_jobs', 'reviews'], listenerCount: 4 });
   const ch = sb
     .channel('linkhelp-app-data')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'upcoming_jobs' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, handleEvent('requests'))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, handleEvent('applications'))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'upcoming_jobs' }, handleEvent('upcoming_jobs'))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, handleEvent('reviews'))
     .subscribe();
 
   return () => {

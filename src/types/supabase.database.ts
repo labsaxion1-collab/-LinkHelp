@@ -280,6 +280,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      get_public_gamification_profile: {
+        Args: { target_user_id: string; target_user_type: string };
+        Returns: { user_id: string; user_type: string; hero_key: string | null }[];
+      };
       get_user_reputation_stats: {
         Args: { p_user_id: string };
         Returns: Json;
@@ -304,3 +308,4 @@ export type Database = {
     Enums: Record<string, never>;
   };
 };
+

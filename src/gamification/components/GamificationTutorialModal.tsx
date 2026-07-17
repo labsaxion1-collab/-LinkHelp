@@ -11,6 +11,7 @@ import { useGamification } from '@/gamification/hooks/useGamification';
 import { getProgressToNextLevel, listMissingRequirements } from '@/gamification/engines/progressEngine';
 import { EMPTY_GAMIFICATION_STATS } from '@/gamification/services/gamificationStatsAdapter';
 import { CLIENT_LEVELS } from '@/gamification/config/clientLevels';
+import { HELPER_LEVELS } from '@/gamification/config/helperLevels';
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -25,16 +26,18 @@ export function GamificationTutorialModal({ open, onClose, userType }: Props) {
     ? getProgressToNextLevel(userType, record.score, record.stats ?? EMPTY_GAMIFICATION_STATS, record.levelKey)
     : null;
   const staticCards = getGamificationTutorialCards(userType);
+  const tutorialLevelName = (key: string, fallback: string) =>
+    userType === 'helper' && key === 'confiavel' ? 'Helper Iniciante' : fallback;
   const currentCard = progress && record ? {
     id: 'current-progress',
-    title: progress.nextLevel ? `Como virar ${progress.nextLevel.name}?` : 'Nível máximo alcançado',
+    title: progress.nextLevel ? `Como virar ${tutorialLevelName(progress.nextLevel.key, progress.nextLevel.name)}?` : 'Nível máximo alcançado',
     body: progress.nextLevel
       ? 'Para conquistar seu próximo nível, você precisa:'
       : 'Você já chegou à medalha mais alta desta jornada.',
     heroKey: record.heroKey,
     nextHeroKey: progress.nextLevel?.heroKey,
-    currentLevelName: progress.currentLevel.name,
-    nextLevelName: progress.nextLevel?.name,
+    currentLevelName: tutorialLevelName(progress.currentLevel.key, progress.currentLevel.name),
+    nextLevelName: progress.nextLevel ? tutorialLevelName(progress.nextLevel.key, progress.nextLevel.name) : undefined,
     statusCopy: userType === 'client' ? 'Você começou sua jornada na LinkHelp!' : 'Sua jornada profissional começa aqui!',
     requirements: progress.nextLevel
       ? [
@@ -157,9 +160,15 @@ export function GamificationTutorialModal({ open, onClose, userType }: Props) {
       ? clientFutureCards.slice(3)
       : [currentCard, ...clientFutureCards.slice(clientLevelIndex)]
     : staticCards;
-  const cards = userType === 'client'
-    ? clientCards
-    : currentCard ? [currentCard, ...staticCards.slice(1)] : staticCards;
+  const helperLevelIndex = progress
+    ? HELPER_LEVELS.findIndex((level) => level.key === progress.currentLevel.key)
+    : -1;
+  const helperCards = currentCard && helperLevelIndex >= 0
+    ? helperLevelIndex >= HELPER_LEVELS.length - 1
+      ? staticCards.slice(-2)
+      : [currentCard, ...staticCards.slice(helperLevelIndex + 1)]
+    : staticCards;
+  const cards = userType === 'client' ? clientCards : helperCards;
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -207,16 +216,22 @@ export function GamificationTutorialModal({ open, onClose, userType }: Props) {
       stepCount={cards.length}
       onStepChange={setStep}
       onDismiss={onClose}
-      headerLabel="Tutorial de níveis"
+      headerLabel={userType === 'helper' ? 'Tutorial de níveis - Helper' : 'Tutorial de níveis'}
       closeLabel={t('common.close')}
       titleId="gamification-tutorial-title"
       zIndex={1000}
+      premiumStickyHeader={userType === 'helper'}
       footer={
         <>
           <button
             type="button"
             onClick={goNext}
-            className="inline-flex min-h-[62px] w-full items-center justify-center gap-2 rounded-[1.75rem] bg-gradient-to-r from-[#2563FF] via-[#1B8FFF] to-[#4F8CFF] px-6 text-base font-black text-white shadow-[0_18px_40px_rgba(37,99,255,0.32)] transition hover:brightness-105"
+            className={clsx(
+              'inline-flex w-full items-center justify-center gap-2 bg-gradient-to-r from-[#2563FF] via-[#1B8FFF] to-[#4F8CFF] font-black text-white transition hover:brightness-105',
+              userType === 'helper'
+                ? 'min-h-[52px] rounded-2xl px-5 text-sm shadow-[0_12px_28px_rgba(37,99,255,0.28)]'
+                : 'min-h-[62px] rounded-[1.75rem] px-6 text-base shadow-[0_18px_40px_rgba(37,99,255,0.32)]',
+            )}
           >
             {isLastStep ? t('client_onboarding_tutorial.finish') : t('client_onboarding_tutorial.next')}
             {!isLastStep ? <ArrowRight className="h-5 w-5" /> : null}

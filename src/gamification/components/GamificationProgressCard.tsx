@@ -64,15 +64,16 @@ export function GamificationLevelButton({
   const [expanded, setExpanded] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [panelStyle, setPanelStyle] = useState<{ top: number; left: number; width: number } | null>(null);
-  const progress = record
-    ? getProgressToNextLevel(
-        userType,
-        record.score,
-        record.stats ?? EMPTY_GAMIFICATION_STATS,
-        record.levelKey,
-      )
-    : null;
-  const missingRequirements = progress?.missingRequirements ?? [];
+  const progress = getProgressToNextLevel(
+    userType,
+    record?.score ?? 0,
+    record?.stats ?? EMPTY_GAMIFICATION_STATS,
+    record?.levelKey ?? 'novo',
+  );
+  const missingRequirements = [
+    ...(progress.pointsToNext > 0 ? [`Alcançar mais ${progress.pointsToNext} pontos`] : []),
+    ...progress.missingRequirements,
+  ];
 
   useLayoutEffect(() => {
     if (!expanded || !buttonRef.current) {
@@ -216,15 +217,13 @@ export function GamificationProgressCard({ userType, className = '', variant = '
     );
   }
 
-  if (!record?.levelKey) return null;
-
   const progress = getProgressToNextLevel(
     userType,
-    record.score,
-    record.stats ?? EMPTY_GAMIFICATION_STATS,
-    record.levelKey,
+    record?.score ?? 0,
+    record?.stats ?? EMPTY_GAMIFICATION_STATS,
+    record?.levelKey ?? 'novo',
   );
-  const heroKey = record.heroKey;
+  const heroKey = record?.heroKey ?? `${userType}_novo`;
   const medalSrc = MEDAL_MAP[heroKey] ?? MEDAL_MAP[`${userType}_novo`];
   const accentTheme = PROGRESS_MEDAL_ACCENT;
   const isMax = progress.nextLevel === null;
@@ -284,7 +283,7 @@ export function GamificationProgressCard({ userType, className = '', variant = '
         <div className="shrink-0 text-right">
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Score</p>
           <p className="tabular-nums text-xl font-black text-slate-950">
-            {record.score}
+            {record?.score ?? 0}
             <span className="text-xs font-semibold text-slate-400"> / 1000</span>
           </p>
         </div>

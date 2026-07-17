@@ -1053,11 +1053,6 @@ export default function HelperDashboard() {
             rating={helperMvpStats.avgRating}
             connectedProfessionals={helperMvpStats.accepted}
           />
-          {helperGamification.heroKey === 'helper_novo' ? (
-            <GamificationProgressCard userType="helper" className="mb-4" />
-          ) : null}
-
-
           <section
               className="relative isolate hidden mb-8 w-screen min-w-[100vw] max-w-none overflow-hidden pb-8 pt-0"
               style={{ marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)' }}

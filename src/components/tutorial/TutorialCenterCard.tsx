@@ -19,20 +19,23 @@ type Props = {
   controlsOnImage?: boolean;
   footerBlurOverlay?: boolean;
   immersiveLayout?: boolean;
+  premiumStickyHeader?: boolean;
   /** Card 1 — hint de swipe horizontal (somente cliente) */
   swipeHint?: boolean;
   children: ReactNode;  footer: ReactNode;
 };
 
-function ProgressDots({ total, active, onImage }: { total: number; active: number; onImage?: boolean }) {
+function ProgressDots({ total, active, onImage, compact = false }: { total: number; active: number; onImage?: boolean; compact?: boolean }) {
   return (
-    <div className="flex items-center justify-center gap-2">
+    <div className={clsx('flex items-center justify-center', compact ? 'gap-1.5' : 'gap-2')}>
       {Array.from({ length: total }).map((_, index) => (
         <span
           key={index}
           className={clsx(
             'h-2 rounded-full transition-all duration-300',
-            index === active ? 'w-8 bg-[#2563FF]' : onImage ? 'w-2 bg-white/60' : 'w-2 bg-[#CBD5E1]',
+            index === active
+              ? compact ? 'w-6 bg-[#2563FF]' : 'w-8 bg-[#2563FF]'
+              : onImage ? 'w-2 bg-white/60' : compact ? 'w-1.5 bg-[#CBD5E1]' : 'w-2 bg-[#CBD5E1]',
           )}
         />
       ))}
@@ -55,6 +58,7 @@ export function TutorialCenterCard({
   controlsOnImage = false,
   footerBlurOverlay = false,
   immersiveLayout = false,
+  premiumStickyHeader = false,
   swipeHint = false,
   children,
   footer,
@@ -128,10 +132,30 @@ export function TutorialCenterCard({
         className={clsx(
           'relative flex h-[min(90dvh,680px)] max-h-[min(90dvh,680px)] w-full max-w-[420px] flex-col overflow-hidden rounded-[32px] shadow-[0_24px_80px_rgba(37,99,255,0.2)] animate-in zoom-in-95 fade-in duration-300',
           immersiveLayout ? 'bg-gradient-to-b from-[#F3F8FF] to-[#FAFCFF]' : 'bg-white',
+          premiumStickyHeader && '[&_.lh-tutorial-slide-panel]:pt-24',
         )}
         onClick={(event) => event.stopPropagation()}
       >
-        {headerLabel ? (
+        {premiumStickyHeader ? (
+          <header className="absolute inset-x-0 top-0 z-50 flex min-h-[88px] flex-col items-center justify-center gap-1 bg-gradient-to-r from-[#123FC4] via-[#1854D8] to-[#2563E8] px-5 py-2 shadow-[0_10px_28px_rgba(18,63,196,0.3)]">
+            <p className="w-full pr-12 text-left text-sm font-black leading-tight tracking-[-0.01em] text-white sm:text-base">
+              {headerLabel}
+            </p>
+            <div className="rounded-full border border-white/25 bg-white/15 px-3 py-1.5 shadow-inner backdrop-blur-sm">
+              <ProgressDots total={stepCount} active={step} compact />
+            </div>
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-white/35 bg-white/20 text-white shadow-[0_8px_22px_rgba(15,23,42,0.12)] backdrop-blur-md transition hover:bg-white/30"
+              aria-label={closeLabel}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </header>
+        ) : null}
+
+        {headerLabel && !premiumStickyHeader ? (
           <p className="absolute left-5 top-5 z-40 text-sm font-semibold text-[#475569]">
             {headerLabel}
           </p>
@@ -151,14 +175,14 @@ export function TutorialCenterCard({
           </button>
         ) : null}
 
-        <div className="absolute left-1/2 top-5 z-40 -translate-x-1/2">
+        <div className={clsx('absolute left-1/2 top-5 z-40 -translate-x-1/2', premiumStickyHeader && 'hidden')}>
           <ProgressDots total={stepCount} active={step} onImage={controlsOnImage} />
         </div>
 
         <button
           type="button"
           onClick={onDismiss}
-          className="absolute right-4 top-3.5 z-40 rounded-full bg-white/50 p-2 text-[#64748B] shadow-[0_4px_16px_rgba(15,23,42,0.08)] ring-1 ring-white/50 backdrop-blur-md transition hover:bg-white/75 hover:text-[#0B1220]"
+          className={clsx('absolute right-4 top-3.5 z-40 rounded-full bg-white/50 p-2 text-[#64748B] shadow-[0_4px_16px_rgba(15,23,42,0.08)] ring-1 ring-white/50 backdrop-blur-md transition hover:bg-white/75 hover:text-[#0B1220]', premiumStickyHeader && 'hidden')}
           aria-label={closeLabel}
         >
           <X className="h-4 w-4" />
@@ -221,7 +245,7 @@ export function TutorialSlidePanel({
   return (
     <div
       className={clsx(
-        'flex w-full shrink-0 basis-full flex-col',
+        'lh-tutorial-slide-panel flex w-full shrink-0 basis-full flex-col',
         fill ? 'h-full min-h-0 overflow-hidden' : 'overflow-y-auto',
         flush ? 'px-0 pt-0 pb-0' : 'px-6 pb-4 pt-14',
       )}

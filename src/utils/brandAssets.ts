@@ -19,6 +19,13 @@ export const BRAND = {
   tutorialC4: '/brand/tutorial%20c4.png',
   tutorialC5: '/brand/tutorial%20c5.png',
   tutorialC6: '/brand/tutorial%20c6.png',
+  tutorialH1: '/brand/tutorial-helper/p1.png',
+  tutorialH2: '/brand/tutorial-helper/p2.png',
+  tutorialH3: '/brand/tutorial-helper/p3.png',
+  tutorialH4: '/brand/tutorial-helper/p4.png',
+  tutorialH5: '/brand/tutorial-helper/p5.png',
+  tutorialH6: '/brand/tutorial-helper/p6.png',
+  tutorialH7: '/brand/tutorial-helper/p7.png',
   tutorialSwipeDedo: '/brand/dedo1.png',
   introVideo: '/brand/intro.mp4',
 } as const;

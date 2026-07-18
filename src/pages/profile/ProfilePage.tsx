@@ -43,7 +43,7 @@ import { filterValidSkillKeys } from '@/data/helperSkillsCatalog';
 import { deriveHelperCategoriesFromSkillKeys, getHelperCategoryPreferences } from '@/utils/helperCategoryPreferences';
 import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
 import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
-import { cropSquareAvatarFromFile } from '@/utils/portfolioMediaProcessing';
+import { cropSquareAvatarFromFile } from '@/utils/avatarMediaProcessing';
 import { extractErrorMessage, formatAuthFlowErrorMessage } from '@/utils/errorMessage';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ClientProfileLinkCreditsPanel } from '@/components/client/ClientProfileLinkCreditsPanel';

@@ -16,7 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
 import { logMediaPicker } from '@/utils/mediaPickerDebug';
-import { cropSquareAvatarFromFile } from '@/utils/portfolioMediaProcessing';
+import { cropSquareAvatarFromFile } from '@/utils/avatarMediaProcessing';
 import { CityRegionAutocomplete } from '@/components/common/CityRegionAutocomplete';
 import { ProfilePhoneField } from '@/components/profile/ProfilePhoneField';
 import type { QuebecPlace } from '@/data/quebecRegions';

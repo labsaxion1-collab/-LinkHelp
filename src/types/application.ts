@@ -1,5 +1,3 @@
-import type { HelperSubscriptionTier } from '@/types/helperSubscription';
-
 export type ApplicationStatus = 'pending' | 'viewed' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
 
 export interface Application {
@@ -17,8 +15,6 @@ export interface Application {
   helperAvatar: string;
   helperRating: number;
   helperJobs: number;
-  /** Membership tier at time of application (for client-side badges). */
-  helperPlan?: HelperSubscriptionTier;
   status: ApplicationStatus;
   /** True only after client clicks “Contratar oficialmente”. */
   chatUnlocked?: boolean;

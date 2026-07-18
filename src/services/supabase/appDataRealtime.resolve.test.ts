@@ -24,7 +24,7 @@ describe('granular payload resolution', () => {
   });
 
   it('updates an application from payload and preserves chatUnlocked', async () => {
-    const current = { id: 'a1', helperName: 'Helper', helperAvatar: 'avatar', helperRating: 5, helperJobs: 3, helperPlan: 'BASIC', chatUnlocked: true } as never;
+    const current = { id: 'a1', helperName: 'Helper', helperAvatar: 'avatar', helperRating: 5, helperJobs: 3, chatUnlocked: true } as never;
     const result = await resolveApplicationEvent(event('applications', application), current);
     expect(result.queries).toEqual([]);
     expect(result.item?.chatUnlocked).toBe(true);

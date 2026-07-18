@@ -1,5 +1,4 @@
 import { avatarUrlForName } from '@/utils/avatarUrl';
-import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import type { Application } from '@/types/application';
 import type { Job, JobUrgency } from '@/types/job';
 import type { AppNotification } from '@/types/notification';
@@ -77,7 +76,6 @@ export function applicationRowToApp(row: ApplicationRow, helper: MapperProfile):
     helperAvatar: helper.avatar_url || avatarUrlForName(hName, 'dcfce7', '14532d'),
     helperRating: helper.rating ?? 5,
     helperJobs: helper.jobs_completed ?? 0,
-    helperPlan: (helper.plan_type as HelperSubscriptionTier | undefined) ?? 'BASIC',
     status: normalizeApplicationStatus(row.status),
     createdAt: tsFromIso(row.created_at),
   };

@@ -92,7 +92,7 @@ export async function resolveApplicationEvent(event: AppDataRealtimeEvent, curre
   const queries = complete ? [] : ['applications:id'];
   if (!row) return { item: null, id, usedPayload: complete, queries };
   const profile = current
-    ? { name: current.helperName, avatar_url: current.helperAvatar, rating: current.helperRating, jobs_completed: current.helperJobs, plan_type: current.helperPlan ?? null }
+    ? { name: current.helperName, avatar_url: current.helperAvatar, rating: current.helperRating, jobs_completed: current.helperJobs, plan_type: null }
     : await profileFor(row.helper_id);
   if (!current) queries.push('profiles:helper_id');
   const item = applicationRowToApp(row, profile);

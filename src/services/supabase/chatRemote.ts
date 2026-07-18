@@ -1,17 +1,10 @@
 import { getSupabase } from '@/lib/supabase';
 import { recordRealtimeChannelCreated, recordRealtimeChannelRemoved, recordRealtimeEvent, recordRealtimeSubscriptionStatus } from '@/lib/dev/supabaseMetrics';
 import type { ConversationRow, MessageRow } from '@/types/database';
-import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import { avatarUrlForName } from '@/utils/avatarUrl';
 import { ROUTES } from '@/utils/constants';
 import { remoteInsertNotification } from '@/services/supabase/appDataRemote';
 import { fetchProfilesAsMapperMap } from '@/services/supabase/fetchUserViews';
-
-function tierFromPlan(plan: string | null | undefined): HelperSubscriptionTier {
-  const p = (plan || 'BASIC').toUpperCase();
-  if (p === 'ELITE' || p === 'PRO_HELP' || p === 'BASIC') return p as HelperSubscriptionTier;
-  return 'BASIC';
-}
 
 export type ChatConversationSummary = {
   id: string;
@@ -21,7 +14,6 @@ export type ChatConversationSummary = {
   peerId: string;
   peerName: string;
   peerAvatar: string;
-  peerPlan: HelperSubscriptionTier;
 };
 
 type ConvSelectRow = ConversationRow & {
@@ -103,12 +95,11 @@ export async function fetchChatConversationSummaries(userId: string): Promise<Ch
       peerId,
       peerName: name,
       peerAvatar: u?.avatar_url || avatarUrlForName(name, 'dbeafe', '1e3a8a'),
-      peerPlan: tierFromPlan(u?.plan_type),
     };
   });
 }
 
-function mapConversationRowToSummary(row: ConvSelectRow, userId: string, peers: Map<string, { name?: string | null; avatar_url?: string | null; plan_type?: string | null }>): ChatConversationSummary {
+function mapConversationRowToSummary(row: ConvSelectRow, userId: string, peers: Map<string, { name?: string | null; avatar_url?: string | null }>): ChatConversationSummary {
   const peerId = row.client_id === userId ? row.helper_id : row.client_id;
   const u = peers.get(peerId);
   const name = u?.name?.trim() || 'User';
@@ -120,7 +111,6 @@ function mapConversationRowToSummary(row: ConvSelectRow, userId: string, peers: 
     peerId,
     peerName: name,
     peerAvatar: u?.avatar_url || avatarUrlForName(name, 'dbeafe', '1e3a8a'),
-    peerPlan: tierFromPlan(u?.plan_type),
   };
 }
 

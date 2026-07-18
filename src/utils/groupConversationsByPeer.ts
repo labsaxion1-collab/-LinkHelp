@@ -4,7 +4,6 @@ export type PeerConversationGroup = {
   peerId: string;
   peerName: string;
   peerAvatar: string;
-  peerPlan: ChatConversationSummary['peerPlan'];
   conversations: ChatConversationSummary[];
 };
 
@@ -20,7 +19,6 @@ export function groupConversationsByPeer(summaries: ChatConversationSummary[]): 
         peerId: summary.peerId,
         peerName: summary.peerName,
         peerAvatar: summary.peerAvatar,
-        peerPlan: summary.peerPlan,
         conversations: [],
       };
       map.set(summary.peerId, group);

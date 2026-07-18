@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MessageRow } from '@/types/database';
-import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 import { getSupabase } from '@/lib/supabase';
 import {
   fetchChatConversationSummaries,
@@ -56,7 +55,6 @@ export function useSupabaseMessages(opts: UseSupabaseMessagesOpts) {
   const [requestTitle, setRequestTitle] = useState('');
   const [peerName, setPeerName] = useState('');
   const [peerAvatar, setPeerAvatar] = useState('');
-  const [peerPlan, setPeerPlan] = useState<HelperSubscriptionTier>('BASIC');
   const [peerId, setPeerId] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
 
@@ -92,7 +90,6 @@ export function useSupabaseMessages(opts: UseSupabaseMessagesOpts) {
     setRequestTitle(selected.requestTitle);
     setPeerName(selected.peerName);
     setPeerAvatar(selected.peerAvatar);
-    setPeerPlan(selected.peerPlan);
     setPeerId(selected.peerId);
   }, [selected]);
 
@@ -129,7 +126,6 @@ export function useSupabaseMessages(opts: UseSupabaseMessagesOpts) {
       setRequestTitle(summary.requestTitle);
       setPeerName(summary.peerName);
       setPeerAvatar(summary.peerAvatar);
-      setPeerPlan(summary.peerPlan);
       setPeerId(summary.peerId);
     });
 
@@ -245,7 +241,6 @@ export function useSupabaseMessages(opts: UseSupabaseMessagesOpts) {
     requestTitle,
     peerName,
     peerAvatar,
-    peerPlan,
     peerId,
     preMatchOutgoingCount,
     preMatchPeerOutgoingCount,

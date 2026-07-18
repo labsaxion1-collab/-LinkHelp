@@ -747,7 +747,6 @@ export default function HelperDashboard() {
       list = sortOpportunitiesForHelper(list, {
         origin: helperBaseCoords,
         helperSkillIds: profileSettings.skillIds,
-        helperPlanTier: me?.subscriptionTier ?? 'BASIC',
       });
     }
     list = filterToPreferredCategoriesIfPossible(
@@ -773,7 +772,6 @@ export default function HelperDashboard() {
     helperBaseCoords,
     profileSettings.skillIds,
     helperUserId,
-    me?.subscriptionTier,
     categoryPrefs,
     dismissedJobIds,
     me?.id,

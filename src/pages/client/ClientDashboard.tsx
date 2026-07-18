@@ -17,11 +17,8 @@ import { formatJobScheduleDisplay, isBeautyScheduledJob } from '@/utils/jobDispl
 import { ROUTES } from '@/utils/constants';
 import { BRAND } from '@/utils/brandAssets';
 import { avatarUrlForName } from '@/utils/avatarUrl';
-import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
 import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
 import { CreateRequestModal } from '@/components/client/create-request/CreateRequestModal';
-import type { TrainingCertLevel } from '@/utils/helperTrainingProgress';
-import { helperPlanFromRoleKey, helperTierFromApplication } from '@/utils/helperPlanFromRoleKey';
 import { ClientMapWidget } from '@/components/client/ClientMapWidget';
 import { ClientNearbyHelpersList } from '@/components/client/ClientNearbyHelpersList';
 import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
@@ -93,13 +90,10 @@ function formatClientBudgetRangeLabel(job: Job, t: (key: string, vars?: Record<s
 type RecommendedHelperCard = {
   id: string | number;
   name: string;
-  roleKey: 'pro_helper' | 'elite' | 'trusted';
-  roleColor: string;
   rating: number;
   avatar: string;
   skills: readonly string[];
   isOnline: boolean;
-  trainingCert: TrainingCertLevel;
   jobsCompleted?: number;
 };
 
@@ -536,11 +530,8 @@ export default function ClientDashboard() {
         avatar: app.helperAvatar,
         rating: app.helperRating,
         jobsCompleted: app.helperJobs,
-        roleKey: 'pro_helper',
-        roleColor: '',
         skills: [],
         isOnline: true,
-        trainingCert: 'none',
       },
       app.id,
       job.id,
@@ -917,7 +908,6 @@ export default function ClientDashboard() {
                       <div className="min-w-0 flex-1">
                         <p className="flex items-center gap-1.5 text-sm font-black text-slate-950">
                           <span className="truncate">{app.helperName}</span>
-                          <HelperPlanBadge tier={helperTierFromApplication(app)} size="sm" />
                           <LinkHelpRankBadgeFromStats
                             completedCount={app.helperJobs}
                             averageRating={app.helperRating}
@@ -962,7 +952,7 @@ export default function ClientDashboard() {
                               onClick={() => {
                                 setDetailJob(null);
                                 openHelperProfile(
-                                  { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, jobsCompleted: app.helperJobs, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
+                                  { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, jobsCompleted: app.helperJobs, skills: [], isOnline: true },
                                   app.id,
                                 );
                               }}
@@ -992,7 +982,7 @@ export default function ClientDashboard() {
                             onClick={() => {
                               setDetailJob(null);
                               openHelperProfile(
-                                { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, jobsCompleted: app.helperJobs, roleKey: 'pro_helper', roleColor: '', skills: [], isOnline: true, trainingCert: 'none' },
+                                { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, jobsCompleted: app.helperJobs, skills: [], isOnline: true },
                                 app.id,
                               );
                             }}
@@ -1485,7 +1475,6 @@ export default function ClientDashboard() {
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-gray-900 flex flex-wrap items-center gap-2">
                         {helper.name} <Icons.CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" />
-                        <HelperPlanBadge tier={helperPlanFromRoleKey(helper.roleKey)} className="align-middle" />
                       </h4>
                       <p className="text-sm text-gray-500 mb-1">
                         {t('client_helpers.last_service', {
@@ -1849,7 +1838,6 @@ export default function ClientDashboard() {
                                           <span className="truncate text-sm font-black text-slate-950">
                                             {hiredApplication.helperName}
                                           </span>
-                                          <HelperPlanBadge tier={helperTierFromApplication(hiredApplication)} size="sm" />
                                         </button>
                                         <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
                                           <Icons.Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
@@ -1924,7 +1912,6 @@ export default function ClientDashboard() {
                                             <span className="truncate text-sm font-black text-slate-950">
                                               {app.helperName}
                                             </span>
-                                            <HelperPlanBadge tier={helperTierFromApplication(app)} size="sm" />
                                           </button>
                                           <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
                                             <Icons.Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />

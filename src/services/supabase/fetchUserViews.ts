@@ -7,7 +7,7 @@ export function profileRowToMapper(p: ProfileRow): MapperProfile {
     avatar_url: p.avatar_url,
     rating: p.rating,
     jobs_completed: 0,
-    plan_type: 'BASIC',
+    plan_type: null,
   };
 }
 

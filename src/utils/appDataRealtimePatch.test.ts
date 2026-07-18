@@ -53,7 +53,6 @@ const sampleApp: Application = {
   helperAvatar: 'https://example.com/b.png',
   helperRating: 5,
   helperJobs: 3,
-  helperPlan: 'BASIC',
   status: 'pending',
   createdAt: 1_700_000_100_000,
   proposedAmount: 120,

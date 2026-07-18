@@ -698,7 +698,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       helperAvatar,
       helperRating: profile?.rating ?? 0,
       helperJobs: 0,
-      helperPlan: 'BASIC',
       status: 'pending',
       createdAt: Date.now(),
     };

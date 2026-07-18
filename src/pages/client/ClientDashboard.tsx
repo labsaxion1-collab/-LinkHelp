@@ -20,7 +20,6 @@ import { avatarUrlForName } from '@/utils/avatarUrl';
 import { HelperPlanBadge } from '@/components/helpers/HelperPlanBadge';
 import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
 import { CreateRequestModal } from '@/components/client/create-request/CreateRequestModal';
-import { TrainingCertBadge } from '@/components/training/TrainingCertBadge';
 import type { TrainingCertLevel } from '@/utils/helperTrainingProgress';
 import { helperPlanFromRoleKey, helperTierFromApplication } from '@/utils/helperPlanFromRoleKey';
 import { ClientMapWidget } from '@/components/client/ClientMapWidget';

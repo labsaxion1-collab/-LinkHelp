@@ -9,8 +9,6 @@ export const UI_VISIBILITY = {
   helperCredits: true,
   /** Real Stripe checkout for helper LinkCredits packages. */
   helperCreditPurchase: true,
-  /** Monthly Elite / Pro Help subscription UI — hidden; credits-only model. */
-  helperSubscriptionPlans: false,
   /** Spend credits to unlock opportunities — off until Phase 2. */
   helperCreditUnlock: false,
   /** Training center — hidden until relaunch. */

@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { FilePickerLabel } from '@/components/common/HiddenFileInput';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
-  GraduationCap,
   Bell,
   User,
   Loader2,
@@ -11,7 +10,6 @@ import {
   LogOut,
   Languages,
 } from 'lucide-react';
-import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { useLanguage } from '@/context/LanguageContext';
 import { ROUTES } from '@/utils/constants';
 import { useAuth } from '@/context/AuthContext';
@@ -662,23 +660,6 @@ export default function SettingsPage() {
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
           {t('app_pages.settings_save')}
         </button>
-
-        {isHelper && UI_VISIBILITY.training ? (
-          <Link
-            to={ROUTES.helperTraining}
-            className="block rounded-2xl border border-indigo-100 bg-white p-5 shadow-sm transition-all hover:border-indigo-200 hover:shadow-md"
-          >
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg">
-                <GraduationCap className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <h2 className="text-base font-black text-gray-900">{t('training.page_title')}</h2>
-                <p className="mt-1 text-sm font-medium text-gray-500">{t('training.settings_teaser')}</p>
-              </div>
-            </div>
-          </Link>
-        ) : null}
 
         <SettingsCard icon={<Star className="h-5 w-5 text-slate-500" />} title={t('brand.about_title')}>
           <p className="text-sm font-medium leading-relaxed text-gray-600">{t('brand.about_body')}</p>

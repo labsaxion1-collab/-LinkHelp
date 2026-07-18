@@ -1,4 +1,3 @@
-import { trainingPt } from '../training/pt';
 import { helperSkillsPt } from '../helperSkillsBlocks';
 
 export const pt = {
@@ -185,7 +184,6 @@ export const pt = {
     profile_menu_applications: 'Minhas candidaturas',
     profile_menu_active: 'Serviços ativos',
     profile_menu_credits: 'Créditos',
-    profile_menu_training: 'Centro de treinamento',
     profile_menu_logout: 'Sair da conta',
     profile_menu_favorites: 'Helpers favoritos',
     profile_menu_packages: 'Pacotes',
@@ -847,10 +845,9 @@ export const pt = {
     sidebar_acc_portfolio: 'Portfólio',
     sidebar_acc_profile: 'Força do perfil',
     sidebar_acc_plan: 'LinkCredits',
-    sidebar_acc_training: 'Centro de treinamento',
     sidebar_acc_skills: 'Skills',
     sidebar_acc_ideas: 'Ideias LinkHelp',
-    sidebar_acc_mobile_extras: 'Perfil, treino e portfólio',
+    sidebar_acc_mobile_extras: 'Perfil e portfólio',
     achievements_title: 'Suas conquistas',
     streak_badge: 'Streak',
     expert_badge: 'Expert',
@@ -1212,7 +1209,6 @@ export const pt = {
     verify_done: 'Você está verificado (demo).',
   },
   helper_skills: helperSkillsPt,
-  training: trainingPt,
   link_credits: {
     choose_package: 'Escolha o seu pacote',
     credits_count: '{{count}} créditos',
@@ -1362,7 +1358,7 @@ export const pt = {
     radar_browse_helpers: 'Ver helpers',
     radar_tips_title: 'Dicas rápidas',
     radar_tip_hire: 'Detalhes e orçamento claros geram respostas mais rápidas.',
-    radar_tip_verify: 'Prefira helpers com selos de treino e boas avaliações.',
+    radar_tip_verify: 'Prefira helpers com perfil verificado e boas avaliações.',
     live_hub_title: 'Live hub',
     live_hub_stat_online: 'Helpers online',
     live_hub_stat_response: 'Média de resposta',

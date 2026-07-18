@@ -1,4 +1,3 @@
-import { trainingFr } from '../training/fr';
 import { helperSkillsFr } from '../helperSkillsBlocks';
 
 export const fr = {
@@ -185,7 +184,6 @@ export const fr = {
     profile_menu_applications: 'Mes candidatures',
     profile_menu_active: 'Services actifs',
     profile_menu_credits: 'Crédits',
-    profile_menu_training: 'Centre de formation',
     profile_menu_logout: 'Se déconnecter',
     profile_menu_favorites: 'Helpers favoris',
     profile_menu_packages: 'Forfaits',
@@ -844,10 +842,9 @@ export const fr = {
     sidebar_acc_portfolio: 'Portfolio',
     sidebar_acc_profile: 'Profil',
     sidebar_acc_plan: 'LinkCredits',
-    sidebar_acc_training: 'Centre de formation',
     sidebar_acc_skills: 'Compétences',
     sidebar_acc_ideas: 'Idées LinkHelp',
-    sidebar_acc_mobile_extras: 'Profil, formation et portfolio',
+    sidebar_acc_mobile_extras: 'Profil et portfolio',
     achievements_title: 'Vos succès',
     streak_badge: 'Série',
     expert_badge: 'Expert',
@@ -1209,7 +1206,6 @@ export const fr = {
     verify_done: 'Compte vérifié (démo).',
   },
   helper_skills: helperSkillsFr,
-  training: trainingFr,
   link_credits: {
     choose_package: 'Choisissez votre forfait',
     credits_count: '{{count}} crédits',
@@ -1359,7 +1355,7 @@ export const fr = {
     radar_browse_helpers: 'Parcourir les helpers',
     radar_tips_title: 'Conseils rapides',
     radar_tip_hire: 'Soyez précis sur le budget et les détails pour des réponses plus rapides.',
-    radar_tip_verify: 'Privilégiez les helpers avec badges de formation et de bonnes notes.',
+    radar_tip_verify: 'Privilégiez les helpers avec profil vérifié et de bonnes notes.',
     live_hub_title: 'Live hub',
     live_hub_stat_online: 'Assistants en ligne',
     live_hub_stat_response: 'Réponse moy.',

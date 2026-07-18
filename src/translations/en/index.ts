@@ -1,4 +1,3 @@
-import { trainingEn } from '../training/en';
 import { helperSkillsEn } from '../helperSkillsBlocks';
 
 export const en = {
@@ -185,7 +184,6 @@ export const en = {
     profile_menu_applications: 'My applications',
     profile_menu_active: 'Active services',
     profile_menu_credits: 'Credits',
-    profile_menu_training: 'Training center',
     profile_menu_logout: 'Sign out',
     profile_menu_favorites: 'Favorite helpers',
     profile_menu_packages: 'Packages',
@@ -840,10 +838,9 @@ export const en = {
     sidebar_acc_portfolio: 'Portfolio',
     sidebar_acc_profile: 'Profile strength',
     sidebar_acc_plan: 'LinkCredits',
-    sidebar_acc_training: 'Training center',
     sidebar_acc_skills: 'Skills',
     sidebar_acc_ideas: 'LinkHelp ideas',
-    sidebar_acc_mobile_extras: 'Profile, training & portfolio',
+    sidebar_acc_mobile_extras: 'Profile & portfolio',
     achievements_title: 'Your achievements',
     streak_badge: 'Streak',
     expert_badge: 'Expert',
@@ -1203,7 +1200,6 @@ export const en = {
     verify_done: 'You are verified (demo).',
   },
   helper_skills: helperSkillsEn,
-  training: trainingEn,
   link_credits: {
     choose_package: 'Choose your package',
     credits_count: '{{count}} credits',
@@ -1353,7 +1349,7 @@ export const en = {
     radar_browse_helpers: 'Browse helpers',
     radar_tips_title: 'Quick tips',
     radar_tip_hire: 'Write clear details and budget to get faster replies.',
-    radar_tip_verify: 'Prefer helpers with training badges and strong ratings.',
+    radar_tip_verify: 'Prefer helpers with verified profiles and strong ratings.',
     live_hub_title: 'Live hub',
     live_hub_stat_online: 'Helpers online',
     live_hub_stat_response: 'Avg. response',

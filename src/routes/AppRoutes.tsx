@@ -29,7 +29,6 @@ const ClientCreditsPage = lazyPage(() => import('@/pages/client/ClientCreditsPag
 const ClientCreditsSuccessPage = lazyPage(() => import('@/pages/client/ClientCreditsSuccessPage'));
 const HelperDashboard = lazyPage(() => import('@/pages/helper/HelperDashboard'));
 const HelperUpcomingJobsPage = lazyPage(() => import('@/pages/helper/HelperUpcomingJobsPage'));
-const HelperTrainingPage = lazyPage(() => import('@/pages/helper/HelperTrainingPage'));
 const MessagesPage = lazyPage(() => import('@/pages/chat/MessagesPage'));
 const IdeasPage = lazyPage(() => import('@/pages/ideas/IdeasPage'));
 const NotificationsPage = lazyPage(() => import('@/pages/notifications/NotificationsPage'));
@@ -137,16 +136,6 @@ export function AppRoutes() {
             <Route path={ROUTES.helperPerformance} element={<HelperDashboard />} />
             <Route path={ROUTES.helperJobs} element={<HelperUpcomingJobsPage />} />
             <Route path="/helper/jobs/upcoming" element={<Navigate to={ROUTES.helperJobs} replace />} />
-            <Route
-              path={ROUTES.helperTraining}
-              element={
-                UI_VISIBILITY.training ? (
-                  <HelperTrainingPage />
-                ) : (
-                  <Navigate to={ROUTES.helperDashboard} replace />
-                )
-              }
-            />
           </Route>
 
           <Route element={<AdminProtectedRoute />}>

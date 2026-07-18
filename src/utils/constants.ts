@@ -22,8 +22,6 @@ export const ROUTES = {
   helperPerformance: '/helper/performance',
   /** Upcoming / scheduled work for helpers */
   helperJobs: '/helper/jobs',
-  /** Micro-learning & training center (PRO/Elite benefits) */
-  helperTraining: '/helper/training',
   /** @deprecated Use helperJobs — kept for notification links during migration */
   helperJobsUpcoming: '/helper/jobs',
   messages: '/messages',

@@ -38,7 +38,6 @@ export const trainingFr = {
   locked_elite_body: 'Visibilité, conversion, réputation et opportunités s’ouvriront ici au fil des lancements.',
   cta_upgrade_pro_help: 'Plus de leçons bientôt',
   cta_upgrade_elite: 'Plus de leçons bientôt',
-  membership_link: 'Ouvrir le centre',
   settings_teaser: 'Micro-leçons pour assistants—de nouveaux modules arrivent progressivement.',
   cert_basic: 'Formé niveau base',
   cert_pro: 'Formé niveau essentiel',

@@ -38,7 +38,6 @@ export const trainingEn = {
   locked_elite_body: 'Visibility, conversion, reputation, and opportunity playbooks will open here as they launch.',
   cta_upgrade_pro_help: 'More lessons coming soon',
   cta_upgrade_elite: 'More lessons coming soon',
-  membership_link: 'Open Training Center',
   settings_teaser: 'Micro-lessons for helpers—new modules roll out over time.',
   cert_basic: 'Basic trained',
   cert_pro: 'Essential trained',

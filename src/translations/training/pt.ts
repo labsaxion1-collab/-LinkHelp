@@ -38,7 +38,6 @@ export const trainingPt = {
   locked_elite_body: 'Visibilidade, conversão, reputação e oportunidades abrirão aqui conforme forem lançados.',
   cta_upgrade_pro_help: 'Mais aulas em breve',
   cta_upgrade_elite: 'Mais aulas em breve',
-  membership_link: 'Abrir centro de treino',
   settings_teaser: 'Microaulas para helpers—novos módulos serão liberados aos poucos.',
   cert_basic: 'Treino básico',
   cert_pro: 'Treino essencial',

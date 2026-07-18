@@ -1,17 +1,14 @@
 import { useAuth } from '@/context/AuthContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { avatarUrlForName } from '@/utils/avatarUrl';
-import type { HelperSubscriptionTier } from '@/types/helperSubscription';
 
 export type SessionViewer = {
   id: string;
   name: string;
   avatar: string;
   userType: 'client' | 'helper';
-  subscriptionTier: HelperSubscriptionTier;
   rating: number;
   jobsCompleted: number;
-  nextBillingDate?: string;
 };
 
 const guestAvatar = (label: string) => avatarUrlForName(label, 'dbeafe', '1e3a8a');
@@ -36,10 +33,8 @@ export function useSessionViewer(): SessionViewer {
       name,
       avatar,
       userType,
-      subscriptionTier: 'BASIC',
       rating: profile?.rating ?? 4.8,
       jobsCompleted: 0,
-      nextBillingDate: undefined,
     };
   }
 
@@ -49,7 +44,6 @@ export function useSessionViewer(): SessionViewer {
       name: '…',
       avatar: guestAvatar('LinkHelp'),
       userType: mode,
-      subscriptionTier: 'BASIC',
       rating: 0,
       jobsCompleted: 0,
     };
@@ -60,7 +54,6 @@ export function useSessionViewer(): SessionViewer {
     name: 'Guest',
     avatar: guestAvatar('Guest'),
     userType: mode,
-    subscriptionTier: 'BASIC',
     rating: 0,
     jobsCompleted: 0,
   };

@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import { useSessionViewer } from '@/hooks/useSessionViewer';
 import { HELPER_TRAINING_LESSONS, lessonsAccessibleForTier, type TrainingLessonDef } from '@/data/helperTrainingCatalog';
 import { ROUTES } from '@/utils/constants';
 import { loadHelperPortfolio } from '@/utils/helperPortfolioState';
@@ -17,20 +16,20 @@ import {
   trainingCompletionRatio,
   type HelperTrainingPersist,
 } from '@/utils/helperTrainingProgress';
-import type { HelperSubscriptionTier } from '@/types/helperSubscription';
+import { trainingRuntimeAccessTier } from '@/utils/trainingLegacyAccess';
+import type { LegacyHelperTierKey } from '@/types/helperSubscription';
 import { TrainingLessonDrawer } from '@/components/training/TrainingLessonDrawer';
 import { TrainingCertBadge } from '@/components/training/TrainingCertBadge';
 
 const ACHIEVEMENT_IDS = ['first_training', 'portfolio_expert', 'trusted_profile', 'video_verified'] as const;
 
-function accessLocked(tier: HelperSubscriptionTier, lesson: TrainingLessonDef): boolean {
+function accessLocked(tier: LegacyHelperTierKey, lesson: TrainingLessonDef): boolean {
   return !lessonsAccessibleForTier(tier).some((l) => l.id === lesson.id);
 }
 
 export default function HelperTrainingPage() {
   const { t } = useLanguage();
-  const me = useSessionViewer();
-  const tier: HelperSubscriptionTier = me.subscriptionTier ?? 'BASIC';
+  const tier = trainingRuntimeAccessTier();
 
   const [training, setTraining] = useState<HelperTrainingPersist>(() => loadTrainingProgress());
   const [activeLesson, setActiveLesson] = useState<string | null>(null);
@@ -41,9 +40,9 @@ export default function HelperTrainingPage() {
 
   const profileBreakdown = computeHelperProfileCompletion(loadHelperProfileSettings());
 
-  const trainingPct = trainingCompletionRatio(tier, training.completedLessonIds);
-  const combinedPct = combinedProfileStrengthPercent(profileBreakdown.percent, tier, training.completedLessonIds);
-  const certLevel = computeTrainingCertLevel(tier, training.completedLessonIds);
+  const trainingPct = trainingCompletionRatio(training.completedLessonIds);
+  const combinedPct = combinedProfileStrengthPercent(profileBreakdown.percent, training.completedLessonIds);
+  const certLevel = computeTrainingCertLevel(training.completedLessonIds);
 
   const suggestions = useMemo(() => {
     const out: string[] = [];
@@ -230,7 +229,7 @@ function TrainingSection({
   title: string;
   subtitle: string;
   lessons: TrainingLessonDef[];
-  tier: HelperSubscriptionTier;
+  tier: LegacyHelperTierKey;
   completed: string[];
   onOpen: (id: string) => void;
 }) {

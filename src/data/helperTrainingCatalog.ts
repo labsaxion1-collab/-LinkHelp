@@ -1,6 +1,6 @@
 /** Micro-training catalog — content strings live under `training.lessons.*` (i18n). */
 
-import type { HelperSubscriptionTier } from '@/types/helperSubscription';
+import type { LegacyHelperTierKey } from '@/types/helperSubscription';
 
 export type TrainingLessonAccess = 'free' | 'pro' | 'elite';
 
@@ -29,7 +29,8 @@ export const FREE_LESSON_IDS = HELPER_TRAINING_LESSONS.filter((l) => l.access ==
 export const PRO_LESSON_IDS = HELPER_TRAINING_LESSONS.filter((l) => l.access === 'pro').map((l) => l.id);
 export const ELITE_LESSON_IDS = HELPER_TRAINING_LESSONS.filter((l) => l.access === 'elite').map((l) => l.id);
 
-export function lessonsAccessibleForTier(tier: HelperSubscriptionTier): TrainingLessonDef[] {
+/** Legacy tier gate — not tied to session or billing. */
+export function lessonsAccessibleForTier(tier: LegacyHelperTierKey): TrainingLessonDef[] {
   return HELPER_TRAINING_LESSONS.filter((l) => {
     if (l.access === 'free') return true;
     if (l.access === 'pro') return tier === 'PRO_HELP';

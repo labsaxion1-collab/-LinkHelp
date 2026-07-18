@@ -62,8 +62,6 @@ export default function MessagesPage() {
   const chatAccentHeroKey = viewerGamification.heroKey;
   const chatAccentTheme = getChatHeroAccentTheme(chatAccentHeroKey);
 
-  const myTier = me.subscriptionTier ?? 'BASIC';
-
   const [message, setMessage] = useState('');
   const [filterBanner, setFilterBanner] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
@@ -121,8 +119,8 @@ export default function MessagesPage() {
   const peerAvatar = remote.peerAvatar;
 
   const usedPreMatch = remote.preMatchOutgoingCount;
-  const limit = preMatchOutgoingLimit(myTier);
-  const unlimited = isUnlimitedPreMatch(myTier);
+  const limit = preMatchOutgoingLimit();
+  const unlimited = isUnlimitedPreMatch();
 
   const threadMessages = useMemo((): ChatRow[] => remote.rows as ChatRow[], [remote.rows]);
 

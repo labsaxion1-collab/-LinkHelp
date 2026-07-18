@@ -7,7 +7,10 @@ import {
   PRO_LESSON_IDS,
   lessonsAccessibleForTier,
 } from '@/data/helperTrainingCatalog';
-import type { HelperSubscriptionTier } from '@/types/helperSubscription';
+import {
+  TRAINING_RUNTIME_ACCESS_TIER,
+  type LegacyHelperTierKey,
+} from '@/types/helperSubscription';
 import { computeHelperProfileCompletion } from '@/utils/helperProfileCompletion';
 
 const STORAGE_KEY = 'linkhelp_helper_training_v1';
@@ -86,7 +89,10 @@ export function markLessonComplete(
   return { completedLessonIds, achievementIds };
 }
 
-export function trainingCompletionRatio(tier: HelperSubscriptionTier, completedIds: string[]): number {
+export function trainingCompletionRatio(
+  completedIds: string[],
+  tier: LegacyHelperTierKey = TRAINING_RUNTIME_ACCESS_TIER,
+): number {
   const accessible = lessonsAccessibleForTier(tier);
   if (accessible.length === 0) return 0;
   const set = new Set(completedIds);
@@ -96,10 +102,10 @@ export function trainingCompletionRatio(tier: HelperSubscriptionTier, completedI
 
 export function combinedProfileStrengthPercent(
   profilePercent: number,
-  tier: HelperSubscriptionTier,
   completedLessonIds: string[],
+  tier: LegacyHelperTierKey = TRAINING_RUNTIME_ACCESS_TIER,
 ): number {
-  const trainingPct = trainingCompletionRatio(tier, completedLessonIds);
+  const trainingPct = trainingCompletionRatio(completedLessonIds, tier);
   return Math.min(100, Math.round(profilePercent * 0.55 + trainingPct * 0.45));
 }
 
@@ -107,8 +113,8 @@ export function combinedProfileStrengthPercent(
 export type TrainingCertLevel = 'none' | 'basic' | 'pro' | 'elite';
 
 export function computeTrainingCertLevel(
-  tier: HelperSubscriptionTier,
   completedLessonIds: string[],
+  tier: LegacyHelperTierKey = TRAINING_RUNTIME_ACCESS_TIER,
 ): TrainingCertLevel {
   const done = new Set(completedLessonIds);
 

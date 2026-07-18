@@ -1,5 +1,3 @@
-import type { HelperSubscriptionTier } from '@/types/helperSubscription';
-
 /**
  * Flat pre-hire message limit per participant (client AND helper).
  * Both sides start with this many messages before the client must hire.
@@ -8,12 +6,12 @@ import type { HelperSubscriptionTier } from '@/types/helperSubscription';
  */
 export const PRE_HIRE_MESSAGE_LIMIT = 5;
 
-/** Max outgoing pre-match messages per participant. Fixed at 5 for all tiers. */
-export function preMatchOutgoingLimit(_tier?: HelperSubscriptionTier): number {
+/** Max outgoing pre-match messages per participant. Fixed for all helpers and clients. */
+export function preMatchOutgoingLimit(): number {
   return PRE_HIRE_MESSAGE_LIMIT;
 }
 
-/** No tier grants unlimited pre-match messages in the new flat-limit model. */
-export function isUnlimitedPreMatch(_tier?: HelperSubscriptionTier): boolean {
+/** Pre-match messages are never unlimited in the current model. */
+export function isUnlimitedPreMatch(): boolean {
   return false;
 }

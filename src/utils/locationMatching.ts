@@ -71,8 +71,6 @@ function schedulePriority(date: string): number {
 export type OpportunitySortContext = {
   origin: Coordinates | null;
   helperSkillIds: string[];
-  /** Reserved for future client plan / badge ranking. */
-  helperPlanTier?: string;
 };
 
 export function sortOpportunitiesForHelper(jobs: Job[], ctx: OpportunitySortContext): Job[] {

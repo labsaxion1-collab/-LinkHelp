@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { hapticLight, hapticSuccess } from '@/utils/haptic';
 import * as Icons from 'lucide-react';
 import { CheckCircle2 } from 'lucide-react';
@@ -8,11 +9,16 @@ import type { Job } from '@/types/job';
 import { formatJobBudgetAmount } from '@/utils/formatJobBudget';
 import { formatJobOpenedAt } from '@/utils/jobDisplay';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
-import { translateJobTitle } from '@/utils/translateCategory';
+import { translateJobTitle, resolveCategoryId } from '@/utils/translateCategory';
 import { LhCard } from '@/components/design-system/LhCard';
 import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { HelperApplyConfirmModal } from '@/components/modals/HelperApplyConfirmModal';
-import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
+import { HelperOpportunityLcDebugPanel } from '@/components/opportunities/HelperOpportunityLcDebugPanel';
+import {
+  calculateHelperLeadCreditCost,
+  isRemoteJob,
+} from '@/utils/calculateHelperLeadCreditCost';
+import { getHelperLeadCreditSummary } from '@/utils/helperCreditDisplay';
 import { isJobInterestFull } from '@/utils/applicationInterest';
 import { getRequestDescriptionForViewer } from '@/utils/requestDescriptionDisplay';
 import type { AppLanguage } from '@/services/translationService';
@@ -32,6 +38,10 @@ import {
 } from '@/utils/helperOpportunityApply';
 import { validateHelperProposal } from '@/utils/jobProposal';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
+import {
+  isLinkCreditsDebugEnabled,
+  shouldShowHelperOpportunityLcDebugPanel,
+} from '@/utils/linkCreditsDebug';
 
 export type HelperOpportunityCardTab = 'match' | 'recentes' | 'emergencia';
 
@@ -115,6 +125,8 @@ function HelperOpportunityCardInner({
   descriptionExpanded = false,
   onDescriptionExpandedChange,
 }: HelperOpportunityCardProps) {
+  const [searchParams] = useSearchParams();
+  const lcDebugEnabled = isLinkCreditsDebugEnabled(searchParams);
   const tier = jobMatchTier(job, activeTab);
   const schedule = formatJobSchedule(job, t);
   const category = translateCategory(job.category, t);
@@ -149,6 +161,41 @@ function HelperOpportunityCardInner({
   const normalCharge = getNormalApplicationChargeLc(job, distanceKm);
   const vipCharge = getApplicationTypeChargeLc(job, 'exclusive', distanceKm);
   const balanceSummary = getApplicationBalanceSummary(job, walletBalance, distanceKm);
+  const leadCreditSummary = getHelperLeadCreditSummary(job, distanceKm);
+  const leadCreditBreakdown = calculateHelperLeadCreditCost(job, { distanceKm });
+  const resolvedCategoryId = resolveCategoryId(job.category) || job.category;
+  const normalLabelCount = formatLinkCredits(normalCharge, language);
+  const vipLabelCount = formatLinkCredits(vipCharge, language);
+  const showLcDebugPanel = shouldShowHelperOpportunityLcDebugPanel(lcDebugEnabled, descriptionOpen);
+
+  useEffect(() => {
+    if (!lcDebugEnabled) return;
+    console.debug('[HelperOpportunityCard LC trace]', {
+      jobId: job.id,
+      jobCategory: job.category,
+      distanceKm,
+      normalCharge,
+      vipCharge,
+      balanceSummary,
+      leadCreditSummary,
+      leadCreditBreakdown,
+      serviceCost: leadCreditBreakdown.serviceCost,
+      distanceCost: leadCreditBreakdown.distanceCost,
+      estimatedTotal: leadCreditBreakdown.estimatedTotal,
+      interestCost: leadCreditBreakdown.interestCost,
+    });
+  }, [
+    lcDebugEnabled,
+    job.id,
+    job.category,
+    distanceKm,
+    normalCharge,
+    vipCharge,
+    balanceSummary,
+    leadCreditSummary,
+    leadCreditBreakdown,
+  ]);
+
   const actionsBelowDescription = shouldPlaceApplyActionsBelowDescription(descriptionOpen);
   const isInterestFull = isJobInterestFull(applicationsCount);
   const canApply =
@@ -440,7 +487,7 @@ function HelperOpportunityCardInner({
             {t('helper_dashboard.apply_type_normal')}
           </p>
           <p className="mt-0.5 text-[12px] font-bold text-blue-900">
-            {t('helper_dashboard.apply_cost_label', { count: formatLinkCredits(normalCharge, language) })}
+            {t('helper_dashboard.apply_cost_label', { count: normalLabelCount })}
           </p>
           <p className="mt-0.5 text-[11px] font-semibold text-[#64748B]">
             {walletBalance == null
@@ -465,7 +512,7 @@ function HelperOpportunityCardInner({
             {t('helper_dashboard.apply_type_exclusive')}
           </p>
           <p className="mt-0.5 text-[12px] font-bold text-amber-900">
-            {t('helper_dashboard.apply_cost_label', { count: formatLinkCredits(vipCharge, language) })}
+            {t('helper_dashboard.apply_cost_label', { count: vipLabelCount })}
           </p>
           <p className="mt-0.5 text-[11px] font-semibold text-[#64748B]">
             {walletBalance == null
@@ -478,6 +525,23 @@ function HelperOpportunityCardInner({
           </p>
         </div>
       </div>
+
+      {showLcDebugPanel ? (
+        <HelperOpportunityLcDebugPanel
+          jobId={job.id}
+          rawCategory={job.category}
+          resolvedCategoryId={resolvedCategoryId}
+          distanceKm={distanceKm}
+          interestCost={leadCreditBreakdown.interestCost}
+          serviceCost={leadCreditBreakdown.serviceCost}
+          distanceCost={leadCreditBreakdown.distanceCost}
+          estimatedTotal={leadCreditBreakdown.estimatedTotal}
+          normalCharge={normalCharge}
+          vipCharge={vipCharge}
+          normalLabelCount={normalLabelCount}
+          vipLabelCount={vipLabelCount}
+        />
+      ) : null}
 
       <p className="text-[11px] font-medium leading-relaxed text-[#64748B]">
         {t('helper_dashboard.apply_vip_explain')}

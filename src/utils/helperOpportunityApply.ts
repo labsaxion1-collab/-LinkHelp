@@ -1,5 +1,7 @@
 import type { Job } from '@/types/job';
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
+import { formatJobBudgetAmount } from '@/utils/formatJobBudget';
+import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 import { getHelperLeadCreditQuote } from '@/utils/helperLeadCreditQuote';
 import { jobHasBoundedBudget, jobIsNegotiableBudget, isProposalAmountValid } from '@/utils/jobProposal';
 
@@ -50,9 +52,58 @@ export function getApplicationBalanceSummary(
 /** Closed card uses two footer rows: avatar+description, then separate apply actions. */
 export const HELPER_OPPORTUNITY_CARD_FOOTER_LAYOUT = 'avatar-description-row-then-actions-row' as const;
 
-/** When description accordion opens, apply actions stay below expanded content. */
-export function shouldPlaceApplyActionsBelowDescription(descriptionOpen: boolean): boolean {
-  return descriptionOpen;
+/** Description opens in an overlay — apply actions never move in document flow. */
+export function shouldPlaceApplyActionsBelowDescription(_descriptionOpen: boolean): boolean {
+  return false;
+}
+
+export type OpportunityCardMetaParts = {
+  budget: string;
+  distance: string | null;
+  schedule: string | null;
+};
+
+/** Budget segment for compact card meta (e.g. CAD $45–90). */
+export function formatOpportunityCardBudgetCompact(job: Job, t: LocationTFn): string {
+  const amount = formatJobBudgetAmount(job, t);
+  if (amount === t('jobs.budget_not_informed')) return amount;
+  return amount.replace(/\s+-\s+/g, '–');
+}
+
+/** Distance segment when numeric km is known (e.g. 5 km). */
+export function formatOpportunityCardDistanceCompact(
+  job: Job,
+  distanceKm: number | null | undefined,
+): string | null {
+  if (isRemoteJob(job)) return null;
+  if (distanceKm == null || !Number.isFinite(distanceKm)) return null;
+  const km = distanceKm >= 10 ? Math.round(distanceKm) : Math.round(distanceKm * 10) / 10;
+  return `${km} km`;
+}
+
+/** Schedule/time segment — prefers exact time (e.g. 08:00). */
+export function formatOpportunityCardScheduleCompact(job: Job, t: LocationTFn): string | null {
+  const exactTime = job.preferredTime?.trim();
+  if (exactTime) return exactTime;
+  const schedule = formatJobScheduleDisplay(job, t);
+  return schedule?.trim() ? schedule : null;
+}
+
+export function buildOpportunityCardMetaParts(
+  job: Job,
+  t: LocationTFn,
+  distanceKm?: number | null,
+): OpportunityCardMetaParts {
+  return {
+    budget: formatOpportunityCardBudgetCompact(job, t),
+    distance: formatOpportunityCardDistanceCompact(job, distanceKm),
+    schedule: formatOpportunityCardScheduleCompact(job, t),
+  };
+}
+
+/** Single compact meta line: CAD $45–90 · 5 km · 08:00 */
+export function formatOpportunityCardMetaLine(parts: OpportunityCardMetaParts): string {
+  return [parts.budget, parts.distance, parts.schedule].filter(Boolean).join(' · ');
 }
 
 /** Default proposal amount when the helper applies from the compact card flow. */

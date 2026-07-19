@@ -10,6 +10,8 @@ import {
   canSubmitConfirmedApplication,
   requiresProposalAmountInput,
   resolveDefaultProposalAmount,
+  buildOpportunityCardMetaParts,
+  formatOpportunityCardMetaLine,
   shouldExpandDescriptionForAmountInput,
   shouldPlaceApplyActionsBelowDescription,
   HELPER_OPPORTUNITY_CARD_FOOTER_LAYOUT,
@@ -116,9 +118,21 @@ describe('card layout helpers', () => {
     expect(HELPER_OPPORTUNITY_CARD_FOOTER_LAYOUT).toBe('avatar-description-row-then-actions-row');
   });
 
-  it('places apply actions below expanded description content when open', () => {
+  it('keeps apply actions fixed when description overlay is open', () => {
     expect(shouldPlaceApplyActionsBelowDescription(false)).toBe(false);
-    expect(shouldPlaceApplyActionsBelowDescription(true)).toBe(true);
+    expect(shouldPlaceApplyActionsBelowDescription(true)).toBe(false);
+  });
+
+  it('builds compact meta line with budget, distance and schedule', () => {
+    const parts = buildOpportunityCardMetaParts(
+      { ...baseJob, preferredTime: '08:00' },
+      (key) => key,
+      5,
+    );
+    expect(parts.budget).toContain('CAD');
+    expect(parts.distance).toBe('5 km');
+    expect(parts.schedule).toBe('08:00');
+    expect(formatOpportunityCardMetaLine(parts)).toBe(`${parts.budget} · 5 km · 08:00`);
   });
 });
 

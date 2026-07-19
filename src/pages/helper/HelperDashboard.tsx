@@ -32,8 +32,6 @@ import { HelperCreditsWalletCard } from '@/components/helpers/HelperCreditsWalle
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
 import { HelperCategoryDropdown } from '@/components/helper/HelperCategoryDropdown';
-import { ClientPublicProfileView } from '@/components/features/ClientPublicProfileView';
-import { PublicProfileSheetFrame, PUBLIC_PROFILE_SCROLL_ATTR } from '@/components/reputation/PublicProfileSheetFrame';
 import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
 import { getApplicationChargeLc } from '@/config/helperCreditCharge';
 import { getExclusiveApplicationChargeLc } from '@/utils/helperCreditDisplay';
@@ -358,7 +356,6 @@ export default function HelperDashboard() {
 
   const [upcomingModalJob, setUpcomingModalJob] = useState<UpcomingJob | null>(null);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
-  const [clientProfileJob, setClientProfileJob] = useState<Job | null>(null);
   const [applyExpandedJobId, setApplyExpandedJobId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -440,7 +437,6 @@ export default function HelperDashboard() {
     },
     [walletLoading, walletBalance, interestCostForJob, openInsufficientCreditsModal, pushToast, t],
   );
-  const [swipeCooldownUntil, setSwipeCooldownUntil] = useState(0);
   const proposalSourceRef = React.useRef<ProposalAnalyticsSource>('card');
   const goToCredits = React.useCallback(() => navigate(ROUTES.helperLinkCredits), [navigate]);
   const creditsUsedThisMonth = React.useMemo(() => {
@@ -707,13 +703,6 @@ export default function HelperDashboard() {
       t,
     ],
   );
-
-  const handleSwipeDismiss = (jobId: string) => {
-    const job = jobs.find((j) => j.id === jobId);
-    dismissJobWithAnimation(jobId, job);
-  };
-
-  const swipeRateLimited = Date.now() < swipeCooldownUntil;
 
   const displayedJobs = useMemo(() => {
     if (profileSettings.skillIds.length === 0) return [];
@@ -1236,9 +1225,8 @@ export default function HelperDashboard() {
                         hasApplied={appliedJobIds.has(job.id)}
                         isApplying={applyingJobId === job.id}
                         isExiting={exitingJobIds.has(job.id)}
-                        interactionLocked={Boolean(applyingJobId) || swipeRateLimited}
+                        interactionLocked={Boolean(applyingJobId)}
                         proposalOpen={applyingJobId === job.id}
-                        swipeRateLimited={swipeRateLimited}
                         distanceKm={baseDistanceToJobKm(job)}
                         distanceFromBase={hasExactBaseCoords}
                         needsBaseAddress={!hasHelperBaseAddress}
@@ -1246,8 +1234,6 @@ export default function HelperDashboard() {
                         applicationsCount={job.applicantCount ?? 0}
                         clientReviewCount={reviewCountByUserId.get(job.clientId) ?? 0}
                         onSubmitApply={handleCardSubmitApply}
-                        onDismiss={handleSwipeDismiss}
-                        onViewClientProfile={setClientProfileJob}
                         exclusiveLocked={
                           helperUserId
                             ? isRequestExclusiveLockedForViewer(job, helperApplications, helperUserId)
@@ -1403,36 +1389,6 @@ export default function HelperDashboard() {
         t={t}
         language={language}
       />
-
-      {clientProfileJob ? (
-        <PublicProfileSheetFrame
-          open
-          mobileAlign="bottom"
-          onClose={() => setClientProfileJob(null)}
-          panelClassName="h-full max-h-full rounded-t-[1.75rem] border border-slate-100 bg-white shadow-2xl md:rounded-3xl"
-        >
-          <div className="relative shrink-0 overflow-hidden rounded-t-[1.75rem] bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-800 md:rounded-t-3xl">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,white,transparent_55%)] opacity-15 pointer-events-none" />
-            <button
-              type="button"
-              onClick={() => setClientProfileJob(null)}
-              className="absolute top-3 right-3 z-20 rounded-full bg-black/20 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/30"
-              aria-label={t('common.close')}
-            >
-              <Icons.X className="h-5 w-5" />
-            </button>
-            <div className="h-12" aria-hidden />
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div
-              {...{ [PUBLIC_PROFILE_SCROLL_ATTR]: '' }}
-              className="ios-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2 sm:p-4"
-            >
-              <ClientPublicProfileView job={clientProfileJob} />
-            </div>
-          </div>
-        </PublicProfileSheetFrame>
-      ) : null}
 
     </AppPageShell>
   );

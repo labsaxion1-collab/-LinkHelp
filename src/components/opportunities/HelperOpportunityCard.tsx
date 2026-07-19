@@ -1,20 +1,19 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { hapticLight, hapticSuccess } from '@/utils/haptic';
+import { hapticSuccess } from '@/utils/haptic';
 import * as Icons from 'lucide-react';
 import { CheckCircle2 } from 'lucide-react';
 import { getCategoryIconById } from '@/utils/categoryIcons';
 import { clsx } from 'clsx';
 import type { Job } from '@/types/job';
-import { formatJobBudgetAmount } from '@/utils/formatJobBudget';
 import { formatJobOpenedAt } from '@/utils/jobDisplay';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { translateJobTitle, resolveCategoryId } from '@/utils/translateCategory';
 import { LhCard } from '@/components/design-system/LhCard';
 import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { HelperApplyConfirmModal } from '@/components/modals/HelperApplyConfirmModal';
+import { ClientPublicProfileView } from '@/components/features/ClientPublicProfileView';
 import { HelperOpportunityLcDebugPanel } from '@/components/opportunities/HelperOpportunityLcDebugPanel';
-import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
 import { getHelperLeadCreditSummary } from '@/utils/helperCreditDisplay';
 import { isJobInterestFull } from '@/utils/applicationInterest';
 import { getRequestDescriptionForViewer } from '@/utils/requestDescriptionDisplay';
@@ -22,15 +21,15 @@ import type { AppLanguage } from '@/services/translationService';
 import {
   getApplicationTypeChargeLc,
   getApplicationTypeLabelKey,
-  getNormalApplicationChargeLc,
   getApplicationBalanceSummary,
   getApplicationCreditQuote,
   getOpportunityLocationLabel,
+  buildOpportunityCardMetaParts,
+  formatOpportunityCardMetaLine,
   canSubmitConfirmedApplication,
   requiresProposalAmountInput,
   resolveDefaultProposalAmount,
   shouldExpandDescriptionForAmountInput,
-  shouldPlaceApplyActionsBelowDescription,
   HELPER_OPPORTUNITY_CARD_FOOTER_LAYOUT,
   type HelperApplicationType,
 } from '@/utils/helperOpportunityApply';
@@ -56,12 +55,9 @@ export type HelperOpportunityCardProps = {
     proposedAmount: number,
     options: { isExclusive: boolean },
   ) => void;
-  onDismiss?: (jobId: string) => void;
   isExiting?: boolean;
   interactionLocked?: boolean;
   proposalOpen?: boolean;
-  swipeRateLimited?: boolean;
-  onViewClientProfile?: (job: Job) => void;
   applicationsCount?: number;
   clientReviewCount?: number;
   t: TFn;
@@ -77,8 +73,6 @@ export type HelperOpportunityCardProps = {
   descriptionExpanded?: boolean;
   onDescriptionExpandedChange?: (expanded: boolean) => void;
 };
-
-const SWIPE_COMMIT_PX = 90;
 
 function jobMatchTier(job: Job, activeTab: HelperOpportunityCardTab): 'urgent' | 'best' | 'normal' {
   if (job.urgency === 'high') return 'urgent';
@@ -102,15 +96,12 @@ function HelperOpportunityCardInner({
   hasApplied,
   isApplying,
   onSubmitApply,
-  onDismiss,
   isExiting = false,
   interactionLocked = false,
   proposalOpen = false,
-  swipeRateLimited = false,
-  onViewClientProfile,
   t,
   translateCategory,
-  formatJobSchedule,
+  formatJobSchedule: _formatJobSchedule,
   distanceKm,
   distanceFromBase = false,
   needsBaseAddress = false,
@@ -126,7 +117,6 @@ function HelperOpportunityCardInner({
   const [searchParams] = useSearchParams();
   const lcDebugEnabled = isLinkCreditsDebugEnabled(searchParams);
   const tier = jobMatchTier(job, activeTab);
-  const schedule = formatJobSchedule(job, t);
   const category = translateCategory(job.category, t);
   const loc = getOpportunityLocationLabel(
     job,
@@ -137,25 +127,18 @@ function HelperOpportunityCardInner({
     baseAddressPendingCoords,
   );
   const openedLabel = formatJobOpenedAt(job.createdAt, t);
-  const [dragX, setDragX] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const [swipeOverlay, setSwipeOverlay] = useState<'none' | 'accept' | 'pass'>('none');
-  const [passExiting, setPassExiting] = useState(false);
   const [descriptionOpen, setDescriptionOpen] = useState(descriptionExpanded);
+  const [clientPanelOpen, setClientPanelOpen] = useState(false);
   const [applicationType, setApplicationType] = useState<HelperApplicationType | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [proposalAmountRaw, setProposalAmountRaw] = useState('');
   const [amountError, setAmountError] = useState('');
-  const swipeStartX = useRef(0);
-  const swipeStartTarget = useRef<EventTarget | null>(null);
   const confirmSubmittedRef = useRef(false);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const CategoryIcon = getCategoryIconById(job.category);
   const categoryTheme = getCategoryFeedTheme(job.category);
   const showCategoryLine = !title.startsWith(`${category}:`);
-  const budgetAmount = formatJobBudgetAmount(job, t);
-  const budgetNotInformed = budgetAmount === t('jobs.budget_not_informed');
-  const dateLabel = schedule;
+  const metaLine = formatOpportunityCardMetaLine(buildOpportunityCardMetaParts(job, t, distanceKm));
   const creditQuote = getApplicationCreditQuote(job, distanceKm);
   const normalCharge = creditQuote.normalApplyLc;
   const vipCharge = creditQuote.vipApplyLc;
@@ -195,10 +178,9 @@ function HelperOpportunityCardInner({
     leadCreditBreakdown,
   ]);
 
-  const actionsBelowDescription = shouldPlaceApplyActionsBelowDescription(descriptionOpen);
   const isInterestFull = isJobInterestFull(applicationsCount);
-  const canApply =
-    !hasApplied && !isApplying && !isInterestFull && !swipeRateLimited && !interactionLocked;
+  const cardPanelOpen = descriptionOpen || clientPanelOpen;
+  const canApply = !hasApplied && !isApplying && !isInterestFull && !interactionLocked;
   const requestDescription = getRequestDescriptionForViewer(job.description, language);
   const showAmountInput = requiresProposalAmountInput(job);
 
@@ -222,6 +204,7 @@ function HelperOpportunityCardInner({
     if (hasApplied) {
       setConfirmOpen(false);
       setDescriptionOpen(false);
+      setClientPanelOpen(false);
     }
   }, [hasApplied]);
 
@@ -233,7 +216,16 @@ function HelperOpportunityCardInner({
 
   const setDescription = (open: boolean) => {
     setDescriptionOpen(open);
+    if (open) setClientPanelOpen(false);
     onDescriptionExpandedChange?.(open);
+  };
+
+  const setClientPanel = (open: boolean) => {
+    setClientPanelOpen(open);
+    if (open) {
+      setDescriptionOpen(false);
+      onDescriptionExpandedChange?.(false);
+    }
   };
 
   const resolveProposalAmount = (): number | null => {
@@ -293,68 +285,6 @@ function HelperOpportunityCardInner({
   const handleConfirmCancel = () => {
     if (isApplying) return;
     setConfirmOpen(false);
-  };
-
-  const acceptOpacity = Math.min(0.42, Math.max(0, dragX / 140));
-  const passOpacity = Math.min(0.42, Math.max(0, -dragX / 140));
-  const dragRotation = Math.max(-6, Math.min(6, dragX * 0.04));
-
-  const resetSwipeVisual = () => {
-    setDragX(0);
-    setSwipeOverlay('none');
-    setDragging(false);
-  };
-
-  const wasProposalOpen = useRef(false);
-  useEffect(() => {
-    if (wasProposalOpen.current && !proposalOpen) {
-      resetSwipeVisual();
-    }
-    wasProposalOpen.current = proposalOpen;
-  }, [proposalOpen]);
-
-  const finishSwipe = (offset: number) => {
-    setDragging(false);
-    if (hasApplied || interactionLocked) {
-      resetSwipeVisual();
-      return;
-    }
-    if (offset > SWIPE_COMMIT_PX) {
-      hapticLight();
-      resetSwipeVisual();
-      if (!isInterestFull) handleExternalNormalApply();
-      return;
-    }
-    if (offset < -SWIPE_COMMIT_PX) {
-      hapticLight();
-      setPassExiting(true);
-      setSwipeOverlay('pass');
-      setDragX(-Math.min(typeof window !== 'undefined' ? window.innerWidth * 0.45 : 280, 280));
-      window.setTimeout(() => {
-        onDismiss?.(job.id);
-        setPassExiting(false);
-        resetSwipeVisual();
-      }, 520);
-      return;
-    }
-    resetSwipeVisual();
-  };
-
-  const onSwipeStart = (clientX: number, target?: EventTarget | null) => {
-    if (hasApplied || isExiting || interactionLocked || proposalOpen || swipeRateLimited) return;
-    setDragging(true);
-    swipeStartX.current = clientX;
-    swipeStartTarget.current = target ?? null;
-    setSwipeOverlay('none');
-  };
-
-  const onSwipeMove = (clientX: number) => {
-    if (hasApplied || isExiting || interactionLocked || proposalOpen || swipeRateLimited) return;
-    const dx = clientX - swipeStartX.current;
-    setDragX(dx);
-    if (dx > 36) setSwipeOverlay('accept');
-    else if (dx < -36) setSwipeOverlay('pass');
-    else setSwipeOverlay('none');
   };
 
   const ctaBase =
@@ -451,7 +381,7 @@ function HelperOpportunityCardInner({
   };
 
   const renderExpandedDescriptionContent = () => (
-    <div className="space-y-3 border-t border-[rgba(15,23,42,0.06)] px-3 pb-3 pt-2.5">
+    <div className="space-y-2.5">
       {requestDescription.display ? (
         <p className="whitespace-pre-wrap text-[13px] font-medium leading-relaxed text-[#475569]">
           {requestDescription.display}
@@ -582,8 +512,45 @@ function HelperOpportunityCardInner({
     </div>
   );
 
+  const renderCardOverlay = () => {
+    if (!cardPanelOpen) return null;
+
+    const panelTitle = descriptionOpen
+      ? t('helper_dashboard.apply_description_label')
+      : t('helper_public.view_profile');
+
+    return (
+      <div
+        className="absolute inset-x-0 bottom-[52px] z-30 flex max-h-[min(220px,42vh)] flex-col overflow-hidden rounded-xl border border-[rgba(15,23,42,0.10)] bg-white shadow-[0_10px_36px_rgba(15,23,42,0.14)]"
+        role="dialog"
+        aria-label={panelTitle}
+      >
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[rgba(15,23,42,0.06)] px-2.5 py-2">
+          <p className="min-w-0 truncate text-[11px] font-black uppercase tracking-wide text-[#64748B]">
+            {panelTitle}
+          </p>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDescription(false);
+              setClientPanel(false);
+            }}
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#64748B] transition hover:bg-slate-100"
+            aria-label={t('common.close')}
+          >
+            <Icons.X className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
+        <div className="ios-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-2.5 py-2.5">
+          {descriptionOpen ? renderExpandedDescriptionContent() : <ClientPublicProfileView job={job} />}
+        </div>
+      </div>
+    );
+  };
+
   const feedBody = (
-    <div className="grid w-full min-w-0 grid-cols-[52px_minmax(0,1fr)_80px] grid-rows-[auto_auto_auto_auto] gap-x-2 gap-y-1.5 sm:grid-cols-[64px_minmax(0,1fr)_80px] sm:gap-x-3 sm:gap-y-2">
+    <div className="grid w-full min-w-0 grid-cols-[52px_minmax(0,1fr)_80px] grid-rows-[auto_auto_auto] gap-x-2 gap-y-1.5 sm:grid-cols-[64px_minmax(0,1fr)_80px] sm:gap-x-3 sm:gap-y-2">
       <div
         className="col-start-1 row-start-1 row-span-2 flex h-[52px] w-[52px] items-center justify-center self-start rounded-xl border sm:h-16 sm:w-16 sm:rounded-[18px]"
         style={{
@@ -606,7 +573,7 @@ function HelperOpportunityCardInner({
         </span>
       </div>
 
-      <div className="col-start-2 row-start-2 min-w-0 self-start space-y-1 overflow-hidden">
+      <div className="col-start-2 row-start-2 min-w-0 self-start space-y-1">
         {showCategoryLine ? (
           <div className="flex min-w-0 items-center gap-2">
             <span
@@ -619,45 +586,32 @@ function HelperOpportunityCardInner({
           </div>
         ) : null}
 
-        <div
-          className="flex min-w-0 items-center gap-1.5 overflow-hidden"
+        <p
+          className="text-[12px] font-bold leading-snug sm:text-[13px] line-clamp-2 sm:line-clamp-none"
           style={{ color: categoryTheme.budgetColor }}
         >
-          <Icons.Link2 className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
-          <span className="truncate whitespace-nowrap text-[13px] font-bold">
-            {budgetNotInformed ? budgetAmount : t('jobs.budget_with_amount', { amount: budgetAmount })}
-          </span>
-        </div>
-
-        {!isRemoteJob(job) && loc ? (
-          <div className="flex min-w-0 items-center gap-1.5 overflow-hidden text-[#94A3B8]">
-            <Icons.MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-            <span className="truncate whitespace-nowrap text-[12px] font-medium">{loc}</span>
-          </div>
-        ) : null}
-
-        {dateLabel ? (
-          <div className="flex min-w-0 items-center gap-1.5 overflow-hidden text-[#94A3B8]">
-            <Icons.Calendar className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-            <span className="truncate whitespace-nowrap text-[12px] font-medium">{dateLabel}</span>
-          </div>
-        ) : null}
+          {metaLine}
+        </p>
       </div>
 
       <div className="col-start-3 row-start-1 row-span-2 flex shrink-0 items-center justify-center self-center">
         <InterestedRing interestedCount={applicationsCount} label={interestRingLabel} size={80} />
       </div>
 
-      <div className="col-span-3 col-start-1 row-start-3 mt-0.5 flex flex-col gap-2 border-t border-[rgba(15,23,42,0.06)] pt-2.5">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="relative col-span-3 col-start-1 row-start-3 mt-0.5 flex flex-col gap-2 border-t border-[rgba(15,23,42,0.06)] pt-2.5">
+        <div className={clsx('flex min-w-0 items-center gap-2', cardPanelOpen && 'pointer-events-none opacity-0')}>
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              onViewClientProfile?.(job);
+              setClientPanel(!clientPanelOpen);
             }}
-            className="shrink-0 rounded-full ring-2 ring-white shadow-sm transition hover:opacity-90"
+            className={clsx(
+              'shrink-0 rounded-full ring-2 ring-white shadow-sm transition hover:opacity-90',
+              clientPanelOpen && 'ring-blue-200',
+            )}
             aria-label={t('helper_public.view_profile')}
+            aria-expanded={clientPanelOpen}
           >
             {job.clientAvatar && !job.clientAvatar.includes('pravatar') ? (
               <img
@@ -703,36 +657,29 @@ function HelperOpportunityCardInner({
           </button>
         </div>
 
-        {actionsBelowDescription ? (
-          <div className="overflow-hidden rounded-xl border border-[rgba(15,23,42,0.06)] bg-[#f8fafc]">
-            {renderExpandedDescriptionContent()}
-          </div>
-        ) : null}
+        {renderCardOverlay()}
 
-        {renderApplyActionRow()}
+        <div className="relative z-40">{renderApplyActionRow()}</div>
       </div>
 
       <div className="sr-only">
-        {schedule} {loc} {openedLabel} {title} {applicationsCount}
+        {metaLine} {loc} {openedLabel} {title} {applicationsCount}
       </div>
     </div>
   );
 
   const cardShell = clsx(
-    'group/card relative h-full w-full max-w-full overflow-hidden rounded-[22px] border bg-white transition-all duration-300',
+    'group/card relative h-full w-full max-w-full overflow-visible rounded-[22px] border bg-white transition-all duration-300',
     'shadow-[0_2px_12px_rgba(15,23,42,0.05),0_6px_28px_rgba(15,23,42,0.06)]',
     'md:hover:-translate-y-1 md:hover:shadow-[0_12px_40px_rgba(15,23,42,0.10)] motion-reduce:transform-none',
-    (isExiting || passExiting) &&
+    isExiting &&
       'pointer-events-none scale-[0.88] opacity-0 -translate-x-8 -rotate-2 duration-[520ms] ease-[cubic-bezier(0.34,1.15,0.64,1)]',
-    swipeRateLimited && !isExiting && 'opacity-75',
     tier === 'urgent'
       ? 'border-rose-200/80'
       : tier === 'best'
         ? 'border-emerald-200/70'
         : 'border-[rgba(15,23,42,0.08)]',
   );
-
-  const cardPadding = 'relative z-20 bg-white px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4 will-change-transform';
 
   const topAccent = (
     <div
@@ -748,27 +695,9 @@ function HelperOpportunityCardInner({
     <>
       <LhCard padding="none" className={cardShell}>
         {topAccent}
-        <div
-          className="relative w-full max-w-full overflow-hidden touch-pan-y md:hidden"
-          onTouchStart={(e) => onSwipeStart(e.touches[0]?.clientX ?? 0, e.target)}
-          onTouchMove={(e) => onSwipeMove(e.touches[0]?.clientX ?? 0)}
-          onTouchEnd={(e) => finishSwipe((e.changedTouches[0]?.clientX ?? 0) - swipeStartX.current)}
-        >
-          <div
-            className={clsx(
-              cardPadding,
-              !dragging && 'transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.2,0.64,1)]',
-            )}
-            style={{
-              transform: `translateX(${dragX}px) rotate(${dragRotation}deg)`,
-              opacity: 1 - Math.min(0.12, Math.abs(dragX) / 400),
-            }}
-          >
-            {feedBody}
-          </div>
+        <div className="relative z-20 bg-white px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4">
+          {feedBody}
         </div>
-
-        <div className="hidden px-4 pb-4 pt-4 md:block">{feedBody}</div>
       </LhCard>
 
       {applicationType && confirmOpen ? (
@@ -803,7 +732,6 @@ export const HelperOpportunityCard = memo(HelperOpportunityCardInner, (prev, nex
     prev.isExiting === next.isExiting &&
     prev.interactionLocked === next.interactionLocked &&
     prev.proposalOpen === next.proposalOpen &&
-    prev.swipeRateLimited === next.swipeRateLimited &&
     prev.activeTab === next.activeTab &&
     prev.distanceKm === next.distanceKm &&
     prev.distanceFromBase === next.distanceFromBase &&

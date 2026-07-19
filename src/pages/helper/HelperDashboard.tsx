@@ -32,10 +32,8 @@ import { HelperCreditsWalletCard } from '@/components/helpers/HelperCreditsWalle
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
 import { HelperCategoryDropdown } from '@/components/helper/HelperCategoryDropdown';
-import { HelperOpportunityDetailModal } from '@/components/opportunities/HelperOpportunityDetailModal';
 import { ClientPublicProfileView } from '@/components/features/ClientPublicProfileView';
 import { PublicProfileSheetFrame, PUBLIC_PROFILE_SCROLL_ATTR } from '@/components/reputation/PublicProfileSheetFrame';
-import { HelperProposalModal } from '@/components/modals/HelperProposalModal';
 import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
 import { getApplicationChargeLc } from '@/config/helperCreditCharge';
 import { getExclusiveApplicationChargeLc } from '@/utils/helperCreditDisplay';
@@ -111,7 +109,6 @@ export default function HelperDashboard() {
   const [activeTab, setActiveTab] = useState<'match' | 'recentes' | 'emergencia'>('match');
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const isSubmittingApplyRef = React.useRef(false);
-  const [proposalJob, setProposalJob] = useState<Job | null>(null);
   const [exitingJobIds, setExitingJobIds] = useState<Set<string>>(() => new Set());
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
@@ -362,13 +359,13 @@ export default function HelperDashboard() {
   const [upcomingModalJob, setUpcomingModalJob] = useState<UpcomingJob | null>(null);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
   const [clientProfileJob, setClientProfileJob] = useState<Job | null>(null);
-  const [detailOpportunity, setDetailOpportunity] = useState<Job | null>(null);
+  const [applyExpandedJobId, setApplyExpandedJobId] = useState<string | null>(null);
 
   useEffect(() => {
     const openJobId = (location.state as { openJobId?: string } | null)?.openJobId;
     if (!openJobId) return;
     const job = jobs.find((j) => j.id === openJobId);
-    if (job) setDetailOpportunity(job);
+    if (job) setApplyExpandedJobId(job.id);
     navigate(location.pathname, { replace: true, state: null });
   }, [location.state, jobs, navigate, location.pathname]);
   const helperUserId = session?.user?.id ?? profile?.id ?? (me?.id && me.id !== 'guest' && me.id !== '…' ? me.id : null);
@@ -420,10 +417,8 @@ export default function HelperDashboard() {
     [baseDistanceToJobKm],
   );
 
-  const openInsufficientCreditsModal = React.useCallback((job: Job) => {
-    setProposalJob(null);
-    proposalOpenedAtRef.current = null;
-    setInsufficientCreditsLc(interestCostForJob(job));
+  const openInsufficientCreditsModal = React.useCallback((job: Job, requiredLc?: number) => {
+    setInsufficientCreditsLc(requiredLc ?? interestCostForJob(job));
   }, [interestCostForJob]);
 
   const hasInterestCredits = React.useCallback(
@@ -446,8 +441,7 @@ export default function HelperDashboard() {
     [walletLoading, walletBalance, interestCostForJob, openInsufficientCreditsModal, pushToast, t],
   );
   const [swipeCooldownUntil, setSwipeCooldownUntil] = useState(0);
-  const proposalOpenedAtRef = React.useRef<number | null>(null);
-  const proposalSourceRef = React.useRef<ProposalAnalyticsSource>('modal');
+  const proposalSourceRef = React.useRef<ProposalAnalyticsSource>('card');
   const goToCredits = React.useCallback(() => navigate(ROUTES.helperLinkCredits), [navigate]);
   const creditsUsedThisMonth = React.useMemo(() => {
     const now = new Date();
@@ -559,9 +553,7 @@ export default function HelperDashboard() {
   );
 
   const logProposalAnalytics = React.useCallback(
-    (event: 'opened' | 'closed' | 'cancelled' | 'submitted', job: Job, extra?: { proposedAmount?: number | null }) => {
-      const openedAt = proposalOpenedAtRef.current;
-      const durationMs = openedAt ? Date.now() - openedAt : null;
+    (event: 'submitted', job: Job, extra?: { proposedAmount?: number | null }) => {
       recordProposalAnalytics({
         requestId: job.id,
         helperId: helperUserId,
@@ -570,38 +562,11 @@ export default function HelperDashboard() {
         proposedAmount: extra?.proposedAmount ?? null,
         budgetMin: job.budgetMin ?? null,
         budgetMax: job.budgetMax ?? null,
-        durationMs,
+        durationMs: null,
         timezone: getBrowserTimezone(),
       });
     },
     [helperUserId],
-  );
-
-  const openProposalForJob = React.useCallback(
-    (job: Job, source: ProposalAnalyticsSource) => {
-      if (appliedJobIds.has(job.id)) {
-        pushToast(t('helper_dashboard.already_interested'));
-        return;
-      }
-      if (!hasInterestCredits(job)) return;
-      proposalSourceRef.current = source;
-      proposalOpenedAtRef.current = Date.now();
-      recordMarketSignal({
-        requestId: job.id,
-        helperId: helperUserId,
-        event: 'opened',
-        category: job.category,
-        city: job.city ?? null,
-        province: job.region ?? null,
-        budgetMin: job.budgetMin ?? null,
-        budgetMax: job.budgetMax ?? null,
-        distanceKm: baseDistanceToJobKm(job),
-        source,
-      });
-      logProposalAnalytics('opened', job);
-      setProposalJob(job);
-    },
-    [appliedJobIds, helperUserId, baseDistanceToJobKm, hasInterestCredits, logProposalAnalytics, pushToast, t],
   );
 
   const submitApply = async (
@@ -659,9 +624,6 @@ export default function HelperDashboard() {
       });
       logProposalAnalytics('submitted', job, { proposedAmount });
       hapticSuccess();
-      setProposalJob(null);
-      setDetailOpportunity(null);
-      proposalOpenedAtRef.current = null;
       dismissJobWithAnimation(job.id);
       setToastNotification({ message: t('helper_dashboard.toast_apply_success'), show: true });
       setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
@@ -677,9 +639,6 @@ export default function HelperDashboard() {
             ? String((err as { message?: unknown }).message ?? '')
             : '';
       if (msg === 'ALREADY_APPLIED') {
-        logProposalAnalytics('closed', job);
-        setProposalJob(null);
-        proposalOpenedAtRef.current = null;
         showToast(t('helper_dashboard.already_interested'), 'error');
         return;
       }
@@ -705,26 +664,49 @@ export default function HelperDashboard() {
     }
   };
 
-  const requestApply = (job: Job) => {
-    if (isSubmittingApplyRef.current) return;
-    if (!helperUserId) {
-      showToast(t('auth.errors.not_signed_in'), 'error');
-      return;
-    }
-    if (!hasInterestCredits(job)) return;
-    openProposalForJob(job, 'modal');
-  };
-
-  const handleProposalClose = () => {
-    if (applyingJobId || !proposalJob) return;
-    logProposalAnalytics('cancelled', proposalJob);
-    setProposalJob(null);
-    proposalOpenedAtRef.current = null;
-  };
-
-  const handleSwipeInterest = (job: Job) => {
-    requestApply(job);
-  };
+  const handleCardSubmitApply = React.useCallback(
+    (job: Job, proposedAmount: number, options: { isExclusive: boolean }) => {
+      if (appliedJobIds.has(job.id) || isSubmittingApplyRef.current) return;
+      if (!helperUserId) {
+        showToast(t('auth.errors.not_signed_in'), 'error');
+        return;
+      }
+      const distanceKm = baseDistanceToJobKm(job);
+      const isExclusive = options.isExclusive === true;
+      const requiredCredits = isExclusive
+        ? getExclusiveApplicationChargeLc(leadCostsForJob(job, { distanceKm }))
+        : interestCostForJob(job);
+      if (walletLoading && walletBalance == null) {
+        showToast(t('common.loading'), 'error');
+        return;
+      }
+      if (walletBalance == null || walletBalance < requiredCredits) {
+        if (isExclusive) {
+          showToast(
+            t('helper_credits.insufficient_interest_body', { required: requiredCredits }),
+            'error',
+          );
+        } else {
+          openInsufficientCreditsModal(job, requiredCredits);
+        }
+        return;
+      }
+      proposalSourceRef.current = 'card';
+      void submitApply(job, proposedAmount, null, options);
+    },
+    [
+      appliedJobIds,
+      helperUserId,
+      baseDistanceToJobKm,
+      interestCostForJob,
+      walletLoading,
+      walletBalance,
+      openInsufficientCreditsModal,
+      showToast,
+      submitApply,
+      t,
+    ],
+  );
 
   const handleSwipeDismiss = (jobId: string) => {
     const job = jobs.find((j) => j.id === jobId);
@@ -1235,7 +1217,7 @@ export default function HelperDashboard() {
               <div
                 className={clsx(
                   'grid w-full max-w-full min-w-0 grid-cols-1 gap-5 transition-[filter,opacity] duration-300',
-                  proposalJob && 'pointer-events-none brightness-[0.92] md:brightness-[0.88]',
+                  applyingJobId && 'pointer-events-none brightness-[0.92] md:brightness-[0.88]',
                 )}
               >
               {displayedJobs.map((job, idx) => (
@@ -1255,7 +1237,7 @@ export default function HelperDashboard() {
                         isApplying={applyingJobId === job.id}
                         isExiting={exitingJobIds.has(job.id)}
                         interactionLocked={Boolean(applyingJobId) || swipeRateLimited}
-                        proposalOpen={proposalJob?.id === job.id}
+                        proposalOpen={applyingJobId === job.id}
                         swipeRateLimited={swipeRateLimited}
                         distanceKm={baseDistanceToJobKm(job)}
                         distanceFromBase={hasExactBaseCoords}
@@ -1263,11 +1245,20 @@ export default function HelperDashboard() {
                         baseAddressPendingCoords={baseAddressPendingCoords}
                         applicationsCount={job.applicantCount ?? 0}
                         clientReviewCount={reviewCountByUserId.get(job.clientId) ?? 0}
-                        onApply={requestApply}
-                        onSwipeInterest={handleSwipeInterest}
+                        onSubmitApply={handleCardSubmitApply}
                         onDismiss={handleSwipeDismiss}
                         onViewClientProfile={setClientProfileJob}
-                        onViewDetails={setDetailOpportunity}
+                        exclusiveLocked={
+                          helperUserId
+                            ? isRequestExclusiveLockedForViewer(job, helperApplications, helperUserId)
+                            : false
+                        }
+                        descriptionExpanded={applyExpandedJobId === job.id}
+                        onDescriptionExpandedChange={(expanded) => {
+                          if (expanded) setApplyExpandedJobId(job.id);
+                          else if (applyExpandedJobId === job.id) setApplyExpandedJobId(null);
+                        }}
+                        language={language}
                         t={t}
                         translateCategory={translateCategory}
                         formatJobSchedule={formatJobScheduleDisplay}
@@ -1403,18 +1394,6 @@ export default function HelperDashboard() {
         onUpdateWorkflow={updateUpcomingWorkflow}
       />
 
-      <HelperProposalModal
-        open={Boolean(proposalJob)}
-        job={proposalJob}
-        submitting={proposalJob ? applyingJobId === proposalJob.id : false}
-        creditBalance={walletBalance}
-        onClose={handleProposalClose}
-        onSubmit={(amount, message, options) => proposalJob && void submitApply(proposalJob, amount, message, options)}
-        t={t}
-        language={language}
-        distanceKm={proposalJob ? baseDistanceToJobKm(proposalJob) : null}
-      />
-
       <HelperInsufficientCreditsModal
         open={insufficientCreditsLc != null}
         requiredLc={insufficientCreditsLc ?? 0}
@@ -1422,30 +1401,6 @@ export default function HelperDashboard() {
         onClose={() => setInsufficientCreditsLc(null)}
         t={t}
         language={language}
-      />
-
-      <HelperOpportunityDetailModal
-        job={detailOpportunity}
-        open={Boolean(detailOpportunity)}
-        onClose={() => setDetailOpportunity(null)}
-        hasApplied={detailOpportunity ? appliedJobIds.has(detailOpportunity.id) : false}
-        isApplying={detailOpportunity ? applyingJobId === detailOpportunity.id : false}
-        onApply={requestApply}
-        clientReviewCount={
-          detailOpportunity ? reviewCountByUserId.get(detailOpportunity.clientId) ?? 0 : 0
-        }
-        clientCompletedOrders={
-          detailOpportunity
-            ? jobs.filter((j) => j.clientId === detailOpportunity.clientId && j.status === 'completed').length
-            : 0
-        }
-        t={t}
-        translateCategory={translateCategory}
-        formatJobSchedule={formatJobScheduleDisplay}
-        distanceKm={detailOpportunity ? baseDistanceToJobKm(detailOpportunity) : null}
-        distanceFromBase={hasExactBaseCoords}
-        needsBaseAddress={!hasHelperBaseAddress}
-        baseAddressPendingCoords={baseAddressPendingCoords}
       />
 
       {clientProfileJob ? (

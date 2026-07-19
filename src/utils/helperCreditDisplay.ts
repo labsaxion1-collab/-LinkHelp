@@ -1,6 +1,7 @@
 import type { Job } from '@/types/job';
 import { calculateHelperLeadCreditCost, type HelperLeadCreditBreakdown } from '@/utils/calculateHelperLeadCreditCost';
 import { getApplicationChargeLc } from '@/config/helperCreditCharge';
+import { getVipApplicationChargeLc } from '@/utils/vipApplicationCredits';
 
 export type HelperLeadCreditSummary = HelperLeadCreditBreakdown;
 
@@ -35,7 +36,7 @@ export function getHelperCreditPublicDisplay(costs: HelperLeadCreditBreakdown): 
   };
 }
 
-/** LinkCredits debited when helper submits an exclusive candidatura (apply + job + hire estimate). */
+/** LinkCredits debited when helper submits a VIP / exclusive candidatura (normal charge + surcharge). */
 export function getExclusiveApplicationChargeLc(costs: HelperLeadCreditBreakdown): number {
-  return getHelperCreditPublicDisplay(costs).totalEstimate;
+  return getVipApplicationChargeLc(getApplicationChargeLc(costs));
 }

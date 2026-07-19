@@ -14,7 +14,7 @@ export type MarketSignalEvent =
 /** @deprecated legacy alias */
 export type MarketSignalKind = 'ignore' | 'interest' | 'applied' | 'hired';
 
-export type MarketSignalSource = 'swipe' | 'modal' | 'details' | 'recommendation' | 'system';
+export type MarketSignalSource = 'swipe' | 'modal' | 'details' | 'recommendation' | 'system' | 'card';
 
 export type MarketSignalPayload = {
   requestId: string;

@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { hapticLight, hapticSuccess } from '@/utils/haptic';
 import * as Icons from 'lucide-react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Crown } from 'lucide-react';
 import { getCategoryIconById } from '@/utils/categoryIcons';
 import { clsx } from 'clsx';
 import type { Job } from '@/types/job';
@@ -10,10 +10,25 @@ import { formatJobOpenedAt } from '@/utils/jobDisplay';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { translateJobTitle } from '@/utils/translateCategory';
 import { LhCard } from '@/components/design-system/LhCard';
-import { HelperCreditCostBlock } from '@/components/helpers/HelperCreditCostBlock';
 import { InterestedRing } from '@/components/opportunities/InterestedRing';
+import { HelperApplyConfirmModal } from '@/components/modals/HelperApplyConfirmModal';
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
 import { isJobInterestFull } from '@/utils/applicationInterest';
+import { getRequestDescriptionForViewer } from '@/utils/requestDescriptionDisplay';
+import type { AppLanguage } from '@/services/translationService';
+import {
+  getApplicationTypeChargeLc,
+  getApplicationTypeLabelKey,
+  getNormalApplicationChargeLc,
+  getOpportunityLocationLabel,
+  canSubmitConfirmedApplication,
+  requiresProposalAmountInput,
+  resolveDefaultProposalAmount,
+  shouldExpandDescriptionForAmountInput,
+  type HelperApplicationType,
+} from '@/utils/helperOpportunityApply';
+import { validateHelperProposal } from '@/utils/jobProposal';
+import { formatLinkCredits } from '@/utils/formatLinkCredits';
 
 export type HelperOpportunityCardTab = 'match' | 'recentes' | 'emergencia';
 
@@ -25,15 +40,17 @@ export type HelperOpportunityCardProps = {
   activeTab: HelperOpportunityCardTab;
   hasApplied: boolean;
   isApplying: boolean;
-  onApply: (job: Job) => void;
-  onSwipeInterest?: (job: Job) => void;
+  onSubmitApply: (
+    job: Job,
+    proposedAmount: number,
+    options: { isExclusive: boolean },
+  ) => void;
   onDismiss?: (jobId: string) => void;
   isExiting?: boolean;
   interactionLocked?: boolean;
   proposalOpen?: boolean;
   swipeRateLimited?: boolean;
   onViewClientProfile?: (job: Job) => void;
-  onViewDetails?: (job: Job) => void;
   applicationsCount?: number;
   clientReviewCount?: number;
   t: TFn;
@@ -43,6 +60,10 @@ export type HelperOpportunityCardProps = {
   distanceFromBase?: boolean;
   needsBaseAddress?: boolean;
   baseAddressPendingCoords?: boolean;
+  language?: AppLanguage;
+  exclusiveLocked?: boolean;
+  descriptionExpanded?: boolean;
+  onDescriptionExpandedChange?: (expanded: boolean) => void;
 };
 
 const SWIPE_COMMIT_PX = 90;
@@ -57,37 +78,10 @@ function jobMatchTier(job: Job, activeTab: HelperOpportunityCardTab): 'urgent' |
   return 'normal';
 }
 
-function locationLabel(
-  job: Job,
-  distanceKm: number | null | undefined,
-  t: TFn,
-  distanceFromBase?: boolean,
-  needsBaseAddress?: boolean,
-  baseAddressPendingCoords?: boolean,
-): string {
-  if (isRemoteJob(job)) return t('jobs.remote');
-  if (needsBaseAddress) return t('helper_dashboard.base_address_missing_short');
-  if (baseAddressPendingCoords) return t('helper_dashboard.base_address_saved_pending_coords');
-  if (distanceKm != null) {
-    return distanceFromBase
-      ? t('helper_dashboard.distance_from_base_km', { km: distanceKm.toFixed(1) })
-      : t('helper_dashboard.distance_km', { km: distanceKm.toFixed(1) });
-  }
-  const loc = job.location?.trim();
-  if (!loc || /remot|remote|en ligne|online/i.test(loc)) return t('jobs.remote');
-  return loc.length > 28 ? `${loc.slice(0, 26)}…` : loc;
-}
-
 function clientInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length >= 2) return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
   return (parts[0]?.slice(0, 2) ?? '?').toUpperCase();
-}
-
-function clientLocationDisplay(job: Job, fallback: string): string {
-  const parts = [job.city?.trim(), job.region?.trim()].filter(Boolean);
-  if (parts.length) return parts.join(', ');
-  return fallback;
 }
 
 function HelperOpportunityCardInner({
@@ -95,15 +89,13 @@ function HelperOpportunityCardInner({
   activeTab,
   hasApplied,
   isApplying,
-  onApply,
-  onSwipeInterest,
+  onSubmitApply,
   onDismiss,
   isExiting = false,
   interactionLocked = false,
   proposalOpen = false,
   swipeRateLimited = false,
   onViewClientProfile,
-  onViewDetails,
   t,
   translateCategory,
   formatJobSchedule,
@@ -113,29 +105,143 @@ function HelperOpportunityCardInner({
   baseAddressPendingCoords = false,
   applicationsCount = 0,
   clientReviewCount = 0,
+  language = 'pt',
+  exclusiveLocked = false,
+  descriptionExpanded = false,
+  onDescriptionExpandedChange,
 }: HelperOpportunityCardProps) {
   const tier = jobMatchTier(job, activeTab);
   const schedule = formatJobSchedule(job, t);
   const category = translateCategory(job.category, t);
-  const loc = locationLabel(job, distanceKm, t, distanceFromBase, needsBaseAddress, baseAddressPendingCoords);
+  const loc = getOpportunityLocationLabel(
+    job,
+    distanceKm,
+    t,
+    distanceFromBase,
+    needsBaseAddress,
+    baseAddressPendingCoords,
+  );
   const openedLabel = formatJobOpenedAt(job.createdAt, t);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [swipeOverlay, setSwipeOverlay] = useState<'none' | 'accept' | 'pass'>('none');
   const [passExiting, setPassExiting] = useState(false);
+  const [descriptionOpen, setDescriptionOpen] = useState(descriptionExpanded);
+  const [applicationType, setApplicationType] = useState<HelperApplicationType | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [proposalAmountRaw, setProposalAmountRaw] = useState('');
+  const [amountError, setAmountError] = useState('');
   const swipeStartX = useRef(0);
   const swipeStartTarget = useRef<EventTarget | null>(null);
+  const confirmSubmittedRef = useRef(false);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const CategoryIcon = getCategoryIconById(job.category);
   const categoryTheme = getCategoryFeedTheme(job.category);
-  const clientLoc = clientLocationDisplay(job, loc);
   const showCategoryLine = !title.startsWith(`${category}:`);
   const budgetAmount = formatJobBudgetAmount(job, t);
   const budgetNotInformed = budgetAmount === t('jobs.budget_not_informed');
-  const dateLabel = openedLabel || schedule;
+  const dateLabel = schedule;
+  const normalCharge = getNormalApplicationChargeLc(job, distanceKm);
+  const vipCharge = getApplicationTypeChargeLc(job, 'exclusive', distanceKm);
   const isInterestFull = isJobInterestFull(applicationsCount);
   const canApply =
     !hasApplied && !isApplying && !isInterestFull && !swipeRateLimited && !interactionLocked;
+  const requestDescription = getRequestDescriptionForViewer(job.description, language);
+  const showAmountInput = requiresProposalAmountInput(job);
+
+  useEffect(() => {
+    setDescriptionOpen(descriptionExpanded);
+  }, [descriptionExpanded]);
+
+  useEffect(() => {
+    if (!showAmountInput) return;
+    const defaultAmount = resolveDefaultProposalAmount(job);
+    if (defaultAmount != null && !proposalAmountRaw) {
+      setProposalAmountRaw(String(defaultAmount));
+    }
+  }, [job.id, showAmountInput, proposalAmountRaw]);
+
+  useEffect(() => {
+    if (!confirmOpen) confirmSubmittedRef.current = false;
+  }, [confirmOpen]);
+
+  useEffect(() => {
+    if (hasApplied) {
+      setConfirmOpen(false);
+      setDescriptionOpen(false);
+    }
+  }, [hasApplied]);
+
+  useEffect(() => {
+    if (!isApplying) {
+      setConfirmOpen(false);
+    }
+  }, [isApplying]);
+
+  const setDescription = (open: boolean) => {
+    setDescriptionOpen(open);
+    onDescriptionExpandedChange?.(open);
+  };
+
+  const resolveProposalAmount = (): number | null => {
+    const raw = showAmountInput ? proposalAmountRaw : String(resolveDefaultProposalAmount(job) ?? '');
+    const result = validateHelperProposal(raw, job, true);
+    if (result.ok === false) {
+      setAmountError(t(result.messageKey, result.messageVars));
+      return null;
+    }
+    setAmountError('');
+    return result.amount;
+  };
+
+  const openConfirmWithType = (type: HelperApplicationType) => {
+    if (!canApply) return;
+    if (type === 'exclusive' && exclusiveLocked) return;
+    setApplicationType(type);
+    if (shouldExpandDescriptionForAmountInput(showAmountInput, proposalAmountRaw)) {
+      setDescription(true);
+      setAmountError(t('helper_proposal.error_required'));
+      return;
+    }
+    setConfirmOpen(true);
+  };
+
+  const handleExternalNormalApply = () => {
+    if (!canApply) return;
+    hapticSuccess();
+    openConfirmWithType('normal');
+  };
+
+  const handleExternalVipApply = () => {
+    if (!canApply || exclusiveLocked) return;
+    hapticSuccess();
+    openConfirmWithType('exclusive');
+  };
+
+  const handleAccordionApply = (type: HelperApplicationType) => {
+    if (!canApply) return;
+    hapticSuccess();
+    openConfirmWithType(type);
+  };
+
+  const handleConfirm = () => {
+    if (!canSubmitConfirmedApplication({
+      applicationType,
+      isApplying,
+      alreadySubmitted: confirmSubmittedRef.current,
+    })) {
+      return;
+    }
+    const amount = resolveProposalAmount();
+    if (amount == null || !applicationType) return;
+    confirmSubmittedRef.current = true;
+    onSubmitApply(job, amount, { isExclusive: applicationType === 'exclusive' });
+  };
+
+  const handleConfirmCancel = () => {
+    if (isApplying) return;
+    setConfirmOpen(false);
+  };
 
   const acceptOpacity = Math.min(0.42, Math.max(0, dragX / 140));
   const passOpacity = Math.min(0.42, Math.max(0, -dragX / 140));
@@ -164,7 +270,7 @@ function HelperOpportunityCardInner({
     if (offset > SWIPE_COMMIT_PX) {
       hapticLight();
       resetSwipeVisual();
-      if (!isInterestFull) onSwipeInterest?.(job);
+      if (!isInterestFull) handleExternalNormalApply();
       return;
     }
     if (offset < -SWIPE_COMMIT_PX) {
@@ -204,11 +310,16 @@ function HelperOpportunityCardInner({
 
   const interestRingLabel = t('helper_dashboard.interested_ring_label');
 
-  const renderApplyControl = () => {
-    const primaryBtn = clsx(
+  const renderExternalApplyActions = () => {
+    const normalBtn = clsx(
       ctaBase,
-      'bg-gradient-to-br from-[#2563FF] to-[#1557F0] text-white shadow-[0_8px_22px_rgba(37,99,255,0.28),inset_0_1px_0_rgba(255,255,255,0.18)]',
+      'min-w-[7.5rem] flex-1 bg-gradient-to-br from-[#2563FF] to-[#1557F0] text-white shadow-[0_8px_22px_rgba(37,99,255,0.28),inset_0_1px_0_rgba(255,255,255,0.18)]',
       'hover:shadow-[0_12px_30px_rgba(37,99,255,0.36)] hover:brightness-105 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50',
+    );
+    const vipBtn = clsx(
+      ctaBase,
+      'min-w-[5.5rem] shrink-0 border border-amber-200/90 bg-gradient-to-br from-amber-50 to-white text-amber-900 shadow-[0_4px_14px_rgba(245,158,11,0.14)]',
+      'hover:border-amber-300 hover:from-amber-100 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50',
     );
 
     if (hasApplied) {
@@ -216,7 +327,7 @@ function HelperOpportunityCardInner({
         <span
           className={clsx(
             ctaBase,
-            'cursor-default gap-2 rounded-[14px] border border-emerald-200/80 bg-emerald-50 text-emerald-700',
+            'w-full cursor-default gap-2 rounded-[14px] border border-emerald-200/80 bg-emerald-50 text-emerald-700',
           )}
         >
           <CheckCircle2 className="h-[18px] w-[18px] shrink-0" />
@@ -227,7 +338,7 @@ function HelperOpportunityCardInner({
 
     if (isApplying) {
       return (
-        <button type="button" disabled className={primaryBtn}>
+        <button type="button" disabled className={clsx(normalBtn, 'w-full')}>
           <Icons.Loader2 className="h-[18px] w-[18px] animate-spin" />
         </button>
       );
@@ -238,7 +349,7 @@ function HelperOpportunityCardInner({
         <span
           className={clsx(
             ctaBase,
-            'max-w-[10rem] cursor-default rounded-[14px] border border-slate-200 bg-slate-50 px-4 text-center text-[13px] font-semibold leading-tight text-slate-500',
+            'w-full cursor-default rounded-[14px] border border-slate-200 bg-slate-50 px-4 text-center text-[13px] font-semibold leading-tight text-slate-500',
           )}
         >
           {t('helper_dashboard.interested_limit_reached')}
@@ -247,26 +358,151 @@ function HelperOpportunityCardInner({
     }
 
     return (
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          hapticSuccess();
-          onApply(job);
-        }}
-        onTouchEnd={(e) => e.stopPropagation()}
-        disabled={!canApply}
-        className={primaryBtn}
-      >
-        <Icons.Send className="h-[15px] w-[15px] shrink-0" strokeWidth={2.25} aria-hidden />
-        <span className="text-center">{t('helper_dashboard.apply_now')}</span>
-      </button>
+      <div className="flex w-full min-w-0 items-stretch gap-2">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleExternalNormalApply();
+          }}
+          onTouchEnd={(e) => e.stopPropagation()}
+          disabled={!canApply}
+          className={normalBtn}
+        >
+          <Icons.Send className="h-[15px] w-[15px] shrink-0" strokeWidth={2.25} aria-hidden />
+          <span className="truncate text-center">{t('helper_dashboard.apply_confirm_action')}</span>
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleExternalVipApply();
+          }}
+          onTouchEnd={(e) => e.stopPropagation()}
+          disabled={!canApply || exclusiveLocked}
+          className={vipBtn}
+          aria-label={t('helper_dashboard.apply_type_exclusive')}
+        >
+          <Crown className="h-[15px] w-[15px] shrink-0 text-amber-500" aria-hidden />
+          <span className="truncate">{t('helper_dashboard.apply_vip_short')}</span>
+        </button>
+      </div>
     );
   };
 
+  const descriptionPanel = (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateRows: descriptionOpen ? '1fr' : '0fr',
+        transition: 'grid-template-rows 320ms cubic-bezier(0.4,0,0.2,1)',
+      }}
+    >
+      <div className="overflow-hidden" style={{ minHeight: 0 }}>
+        <div className="space-y-3 border-t border-[rgba(15,23,42,0.06)] px-3 pb-3 pt-2.5">
+          {requestDescription.display ? (
+            <p className="whitespace-pre-wrap text-[13px] font-medium leading-relaxed text-[#475569]">
+              {requestDescription.display}
+            </p>
+          ) : (
+            <p className="text-[13px] font-medium text-[#94A3B8]">{t('helper_dashboard.apply_no_description')}</p>
+          )}
+
+          <div className="flex items-center gap-1.5 text-[12px] font-semibold text-[#64748B]">
+            <Icons.MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>{loc}</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-lg border border-blue-100 bg-blue-50/80 px-2.5 py-2">
+              <p className="text-[10px] font-black uppercase tracking-wide text-blue-700/80">
+                {t('helper_dashboard.apply_type_normal')}
+              </p>
+              <p className="mt-0.5 text-[12px] font-bold text-blue-900">
+                {t('helper_dashboard.apply_cost_label', { count: formatLinkCredits(normalCharge, language) })}
+              </p>
+            </div>
+            <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-2.5 py-2">
+              <p className="text-[10px] font-black uppercase tracking-wide text-amber-800/80">
+                {t('helper_dashboard.apply_type_exclusive')}
+              </p>
+              <p className="mt-0.5 text-[12px] font-bold text-amber-900">
+                {t('helper_dashboard.apply_cost_label', { count: formatLinkCredits(vipCharge, language) })}
+              </p>
+            </div>
+          </div>
+
+          <p className="text-[11px] font-medium leading-relaxed text-[#64748B]">
+            {t('helper_dashboard.apply_vip_explain')}
+          </p>
+
+          {exclusiveLocked ? (
+            <p className="text-[11px] font-medium text-amber-700">
+              {t('helper_dashboard.exclusive_application_locked')}
+            </p>
+          ) : null}
+
+          {showAmountInput ? (
+            <div>
+              <label className="mb-1 block text-[11px] font-bold text-[#64748B]">
+                {t('helper_proposal.your_proposal')}
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={proposalAmountRaw}
+                onChange={(e) => {
+                  setProposalAmountRaw(e.target.value.replace(/[^\d.,]/g, ''));
+                  setAmountError('');
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-[#0F172A] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-500/10"
+                placeholder={t('helper_proposal.amount_placeholder')}
+              />
+              {amountError ? <p className="mt-1 text-[11px] font-semibold text-rose-600">{amountError}</p> : null}
+            </div>
+          ) : null}
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              disabled={!canApply}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAccordionApply('normal');
+              }}
+              className={clsx(
+                ctaBase,
+                'bg-gradient-to-br from-[#2563FF] to-[#1557F0] text-white shadow-[0_6px_18px_rgba(37,99,255,0.24)]',
+                'hover:brightness-105 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
+              )}
+            >
+              <Icons.Send className="h-[15px] w-[15px] shrink-0" strokeWidth={2.25} aria-hidden />
+              {t('helper_dashboard.apply_confirm_action')}
+            </button>
+            <button
+              type="button"
+              disabled={!canApply || exclusiveLocked}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAccordionApply('exclusive');
+              }}
+              className={clsx(
+                ctaBase,
+                'border border-amber-200 bg-amber-50 text-amber-900',
+                'hover:bg-amber-100 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
+              )}
+            >
+              <Crown className="h-[15px] w-[15px] shrink-0 text-amber-500" aria-hidden />
+              {t('helper_dashboard.apply_vip_short')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const feedBody = (
-    <div className="grid w-full min-w-0 grid-cols-[52px_minmax(0,1fr)_80px] grid-rows-[auto_auto_auto] gap-x-2 gap-y-1.5 sm:grid-cols-[64px_minmax(0,1fr)_80px] sm:gap-x-3 sm:gap-y-2">
-      {/* Ícone — ocupa as duas primeiras linhas */}
+    <div className="grid w-full min-w-0 grid-cols-[52px_minmax(0,1fr)_80px] grid-rows-[auto_auto_auto_auto] gap-x-2 gap-y-1.5 sm:grid-cols-[64px_minmax(0,1fr)_80px] sm:gap-x-3 sm:gap-y-2">
       <div
         className="col-start-1 row-start-1 row-span-2 flex h-[52px] w-[52px] items-center justify-center self-start rounded-xl border sm:h-16 sm:w-16 sm:rounded-[18px]"
         style={{
@@ -283,14 +519,12 @@ function HelperOpportunityCardInner({
         />
       </div>
 
-      {/* Título — uma linha, nunca quebra */}
       <div className="col-start-2 row-start-1 min-w-0 overflow-hidden pr-1">
         <span className="block truncate whitespace-nowrap text-[16px] font-bold leading-snug text-[#0F172A] sm:text-[18px]">
           {title}
         </span>
       </div>
 
-      {/* Meta (categoria, orçamento, data) — cada linha nunca quebra */}
       <div className="col-start-2 row-start-2 min-w-0 self-start space-y-1 overflow-hidden">
         {showCategoryLine ? (
           <div className="flex min-w-0 items-center gap-2">
@@ -314,76 +548,87 @@ function HelperOpportunityCardInner({
           </span>
         </div>
 
+        {!isRemoteJob(job) && loc ? (
+          <div className="flex min-w-0 items-center gap-1.5 overflow-hidden text-[#94A3B8]">
+            <Icons.MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+            <span className="truncate whitespace-nowrap text-[12px] font-medium">{loc}</span>
+          </div>
+        ) : null}
+
         {dateLabel ? (
           <div className="flex min-w-0 items-center gap-1.5 overflow-hidden text-[#94A3B8]">
             <Icons.Calendar className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-            <span className="truncate whitespace-nowrap text-[12px] font-medium">
-              {dateLabel}
-            </span>
+            <span className="truncate whitespace-nowrap text-[12px] font-medium">{dateLabel}</span>
           </div>
         ) : null}
       </div>
 
-      {/* Anel de interessados — ocupa as duas primeiras linhas, nunca quebra */}
       <div className="col-start-3 row-start-1 row-span-2 flex shrink-0 items-center justify-center self-center">
-        <InterestedRing
-          interestedCount={applicationsCount}
-          label={interestRingLabel}
-          size={80}
-        />
+        <InterestedRing interestedCount={applicationsCount} label={interestRingLabel} size={80} />
       </div>
 
-      {/* Rodapé — avatar + nome do cliente + botão */}
-      <div className="col-span-3 col-start-1 row-start-3 mt-0.5 flex flex-col gap-2 border-t border-[rgba(15,23,42,0.06)] pt-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onViewClientProfile?.(job);
-          }}
-          className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-left"
-          aria-label={t('helper_public.view_profile')}
-        >
-          {job.clientAvatar && !job.clientAvatar.includes('pravatar') ? (
-            <img
-              src={job.clientAvatar}
-              alt=""
-              className="h-8 w-8 shrink-0 rounded-full object-cover ring-2 ring-white shadow-sm"
-              loading="lazy"
-              decoding="async"
+      <div className="col-span-3 col-start-1 row-start-3 mt-0.5 flex flex-col gap-2 border-t border-[rgba(15,23,42,0.06)] pt-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewClientProfile?.(job);
+            }}
+            className="shrink-0 rounded-full ring-2 ring-white shadow-sm transition hover:opacity-90"
+            aria-label={t('helper_public.view_profile')}
+          >
+            {job.clientAvatar && !job.clientAvatar.includes('pravatar') ? (
+              <img
+                src={job.clientAvatar}
+                alt=""
+                className="h-9 w-9 rounded-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold"
+                style={{
+                  backgroundColor: categoryTheme.iconBg,
+                  color: categoryTheme.iconColor,
+                }}
+              >
+                {clientInitials(job.clientName)}
+              </div>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDescription(!descriptionOpen);
+            }}
+            className={clsx(
+              'inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-xl border border-[rgba(15,23,42,0.08)] bg-[#f8fafc] px-2.5 py-1.5 text-[12px] font-bold text-[#0F172A] transition hover:bg-slate-50',
+              descriptionOpen && 'border-blue-200 bg-blue-50/60',
+            )}
+            aria-expanded={descriptionOpen}
+          >
+            <Icons.FileText className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
+            <span>{t('helper_dashboard.apply_description_label')}</span>
+            <Icons.ChevronDown
+              className={clsx('h-3.5 w-3.5 shrink-0 text-[#64748B] transition-transform duration-200', descriptionOpen && 'rotate-180')}
+              aria-hidden
             />
-          ) : (
-            <div
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ring-2 ring-white shadow-sm"
-              style={{
-                backgroundColor: categoryTheme.iconBg,
-                color: categoryTheme.iconColor,
-              }}
-            >
-              {clientInitials(job.clientName)}
-            </div>
-          )}
-          <div className="min-w-0 overflow-hidden">
-            <p className="truncate whitespace-nowrap text-[14px] font-bold leading-tight text-[#0F172A]">
-              {job.clientName}
-            </p>
-            <p className="mt-0.5 truncate whitespace-nowrap text-[12px] font-medium text-[#94A3B8]">
-              {clientLoc}
-            </p>
-          </div>
-        </button>
-        <div className="w-full shrink-0 sm:w-auto [&_button]:w-full sm:[&_button]:w-auto [&_span]:w-full sm:[&_span]:w-auto">
-          {renderApplyControl()}
+          </button>
+          <div className="min-w-0 flex-1">{renderExternalApplyActions()}</div>
+        </div>
+        <div className="overflow-hidden rounded-xl border border-[rgba(15,23,42,0.06)] bg-[#f8fafc]">
+          {descriptionPanel}
         </div>
       </div>
 
       <div className="sr-only">
-        <HelperCreditCostBlock job={job} t={t} distanceKm={distanceKm} variant="compact" showHireEstimate />
-        {schedule} {loc} {openedLabel} {title} {applicationsCount} {clientReviewCount}
+        {schedule} {loc} {openedLabel} {title} {applicationsCount}
       </div>
     </div>
   );
-
 
   const cardShell = clsx(
     'group/card relative h-full w-full max-w-full overflow-hidden rounded-[22px] border bg-white transition-all duration-300',
@@ -412,72 +657,45 @@ function HelperOpportunityCardInner({
   );
 
   return (
-    <LhCard padding="none" className={cardShell}>
-      {topAccent}
-      {/* Mobile — swipe */}
-      <div
-        className="relative w-full max-w-full overflow-hidden touch-pan-y md:hidden"
-        onTouchStart={(e) => onSwipeStart(e.touches[0]?.clientX ?? 0, e.target)}
-        onTouchMove={(e) => onSwipeMove(e.touches[0]?.clientX ?? 0)}
-        onTouchEnd={(e) => finishSwipe((e.changedTouches[0]?.clientX ?? 0) - swipeStartX.current)}
-      >
+    <>
+      <LhCard padding="none" className={cardShell}>
+        {topAccent}
         <div
-          className="pointer-events-none absolute inset-y-0 left-2 z-0 flex items-center"
-          aria-hidden
+          className="relative w-full max-w-full overflow-hidden touch-pan-y md:hidden"
+          onTouchStart={(e) => onSwipeStart(e.touches[0]?.clientX ?? 0, e.target)}
+          onTouchMove={(e) => onSwipeMove(e.touches[0]?.clientX ?? 0)}
+          onTouchEnd={(e) => finishSwipe((e.changedTouches[0]?.clientX ?? 0) - swipeStartX.current)}
         >
-          <span className="flex max-w-[5.5rem] flex-col items-center gap-0.5 rounded-xl border border-rose-200/60 bg-rose-50/45 px-2 py-1.5 text-center opacity-40">
-            <span className="text-base leading-none">←</span>
-            <span className="text-[9px] font-black uppercase leading-tight text-rose-800">
-              {t('helper_dashboard.swipe_not_interested')}
-            </span>
-          </span>
-        </div>
-        <div
-          className="pointer-events-none absolute inset-y-0 right-2 z-0 flex items-center"
-          aria-hidden
-        >
-          <span className="flex max-w-[5.5rem] flex-col items-center gap-0.5 rounded-xl border border-emerald-200/60 bg-emerald-50/45 px-2 py-1.5 text-center opacity-40">
-            <span className="text-base leading-none">→</span>
-            <span className="text-[9px] font-black uppercase leading-tight text-emerald-800">
-              {t('helper_dashboard.swipe_interest')}
-            </span>
-          </span>
+          <div
+            className={clsx(
+              cardPadding,
+              !dragging && 'transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.2,0.64,1)]',
+            )}
+            style={{
+              transform: `translateX(${dragX}px) rotate(${dragRotation}deg)`,
+              opacity: 1 - Math.min(0.12, Math.abs(dragX) / 400),
+            }}
+          >
+            {feedBody}
+          </div>
         </div>
 
-        <div
-          className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-emerald-500/30 text-emerald-950 backdrop-blur-[2px] transition-opacity duration-100"
-          style={{ opacity: acceptOpacity }}
-        >
-          <Icons.Check className="h-10 w-10" strokeWidth={2.5} />
-          <span className="text-sm font-black">{t('helper_dashboard.swipe_interest')}</span>
-        </div>
-        <div
-          className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-rose-500/30 text-rose-950 backdrop-blur-[2px] transition-opacity duration-100"
-          style={{ opacity: passOpacity }}
-        >
-          <Icons.X className="h-10 w-10" strokeWidth={2.5} />
-          <span className="text-sm font-black">{t('helper_dashboard.swipe_not_interested')}</span>
-        </div>
+        <div className="hidden px-4 pb-4 pt-4 md:block">{feedBody}</div>
+      </LhCard>
 
-        <div
-          className={clsx(
-            cardPadding,
-            !dragging && 'transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.2,0.64,1)]',
-          )}
-          style={{
-            transform: `translateX(${dragX}px) rotate(${dragRotation}deg)`,
-            opacity: 1 - Math.min(0.12, Math.abs(dragX) / 400),
-          }}
-        >
-          {feedBody}
-        </div>
-      </div>
-
-      {/* Desktop */}
-      <div className="hidden px-4 pb-4 pt-4 md:block">
-        {feedBody}
-      </div>
-    </LhCard>
+      {applicationType && confirmOpen ? (
+        <HelperApplyConfirmModal
+          open={confirmOpen}
+          submitting={isApplying}
+          applicationType={applicationType}
+          linkCreditsCost={getApplicationTypeChargeLc(job, applicationType, distanceKm)}
+          language={language}
+          onConfirm={handleConfirm}
+          onCancel={handleConfirmCancel}
+          t={t}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -501,6 +719,9 @@ export const HelperOpportunityCard = memo(HelperOpportunityCardInner, (prev, nex
     prev.distanceFromBase === next.distanceFromBase &&
     prev.needsBaseAddress === next.needsBaseAddress &&
     prev.applicationsCount === next.applicationsCount &&
-    prev.clientReviewCount === next.clientReviewCount
+    prev.clientReviewCount === next.clientReviewCount &&
+    prev.exclusiveLocked === next.exclusiveLocked &&
+    prev.descriptionExpanded === next.descriptionExpanded &&
+    prev.language === next.language
   );
 });

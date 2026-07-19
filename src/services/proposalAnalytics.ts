@@ -2,7 +2,7 @@ import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { getBrowserTimezone } from '@/utils/browserTimezone';
 
 export type ProposalAnalyticsEvent = 'opened' | 'closed' | 'cancelled' | 'submitted';
-export type ProposalAnalyticsSource = 'swipe' | 'modal' | 'details' | 'recommendation';
+export type ProposalAnalyticsSource = 'swipe' | 'modal' | 'details' | 'recommendation' | 'card';
 
 export type ProposalAnalyticsPayload = {
   requestId: string;

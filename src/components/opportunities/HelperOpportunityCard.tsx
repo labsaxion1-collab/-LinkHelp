@@ -14,10 +14,7 @@ import { LhCard } from '@/components/design-system/LhCard';
 import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { HelperApplyConfirmModal } from '@/components/modals/HelperApplyConfirmModal';
 import { HelperOpportunityLcDebugPanel } from '@/components/opportunities/HelperOpportunityLcDebugPanel';
-import {
-  calculateHelperLeadCreditCost,
-  isRemoteJob,
-} from '@/utils/calculateHelperLeadCreditCost';
+import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
 import { getHelperLeadCreditSummary } from '@/utils/helperCreditDisplay';
 import { isJobInterestFull } from '@/utils/applicationInterest';
 import { getRequestDescriptionForViewer } from '@/utils/requestDescriptionDisplay';
@@ -27,6 +24,7 @@ import {
   getApplicationTypeLabelKey,
   getNormalApplicationChargeLc,
   getApplicationBalanceSummary,
+  getApplicationCreditQuote,
   getOpportunityLocationLabel,
   canSubmitConfirmedApplication,
   requiresProposalAmountInput,
@@ -158,11 +156,12 @@ function HelperOpportunityCardInner({
   const budgetAmount = formatJobBudgetAmount(job, t);
   const budgetNotInformed = budgetAmount === t('jobs.budget_not_informed');
   const dateLabel = schedule;
-  const normalCharge = getNormalApplicationChargeLc(job, distanceKm);
-  const vipCharge = getApplicationTypeChargeLc(job, 'exclusive', distanceKm);
+  const creditQuote = getApplicationCreditQuote(job, distanceKm);
+  const normalCharge = creditQuote.normalApplyLc;
+  const vipCharge = creditQuote.vipApplyLc;
   const balanceSummary = getApplicationBalanceSummary(job, walletBalance, distanceKm);
   const leadCreditSummary = getHelperLeadCreditSummary(job, distanceKm);
-  const leadCreditBreakdown = calculateHelperLeadCreditCost(job, { distanceKm });
+  const leadCreditBreakdown = creditQuote;
   const resolvedCategoryId = resolveCategoryId(job.category) || job.category;
   const normalLabelCount = formatLinkCredits(normalCharge, language);
   const vipLabelCount = formatLinkCredits(vipCharge, language);
@@ -487,7 +486,13 @@ function HelperOpportunityCardInner({
             {t('helper_dashboard.apply_type_normal')}
           </p>
           <p className="mt-0.5 text-[12px] font-bold text-blue-900">
-            {t('helper_dashboard.apply_cost_label', { count: normalLabelCount })}
+            {t('helper_dashboard.split_normal_cost_now', { count: normalCharge })}
+          </p>
+          <p className="text-[11px] font-semibold text-blue-800/90">
+            {t('helper_dashboard.split_normal_if_hired', { count: creditQuote.normalHireRemainderLc })}
+          </p>
+          <p className="text-[11px] font-semibold text-blue-800/90">
+            {t('helper_dashboard.split_normal_total', { count: creditQuote.fullRequestLc })}
           </p>
           <p className="mt-0.5 text-[11px] font-semibold text-[#64748B]">
             {walletBalance == null
@@ -512,7 +517,13 @@ function HelperOpportunityCardInner({
             {t('helper_dashboard.apply_type_exclusive')}
           </p>
           <p className="mt-0.5 text-[12px] font-bold text-amber-900">
-            {t('helper_dashboard.apply_cost_label', { count: vipLabelCount })}
+            {t('helper_dashboard.split_vip_cost_now', { count: vipCharge })}
+          </p>
+          <p className="text-[11px] font-semibold text-amber-900/90">
+            {t('helper_dashboard.split_vip_breakdown', {
+              full: creditQuote.fullRequestLc,
+              surcharge: 4,
+            })}
           </p>
           <p className="mt-0.5 text-[11px] font-semibold text-[#64748B]">
             {walletBalance == null
@@ -532,12 +543,8 @@ function HelperOpportunityCardInner({
           rawCategory={job.category}
           resolvedCategoryId={resolvedCategoryId}
           distanceKm={distanceKm}
-          interestCost={leadCreditBreakdown.interestCost}
-          serviceCost={leadCreditBreakdown.serviceCost}
-          distanceCost={leadCreditBreakdown.distanceCost}
-          estimatedTotal={leadCreditBreakdown.estimatedTotal}
-          normalCharge={normalCharge}
-          vipCharge={vipCharge}
+          creditQuote={creditQuote}
+          walletBalance={walletBalance}
           normalLabelCount={normalLabelCount}
           vipLabelCount={vipLabelCount}
         />
@@ -770,6 +777,7 @@ function HelperOpportunityCardInner({
           submitting={isApplying}
           applicationType={applicationType}
           linkCreditsCost={getApplicationTypeChargeLc(job, applicationType, distanceKm)}
+          creditQuote={creditQuote}
           walletBalance={walletBalance}
           language={language}
           onConfirm={handleConfirm}

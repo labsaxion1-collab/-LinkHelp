@@ -1,9 +1,12 @@
 import type { HelperLeadCreditBreakdown } from '@/utils/calculateHelperLeadCreditCost';
 
-/** When true, application debits interest + category service + distance (authoritative variable cost). */
-export const ENABLE_FULL_HELPER_CREDIT_CHARGE = true;
+/**
+ * Official split-charge rule (frozen): Normal apply debits 4 LC; hire debits remainder.
+ * Full upfront charge must remain disabled in production.
+ */
+export const ENABLE_FULL_HELPER_CREDIT_CHARGE = false;
 
-/** Normal candidatura debit: variable lead cost (category + distance + base interest). */
+/** Normal candidatura debit at apply time (interest only under split charge). */
 export function getApplicationChargeLc(breakdown: HelperLeadCreditBreakdown): number {
   return ENABLE_FULL_HELPER_CREDIT_CHARGE ? breakdown.estimatedTotal : breakdown.interestCost;
 }

@@ -1,8 +1,6 @@
 import type { Job } from '@/types/job';
-import { getApplicationChargeLc } from '@/config/helperCreditCharge';
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
-import { getHelperLeadCreditSummary } from '@/utils/helperCreditDisplay';
-import { getVipApplicationChargeLc } from '@/utils/vipApplicationCredits';
+import { getHelperLeadCreditQuote } from '@/utils/helperLeadCreditQuote';
 import { jobHasBoundedBudget, jobIsNegotiableBudget, isProposalAmountValid } from '@/utils/jobProposal';
 
 type LocationTFn = (key: string, options?: Record<string, string | number>) => string;
@@ -72,20 +70,24 @@ export function requiresProposalAmountInput(job: Job): boolean {
   return resolveDefaultProposalAmount(job) == null || jobIsNegotiableBudget(job);
 }
 
-/** Normal application charge for a job (authoritative lead/application cost). */
+/** Normal application charge for a job (4 LC at apply under split charge). */
 export function getNormalApplicationChargeLc(job: Job, distanceKm?: number | null): number {
-  return getApplicationChargeLc(getHelperLeadCreditSummary(job, distanceKm));
+  return getHelperLeadCreditQuote(job, { distanceKm }).normalApplyLc;
 }
 
-/** Authoritative LinkCredits debit for the selected application type (same sources as AppDataContext.applyForJob). */
+/** Authoritative LinkCredits debit for the selected application type. */
 export function getApplicationTypeChargeLc(
   job: Job,
   type: HelperApplicationType,
   distanceKm?: number | null,
 ): number {
-  const normalCharge = getNormalApplicationChargeLc(job, distanceKm);
-  if (type === 'exclusive') return getVipApplicationChargeLc(normalCharge);
-  return normalCharge;
+  const quote = getHelperLeadCreditQuote(job, { distanceKm });
+  return type === 'exclusive' ? quote.vipApplyLc : quote.normalApplyLc;
+}
+
+/** Split-charge quote for UI and preview mismatch checks. */
+export function getApplicationCreditQuote(job: Job, distanceKm?: number | null) {
+  return getHelperLeadCreditQuote(job, { distanceKm });
 }
 
 export function getApplicationTypeLabelKey(type: HelperApplicationType): string {

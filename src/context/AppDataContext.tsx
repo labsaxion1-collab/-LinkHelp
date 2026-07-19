@@ -48,11 +48,9 @@ import { isAwaitingClientCompletion } from '@/utils/serviceWorkflow';
 import type { PendingServiceReview, ServiceReview } from '@/types/review';
 import { dispatchPushEvent } from '@/services/push/pushEventDispatcher';
 import { useCredits } from '@/context/CreditContext';
-import { getApplicationChargeLc } from '@/config/helperCreditCharge';
-import { getExclusiveApplicationChargeLc } from '@/utils/helperCreditDisplay';
+import { getHelperLeadCreditQuote } from '@/utils/helperLeadCreditQuote';
 import {
   fetchHelperBaseDistanceKm,
-  leadCostsForJob,
 } from '@/services/helperLeadCredits';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import { markNotificationsCleared } from '@/utils/notificationVisibility';
@@ -651,10 +649,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       throw new Error('APPLICATION_LIMIT_REACHED');
     }
 
-    const leadCostBreakdown = leadCostsForJob(job, { distanceKm: options?.distanceKm ?? null });
-    const interestCost = options?.isExclusive
-      ? getExclusiveApplicationChargeLc(leadCostBreakdown)
-      : getApplicationChargeLc(leadCostBreakdown);
+    const creditQuote = getHelperLeadCreditQuote(job, { distanceKm: options?.distanceKm ?? null });
+    const interestCost = options?.isExclusive ? creditQuote.vipApplyLc : creditQuote.normalApplyLc;
 
     const sessionUserId = session?.user?.id ?? profile?.id ?? null;
 
@@ -934,7 +930,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     }
 
     const selectedDistanceKm = useRemote ? await fetchHelperBaseDistanceKm(helperId, jobSnapshot) : null;
-    const selectedCost = leadCostsForJob(jobSnapshot, { distanceKm: selectedDistanceKm }).selectedCost;
+    const creditQuote = getHelperLeadCreditQuote(jobSnapshot, { distanceKm: selectedDistanceKm });
+    const chargeAmount = targetApp.isExclusive ? 0 : creditQuote.normalHireRemainderLc;
 
     const applyOptimisticHire = () => {
       chatUnlockedKeysRef.current.add(`${requestId}:${helperId}`);
@@ -962,7 +959,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       applyOptimisticHire();
       try {
         const conversationId = await remoteOfficiallyHireHelper(payload, jobSnapshot, initialMessage, {
-          chargeAmount: selectedCost,
+          chargeAmount,
         });
 
         const hireHelperTitle = 'Contratação oficial';

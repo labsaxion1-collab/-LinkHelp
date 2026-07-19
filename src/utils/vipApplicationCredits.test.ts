@@ -5,9 +5,9 @@ import {
   VIP_APPLICATION_SURCHARGE_LC,
   VIP_DISPLACED_NORMAL_REFUND_LC,
 } from '@/utils/vipApplicationCredits';
-import { getApplicationChargeLc } from '@/config/helperCreditCharge';
 import { calculateHelperLeadCreditCost } from '@/utils/calculateHelperLeadCreditCost';
 import { getExclusiveApplicationChargeLc } from '@/utils/helperCreditDisplay';
+import { getHelperLeadCreditQuote } from '@/utils/helperLeadCreditQuote';
 import type { Job } from '@/types/job';
 
 const baseJob = (overrides: Partial<Job> = {}): Job => ({
@@ -31,11 +31,10 @@ const baseJob = (overrides: Partial<Job> = {}): Job => ({
 });
 
 describe('vipApplicationCredits', () => {
-  it('VIP charge equals normal + 4 LinkCredits', () => {
+  it('VIP charge helper adds surcharge to base amount', () => {
     expect(getVipApplicationChargeLc(4)).toBe(8);
     expect(getVipApplicationChargeLc(12)).toBe(16);
-    expect(getVipApplicationChargeLc(20)).toBe(24);
-    expect(getVipApplicationChargeLc(4)).toBe(4 + VIP_APPLICATION_SURCHARGE_LC);
+    expect(getVipApplicationChargeLc(25)).toBe(29);
   });
 
   it('VIP partial refund uses ceil(vipCharge / 2)', () => {
@@ -48,12 +47,12 @@ describe('vipApplicationCredits', () => {
     expect(VIP_DISPLACED_NORMAL_REFUND_LC).toBe(2);
   });
 
-  it('exclusive charge from job uses variable normal lead cost + surcharge', () => {
-    const costs = calculateHelperLeadCreditCost(baseJob(), { distanceKm: 8 });
-    const normal = getApplicationChargeLc(costs);
-    expect(normal).toBe(costs.estimatedTotal);
-    expect(normal).not.toBe(4);
-    expect(getExclusiveApplicationChargeLc(costs)).toBe(getVipApplicationChargeLc(normal));
-    expect(getExclusiveApplicationChargeLc(costs)).toBe(normal + VIP_APPLICATION_SURCHARGE_LC);
+  it('exclusive charge from job uses fullRequest + surcharge under split charge', () => {
+    const quote = getHelperLeadCreditQuote(baseJob(), { distanceKm: 8 });
+    expect(quote.normalApplyLc).toBe(4);
+    expect(getExclusiveApplicationChargeLc(quote)).toBe(quote.fullRequestLc + VIP_APPLICATION_SURCHARGE_LC);
+    expect(getExclusiveApplicationChargeLc(calculateHelperLeadCreditCost(baseJob(), { distanceKm: 8 }))).toBe(
+      quote.vipApplyLc,
+    );
   });
 });

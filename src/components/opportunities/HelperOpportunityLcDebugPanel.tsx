@@ -1,16 +1,13 @@
 import { ENABLE_FULL_HELPER_CREDIT_CHARGE } from '@/config/helperCreditCharge';
+import type { HelperLeadCreditQuote } from '@/utils/helperLeadCreditQuote';
 
 export type HelperOpportunityLcDebugPanelProps = {
   jobId: string;
   rawCategory: string;
   resolvedCategoryId: string;
   distanceKm: number | null | undefined;
-  interestCost: number;
-  serviceCost: number;
-  distanceCost: number;
-  estimatedTotal: number;
-  normalCharge: number;
-  vipCharge: number;
+  creditQuote: HelperLeadCreditQuote;
+  walletBalance: number | null;
   normalLabelCount: string;
   vipLabelCount: string;
 };
@@ -20,29 +17,33 @@ export function HelperOpportunityLcDebugPanel({
   rawCategory,
   resolvedCategoryId,
   distanceKm,
-  interestCost,
-  serviceCost,
-  distanceCost,
-  estimatedTotal,
-  normalCharge,
-  vipCharge,
+  creditQuote,
+  walletBalance,
   normalLabelCount,
   vipLabelCount,
 }: HelperOpportunityLcDebugPanelProps) {
   const distanceDisplay =
     distanceKm == null ? 'null' : Number.isFinite(distanceKm) ? String(distanceKm) : String(distanceKm);
 
+  const balanceAfterNormal =
+    walletBalance == null ? 'n/a' : String(Math.max(0, walletBalance - creditQuote.normalApplyLc));
+  const balanceAfterVip =
+    walletBalance == null ? 'n/a' : String(Math.max(0, walletBalance - creditQuote.vipApplyLc));
+
   const rows: { label: string; value: string }[] = [
     { label: 'job.id', value: jobId },
     { label: 'raw job.category', value: rawCategory },
     { label: 'resolved categoryId', value: resolvedCategoryId },
     { label: 'distanceKm', value: distanceDisplay },
-    { label: 'interestCost', value: String(interestCost) },
-    { label: 'serviceCost', value: String(serviceCost) },
-    { label: 'distanceCost', value: String(distanceCost) },
-    { label: 'estimatedTotal', value: String(estimatedTotal) },
-    { label: 'normalCharge', value: String(normalCharge) },
-    { label: 'vipCharge', value: String(vipCharge) },
+    { label: 'fullRequestLc', value: String(creditQuote.fullRequestLc) },
+    { label: 'normalApplyLc', value: String(creditQuote.normalApplyLc) },
+    { label: 'normalHireRemainderLc', value: String(creditQuote.normalHireRemainderLc) },
+    { label: 'vipApplyLc', value: String(creditQuote.vipApplyLc) },
+    { label: 'serviceLc', value: String(creditQuote.serviceLc) },
+    { label: 'distanceLc', value: String(creditQuote.distanceLc) },
+    { label: 'walletBalance', value: walletBalance == null ? 'null' : String(walletBalance) },
+    { label: 'balanceAfterNormalApply', value: balanceAfterNormal },
+    { label: 'balanceAfterVipApply', value: balanceAfterVip },
     { label: 'ENABLE_FULL_HELPER_CREDIT_CHARGE', value: String(ENABLE_FULL_HELPER_CREDIT_CHARGE) },
     { label: 'UI Normal label (apply_cost_label count)', value: normalLabelCount },
     { label: 'UI VIP label (apply_cost_label count)', value: vipLabelCount },

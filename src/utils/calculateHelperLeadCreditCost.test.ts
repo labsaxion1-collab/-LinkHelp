@@ -38,7 +38,8 @@ describe('calculateHelperLeadCreditCost', () => {
     const far = calculateHelperLeadCreditCost(baseJob(), { distanceKm: 12 });
     expect(far.distanceCost).toBeGreaterThan(near.distanceCost);
     expect(far.estimatedTotal).toBeGreaterThan(near.estimatedTotal);
-    expect(getApplicationChargeLc(far)).toBeGreaterThan(getApplicationChargeLc(near));
+    expect(getApplicationChargeLc(far)).toBe(4);
+    expect(getApplicationChargeLc(near)).toBe(4);
   });
 
   it('varies estimated total by category service cost', () => {

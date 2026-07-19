@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import type { AdminDashboardSummary } from '../adminDashboardContract';
-import { clearAdminDashboardCache, subscribeAdminDashboardSummary } from '../api/adminDashboardApi';
+import type { AdminDashboardPayload } from '../adminDashboardContract';
+import type { AdminDashboardApiErrorCode } from '../adminDashboardErrors';
+import type { AdminFinancialTimeRange } from '../adminDashboardFinancialContract';
+import { AdminApiError, clearAdminDashboardCache, subscribeAdminDashboardSummary } from '../api/adminDashboardApi';
 
-export function useAdminDashboardSummary() {
+export function useAdminDashboardSummary(timeRange: AdminFinancialTimeRange = 'all') {
   const { session } = useAuth();
   const userId = session?.user?.id ?? null;
   const accessToken = session?.access_token ?? null;
-  const [data, setData] = useState<AdminDashboardSummary | null>(null);
+  const [data, setData] = useState<AdminDashboardPayload | null>(null);
   const [loading, setLoading] = useState(Boolean(userId && accessToken));
-  const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<AdminDashboardApiErrorCode | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   const reload = useCallback(() => {
@@ -22,29 +24,50 @@ export function useAdminDashboardSummary() {
     if (!userId || !accessToken) {
       setData(null);
       setLoading(false);
-      setError(null);
-      return () => { active = false; };
+      setErrorCode(null);
+      return () => {
+        active = false;
+      };
     }
     setLoading(true);
-    setError(null);
-    const subscription = subscribeAdminDashboardSummary({ userId, accessToken, force: reloadKey > 0 });
+    setErrorCode(null);
+    const subscription = subscribeAdminDashboardSummary({
+      userId,
+      accessToken,
+      force: reloadKey > 0,
+      timeRange,
+    });
     subscription.promise.then(
-      (summary) => {
+      (payload) => {
         if (!active) return;
-        setData(summary);
+        setData(payload);
         setLoading(false);
+        setErrorCode(null);
       },
       (reason: unknown) => {
         if (!active || (reason instanceof DOMException && reason.name === 'AbortError')) return;
-        setError(reason instanceof Error ? reason.message : 'ADMIN_SUMMARY_UNAVAILABLE');
+        setData(null);
         setLoading(false);
+        if (reason instanceof AdminApiError) {
+          setErrorCode(reason.code);
+          return;
+        }
+        setErrorCode('ADMIN_SUMMARY_UNAVAILABLE');
       },
     );
     return () => {
       active = false;
       subscription.release();
     };
-  }, [userId, accessToken, reloadKey]);
+  }, [userId, accessToken, reloadKey, timeRange]);
 
-  return { data, loading, error, reload };
+  return {
+    data,
+    summary: data?.summary ?? null,
+    financial: data?.financial ?? null,
+    financialError: data?.financialError ?? null,
+    loading,
+    errorCode,
+    reload,
+  };
 }

@@ -6,14 +6,49 @@ import { createSupabaseServiceRoleClient } from '../../../api/lib/supabaseAdmin.
 vi.mock('../../../api/lib/adminAuth.server', () => ({ authorizeAdmin: vi.fn() }));
 vi.mock('../../../api/lib/supabaseAdmin.server', () => ({ createSupabaseServiceRoleClient: vi.fn() }));
 
-const summaryRow = { total_requests: 1, open_requests: 1, in_progress_requests: 0, total_applications: 1, pending_applications: 0, hired_applications: 1, hire_rate: 100, categories: [] };
+const summaryRow = {
+  total_requests: 1,
+  open_requests: 1,
+  in_progress_requests: 0,
+  total_applications: 1,
+  pending_applications: 0,
+  hired_applications: 1,
+  hire_rate: 100,
+  categories: [],
+};
+
+const financialRow = {
+  revenue_cad_cents: 2500,
+  purchase_count: 1,
+  lc_sold: 50,
+  lc_consumed: 12,
+  lc_refunded: 4,
+  lc_granted: 10,
+  lc_in_circulation: 100,
+  net_credit_burn: 8,
+  time_range: 'all',
+};
 
 function response() {
   const res: Record<string, unknown> = {};
   res.setHeader = vi.fn();
-  res.status = vi.fn((status: number) => { res.statusCode = status; return res; });
-  res.json = vi.fn((body: unknown) => { res.body = body; return res; });
+  res.status = vi.fn((status: number) => {
+    res.statusCode = status;
+    return res;
+  });
+  res.json = vi.fn((body: unknown) => {
+    res.body = body;
+    return res;
+  });
   return res as never;
+}
+
+function mockRpc() {
+  return vi.fn(async (name: string) => {
+    if (name === 'admin_dashboard_summary') return { data: [summaryRow], error: null };
+    if (name === 'admin_dashboard_financial_summary') return { data: [financialRow], error: null };
+    return { data: null, error: { code: '42883', message: 'missing' } };
+  });
 }
 
 describe('GET /api/admin/dashboard-summary', () => {
@@ -37,20 +72,60 @@ describe('GET /api/admin/dashboard-summary', () => {
     expect(createSupabaseServiceRoleClient).not.toHaveBeenCalled();
   });
 
-  it('returns only validated aggregate fields for an admin', async () => {
+  it('returns validated summary and financial payload for admin', async () => {
     vi.mocked(authorizeAdmin).mockResolvedValue({ ok: true, user: { id: 'admin' } as never });
-    const rpc = vi.fn(async () => ({ data: [summaryRow], error: null }));
+    const rpc = mockRpc();
     vi.mocked(createSupabaseServiceRoleClient).mockReturnValue({ rpc } as never);
     const res = response();
-    await handler({ method: 'GET', headers: { authorization: 'Bearer token' } } as never, res);
+    await handler({ method: 'GET', headers: { authorization: 'Bearer token' }, query: { range: 'all' } } as never, res);
     expect(rpc).toHaveBeenCalledWith('admin_dashboard_summary');
-    expect(res).toMatchObject({ statusCode: 200, body: { totalRequests: 1, hireRate: 100, categories: [] } });
+    expect(rpc).toHaveBeenCalledWith('admin_dashboard_financial_summary', { p_time_range: 'all' });
+    expect(res).toMatchObject({
+      statusCode: 200,
+      body: {
+        summary: { totalRequests: 1, hireRate: 100, categories: [] },
+        financial: { revenueCadCents: 2500, purchaseCount: 1, lcSold: 50 },
+        financialError: null,
+        timeRange: 'all',
+      },
+    });
     expect(JSON.stringify((res as never as { body: unknown }).body)).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
   });
 
-  it('sanitizes RPC errors', async () => {
+  it('returns summary with financialError when financial RPC is missing', async () => {
     vi.mocked(authorizeAdmin).mockResolvedValue({ ok: true, user: { id: 'admin' } as never });
-    vi.mocked(createSupabaseServiceRoleClient).mockReturnValue({ rpc: vi.fn(async () => ({ data: null, error: { code: '42501', message: 'private detail' } })) } as never);
+    const rpc = vi.fn(async (name: string) => {
+      if (name === 'admin_dashboard_summary') return { data: [summaryRow], error: null };
+      return { data: null, error: { code: '42883', message: 'could not find the function' } };
+    });
+    vi.mocked(createSupabaseServiceRoleClient).mockReturnValue({ rpc } as never);
+    const res = response();
+    await handler({ method: 'GET', headers: { authorization: 'Bearer token' } } as never, res);
+    expect(res).toMatchObject({
+      statusCode: 200,
+      body: {
+        summary: { totalRequests: 1 },
+        financial: null,
+        financialError: 'ADMIN_SUMMARY_FINANCIAL_UNAVAILABLE',
+      },
+    });
+  });
+
+  it('maps missing summary RPC to ADMIN_SUMMARY_RPC_FAILED', async () => {
+    vi.mocked(authorizeAdmin).mockResolvedValue({ ok: true, user: { id: 'admin' } as never });
+    vi.mocked(createSupabaseServiceRoleClient).mockReturnValue({
+      rpc: vi.fn(async () => ({ data: null, error: { code: '42883', message: 'could not find the function admin_dashboard_summary' } })),
+    } as never);
+    const res = response();
+    await handler({ method: 'GET', headers: { authorization: 'Bearer token' } } as never, res);
+    expect(res).toMatchObject({ statusCode: 502, body: { error: 'ADMIN_SUMMARY_RPC_FAILED' } });
+  });
+
+  it('sanitizes other RPC errors', async () => {
+    vi.mocked(authorizeAdmin).mockResolvedValue({ ok: true, user: { id: 'admin' } as never });
+    vi.mocked(createSupabaseServiceRoleClient).mockReturnValue({
+      rpc: vi.fn(async () => ({ data: null, error: { code: '42501', message: 'private detail' } })),
+    } as never);
     const res = response();
     await handler({ method: 'GET', headers: { authorization: 'Bearer token' } } as never, res);
     expect(res).toMatchObject({ statusCode: 502, body: { error: 'ADMIN_SUMMARY_UNAVAILABLE' } });

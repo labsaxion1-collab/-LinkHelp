@@ -18,8 +18,8 @@ describe('0051 admin dashboard summary RPC migration', () => {
     expect(sql).not.toMatch(/client_id|helper_id|description|review|email|phone/i);
   });
 
-  it('uses invoker security and restricts execution to service_role', () => {
-    expect(sql).toContain('security invoker');
+  it('uses definer security and restricts execution to service_role', () => {
+    expect(sql).toContain('security definer');
     expect(sql).toContain('set search_path =');
     expect(sql).toContain('revoke all on function public.admin_dashboard_summary() from public');
     expect(sql).toContain('revoke all on function public.admin_dashboard_summary() from anon');

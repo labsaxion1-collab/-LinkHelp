@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseAdminDashboardSummary } from './adminDashboardContract';
+import { isAdminDashboardEmpty, parseAdminDashboardSummary } from './adminDashboardContract';
 
 const valid = {
   total_requests: 4,
@@ -28,6 +28,44 @@ describe('admin dashboard contract', () => {
 
   it('accepts empty tables and null category budget', () => {
     expect(parseAdminDashboardSummary([{ ...valid, total_requests: 0, total_applications: 0, hire_rate: 0, categories: [{ ...valid.categories[0], average_budget: null }] }])?.hireRate).toBe(0);
+  });
+
+  it('parses string bigints and categories json string from postgres', () => {
+    expect(
+      parseAdminDashboardSummary([
+        {
+          ...valid,
+          total_requests: '0',
+          categories: JSON.stringify([]),
+        },
+      ]),
+    ).toEqual({
+      totalRequests: 0,
+      openRequests: 2,
+      inProgressRequests: 1,
+      totalApplications: 5,
+      pendingApplications: 2,
+      hiredApplications: 2,
+      hireRate: 40,
+      categories: [],
+    });
+  });
+
+  it('treats all-zero summary as empty, not invalid', () => {
+    const empty = parseAdminDashboardSummary([
+      {
+        total_requests: 0,
+        open_requests: 0,
+        in_progress_requests: 0,
+        total_applications: 0,
+        pending_applications: 0,
+        hired_applications: 0,
+        hire_rate: 0,
+        categories: [],
+      },
+    ]);
+    expect(empty).not.toBeNull();
+    expect(isAdminDashboardEmpty(empty!)).toBe(true);
   });
 
   it('rejects malformed or personal payloads instead of casting blindly', () => {

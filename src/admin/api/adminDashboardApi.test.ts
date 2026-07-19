@@ -1,7 +1,23 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AdminApiError, clearAdminDashboardCache, resetAdminDashboardApiForTests, subscribeAdminDashboardSummary } from './adminDashboardApi';
 
-const summary = { totalRequests: 1, openRequests: 1, inProgressRequests: 0, totalApplications: 0, pendingApplications: 0, hiredApplications: 0, hireRate: 0, categories: [] };
+const summary = {
+  totalRequests: 1,
+  openRequests: 1,
+  inProgressRequests: 0,
+  totalApplications: 0,
+  pendingApplications: 0,
+  hiredApplications: 0,
+  hireRate: 0,
+  categories: [],
+};
+
+const payload = {
+  summary,
+  financial: null,
+  financialError: 'ADMIN_SUMMARY_FINANCIAL_UNAVAILABLE',
+  timeRange: 'all' as const,
+};
 
 describe('admin dashboard API client', () => {
   afterEach(() => {
@@ -17,14 +33,14 @@ describe('admin dashboard API client', () => {
     const second = subscribeAdminDashboardSummary({ userId: 'admin-1', accessToken: 'token' });
     expect(first.promise).toBe(second.promise);
     expect(fetchMock).toHaveBeenCalledOnce();
-    resolveFetch({ ok: true, json: async () => summary });
-    await expect(first.promise).resolves.toEqual(summary);
+    resolveFetch({ ok: true, json: async () => payload });
+    await expect(first.promise).resolves.toEqual(payload);
     first.release();
     second.release();
   });
 
   it('isolates cache by user and clears it on logout', async () => {
-    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => summary }));
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => payload }));
     vi.stubGlobal('fetch', fetchMock);
     await subscribeAdminDashboardSummary({ userId: 'admin-1', accessToken: 'one' }).promise;
     await subscribeAdminDashboardSummary({ userId: 'admin-1', accessToken: 'one' }).promise;
@@ -54,5 +70,57 @@ describe('admin dashboard API client', () => {
     const request = subscribeAdminDashboardSummary({ userId: 'admin-1', accessToken: 'secret-token' });
     await expect(request.promise).rejects.toMatchObject({ status } satisfies Partial<AdminApiError>);
     await expect(request.promise).rejects.not.toThrow('secret-token');
+  });
+
+  it('maps JSON error bodies to admin error codes', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: false,
+        status: 502,
+        json: async () => ({ error: 'ADMIN_SUMMARY_RPC_FAILED' }),
+      })),
+    );
+    const request = subscribeAdminDashboardSummary({ userId: 'admin-1', accessToken: 'token' });
+    await expect(request.promise).rejects.toMatchObject({
+      code: 'ADMIN_SUMMARY_RPC_FAILED',
+    } satisfies Partial<AdminApiError>);
+  });
+
+  it('treats successful zero-data payload as success, not error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          summary: {
+            totalRequests: 0,
+            openRequests: 0,
+            inProgressRequests: 0,
+            totalApplications: 0,
+            pendingApplications: 0,
+            hiredApplications: 0,
+            hireRate: 0,
+            categories: [],
+          },
+          financial: {
+            revenueCadCents: 0,
+            purchaseCount: 0,
+            lcSold: 0,
+            lcConsumed: 0,
+            lcRefunded: 0,
+            lcGranted: 0,
+            lcInCirculation: 0,
+            netCreditBurn: 0,
+            timeRange: 'all',
+          },
+          financialError: null,
+          timeRange: 'all',
+        }),
+      })),
+    );
+    await expect(subscribeAdminDashboardSummary({ userId: 'admin-1', accessToken: 'token' }).promise).resolves.toMatchObject({
+      summary: { totalRequests: 0 },
+    });
   });
 });

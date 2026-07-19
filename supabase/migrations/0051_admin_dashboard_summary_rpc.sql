@@ -12,8 +12,8 @@ returns table (
 )
 language sql
 stable
-security invoker
-set search_path = ''
+security definer
+set search_path = public
 as $$
   with request_base as materialized (
     select

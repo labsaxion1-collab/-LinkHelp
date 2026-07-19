@@ -11,6 +11,7 @@ type Insight = {
 
 type Props = {
   insights: Insight[];
+  demo?: boolean;
 };
 
 const typeStyles = {
@@ -19,7 +20,7 @@ const typeStyles = {
   trend: { icon: TrendingUp, className: 'border-blue-500/25 bg-blue-500/5 text-blue-300' },
 };
 
-export function FluxAiInsightsPanel({ insights }: Props) {
+export function FluxAiInsightsPanel({ insights, demo = false }: Props) {
   const { t } = useLanguage();
 
   return (
@@ -29,8 +30,17 @@ export function FluxAiInsightsPanel({ insights }: Props) {
           <Sparkles className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h2 className="text-base font-black text-white">{t('flux_admin.ai_insights_title')}</h2>
-          <p className="text-xs font-medium text-slate-500">{t('flux_admin.ai_insights_sub')}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-base font-black text-white">{t('flux_admin.ai_insights_title')}</h2>
+            {demo ? (
+              <span className="rounded-full border border-violet-400/30 bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-200">
+                {t('flux_admin.market_pulse_demo_label')}
+              </span>
+            ) : null}
+          </div>
+          <p className="text-xs font-medium text-slate-500">
+            {demo ? t('flux_admin.ai_insights_demo_sub') : t('flux_admin.ai_insights_sub')}
+          </p>
         </div>
       </div>
 

@@ -21,6 +21,8 @@ import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBad
 import { CreateRequestModal } from '@/components/client/create-request/CreateRequestModal';
 import { ClientMapWidget } from '@/components/client/ClientMapWidget';
 import { ClientNearbyHelpersList } from '@/components/client/ClientNearbyHelpersList';
+import { ClientCandidateCard } from '@/components/client/ClientCandidateCard';
+import { candidateProfileExpandKey } from '@/utils/candidateProfileExpand';
 import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
 import type { NearbyHelperMapPoint } from '@/types/nearbyHelper';
 import { LhCard } from '@/components/design-system/LhCard';
@@ -188,6 +190,7 @@ export default function ClientDashboard() {
   const [pauseTargetJobId, setPauseTargetJobId] = useState<string | null>(null);
   const [pausingJobId, setPausingJobId] = useState<string | null>(null);
   const [detailJob, setDetailJob] = useState<Job | null>(null);
+  const [expandedCandidateProfileKey, setExpandedCandidateProfileKey] = useState<string | null>(null);
   const [serviceConfirmJob, setServiceConfirmJob] = useState<Job | null>(null);
   const [serviceConfirmBusy, setServiceConfirmBusy] = useState(false);
   
@@ -204,7 +207,7 @@ export default function ClientDashboard() {
   const clientCreditsBalance = profile?.credits ?? 0;
   const skillChip = (skill: string) =>
     skill === 'support' ? t('skills.support') : t(`categories.${skill}`);
-  const { jobs, applications, notifications, updateApplicationStatus, updateJobStatus, officiallyHireHelper, pendingServiceReviews, upcomingJobs, confirmServiceCompleted } = useAppData();
+  const { jobs, applications, notifications, updateApplicationStatus, updateJobStatus, officiallyHireHelper, pendingServiceReviews, upcomingJobs, confirmServiceCompleted, finalizeServiceCompletion } = useAppData();
   const { openReviewByRequestId } = useServiceReview();
   const me = useSessionViewer();
 
@@ -294,8 +297,17 @@ export default function ClientDashboard() {
     if (!serviceConfirmJob) return;
     setServiceConfirmBusy(true);
     const requestId = serviceConfirmJob.id;
+    const upcoming = upcomingJobs.find((u) => u.jobId === requestId);
     try {
-      await confirmServiceCompleted(requestId);
+      if (upcoming) {
+        await finalizeServiceCompletion({
+          requestId,
+          upcomingJobId: upcoming.id,
+          role: 'client',
+        });
+      } else {
+        await confirmServiceCompleted(requestId);
+      }
       try {
         sessionStorage.removeItem(`${SERVICE_CONFIRM_DISMISS_PREFIX}${requestId}`);
       } catch {
@@ -442,9 +454,19 @@ export default function ClientDashboard() {
   };
 
   const toggleActivityPanel = (jobId: string, panel: 'applications' | 'description') => {
-    setExpandedActivityPanel((current) =>
-      current?.jobId === jobId && current.panel === panel ? null : { jobId, panel },
-    );
+    setExpandedActivityPanel((current) => {
+      const next =
+        current?.jobId === jobId && current.panel === panel ? null : { jobId, panel };
+      if (!next || next.panel !== 'applications') {
+        setExpandedCandidateProfileKey(null);
+      }
+      return next;
+    });
+  };
+
+  const toggleCandidateProfile = (jobId: string, applicationId: string) => {
+    const key = candidateProfileExpandKey(jobId, applicationId);
+    setExpandedCandidateProfileKey((current) => (current === key ? null : key));
   };
 
   const myOpenJobCategories = useMemo(
@@ -888,126 +910,52 @@ export default function ClientDashboard() {
                     <p className="text-sm font-medium">{t('client_dashboard.candidates_count_zero')}</p>
                   </div>
                 ) : sheetDisplayApps.map((app) => app && (
-                  <div
-                    key={app.id}
-                    className={`rounded-2xl border p-4 ${app.isExclusive ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-slate-50/50'}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="relative shrink-0">
-                        {app.isExclusive && <span className="absolute -top-1 -right-1 z-10 text-sm leading-none">👑</span>}
-                        <img
-                          src={app.helperAvatar}
-                          alt={app.helperName}
-                          className="w-12 h-12 rounded-full object-cover"
-                          style={app.isExclusive
-                            ? { border: '3px solid #F5C542', boxShadow: '0 0 12px rgba(245,197,66,.35)' }
-                            : { border: '2px solid white', boxShadow: '0 1px 4px rgba(0,0,0,.1)' }
-                          }
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="flex items-center gap-1.5 text-sm font-black text-slate-950">
-                          <span className="truncate">{app.helperName}</span>
-                          <LinkHelpRankBadgeFromStats
-                            completedCount={app.helperJobs}
-                            averageRating={app.helperRating}
-                            role="helper"
-                            size="sm"
-                            showLabel={false}
-                            t={t}
-                          />
-                        </p>
-                        <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
-                          <Icons.Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                          <span>{app.helperRating}</span>
-                          <span>· {t('client_dashboard.helper_jobs_count', { count: app.helperJobs })}</span>
-                        </p>
-                        {app.proposedAmount != null ? (
-                          <p className="mt-1 text-xs font-black text-slate-900">
-                            {t('client_dashboard.helper_proposal_amount', { amount: formatMoneyAmount(app.proposedAmount, detailJob.currency || 'CAD') })}
-                          </p>
-                        ) : (
-                          <p className="mt-1 text-xs font-semibold text-slate-600">{t('client_dashboard.helper_proposal_negotiable')}</p>
-                        )}
-                        {sheetBudgetRange && <p className="mt-0.5 text-[11px] text-slate-400">{sheetBudgetRange}</p>}
-                        {app.message ? (
-                          <p className="mt-1.5 text-xs text-slate-600 italic line-clamp-2">"{app.message}"</p>
+                  <div key={app.id} className="space-y-2">
+                    <ClientCandidateCard
+                      job={detailJob}
+                      app={app}
+                      t={t}
+                      formatMoneyAmount={formatMoneyAmount}
+                      profileExpanded={
+                        expandedCandidateProfileKey === candidateProfileExpandKey(detailJob.id, app.id)
+                      }
+                      onToggleProfile={() => toggleCandidateProfile(detailJob.id, app.id)}
+                      showAccept={app.status === 'pending' || app.status === 'viewed'}
+                      showReject={app.status === 'pending' || app.status === 'viewed'}
+                      accepting={acceptingApplicationId === app.id}
+                      onAccept={() => void handleAcceptProposal(detailJob, app)}
+                      onReject={() => void handleRejectApplication(app.id, app.isExclusive === true)}
+                      budgetRangeLabel={sheetBudgetRange}
+                    />
+                    {app.status !== 'pending' && app.status !== 'viewed' ? (
+                      <div className="space-y-1.5">
+                        {(app.status === 'accepted' || app.status === 'completed') &&
+                        detailJob.status === 'in_progress' ? (
+                          <span className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800">
+                            <Icons.CheckCircle2 className="h-3.5 w-3.5" />
+                            {t('messages_page.service_confirmed_badge')}
+                          </span>
                         ) : null}
-                      </div>
-                    </div>
-                    <div className="mt-3 space-y-1.5">
-                      {(app.status === 'pending' || app.status === 'viewed') ? (
-                        <>
-                          <button
-                            type="button"
-                            disabled={acceptingApplicationId === app.id}
-                            onClick={() => void handleAcceptProposal(detailJob, app)}
-                            className="w-full rounded-xl bg-green-600 px-3 py-2 text-xs font-black text-white hover:bg-green-700 disabled:opacity-60"
-                          >
-                            {t('client_dashboard.accept_proposal')}
-                          </button>
-                          <div className="flex gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setDetailJob(null);
-                                openHelperProfile(
-                                  { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, jobsCompleted: app.helperJobs, skills: [], isOnline: true },
-                                  app.id,
-                                );
-                              }}
-                              className="flex-1 min-w-0 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700 hover:bg-blue-50 truncate"
-                            >
-                              {t('helper_public.view_profile')}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void handleRejectApplication(app.id, app.isExclusive === true)}
-                              className={`flex-1 min-w-0 rounded-xl px-2 py-1.5 text-xs font-bold truncate ${app.isExclusive ? 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}
-                            >
-                              {app.isExclusive ? t('client_dashboard.exclusive_reject_unlock') : t('client_dashboard.reject_helper')}
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          {(app.status === 'accepted' || app.status === 'completed') && detailJob.status === 'in_progress' ? (
-                            <span className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800">
-                              <Icons.CheckCircle2 className="h-3.5 w-3.5" />
-                              {t('messages_page.service_confirmed_badge')}
-                            </span>
-                          ) : null}
+                        {app.chatUnlocked ? (
                           <button
                             type="button"
                             onClick={() => {
                               setDetailJob(null);
-                              openHelperProfile(
-                                { id: app.helperId, name: app.helperName, avatar: app.helperAvatar, rating: app.helperRating, jobsCompleted: app.helperJobs, skills: [], isOnline: true },
-                                app.id,
-                              );
+                              navigate(ROUTES.messages);
                             }}
-                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50"
+                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700"
                           >
-                            {t('helper_public.view_profile')}
+                            <Icons.MessageSquare className="h-3.5 w-3.5" />
+                            {t('client_dashboard.open_chat_with', { name: app.helperName.split(' ')[0] })}
                           </button>
-                          {app.chatUnlocked ? (
-                            <button
-                              type="button"
-                              onClick={() => { setDetailJob(null); navigate(ROUTES.messages); }}
-                              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700"
-                            >
-                              <Icons.MessageSquare className="h-3.5 w-3.5" />
-                              {t('client_dashboard.open_chat_with', { name: app.helperName.split(' ')[0] })}
-                            </button>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-bold text-slate-400 opacity-70">
-                              <Icons.MessageSquare className="h-3.5 w-3.5" />
-                              {t('client_dashboard.chat_locked_until_accept')}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </div>
+                        ) : (
+                          <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-bold text-slate-400 opacity-70">
+                            <Icons.MessageSquare className="h-3.5 w-3.5" />
+                            {t('client_dashboard.chat_locked_until_accept')}
+                          </span>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -1684,7 +1632,10 @@ export default function ClientDashboard() {
                                   Pausar
                                 </button>
                               ) : null}
-                              {job.status === 'in_progress' && isJobAwaitingCompletion(job.id) ? (
+                              {job.status === 'in_progress' &&
+                              applications.some(
+                                (a) => a.jobId === job.id && a.status === 'accepted',
+                              ) ? (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1694,7 +1645,7 @@ export default function ClientDashboard() {
                                   className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-emerald-800 hover:bg-emerald-50"
                                 >
                                   <Icons.CircleCheck className="h-4 w-4 text-emerald-600" />
-                                  {t('service_confirm.confirm_completion')}
+                                  {t('upcoming_jobs.complete_work')}
                                 </button>
                               ) : null}
                               <button
@@ -1884,75 +1835,24 @@ export default function ClientDashboard() {
                               ) : (
                                 <div className="space-y-2">
                                   {displayCandidateApps.map((app) => (
-                                    <div
+                                    <ClientCandidateCard
                                       key={app.id}
-                                      className={clsx(
-                                        'rounded-2xl border bg-white/95 p-3 shadow-sm',
-                                        app.isExclusive ? 'border-amber-200' : 'border-slate-100',
-                                      )}
-                                    >
-                                      <div className="flex items-start gap-3">
-                                        <button
-                                          type="button"
-                                          onClick={() => openHelperProfileFromApplication(job, app)}
-                                          className="relative shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                                        >
-                                          <img
-                                            src={app.helperAvatar}
-                                            alt={app.helperName}
-                                            className="h-11 w-11 rounded-full object-cover ring-2 ring-white"
-                                          />
-                                        </button>
-                                        <div className="min-w-0 flex-1">
-                                          <button
-                                            type="button"
-                                            onClick={() => openHelperProfileFromApplication(job, app)}
-                                            className="flex max-w-full items-center gap-1.5 text-left"
-                                          >
-                                            <span className="truncate text-sm font-black text-slate-950">
-                                              {app.helperName}
-                                            </span>
-                                          </button>
-                                          <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
-                                            <Icons.Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                                            <span>{app.helperRating}</span>
-                                            <LinkHelpRankBadgeFromStats
-                                              completedCount={app.helperJobs}
-                                              averageRating={app.helperRating}
-                                              role="helper"
-                                              size="sm"
-                                              showLabel={false}
-                                              t={t}
-                                            />
-                                          </p>
-                                          {app.proposedAmount != null ? (
-                                            <p className="mt-1 text-xs font-black text-slate-900">
-                                              {t('client_dashboard.helper_proposal_amount', {
-                                                amount: formatMoneyAmount(
-                                                  app.proposedAmount,
-                                                  job.currency || 'CAD',
-                                                ),
-                                              })}
-                                            </p>
-                                          ) : (
-                                            <p className="mt-1 text-xs font-semibold text-slate-600">
-                                              {t('client_dashboard.helper_proposal_negotiable')}
-                                            </p>
-                                          )}
-                                        </div>
-                                      </div>
-                                      {(app.status === 'pending' || app.status === 'viewed') &&
-                                      isPreHireActivity ? (
-                                        <button
-                                          type="button"
-                                          disabled={acceptingApplicationId === app.id}
-                                          onClick={() => void handleAcceptProposal(job, app)}
-                                          className="mt-3 inline-flex min-h-[38px] w-full items-center justify-center rounded-xl bg-green-600 px-3 text-xs font-black text-white hover:bg-green-700 disabled:opacity-60"
-                                        >
-                                          Aceitar
-                                        </button>
-                                      ) : null}
-                                    </div>
+                                      job={job}
+                                      app={app}
+                                      t={t}
+                                      formatMoneyAmount={formatMoneyAmount}
+                                      profileExpanded={
+                                        expandedCandidateProfileKey ===
+                                        candidateProfileExpandKey(job.id, app.id)
+                                      }
+                                      onToggleProfile={() => toggleCandidateProfile(job.id, app.id)}
+                                      showAccept={
+                                        (app.status === 'pending' || app.status === 'viewed') &&
+                                        isPreHireActivity
+                                      }
+                                      accepting={acceptingApplicationId === app.id}
+                                      onAccept={() => void handleAcceptProposal(job, app)}
+                                    />
                                   ))}
                                 </div>
                               )}

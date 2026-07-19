@@ -22,6 +22,31 @@ export function canHelperRequestCompletion(status: UpcomingWorkflowStatus): bool
   return ['scheduled', 'in_progress', 'arriving', 'accepted'].includes(status);
 }
 
+/** Client may finalize when job is active or already awaiting helper confirmation. */
+export function canClientFinalizeCompletion(
+  jobStatus: string,
+  workflowStatus: UpcomingWorkflowStatus,
+): boolean {
+  if (jobStatus === 'completed') return false;
+  if (isAwaitingClientCompletion(workflowStatus)) return true;
+  return jobStatus === 'in_progress' && canHelperRequestCompletion(workflowStatus);
+}
+
+/** Either side pressed complete — job is done or awaiting (helper-first legacy). */
+export function isServiceCompletionInProgress(
+  jobStatus: string,
+  workflowStatus: UpcomingWorkflowStatus,
+): boolean {
+  return jobStatus === 'completed' || isAwaitingClientCompletion(workflowStatus);
+}
+
+export function shouldHideCompleteButton(
+  jobStatus: string,
+  workflowStatus: UpcomingWorkflowStatus,
+): boolean {
+  return jobStatus === 'completed' || isAwaitingClientCompletion(workflowStatus);
+}
+
 /** Hours since completion was requested (for reminder UI). */
 export function hoursSinceCompletionRequested(completionRequestedAt: number | null | undefined): number {
   if (!completionRequestedAt) return 0;

@@ -26,10 +26,16 @@ export function buildPendingServiceReviews(
 
   if (role === 'client') {
     for (const job of jobs) {
-      if (job.clientId !== userId || job.status !== 'completed') continue;
-      if (reviewedRequestIds.has(job.id)) continue;
+      if (job.clientId !== userId) continue;
       const app = hiredApplication(applications, job.id);
       if (!app) continue;
+      if (reviewedRequestIds.has(job.id)) continue;
+
+      const upcoming = upcomingJobs.find((u) => u.jobId === job.id);
+      const awaiting = upcoming ? isAwaitingClientCompletion(upcoming.workflowStatus) : false;
+      const canReview = job.status === 'completed' || awaiting;
+      if (!canReview) continue;
+
       pending.push({
         requestId: job.id,
         targetUserId: app.helperId,

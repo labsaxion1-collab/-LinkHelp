@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { calculateHelperLeadCreditCost } from '@/utils/calculateHelperLeadCreditCost';
+import { getApplicationChargeLc } from '@/config/helperCreditCharge';
 import type { Job } from '@/types/job';
 
 const baseJob = (overrides: Partial<Job> = {}): Job => ({
@@ -37,6 +38,13 @@ describe('calculateHelperLeadCreditCost', () => {
     const far = calculateHelperLeadCreditCost(baseJob(), { distanceKm: 12 });
     expect(far.distanceCost).toBeGreaterThan(near.distanceCost);
     expect(far.estimatedTotal).toBeGreaterThan(near.estimatedTotal);
+    expect(getApplicationChargeLc(far)).toBeGreaterThan(getApplicationChargeLc(near));
+  });
+
+  it('varies estimated total by category service cost', () => {
+    const cleaning = calculateHelperLeadCreditCost(baseJob({ category: 'cleaning' }), { distanceKm: 3 });
+    const translation = calculateHelperLeadCreditCost(baseJob({ category: 'translation' }), { distanceKm: 3 });
+    expect(cleaning.estimatedTotal).toBeGreaterThan(translation.estimatedTotal);
   });
 
   it('adds distance surcharge beyond 5km', () => {

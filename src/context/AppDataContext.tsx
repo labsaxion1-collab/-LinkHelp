@@ -29,6 +29,7 @@ import {
   remoteUpdateUpcomingWorkflow,
   remoteMarkServiceAwaitingConfirmation,
   remoteConfirmServiceCompleted,
+  remoteFinalizeServiceCompletion,
   subscribeAppDataChanges,
   subscribeNotificationsChannel,
   type NotificationRow,
@@ -118,6 +119,11 @@ interface AppDataContextData {
   getUpcomingJobsForHelper: (helperId: string) => UpcomingJob[];
   updateUpcomingWorkflow: (upcomingId: string, workflowStatus: UpcomingWorkflowStatus) => void;
   confirmServiceCompleted: (requestId: string) => Promise<void>;
+  finalizeServiceCompletion: (input: {
+    requestId: string;
+    upcomingJobId: string;
+    role: 'client' | 'helper';
+  }) => Promise<void>;
   addNotification: (notification: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => void;
   markNotificationAsRead: (id: string) => void;
   markAllAsRead: () => void;
@@ -1168,6 +1174,97 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  const applyLocalServiceCompleted = (requestId: string) => {
+    setJobs((prev) =>
+      prev.map((job) => (job.id === requestId ? { ...job, status: 'completed' as JobStatus } : job)),
+    );
+    setUpcomingJobs((prev) =>
+      prev.map((u) =>
+        u.jobId === requestId ? { ...u, workflowStatus: 'completed' as UpcomingWorkflowStatus } : u,
+      ),
+    );
+    setApplications((prev) =>
+      prev.map((app) =>
+        app.jobId === requestId && (app.status === 'accepted' || app.status === 'completed')
+          ? { ...app, status: 'completed' as ApplicationStatus }
+          : app,
+      ),
+    );
+    triggerGamificationRecalculate('service_completed', 'client');
+    triggerGamificationRecalculate('service_completed', 'helper');
+  };
+
+  const finalizeServiceCompletion = async (input: {
+    requestId: string;
+    upcomingJobId: string;
+    role: 'client' | 'helper';
+  }) => {
+    const { requestId, upcomingJobId, role } = input;
+    if (isSupabaseConfigured() && !session) {
+      throw new Error('AUTH_REQUIRED');
+    }
+
+    const upcoming = upcomingJobsRef.current.find((u) => u.id === upcomingJobId);
+    const jobSnapshot = jobsRef.current.find((j) => j.id === requestId);
+
+    if (useRemote) {
+      try {
+        await remoteFinalizeServiceCompletion(requestId);
+        applyLocalServiceCompleted(requestId);
+        return;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg !== 'FINALIZE_RPC_NOT_DEPLOYED') {
+          throw e;
+        }
+      }
+
+      if (role === 'helper') {
+        await remoteMarkServiceAwaitingConfirmation(upcomingJobId);
+        setUpcomingJobs((prev) =>
+          prev.map((u) =>
+            u.id === upcomingJobId
+              ? {
+                  ...u,
+                  workflowStatus: 'completion_requested' as UpcomingWorkflowStatus,
+                  completionRequestedAt: Date.now(),
+                }
+              : u,
+          ),
+        );
+        if (upcoming && jobSnapshot?.clientId) {
+          const completionLink = buildNotificationPayload({
+            audience: 'client',
+            requestId,
+            clientTarget: 'jobs',
+          });
+          addNotification({
+            userId: jobSnapshot.clientId,
+            type: 'application',
+            title: 'Serviço concluído',
+            message: `Seu Help informou que o trabalho "${jobSnapshot.title}" foi concluído. Confirme se o serviço foi feito.`,
+            ...completionLink,
+          });
+        }
+        return;
+      }
+
+      const awaiting = upcoming && isAwaitingClientCompletion(upcoming.workflowStatus);
+      if (awaiting) {
+        await confirmServiceCompleted(requestId);
+        return;
+      }
+
+      throw new Error('CLIENT_COMPLETE_REQUIRES_FINALIZE_RPC');
+    }
+
+    if (isSupabaseConfigured()) {
+      throw new Error('REQUEST_LIFECYCLE_BACKEND_NOT_READY');
+    }
+
+    applyLocalServiceCompleted(requestId);
+  };
+
   const pendingServiceReviews = useMemo(
     () =>
       userId
@@ -1239,6 +1336,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         getUpcomingJobsForHelper,
         updateUpcomingWorkflow,
         confirmServiceCompleted,
+        finalizeServiceCompletion,
         addNotification,
         markNotificationAsRead,
         markAllAsRead,

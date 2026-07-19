@@ -1015,6 +1015,32 @@ export async function remoteConfirmServiceCompleted(requestId: string): Promise<
   if (error) throw new Error(error.message || 'CONFIRM_SERVICE_FAILED');
 }
 
+/**
+ * First-side completion — completes active job immediately when RPC is deployed.
+ * Falls back to role-specific legacy flow when function is missing.
+ */
+export async function remoteFinalizeServiceCompletion(requestId: string): Promise<{ completed: boolean }> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+  // RPC typed after manual deploy of apply_service_first_completion.sql
+  const { error } = await (
+    sb as unknown as {
+      rpc: (
+        fn: string,
+        args: Record<string, string>,
+      ) => Promise<{ error: { message?: string } | null }>;
+    }
+  ).rpc('finalize_service_completion', { p_request_id: requestId });
+  if (error) {
+    const msg = error.message || '';
+    if (/Could not find the function|42883|PGRST202/i.test(msg)) {
+      throw new Error('FINALIZE_RPC_NOT_DEPLOYED');
+    }
+    throw new Error(msg || 'FINALIZE_SERVICE_FAILED');
+  }
+  return { completed: true };
+}
+
 const AWAITING_COMPLETION_STATUSES = ['completion_requested', 'awaiting_client_confirmation'] as const;
 
 /** Request IDs where helper marked completion and client must confirm. */

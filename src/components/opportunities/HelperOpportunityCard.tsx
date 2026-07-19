@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { hapticLight, hapticSuccess } from '@/utils/haptic';
 import * as Icons from 'lucide-react';
-import { CheckCircle2, Crown } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { getCategoryIconById } from '@/utils/categoryIcons';
 import { clsx } from 'clsx';
 import type { Job } from '@/types/job';
@@ -20,11 +20,14 @@ import {
   getApplicationTypeChargeLc,
   getApplicationTypeLabelKey,
   getNormalApplicationChargeLc,
+  getApplicationBalanceSummary,
   getOpportunityLocationLabel,
   canSubmitConfirmedApplication,
   requiresProposalAmountInput,
   resolveDefaultProposalAmount,
   shouldExpandDescriptionForAmountInput,
+  shouldPlaceApplyActionsBelowDescription,
+  HELPER_OPPORTUNITY_CARD_FOOTER_LAYOUT,
   type HelperApplicationType,
 } from '@/utils/helperOpportunityApply';
 import { validateHelperProposal } from '@/utils/jobProposal';
@@ -60,6 +63,7 @@ export type HelperOpportunityCardProps = {
   distanceFromBase?: boolean;
   needsBaseAddress?: boolean;
   baseAddressPendingCoords?: boolean;
+  walletBalance?: number | null;
   language?: AppLanguage;
   exclusiveLocked?: boolean;
   descriptionExpanded?: boolean;
@@ -105,6 +109,7 @@ function HelperOpportunityCardInner({
   baseAddressPendingCoords = false,
   applicationsCount = 0,
   clientReviewCount = 0,
+  walletBalance = null,
   language = 'pt',
   exclusiveLocked = false,
   descriptionExpanded = false,
@@ -143,6 +148,8 @@ function HelperOpportunityCardInner({
   const dateLabel = schedule;
   const normalCharge = getNormalApplicationChargeLc(job, distanceKm);
   const vipCharge = getApplicationTypeChargeLc(job, 'exclusive', distanceKm);
+  const balanceSummary = getApplicationBalanceSummary(job, walletBalance, distanceKm);
+  const actionsBelowDescription = shouldPlaceApplyActionsBelowDescription(descriptionOpen);
   const isInterestFull = isJobInterestFull(applicationsCount);
   const canApply =
     !hasApplied && !isApplying && !isInterestFull && !swipeRateLimited && !interactionLocked;
@@ -197,6 +204,11 @@ function HelperOpportunityCardInner({
   const openConfirmWithType = (type: HelperApplicationType) => {
     if (!canApply) return;
     if (type === 'exclusive' && exclusiveLocked) return;
+    const charge =
+      type === 'exclusive'
+        ? balanceSummary.vip.charge
+        : balanceSummary.normal.charge;
+    if (walletBalance != null && walletBalance < charge) return;
     setApplicationType(type);
     if (shouldExpandDescriptionForAmountInput(showAmountInput, proposalAmountRaw)) {
       setDescription(true);
@@ -216,12 +228,6 @@ function HelperOpportunityCardInner({
     if (!canApply || exclusiveLocked) return;
     hapticSuccess();
     openConfirmWithType('exclusive');
-  };
-
-  const handleAccordionApply = (type: HelperApplicationType) => {
-    if (!canApply) return;
-    hapticSuccess();
-    openConfirmWithType(type);
   };
 
   const handleConfirm = () => {
@@ -306,19 +312,24 @@ function HelperOpportunityCardInner({
   };
 
   const ctaBase =
-    'inline-flex min-h-[44px] min-w-0 max-w-full items-center justify-center gap-2 rounded-[14px] px-3 py-2.5 text-[12px] font-bold leading-tight transition-all duration-200 sm:min-h-0 sm:px-4 sm:text-[13px] md:text-[14px]';
+    'inline-flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-[14px] px-3 py-2.5 text-[12px] font-bold leading-snug transition-all duration-200 sm:min-h-[42px] sm:px-4 sm:text-[13px]';
 
   const interestRingLabel = t('helper_dashboard.interested_ring_label');
 
-  const renderExternalApplyActions = () => {
+  const renderApplyActionRow = () => {
+    const normalDisabled =
+      !canApply || (walletBalance != null && !balanceSummary.normal.canAfford);
+    const vipDisabled =
+      !canApply || exclusiveLocked || (walletBalance != null && !balanceSummary.vip.canAfford);
+
     const normalBtn = clsx(
       ctaBase,
-      'min-w-[7.5rem] flex-1 bg-gradient-to-br from-[#2563FF] to-[#1557F0] text-white shadow-[0_8px_22px_rgba(37,99,255,0.28),inset_0_1px_0_rgba(255,255,255,0.18)]',
+      'flex-1 bg-gradient-to-br from-[#2563FF] to-[#1557F0] text-white shadow-[0_8px_22px_rgba(37,99,255,0.28),inset_0_1px_0_rgba(255,255,255,0.18)]',
       'hover:shadow-[0_12px_30px_rgba(37,99,255,0.36)] hover:brightness-105 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50',
     );
     const vipBtn = clsx(
       ctaBase,
-      'min-w-[5.5rem] shrink-0 border border-amber-200/90 bg-gradient-to-br from-amber-50 to-white text-amber-900 shadow-[0_4px_14px_rgba(245,158,11,0.14)]',
+      'w-[5.25rem] shrink-0 border border-amber-200/90 bg-gradient-to-br from-amber-50 to-white text-amber-900 shadow-[0_4px_14px_rgba(245,158,11,0.14)] sm:w-[5.75rem]',
       'hover:border-amber-300 hover:from-amber-100 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50',
     );
 
@@ -331,14 +342,14 @@ function HelperOpportunityCardInner({
           )}
         >
           <CheckCircle2 className="h-[18px] w-[18px] shrink-0" />
-          <span className="max-[380px]:hidden">{t('helper_dashboard.applied_sent')}</span>
+          <span>{t('helper_dashboard.applied_sent')}</span>
         </span>
       );
     }
 
     if (isApplying) {
       return (
-        <button type="button" disabled className={clsx(normalBtn, 'w-full')}>
+        <button type="button" disabled className={clsx(normalBtn, 'w-full flex-1')}>
           <Icons.Loader2 className="h-[18px] w-[18px] animate-spin" />
         </button>
       );
@@ -358,7 +369,7 @@ function HelperOpportunityCardInner({
     }
 
     return (
-      <div className="flex w-full min-w-0 items-stretch gap-2">
+      <div className="flex w-full min-w-0 items-stretch gap-2" data-layout={HELPER_OPPORTUNITY_CARD_FOOTER_LAYOUT}>
         <button
           type="button"
           onClick={(e) => {
@@ -366,11 +377,12 @@ function HelperOpportunityCardInner({
             handleExternalNormalApply();
           }}
           onTouchEnd={(e) => e.stopPropagation()}
-          disabled={!canApply}
+          disabled={normalDisabled}
           className={normalBtn}
+          aria-label={t('helper_dashboard.apply_confirm_action')}
         >
           <Icons.Send className="h-[15px] w-[15px] shrink-0" strokeWidth={2.25} aria-hidden />
-          <span className="truncate text-center">{t('helper_dashboard.apply_confirm_action')}</span>
+          <span className="whitespace-nowrap text-center">{t('helper_dashboard.apply_confirm_action')}</span>
         </button>
         <button
           type="button"
@@ -379,125 +391,123 @@ function HelperOpportunityCardInner({
             handleExternalVipApply();
           }}
           onTouchEnd={(e) => e.stopPropagation()}
-          disabled={!canApply || exclusiveLocked}
+          disabled={vipDisabled}
           className={vipBtn}
           aria-label={t('helper_dashboard.apply_type_exclusive')}
         >
-          <Crown className="h-[15px] w-[15px] shrink-0 text-amber-500" aria-hidden />
-          <span className="truncate">{t('helper_dashboard.apply_vip_short')}</span>
+          <span aria-hidden className="shrink-0 text-[13px] leading-none">
+            👑
+          </span>
+          <span className="whitespace-nowrap">{t('helper_dashboard.apply_vip_short')}</span>
         </button>
       </div>
     );
   };
 
-  const descriptionPanel = (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateRows: descriptionOpen ? '1fr' : '0fr',
-        transition: 'grid-template-rows 320ms cubic-bezier(0.4,0,0.2,1)',
-      }}
-    >
-      <div className="overflow-hidden" style={{ minHeight: 0 }}>
-        <div className="space-y-3 border-t border-[rgba(15,23,42,0.06)] px-3 pb-3 pt-2.5">
-          {requestDescription.display ? (
-            <p className="whitespace-pre-wrap text-[13px] font-medium leading-relaxed text-[#475569]">
-              {requestDescription.display}
-            </p>
-          ) : (
-            <p className="text-[13px] font-medium text-[#94A3B8]">{t('helper_dashboard.apply_no_description')}</p>
+  const renderExpandedDescriptionContent = () => (
+    <div className="space-y-3 border-t border-[rgba(15,23,42,0.06)] px-3 pb-3 pt-2.5">
+      {requestDescription.display ? (
+        <p className="whitespace-pre-wrap text-[13px] font-medium leading-relaxed text-[#475569]">
+          {requestDescription.display}
+        </p>
+      ) : (
+        <p className="text-[13px] font-medium text-[#94A3B8]">{t('helper_dashboard.apply_no_description')}</p>
+      )}
+
+      <div className="flex items-center gap-1.5 text-[12px] font-semibold text-[#64748B]">
+        <Icons.MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <span>{loc}</span>
+      </div>
+
+      <p className="text-[13px] font-bold text-[#0F172A]">
+        {walletBalance == null
+          ? t('helper_dashboard.apply_wallet_balance_loading')
+          : t('helper_dashboard.apply_wallet_balance', {
+              count: formatLinkCredits(walletBalance, language),
+            })}
+      </p>
+
+      <div className="space-y-2">
+        <div
+          className={clsx(
+            'rounded-lg border px-2.5 py-2',
+            balanceSummary.normal.canAfford
+              ? 'border-blue-100 bg-blue-50/80'
+              : 'border-rose-200 bg-rose-50/80',
           )}
-
-          <div className="flex items-center gap-1.5 text-[12px] font-semibold text-[#64748B]">
-            <Icons.MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            <span>{loc}</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-lg border border-blue-100 bg-blue-50/80 px-2.5 py-2">
-              <p className="text-[10px] font-black uppercase tracking-wide text-blue-700/80">
-                {t('helper_dashboard.apply_type_normal')}
-              </p>
-              <p className="mt-0.5 text-[12px] font-bold text-blue-900">
-                {t('helper_dashboard.apply_cost_label', { count: formatLinkCredits(normalCharge, language) })}
-              </p>
-            </div>
-            <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-2.5 py-2">
-              <p className="text-[10px] font-black uppercase tracking-wide text-amber-800/80">
-                {t('helper_dashboard.apply_type_exclusive')}
-              </p>
-              <p className="mt-0.5 text-[12px] font-bold text-amber-900">
-                {t('helper_dashboard.apply_cost_label', { count: formatLinkCredits(vipCharge, language) })}
-              </p>
-            </div>
-          </div>
-
-          <p className="text-[11px] font-medium leading-relaxed text-[#64748B]">
-            {t('helper_dashboard.apply_vip_explain')}
+        >
+          <p className="text-[10px] font-black uppercase tracking-wide text-blue-700/80">
+            {t('helper_dashboard.apply_type_normal')}
           </p>
+          <p className="mt-0.5 text-[12px] font-bold text-blue-900">
+            {t('helper_dashboard.apply_cost_label', { count: formatLinkCredits(normalCharge, language) })}
+          </p>
+          <p className="mt-0.5 text-[11px] font-semibold text-[#64748B]">
+            {walletBalance == null
+              ? t('helper_dashboard.apply_balance_after_loading')
+              : balanceSummary.normal.canAfford
+                ? t('helper_dashboard.apply_balance_after', {
+                    count: formatLinkCredits(balanceSummary.normal.balanceAfter ?? 0, language),
+                  })
+                : t('helper_dashboard.apply_insufficient_lc')}
+          </p>
+        </div>
 
-          {exclusiveLocked ? (
-            <p className="text-[11px] font-medium text-amber-700">
-              {t('helper_dashboard.exclusive_application_locked')}
-            </p>
-          ) : null}
-
-          {showAmountInput ? (
-            <div>
-              <label className="mb-1 block text-[11px] font-bold text-[#64748B]">
-                {t('helper_proposal.your_proposal')}
-              </label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={proposalAmountRaw}
-                onChange={(e) => {
-                  setProposalAmountRaw(e.target.value.replace(/[^\d.,]/g, ''));
-                  setAmountError('');
-                }}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-[#0F172A] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-500/10"
-                placeholder={t('helper_proposal.amount_placeholder')}
-              />
-              {amountError ? <p className="mt-1 text-[11px] font-semibold text-rose-600">{amountError}</p> : null}
-            </div>
-          ) : null}
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              disabled={!canApply}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAccordionApply('normal');
-              }}
-              className={clsx(
-                ctaBase,
-                'bg-gradient-to-br from-[#2563FF] to-[#1557F0] text-white shadow-[0_6px_18px_rgba(37,99,255,0.24)]',
-                'hover:brightness-105 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
-              )}
-            >
-              <Icons.Send className="h-[15px] w-[15px] shrink-0" strokeWidth={2.25} aria-hidden />
-              {t('helper_dashboard.apply_confirm_action')}
-            </button>
-            <button
-              type="button"
-              disabled={!canApply || exclusiveLocked}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAccordionApply('exclusive');
-              }}
-              className={clsx(
-                ctaBase,
-                'border border-amber-200 bg-amber-50 text-amber-900',
-                'hover:bg-amber-100 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
-              )}
-            >
-              <Crown className="h-[15px] w-[15px] shrink-0 text-amber-500" aria-hidden />
-              {t('helper_dashboard.apply_vip_short')}
-            </button>
-          </div>
+        <div
+          className={clsx(
+            'rounded-lg border px-2.5 py-2',
+            balanceSummary.vip.canAfford
+              ? 'border-amber-200 bg-amber-50/80'
+              : 'border-rose-200 bg-rose-50/80',
+          )}
+        >
+          <p className="text-[10px] font-black uppercase tracking-wide text-amber-800/80">
+            {t('helper_dashboard.apply_type_exclusive')}
+          </p>
+          <p className="mt-0.5 text-[12px] font-bold text-amber-900">
+            {t('helper_dashboard.apply_cost_label', { count: formatLinkCredits(vipCharge, language) })}
+          </p>
+          <p className="mt-0.5 text-[11px] font-semibold text-[#64748B]">
+            {walletBalance == null
+              ? t('helper_dashboard.apply_balance_after_loading')
+              : balanceSummary.vip.canAfford
+                ? t('helper_dashboard.apply_balance_after', {
+                    count: formatLinkCredits(balanceSummary.vip.balanceAfter ?? 0, language),
+                  })
+                : t('helper_dashboard.apply_insufficient_lc')}
+          </p>
         </div>
       </div>
+
+      <p className="text-[11px] font-medium leading-relaxed text-[#64748B]">
+        {t('helper_dashboard.apply_vip_explain')}
+      </p>
+
+      {exclusiveLocked ? (
+        <p className="text-[11px] font-medium text-amber-700">
+          {t('helper_dashboard.exclusive_application_locked')}
+        </p>
+      ) : null}
+
+      {showAmountInput ? (
+        <div>
+          <label className="mb-1 block text-[11px] font-bold text-[#64748B]">
+            {t('helper_proposal.your_proposal')}
+          </label>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={proposalAmountRaw}
+            onChange={(e) => {
+              setProposalAmountRaw(e.target.value.replace(/[^\d.,]/g, ''));
+              setAmountError('');
+            }}
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-[#0F172A] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-500/10"
+            placeholder={t('helper_proposal.amount_placeholder')}
+          />
+          {amountError ? <p className="mt-1 text-[11px] font-semibold text-rose-600">{amountError}</p> : null}
+        </div>
+      ) : null}
     </div>
   );
 
@@ -605,23 +615,30 @@ function HelperOpportunityCardInner({
               setDescription(!descriptionOpen);
             }}
             className={clsx(
-              'inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-xl border border-[rgba(15,23,42,0.08)] bg-[#f8fafc] px-2.5 py-1.5 text-[12px] font-bold text-[#0F172A] transition hover:bg-slate-50',
+              'inline-flex min-h-[44px] min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[rgba(15,23,42,0.08)] bg-[#f8fafc] px-3 py-2 text-[12px] font-bold text-[#0F172A] transition hover:bg-slate-50',
               descriptionOpen && 'border-blue-200 bg-blue-50/60',
             )}
             aria-expanded={descriptionOpen}
           >
             <Icons.FileText className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
-            <span>{t('helper_dashboard.apply_description_label')}</span>
+            <span className="truncate">{t('helper_dashboard.apply_description_label')}</span>
             <Icons.ChevronDown
-              className={clsx('h-3.5 w-3.5 shrink-0 text-[#64748B] transition-transform duration-200', descriptionOpen && 'rotate-180')}
+              className={clsx(
+                'h-3.5 w-3.5 shrink-0 text-[#64748B] transition-transform duration-200',
+                descriptionOpen && 'rotate-180',
+              )}
               aria-hidden
             />
           </button>
-          <div className="min-w-0 flex-1">{renderExternalApplyActions()}</div>
         </div>
-        <div className="overflow-hidden rounded-xl border border-[rgba(15,23,42,0.06)] bg-[#f8fafc]">
-          {descriptionPanel}
-        </div>
+
+        {actionsBelowDescription ? (
+          <div className="overflow-hidden rounded-xl border border-[rgba(15,23,42,0.06)] bg-[#f8fafc]">
+            {renderExpandedDescriptionContent()}
+          </div>
+        ) : null}
+
+        {renderApplyActionRow()}
       </div>
 
       <div className="sr-only">
@@ -689,6 +706,7 @@ function HelperOpportunityCardInner({
           submitting={isApplying}
           applicationType={applicationType}
           linkCreditsCost={getApplicationTypeChargeLc(job, applicationType, distanceKm)}
+          walletBalance={walletBalance}
           language={language}
           onConfirm={handleConfirm}
           onCancel={handleConfirmCancel}

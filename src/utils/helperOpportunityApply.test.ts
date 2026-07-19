@@ -4,15 +4,19 @@ import {
   getApplicationTypeChargeLc,
   getApplicationTypeLabelKey,
   getNormalApplicationChargeLc,
+  getApplicationBalanceSummary,
   getOpportunityLocationLabel,
   canSubmitConfirmedApplication,
   requiresProposalAmountInput,
   resolveDefaultProposalAmount,
   shouldExpandDescriptionForAmountInput,
+  shouldPlaceApplyActionsBelowDescription,
+  HELPER_OPPORTUNITY_CARD_FOOTER_LAYOUT,
   type HelperApplicationType,
 } from '@/utils/helperOpportunityApply';
 import { getApplicationChargeLc } from '@/config/helperCreditCharge';
 import { getHelperLeadCreditSummary } from '@/utils/helperCreditDisplay';
+import { calculateHelperLeadCreditCost } from '@/utils/calculateHelperLeadCreditCost';
 import { getVipApplicationChargeLc, VIP_APPLICATION_SURCHARGE_LC } from '@/utils/vipApplicationCredits';
 
 const baseJob: Job = {
@@ -53,25 +57,41 @@ describe('helperOpportunityApply', () => {
     expect(resolveDefaultProposalAmount(baseJob)).toBe(150);
   });
 
-  it('uses authoritative normal charge from helper credit config', () => {
+  it('uses variable normal charge from category + distance breakdown', () => {
     const costs = getHelperLeadCreditSummary(baseJob, 8);
     expect(getNormalApplicationChargeLc(baseJob, 8)).toBe(getApplicationChargeLc(costs));
-    expect(getApplicationTypeChargeLc(baseJob, 'normal', 8)).toBe(getApplicationChargeLc(costs));
+    expect(getNormalApplicationChargeLc(baseJob, 8)).toBe(costs.estimatedTotal);
+    expect(getApplicationTypeChargeLc(baseJob, 'normal', 8)).toBe(costs.estimatedTotal);
+  });
+
+  it('different categories produce different normal costs', () => {
+    const cleaning = getNormalApplicationChargeLc(baseJob, 3);
+    const translation = getNormalApplicationChargeLc(
+      { ...baseJob, category: 'translation', title: 'Translate docs' },
+      3,
+    );
+    const moving = getNormalApplicationChargeLc(
+      { ...baseJob, category: 'moving', title: 'Move boxes' },
+      3,
+    );
+    expect(cleaning).not.toBe(translation);
+    expect(moving).toBeGreaterThan(translation);
+    expect(cleaning).toBeGreaterThan(4);
+    expect(moving).toBeGreaterThan(4);
+  });
+
+  it('does not use global fixed 4 LC normal or 8 LC VIP display amounts', () => {
+    const normal = getNormalApplicationChargeLc(baseJob, 8);
+    const vip = getApplicationTypeChargeLc(baseJob, 'exclusive', 8);
+    expect(normal).not.toBe(4);
+    expect(vip).not.toBe(8);
+    expect(vip).toBe(normal + VIP_APPLICATION_SURCHARGE_LC);
   });
 
   it('VIP charge equals normal + 4 LinkCredits', () => {
     const normal = getNormalApplicationChargeLc(baseJob, 8);
     expect(getApplicationTypeChargeLc(baseJob, 'exclusive', 8)).toBe(getVipApplicationChargeLc(normal));
     expect(getApplicationTypeChargeLc(baseJob, 'exclusive', 8)).toBe(normal + VIP_APPLICATION_SURCHARGE_LC);
-  });
-
-  it('does not hardcode a fixed example amount for normal charge', () => {
-    const remoteJob: Job = { ...baseJob, location: 'Remote', city: 'Remote' };
-    const localNormal = getNormalApplicationChargeLc(baseJob, 8);
-    const remoteNormal = getNormalApplicationChargeLc(remoteJob, null);
-    expect(localNormal).toBeGreaterThan(0);
-    expect(remoteNormal).toBeGreaterThan(0);
-    expect(localNormal).not.toBe(12);
   });
 
   it('maps application type label keys consistently', () => {
@@ -88,6 +108,45 @@ describe('helperOpportunityApply', () => {
       value: 'Negotiable',
     };
     expect(requiresProposalAmountInput(negotiable)).toBe(true);
+  });
+});
+
+describe('application balance summary', () => {
+  it('calculates resulting balances and affordability per type', () => {
+    const summary = getApplicationBalanceSummary(baseJob, 30, 8);
+    expect(summary.normal.charge).toBe(getNormalApplicationChargeLc(baseJob, 8));
+    expect(summary.vip.charge).toBe(getApplicationTypeChargeLc(baseJob, 'exclusive', 8));
+    expect(summary.normal.balanceAfter).toBe(30 - summary.normal.charge);
+    expect(summary.vip.balanceAfter).toBe(30 - summary.vip.charge);
+    expect(summary.normal.canAfford).toBe(true);
+    expect(summary.vip.canAfford).toBe(true);
+  });
+
+  it('marks only unaffordable action when balance is between normal and VIP', () => {
+    const normal = getNormalApplicationChargeLc(baseJob, 8);
+    const vip = getApplicationTypeChargeLc(baseJob, 'exclusive', 8);
+    const wallet = normal + 1;
+    expect(wallet).toBeLessThan(vip);
+    const summary = getApplicationBalanceSummary(baseJob, wallet, 8);
+    expect(summary.normal.canAfford).toBe(true);
+    expect(summary.vip.canAfford).toBe(false);
+  });
+
+  it('marks both actions unaffordable when wallet is below normal cost', () => {
+    const summary = getApplicationBalanceSummary(baseJob, 2, 8);
+    expect(summary.normal.canAfford).toBe(false);
+    expect(summary.vip.canAfford).toBe(false);
+  });
+});
+
+describe('card layout helpers', () => {
+  it('uses avatar-description row then separate actions row marker', () => {
+    expect(HELPER_OPPORTUNITY_CARD_FOOTER_LAYOUT).toBe('avatar-description-row-then-actions-row');
+  });
+
+  it('places apply actions below expanded description content when open', () => {
+    expect(shouldPlaceApplyActionsBelowDescription(false)).toBe(false);
+    expect(shouldPlaceApplyActionsBelowDescription(true)).toBe(true);
   });
 });
 
@@ -152,14 +211,17 @@ describe('privacy-safe location label', () => {
 });
 
 describe('application type charge selection', () => {
-  it('exclusive charge is normal plus surcharge', () => {
+  it('exclusive charge is normal plus surcharge for variable costs', () => {
     const types: HelperApplicationType[] = ['normal', 'exclusive'];
     for (const type of types) {
       const charge = getApplicationTypeChargeLc(baseJob, type, 12);
-      expect(charge).toBeGreaterThan(0);
+      expect(charge).toBeGreaterThan(4);
     }
     const normal = getApplicationTypeChargeLc(baseJob, 'normal', 12);
     const vip = getApplicationTypeChargeLc(baseJob, 'exclusive', 12);
     expect(vip).toBe(normal + VIP_APPLICATION_SURCHARGE_LC);
+    expect(normal).toBe(
+      calculateHelperLeadCreditCost(baseJob, { distanceKm: 12 }).estimatedTotal,
+    );
   });
 });

@@ -48,10 +48,12 @@ describe('vipApplicationCredits', () => {
     expect(VIP_DISPLACED_NORMAL_REFUND_LC).toBe(2);
   });
 
-  it('exclusive charge from job uses normal lead cost + surcharge, not totalEstimate', () => {
+  it('exclusive charge from job uses variable normal lead cost + surcharge', () => {
     const costs = calculateHelperLeadCreditCost(baseJob(), { distanceKm: 8 });
     const normal = getApplicationChargeLc(costs);
+    expect(normal).toBe(costs.estimatedTotal);
+    expect(normal).not.toBe(4);
     expect(getExclusiveApplicationChargeLc(costs)).toBe(getVipApplicationChargeLc(normal));
-    expect(getExclusiveApplicationChargeLc(costs)).not.toBe(costs.estimatedTotal);
+    expect(getExclusiveApplicationChargeLc(costs)).toBe(normal + VIP_APPLICATION_SURCHARGE_LC);
   });
 });

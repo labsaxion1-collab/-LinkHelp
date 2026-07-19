@@ -119,7 +119,7 @@ export function UpcomingJobDetailModal({
   onUpdateWorkflow,
 }: UpcomingJobDetailModalProps) {
   const navigate = useNavigate();
-  const { jobs, updateUpcomingWorkflow } = useAppData();
+  const { jobs, updateUpcomingWorkflow, finalizeServiceCompletion } = useAppData();
   const { session } = useAuth();
   const { showToast } = useToast();
   const { openReviewByRequestId } = useServiceReview();
@@ -187,7 +187,11 @@ export function UpcomingJobDetailModal({
     if (completeLoading || !requestJob?.clientId) return;
     setCompleteLoading(true);
     try {
-      updateUpcomingWorkflow(job.id, 'completion_requested');
+      await finalizeServiceCompletion({
+        requestId: job.jobId,
+        upcomingJobId: job.id,
+        role: 'helper',
+      });
       showToast(t('upcoming_jobs.complete_work_success'), 'success');
       window.setTimeout(() => openReviewByRequestId(job.jobId), 400);
     } catch (e) {

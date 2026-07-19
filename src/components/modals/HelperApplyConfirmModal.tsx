@@ -9,6 +9,7 @@ type Props = {
   submitting?: boolean;
   applicationType: HelperApplicationType;
   linkCreditsCost: number;
+  walletBalance?: number | null;
   language?: AppLanguage;
   onConfirm: () => void;
   onCancel: () => void;
@@ -20,6 +21,7 @@ export function HelperApplyConfirmModal({
   submitting = false,
   applicationType,
   linkCreditsCost,
+  walletBalance = null,
   language = 'pt',
   onConfirm,
   onCancel,
@@ -27,6 +29,16 @@ export function HelperApplyConfirmModal({
 }: Props) {
   const typeLabel = t(getApplicationTypeLabelKey(applicationType));
   const costLabel = formatLinkCredits(linkCreditsCost, language);
+  const currentBalanceLabel =
+    walletBalance == null
+      ? t('helper_dashboard.apply_wallet_balance_loading')
+      : formatLinkCredits(walletBalance, language);
+  const resultingBalance =
+    walletBalance == null ? null : Math.max(0, walletBalance - linkCreditsCost);
+  const resultingBalanceLabel =
+    resultingBalance == null
+      ? t('helper_dashboard.apply_balance_after_loading')
+      : formatLinkCredits(resultingBalance, language);
 
   return (
     <PremiumResponsiveModal
@@ -55,9 +67,12 @@ export function HelperApplyConfirmModal({
         </div>
       }
     >
-      <p className="text-sm font-medium leading-relaxed text-slate-600">
-        {t('helper_dashboard.apply_confirm_body', { type: typeLabel, cost: costLabel })}
-      </p>
+      <div className="space-y-2 text-sm font-medium leading-relaxed text-slate-600">
+        <p>{t('helper_dashboard.apply_confirm_type', { type: typeLabel })}</p>
+        <p>{t('helper_dashboard.apply_confirm_debit', { cost: costLabel })}</p>
+        <p>{t('helper_dashboard.apply_confirm_current_balance', { count: currentBalanceLabel })}</p>
+        <p>{t('helper_dashboard.apply_confirm_resulting_balance', { count: resultingBalanceLabel })}</p>
+      </div>
     </PremiumResponsiveModal>
   );
 }

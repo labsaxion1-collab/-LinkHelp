@@ -1258,6 +1258,7 @@ export default function HelperDashboard() {
                           if (expanded) setApplyExpandedJobId(job.id);
                           else if (applyExpandedJobId === job.id) setApplyExpandedJobId(null);
                         }}
+                        walletBalance={walletBalance}
                         language={language}
                         t={t}
                         translateCategory={translateCategory}

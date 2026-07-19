@@ -9,6 +9,54 @@ type LocationTFn = (key: string, options?: Record<string, string | number>) => s
 
 export type HelperApplicationType = 'normal' | 'exclusive';
 
+export type ApplicationChargeLine = {
+  charge: number;
+  balanceAfter: number | null;
+  canAfford: boolean;
+};
+
+export type ApplicationBalanceSummary = {
+  walletBalance: number | null;
+  normal: ApplicationChargeLine;
+  vip: ApplicationChargeLine;
+};
+
+/** Wallet pre-check lines for card accordion and confirm modal (whole LinkCredits only). */
+export function getApplicationBalanceSummary(
+  job: Job,
+  walletBalance: number | null,
+  distanceKm?: number | null,
+): ApplicationBalanceSummary {
+  const normalCharge = getNormalApplicationChargeLc(job, distanceKm);
+  const vipCharge = getApplicationTypeChargeLc(job, 'exclusive', distanceKm);
+  const balanceAfter = (balance: number | null, charge: number): number | null =>
+    balance == null ? null : balance - charge;
+  const canAfford = (balance: number | null, charge: number): boolean =>
+    balance != null && balance >= charge;
+
+  return {
+    walletBalance,
+    normal: {
+      charge: normalCharge,
+      balanceAfter: balanceAfter(walletBalance, normalCharge),
+      canAfford: canAfford(walletBalance, normalCharge),
+    },
+    vip: {
+      charge: vipCharge,
+      balanceAfter: balanceAfter(walletBalance, vipCharge),
+      canAfford: canAfford(walletBalance, vipCharge),
+    },
+  };
+}
+
+/** Closed card uses two footer rows: avatar+description, then separate apply actions. */
+export const HELPER_OPPORTUNITY_CARD_FOOTER_LAYOUT = 'avatar-description-row-then-actions-row' as const;
+
+/** When description accordion opens, apply actions stay below expanded content. */
+export function shouldPlaceApplyActionsBelowDescription(descriptionOpen: boolean): boolean {
+  return descriptionOpen;
+}
+
 /** Default proposal amount when the helper applies from the compact card flow. */
 export function resolveDefaultProposalAmount(job: Job): number | null {
   if (jobHasBoundedBudget(job)) {

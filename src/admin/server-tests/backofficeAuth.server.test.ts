@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { authorizeBackoffice } from '../../../api/lib/backofficeAuth.server';
+import { authorizeBackoffice } from '../../../api/lib/adminAuth.server';
 import { createSupabaseAuthVerifier, createSupabaseServiceRoleClient } from '../../../api/lib/supabaseAdmin.server';
 
 vi.mock('../../../api/lib/supabaseAdmin.server', () => ({

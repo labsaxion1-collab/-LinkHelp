@@ -19,7 +19,7 @@ export async function authorizeAdmin(
   if (!token) return { ok: false, status: 401, error: 'UNAUTHORIZED' };
   const { data, error } = await verifier.auth.getUser(token);
   if (error || !data.user) return { ok: false, status: 401, error: 'UNAUTHORIZED' };
-  if (data.user.app_metadata?.role !== 'admin') {
+  if (data.user.app_metadata?.role !== 'admin' && data.user.app_metadata?.role !== 'flux_admin') {
     return { ok: false, status: 403, error: 'FORBIDDEN' };
   }
   return { ok: true, user: data.user };

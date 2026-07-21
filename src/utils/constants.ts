@@ -37,6 +37,15 @@ export const ROUTES = {
   settings: '/settings',
   /** FLUX multi-app admin console */
   adminDashboard: '/admin/dashboard',
+  /** BackOffice P0 — read-only operational views */
+  adminUsers: '/admin/users',
+  adminUserDetail: '/admin/users/:userId',
+  adminRequests: '/admin/requests',
+  adminRequestDetail: '/admin/requests/:requestId',
+  adminCredits: '/admin/credits',
+  adminEconomy: '/admin/economy',
+  adminAudit: '/admin/audit',
+  adminSupport: '/admin/support',
   /** Dev-only push notification diagnostics */
   adminPushTest: '/admin/push-test',
 } as const;

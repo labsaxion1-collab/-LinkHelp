@@ -51,6 +51,14 @@ function AdminDashboardLoadError() {
 }
 
 const PushTestPage = lazyPage(() => import('@/pages/admin/PushTestPage'));
+const BackofficeUsersPage = lazyPage(() => import('@/pages/admin/backoffice/BackofficeUsersPage'));
+const BackofficeUserDetailPage = lazyPage(() => import('@/pages/admin/backoffice/BackofficeUserDetailPage'));
+const BackofficeRequestsPage = lazyPage(() => import('@/pages/admin/backoffice/BackofficeRequestsPage'));
+const BackofficeRequestDetailPage = lazyPage(() => import('@/pages/admin/backoffice/BackofficeRequestDetailPage'));
+const BackofficeCreditsPage = lazyPage(() => import('@/pages/admin/backoffice/BackofficeCreditsPage'));
+const BackofficeEconomyPage = lazyPage(() => import('@/pages/admin/backoffice/BackofficeEconomyPage'));
+const BackofficeAuditPage = lazyPage(() => import('@/pages/admin/backoffice/BackofficeAuditPage'));
+const BackofficeSupportPage = lazyPage(() => import('@/pages/admin/backoffice/BackofficeSupportPage'));
 
 const AdminDashboard = lazy(() =>
   importWithRetry(() => import('@/pages/admin/AdminDashboard')).catch((error: unknown) => {
@@ -141,6 +149,14 @@ export function AppRoutes() {
           <Route element={<AdminProtectedRoute />}>
             <Route element={<FluxAdminLayout />}>
               <Route path={ROUTES.adminDashboard} element={<AdminDashboard />} />
+              <Route path={ROUTES.adminUsers} element={<BackofficeUsersPage />} />
+              <Route path={ROUTES.adminUserDetail} element={<BackofficeUserDetailPage />} />
+              <Route path={ROUTES.adminRequests} element={<BackofficeRequestsPage />} />
+              <Route path={ROUTES.adminRequestDetail} element={<BackofficeRequestDetailPage />} />
+              <Route path={ROUTES.adminCredits} element={<BackofficeCreditsPage />} />
+              <Route path={ROUTES.adminEconomy} element={<BackofficeEconomyPage />} />
+              <Route path={ROUTES.adminAudit} element={<BackofficeAuditPage />} />
+              <Route path={ROUTES.adminSupport} element={<BackofficeSupportPage />} />
               <Route path={ROUTES.adminPushTest} element={<PushTestPage />} />
             </Route>
           </Route>

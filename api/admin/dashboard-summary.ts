@@ -6,6 +6,10 @@ import {
   parseAdminDashboardFinancialSummary,
   type AdminFinancialTimeRange,
 } from '../../src/admin/adminDashboardFinancialContract.js';
+import {
+  handleBackofficeRoute,
+  parseBackofficeResource,
+} from '../../src/backoffice/server/backofficeRouteHandlers.js';
 
 function parseTimeRange(value: unknown): AdminFinancialTimeRange {
   if (value === 'today' || value === '7d' || value === '30d' || value === 'all') return value;
@@ -14,6 +18,9 @@ function parseTimeRange(value: unknown): AdminFinancialTimeRange {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
+
+  const backoffice = parseBackofficeResource(req.query?.backoffice);
+  if (backoffice) return handleBackofficeRoute(req, res, backoffice);
 
   const timeRange = parseTimeRange(typeof req.query?.range === 'string' ? req.query.range : 'all');
 

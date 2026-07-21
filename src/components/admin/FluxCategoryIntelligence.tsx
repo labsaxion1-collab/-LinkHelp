@@ -1,5 +1,5 @@
 import { Layers } from 'lucide-react';
-import { useLanguage } from '@/context/LanguageContext';
+import { FLUX_PT } from '@/admin/fluxPtCopy';
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 
 export type CategoryIntelRow = {
@@ -18,8 +18,6 @@ type Props = {
 };
 
 export function FluxCategoryIntelligence({ rows }: Props) {
-  const { t } = useLanguage();
-
   return (
     <section className="rounded-2xl border border-white/10 bg-[#0E1422]/90 p-5 shadow-xl shadow-black/30">
       <div className="mb-5 flex items-center gap-3">
@@ -27,8 +25,8 @@ export function FluxCategoryIntelligence({ rows }: Props) {
           <Layers className="h-5 w-5 text-violet-300" />
         </div>
         <div>
-          <h2 className="text-base font-black text-white">{t('flux_admin.category_intel_title')}</h2>
-          <p className="text-xs font-medium text-slate-500">{t('flux_admin.category_intel_sub')}</p>
+          <h2 className="text-base font-black text-white">{FLUX_PT.categoryIntelTitle}</h2>
+          <p className="text-xs font-medium text-slate-500">{FLUX_PT.categoryIntelSub}</p>
         </div>
       </div>
 
@@ -36,12 +34,12 @@ export function FluxCategoryIntelligence({ rows }: Props) {
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead>
             <tr className="border-b border-white/8 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              <th className="pb-3 pr-4">{t('flux_admin.col_category')}</th>
-              <th className="pb-3 pr-4">{t('flux_admin.col_open')}</th>
-              <th className="pb-3 pr-4">{t('flux_admin.col_applications')}</th>
-              <th className="pb-3 pr-4">{t('flux_admin.col_hire_rate')}</th>
-              <th className="pb-3 pr-4">{t('flux_admin.col_avg_budget')}</th>
-              <th className="pb-3">{t('flux_admin.col_trend')}</th>
+              <th className="pb-3 pr-4">{FLUX_PT.colCategory}</th>
+              <th className="pb-3 pr-4">{FLUX_PT.colOpen}</th>
+              <th className="pb-3 pr-4">{FLUX_PT.colApplications}</th>
+              <th className="pb-3 pr-4">{FLUX_PT.colHireRate}</th>
+              <th className="pb-3 pr-4">{FLUX_PT.colAvgBudget}</th>
+              <th className="pb-3">{FLUX_PT.colTrend}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -49,10 +47,10 @@ export function FluxCategoryIntelligence({ rows }: Props) {
               const IconComponent = getCategoryLucideIcon(row.icon);
               const trendLabel =
                 row.trend === 'up'
-                  ? t('flux_admin.trend_up')
+                  ? FLUX_PT.trendUp
                   : row.trend === 'down'
-                    ? t('flux_admin.trend_down')
-                    : t('flux_admin.trend_flat');
+                    ? FLUX_PT.trendDown
+                    : FLUX_PT.trendFlat;
               const trendClass =
                 row.trend === 'up' ? 'text-emerald-400' : row.trend === 'down' ? 'text-red-400' : 'text-slate-400';
               return (

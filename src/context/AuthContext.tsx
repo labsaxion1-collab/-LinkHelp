@@ -72,7 +72,7 @@ interface AuthContextValue {
       preferredLanguage?: string;
     },
   ) => Promise<AuthError>;
-  signInWithGoogle: () => Promise<AuthError>;
+  signInWithGoogle: (options?: { next?: string | null }) => Promise<AuthError>;
   signOut: () => Promise<void>;
   refreshProfile: (userOverride?: User | null) => Promise<AuthProfile | null>;
   updateProfile: (patch: Partial<AuthProfile>) => Promise<AuthError>;
@@ -665,7 +665,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const signInWithGoogle = useCallback(async (): Promise<AuthError> => {
+  const signInWithGoogle = useCallback(async (options?: { next?: string | null }): Promise<AuthError> => {
     const sb = getSupabase();
     if (!sb) {
       authDevLog('signInWithOAuth:aborted', { reason: 'supabase_client_null' });
@@ -674,7 +674,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     markOAuthCallbackActive();
     markOAuthRedirectPending();
-    const redirectTo = getOAuthRedirectToUrl();
+    const redirectTo = getOAuthRedirectToUrl(options?.next);
     authFlowLog('OAuth redirectTo', {
       redirectTo,
       origin: typeof window !== 'undefined' ? window.location.origin : '',

@@ -3,9 +3,9 @@ import { useOutletContext } from 'react-router-dom';
 import { Briefcase, Users, Zap, Activity, RefreshCw } from 'lucide-react';
 import { useAdminDashboardSummary } from '@/admin/hooks/useAdminDashboardSummary';
 import { isAdminDashboardEmpty } from '@/admin/adminDashboardContract';
-import { adminDashboardErrorTranslationKey } from '@/admin/adminDashboardErrors';
+import { adminDashboardErrorMessage } from '@/admin/adminDashboardErrors';
 import type { AdminFinancialTimeRange } from '@/admin/adminDashboardFinancialContract';
-import { useLanguage } from '@/context/LanguageContext';
+import { FLUX_PT, serviceCategoryLabelPt } from '@/admin/fluxPtCopy';
 import { FluxMetricCard } from '@/components/admin/FluxMetricCard';
 import { FluxAiInsightsPanel } from '@/components/admin/FluxAiInsightsPanel';
 import { FluxCategoryIntelligence, type CategoryIntelRow } from '@/components/admin/FluxCategoryIntelligence';
@@ -19,7 +19,6 @@ export type FluxAdminOutletContext = {
 };
 
 export default function AdminDashboard() {
-  const { t } = useLanguage();
   const [timeRange, setTimeRange] = useState<AdminFinancialTimeRange>('all');
   const { summary, financial, financialError, loading, errorCode, reload } = useAdminDashboardSummary(timeRange);
   const { activeSection } = useOutletContext<FluxAdminOutletContext>();
@@ -41,57 +40,57 @@ export default function AdminDashboard() {
         openRequests >= 3 ? 'up' : openRequests === 0 ? 'down' : 'flat';
       return {
         id: cat.id,
-        label: t(`categories.${cat.id}`),
+        label: serviceCategoryLabelPt(cat.id),
         icon: cat.icon,
         openRequests,
         applications: aggregate?.applications ?? 0,
         hireRate: aggregate?.hireRate ?? 0,
         avgBudget: aggregate?.averageBudget != null
           ? `CAD $${Math.round(aggregate.averageBudget)}`
-          : t('flux_admin.budget_na'),
+          : FLUX_PT.budgetNa,
         trend,
       };
     }).sort((a, b) => b.openRequests - a.openRequests);
-  }, [summary, t]);
+  }, [summary]);
 
   const aiInsights = useMemo(
     () => [
       {
         id: '1',
         type: 'opportunity' as const,
-        title: t('flux_admin.insight_1_title'),
-        body: t('flux_admin.insight_1_body'),
+        title: FLUX_PT.insight1Title,
+        body: FLUX_PT.insight1Body,
         score: 86,
       },
       {
         id: '2',
         type: 'trend' as const,
-        title: t('flux_admin.insight_2_title'),
-        body: t('flux_admin.insight_2_body'),
+        title: FLUX_PT.insight2Title,
+        body: FLUX_PT.insight2Body,
         score: 72,
       },
       {
         id: '3',
         type: 'risk' as const,
-        title: t('flux_admin.insight_3_title'),
-        body: t('flux_admin.insight_3_body'),
+        title: FLUX_PT.insight3Title,
+        body: FLUX_PT.insight3Body,
       },
     ],
-    [t],
+    [],
   );
 
   const showOverview = activeSection === 'overview';
   const showInsights = activeSection === 'overview' || activeSection === 'insights';
   const showCategories = activeSection === 'overview' || activeSection === 'categories';
   const showEmptyState = !loading && !errorCode && summary != null && isAdminDashboardEmpty(summary);
-  const errorMessageKey = errorCode ? adminDashboardErrorTranslationKey(errorCode) : null;
+  const errorMessage = errorCode ? adminDashboardErrorMessage(errorCode) : null;
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       {loading && !summary && !errorCode ? (
         <div className="flex min-h-40 items-center justify-center text-sm font-semibold text-slate-400">
           <RefreshCw className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-          {t('flux_admin.loading_metrics')}
+          {FLUX_PT.loadingMetrics}
         </div>
       ) : null}
 
@@ -101,7 +100,7 @@ export default function AdminDashboard() {
           className="flex flex-col gap-3 border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <p className="font-bold">{t(errorMessageKey ?? 'flux_admin.error_summary_unavailable')}</p>
+            <p className="font-bold">{errorMessage}</p>
             {import.meta.env.DEV ? (
               <p className="mt-1 font-mono text-xs text-rose-200/80">{errorCode}</p>
             ) : null}
@@ -112,16 +111,16 @@ export default function AdminDashboard() {
             className="inline-flex h-9 shrink-0 items-center gap-2 border border-rose-300/30 px-3 font-bold hover:bg-white/10"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
-            {t('common.retry')}
+            {FLUX_PT.retry}
           </button>
         </div>
       ) : null}
 
       {showEmptyState ? (
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-8 text-center">
-          <p className="text-base font-black text-white">{t('flux_admin.empty_title')}</p>
+          <p className="text-base font-black text-white">{FLUX_PT.emptyTitle}</p>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-slate-400">
-            {t('flux_admin.empty_body')}
+            {FLUX_PT.emptyBody}
           </p>
         </div>
       ) : null}
@@ -130,36 +129,36 @@ export default function AdminDashboard() {
         <>
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-400/90">
-              {t('flux_admin.live_metrics')}
+              {FLUX_PT.liveMetrics}
             </p>
-            <h2 className="mt-1 text-2xl font-black text-white">{t('flux_admin.overview_title')}</h2>
+            <h2 className="mt-1 text-2xl font-black text-white">{FLUX_PT.overviewTitle}</h2>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <FluxMetricCard
-              label={t('flux_admin.metric_open_requests')}
+              label={FLUX_PT.metricOpenRequests}
               value={metrics.openJobs}
-              delta={t('flux_admin.metric_open_delta')}
+              delta={FLUX_PT.metricOpenDelta}
               deltaPositive
               icon={Briefcase}
               accent="blue"
             />
             <FluxMetricCard
-              label={t('flux_admin.metric_in_progress')}
+              label={FLUX_PT.metricInProgress}
               value={metrics.inProgress}
               icon={Activity}
               accent="violet"
             />
             <FluxMetricCard
-              label={t('flux_admin.metric_pending_apps')}
+              label={FLUX_PT.metricPendingApps}
               value={metrics.pendingApps}
               icon={Users}
               accent="amber"
             />
             <FluxMetricCard
-              label={t('flux_admin.metric_hire_rate')}
+              label={FLUX_PT.metricHireRate}
               value={`${metrics.hireRate}%`}
-              delta={t('flux_admin.metric_hired_count', { count: String(metrics.hiredApps) })}
+              delta={FLUX_PT.metricHiredCount(metrics.hiredApps)}
               deltaPositive={metrics.hireRate > 0}
               icon={Zap}
               accent="emerald"
@@ -176,9 +175,9 @@ export default function AdminDashboard() {
 
           <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-violet-600/15 to-transparent p-5">
             <p className="text-xs font-bold uppercase tracking-wider text-violet-300/80">
-              {t('flux_admin.market_pulse_demo_label')}
+              {FLUX_PT.marketPulseDemoLabel}
             </p>
-            <p className="mt-3 text-sm leading-relaxed text-slate-400">{t('flux_admin.market_pulse_body')}</p>
+            <p className="mt-3 text-sm leading-relaxed text-slate-400">{FLUX_PT.marketPulseBody}</p>
           </div>
         </>
       ) : null}
@@ -188,7 +187,7 @@ export default function AdminDashboard() {
 
       {!CLIENT_LINKCREDITS_ENABLED ? (
         <p className="border-t border-white/5 pt-6 text-xs leading-relaxed text-slate-500">
-          {t('client_linkcredits.admin_flag')}
+          {FLUX_PT.clientLinkCreditsFlag}
         </p>
       ) : null}
     </div>

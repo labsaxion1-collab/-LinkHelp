@@ -6,7 +6,12 @@ import { useAuth, type AuthProfile } from '@/context/AuthContext';
 import { ROUTES } from '@/utils/constants';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
-import { resolvePostOAuthPath } from '@/utils/postOAuthRedirect';
+import {
+  clearAdminOAuthState,
+  isAdminOAuthFlowPending,
+  resolveAdminOAuthReturnTo,
+  resolveAuthCallbackDestination,
+} from '@/utils/fluxRedirect';
 import { writeStoredAppMode } from '@/utils/appModeStorage';
 import { dashboardPathForRole, normalizeProfileRole } from '@/utils/userRole';
 import {
@@ -136,9 +141,16 @@ export default function AuthCallbackPage() {
           return;
         }
 
+        const { data: freshSessionData } = await sb.auth.getSession();
+        if (freshSessionData.session?.user) {
+          session = freshSessionData.session;
+        }
+
         authFlowLog('AuthCallback: session OK', {
           userId: session.user.id,
           email: session.user.email ?? undefined,
+          app_metadata_role: session.user.app_metadata?.role ?? null,
+          user_metadata_role: session.user.user_metadata?.role ?? session.user.user_metadata?.user_type ?? null,
         });
 
         stripAuthParamsFromUrl();
@@ -170,18 +182,25 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : null;
         const role = normalizeProfileRole(profileRow?.role ?? session.user.user_metadata?.user_type);
         writeStoredAppMode(role, session.user.id);
 
-        const dest = safeNext ?? resolvePostOAuthPath(profileRow, session.user);
+        const adminReturnResolved = resolveAdminOAuthReturnTo(next);
+        const dest = resolveAuthCallbackDestination({
+          session,
+          nextFromUrl: next,
+          profileRole: role,
+          hostname: typeof window !== 'undefined' ? window.location.hostname : undefined,
+        });
         roleRoutingLog('AuthCallback:redirect', {
           userId: session.user.id,
           email: session.user.email ?? profileRow?.email ?? null,
           role_from_profile: profileRow?.role ?? null,
           role_from_auth: roleFromAuthMetadata(session.user),
           redirect_destination: dest,
-          safe_next: safeNext,
+          next_from_url: next,
+          admin_return_resolved: adminReturnResolved,
+          admin_oauth_pending: isAdminOAuthFlowPending(),
           computed_role: role,
         });
         authFlowLog('AuthCallback redirect', {
@@ -191,6 +210,7 @@ export default function AuthCallbackPage() {
           userId: session.user.id,
         });
 
+        clearAdminOAuthState();
         clearOAuthCallbackActive();
         clearOAuthRedirectPending();
         navigate(dest, { replace: true });

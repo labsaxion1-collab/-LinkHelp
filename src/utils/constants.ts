@@ -8,6 +8,10 @@ export const ROUTES = {
   resetPassword: '/auth/reset-password',
   /** OAuth redirect target — must be allowed in Supabase Auth → URL Configuration */
   authCallback: '/auth/callback',
+  /** FLUX console — admin-only sign-in (hostname-safe returnTo) */
+  adminLogin: '/auth/admin-login',
+  /** Non-admin signed in on flux.linkhelp.app */
+  fluxAccessDenied: '/auth/flux-access-denied',
   /** Shortcuts into the app (redirect to nested dashboard routes in AppRoutes) */
   clientHome: '/client',
   helperHome: '/helper',
@@ -37,6 +41,15 @@ export const ROUTES = {
   settings: '/settings',
   /** FLUX multi-app admin console */
   adminDashboard: '/admin/dashboard',
+  /** BackOffice P0 — read-only operational views */
+  adminUsers: '/admin/users',
+  adminUserDetail: '/admin/users/:userId',
+  adminRequests: '/admin/requests',
+  adminRequestDetail: '/admin/requests/:requestId',
+  adminCredits: '/admin/credits',
+  adminEconomy: '/admin/economy',
+  adminAudit: '/admin/audit',
+  adminSupport: '/admin/support',
   /** Dev-only push notification diagnostics */
   adminPushTest: '/admin/push-test',
 } as const;

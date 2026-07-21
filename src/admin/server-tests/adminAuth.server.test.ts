@@ -22,13 +22,11 @@ describe('admin server authorization', () => {
     await expect(authorizeAdmin('Bearer valid', verifier({ data: { user }, error: null }))).resolves.toEqual({ ok: false, status: 403, error: 'FORBIDDEN' });
   });
 
-  it('returns 403 for flux_admin (UI-only role without full API access)', async () => {
+  it('accepts flux_admin for FLUX console access', async () => {
     const user = { id: 'flux-1', app_metadata: { role: 'flux_admin' } };
-    await expect(authorizeAdmin('Bearer valid', verifier({ data: { user }, error: null }))).resolves.toEqual({
-      ok: false,
-      status: 403,
-      error: 'FORBIDDEN',
-    });
+    const result = await authorizeAdmin('Bearer valid', verifier({ data: { user }, error: null }));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.user.id).toBe('flux-1');
   });
 
   it('accepts role admin only from validated user app_metadata', async () => {

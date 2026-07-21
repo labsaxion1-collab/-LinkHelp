@@ -1,5 +1,5 @@
 import { ROUTES } from '@/utils/constants';
-import { sanitizeReturnTo } from '@/utils/fluxRedirect';
+import { sanitizeAdminReturnTo, sanitizeReturnTo } from '@/utils/fluxRedirect';
 
 const PRODUCTION_ORIGIN = 'https://www.linkhelp.app';
 
@@ -12,7 +12,7 @@ const PRODUCTION_ORIGIN = 'https://www.linkhelp.app';
 export function getOAuthRedirectToUrl(nextPath?: string | null): string {
   const origin = typeof window === 'undefined' ? PRODUCTION_ORIGIN : window.location.origin;
   const base = `${origin}${ROUTES.authCallback}`;
-  const safeNext = sanitizeReturnTo(nextPath);
+  const safeNext = sanitizeAdminReturnTo(nextPath) ?? sanitizeReturnTo(nextPath);
   if (!safeNext) return base;
   const params = new URLSearchParams({ next: safeNext });
   return `${base}?${params.toString()}`;

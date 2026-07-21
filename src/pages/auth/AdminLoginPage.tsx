@@ -16,6 +16,7 @@ import { LINKHELP_PUBLIC_ORIGIN } from '@/utils/fluxHost';
 import {
   clearPersistedAdminReturnTo,
   getAdminPostLoginDestination,
+  markAdminOAuthFlow,
   persistAdminReturnTo,
   readPersistedAdminReturnTo,
   readReturnToFromLocation,
@@ -134,6 +135,8 @@ export default function AdminLoginPage() {
     }
     setGoogleLoading(true);
     try {
+      persistAdminReturnTo(effectiveReturnTo ?? null);
+      markAdminOAuthFlow();
       const err = await signInWithGoogle({ next: effectiveReturnTo });
       if (!isOAuthRedirectPending() && err) {
         setError(t(err.messageKey, err.vars));

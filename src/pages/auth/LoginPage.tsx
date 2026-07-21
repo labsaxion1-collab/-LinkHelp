@@ -23,6 +23,8 @@ import { oauthErrorMessageKey, type OAuthCallbackErrorCode } from '@/utils/parse
 
 import { readKeepSignedIn, writeKeepSignedIn } from '@/utils/rememberSession';
 
+import { clearAdminOAuthState } from '@/utils/fluxRedirect';
+
 import {
 
   clearOAuthCallbackActive,
@@ -258,6 +260,8 @@ export default function LoginPage() {
     }, 15_000);
 
     try {
+
+      clearAdminOAuthState();
 
       const err = await signInWithGoogle();
 

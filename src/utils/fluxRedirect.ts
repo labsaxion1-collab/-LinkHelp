@@ -45,22 +45,63 @@ export function sanitizeAdminReturnTo(raw: string | null | undefined): string | 
 }
 
 const FLUX_ADMIN_RETURN_TO_KEY = 'flux_admin_return_to';
+const FLUX_ADMIN_OAUTH_PENDING_KEY = 'flux_admin_oauth_pending';
+
+/** Set before admin Google OAuth so callback can recover returnTo if Supabase drops `next`. */
+export function markAdminOAuthFlow(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(FLUX_ADMIN_OAUTH_PENDING_KEY, '1');
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isAdminOAuthFlowPending(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.sessionStorage.getItem(FLUX_ADMIN_OAUTH_PENDING_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function clearAdminOAuthFlow(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(FLUX_ADMIN_OAUTH_PENDING_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 export function persistAdminReturnTo(path: string | null): void {
   if (typeof window === 'undefined') return;
   const safe = sanitizeAdminReturnTo(path);
-  if (safe) sessionStorage.setItem(FLUX_ADMIN_RETURN_TO_KEY, safe);
-  else sessionStorage.removeItem(FLUX_ADMIN_RETURN_TO_KEY);
+  try {
+    if (safe) window.sessionStorage.setItem(FLUX_ADMIN_RETURN_TO_KEY, safe);
+    else window.sessionStorage.removeItem(FLUX_ADMIN_RETURN_TO_KEY);
+  } catch {
+    /* private mode / blocked storage */
+  }
 }
 
 export function readPersistedAdminReturnTo(): string | null {
   if (typeof window === 'undefined') return null;
-  return sanitizeAdminReturnTo(sessionStorage.getItem(FLUX_ADMIN_RETURN_TO_KEY));
+  try {
+    return sanitizeAdminReturnTo(window.sessionStorage.getItem(FLUX_ADMIN_RETURN_TO_KEY));
+  } catch {
+    return null;
+  }
 }
 
 export function clearPersistedAdminReturnTo(): void {
   if (typeof window === 'undefined') return;
-  sessionStorage.removeItem(FLUX_ADMIN_RETURN_TO_KEY);
+  try {
+    window.sessionStorage.removeItem(FLUX_ADMIN_RETURN_TO_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 /**
@@ -72,6 +113,45 @@ export function getAdminPostLoginDestination(session: Session | null, returnTo?:
   }
   const safe = sanitizeAdminReturnTo(returnTo);
   return safe ?? ROUTES.adminDashboard;
+}
+
+/** URL `next` wins; otherwise admin login returnTo from sessionStorage (OAuth). */
+export function resolveAdminOAuthReturnTo(nextFromUrl: string | null | undefined): string | null {
+  const fromUrl = sanitizeAdminReturnTo(nextFromUrl);
+  if (fromUrl) return fromUrl;
+  return readPersistedAdminReturnTo();
+}
+
+export type AuthCallbackDestinationInput = {
+  session: Session | null;
+  nextFromUrl: string | null;
+  profileRole: ProfileRole;
+  hostname?: string;
+};
+
+/**
+ * OAuth callback routing — admin FLUX flow when `next` is admin, returnTo persisted, or admin OAuth flag.
+ */
+export function resolveAuthCallbackDestination(input: AuthCallbackDestinationInput): string {
+  const { session, nextFromUrl, profileRole, hostname } = input;
+  const adminReturn = resolveAdminOAuthReturnTo(nextFromUrl);
+  const adminOAuthFlow = Boolean(adminReturn) || isAdminOAuthFlowPending();
+
+  if (adminOAuthFlow) {
+    return getAdminPostLoginDestination(session, adminReturn);
+  }
+
+  return getPostLoginDestination({
+    hostname,
+    profileRole,
+    session,
+    returnTo: sanitizeReturnTo(nextFromUrl),
+  });
+}
+
+export function clearAdminOAuthState(): void {
+  clearPersistedAdminReturnTo();
+  clearAdminOAuthFlow();
 }
 
 export type PostLoginDestinationInput = {

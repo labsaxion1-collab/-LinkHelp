@@ -1,13 +1,17 @@
 import type { Session } from '@supabase/supabase-js';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ROUTES } from '@/utils/constants';
 import { FLUX_HOSTNAME, isAdminRoute, isFluxHost } from '@/utils/fluxHost';
 import {
   getAdminPostLoginDestination,
   getAuthLoginPathForRoute,
   getPostLoginDestination,
+  resolveAuthCallbackDestination,
+  resolveAdminOAuthReturnTo,
   sanitizeAdminReturnTo,
   sanitizeReturnTo,
+  persistAdminReturnTo,
+  markAdminOAuthFlow,
 } from '@/utils/fluxRedirect';
 import { getOAuthRedirectToUrl } from '@/utils/oauthRedirect';
 import { FluxAdminSidebar } from '@/components/admin/FluxAdminSidebar';
@@ -208,7 +212,7 @@ describe('getAuthLoginPathForRoute', () => {
 });
 
 describe('getOAuthRedirectToUrl', () => {
-  it('OAuth callback preserves current origin in browser', () => {
+  it('OAuth admin callback uses preview origin and next=/admin/users', () => {
     const previous = global.window;
     Object.defineProperty(global, 'window', {
       value: {
@@ -220,6 +224,131 @@ describe('getOAuthRedirectToUrl', () => {
       'https://link-help-git-feature-backoffice-p0.vercel.app/auth/callback?next=%2Fadmin%2Fusers',
     );
     Object.defineProperty(global, 'window', { value: previous, configurable: true });
+  });
+
+  it('OAuth callback never embeds production origin when window is preview', () => {
+    const previous = global.window;
+    Object.defineProperty(global, 'window', {
+      value: {
+        location: { origin: 'https://link-help-57ooop767-labsaxion1-4960s-projects.vercel.app' },
+      },
+      configurable: true,
+    });
+    const url = getOAuthRedirectToUrl('/admin/users');
+    expect(url).toContain('link-help-57ooop767-labsaxion1-4960s-projects.vercel.app');
+    expect(url).not.toContain('www.linkhelp.app');
+    Object.defineProperty(global, 'window', { value: previous, configurable: true });
+  });
+});
+
+describe('resolveAuthCallbackDestination', () => {
+  const storage = new Map<string, string>();
+
+  beforeEach(() => {
+    storage.clear();
+    vi.stubGlobal('sessionStorage', {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        storage.set(key, value);
+      },
+      removeItem: (key: string) => {
+        storage.delete(key);
+      },
+      clear: () => storage.clear(),
+      key: () => null,
+      length: 0,
+    });
+    vi.stubGlobal('window', { sessionStorage: globalThis.sessionStorage });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('1 OAuth admin + next=/admin/users → /admin/users', () => {
+    expect(
+      resolveAuthCallbackDestination({
+        session: adminSession(),
+        nextFromUrl: '/admin/users',
+        profileRole: 'client',
+        hostname: 'link-help-preview.vercel.app',
+      }),
+    ).toBe(ROUTES.adminUsers);
+  });
+
+  it('2 OAuth admin + persisted returnTo when next missing → persisted admin route', () => {
+    persistAdminReturnTo('/admin/users');
+    markAdminOAuthFlow();
+    expect(
+      resolveAuthCallbackDestination({
+        session: adminSession(),
+        nextFromUrl: null,
+        profileRole: 'client',
+        hostname: 'link-help-preview.vercel.app',
+      }),
+    ).toBe(ROUTES.adminUsers);
+    expect(resolveAdminOAuthReturnTo(null)).toBe('/admin/users');
+  });
+
+  it('3 admin next wins over client profile fallback', () => {
+    expect(
+      resolveAuthCallbackDestination({
+        session: adminSession(),
+        nextFromUrl: '/admin/users',
+        profileRole: 'client',
+        hostname: 'www.linkhelp.app',
+      }),
+    ).toBe(ROUTES.adminUsers);
+  });
+
+  it('4 admin without next → /admin/dashboard', () => {
+    expect(
+      resolveAuthCallbackDestination({
+        session: adminSession(),
+        nextFromUrl: null,
+        profileRole: 'client',
+        hostname: 'link-help-preview.vercel.app',
+      }),
+    ).toBe(ROUTES.adminDashboard);
+  });
+
+  it('5 Google user without app_metadata admin → flux-access-denied on admin OAuth flow', () => {
+    markAdminOAuthFlow();
+    expect(
+      resolveAuthCallbackDestination({
+        session: clientSession(),
+        nextFromUrl: '/admin/users',
+        profileRole: 'client',
+        hostname: 'link-help-preview.vercel.app',
+      }),
+    ).toBe(ROUTES.fluxAccessDenied);
+  });
+
+  it('6 callback never returns client dashboard when admin next present', () => {
+    const dest = resolveAuthCallbackDestination({
+      session: adminSession(),
+      nextFromUrl: '/admin/users',
+      profileRole: 'client',
+      hostname: 'link-help-preview.vercel.app',
+    });
+    expect(dest).not.toBe(ROUTES.clientDashboard);
+    expect(dest).not.toBe(ROUTES.helperDashboard);
+    expect(dest).not.toBe(ROUTES.home);
+  });
+
+  it('7 normal LinkHelp OAuth without admin flow → client dashboard', () => {
+    expect(
+      resolveAuthCallbackDestination({
+        session: clientSession(),
+        nextFromUrl: null,
+        profileRole: 'client',
+        hostname: 'www.linkhelp.app',
+      }),
+    ).toBe(ROUTES.clientDashboard);
+  });
+
+  it('8 email admin path still covered by getAdminPostLoginDestination', () => {
+    expect(getAdminPostLoginDestination(adminSession(), '/admin/users')).toBe(ROUTES.adminUsers);
   });
 });
 

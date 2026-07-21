@@ -1,6 +1,6 @@
-import { LINK_CREDIT_PACKAGES } from '@/config/linkCreditPackages';
-import { SIGNUP_BONUS_LC, CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';
-import { VIP_APPLICATION_SURCHARGE_LC } from '@/utils/vipApplicationCredits';
+import { LINK_CREDIT_PACKAGES } from '../../config/linkCreditPackages.js';
+import { SIGNUP_BONUS_LC, CLIENT_WELCOME_30_LC } from '../../config/onboardingRewards.js';
+import { VIP_APPLICATION_SURCHARGE_LC } from '../../utils/vipApplicationCredits.js';
 
 const CATEGORY_SERVICE_LC: Record<string, number> = {
   cleaning: 7,

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useLanguage } from '@/context/LanguageContext';
+import { BACKOFFICE_PT } from '@/admin/fluxPtCopy';
 import { ROUTES } from '@/utils/constants';
 
 type Props = {
@@ -9,12 +9,11 @@ type Props = {
 };
 
 export function BackofficePageShell({ title, subtitle, children }: Props) {
-  const { t } = useLanguage();
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="border border-cyan-500/10 bg-white/[0.03] p-5 backdrop-blur-sm">
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-400/80">
-          {t('backoffice.section_label')}
+          {BACKOFFICE_PT.sectionLabel}
         </p>
         <h2 className="mt-1 text-xl font-black text-white">{title}</h2>
         {subtitle ? <p className="mt-1 text-sm text-slate-400">{subtitle}</p> : null}
@@ -31,11 +30,10 @@ export function BackofficeTableShell({
   children: React.ReactNode;
   empty?: boolean;
 }) {
-  const { t } = useLanguage();
   if (empty) {
     return (
       <div className="border border-white/10 bg-white/[0.02] p-8 text-center text-sm text-slate-500">
-        {t('backoffice.empty')}
+        {BACKOFFICE_PT.empty}
       </div>
     );
   }

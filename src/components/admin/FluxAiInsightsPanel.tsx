@@ -1,5 +1,5 @@
 import { Sparkles, TrendingUp, AlertTriangle, Lightbulb } from 'lucide-react';
-import { useLanguage } from '@/context/LanguageContext';
+import { FLUX_PT, INSIGHT_TYPE_LABEL_PT } from '@/admin/fluxPtCopy';
 
 type Insight = {
   id: string;
@@ -21,8 +21,6 @@ const typeStyles = {
 };
 
 export function FluxAiInsightsPanel({ insights, demo = false }: Props) {
-  const { t } = useLanguage();
-
   return (
     <section className="rounded-2xl border border-white/10 bg-[#0E1422]/90 p-5 shadow-xl shadow-black/30">
       <div className="mb-5 flex items-center gap-3">
@@ -31,15 +29,15 @@ export function FluxAiInsightsPanel({ insights, demo = false }: Props) {
         </div>
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-black text-white">{t('flux_admin.ai_insights_title')}</h2>
+            <h2 className="text-base font-black text-white">{FLUX_PT.aiInsightsTitle}</h2>
             {demo ? (
               <span className="rounded-full border border-violet-400/30 bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-200">
-                {t('flux_admin.market_pulse_demo_label')}
+                {FLUX_PT.marketPulseDemoLabel}
               </span>
             ) : null}
           </div>
           <p className="text-xs font-medium text-slate-500">
-            {demo ? t('flux_admin.ai_insights_demo_sub') : t('flux_admin.ai_insights_sub')}
+            {demo ? FLUX_PT.aiInsightsDemoSub : FLUX_PT.aiInsightsSub}
           </p>
         </div>
       </div>
@@ -56,7 +54,7 @@ export function FluxAiInsightsPanel({ insights, demo = false }: Props) {
               <div className="mb-2 flex items-center gap-2">
                 <Icon className={`h-4 w-4 ${style.className.split(' ').pop()}`} />
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                  {t(`flux_admin.insight_type_${insight.type}`)}
+                  {INSIGHT_TYPE_LABEL_PT[insight.type]}
                 </span>
                 {insight.score != null ? (
                   <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-black text-white">

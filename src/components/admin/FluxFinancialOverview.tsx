@@ -1,5 +1,5 @@
 import { formatCadFromCents, type AdminDashboardFinancialSummary } from '@/admin/adminDashboardFinancialContract';
-import { useLanguage } from '@/context/LanguageContext';
+import { FINANCIAL_RANGE_LABEL_PT, FLUX_PT } from '@/admin/fluxPtCopy';
 import { clsx } from 'clsx';
 import { Coins, Flame, Gift, RefreshCcw, RotateCcw, ShoppingCart, Wallet } from 'lucide-react';
 
@@ -43,7 +43,6 @@ export function FluxFinancialOverview({
   onTimeRangeChange,
   loading = false,
 }: Props) {
-  const { t } = useLanguage();
   const avgPurchaseCad =
     financial && financial.purchaseCount > 0
       ? formatCadFromCents(Math.round(financial.revenueCadCents / financial.purchaseCount))
@@ -54,10 +53,10 @@ export function FluxFinancialOverview({
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400/90">
-            {t('flux_admin.financial_live_metrics')}
+            {FLUX_PT.financialLiveMetrics}
           </p>
-          <h2 className="mt-1 text-xl font-black text-white">{t('flux_admin.financial_title')}</h2>
-          <p className="mt-1 text-xs text-slate-500">{t('flux_admin.financial_sub')}</p>
+          <h2 className="mt-1 text-xl font-black text-white">{FLUX_PT.financialTitle}</h2>
+          <p className="mt-1 text-xs text-slate-500">{FLUX_PT.financialSub}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {ranges.map((range) => (
@@ -72,7 +71,7 @@ export function FluxFinancialOverview({
                   : 'border-white/10 text-slate-400 hover:bg-white/5 hover:text-white',
               )}
             >
-              {t(`flux_admin.financial_range_${range}`)}
+              {FINANCIAL_RANGE_LABEL_PT[range]}
             </button>
           ))}
         </div>
@@ -80,12 +79,12 @@ export function FluxFinancialOverview({
 
       {financialError && !financial ? (
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm text-amber-100">
-          {t('flux_admin.financial_unavailable')}
+          {FLUX_PT.financialUnavailable}
         </div>
       ) : null}
 
       {loading && !financial ? (
-        <p className="text-sm text-slate-400">{t('common.loading')}</p>
+        <p className="text-sm text-slate-400">{FLUX_PT.loading}</p>
       ) : null}
 
       {financial ? (
@@ -93,30 +92,27 @@ export function FluxFinancialOverview({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricTile
               icon={ShoppingCart}
-              label={t('flux_admin.financial_revenue_cad')}
+              label={FLUX_PT.financialRevenueCad}
               value={`CAD $${formatCadFromCents(financial.revenueCadCents)}`}
               hint={
                 financial.purchaseCount > 0
-                  ? t('flux_admin.financial_purchase_stats', {
-                      count: String(financial.purchaseCount),
-                      avg: avgPurchaseCad ?? '0.00',
-                    })
-                  : t('flux_admin.financial_no_purchases')
+                  ? FLUX_PT.financialPurchaseStats(financial.purchaseCount, avgPurchaseCad ?? '0.00')
+                  : FLUX_PT.financialNoPurchases
               }
             />
             <MetricTile
               icon={Coins}
-              label={t('flux_admin.financial_lc_sold')}
+              label={FLUX_PT.financialLcSold}
               value={`${financial.lcSold} LC`}
             />
             <MetricTile
               icon={Flame}
-              label={t('flux_admin.financial_lc_consumed')}
+              label={FLUX_PT.financialLcConsumed}
               value={`${financial.lcConsumed} LC`}
             />
             <MetricTile
               icon={RotateCcw}
-              label={t('flux_admin.financial_lc_refunded')}
+              label={FLUX_PT.financialLcRefunded}
               value={`${financial.lcRefunded} LC`}
             />
           </div>
@@ -124,20 +120,20 @@ export function FluxFinancialOverview({
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <MetricTile
               icon={Gift}
-              label={t('flux_admin.financial_lc_granted')}
+              label={FLUX_PT.financialLcGranted}
               value={`${financial.lcGranted} LC`}
-              hint={t('flux_admin.financial_lc_granted_hint')}
+              hint={FLUX_PT.financialLcGrantedHint}
             />
             <MetricTile
               icon={Wallet}
-              label={t('flux_admin.financial_lc_circulation')}
+              label={FLUX_PT.financialLcCirculation}
               value={`${financial.lcInCirculation} LC`}
             />
             <MetricTile
               icon={RefreshCcw}
-              label={t('flux_admin.financial_net_burn')}
+              label={FLUX_PT.financialNetBurn}
               value={`${financial.netCreditBurn} LC`}
-              hint={t('flux_admin.financial_net_burn_hint')}
+              hint={FLUX_PT.financialNetBurnHint}
             />
           </div>
         </>

@@ -21,24 +21,24 @@ export function isAdminDashboardApiErrorCode(value: unknown): value is AdminDash
   );
 }
 
-export function adminDashboardErrorTranslationKey(code: AdminDashboardApiErrorCode): string {
+export function adminDashboardErrorMessage(code: AdminDashboardApiErrorCode): string {
   switch (code) {
     case 'ADMIN_SESSION_EXPIRED':
-      return 'flux_admin.error_session_expired';
+      return 'Sua sessão admin expirou. Entre novamente.';
     case 'ADMIN_FORBIDDEN':
-      return 'flux_admin.error_forbidden';
+      return 'Esta conta não tem acesso completo à API administrativa.';
     case 'SUPABASE_SERVER_NOT_CONFIGURED':
-      return 'flux_admin.error_server_not_configured';
+      return 'Servidor de métricas admin não está configurado.';
     case 'ADMIN_SUMMARY_INVALID':
-      return 'flux_admin.error_invalid_payload';
+      return 'As métricas admin retornaram uma resposta inválida.';
     case 'ADMIN_SUMMARY_RPC_FAILED':
-      return 'flux_admin.error_rpc_failed';
+      return 'Função de métricas admin ausente ou indisponível no banco.';
     case 'ADMIN_SUMMARY_NETWORK':
-      return 'flux_admin.error_network';
+      return 'Não foi possível contactar a API de métricas admin.';
     case 'ADMIN_SUMMARY_FINANCIAL_UNAVAILABLE':
-      return 'flux_admin.financial_unavailable';
+      return 'Métricas financeiras temporariamente indisponíveis.';
     case 'ADMIN_SUMMARY_UNAVAILABLE':
     default:
-      return 'flux_admin.error_summary_unavailable';
+      return 'Não foi possível carregar as métricas administrativas.';
   }
 }

@@ -3,11 +3,10 @@ import { useAuth } from '@/context/AuthContext';
 import { backofficeFetch, BackofficeApiError } from '@/backoffice/api/backofficeClient';
 import { parseBackofficeCreditList } from '@/backoffice/contracts/creditsContract';
 import { BackofficePageShell, BackofficeTableShell } from '@/backoffice/components/BackofficePageShell';
-import { useLanguage } from '@/context/LanguageContext';
+import { BACKOFFICE_PT, formatBackofficeApiError } from '@/admin/fluxPtCopy';
 
 export default function BackofficeCreditsPage() {
   const { session } = useAuth();
-  const { t } = useLanguage();
   const [typeFilter, setTypeFilter] = useState('');
   const [data, setData] = useState<ReturnType<typeof parseBackofficeCreditList>>(null);
   const [error, setError] = useState<string | null>(null);
@@ -19,17 +18,19 @@ export default function BackofficeCreditsPage() {
     if (typeFilter) params.set('type', typeFilter);
     void backofficeFetch<unknown>(token, `/api/backoffice/credits?${params}`)
       .then((raw) => setData(parseBackofficeCreditList(raw)))
-      .catch((e: unknown) => setError(e instanceof BackofficeApiError ? e.code : 'BACKOFFICE_UNAVAILABLE'));
+      .catch((e: unknown) =>
+        setError(formatBackofficeApiError(e instanceof BackofficeApiError ? e.code : 'BACKOFFICE_UNAVAILABLE')),
+      );
   }, [session?.access_token, typeFilter]);
 
   return (
-    <BackofficePageShell title={t('backoffice.credits_title')} subtitle={t('backoffice.credits_subtitle')}>
+    <BackofficePageShell title={BACKOFFICE_PT.creditsTitle} subtitle={BACKOFFICE_PT.creditsSubtitle}>
       <select
         value={typeFilter}
         onChange={(e) => setTypeFilter(e.target.value)}
         className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
       >
-        <option value="">{t('backoffice.filter_all_types')}</option>
+        <option value="">{BACKOFFICE_PT.filterAllTypes}</option>
         <option value="CREDIT_PURCHASE">CREDIT_PURCHASE</option>
         <option value="APPLICATION_INTEREST">APPLICATION_INTEREST</option>
         <option value="APPLICATION_SELECTED">APPLICATION_SELECTED</option>
@@ -41,10 +42,10 @@ export default function BackofficeCreditsPage() {
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-white/10 text-xs uppercase text-slate-500">
             <tr>
-              <th className="px-4 py-3">{t('backoffice.col_type')}</th>
-              <th className="px-4 py-3">{t('backoffice.col_helper')}</th>
-              <th className="px-4 py-3">{t('backoffice.col_amount')}</th>
-              <th className="px-4 py-3">{t('backoffice.col_date')}</th>
+              <th className="px-4 py-3">{BACKOFFICE_PT.colType}</th>
+              <th className="px-4 py-3">{BACKOFFICE_PT.colHelper}</th>
+              <th className="px-4 py-3">{BACKOFFICE_PT.colAmount}</th>
+              <th className="px-4 py-3">{BACKOFFICE_PT.colDate}</th>
             </tr>
           </thead>
           <tbody>

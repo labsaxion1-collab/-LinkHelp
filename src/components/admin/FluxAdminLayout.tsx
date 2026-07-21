@@ -3,14 +3,13 @@ import { useState } from 'react';
 import { FluxAdminSidebar } from '@/components/admin/FluxAdminSidebar';
 import { FluxBrandMark } from '@/components/brand/FluxBrandMark';
 import { useAuth } from '@/context/AuthContext';
-import { useLanguage } from '@/context/LanguageContext';
+import { FLUX_PT } from '@/admin/fluxPtCopy';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/utils/constants';
 import { LogOut } from 'lucide-react';
 
 export function FluxAdminLayout() {
   const { session, signOut } = useAuth();
-  const { t } = useLanguage();
   const [activeSection, setActiveSection] = useState<'overview' | 'insights' | 'categories'>('overview');
 
   return (
@@ -29,7 +28,7 @@ export function FluxAdminLayout() {
             <FluxBrandMark compact showTagline={false} className="md:hidden" />
             <div className="min-w-0">
               <h1 className="text-lg font-black tracking-[0.12em] text-white">FLUX</h1>
-              <p className="text-xs font-medium text-cyan-300/70">{t('brand.flux_tagline')}</p>
+              <p className="text-xs font-medium text-cyan-300/70">{FLUX_PT.brandTagline}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -40,7 +39,7 @@ export function FluxAdminLayout() {
               to={ROUTES.home}
               className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-bold text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
             >
-              {t('flux_admin.back_to_app')}
+              {FLUX_PT.backToApp}
             </Link>
             <button
               type="button"
@@ -48,7 +47,7 @@ export function FluxAdminLayout() {
               className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-bold text-slate-300 transition-colors hover:bg-red-500/10 hover:text-red-300"
             >
               <LogOut className="h-3.5 w-3.5" />
-              {t('flux_admin.sign_out')}
+              {FLUX_PT.signOut}
             </button>
           </div>
         </header>

@@ -3,11 +3,10 @@ import { useAuth } from '@/context/AuthContext';
 import { backofficeFetch, BackofficeApiError } from '@/backoffice/api/backofficeClient';
 import { parseBackofficeAuditList } from '@/backoffice/contracts/auditContract';
 import { BackofficePageShell, BackofficeTableShell } from '@/backoffice/components/BackofficePageShell';
-import { useLanguage } from '@/context/LanguageContext';
+import { BACKOFFICE_PT, formatBackofficeApiError } from '@/admin/fluxPtCopy';
 
 export default function BackofficeAuditPage() {
   const { session } = useAuth();
-  const { t } = useLanguage();
   const [data, setData] = useState<ReturnType<typeof parseBackofficeAuditList>>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,19 +15,21 @@ export default function BackofficeAuditPage() {
     if (!token) return;
     void backofficeFetch<unknown>(token, '/api/backoffice/audit')
       .then((raw) => setData(parseBackofficeAuditList(raw)))
-      .catch((e: unknown) => setError(e instanceof BackofficeApiError ? e.code : 'BACKOFFICE_UNAVAILABLE'));
+      .catch((e: unknown) =>
+        setError(formatBackofficeApiError(e instanceof BackofficeApiError ? e.code : 'BACKOFFICE_UNAVAILABLE')),
+      );
   }, [session?.access_token]);
 
   return (
-    <BackofficePageShell title={t('backoffice.audit_title')} subtitle={t('backoffice.audit_subtitle')}>
+    <BackofficePageShell title={BACKOFFICE_PT.auditTitle} subtitle={BACKOFFICE_PT.auditSubtitle}>
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}
       <BackofficeTableShell empty={(data?.logs.length ?? 0) === 0}>
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-white/10 text-xs uppercase text-slate-500">
             <tr>
-              <th className="px-4 py-3">{t('backoffice.col_action')}</th>
-              <th className="px-4 py-3">{t('backoffice.col_target')}</th>
-              <th className="px-4 py-3">{t('backoffice.col_date')}</th>
+              <th className="px-4 py-3">{BACKOFFICE_PT.colAction}</th>
+              <th className="px-4 py-3">{BACKOFFICE_PT.colTarget}</th>
+              <th className="px-4 py-3">{BACKOFFICE_PT.colDate}</th>
             </tr>
           </thead>
           <tbody>

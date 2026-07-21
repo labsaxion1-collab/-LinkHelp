@@ -6,7 +6,7 @@ import { useAuth, type AuthProfile } from '@/context/AuthContext';
 import { ROUTES } from '@/utils/constants';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
-import { resolvePostOAuthPath } from '@/utils/postOAuthRedirect';
+import { getPostLoginDestination, sanitizeReturnTo } from '@/utils/fluxRedirect';
 import { writeStoredAppMode } from '@/utils/appModeStorage';
 import { dashboardPathForRole, normalizeProfileRole } from '@/utils/userRole';
 import {
@@ -170,11 +170,16 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : null;
+        const safeNext = sanitizeReturnTo(next);
         const role = normalizeProfileRole(profileRow?.role ?? session.user.user_metadata?.user_type);
         writeStoredAppMode(role, session.user.id);
 
-        const dest = safeNext ?? resolvePostOAuthPath(profileRow, session.user);
+        const dest = getPostLoginDestination({
+          hostname: typeof window !== 'undefined' ? window.location.hostname : undefined,
+          profileRole: role,
+          session,
+          returnTo: safeNext,
+        });
         roleRoutingLog('AuthCallback:redirect', {
           userId: session.user.id,
           email: session.user.email ?? profileRow?.email ?? null,

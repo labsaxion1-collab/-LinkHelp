@@ -1,4 +1,5 @@
 import { ROUTES } from '@/utils/constants';
+import { sanitizeReturnTo } from '@/utils/fluxRedirect';
 
 const PRODUCTION_ORIGIN = 'https://www.linkhelp.app';
 
@@ -8,9 +9,11 @@ const PRODUCTION_ORIGIN = 'https://www.linkhelp.app';
  *
  * Production canonical site: https://www.linkhelp.app/auth/callback
  */
-export function getOAuthRedirectToUrl(): string {
-  if (typeof window === 'undefined') {
-    return `${PRODUCTION_ORIGIN}${ROUTES.authCallback}`;
-  }
-  return `${window.location.origin}${ROUTES.authCallback}`;
+export function getOAuthRedirectToUrl(nextPath?: string | null): string {
+  const origin = typeof window === 'undefined' ? PRODUCTION_ORIGIN : window.location.origin;
+  const base = `${origin}${ROUTES.authCallback}`;
+  const safeNext = sanitizeReturnTo(nextPath);
+  if (!safeNext) return base;
+  const params = new URLSearchParams({ next: safeNext });
+  return `${base}?${params.toString()}`;
 }

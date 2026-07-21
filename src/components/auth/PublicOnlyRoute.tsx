@@ -2,8 +2,11 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { PageLoader } from '@/components/common/PageLoader';
 import { useAuth } from '@/context/AuthContext';
 import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
+import { isFluxAdmin } from '@/utils/adminAccess';
 import { ROUTES } from '@/utils/constants';
 import { isOAuthRedirectPending } from '@/utils/authStorage';
+import { isFluxHost } from '@/utils/fluxHost';
+import { getPostLoginDestination } from '@/utils/fluxRedirect';
 import { dashboardPathForRole, normalizeProfileRole } from '@/utils/userRole';
 
 /** Keep authenticated users inside the app when browser back reaches public auth/landing routes. */
@@ -17,7 +20,11 @@ export function PublicOnlyRoute() {
   if (isConfigured && session?.user && !isOAuthRedirectPending()) {
     if (profile) {
       const role = normalizeProfileRole(profile.role);
-      const dest = dashboardPathForRole(role);
+      const dest = isFluxHost()
+        ? isFluxAdmin(session)
+          ? getPostLoginDestination({ hostname: window.location.hostname, profileRole: role, session, returnTo: null })
+          : ROUTES.fluxAccessDenied
+        : dashboardPathForRole(role);
       roleRoutingLog('PublicOnlyRoute:redirect', {
         userId: session.user.id,
         email: session.user.email ?? profile.email ?? null,

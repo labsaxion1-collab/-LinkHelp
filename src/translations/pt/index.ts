@@ -14,6 +14,7 @@ export const pt = {
     next: 'Próximo',
     close: 'Fechar',
     hide: 'Ocultar',
+    show: 'Mostrar',
     show_details: 'Ver detalhes',
     move_up: 'Mover para cima',
     move_down: 'Mover para baixo',
@@ -88,6 +89,20 @@ export const pt = {
     submit: 'Entrar',
     divider: 'Ou continue com',
     google: 'Continuar com Google',
+  },
+  flux: {
+    admin_login: {
+      kicker: 'Console FLUX',
+      title: 'Acesso administrativo',
+      subtitle: 'Entre com uma conta autorizada para operar o BackOffice.',
+      submit: 'Entrar no FLUX',
+      back_to_linkhelp: 'Voltar ao LinkHelp',
+    },
+    access_denied: {
+      title: 'Acesso administrativo não autorizado',
+      body: 'Esta área é exclusiva para administradores autorizados do FLUX.',
+      cta: 'Voltar ao LinkHelp',
+    },
   },
   register_page: {
     title: 'Crie sua conta',

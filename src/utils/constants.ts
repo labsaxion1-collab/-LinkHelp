@@ -8,6 +8,10 @@ export const ROUTES = {
   resetPassword: '/auth/reset-password',
   /** OAuth redirect target — must be allowed in Supabase Auth → URL Configuration */
   authCallback: '/auth/callback',
+  /** FLUX console — admin-only sign-in (hostname-safe returnTo) */
+  adminLogin: '/auth/admin-login',
+  /** Non-admin signed in on flux.linkhelp.app */
+  fluxAccessDenied: '/auth/flux-access-denied',
   /** Shortcuts into the app (redirect to nested dashboard routes in AppRoutes) */
   clientHome: '/client',
   helperHome: '/helper',

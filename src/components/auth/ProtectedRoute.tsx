@@ -4,8 +4,10 @@ import { PageLoader } from '@/components/common/PageLoader';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
+import { isFluxAdmin } from '@/utils/adminAccess';
 import { ROUTES } from '@/utils/constants';
 import { isAuthCallbackPath } from '@/utils/authStorage';
+import { getAuthLoginPathForRoute, sanitizeReturnTo } from '@/utils/fluxRedirect';
 
 /** Require Supabase env, real session, and a `profiles` row for workspace routes. */
 export function ProtectedRoute() {
@@ -51,6 +53,7 @@ export function ProtectedRoute() {
   useEffect(() => {
     if (!isConfigured || !authBootstrapped || authLoading || session) return;
     if (isAuthCallbackPath(location.pathname) || location.pathname === ROUTES.login) return;
+    if (location.pathname === ROUTES.adminLogin) return;
 
     let cancelled = false;
     setSessionRecoveryBusy(true);
@@ -99,11 +102,20 @@ export function ProtectedRoute() {
   }
 
   if (!session) {
+    const returnPath = sanitizeReturnTo(`${location.pathname}${location.search}`) ?? location.pathname;
+    const loginTarget = getAuthLoginPathForRoute(location.pathname, returnPath);
     authFlowLog('ProtectedRoute: redirect to login', {
       path: location.pathname,
       reason: 'no_session_after_bootstrap_and_recovery',
+      loginTarget,
     });
-    return <Navigate to={ROUTES.login} replace state={{ from: location.pathname }} />;
+    return (
+      <Navigate
+        to={loginTarget}
+        replace
+        state={{ from: returnPath }}
+      />
+    );
   }
 
   if (!profile) {

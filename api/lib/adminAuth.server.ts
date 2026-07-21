@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { createSupabaseAuthVerifier, createSupabaseServiceRoleClient } from './supabaseAdmin.server.js';
 import {
+  isFluxAdminAppMetadata,
   isLegacyFluxAdminRole,
   roleGrantsPermission,
   type BackofficePermission,
@@ -30,7 +31,7 @@ export async function authorizeAdmin(
   if (!token) return { ok: false, status: 401, error: 'UNAUTHORIZED' };
   const { data, error } = await verifier.auth.getUser(token);
   if (error || !data.user) return { ok: false, status: 401, error: 'UNAUTHORIZED' };
-  if (data.user.app_metadata?.role !== 'admin' && data.user.app_metadata?.role !== 'flux_admin') {
+  if (!isFluxAdminAppMetadata(data.user.app_metadata?.role)) {
     return { ok: false, status: 403, error: 'FORBIDDEN' };
   }
   return { ok: true, user: data.user };

@@ -10,6 +10,7 @@ import { RoleRoute } from '@/components/auth/RoleRoute';
 import { AdminProtectedRoute } from '@/components/admin/AdminProtectedRoute';
 import { FluxAdminLayout } from '@/components/admin/FluxAdminLayout';
 import { LoginSplashGate } from '@/components/auth/LoginSplashGate';
+import { FluxHostGuard } from '@/components/auth/FluxHostGuard';
 import { LegacyPaymentsRedirect } from '@/routes/LegacyPaymentsRedirect';
 
 function lazyPage<T extends { default: ComponentType<unknown> }>(loader: () => Promise<T>) {
@@ -23,6 +24,8 @@ const LoginPage = lazyPage(() => import('@/pages/auth/LoginPage'));
 const RegisterPage = lazyPage(() => import('@/pages/auth/RegisterPage'));
 const ResetPasswordPage = lazyPage(() => import('@/pages/auth/ResetPasswordPage'));
 const AuthCallbackPage = lazyPage(() => import('@/pages/auth/AuthCallbackPage'));
+const AdminLoginPage = lazyPage(() => import('@/pages/auth/AdminLoginPage'));
+const FluxAccessDeniedPage = lazyPage(() => import('@/pages/auth/FluxAccessDeniedPage'));
 const DashboardEntryPage = lazyPage(() => import('@/pages/app/DashboardEntryPage'));
 const ClientDashboard = lazyPage(() => import('@/pages/client/ClientDashboard'));
 const ClientCreditsPage = lazyPage(() => import('@/pages/client/ClientCreditsPage'));
@@ -71,6 +74,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route element={<Layout />}>
+        <Route element={<FluxHostGuard />}>
         <Route element={<PublicOnlyRoute />}>
           <Route path={ROUTES.home} element={<LandingPage />} />
 
@@ -90,6 +94,8 @@ export function AppRoutes() {
         <Route path={ROUTES.contact} element={<ContactPage />} />
         <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />
         <Route path={ROUTES.authCallback} element={<AuthCallbackPage />} />
+        <Route path={ROUTES.adminLogin} element={<AdminLoginPage />} />
+        <Route path={ROUTES.fluxAccessDenied} element={<FluxAccessDeniedPage />} />
         <Route path={ROUTES.dashboard} element={<DashboardEntryPage />} />
         {/* Stripe return — outside ProtectedRoute so session recovery can run before login redirect */}
         <Route path={ROUTES.helperCreditsSuccess} element={<HelperCreditsSuccessPage />} />
@@ -163,6 +169,7 @@ export function AppRoutes() {
         </Route>
 
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+        </Route>
       </Route>
     </Routes>
   );

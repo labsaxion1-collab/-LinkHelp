@@ -13,6 +13,7 @@ import { PwaInstallPrompt } from '@/components/layout/PwaInstallPrompt';
 import { PushNotificationPrompt } from '@/components/notifications/PushNotificationPrompt';
 import { isAppShellPath } from '@/utils/navigation';
 import { isAdminPath } from '@/utils/adminAccess';
+import { ROUTES } from '@/utils/constants';
 import { clsx } from 'clsx';
 import { AppErrorBoundary } from '@/components/common/AppErrorBoundary';
 import { useLanguage } from '@/context/LanguageContext';
@@ -40,7 +41,10 @@ function LayoutMobileMenus() {
 export default function Layout() {
   const { pathname } = useLocation();
   const { t } = useLanguage();
-  const isAdmin = isAdminPath(pathname);
+  const isAdmin =
+    isAdminPath(pathname) ||
+    pathname === ROUTES.adminLogin ||
+    pathname === ROUTES.fluxAccessDenied;
   const showMobileChrome = !isAdmin && isAppShellPath(pathname);
   const isAppShell = !isAdmin && isAppShellPath(pathname);
 

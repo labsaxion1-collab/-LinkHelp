@@ -30,6 +30,10 @@ export function isLegacyFluxAdminRole(appRole: unknown): boolean {
   return appRole === 'admin' || appRole === 'flux_admin';
 }
 
+export function isFluxAdminAppMetadata(role: unknown): boolean {
+  return isLegacyFluxAdminRole(role) || role === 'super_admin';
+}
+
 export function roleGrantsPermission(roleId: BackofficeRoleId, permission: BackofficePermission): boolean {
   if (roleId === 'super_admin') return true;
   const matrix: Record<Exclude<BackofficeRoleId, 'super_admin'>, BackofficePermission[]> = {

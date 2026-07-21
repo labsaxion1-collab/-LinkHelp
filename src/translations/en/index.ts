@@ -14,6 +14,7 @@ export const en = {
     next: 'Next',
     close: 'Close',
     hide: 'Hide',
+    show: 'Show',
     show_details: 'Show details',
     move_up: 'Move up',
     move_down: 'Move down',
@@ -88,6 +89,20 @@ export const en = {
     submit: 'Sign in',
     divider: 'Or continue with',
     google: 'Continue with Google',
+  },
+  flux: {
+    admin_login: {
+      kicker: 'FLUX Console',
+      title: 'Administrative access',
+      subtitle: 'Sign in with an authorized account to operate the BackOffice.',
+      submit: 'Enter FLUX',
+      back_to_linkhelp: 'Back to LinkHelp',
+    },
+    access_denied: {
+      title: 'Unauthorized administrative access',
+      body: 'This area is reserved for authorized FLUX administrators.',
+      cta: 'Back to LinkHelp',
+    },
   },
   register_page: {
     title: 'Create your account',

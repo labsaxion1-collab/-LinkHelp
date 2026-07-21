@@ -14,6 +14,7 @@ export const fr = {
     next: 'Suivant',
     close: 'Fermer',
     hide: 'Masquer',
+    show: 'Afficher',
     show_details: 'Voir les détails',
     move_up: 'Monter',
     move_down: 'Descendre',
@@ -88,6 +89,20 @@ export const fr = {
     submit: 'Se connecter',
     divider: 'Ou continuer avec',
     google: 'Continuer avec Google',
+  },
+  flux: {
+    admin_login: {
+      kicker: 'Console FLUX',
+      title: 'Accès administratif',
+      subtitle: 'Connectez-vous avec un compte autorisé pour le BackOffice.',
+      submit: 'Entrer dans FLUX',
+      back_to_linkhelp: 'Retour à LinkHelp',
+    },
+    access_denied: {
+      title: 'Accès administratif non autorisé',
+      body: 'Cette zone est réservée aux administrateurs FLUX autorisés.',
+      cta: 'Retour à LinkHelp',
+    },
   },
   register_page: {
     title: 'Créer votre compte',

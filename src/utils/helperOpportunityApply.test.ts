@@ -125,14 +125,20 @@ describe('card layout helpers', () => {
 
   it('builds compact meta line with budget, distance and schedule', () => {
     const parts = buildOpportunityCardMetaParts(
-      { ...baseJob, preferredTime: '08:00' },
-      (key) => key,
+      { ...baseJob, date: '__today', preferredTime: '08:00' },
+      (key, vars) => {
+        if (key === 'jobs.date_today') return 'Hoje';
+        if (key === 'jobs.schedule_date_with_period' && vars) {
+          return `${vars.date} · ${vars.period}`;
+        }
+        return key;
+      },
       5,
     );
     expect(parts.budget).toContain('CAD');
     expect(parts.distance).toBe('5 km');
-    expect(parts.schedule).toBe('08:00');
-    expect(formatOpportunityCardMetaLine(parts)).toBe(`${parts.budget} · 5 km · 08:00`);
+    expect(parts.schedule).toBe('Hoje 08:00');
+    expect(formatOpportunityCardMetaLine(parts)).toBe(`${parts.budget} · 5 km · Hoje 08:00`);
   });
 });
 

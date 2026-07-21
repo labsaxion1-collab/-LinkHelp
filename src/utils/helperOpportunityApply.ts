@@ -81,12 +81,11 @@ export function formatOpportunityCardDistanceCompact(
   return `${km} km`;
 }
 
-/** Schedule/time segment — prefers exact time (e.g. 08:00). */
+/** Schedule/time segment — e.g. "Hoje 09:00". */
 export function formatOpportunityCardScheduleCompact(job: Job, t: LocationTFn): string | null {
-  const exactTime = job.preferredTime?.trim();
-  if (exactTime) return exactTime;
   const schedule = formatJobScheduleDisplay(job, t);
-  return schedule?.trim() ? schedule : null;
+  if (!schedule?.trim()) return null;
+  return schedule.replace(/\s*·\s*/g, ' ');
 }
 
 export function buildOpportunityCardMetaParts(

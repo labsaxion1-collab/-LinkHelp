@@ -1,13 +1,15 @@
 import type { Session } from '@supabase/supabase-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ROUTES } from '@/utils/constants';
-import { FLUX_HOSTNAME, isAdminRoute, isFluxHost } from '@/utils/fluxHost';
+import { FLUX_HOSTNAME, isAdminRoute, isFluxHost, isFluxHostAllowedPath } from '@/utils/fluxHost';
 import {
   getAdminPostLoginDestination,
   getAuthLoginPathForRoute,
+  getFluxHostAdminLoginPath,
   getPostLoginDestination,
   resolveAuthCallbackDestination,
   resolveAdminOAuthReturnTo,
+  resolveFluxHostNavigation,
   sanitizeAdminReturnTo,
   sanitizeReturnTo,
   persistAdminReturnTo,
@@ -44,7 +46,119 @@ describe('isFluxHost', () => {
   it('recognizes flux production hostname', () => {
     expect(isFluxHost(FLUX_HOSTNAME)).toBe(true);
     expect(isFluxHost('www.linkhelp.app')).toBe(false);
+    expect(isFluxHost('linkhelp.app')).toBe(false);
     expect(isFluxHost('link-help-git-feature-backoffice-p0.vercel.app')).toBe(false);
+  });
+});
+
+describe('isFluxHostAllowedPath', () => {
+  it('allows admin, auth, and callback routes without FLUX entry redirect', () => {
+    expect(isFluxHostAllowedPath('/admin/users')).toBe(true);
+    expect(isFluxHostAllowedPath(ROUTES.adminLogin)).toBe(true);
+    expect(isFluxHostAllowedPath(ROUTES.authCallback)).toBe(true);
+    expect(isFluxHostAllowedPath(ROUTES.fluxAccessDenied)).toBe(true);
+    expect(isFluxHostAllowedPath(ROUTES.home)).toBe(false);
+  });
+});
+
+describe('getFluxHostAdminLoginPath', () => {
+  it('defaults returnTo to admin dashboard', () => {
+    expect(getFluxHostAdminLoginPath()).toBe(
+      `${ROUTES.adminLogin}?returnTo=${encodeURIComponent(ROUTES.adminDashboard)}`,
+    );
+  });
+});
+
+describe('resolveFluxHostNavigation', () => {
+  it('flux host / → admin login with returnTo when logged out', () => {
+    expect(
+      resolveFluxHostNavigation({
+        pathname: ROUTES.home,
+        authedAdmin: false,
+        hasSession: false,
+      }),
+    ).toBe(`${ROUTES.adminLogin}?returnTo=${encodeURIComponent(ROUTES.adminDashboard)}`);
+  });
+
+  it('flux host / → admin dashboard when admin authenticated', () => {
+    expect(
+      resolveFluxHostNavigation({
+        pathname: ROUTES.home,
+        authedAdmin: true,
+        hasSession: true,
+      }),
+    ).toBe(ROUTES.adminDashboard);
+  });
+
+  it('flux host /admin/users → no redirect (handled by AdminProtectedRoute)', () => {
+    expect(
+      resolveFluxHostNavigation({
+        pathname: ROUTES.adminUsers,
+        authedAdmin: false,
+        hasSession: false,
+      }),
+    ).toBeNull();
+  });
+
+  it('flux host admin login → no redirect loop', () => {
+    expect(
+      resolveFluxHostNavigation({
+        pathname: ROUTES.adminLogin,
+        authedAdmin: false,
+        hasSession: false,
+      }),
+    ).toBeNull();
+  });
+
+  it('flux host auth callback → no redirect before OAuth completes', () => {
+    expect(
+      resolveFluxHostNavigation({
+        pathname: ROUTES.authCallback,
+        authedAdmin: false,
+        hasSession: false,
+      }),
+    ).toBeNull();
+  });
+
+  it('flux host flux-access-denied stays accessible', () => {
+    expect(
+      resolveFluxHostNavigation({
+        pathname: ROUTES.fluxAccessDenied,
+        authedAdmin: false,
+        hasSession: true,
+      }),
+    ).toBeNull();
+  });
+
+  it('client session on flux host marketplace path → access denied', () => {
+    expect(
+      resolveFluxHostNavigation({
+        pathname: ROUTES.home,
+        authedAdmin: false,
+        hasSession: true,
+      }),
+    ).toBe(ROUTES.fluxAccessDenied);
+  });
+
+  it('client session on flux host /client → access denied', () => {
+    expect(
+      resolveFluxHostNavigation({
+        pathname: ROUTES.clientDashboard,
+        authedAdmin: false,
+        hasSession: true,
+      }),
+    ).toBe(ROUTES.fluxAccessDenied);
+  });
+
+  it('www host navigation helper is not used here — preview admin deep link unchanged', () => {
+    expect(
+      getPostLoginDestination({
+        hostname: 'www.linkhelp.app',
+        profileRole: 'client',
+        session: clientSession(),
+        returnTo: null,
+      }),
+    ).toBe(ROUTES.clientDashboard);
   });
 });
 

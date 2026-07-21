@@ -2,9 +2,8 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { PageLoader } from '@/components/common/PageLoader';
 import { useAuth } from '@/context/AuthContext';
 import { isFluxAdmin } from '@/utils/adminAccess';
-import { ROUTES } from '@/utils/constants';
-import { isAdminRoute, isFluxHost } from '@/utils/fluxHost';
-import { isAppShellPath } from '@/utils/navigation';
+import { isFluxHost, isFluxHostAllowedPath } from '@/utils/fluxHost';
+import { resolveFluxHostNavigation } from '@/utils/fluxRedirect';
 
 /** On flux.linkhelp.app, block public marketplace routes and client/helper workspaces. */
 export function FluxHostGuard() {
@@ -17,13 +16,7 @@ export function FluxHostGuard() {
 
   const path = location.pathname;
 
-  const allowedPublic =
-    path === ROUTES.adminLogin ||
-    path === ROUTES.fluxAccessDenied ||
-    path === ROUTES.authCallback ||
-    path === ROUTES.resetPassword;
-
-  if (allowedPublic || isAdminRoute(path)) {
+  if (isFluxHostAllowedPath(path)) {
     return <Outlet />;
   }
 
@@ -32,23 +25,14 @@ export function FluxHostGuard() {
   }
 
   const authedAdmin = Boolean(session && isFluxAdmin(session));
+  const target = resolveFluxHostNavigation({
+    pathname: path,
+    authedAdmin,
+    hasSession: Boolean(session),
+  });
 
-  if (
-    path === ROUTES.home ||
-    path === ROUTES.login ||
-    path === ROUTES.signup ||
-    path === ROUTES.howItWorks ||
-    path === ROUTES.contact
-  ) {
-    if (authedAdmin) return <Navigate to={ROUTES.adminDashboard} replace />;
-    if (session && !authedAdmin) return <Navigate to={ROUTES.fluxAccessDenied} replace />;
-    return <Navigate to={ROUTES.adminLogin} replace />;
-  }
-
-  if (isAppShellPath(path) || path === ROUTES.dashboard) {
-    if (session && !authedAdmin) return <Navigate to={ROUTES.fluxAccessDenied} replace />;
-    if (!session) return <Navigate to={ROUTES.adminLogin} replace />;
-    if (authedAdmin) return <Navigate to={ROUTES.adminDashboard} replace />;
+  if (target) {
+    return <Navigate to={target} replace />;
   }
 
   return <Outlet />;

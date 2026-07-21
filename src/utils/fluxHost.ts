@@ -1,3 +1,5 @@
+import { ROUTES } from '@/utils/constants';
+
 /** Production FLUX console hostname (same Vercel project as www). */
 export const FLUX_HOSTNAME = 'flux.linkhelp.app';
 
@@ -17,4 +19,26 @@ export function getCurrentOrigin(): string {
 /** Admin BackOffice / FLUX dashboard paths. */
 export function isAdminRoute(pathname: string): boolean {
   return pathname === '/admin' || pathname.startsWith('/admin/');
+}
+
+/** Paths that must render as-is on flux.linkhelp.app (no FLUX entry redirect). */
+export function isFluxHostAllowedPath(pathname: string): boolean {
+  return (
+    pathname === ROUTES.adminLogin ||
+    pathname === ROUTES.fluxAccessDenied ||
+    pathname === ROUTES.authCallback ||
+    pathname === ROUTES.resetPassword ||
+    isAdminRoute(pathname)
+  );
+}
+
+/** Public marketplace entry routes blocked on the FLUX host. */
+export function isFluxHostMarketplaceEntry(pathname: string): boolean {
+  return (
+    pathname === ROUTES.home ||
+    pathname === ROUTES.login ||
+    pathname === ROUTES.signup ||
+    pathname === ROUTES.howItWorks ||
+    pathname === ROUTES.contact
+  );
 }

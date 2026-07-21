@@ -12,6 +12,7 @@ import { FluxAdminLayout } from '@/components/admin/FluxAdminLayout';
 import { LoginSplashGate } from '@/components/auth/LoginSplashGate';
 import { FluxHostGuard } from '@/components/auth/FluxHostGuard';
 import { LegacyPaymentsRedirect } from '@/routes/LegacyPaymentsRedirect';
+import { AppCatchAllRedirect } from '@/routes/AppCatchAllRedirect';
 
 function lazyPage<T extends { default: ComponentType<unknown> }>(loader: () => Promise<T>) {
   return lazy(() => importWithRetry(loader));
@@ -168,7 +169,7 @@ export function AppRoutes() {
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+        <Route path="*" element={<AppCatchAllRedirect />} />
         </Route>
       </Route>
     </Routes>

@@ -42,9 +42,11 @@ export function PublicOnlyRoute() {
     if (authBootstrapped && !authLoading) {
       authFlowLog('PublicOnlyRoute redirect — profile pending', {
         userId: session.user.id,
-        redirectTo: ROUTES.dashboard,
+        redirectTo: isFluxHost() ? ROUTES.fluxAccessDenied : ROUTES.dashboard,
       });
-      return <Navigate to={ROUTES.dashboard} replace />;
+      return (
+        <Navigate to={isFluxHost() ? ROUTES.fluxAccessDenied : ROUTES.dashboard} replace />
+      );
     }
     return <PageLoader />;
   }

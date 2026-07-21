@@ -1,7 +1,15 @@
 import type { Session } from '@supabase/supabase-js';
 import { isFluxAdmin } from '@/utils/adminAccess';
 import { ROUTES } from '@/utils/constants';
-import { FLUX_HOSTNAME, isAdminRoute, isFluxHost, LINKHELP_PUBLIC_ORIGIN } from '@/utils/fluxHost';
+import {
+  FLUX_HOSTNAME,
+  isAdminRoute,
+  isFluxHost,
+  isFluxHostAllowedPath,
+  isFluxHostMarketplaceEntry,
+  LINKHELP_PUBLIC_ORIGIN,
+} from '@/utils/fluxHost';
+import { isAppShellPath } from '@/utils/navigation';
 import type { ProfileRole } from '@/types/database';
 import { dashboardPathForRole, isPathAllowedForRole } from '@/utils/userRole';
 
@@ -194,6 +202,46 @@ export function getPostLoginDestination(input: PostLoginDestinationInput): strin
   }
 
   return dashboardPathForRole(profileRole);
+}
+
+/** Admin login on flux.linkhelp.app with safe default returnTo. */
+export function getFluxHostAdminLoginPath(returnTo: string = ROUTES.adminDashboard): string {
+  const safe = sanitizeAdminReturnTo(returnTo) ?? ROUTES.adminDashboard;
+  return `${ROUTES.adminLogin}?returnTo=${encodeURIComponent(safe)}`;
+}
+
+export type FluxHostNavigationInput = {
+  pathname: string;
+  authedAdmin: boolean;
+  hasSession: boolean;
+};
+
+/**
+ * FLUX host redirect target, or null when the current path should render normally.
+ * Uses relative in-app paths only (React Router Navigate).
+ */
+export function resolveFluxHostNavigation(input: FluxHostNavigationInput): string | null {
+  const { pathname, authedAdmin, hasSession } = input;
+
+  if (isFluxHostAllowedPath(pathname)) {
+    return null;
+  }
+
+  if (isFluxHostMarketplaceEntry(pathname)) {
+    if (authedAdmin) return ROUTES.adminDashboard;
+    if (hasSession) return ROUTES.fluxAccessDenied;
+    return getFluxHostAdminLoginPath(ROUTES.adminDashboard);
+  }
+
+  if (isAppShellPath(pathname) || pathname === ROUTES.dashboard) {
+    if (hasSession && !authedAdmin) return ROUTES.fluxAccessDenied;
+    if (!hasSession) return getFluxHostAdminLoginPath(ROUTES.adminDashboard);
+    if (authedAdmin) return ROUTES.adminDashboard;
+  }
+
+  if (authedAdmin) return ROUTES.adminDashboard;
+  if (hasSession) return ROUTES.fluxAccessDenied;
+  return getFluxHostAdminLoginPath(ROUTES.adminDashboard);
 }
 
 /** Login target when an unauthenticated user hits a protected route. */

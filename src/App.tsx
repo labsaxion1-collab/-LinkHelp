@@ -7,10 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { IntroSplash } from '@/components/common/IntroSplash';
-
-function introAlreadyPlayed(): boolean {
-  try { return sessionStorage.getItem('lh:intro-played') === '1'; } catch { return false; }
-}
+import { readAppIntroVideoContext, shouldShowAppIntroVideo } from '@/utils/appIntroVideo';
 import { BrowserRouter } from 'react-router-dom';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { AppDataProvider } from '@/context/AppDataContext';
@@ -40,7 +37,9 @@ function DevSupabasePing() {
 }
 
 export default function App() {
-  const [showIntro, setShowIntro] = useState(() => !introAlreadyPlayed());
+  const [showIntro, setShowIntro] = useState(() =>
+    shouldShowAppIntroVideo(readAppIntroVideoContext()),
+  );
 
   return (
     <ThemeProvider>

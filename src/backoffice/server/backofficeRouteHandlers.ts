@@ -4,15 +4,13 @@ import {
   backofficeJsonError,
   logBackofficeRead,
   parseLimitOffset,
-} from '../lib/adminAuth.server.js';
-import { createSupabaseServiceRoleClient } from '../lib/supabaseAdmin.server.js';
-import { buildEconomySnapshot } from '../../src/backoffice/economy/economySnapshot.js';
+} from '../../../api/lib/adminAuth.server.js';
+import { createSupabaseServiceRoleClient } from '../../../api/lib/supabaseAdmin.server.js';
+import { buildEconomySnapshot } from '../economy/economySnapshot.js';
 
-type Resource = 'users' | 'requests' | 'credits' | 'economy' | 'audit' | 'support';
+export type BackofficeResource = 'users' | 'requests' | 'credits' | 'economy' | 'audit' | 'support';
 
-function parseResource(req: VercelRequest): Resource | null {
-  const raw = req.query?.resource;
-  const value = Array.isArray(raw) ? raw[0] : raw;
+export function parseBackofficeResource(value: unknown): BackofficeResource | null {
   if (
     value === 'users' ||
     value === 'requests' ||
@@ -176,12 +174,13 @@ async function handleSupport(req: VercelRequest, res: VercelResponse) {
   });
 }
 
-/** Single serverless entry — routes /api/backoffice/:resource (Vercel Hobby function limit). */
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+/** Routed via /api/admin/dashboard-summary?backoffice=:resource (Vercel Hobby limit). */
+export async function handleBackofficeRoute(
+  req: VercelRequest,
+  res: VercelResponse,
+  resource: BackofficeResource,
+) {
   if (req.method !== 'GET') return backofficeJsonError(res, 405, 'METHOD_NOT_ALLOWED');
-
-  const resource = parseResource(req);
-  if (!resource) return backofficeJsonError(res, 404, 'BACKOFFICE_RESOURCE_NOT_FOUND');
 
   try {
     switch (resource) {

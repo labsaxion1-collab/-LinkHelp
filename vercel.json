@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/backoffice/:resource",
+      "destination": "/api/admin/dashboard-summary?backoffice=:resource"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

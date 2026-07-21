@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { isAppShellPath } from '@/utils/navigation';
 import { ROUTES } from '@/utils/constants';
+import { isPwaStandalone } from '@/utils/pwaRuntime';
 
 const STORAGE_KEY = 'linkhelp_pwa_install_dismissed';
 
@@ -30,10 +31,7 @@ export function PwaInstallPrompt() {
     }
 
     const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isStandalone =
-      (window.matchMedia('(display-mode: standalone)').matches as boolean) ||
-      ((navigator as unknown as { standalone?: boolean }).standalone === true);
-    if (isStandalone) return;
+    if (isPwaStandalone()) return;
 
     if (isIos) {
       setIosHint(true);

@@ -10,13 +10,7 @@ import { useEffect, useRef, useState } from 'react';
  *  done    → componente desmontado
  */
 
-const SESSION_KEY = 'lh:intro-played';
-
-function markPlayed(): void {
-  try {
-    sessionStorage.setItem(SESSION_KEY, '1');
-  } catch { /* ignore */ }
-}
+import { markAppIntroPlayed } from '@/utils/appIntroVideo';
 
 type Phase = 'fadein' | 'playing' | 'fadeout' | 'done';
 
@@ -28,7 +22,7 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
   const finish = () => {
     if (doneRef.current) return;
     doneRef.current = true;
-    markPlayed();
+    markAppIntroPlayed();
     setPhase('fadeout');
     setTimeout(() => {
       setPhase('done');

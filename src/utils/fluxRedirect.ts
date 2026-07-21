@@ -37,6 +37,43 @@ export function readReturnToFromLocation(search: string, stateFrom?: string | nu
   return sanitizeReturnTo(stateFrom);
 }
 
+/** Admin FLUX login — only `/admin/*` paths (blocks open redirect). */
+export function sanitizeAdminReturnTo(raw: string | null | undefined): string | null {
+  const safe = sanitizeReturnTo(raw);
+  if (!safe || !isAdminRoute(safe)) return null;
+  return safe;
+}
+
+const FLUX_ADMIN_RETURN_TO_KEY = 'flux_admin_return_to';
+
+export function persistAdminReturnTo(path: string | null): void {
+  if (typeof window === 'undefined') return;
+  const safe = sanitizeAdminReturnTo(path);
+  if (safe) sessionStorage.setItem(FLUX_ADMIN_RETURN_TO_KEY, safe);
+  else sessionStorage.removeItem(FLUX_ADMIN_RETURN_TO_KEY);
+}
+
+export function readPersistedAdminReturnTo(): string | null {
+  if (typeof window === 'undefined') return null;
+  return sanitizeAdminReturnTo(sessionStorage.getItem(FLUX_ADMIN_RETURN_TO_KEY));
+}
+
+export function clearPersistedAdminReturnTo(): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem(FLUX_ADMIN_RETURN_TO_KEY);
+}
+
+/**
+ * Destination after FLUX admin login — never marketplace home or client/helper dashboards.
+ */
+export function getAdminPostLoginDestination(session: Session | null, returnTo?: string | null): string {
+  if (!isFluxAdmin(session)) {
+    return ROUTES.fluxAccessDenied;
+  }
+  const safe = sanitizeAdminReturnTo(returnTo);
+  return safe ?? ROUTES.adminDashboard;
+}
+
 export type PostLoginDestinationInput = {
   hostname?: string;
   profileRole: ProfileRole;
@@ -68,6 +105,10 @@ export function getPostLoginDestination(input: PostLoginDestinationInput): strin
     return safeReturn;
   }
 
+  if (adminUser) {
+    return ROUTES.adminDashboard;
+  }
+
   if (safeReturn && isPathAllowedForRole(safeReturn, profileRole)) {
     return safeReturn;
   }
@@ -77,10 +118,10 @@ export function getPostLoginDestination(input: PostLoginDestinationInput): strin
 
 /** Login target when an unauthenticated user hits a protected route. */
 export function getAuthLoginPathForRoute(pathname: string, returnPath: string): string {
-  const safe = sanitizeReturnTo(returnPath) ?? sanitizeReturnTo(pathname);
+  const safeAdmin = sanitizeAdminReturnTo(returnPath) ?? sanitizeAdminReturnTo(pathname);
   if (isAdminRoute(pathname)) {
-    if (safe) {
-      return `${ROUTES.adminLogin}?returnTo=${encodeURIComponent(safe)}`;
+    if (safeAdmin) {
+      return `${ROUTES.adminLogin}?returnTo=${encodeURIComponent(safeAdmin)}`;
     }
     return ROUTES.adminLogin;
   }

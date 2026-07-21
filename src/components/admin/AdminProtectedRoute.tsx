@@ -3,7 +3,6 @@ import { useAuth } from '@/context/AuthContext';
 import { PageLoader } from '@/components/common/PageLoader';
 import { ROUTES } from '@/utils/constants';
 import { isFluxAdmin } from '@/utils/adminAccess';
-import { isFluxHost } from '@/utils/fluxHost';
 import { getAuthLoginPathForRoute, sanitizeReturnTo } from '@/utils/fluxRedirect';
 
 /** Only Supabase admins (app_metadata.role) may access FLUX admin routes. */
@@ -22,10 +21,7 @@ export function AdminProtectedRoute() {
   }
 
   if (!isFluxAdmin(session)) {
-    if (isFluxHost()) {
-      return <Navigate to={ROUTES.fluxAccessDenied} replace />;
-    }
-    return <Navigate to={ROUTES.home} replace />;
+    return <Navigate to={ROUTES.fluxAccessDenied} replace />;
   }
 
   return <Outlet />;

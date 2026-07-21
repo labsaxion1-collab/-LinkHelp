@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, ShieldAlert } from 'lucide-react';
 import { FluxBrandMark } from '@/components/brand/FluxBrandMark';
@@ -8,11 +9,17 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { authFlowLog } from '@/lib/authDebug';
+import { getSupabase } from '@/lib/supabase';
 import { isFluxAdmin } from '@/utils/adminAccess';
 import { ROUTES } from '@/utils/constants';
 import { LINKHELP_PUBLIC_ORIGIN } from '@/utils/fluxHost';
-import { getPostLoginDestination, readReturnToFromLocation } from '@/utils/fluxRedirect';
-import { resolveEffectiveRole } from '@/utils/userRole';
+import {
+  clearPersistedAdminReturnTo,
+  getAdminPostLoginDestination,
+  persistAdminReturnTo,
+  readPersistedAdminReturnTo,
+  readReturnToFromLocation,
+} from '@/utils/fluxRedirect';
 import { isOAuthCallbackActive, isOAuthRedirectPending } from '@/utils/authStorage';
 
 const INPUT_CLASS =
@@ -41,39 +48,58 @@ export default function AdminLoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const returnTo = readReturnToFromLocation(location.search, (location.state as { from?: string } | null)?.from);
+  const returnToFromLocation = useMemo(
+    () => readReturnToFromLocation(location.search, (location.state as { from?: string } | null)?.from),
+    [location.search, location.state],
+  );
 
-  const finishAdminLogin = (profileOverride?: typeof profile) => {
-    const p = profileOverride ?? profile;
-    if (!session?.user) return;
+  const returnToRef = useRef(returnToFromLocation);
+  if (returnToFromLocation) {
+    returnToRef.current = returnToFromLocation;
+  }
 
-    if (!isFluxAdmin(session)) {
-      authFlowLog('AdminLogin: access denied — not admin', { userId: session.user.id });
+  useEffect(() => {
+    persistAdminReturnTo(returnToFromLocation ?? returnToRef.current);
+  }, [returnToFromLocation]);
+
+  const effectiveReturnTo = returnToFromLocation ?? readPersistedAdminReturnTo() ?? returnToRef.current;
+
+  const redirectedRef = useRef(false);
+
+  const finishAdminLogin = (activeSession: Session) => {
+    if (redirectedRef.current) return;
+
+    if (!isFluxAdmin(activeSession)) {
+      authFlowLog('AdminLogin: access denied — not admin', { userId: activeSession.user.id });
       navigate(ROUTES.fluxAccessDenied, { replace: true });
       return;
     }
 
-    const role = resolveEffectiveRole(p, session.user);
-    const dest = getPostLoginDestination({
-      hostname: window.location.hostname,
-      profileRole: role,
-      session,
-      returnTo,
-    });
-    authFlowLog('AdminLogin: redirect', { dest, returnTo });
+    const dest = getAdminPostLoginDestination(activeSession, effectiveReturnTo);
+    authFlowLog('AdminLogin: redirect', { dest, returnTo: effectiveReturnTo });
+    redirectedRef.current = true;
+    clearPersistedAdminReturnTo();
     navigate(dest, { replace: true });
   };
 
   useEffect(() => {
     if (!isConfigured || !authBootstrapped || authLoading) return;
     if (isOAuthCallbackActive() || isOAuthRedirectPending()) return;
-    if (!session?.user) return;
-    if (!profile) {
-      void refreshProfile(session.user);
-      return;
-    }
-    finishAdminLogin(profile);
-  }, [isConfigured, authBootstrapped, authLoading, session, profile, returnTo]);
+    if (submitting || googleLoading) return;
+
+    void (async () => {
+      const sb = getSupabase();
+      if (!sb) return;
+      const { data } = await sb.auth.getSession();
+      const activeSession = data.session;
+      if (!activeSession?.user) return;
+      if (!profile) {
+        void refreshProfile(activeSession.user);
+        return;
+      }
+      finishAdminLogin(activeSession);
+    })();
+  }, [isConfigured, authBootstrapped, authLoading, session, profile, effectiveReturnTo, submitting, googleLoading]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -84,13 +110,20 @@ export default function AdminLoginPage() {
     }
     setSubmitting(true);
     const err = await signInWithEmail(email, password);
-    setSubmitting(false);
     if (err) {
+      setSubmitting(false);
       setError(t(err.messageKey, err.vars));
       return;
     }
-    const recovered = await refreshProfile();
-    finishAdminLogin(recovered ?? profile);
+
+    const sb = getSupabase();
+    const { data: sessionData } = sb ? await sb.auth.getSession() : { data: { session: null } };
+    await refreshProfile(sessionData.session?.user ?? undefined);
+    setSubmitting(false);
+
+    if (sessionData.session?.user) {
+      finishAdminLogin(sessionData.session);
+    }
   };
 
   const handleGoogle = async () => {
@@ -101,7 +134,7 @@ export default function AdminLoginPage() {
     }
     setGoogleLoading(true);
     try {
-      const err = await signInWithGoogle({ next: returnTo });
+      const err = await signInWithGoogle({ next: effectiveReturnTo });
       if (!isOAuthRedirectPending() && err) {
         setError(t(err.messageKey, err.vars));
       }

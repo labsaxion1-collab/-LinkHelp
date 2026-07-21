@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { ROUTES } from '@/utils/constants';
 import { FLUX_HOSTNAME, isAdminRoute, isFluxHost } from '@/utils/fluxHost';
 import {
+  getAdminPostLoginDestination,
   getAuthLoginPathForRoute,
   getPostLoginDestination,
+  sanitizeAdminReturnTo,
   sanitizeReturnTo,
 } from '@/utils/fluxRedirect';
 import { getOAuthRedirectToUrl } from '@/utils/oauthRedirect';
@@ -16,9 +18,21 @@ function adminSession(): Session {
   } as Session;
 }
 
+function fluxAdminSession(): Session {
+  return {
+    user: { id: 'flux-1', app_metadata: { role: 'flux_admin' } },
+  } as Session;
+}
+
 function clientSession(): Session {
   return {
     user: { id: 'client-1', app_metadata: { role: 'client' } },
+  } as Session;
+}
+
+function helperSession(): Session {
+  return {
+    user: { id: 'helper-1', app_metadata: { role: 'client' }, user_metadata: { user_type: 'helper' } },
   } as Session;
 }
 
@@ -50,8 +64,49 @@ describe('sanitizeReturnTo', () => {
   });
 });
 
+describe('sanitizeAdminReturnTo', () => {
+  it('allows only admin paths', () => {
+    expect(sanitizeAdminReturnTo('/admin/users')).toBe('/admin/users');
+    expect(sanitizeAdminReturnTo('/client/dashboard')).toBeNull();
+    expect(sanitizeAdminReturnTo('/')).toBeNull();
+  });
+});
+
+describe('getAdminPostLoginDestination', () => {
+  it('1 admin + returnTo=/admin/users → /admin/users', () => {
+    expect(getAdminPostLoginDestination(adminSession(), '/admin/users')).toBe(ROUTES.adminUsers);
+  });
+
+  it('2 admin + returnTo=/admin/dashboard → /admin/dashboard', () => {
+    expect(getAdminPostLoginDestination(fluxAdminSession(), '/admin/dashboard')).toBe(ROUTES.adminDashboard);
+  });
+
+  it('3 admin without returnTo → /admin/dashboard', () => {
+    expect(getAdminPostLoginDestination(adminSession(), null)).toBe(ROUTES.adminDashboard);
+  });
+
+  it('4 client on FLUX login → access denied', () => {
+    expect(getAdminPostLoginDestination(clientSession(), '/admin/users')).toBe(ROUTES.fluxAccessDenied);
+  });
+
+  it('5 helper on FLUX login → access denied', () => {
+    expect(getAdminPostLoginDestination(helperSession(), '/admin/dashboard')).toBe(ROUTES.fluxAccessDenied);
+  });
+
+  it('6 external returnTo rejected → /admin/dashboard', () => {
+    expect(getAdminPostLoginDestination(adminSession(), 'https://site-malicioso.com')).toBe(ROUTES.adminDashboard);
+  });
+
+  it('7 never returns marketplace home or client/helper dashboards', () => {
+    const dest = getAdminPostLoginDestination(adminSession(), '/messages');
+    expect(dest).toBe(ROUTES.adminDashboard);
+    expect(dest).not.toBe(ROUTES.home);
+    expect(dest).not.toBe(ROUTES.clientDashboard);
+  });
+});
+
 describe('getPostLoginDestination', () => {
-  it('1 flux host + admin → admin dashboard', () => {
+  it('flux host + admin → admin dashboard', () => {
     expect(
       getPostLoginDestination({
         hostname: FLUX_HOSTNAME,
@@ -62,7 +117,7 @@ describe('getPostLoginDestination', () => {
     ).toBe(ROUTES.adminDashboard);
   });
 
-  it('2 flux host + client profile → access denied', () => {
+  it('flux host + client profile → access denied', () => {
     expect(
       getPostLoginDestination({
         hostname: FLUX_HOSTNAME,
@@ -73,29 +128,7 @@ describe('getPostLoginDestination', () => {
     ).toBe(ROUTES.fluxAccessDenied);
   });
 
-  it('3 flux host + helper session metadata → access denied', () => {
-    expect(
-      getPostLoginDestination({
-        hostname: FLUX_HOSTNAME,
-        profileRole: 'helper',
-        session: clientSession(),
-        returnTo: null,
-      }),
-    ).toBe(ROUTES.fluxAccessDenied);
-  });
-
-  it('4 flux host without session → admin login path via guard (destination denied when no admin)', () => {
-    expect(
-      getPostLoginDestination({
-        hostname: FLUX_HOSTNAME,
-        profileRole: 'client',
-        session: null,
-        returnTo: null,
-      }),
-    ).toBe(ROUTES.fluxAccessDenied);
-  });
-
-  it('5 www host + client → client dashboard', () => {
+  it('www host + client → client dashboard', () => {
     expect(
       getPostLoginDestination({
         hostname: 'www.linkhelp.app',
@@ -106,18 +139,18 @@ describe('getPostLoginDestination', () => {
     ).toBe(ROUTES.clientDashboard);
   });
 
-  it('6 www host + helper → helper dashboard', () => {
+  it('www host + helper → helper dashboard', () => {
     expect(
       getPostLoginDestination({
         hostname: 'www.linkhelp.app',
         profileRole: 'helper',
-        session: clientSession(),
+        session: helperSession(),
         returnTo: null,
       }),
     ).toBe(ROUTES.helperDashboard);
   });
 
-  it('7 preserves returnTo /admin/users for admin on preview host', () => {
+  it('preserves returnTo /admin/users for admin on preview host', () => {
     expect(
       getPostLoginDestination({
         hostname: 'link-help-git-feature-backoffice-p0.vercel.app',
@@ -128,18 +161,18 @@ describe('getPostLoginDestination', () => {
     ).toBe(ROUTES.adminUsers);
   });
 
-  it('8 rejects external returnTo', () => {
+  it('admin without returnTo on preview → admin dashboard', () => {
     expect(
       getPostLoginDestination({
-        hostname: 'www.linkhelp.app',
+        hostname: 'link-help-n5jyza9n7-labsaxion1-4960s-projects.vercel.app',
         profileRole: 'client',
-        session: clientSession(),
-        returnTo: 'https://evil.com',
+        session: adminSession(),
+        returnTo: null,
       }),
-    ).toBe(ROUTES.clientDashboard);
+    ).toBe(ROUTES.adminDashboard);
   });
 
-  it('9 preview host preserves relative admin return (not production origin)', () => {
+  it('preview host preserves relative admin return (not production origin)', () => {
     const dest = getPostLoginDestination({
       hostname: 'link-help-n5jyza9n7-labsaxion1-4960s-projects.vercel.app',
       profileRole: 'client',
@@ -150,7 +183,7 @@ describe('getPostLoginDestination', () => {
     expect(dest).not.toContain('www.linkhelp.app');
   });
 
-  it('11 www host client with public path unchanged', () => {
+  it('www host client with public path unchanged', () => {
     expect(
       getPostLoginDestination({
         hostname: 'www.linkhelp.app',
@@ -167,10 +200,15 @@ describe('getAuthLoginPathForRoute', () => {
     const path = getAuthLoginPathForRoute('/admin/users', '/admin/users');
     expect(path).toBe(`${ROUTES.adminLogin}?returnTo=${encodeURIComponent('/admin/users')}`);
   });
+
+  it('rejects non-admin returnTo on admin login path', () => {
+    const path = getAuthLoginPathForRoute('/admin/users', '/client/dashboard');
+    expect(path).toBe(`${ROUTES.adminLogin}?returnTo=${encodeURIComponent('/admin/users')}`);
+  });
 });
 
 describe('getOAuthRedirectToUrl', () => {
-  it('10 OAuth callback preserves current origin in browser', () => {
+  it('OAuth callback preserves current origin in browser', () => {
     const previous = global.window;
     Object.defineProperty(global, 'window', {
       value: {
@@ -186,7 +224,7 @@ describe('getOAuthRedirectToUrl', () => {
 });
 
 describe('FluxAdminSidebar routes', () => {
-  it('12 backoffice sidebar still references admin routes', () => {
+  it('backoffice sidebar still references admin routes', () => {
     expect(ROUTES.adminUsers).toBe('/admin/users');
     expect(ROUTES.adminDashboard).toBe('/admin/dashboard');
     expect(FluxAdminSidebar).toBeDefined();

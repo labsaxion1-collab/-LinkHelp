@@ -113,6 +113,10 @@ export default defineConfig(({ mode }) => {
       'process.env.VITE_GOOGLE_MAPS_PLATFORM_KEY': JSON.stringify(
         env.VITE_GOOGLE_MAPS_PLATFORM_KEY || '',
       ),
+      /** Vercel sets VERCEL_ENV at build time (preview | production | development). */
+      'import.meta.env.VITE_VERCEL_ENV': JSON.stringify(
+        env.VITE_VERCEL_ENV || process.env.VERCEL_ENV || '',
+      ),
     },
     resolve: {
       alias: {

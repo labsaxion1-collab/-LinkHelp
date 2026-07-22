@@ -27,8 +27,11 @@ export const CLIENT_CONFIAVEL_HERO_MEDIA = {
 export function isClientConfiavelHeroWebpEnabled(): boolean {
   if (import.meta.env.VITE_CLIENT_CONFIAVEL_HERO_WEBP === 'false') return false;
   if (import.meta.env.VITE_CLIENT_CONFIAVEL_HERO_WEBP === 'true') return true;
-  if (import.meta.env.PROD && import.meta.env.VITE_VERCEL_ENV === 'production') return false;
-  return import.meta.env.DEV || import.meta.env.VITE_VERCEL_ENV === 'preview';
+  const vercelEnv = import.meta.env.VITE_VERCEL_ENV;
+  if (vercelEnv === 'production') return false;
+  if (import.meta.env.DEV) return true;
+  if (vercelEnv === 'preview' || vercelEnv === 'development') return true;
+  return false;
 }
 
 export function clientConfiavelPrimarySrc(layer: ClientConfiavelHeroMediaLayer): string {

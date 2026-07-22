@@ -1,9 +1,14 @@
 /**
- * WebP Preview — somente client_confiavel.
+ * WebP — somente client_confiavel (Preview + Production).
  */
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  CLIENT_CONFIAVEL_HERO_MEDIA,
+  clientConfiavelPreloadUrls,
+  clientConfiavelPrimarySrc,
+} from '@/gamification/hero/clientConfiavelHeroMedia';
 
 describe('clientConfiavel Hero WebP', () => {
   it('lazy registry carrega ClientConfiavelHeroWebPValidation', async () => {
@@ -37,8 +42,22 @@ describe('clientConfiavel Hero WebP', () => {
 
   it('ClientConfiavelhero.tsx original permanece PNG (congelado)', async () => {
     const src = await readFile(resolve('src/components/hero/ClientConfiavelhero.tsx'), 'utf8');
-    expect(src).toContain("bg-roxo.png");
+    expect(src).toContain('bg-roxo.png');
     expect(src).not.toContain('webp');
+  });
+
+  it('preload e render usam a mesma URL WebP por camada', () => {
+    const essential = clientConfiavelPreloadUrls();
+    expect(essential[0]).toBe(CLIENT_CONFIAVEL_HERO_MEDIA.background.webp);
+    expect(essential[1]).toBe(CLIENT_CONFIAVEL_HERO_MEDIA.medal.webp);
+    expect(essential[2]).toBe(CLIENT_CONFIAVEL_HERO_MEDIA.pedestal.webp);
+    expect(clientConfiavelPrimarySrc(CLIENT_CONFIAVEL_HERO_MEDIA.medal)).toBe(essential[1]);
+    expect(clientConfiavelPrimarySrc(CLIENT_CONFIAVEL_HERO_MEDIA.pedestal)).toBe(essential[2]);
+  });
+
+  it('ranking/thresholds não alterados neste módulo', async () => {
+    const src = await readFile(resolve('src/gamification/hero/clientConfiavelHeroMedia.ts'), 'utf8');
+    expect(src).not.toMatch(/threshold|score|levelEngine|progressEngine/i);
   });
 });
 
@@ -47,36 +66,31 @@ describe('clientConfiavelHeroMedia flags', () => {
     vi.unstubAllEnvs();
   });
 
-  it('exporta camadas png e webp distintas', async () => {
-    const media = await import('@/gamification/hero/clientConfiavelHeroMedia');
-    expect(media.CLIENT_CONFIAVEL_HERO_MEDIA.background.webp).toContain('.webp');
-    expect(media.CLIENT_CONFIAVEL_HERO_MEDIA.background.png).toMatch(/\.png$/);
+  it('exporta camadas png e webp distintas', () => {
+    expect(CLIENT_CONFIAVEL_HERO_MEDIA.background.webp).toContain('.webp');
+    expect(CLIENT_CONFIAVEL_HERO_MEDIA.background.png).toMatch(/\.png$/);
   });
 
-  it('WebP ativo em preview e inativo em production', async () => {
+  it('WebP ativo em preview e production por padrão', async () => {
     vi.stubEnv('VITE_CLIENT_CONFIAVEL_HERO_WEBP', '');
     vi.stubEnv('VITE_VERCEL_ENV', 'preview');
-    vi.stubEnv('DEV', '');
-    vi.stubEnv('PROD', 'true');
     vi.resetModules();
     const preview = await import('@/gamification/hero/clientConfiavelHeroMedia');
     expect(preview.isClientConfiavelHeroWebpEnabled()).toBe(true);
-    expect(preview.clientConfiavelPreloadUrls()).toEqual([
-      preview.CLIENT_CONFIAVEL_HERO_MEDIA.background.webp,
-      preview.CLIENT_CONFIAVEL_HERO_MEDIA.medal.webp,
-      preview.CLIENT_CONFIAVEL_HERO_MEDIA.pedestal.webp,
-    ]);
+    expect(preview.clientConfiavelPreloadUrls()[0]).toMatch(/\.webp$/);
 
     vi.stubEnv('VITE_VERCEL_ENV', 'production');
     vi.resetModules();
     const prod = await import('@/gamification/hero/clientConfiavelHeroMedia');
-    expect(prod.isClientConfiavelHeroWebpEnabled()).toBe(false);
-    expect(prod.clientConfiavelPreloadUrls()[0]).toMatch(/\.png$/);
+    expect(prod.isClientConfiavelHeroWebpEnabled()).toBe(true);
+    expect(prod.clientConfiavelPreloadUrls()[0]).toMatch(/\.webp$/);
   });
 
-  it('vite.config injeta VITE_VERCEL_ENV a partir de VERCEL_ENV', async () => {
-    const src = await readFile(resolve('vite.config.ts'), 'utf8');
-    expect(src).toContain('import.meta.env.VITE_VERCEL_ENV');
-    expect(src).toContain('process.env.VERCEL_ENV');
+  it('kill-switch VITE_CLIENT_CONFIAVEL_HERO_WEBP=false usa PNG', async () => {
+    vi.stubEnv('VITE_CLIENT_CONFIAVEL_HERO_WEBP', 'false');
+    vi.resetModules();
+    const mod = await import('@/gamification/hero/clientConfiavelHeroMedia');
+    expect(mod.isClientConfiavelHeroWebpEnabled()).toBe(false);
+    expect(mod.clientConfiavelPreloadUrls()[0]).toMatch(/\.png$/);
   });
 });

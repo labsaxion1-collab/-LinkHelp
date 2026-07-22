@@ -1,6 +1,5 @@
 /**
- * Media Cliente Confiável — WebP experimental em DEV/Preview apenas.
- * Production (Vercel production) continua PNG até validação final.
+ * Media Cliente Confiável — WebP primário com fallback PNG (`<picture>`).
  */
 import bgPng from '@/assets/hero/backgrounds/client/bg-roxo.png';
 import medalPng from '@/assets/hero/medals/client/confiavel.png';
@@ -23,15 +22,9 @@ export const CLIENT_CONFIAVEL_HERO_MEDIA = {
   particles: { png: particlesPng, webp: particlesWebp },
 } as const satisfies Record<string, ClientConfiavelHeroMediaLayer>;
 
-/** Preview/DEV validation — nunca Production. */
+/** Kill-switch local/debug (`VITE_CLIENT_CONFIAVEL_HERO_WEBP=false`). */
 export function isClientConfiavelHeroWebpEnabled(): boolean {
-  if (import.meta.env.VITE_CLIENT_CONFIAVEL_HERO_WEBP === 'false') return false;
-  if (import.meta.env.VITE_CLIENT_CONFIAVEL_HERO_WEBP === 'true') return true;
-  const vercelEnv = import.meta.env.VITE_VERCEL_ENV;
-  if (vercelEnv === 'production') return false;
-  if (import.meta.env.DEV) return true;
-  if (vercelEnv === 'preview' || vercelEnv === 'development') return true;
-  return false;
+  return import.meta.env.VITE_CLIENT_CONFIAVEL_HERO_WEBP !== 'false';
 }
 
 export function clientConfiavelPrimarySrc(layer: ClientConfiavelHeroMediaLayer): string {

@@ -1,6 +1,6 @@
 # WebP P0 experiments (Cliente Confiável)
 
-Gerados com `sharp-cli` quality 88 — **não ligados ao Hero em produção**.
+Gerados com `sharp-cli` quality 88 — usados pelo Hero **Cliente Confiável** (WebP primário + PNG fallback).
 
 Comparar visualmente lado a lado com os PNG em `../backgrounds`, `../medals`, etc.
 

@@ -1,6 +1,5 @@
 /**
- * Cliente Confiável — validação WebP (Preview/DEV).
- * Composição idêntica a ClientConfiavelhero; PNG originais preservados como fallback.
+ * Cliente Confiável — WebP primário + fallback PNG (mesma composição do hero congelado).
  */
 import { ChevronRight, Sparkles } from 'lucide-react';
 

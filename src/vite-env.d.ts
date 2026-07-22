@@ -18,7 +18,7 @@ interface ImportMetaEnv {
   readonly VITE_LINKHELP_HOST_PROFILE?: string;
   /** Injected at build from Vercel `VERCEL_ENV` (preview / production / development). */
   readonly VITE_VERCEL_ENV?: string;
-  /** Force WebP validation on/off for Cliente Confiável hero (Preview experiments). */
+  /** Set to `false` to force PNG for Cliente Confiável hero (debug only). */
   readonly VITE_CLIENT_CONFIAVEL_HERO_WEBP?: string;
 }
 

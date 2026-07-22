@@ -773,6 +773,8 @@ export default function ClientDashboard() {
         <DynamicHeroRenderer
           userType="client"
           gamification={clientGamification.record}
+          gamificationLoading={clientGamification.loading}
+          gamificationError={clientGamification.error}
           avatarUrl={me.avatar}
           balance={authLoading ? null : clientCreditsBalance}
           completedServices={0}

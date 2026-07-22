@@ -58,7 +58,7 @@ export function GamificationLevelButton({
   label,
   badgeVariant = 'verde',
 }: GamificationLevelButtonProps) {
-  const { record, loading } = useGamification(userType);
+  const { record, loading, error } = useGamification(userType);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
@@ -144,6 +144,10 @@ export function GamificationLevelButton({
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Carregando seu progresso...
               </div>
+            ) : error || !record ? (
+              <p className="rounded-xl bg-white/[0.06] px-3 py-2.5 text-xs text-white/65">
+                Progresso indisponível no momento.
+              </p>
             ) : missingRequirements.length > 0 ? (
               <ul className="space-y-1.5">
                 {missingRequirements.map((requirement) => (
@@ -200,7 +204,7 @@ export function GamificationLevelButton({
   );
 }
 export function GamificationProgressCard({ userType, className = '', variant = 'card' }: Props) {
-  const { record, loading } = useGamification(userType);
+  const { record, loading, error } = useGamification(userType);
   const [tutorialOpen, setTutorialOpen] = useState(false);
 
   // Estado de carregamento
@@ -217,13 +221,34 @@ export function GamificationProgressCard({ userType, className = '', variant = '
     );
   }
 
+  if (!loading && (error || !record)) {
+    if (variant === 'hero') {
+      return (
+        <div
+          className={
+            'flex h-[5.75rem] items-center justify-center rounded-2xl border bg-black/40 px-3 text-center text-[11px] text-white/60 lh-medal-border ' +
+            className
+          }
+        >
+          Progresso indisponível
+        </div>
+      );
+    }
+
+    return (
+      <LhCard className={`flex items-center justify-center py-6 text-sm font-medium text-slate-500 ${className}`}>
+        Não foi possível carregar seu progresso.
+      </LhCard>
+    );
+  }
+
   const progress = getProgressToNextLevel(
     userType,
-    record?.score ?? 0,
-    record?.stats ?? EMPTY_GAMIFICATION_STATS,
-    record?.levelKey ?? 'novo',
+    record!.score,
+    record!.stats ?? EMPTY_GAMIFICATION_STATS,
+    record!.levelKey,
   );
-  const heroKey = record?.heroKey ?? `${userType}_novo`;
+  const heroKey = record!.heroKey;
   const medalSrc = MEDAL_MAP[heroKey] ?? MEDAL_MAP[`${userType}_novo`];
   const accentTheme = PROGRESS_MEDAL_ACCENT;
   const isMax = progress.nextLevel === null;

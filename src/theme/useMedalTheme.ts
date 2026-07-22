@@ -33,7 +33,10 @@ export function useMedalTheme(userType?: UserType | null): UseMedalThemeResult {
   const cachedBootstrapped = useRef<string | null>(null);
 
   const theme = useMemo(
-    () => resolveMedalTheme(heroKey || levelKey, resolvedType),
+    () =>
+      heroKey || levelKey
+        ? resolveMedalTheme(heroKey || levelKey!, resolvedType)
+        : resolveMedalTheme(getDefaultMedalLevelKey(resolvedType), resolvedType),
     [heroKey, levelKey, resolvedType],
   );
 
@@ -57,10 +60,11 @@ export function useMedalTheme(userType?: UserType | null): UseMedalThemeResult {
   useEffect(() => {
     if (!user?.id) return;
 
-    // Enquanto carrega sem record, manter cache/fallback já aplicado.
     if (loading && !record) return;
 
-    const officialKey = heroKey || levelKey || getDefaultMedalLevelKey(resolvedType);
+    const officialKey = heroKey || levelKey;
+    if (!officialKey) return;
+
     applyMedalTheme(officialKey, resolvedType);
     writeCachedMedalThemeKey(user.id, resolvedType, officialKey);
   }, [user?.id, heroKey, levelKey, resolvedType, loading, record]);

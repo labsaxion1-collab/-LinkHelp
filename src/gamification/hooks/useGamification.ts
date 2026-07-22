@@ -4,7 +4,6 @@ import { useAuth } from '@/context/AuthContext';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { Database } from '@/types/supabase.database';
 import type { LevelKey, UserType } from '@/gamification/types/gamification';
-import { getCurrentLevelConfig } from '@/gamification/engines/levelEngine';
 import {
   fetchGamificationMe,
   requestGamificationRecalculate,
@@ -13,10 +12,12 @@ import type { UserGamificationRecord } from '@/gamification/services/gamificatio
 import { recordRealtimeChannelCreated, recordRealtimeChannelRemoved, recordRealtimeEvent, recordRealtimeSubscriptionStatus } from '@/lib/dev/supabaseMetrics';
 
 export interface UseGamificationResult {
-  levelKey: LevelKey;
-  heroKey: string;
+  levelKey: LevelKey | null;
+  heroKey: string | null;
   record: UserGamificationRecord | null;
   loading: boolean;
+  error: boolean;
+  isResolved: boolean;
 }
 
 type ChannelEntry = {
@@ -89,7 +90,7 @@ function acquireGamificationChannel(
  * - Lê e recalcula via API (/api/gamification/me + /recalculate);
  * - Nunca faz upsert/update direto em user_gamification no navegador;
  * - Realtime dispara novo GET /me quando o snapshot muda no banco;
- * - Fallback seguro: sem sessão ou API indisponível → nível 'novo', sem erro na UI.
+ * - Fallback seguro: sem sessão → estado resolvido vazio; falha de API → error, sem nível presumido.
  */
 export function useGamification(userType: UserType): UseGamificationResult {
   const { user } = useAuth();
@@ -97,9 +98,12 @@ export function useGamification(userType: UserType): UseGamificationResult {
 
   const [record, setRecord] = useState<UserGamificationRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     setRecord(null);
+    setError(false);
+    setLoading(true);
 
     if (!userId || !isSupabaseConfigured()) {
       setLoading(false);
@@ -108,6 +112,7 @@ export function useGamification(userType: UserType): UseGamificationResult {
     const db = getSupabase();
     if (!db) {
       setLoading(false);
+      setError(true);
       return;
     }
 
@@ -116,12 +121,15 @@ export function useGamification(userType: UserType): UseGamificationResult {
     (async () => {
       try {
         const ensured = await fetchGamificationMe(userType);
-        if (!cancelled) setRecord(ensured);
-
+        let resolved = ensured;
         const fresh = await requestGamificationRecalculate(userType);
-        if (!cancelled && fresh) setRecord(fresh);
+        if (fresh) resolved = fresh;
+        if (!cancelled) setRecord(resolved);
       } catch {
-        // Fallback seguro: mantém estado atual.
+        if (!cancelled) {
+          setError(true);
+          setRecord(null);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -141,8 +149,9 @@ export function useGamification(userType: UserType): UseGamificationResult {
     };
   }, [userId, userType]);
 
-  const levelKey = record?.levelKey ?? 'novo';
-  const heroKey = record?.heroKey ?? getCurrentLevelConfig(userType, 'novo').heroKey;
+  const levelKey = record?.levelKey ?? null;
+  const heroKey = record?.heroKey ?? null;
+  const isResolved = !loading;
 
-  return { levelKey, heroKey, record, loading };
+  return { levelKey, heroKey, record, loading, error, isResolved };
 }

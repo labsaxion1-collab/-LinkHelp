@@ -9,13 +9,28 @@ import { isPwaStandalone } from '@/utils/pwaRuntime';
 
 const STORAGE_KEY = 'linkhelp_pwa_install_dismissed';
 
-/** Chrome/Edge install banner + iOS “Add to Home Screen” hint */
+function isIosMobileDevice(): boolean {
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') return false;
+  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  return isIos && window.matchMedia('(max-width: 767px)').matches;
+}
+
+/** Chrome/Edge install banner + iOS “Add to Home Screen” hint — app host only. */
 export function PwaInstallPrompt() {
   const { t } = useLanguage();
   const { pathname } = useLocation();
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
   const [iosHint, setIosHint] = useState(false);
+  const [isMobileLayout, setIsMobileLayout] = useState(true);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const sync = () => setIsMobileLayout(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
 
   useEffect(() => {
     if (pathname === ROUTES.messages) setVisible(false);
@@ -24,7 +39,6 @@ export function PwaInstallPrompt() {
   useEffect(() => {
     if (pathname === ROUTES.messages) return;
     if (!shouldShowPwaInstallPrompt()) return;
-
     if (!isAppShellPath(pathname)) return;
     try {
       if (localStorage.getItem(STORAGE_KEY) === '1') return;
@@ -32,10 +46,9 @@ export function PwaInstallPrompt() {
       /* ignore */
     }
 
-    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
     if (isPwaStandalone()) return;
 
-    if (isIos) {
+    if (isIosMobileDevice()) {
       setIosHint(true);
       setVisible(true);
       return;
@@ -44,6 +57,7 @@ export function PwaInstallPrompt() {
     const onBip = (e: Event) => {
       e.preventDefault();
       setDeferred(e as BeforeInstallPromptEvent);
+      setIosHint(false);
       setVisible(true);
     };
     window.addEventListener('beforeinstallprompt', onBip);
@@ -68,35 +82,57 @@ export function PwaInstallPrompt() {
 
   if (!visible || pathname === ROUTES.messages) return null;
 
+  const showInstallButton = !iosHint && deferred != null;
+  const showIosOnly = iosHint && isMobileLayout;
+  const showDesktopBanner = !isMobileLayout && showInstallButton;
+
+  if (!showIosOnly && !showInstallButton) return null;
+
+  const panel = (
+    <>
+      <div className="p-2 rounded-xl bg-primary-50 text-primary-600 shrink-0">
+        <Download className="w-5 h-5" aria-hidden />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold text-gray-900 leading-snug">{t('pwa_install.title')}</p>
+        <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+          {iosHint ? t('pwa_install.body_ios') : t('pwa_install.body_chrome')}
+        </p>
+        {showInstallButton ? (
+          <button
+            type="button"
+            onClick={() => void install()}
+            className="mt-2 w-full min-h-[44px] rounded-xl bg-primary-600 text-white text-sm font-bold hover:bg-primary-700"
+          >
+            {t('pwa_install.cta')}
+          </button>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        onClick={dismiss}
+        className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
+        aria-label={t('common.close')}
+      >
+        <X className="w-5 h-5" />
+      </button>
+    </>
+  );
+
+  if (showDesktopBanner) {
+    return (
+      <div className="hidden md:block fixed bottom-6 right-6 z-[42] max-w-sm animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="rounded-2xl border border-primary-100 bg-white shadow-lg shadow-slate-900/10 p-3 flex gap-3 items-start">
+          {panel}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="md:hidden fixed bottom-[calc(4.5rem+max(env(safe-area-inset-bottom),0.5rem))] left-3 right-3 z-[42] animate-in slide-in-from-bottom-4 fade-in duration-300">
       <div className="rounded-2xl border border-primary-100 bg-white shadow-lg shadow-slate-900/10 p-3 flex gap-3 items-start">
-        <div className="p-2 rounded-xl bg-primary-50 text-primary-600 shrink-0">
-          <Download className="w-5 h-5" aria-hidden />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-gray-900 leading-snug">{t('pwa_install.title')}</p>
-          <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-            {iosHint ? t('pwa_install.body_ios') : t('pwa_install.body_chrome')}
-          </p>
-          {!iosHint && deferred ? (
-            <button
-              type="button"
-              onClick={() => void install()}
-              className="mt-2 w-full min-h-[44px] rounded-xl bg-primary-600 text-white text-sm font-bold hover:bg-primary-700"
-            >
-              {t('pwa_install.cta')}
-            </button>
-          ) : null}
-        </div>
-        <button
-          type="button"
-          onClick={dismiss}
-          className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
-          aria-label={t('common.close')}
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {panel}
       </div>
     </div>
   );

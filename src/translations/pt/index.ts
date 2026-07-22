@@ -232,11 +232,22 @@ export const pt = {
     body: 'Ative notificações para receber alertas de novos pedidos e mensagens.',
     enable: 'Ativar notificações',
   },
+  www_nav: {
+    open_app: 'Abrir aplicativo',
+    login: 'Entrar',
+    menu: 'Menu',
+  },
+  legacy_pwa_migration: {
+    title: 'O aplicativo LinkHelp mudou',
+    body: 'Agora o LinkHelp possui um endereço exclusivo para o aplicativo. Abra o novo aplicativo para continuar.',
+    cta: 'Abrir novo aplicativo',
+    hint: 'Depois de abrir, instale novamente o LinkHelp para atualizar o atalho na sua tela inicial.',
+  },
   pwa_install: {
     title: 'Instalar LinkHelp',
     body_chrome: 'Adicione à tela inicial para acesso rápido e experiência de app.',
     body_ios: 'Toque em Compartilhar e depois “Adicionar à Tela de Início”.',
-    cta: 'Instalar',
+    cta: 'Instalar aplicativo',
   },
   notifications: {
     title: 'Notificações',

@@ -1,20 +1,27 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, Mail, Sparkles, UserPlus, X, Globe } from 'lucide-react';
+import { ExternalLink, LogIn, Mail, Menu, Sparkles, UserPlus, X, Globe } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { ROUTES } from '@/utils/constants';
-import { hrefForMarketplaceRoute, isExternalAbsoluteHref } from '@/utils/marketingNav';
+import {
+  APP_MARKETING_URLS,
+  hrefForMarketplaceRoute,
+  isExternalAbsoluteHref,
+} from '@/utils/marketingNav';
 import type { AppLanguage } from '@/services/translationService';
 
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** www institutional — no marketplace account chrome */
+  variant?: 'guest' | 'www';
 };
 
-export function MobileGuestDrawer({ open, onClose }: Props) {
+export function MobileGuestDrawer({ open, onClose, variant = 'guest' }: Props) {
   const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
+  const isWww = variant === 'www';
 
   useEffect(() => {
     if (!open) return;
@@ -35,6 +42,11 @@ export function MobileGuestDrawer({ open, onClose }: Props) {
     navigate(href);
   };
 
+  const openApp = () => {
+    onClose();
+    window.location.href = APP_MARKETING_URLS.open;
+  };
+
   const setLang = (lang: AppLanguage) => {
     setLanguage(lang);
   };
@@ -53,13 +65,15 @@ export function MobileGuestDrawer({ open, onClose }: Props) {
         className="absolute right-0 top-0 flex h-full w-[min(88vw,320px)] flex-col bg-white shadow-[-16px_0_48px_rgba(15,23,42,0.16)] animate-in slide-in-from-right duration-300 md:w-[min(24rem,92vw)]"
         role="dialog"
         aria-modal="true"
-        aria-label={t('mobile_nav.guest_menu')}
+        aria-label={isWww ? t('www_nav.menu') : t('mobile_nav.guest_menu')}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2563FF]">Link Help</p>
-            <p className="text-base font-black text-[#0F172A]">{t('mobile_nav.guest_menu')}</p>
+            <p className="text-base font-black text-[#0F172A]">
+              {isWww ? t('www_nav.menu') : t('mobile_nav.guest_menu')}
+            </p>
           </div>
           <button
             type="button"
@@ -72,10 +86,23 @@ export function MobileGuestDrawer({ open, onClose }: Props) {
         </div>
 
         <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
+          {isWww ? (
+            <button
+              type="button"
+              onClick={openApp}
+              className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-[#1677FF] via-[#1B8FFF] to-[#00D4FF] px-4 py-3.5 text-left text-sm font-bold text-white shadow-[0_14px_32px_rgba(37,99,255,0.28)]"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
+                <ExternalLink className="h-5 w-5" />
+              </span>
+              {t('www_nav.open_app')}
+            </button>
+          ) : null}
+
           <button
             type="button"
             onClick={() => go(ROUTES.howItWorks)}
-            className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+            className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left text-sm font-bold text-slate-800 transition hover:bg-slate-50 ${isWww ? 'mt-3' : ''}`}
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF2FF] text-[#2563FF]">
               <Sparkles className="h-5 w-5" />
@@ -118,25 +145,53 @@ export function MobileGuestDrawer({ open, onClose }: Props) {
         </nav>
 
         <div className="shrink-0 space-y-2 border-t border-slate-100 px-4 py-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
-          <button
-            type="button"
-            onClick={() => go(ROUTES.login)}
-            className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
-          >
-            <LogIn className="h-4 w-4" />
-            {t('nav.login')}
-          </button>
-          <button
-            type="button"
-            onClick={() => go(ROUTES.signup)}
-            className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#1677FF] via-[#1B8FFF] to-[#00D4FF] px-5 text-sm font-bold text-white shadow-[0_14px_32px_rgba(37,99,255,0.28)] transition hover:brightness-110"
-          >
-            <UserPlus className="h-4 w-4" />
-            {t('nav.signup')}
-          </button>
+          {isWww ? (
+            <>
+              <button
+                type="button"
+                onClick={() => go(ROUTES.login)}
+                className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+              >
+                <LogIn className="h-4 w-4" />
+                {t('www_nav.login')}
+              </button>
+              <button
+                type="button"
+                onClick={() => go(ROUTES.signup)}
+                className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-5 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+              >
+                <UserPlus className="h-4 w-4" />
+                {t('nav.signup')}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => go(ROUTES.login)}
+                className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+              >
+                <LogIn className="h-4 w-4" />
+                {t('nav.login')}
+              </button>
+              <button
+                type="button"
+                onClick={() => go(ROUTES.signup)}
+                className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#1677FF] via-[#1B8FFF] to-[#00D4FF] px-5 text-sm font-bold text-white shadow-[0_14px_32px_rgba(37,99,255,0.28)] transition hover:brightness-110"
+              >
+                <UserPlus className="h-4 w-4" />
+                {t('nav.signup')}
+              </button>
+            </>
+          )}
         </div>
       </aside>
     </div>,
     document.body,
   );
+}
+
+/** Icon for www institutional mobile menu trigger */
+export function WwwInstitutionalMenuIcon() {
+  return <Menu className="h-4 w-4" />;
 }

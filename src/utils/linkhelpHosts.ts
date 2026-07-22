@@ -1,6 +1,8 @@
 /** Central hostname / origin constants for LinkHelp multi-host routing. */
 
 export const WWW_HOSTNAME = 'www.linkhelp.app';
+/** Apex domain — may serve combined profile until canonical redirect; legacy PWA still uses this host. */
+export const APEX_HOSTNAME = 'linkhelp.app';
 export const APP_HOSTNAME = 'app.linkhelp.app';
 export const FLUX_HOSTNAME = 'flux.linkhelp.app';
 
@@ -81,6 +83,12 @@ export function isWwwHost(hostname?: string): boolean {
     return hostname.toLowerCase() === WWW_HOSTNAME;
   }
   return getCurrentHostProfile() === 'www';
+}
+
+/** Hostnames where an old marketplace PWA could have been installed (not app/flux). */
+export function isLegacyWwwPublicHostname(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  return h === WWW_HOSTNAME || h === APEX_HOSTNAME;
 }
 
 export function isAppHost(hostname?: string): boolean {

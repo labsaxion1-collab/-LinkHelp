@@ -40,7 +40,9 @@ export const HERO_LAZY_LOADERS: Record<string, HeroModuleLoader> = {
   helper_lenda: () =>
     import('@/components/hero/HelperLendaHero').then((m) => ({ default: m.HelperLendaHero })),
   client_confiavel: () =>
-    import('@/components/hero/ClientConfiavelhero').then((m) => ({ default: m.ClientConfiavelhero })),
+    import('@/components/hero/ClientConfiavelHeroWebPValidation').then((m) => ({
+      default: m.ClientConfiavelHeroWebPValidation,
+    })),
   client_ouro: () =>
     import('@/components/hero/ClientOuroHero').then((m) => ({ default: m.ClientOuroHero })),
   client_vip: () =>

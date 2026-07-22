@@ -47,14 +47,10 @@ const HERO_ASSET_LOADERS: Record<string, HeroAssetLoader> = {
     };
   },
   client_confiavel: async () => {
-    const [bg, medal, pedestal] = await Promise.all([
-      import('@/assets/hero/backgrounds/client/bg-roxo.png?url'),
-      import('@/assets/hero/medals/client/confiavel.png?url'),
-      import('@/assets/hero/pedestal/pedestal-azul.png?url'),
-    ]);
+    const media = await import('@/gamification/hero/clientConfiavelHeroMedia');
     return {
-      essential: [bg.default, medal.default, pedestal.default],
-      deferred: [await particlesLoader()],
+      essential: media.clientConfiavelPreloadUrls(),
+      deferred: media.clientConfiavelDeferredPreloadUrls(),
     };
   },
   helper_profissional: async () => {

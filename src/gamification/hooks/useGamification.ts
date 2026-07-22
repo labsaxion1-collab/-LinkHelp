@@ -6,8 +6,12 @@ import type { Database } from '@/types/supabase.database';
 import type { LevelKey, UserType } from '@/gamification/types/gamification';
 import {
   fetchGamificationMe,
-  requestGamificationRecalculate,
 } from '@/gamification/services/gamificationApiClient';
+import {
+  isGamificationRecordForUser,
+  normalizeGamificationRecordUserId,
+  scheduleGamificationRecalculate,
+} from '@/gamification/hero/gamificationBackgroundRecalculate';
 import {
   acquireGamificationHookEffect,
   beginGamificationSession,
@@ -146,11 +150,14 @@ export function useGamification(userType: UserType): UseGamificationResult {
         void (async () => {
           try {
             const ensured = await fetchGamificationMe(userType);
-            let resolved = ensured;
-            const fresh = await requestGamificationRecalculate(userType);
-            if (fresh) resolved = fresh;
             if (cancelled || !isGamificationGenerationCurrent(userId, userType, generation)) return;
-            commitGamificationSuccess(userId, userType, generation, resolved);
+            if (!isGamificationRecordForUser(ensured, userId, userType)) {
+              commitGamificationError(userId, userType, generation);
+              return;
+            }
+            const record = normalizeGamificationRecordUserId(ensured, userId);
+            commitGamificationSuccess(userId, userType, generation, record);
+            scheduleGamificationRecalculate(userId, userType, generation);
           } catch {
             if (cancelled || !isGamificationGenerationCurrent(userId, userType, generation)) return;
             commitGamificationError(userId, userType, generation);

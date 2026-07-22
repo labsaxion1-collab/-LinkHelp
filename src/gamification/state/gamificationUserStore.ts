@@ -1,5 +1,6 @@
 import type { UserType } from '@/gamification/types/gamification';
 import type { UserGamificationRecord } from '@/gamification/services/gamificationService';
+import { heroPerfMark } from '@/gamification/hero/heroPerformance';
 
 export type GamificationSnapshot = {
   userId: string | null;
@@ -81,6 +82,7 @@ export function beginGamificationSession(userId: string, userType: UserType): nu
     error: false,
     generation,
   };
+  heroPerfMark('api-start');
   notify(entry);
   return generation;
 }
@@ -110,6 +112,7 @@ export function commitGamificationSuccess(
     error: false,
     generation,
   };
+  heroPerfMark('api-ready', record.heroKey);
   notify(entry);
 }
 

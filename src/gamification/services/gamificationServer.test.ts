@@ -237,6 +237,7 @@ describe('useGamification — sem escrita direta', () => {
     expect(source).not.toContain('getUserGamification');
     expect(source).not.toContain('.upsert');
     expect(source).toContain('fetchGamificationMe');
-    expect(source).toContain('requestGamificationRecalculate');
+    expect(source).toContain('scheduleGamificationRecalculate');
+    expect(source).not.toContain('requestGamificationRecalculate');
   });
 });

@@ -113,10 +113,25 @@ export default defineConfig(({ mode }) => {
       'process.env.VITE_GOOGLE_MAPS_PLATFORM_KEY': JSON.stringify(
         env.VITE_GOOGLE_MAPS_PLATFORM_KEY || '',
       ),
+      /** Vercel sets VERCEL_ENV at build time (preview | production | development). */
+      'import.meta.env.VITE_VERCEL_ENV': JSON.stringify(
+        env.VITE_VERCEL_ENV || process.env.VERCEL_ENV || '',
+      ),
     },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
+      },
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules/@remotion/player') || id.includes('node_modules/remotion/')) {
+              return 'remotion-player';
+            }
+          },
+        },
       },
     },
     server: {

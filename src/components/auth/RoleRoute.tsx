@@ -5,7 +5,7 @@ import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDeb
 import { dashboardPathForRole } from '@/utils/userRole';
 import { ROUTES } from '@/utils/constants';
 import type { ProfileRole } from '@/types/database';
-import { PageLoader } from '@/components/common/PageLoader';
+import { HomeDashboardRoutePlaceholder } from '@/components/home/HomeDashboardShellContext';
 import { profileIsDeleted } from '@/utils/parseOAuthCallbackError';
 
 type Props = {
@@ -18,7 +18,9 @@ export function RoleRoute({ requiredRole }: Props) {
   const { profileRole } = useAppMode();
   const location = useLocation();
 
-  if (!profile) return <PageLoader />;
+  if (!profile) {
+    return <HomeDashboardRoutePlaceholder />;
+  }
 
   if (profileIsDeleted(profile)) {
     return <Navigate to={ROUTES.dashboard} replace />;

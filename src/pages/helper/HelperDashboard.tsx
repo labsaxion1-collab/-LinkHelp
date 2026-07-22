@@ -78,6 +78,7 @@ import { LhCard } from '@/components/design-system/LhCard';
 import { DynamicHeroRenderer } from '@/gamification/components/DynamicHeroRenderer';
 import { GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
 import { useGamification } from '@/gamification/hooks/useGamification';
+import { useMarkHomeDashboardSurfaceReady } from '@/components/home/HomeDashboardShellContext';
 
 type HelperHomeInfoSlide = {
   id: string;
@@ -101,6 +102,7 @@ const CATEGORY_THUMBNAILS: Record<string, string> = {
 };
 
 export default function HelperDashboard() {
+  useMarkHomeDashboardSurfaceReady();
   const location = useLocation();
   const navigate = useNavigate();
   const [postText, setPostText] = useState('');

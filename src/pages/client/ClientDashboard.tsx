@@ -76,6 +76,7 @@ import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { useGamification } from '@/gamification/hooks/useGamification';
 import { GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
 import { AppHomeClientQuickStrip } from '@/components/home/AppHomeClientQuickStrip';
+import { useMarkHomeDashboardSurfaceReady } from '@/components/home/HomeDashboardShellContext';
 
 const SERVICE_CONFIRM_DISMISS_PREFIX = 'lh_service_confirm_skip_';
 import { translateJobTitle } from '@/utils/translateCategory';
@@ -135,6 +136,7 @@ function estimateClientLeadQuality(description: string, location: string, budget
 }
 
 export default function ClientDashboard() {
+  useMarkHomeDashboardSurfaceReady();
   const clientGamification = useGamification('client');
   const clientDashboardAccent = CLIENT_DASHBOARD_MEDAL_ACCENT;
   const [showCreditModal, setShowCreditModal] = useState(false);

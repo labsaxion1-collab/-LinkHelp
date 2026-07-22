@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useGamification } from '@/gamification/hooks/useGamification';
 import type { UserType } from '@/gamification/types/gamification';
 import {
   applyMedalTheme,
   getDefaultMedalLevelKey,
-  readCachedMedalThemeKey,
   resolveMedalTheme,
   writeCachedMedalThemeKey,
   type MedalThemeTokens,
@@ -22,7 +21,7 @@ export type UseMedalThemeResult = {
  * Lê a gamificação do usuário e aplica o tema da medalha no `documentElement`.
  * Atualiza automaticamente via realtime do `useGamification`.
  *
- * Anti-flash: aplica a última chave válida do localStorage antes do fetch oficial.
+ * Não aplica nível padrão nem cache de outra sessão antes da gamificação resolver.
  */
 export function useMedalTheme(userType?: UserType | null): UseMedalThemeResult {
   const { profile, user } = useAuth();
@@ -30,37 +29,28 @@ export function useMedalTheme(userType?: UserType | null): UseMedalThemeResult {
     userType ?? (profile?.role === 'helper' ? 'helper' : 'client');
 
   const { levelKey, heroKey, loading, record } = useGamification(resolvedType);
-  const cachedBootstrapped = useRef<string | null>(null);
 
-  const theme = useMemo(
-    () => resolveMedalTheme(heroKey || levelKey, resolvedType),
-    [heroKey, levelKey, resolvedType],
-  );
+  const theme = useMemo(() => {
+    if (heroKey || levelKey) {
+      return resolveMedalTheme(heroKey || levelKey!, resolvedType);
+    }
+    if (user?.id && loading) {
+      return resolveMedalTheme(getDefaultMedalLevelKey('helper'), 'helper');
+    }
+    return resolveMedalTheme(getDefaultMedalLevelKey(resolvedType), resolvedType);
+  }, [heroKey, levelKey, resolvedType, loading, user?.id]);
 
-  // 1) Anti-flash: última chave salva (só nível/hero, sem dados sensíveis).
   useEffect(() => {
     if (!user?.id) {
       applyMedalTheme(getDefaultMedalLevelKey('helper'), 'helper');
-      cachedBootstrapped.current = null;
       return;
     }
 
-    const bootKey = `${user.id}:${resolvedType}`;
-    if (cachedBootstrapped.current === bootKey) return;
-    cachedBootstrapped.current = bootKey;
-
-    const cached = readCachedMedalThemeKey(user.id, resolvedType);
-    applyMedalTheme(cached ?? getDefaultMedalLevelKey(resolvedType), resolvedType);
-  }, [user?.id, resolvedType]);
-
-  // 2) Fonte oficial: gamificação (API + realtime).
-  useEffect(() => {
-    if (!user?.id) return;
-
-    // Enquanto carrega sem record, manter cache/fallback já aplicado.
     if (loading && !record) return;
 
-    const officialKey = heroKey || levelKey || getDefaultMedalLevelKey(resolvedType);
+    const officialKey = heroKey || levelKey;
+    if (!officialKey) return;
+
     applyMedalTheme(officialKey, resolvedType);
     writeCachedMedalThemeKey(user.id, resolvedType, officialKey);
   }, [user?.id, heroKey, levelKey, resolvedType, loading, record]);

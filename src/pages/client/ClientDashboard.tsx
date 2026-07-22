@@ -74,6 +74,8 @@ import { CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';
 import { DynamicHeroRenderer } from '@/gamification/components/DynamicHeroRenderer';
 import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { useGamification } from '@/gamification/hooks/useGamification';
+import { GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
+import { AppHomeClientQuickStrip } from '@/components/home/AppHomeClientQuickStrip';
 
 const SERVICE_CONFIRM_DISMISS_PREFIX = 'lh_service_confirm_skip_';
 import { translateJobTitle } from '@/utils/translateCategory';
@@ -164,7 +166,6 @@ export default function ClientDashboard() {
   const [createInitialCategory, setCreateInitialCategory] = useState('');
   const [createInitialSubcategory, setCreateInitialSubcategory] = useState('');
   const [activeSidebarTab, setActiveSidebarTab] = useState<'dashboard' | 'my-helpers' | 'active-services' | 'saved'>('dashboard');
-  const [activeHowItWorksStep, setActiveHowItWorksStep] = useState(0);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [previousAppCount, setPreviousAppCount] = useState(0);
@@ -389,14 +390,6 @@ export default function ClientDashboard() {
   }, [routerLocation.state]);
 
   useEffect(() => {
-    if (activeSidebarTab !== 'dashboard') return;
-    const timer = window.setInterval(() => {
-      setActiveHowItWorksStep((current) => (current + 1) % 3);
-    }, 3200);
-    return () => window.clearInterval(timer);
-  }, [activeSidebarTab]);
-
-  useEffect(() => {
     const state = routerLocation.state as { openCreate?: boolean } | null;
     if (routerLocation.pathname === ROUTES.clientDashboard && state?.openCreate) {
       setShowCreateModal(true);
@@ -505,14 +498,19 @@ export default function ClientDashboard() {
     () => applications.filter((app) => clientJobs.some((job) => job.id === app.jobId)).length,
     [applications, clientJobs],
   );
-
-  const howItWorksSteps = [
-    { icon: Icons.ClipboardCheck, title: t('client_how_it_works.card1_title'), body: t('client_how_it_works.card1_desc') },
-    { icon: Icons.UsersRound, title: t('client_how_it_works.card2_title'), body: t('client_how_it_works.card2_desc') },
-    { icon: Icons.ShieldCheck, title: t('client_how_it_works.card3_title'), body: t('client_how_it_works.card3_desc') },
-  ];
-  const activeHowItWorks = howItWorksSteps[activeHowItWorksStep] ?? howItWorksSteps[0];
-  const ActiveHowItWorksIcon = activeHowItWorks.icon;
+  const pendingApplicationsForClient = useMemo(
+    () =>
+      applications.filter(
+        (app) =>
+          (app.status === 'pending' || app.status === 'viewed') &&
+          clientJobs.some((job) => job.id === app.jobId),
+      ).length,
+    [applications, clientJobs],
+  );
+  const clientUpcomingCount = useMemo(
+    () => upcomingJobs.filter((uj) => clientJobs.some((job) => job.id === uj.jobId)).length,
+    [upcomingJobs, clientJobs],
+  );
 
   const handleConfirmPauseJob = async () => {
     if (!pauseTargetJobId || pausingJobId) return;
@@ -773,6 +771,8 @@ export default function ClientDashboard() {
         <DynamicHeroRenderer
           userType="client"
           gamification={clientGamification.record}
+          gamificationLoading={clientGamification.loading}
+          gamificationError={clientGamification.error}
           avatarUrl={me.avatar}
           balance={authLoading ? null : clientCreditsBalance}
           completedServices={0}
@@ -1263,56 +1263,69 @@ export default function ClientDashboard() {
             <section className="relative bg-[#F5F7FB] px-0 pb-24 pt-0 sm:px-0 md:px-0">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_5%,rgba(37,99,255,0.12),transparent_28%),radial-gradient(circle_at_86%_20%,rgba(59,130,246,0.10),transparent_28%)]" />
               <div className="relative space-y-7">
+                <AppHomeClientQuickStrip
+                  activeJobsCount={activeClientJobs.length}
+                  pendingApplicationsCount={pendingApplicationsForClient}
+                  upcomingServicesCount={clientUpcomingCount}
+                  creditsBalance={authLoading ? null : clientCreditsBalance}
+                  creditsLoading={authLoading}
+                  onOpenActiveServices={() => setActiveSidebarTab('active-services')}
+                  onOpenMessages={() => navigate(ROUTES.messages)}
+                  onCreateRequest={() => openCreateModal()}
+                />
+
                 <section className="px-4 sm:px-6 md:px-8">
-                  <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_how_it_works.title')}</h2>
-                  <div className="mt-4">
-                    <article key={activeHowItWorksStep} className="relative h-[7.75rem] overflow-hidden rounded-[1.6rem] bg-white px-4 py-3 shadow-[0_16px_42px_rgba(15,23,42,0.08)] ring-1 ring-slate-100 transition-all duration-500 animate-in fade-in slide-in-from-right-2 sm:h-32">
-                      <span className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full bg-[#2563FF] text-sm font-black text-white shadow-[0_8px_18px_rgba(37,99,255,0.28)]">{activeHowItWorksStep + 1}</span>
-                      <div className="flex h-full items-center gap-4 pr-10">
-                        <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#EAF2FF] text-[#2563FF]">
-                          <ActiveHowItWorksIcon className="h-8 w-8" />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="line-clamp-2 block text-[clamp(1rem,4.6vw,1.125rem)] font-black leading-tight text-[#0B1220]">{activeHowItWorks.title}</span>
-                          <span className="mt-1 line-clamp-2 block text-[clamp(0.72rem,3.3vw,0.8125rem)] font-semibold leading-snug text-[#64748B]">{activeHowItWorks.body}</span>
-                        </span>
-                      </div>
-                    </article>
-                    <div className="mt-3 flex justify-center gap-2">
-                      {howItWorksSteps.map((step, index) => (
-                        <button
-                          key={step.title}
-                          type="button"
-                          aria-label={`Ver etapa ${index + 1}`}
-                          onClick={() => setActiveHowItWorksStep(index)}
-                          className={`h-2 rounded-full transition-all ${activeHowItWorksStep === index ? 'w-7 bg-[#2563FF]' : 'w-2 bg-blue-200'}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                  <GamificationProgressCard userType="client" />
                 </section>
 
                 <section className="px-4 sm:px-6 md:px-8">
-                  <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_dashboard.quick_summary_title')}</h2>
-                  <div className="mt-4">
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { icon: Icons.Star, value: '0', label: 'Servi\u00e7os realizados' },
-                        { icon: Icons.ThumbsUp, value: '0%', label: 'Taxa de satisfa\u00e7\u00e3o' },
-                        { icon: Icons.Star, value: '0,0', label: 'Avalia\u00e7\u00e3o m\u00e9dia' },
-                        { icon: Icons.UsersRound, value: '0', label: 'Conectados' },
-                      ].map((stat) => {
-                        const Icon = stat.icon;
-                        return (
-                          <article key={stat.label} className={clsx('flex flex-col items-center rounded-2xl border px-3 py-5 text-center', clientDashboardAccent.summaryCard)}>
-                            <p className={clsx('text-xs font-semibold leading-snug', clientDashboardAccent.summaryLabel)}>{stat.label}</p>
-                            <p className="mt-1.5 text-[2rem] font-black leading-none tracking-tight text-white">{stat.value}</p>
-                          </article>
-                        );
-                      })}
-                    </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-lg font-black tracking-tight text-[#0B1220]">
+                      {t('app_home.client_active_preview_title')}
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSidebarTab('active-services')}
+                      className={clsx('inline-flex items-center gap-1 text-sm font-black', clientDashboardAccent.actionLink)}
+                    >
+                      {t('app_home.client_active_preview_cta')}
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="mt-4 space-y-3">
+                    {activeClientJobs.length === 0 ? (
+                      <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-sm font-semibold text-slate-500">
+                        {t('app_home.client_active_preview_empty')}
+                      </p>
+                    ) : (
+                      activeClientJobs.slice(0, 3).map((job) => (
+                        <button
+                          key={job.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveSidebarTab('active-services');
+                            setDetailJob(job);
+                          }}
+                          className="flex w-full items-center gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 text-left shadow-sm transition hover:border-blue-100"
+                        >
+                          <div className={clsx('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', clientDashboardAccent.activitySoftBg, clientDashboardAccent.activityText)}>
+                            <Icons.Briefcase className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate whitespace-nowrap text-sm font-black text-[#0B1220]">
+                              {translateJobTitle(job.title, job.category, job.subcategory, t)}
+                            </p>
+                            <p className="truncate whitespace-nowrap text-xs font-semibold text-slate-500">
+                              {formatJobBudgetDisplay(job, t)}
+                            </p>
+                          </div>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                        </button>
+                      ))
+                    )}
                   </div>
                 </section>
+
                 <section className="relative" style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)' }}>
                   <div className="mb-4 flex items-center justify-between gap-3 px-4 sm:px-6 md:px-8">
                     <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_dashboard.popular_categories_title')}</h2>

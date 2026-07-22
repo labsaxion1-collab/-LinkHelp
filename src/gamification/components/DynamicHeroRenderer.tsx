@@ -12,6 +12,9 @@ import { ClientEliteHero } from '@/components/hero/ClientEliteHero';
 import type { UserType } from '@/gamification/types/gamification';
 import type { UserGamificationRecord } from '@/gamification/services/gamificationService';
 import { DEFAULT_HERO_KEY, resolveHeroKey } from '@/gamification/config/heroKeys';
+import { GamificationHeroSkeleton } from '@/gamification/components/GamificationHeroSkeleton';
+import { GamificationHeroUnavailable } from '@/gamification/components/GamificationHeroUnavailable';
+import { resolveHeroDisplayPhase } from '@/gamification/utils/heroDisplayGate';
 
 /** Props compartilhadas pelos componentes de hero existentes. */
 type HeroSharedProps = {
@@ -49,18 +52,43 @@ const HERO_REGISTRY: Record<string, ComponentType<HeroSharedProps>> = {
 type Props = HeroSharedProps & {
   userType: UserType;
   gamification?: UserGamificationRecord | null;
+  gamificationLoading?: boolean;
+  gamificationError?: boolean;
 };
 
 /**
- * Renderiza UMA única hero decidida por `gamification.heroKey`.
- * Fallbacks: sem gamification ou heroKey desconhecida → hero de nível 1
- * do papel; userType inválido → null.
+ * Renderiza UMA única hero decidida por `gamification.heroKey` da API.
+ * Enquanto carrega: skeleton. Em erro: estado neutro (sem nível 1 presumido).
  */
-export function DynamicHeroRenderer({ userType, gamification, ...heroProps }: Props) {
+export function DynamicHeroRenderer({
+  userType,
+  gamification,
+  gamificationLoading = false,
+  gamificationError = false,
+  ...heroProps
+}: Props) {
   if (!DEFAULT_HERO_KEY[userType]) return null;
 
-  const heroKey = resolveHeroKey(userType, gamification?.heroKey);
+  const phase = resolveHeroDisplayPhase({
+    loading: gamificationLoading,
+    error: gamificationError,
+    record: gamification ?? null,
+  });
+
+  if (phase === 'loading') {
+    return <GamificationHeroSkeleton userType={userType} />;
+  }
+
+  if (phase === 'error') {
+    return <GamificationHeroUnavailable userType={userType} />;
+  }
+
+  const heroKey = resolveHeroKey(userType, gamification!.heroKey);
   const Hero = HERO_REGISTRY[heroKey] ?? HERO_REGISTRY[DEFAULT_HERO_KEY[userType]];
 
-  return <Hero {...heroProps} />;
+  return (
+    <div className="animate-in fade-in duration-200">
+      <Hero {...heroProps} />
+    </div>
+  );
 }

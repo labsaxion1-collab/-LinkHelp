@@ -1015,6 +1015,8 @@ export default function HelperDashboard() {
           <DynamicHeroRenderer
             userType="helper"
             gamification={helperGamification.record}
+            gamificationLoading={helperGamification.loading}
+            gamificationError={helperGamification.error}
             avatarUrl={helperAvatarUrl ?? me.avatar}
             balance={walletBalance}
             completedServices={helperMvpStats.completed}

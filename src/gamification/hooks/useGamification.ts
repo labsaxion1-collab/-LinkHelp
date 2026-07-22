@@ -1,22 +1,37 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import { useAuth } from '@/context/AuthContext';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { Database } from '@/types/supabase.database';
 import type { LevelKey, UserType } from '@/gamification/types/gamification';
-import { getCurrentLevelConfig } from '@/gamification/engines/levelEngine';
 import {
   fetchGamificationMe,
   requestGamificationRecalculate,
 } from '@/gamification/services/gamificationApiClient';
-import type { UserGamificationRecord } from '@/gamification/services/gamificationService';
+import {
+  acquireGamificationHookEffect,
+  beginGamificationSession,
+  clearGamificationInflight,
+  commitGamificationError,
+  commitGamificationRealtime,
+  commitGamificationSuccess,
+  getGamificationSnapshot,
+  getLoggedOutGamificationSnapshot,
+  getReusableGamificationGeneration,
+  isGamificationGenerationCurrent,
+  markGamificationInflight,
+  subscribeGamification,
+  type GamificationSnapshot,
+} from '@/gamification/state/gamificationUserStore';
 import { recordRealtimeChannelCreated, recordRealtimeChannelRemoved, recordRealtimeEvent, recordRealtimeSubscriptionStatus } from '@/lib/dev/supabaseMetrics';
 
 export interface UseGamificationResult {
-  levelKey: LevelKey;
-  heroKey: string;
-  record: UserGamificationRecord | null;
+  levelKey: LevelKey | null;
+  heroKey: string | null;
+  record: GamificationSnapshot['record'];
   loading: boolean;
+  error: boolean;
+  isResolved: boolean;
 }
 
 type ChannelEntry = {
@@ -86,63 +101,83 @@ function acquireGamificationChannel(
 /**
  * Gamificação do usuário autenticado para o papel dado.
  *
- * - Lê e recalcula via API (/api/gamification/me + /recalculate);
- * - Nunca faz upsert/update direto em user_gamification no navegador;
- * - Realtime dispara novo GET /me quando o snapshot muda no banco;
- * - Fallback seguro: sem sessão ou API indisponível → nível 'novo', sem erro na UI.
+ * Estado compartilhado por userId+userType (uma carga por sessão na Home).
+ * Respostas atrasadas de outra geração ou conta não atualizam o snapshot.
  */
 export function useGamification(userType: UserType): UseGamificationResult {
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
-  const [record, setRecord] = useState<UserGamificationRecord | null>(null);
-  const [loading, setLoading] = useState(true);
+  const snapshot = useSyncExternalStore(
+    (onStoreChange) => {
+      if (!userId) return () => {};
+      return subscribeGamification(userId, userType, onStoreChange);
+    },
+    () =>
+      userId ? getGamificationSnapshot(userId, userType) : getLoggedOutGamificationSnapshot(userType),
+    () => getLoggedOutGamificationSnapshot(userType),
+  );
 
   useEffect(() => {
-    setRecord(null);
-
-    if (!userId || !isSupabaseConfigured()) {
-      setLoading(false);
-      return;
-    }
+    if (!userId || !isSupabaseConfigured()) return;
     const db = getSupabase();
-    if (!db) {
-      setLoading(false);
-      return;
-    }
+    if (!db) return;
 
+    const { isPrimary, release: releaseEffect } = acquireGamificationHookEffect(userId, userType);
     let cancelled = false;
-
-    (async () => {
-      try {
-        const ensured = await fetchGamificationMe(userType);
-        if (!cancelled) setRecord(ensured);
-
-        const fresh = await requestGamificationRecalculate(userType);
-        if (!cancelled && fresh) setRecord(fresh);
-      } catch {
-        // Fallback seguro: mantém estado atual.
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+    let generation = 0;
 
     const releaseChannel = acquireGamificationChannel(db, userId, userType, () => {
-      fetchGamificationMe(userType)
+      void fetchGamificationMe(userType)
         .then((next) => {
-          if (!cancelled) setRecord(next);
+          commitGamificationRealtime(userId, userType, next);
         })
         .catch(() => undefined);
     });
 
+    if (isPrimary) {
+      const reusable = getReusableGamificationGeneration(userId, userType);
+      if (reusable !== null) {
+        generation = reusable;
+      } else {
+        generation = beginGamificationSession(userId, userType);
+        markGamificationInflight(userId, userType, generation);
+
+        void (async () => {
+          try {
+            const ensured = await fetchGamificationMe(userType);
+            let resolved = ensured;
+            const fresh = await requestGamificationRecalculate(userType);
+            if (fresh) resolved = fresh;
+            if (cancelled || !isGamificationGenerationCurrent(userId, userType, generation)) return;
+            commitGamificationSuccess(userId, userType, generation, resolved);
+          } catch {
+            if (cancelled || !isGamificationGenerationCurrent(userId, userType, generation)) return;
+            commitGamificationError(userId, userType, generation);
+          } finally {
+            clearGamificationInflight(userId, userType, generation);
+          }
+        })();
+      }
+    }
+
     return () => {
       cancelled = true;
+      releaseEffect();
       releaseChannel();
     };
   }, [userId, userType]);
 
-  const levelKey = record?.levelKey ?? 'novo';
-  const heroKey = record?.heroKey ?? getCurrentLevelConfig(userType, 'novo').heroKey;
+  const levelKey = snapshot.record?.levelKey ?? null;
+  const heroKey = snapshot.record?.heroKey ?? null;
+  const isResolved = !snapshot.loading;
 
-  return { levelKey, heroKey, record, loading };
+  return {
+    levelKey,
+    heroKey,
+    record: snapshot.record,
+    loading: snapshot.loading,
+    error: snapshot.error,
+    isResolved,
+  };
 }

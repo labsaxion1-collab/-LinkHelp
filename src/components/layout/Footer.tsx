@@ -5,6 +5,7 @@ import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
 import { useLanguage } from '@/context/LanguageContext';
 import { isAppShellPath } from '@/utils/navigation';
+import { isAppHost } from '@/utils/linkhelpHosts';
 import { MarketingNavLink } from '@/components/routing/MarketingNavLink';
 import { clsx } from 'clsx';
 
@@ -51,12 +52,21 @@ export default function Footer() {
             >
               {t('footer.about')}
             </Link>
-            <Link
-              to={ROUTES.howItWorks}
-              className={clsx('text-xs font-semibold transition-colors min-h-[44px] flex items-center px-1', isHome ? 'text-[#C7D2FE]/70 hover:text-white' : 'text-gray-500 hover:text-blue-600')}
-            >
-              Como funciona
-            </Link>
+            {isAppHost() ? (
+              <MarketingNavLink
+                to={ROUTES.howItWorks}
+                className={clsx('text-xs font-semibold transition-colors min-h-[44px] flex items-center px-1', isHome ? 'text-[#C7D2FE]/70 hover:text-white' : 'text-gray-500 hover:text-blue-600')}
+              >
+                {t('footer.how_it_works')}
+              </MarketingNavLink>
+            ) : (
+              <Link
+                to={ROUTES.howItWorks}
+                className={clsx('text-xs font-semibold transition-colors min-h-[44px] flex items-center px-1', isHome ? 'text-[#C7D2FE]/70 hover:text-white' : 'text-gray-500 hover:text-blue-600')}
+              >
+                {t('footer.how_it_works')}
+              </Link>
+            )}
             <Link
               to={ROUTES.contact}
               className={clsx('text-xs font-semibold transition-colors min-h-[44px] flex items-center px-1', isHome ? 'text-[#C7D2FE]/70 hover:text-white' : 'text-gray-500 hover:text-blue-600')}

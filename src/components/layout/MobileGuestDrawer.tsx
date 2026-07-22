@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { LogIn, Mail, Sparkles, UserPlus, X, Globe } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { ROUTES } from '@/utils/constants';
+import { hrefForMarketplaceRoute, isExternalAbsoluteHref } from '@/utils/marketingNav';
 import type { AppLanguage } from '@/services/translationService';
 
 type Props = {
@@ -26,7 +27,12 @@ export function MobileGuestDrawer({ open, onClose }: Props) {
 
   const go = (path: string) => {
     onClose();
-    navigate(path);
+    const href = hrefForMarketplaceRoute(path);
+    if (isExternalAbsoluteHref(href)) {
+      window.location.href = href;
+      return;
+    }
+    navigate(href);
   };
 
   const setLang = (lang: AppLanguage) => {

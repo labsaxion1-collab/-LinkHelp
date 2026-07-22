@@ -11,6 +11,9 @@ import { AdminProtectedRoute } from '@/components/admin/AdminProtectedRoute';
 import { FluxAdminLayout } from '@/components/admin/FluxAdminLayout';
 import { LoginSplashGate } from '@/components/auth/LoginSplashGate';
 import { FluxHostGuard } from '@/components/auth/FluxHostGuard';
+import { WwwHostGuard } from '@/components/auth/WwwHostGuard';
+import { AppHostGuard } from '@/components/auth/AppHostGuard';
+import { HostHomeEntry } from '@/components/routing/HostHomeEntry';
 import { LegacyPaymentsRedirect } from '@/routes/LegacyPaymentsRedirect';
 import { AppCatchAllRedirect } from '@/routes/AppCatchAllRedirect';
 
@@ -18,7 +21,6 @@ function lazyPage<T extends { default: ComponentType<unknown> }>(loader: () => P
   return lazy(() => importWithRetry(loader));
 }
 
-const LandingPage = lazyPage(() => import('@/pages/LandingPage'));
 const HowItWorksPage = lazyPage(() => import('@/pages/public/HowItWorksPage'));
 const ContactPage = lazyPage(() => import('@/pages/public/ContactPage'));
 const LoginPage = lazyPage(() => import('@/pages/auth/LoginPage'));
@@ -76,8 +78,10 @@ export function AppRoutes() {
     <Routes>
       <Route element={<Layout />}>
         <Route element={<FluxHostGuard />}>
+        <Route element={<WwwHostGuard />}>
+        <Route element={<AppHostGuard />}>
         <Route element={<PublicOnlyRoute />}>
-          <Route path={ROUTES.home} element={<LandingPage />} />
+          <Route path={ROUTES.home} element={<HostHomeEntry />} />
 
           <Route path="/login" element={<Navigate to={ROUTES.login} replace />} />
           <Route path="/signup" element={<Navigate to={ROUTES.signup} replace />} />
@@ -170,6 +174,8 @@ export function AppRoutes() {
         </Route>
 
         <Route path="*" element={<AppCatchAllRedirect />} />
+        </Route>
+        </Route>
         </Route>
       </Route>
     </Routes>

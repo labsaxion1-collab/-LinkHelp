@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { MarketingNavLink } from '@/components/routing/MarketingNavLink';
 import {
   ArrowRight,
   BadgeCheck,
@@ -68,19 +68,19 @@ export default function HowItWorksPage() {
               confianca e organizacao.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
+              <MarketingNavLink
                 to={`${ROUTES.signup}?role=client`}
                 className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#2563FF] px-6 text-sm font-black text-white shadow-[0_18px_42px_rgba(37,99,255,0.34)] transition hover:brightness-110"
               >
                 Preciso de ajuda
                 <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
+              </MarketingNavLink>
+              <MarketingNavLink
                 to={`${ROUTES.signup}?role=helper`}
                 className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-6 text-sm font-black text-white backdrop-blur-xl transition hover:bg-white/[0.1]"
               >
                 Quero ser helper
-              </Link>
+              </MarketingNavLink>
             </div>
           </div>
         </section>

@@ -4,6 +4,8 @@ import { useAuth } from '@/context/AuthContext';
 import { isFluxAdmin } from '@/utils/adminAccess';
 import { ROUTES } from '@/utils/constants';
 import { isFluxHost } from '@/utils/fluxHost';
+import { resolveCatchAllInAppTarget } from '@/utils/hostRouting';
+import { getCurrentHostProfile } from '@/utils/linkhelpHosts';
 import { resolveFluxHostNavigation } from '@/utils/fluxRedirect';
 
 /** Unknown paths: marketplace → home; FLUX host → admin entry (never public landing). */
@@ -24,5 +26,6 @@ export function AppCatchAllRedirect() {
     return <Navigate to={target} replace />;
   }
 
-  return <Navigate to={ROUTES.home} replace />;
+  const profile = getCurrentHostProfile();
+  return <Navigate to={resolveCatchAllInAppTarget(profile)} replace />;
 }

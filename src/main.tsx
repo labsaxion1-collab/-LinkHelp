@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { shouldRegisterServiceWorker } from '@/utils/linkhelpHosts';
 import { clearChunkReloadFlag } from '@/utils/lazyWithRetry';
 
 function installGlobalErrorLogging() {
@@ -26,7 +27,7 @@ if (import.meta.env.DEV) {
   installGlobalErrorLogging();
 }
 
-if (import.meta.env.PROD) {
+if (import.meta.env.PROD && shouldRegisterServiceWorker()) {
   clearChunkReloadFlag();
   void import('virtual:pwa-register').then(({ registerSW }) => {
     const updateSW = registerSW({

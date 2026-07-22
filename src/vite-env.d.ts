@@ -11,6 +11,11 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_AUTH_FLOW?: string;
   /** Google Maps JavaScript API key (public; restrict by HTTP referrer in Google Cloud). */
   readonly VITE_GOOGLE_MAPS_PLATFORM_KEY?: string;
+  /**
+   * Dev/preview only: simulate `www` | `app` | `flux` host routing on localhost or *.vercel.app.
+   * Ignored in production builds.
+   */
+  readonly VITE_LINKHELP_HOST_PROFILE?: string;
 }
 
 interface ImportMeta {

@@ -1,4 +1,5 @@
 import { isAdminRoute, isFluxHost } from '@/utils/fluxHost';
+import { getCurrentHostProfile, isAppHost } from '@/utils/linkhelpHosts';
 import { isPwaStandalone, type StandaloneWindow } from '@/utils/pwaRuntime';
 
 export const APP_INTRO_SESSION_KEY = 'lh:intro-played';
@@ -35,6 +36,12 @@ export function shouldShowAppIntroVideo(ctx: AppIntroVideoContext): boolean {
   if (!ctx.isStandalone) return false;
   if (isFluxHost(ctx.hostname)) return false;
   if (isAdminRoute(ctx.pathname)) return false;
+  const appHost =
+    isAppHost(ctx.hostname) ||
+    (typeof window !== 'undefined' &&
+      window.location.hostname === ctx.hostname &&
+      getCurrentHostProfile() === 'app');
+  if (!appHost) return false;
   return true;
 }
 

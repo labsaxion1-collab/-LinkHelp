@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { MarketingNavLink } from '@/components/routing/MarketingNavLink';
 import {
   ArrowLeft,
   ArrowRight,
@@ -125,13 +126,13 @@ export default function ContactPage() {
               <h2 className="text-2xl font-black tracking-tight">Ainda nao tem conta?</h2>
               <p className="mt-2 text-sm font-medium text-[#C7D2FE]/74">Crie seu acesso e comece a usar o LinkHelp.</p>
             </div>
-            <Link
+            <MarketingNavLink
               to={ROUTES.signup}
               className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-black text-[#071D48] transition hover:bg-sky-50"
             >
               Criar conta
               <ArrowRight className="h-4 w-4" />
-            </Link>
+            </MarketingNavLink>
           </div>
         </section>
       </main>

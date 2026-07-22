@@ -232,6 +232,17 @@ export const en = {
     body: 'Enable notifications to get alerts for new requests and messages.',
     enable: 'Enable notifications',
   },
+  www_nav: {
+    open_app: 'Open app',
+    login: 'Sign in',
+    menu: 'Menu',
+  },
+  legacy_pwa_migration: {
+    title: 'The LinkHelp app has moved',
+    body: 'LinkHelp now has a dedicated address for the marketplace app. Open the new app to continue.',
+    cta: 'Open new app',
+    hint: 'After opening, install LinkHelp again from the app site to refresh your home screen shortcut.',
+  },
   pwa_install: {
     title: 'Install LinkHelp',
     body_chrome: 'Add LinkHelp to your home screen for faster access and an app-like experience.',

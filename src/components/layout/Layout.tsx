@@ -17,12 +17,16 @@ import { ROUTES } from '@/utils/constants';
 import { clsx } from 'clsx';
 import { AppErrorBoundary } from '@/components/common/AppErrorBoundary';
 import { useLanguage } from '@/context/LanguageContext';
+import { shouldShowLegacyPwaMigration } from '@/utils/legacyPwaMigration';
+import { isWwwInstitutionalSurface } from '@/utils/marketingNav';
+import { LegacyPwaMigrationPage } from '@/pages/public/LegacyPwaMigrationPage';
 
 function LayoutMobileMenus() {
   const { pathname } = useLocation();
   const { open, anchorEl, closeMenu } = useMobileProfileMenu();
   const { isHelperMode } = useAppMode();
   const isConnected = isAppShellPath(pathname);
+  const isWwwInstitutional = isWwwInstitutionalSurface(pathname);
 
   return (
     <>
@@ -33,7 +37,8 @@ function LayoutMobileMenus() {
         isConnected={isConnected}
         isHelperNav={isHelperMode}
       />
-      <MobileGuestDrawer open={open && !isConnected} onClose={closeMenu} />
+      <MobileGuestDrawer open={open && !isConnected && !isWwwInstitutional} onClose={closeMenu} />
+      <MobileGuestDrawer variant="www" open={open && isWwwInstitutional} onClose={closeMenu} />
     </>
   );
 }
@@ -41,6 +46,11 @@ function LayoutMobileMenus() {
 export default function Layout() {
   const { pathname } = useLocation();
   const { t } = useLanguage();
+
+  if (shouldShowLegacyPwaMigration()) {
+    return <LegacyPwaMigrationPage />;
+  }
+
   const isAdmin =
     isAdminPath(pathname) ||
     pathname === ROUTES.adminLogin ||

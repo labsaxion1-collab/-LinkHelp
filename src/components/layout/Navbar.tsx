@@ -15,6 +15,8 @@ import { useMobileProfileMenu } from '@/context/MobileProfileMenuContext';
 import { useTutorial } from '@/context/TutorialContext';
 import { clsx } from 'clsx';
 import { APP_UI_LANGUAGES } from '@/data/spokenLanguages';
+import { APP_MARKETING_URLS, isWwwInstitutionalSurface } from '@/utils/marketingNav';
+import { WwwInstitutionalMenuIcon } from '@/components/layout/MobileGuestDrawer';
 
 export default function Navbar() {
   const { open: mobileProfileOpen, toggleMenu: toggleMobileProfileMenu, closeMenu: closeMobileProfileMenu } =
@@ -43,6 +45,7 @@ export default function Navbar() {
 
   const isHelperNav = isHelperMode;
   const isHome = location.pathname === ROUTES.home;
+  const isWwwInstitutional = isWwwInstitutionalSurface(location.pathname);
   const usePremiumNav =
     isHome ||
     location.pathname === ROUTES.login ||
@@ -50,7 +53,9 @@ export default function Navbar() {
     location.pathname === ROUTES.howItWorks ||
     location.pathname === ROUTES.contact ||
     isConnected;
-  const logoTarget = isConnected
+  const logoTarget = isWwwInstitutional
+    ? ROUTES.home
+    : isConnected
     ? isHelperNav
       ? ROUTES.helperOpportunities
       : ROUTES.clientDashboard
@@ -203,7 +208,40 @@ export default function Navbar() {
           </div>
 
           <div ref={navControlsRef} className={clsx('hidden md:flex md:items-center md:space-x-8', usePremiumNav && 'lh-nav-controls rounded-full px-3 py-2 backdrop-blur-xl')}>
-            {isConnected ? (
+            {isWwwInstitutional ? (
+              <>
+                <div className="relative">
+                  <button
+                    ref={langButtonRef}
+                    type="button"
+                    onClick={() => setIsLangMenuOpen((o) => !o)}
+                    className={`flex items-center space-x-1 rounded-full px-3 py-2 transition-colors focus:outline-none ${usePremiumNav ? 'lh-nav-link text-slate-100/92 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
+                    aria-expanded={isLangMenuOpen}
+                    aria-haspopup="true"
+                  >
+                    <Globe className="w-4 h-4" />
+                    <span className="text-sm font-medium uppercase">{language}</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform ${isLangMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+                <a
+                  href={APP_MARKETING_URLS.login}
+                  className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold transition-colors focus:outline-none ${usePremiumNav ? 'lh-nav-link text-slate-100/92 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  {t('www_nav.login')}
+                </a>
+                <a
+                  href={APP_MARKETING_URLS.open}
+                  className={clsx(
+                    'inline-flex items-center rounded-full px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110',
+                    usePremiumNav && 'lh-nav-cta bg-gradient-to-r from-[#1677FF] to-[#00D4FF]',
+                    !usePremiumNav && 'bg-primary-600 hover:bg-primary-700',
+                  )}
+                >
+                  {t('www_nav.open_app')}
+                </a>
+              </>
+            ) : isConnected ? (
               <>
                 <button
                   type="button"
@@ -282,6 +320,33 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-1.5 md:hidden">
+            {isWwwInstitutional ? (
+              <>
+                <a
+                  href={APP_MARKETING_URLS.open}
+                  className={clsx(
+                    'inline-flex max-w-[9.5rem] items-center justify-center truncate rounded-full px-3 py-2 text-xs font-bold text-white sm:max-w-none sm:px-4 sm:text-sm',
+                    usePremiumNav && 'lh-nav-cta bg-gradient-to-r from-[#1677FF] to-[#00D4FF]',
+                    !usePremiumNav && 'bg-primary-600',
+                  )}
+                >
+                  {t('www_nav.open_app')}
+                </a>
+                <button
+                  type="button"
+                  onClick={(event) => toggleMobileProfileMenu(event.currentTarget)}
+                  className={clsx(
+                    'rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
+                    usePremiumNav ? 'text-slate-100 hover:bg-white/10' : 'text-slate-600 hover:bg-slate-100',
+                  )}
+                  aria-label={t('www_nav.menu')}
+                  aria-expanded={mobileProfileOpen}
+                >
+                  <WwwInstitutionalMenuIcon />
+                </button>
+              </>
+            ) : (
+              <>
             {isConnected ? (
               <button
                 type="button"
@@ -308,6 +373,8 @@ export default function Navbar() {
                 </span>
               )}
             </button>
+              </>
+            )}
           </div>
         </div>
       </div>

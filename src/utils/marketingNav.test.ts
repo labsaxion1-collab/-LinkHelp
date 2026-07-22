@@ -13,6 +13,7 @@ describe('marketingNav', () => {
     expect(APP_MARKETING_URLS.login).toBe(`${APP_ORIGIN}${ROUTES.login}`);
     expect(APP_MARKETING_URLS.registerClient).toBe(`${APP_ORIGIN}${ROUTES.signup}?role=client`);
     expect(APP_MARKETING_URLS.registerHelper).toBe(`${APP_ORIGIN}${ROUTES.signup}?role=helper`);
+    expect(APP_MARKETING_URLS.install).toBe(APP_MARKETING_URLS.open);
   });
 
   it('hrefForMarketplaceRoute uses app origin on www profile', () => {

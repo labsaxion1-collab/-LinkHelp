@@ -1,4 +1,5 @@
 import { ROUTES } from '@/utils/constants';
+import { isInstitutionalPath } from '@/utils/hostRouting';
 import { APP_ORIGIN, getCurrentHostProfile } from '@/utils/linkhelpHosts';
 
 /** Absolute URL on the marketplace app origin (path must start with `/`). */
@@ -14,7 +15,14 @@ export const APP_MARKETING_URLS = {
   register: buildAppAbsoluteUrl(ROUTES.signup),
   registerClient: buildAppAbsoluteUrl(`${ROUTES.signup}?role=client`),
   registerHelper: buildAppAbsoluteUrl(`${ROUTES.signup}?role=helper`),
+  /** PWA install happens on app host — same entry as open. */
+  install: buildAppAbsoluteUrl('/'),
 } as const;
+
+/** www.linkhelp.app institutional pages (landing, como-funciona, contato). */
+export function isWwwInstitutionalSurface(pathname: string): boolean {
+  return getCurrentHostProfile() === 'www' && isInstitutionalPath(pathname);
+}
 
 export function isExternalAbsoluteHref(href: string): boolean {
   return /^https?:\/\//i.test(href);

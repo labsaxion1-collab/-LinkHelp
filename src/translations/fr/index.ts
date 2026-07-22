@@ -232,11 +232,22 @@ export const fr = {
     body: 'Activez les notifications pour recevoir des alertes sur les nouvelles demandes et messages.',
     enable: 'Activer les notifications',
   },
+  www_nav: {
+    open_app: 'Ouvrir l’application',
+    login: 'Connexion',
+    menu: 'Menu',
+  },
+  legacy_pwa_migration: {
+    title: 'L’application LinkHelp a changé',
+    body: 'LinkHelp dispose désormais d’une adresse dédiée pour l’application. Ouvrez la nouvelle application pour continuer.',
+    cta: 'Ouvrir la nouvelle application',
+    hint: 'Après l’ouverture, réinstallez LinkHelp depuis le site app pour mettre à jour le raccourci sur votre écran d’accueil.',
+  },
   pwa_install: {
     title: 'Installer LinkHelp',
     body_chrome: 'Ajoutez LinkHelp à l’écran d’accueil pour un accès rapide, comme une app.',
     body_ios: 'Touchez Partager puis « Sur l’écran d’accueil ».',
-    cta: 'Installer',
+    cta: 'Installer l’application',
   },
   notifications: {
     title: 'Notifications',

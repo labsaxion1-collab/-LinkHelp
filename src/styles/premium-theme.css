@@ -634,4 +634,25 @@
     -webkit-backdrop-filter: blur(24px) saturate(1.5);
     border: 1px solid rgba(255, 255, 255, 0.6);
   }
+
+  /* Hero P0 — camadas PNG entram após load (wrapper do gate, sem alterar lhHero* internos) */
+  .lh-gamification-hero-progressive {
+    background-color: #02040a;
+  }
+
+  .lh-gamification-hero-progressive img {
+    opacity: 0;
+    transition: opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .lh-gamification-hero-progressive img.lh-hero-img-ready {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lh-gamification-hero-progressive img {
+      transition: none;
+      opacity: 1;
+    }
+  }
 }

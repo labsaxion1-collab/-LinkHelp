@@ -84,7 +84,7 @@ describe('loadHeroBundle', () => {
     resetHeroAssetInflightForTests();
   });
 
-  it('chunk + assets do heroKey atual em paralelo', async () => {
+  it('chunk + assets do heroKey atual; preload não bloqueia', async () => {
     const FakeHero = () => null;
     vi.spyOn(heroLazyRegistry, 'loadHeroComponent').mockResolvedValue(FakeHero);
     vi.spyOn(heroAssetUrlLoaders, 'loadHeroAssetUrls').mockResolvedValue({
@@ -125,10 +125,10 @@ describe('DynamicHeroRenderer', () => {
 });
 
 describe('GamificationHeroGate — skeleton único', () => {
-  it('usa um só GamificationHeroSkeleton para API e bundle', async () => {
+  it('usa um só GamificationHeroSkeleton até chunk pronto', async () => {
     const src = await readFile(resolve('src/gamification/hero/GamificationHeroGate.tsx'), 'utf8');
     expect(src).toContain('GamificationHeroSkeleton');
-    expect(src).not.toContain('lh-gamification-hero-mount');
+    expect(src).toContain('lh-gamification-hero-progressive');
     expect(src).not.toContain('animate-in fade-in');
     expect(src).toMatch(/heroReady|visibleKey/);
   });

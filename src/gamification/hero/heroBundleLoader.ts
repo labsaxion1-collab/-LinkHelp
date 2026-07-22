@@ -12,8 +12,7 @@ export type HeroBundleLoadOptions = {
 };
 
 /**
- * Carrega chunk do Hero atual + decodifica assets essenciais em paralelo.
- * URLs de PNG só entram via import() dinâmico por heroKey.
+ * Carrega chunk do Hero atual; preload/decode de PNGs em background (não bloqueia montagem).
  */
 export async function loadHeroBundle(
   heroKey: string,
@@ -27,16 +26,10 @@ export async function loadHeroBundle(
 
   heroPerfMark('import-start', heroKey);
 
-  const assetsPromise = loadHeroAssetUrls(heroKey);
-  const componentPromise = loadHeroComponent(heroKey, userType);
-
-  const [Component, assets] = await Promise.all([componentPromise, assetsPromise]);
-
-  if (signal?.aborted) {
-    throw new DOMException('Aborted', 'AbortError');
-  }
-
-  await preloadImageUrls(assets.essential);
+  const [Component, assets] = await Promise.all([
+    loadHeroComponent(heroKey, userType),
+    loadHeroAssetUrls(heroKey),
+  ]);
 
   if (signal?.aborted) {
     throw new DOMException('Aborted', 'AbortError');
@@ -44,7 +37,12 @@ export async function loadHeroBundle(
 
   heroPerfMark('import-ready', heroKey);
   heroPerfMeasureSinceRecordResolved(heroKey);
+
+  void preloadImageUrls(assets.essential).then(() => {
+    heroPerfMark('assets-essential-ready', heroKey);
+  });
   preloadDeferredImageUrls(assets.deferred);
+
   return Component;
 }
 

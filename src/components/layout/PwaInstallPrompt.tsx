@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { isAppShellPath } from '@/utils/navigation';
 import { ROUTES } from '@/utils/constants';
+import { shouldShowPwaInstallPrompt } from '@/utils/linkhelpHosts';
 import { isPwaStandalone } from '@/utils/pwaRuntime';
 
 const STORAGE_KEY = 'linkhelp_pwa_install_dismissed';
@@ -22,6 +23,7 @@ export function PwaInstallPrompt() {
 
   useEffect(() => {
     if (pathname === ROUTES.messages) return;
+    if (!shouldShowPwaInstallPrompt()) return;
 
     if (!isAppShellPath(pathname)) return;
     try {

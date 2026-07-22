@@ -1,14 +1,14 @@
 import { ROUTES } from '@/utils/constants';
+import {
+  FLUX_HOSTNAME,
+  isFluxHost as isFluxHostFromProfile,
+  LINKHELP_PUBLIC_ORIGIN,
+} from '@/utils/linkhelpHosts';
 
-/** Production FLUX console hostname (same Vercel project as www). */
-export const FLUX_HOSTNAME = 'flux.linkhelp.app';
-
-/** Public marketplace origin — never used for Preview returnTo fallbacks. */
-export const LINKHELP_PUBLIC_ORIGIN = 'https://www.linkhelp.app';
+export { FLUX_HOSTNAME, LINKHELP_PUBLIC_ORIGIN };
 
 export function isFluxHost(hostname?: string): boolean {
-  const h = (hostname ?? (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase();
-  return h === FLUX_HOSTNAME;
+  return isFluxHostFromProfile(hostname);
 }
 
 export function getCurrentOrigin(): string {

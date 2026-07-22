@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import {
@@ -19,7 +18,7 @@ import {
 } from 'lucide-react';
 import { LogoIcon } from '@/components/ui/Logo';
 import { ByFluxBadge } from '@/components/brand/ByFluxBadge';
-import { ROUTES } from '@/utils/constants';
+import { APP_MARKETING_URLS } from '@/utils/marketingNav';
 import { useLanguage } from '@/context/LanguageContext';
 
 const fadeUp = {
@@ -100,8 +99,9 @@ function SectionHeading({ eyebrow, title, body }: { eyebrow: string; title: stri
 
 export default function LandingPage() {
   const { t } = useLanguage();
-  const clientSignup = `${ROUTES.signup}?role=client`;
-  const helperSignup = `${ROUTES.signup}?role=helper`;
+  const clientSignup = APP_MARKETING_URLS.registerClient;
+  const helperSignup = APP_MARKETING_URLS.registerHelper;
+  const appLogin = APP_MARKETING_URLS.login;
   const howItWorks = [
     {
       title: t('landing.premium_how_request_title'),
@@ -196,13 +196,13 @@ export default function LandingPage() {
               </motion.p>
 
               <motion.div variants={fadeUp} className="mt-10 flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
-                <Link
-                  to={clientSignup}
+                <a
+                  href={clientSignup}
                 className="group inline-flex min-h-[56px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#1677FF] to-[#00D4FF] px-5 text-center text-base font-extrabold text-white shadow-[0_18px_55px_rgba(22,119,255,0.42)] transition-all hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(0,212,255,0.36)] sm:px-7"
                 >
                   {t('landing.premium_cta_start')}
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                </Link>
+                </a>
                 <a
                   href="#services"
                   className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-white/14 bg-white/[0.055] px-5 text-center text-base font-extrabold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-xl transition-all hover:-translate-y-1 hover:border-[#33B6FF]/50 hover:bg-white/[0.09] sm:px-7"
@@ -351,7 +351,7 @@ export default function LandingPage() {
               {services.map((service) => {
                 const Icon = service.icon;
                 return (
-                  <Link key={service.title} to={clientSignup} className="block focus:outline-none focus:ring-2 focus:ring-[#33B6FF]/60 rounded-[1.75rem]">
+                  <a key={service.title} href={clientSignup} className="block focus:outline-none focus:ring-2 focus:ring-[#33B6FF]/60 rounded-[1.75rem]">
                     <GlassCard className="min-h-[190px]">
                     <div className="flex h-full flex-col justify-between">
                       <div className="flex items-start justify-between gap-4">
@@ -366,7 +366,7 @@ export default function LandingPage() {
                       </div>
                     </div>
                     </GlassCard>
-                  </Link>
+                  </a>
                 );
               })}
             </motion.div>
@@ -425,19 +425,19 @@ export default function LandingPage() {
                 {t('landing.premium_final_body')}
               </p>
               <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
-                <Link
-                  to={helperSignup}
+                <a
+                  href={helperSignup}
                   className="inline-flex min-h-[56px] items-center justify-center gap-3 rounded-2xl bg-white px-5 text-center text-base font-extrabold text-[#071120] shadow-[0_18px_60px_rgba(255,255,255,0.2)] transition-all hover:-translate-y-1 sm:px-7"
                 >
                   {t('landing.premium_cta_start')}
                   <ArrowRight className="h-5 w-5" />
-                </Link>
-                <Link
-                  to={ROUTES.login}
+                </a>
+                <a
+                  href={appLogin}
                   className="inline-flex min-h-[56px] items-center justify-center rounded-2xl border border-white/18 bg-white/[0.06] px-5 text-center text-base font-extrabold text-white backdrop-blur-xl transition-all hover:-translate-y-1 hover:bg-white/[0.1] sm:px-7"
                 >
                   {t('login_page.submit')}
-                </Link>
+                </a>
               </div>
             </div>
           </motion.div>

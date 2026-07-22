@@ -5,6 +5,7 @@ import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
 import { useLanguage } from '@/context/LanguageContext';
 import { isAppShellPath } from '@/utils/navigation';
+import { MarketingNavLink } from '@/components/routing/MarketingNavLink';
 import { clsx } from 'clsx';
 
 export default function Footer() {
@@ -32,18 +33,18 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-wrap justify-center gap-6">
-            <Link
+            <MarketingNavLink
               to={`${ROUTES.signup}?role=client`}
               className={clsx('text-xs font-semibold transition-colors min-h-[44px] flex items-center px-1', isHome ? 'text-[#C7D2FE]/70 hover:text-white' : 'text-gray-500 hover:text-blue-600')}
             >
               {t('footer.for_clients')}
-            </Link>
-            <Link
+            </MarketingNavLink>
+            <MarketingNavLink
               to={`${ROUTES.signup}?role=helper`}
               className={clsx('text-xs font-semibold transition-colors min-h-[44px] flex items-center px-1', isHome ? 'text-[#C7D2FE]/70 hover:text-white' : 'text-gray-500 hover:text-blue-600')}
             >
               {t('footer.for_helpers')}
-            </Link>
+            </MarketingNavLink>
             <Link
               to={ROUTES.home}
               className={clsx('text-xs font-semibold transition-colors min-h-[44px] flex items-center px-1', isHome ? 'text-[#C7D2FE]/70 hover:text-white' : 'text-gray-500 hover:text-blue-600')}
@@ -63,12 +64,12 @@ export default function Footer() {
               Contato
             </Link>
             {UI_VISIBILITY.ideas ? (
-              <Link
+              <MarketingNavLink
                 to={ROUTES.ideas}
                 className={clsx('text-xs font-semibold transition-colors min-h-[44px] flex items-center px-1', isHome ? 'text-[#C7D2FE]/70 hover:text-white' : 'text-gray-500 hover:text-blue-600')}
               >
                 {t('footer.support_ideas')}
-              </Link>
+              </MarketingNavLink>
             ) : null}
           </div>
         </div>

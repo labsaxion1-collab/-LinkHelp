@@ -48,7 +48,7 @@ export function getServerSiteUrl(): string {
 
 function hostnameAllowed(hostname: string): boolean {
   if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
-  if (hostname === 'linkhelp.app' || hostname === 'www.linkhelp.app') return true;
+  if (hostname === 'linkhelp.app' || hostname === 'www.linkhelp.app' || hostname === 'app.linkhelp.app') return true;
   if (hostname.endsWith('.vercel.app')) return true;
   return false;
 }

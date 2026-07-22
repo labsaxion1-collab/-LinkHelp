@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PageLoader } from '@/components/common/PageLoader';
+import { AuthSessionBootstrapFallback } from '@/components/home/AuthSessionBootstrapFallback';
 import { useAuth } from '@/context/AuthContext';
 import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
 import { isFluxAdmin } from '@/utils/adminAccess';
@@ -31,7 +32,7 @@ function AppHostHomeRedirect() {
   const { session, profile, authBootstrapped, authLoading, isConfigured } = useAuth();
 
   if (isConfigured && (!authBootstrapped || authLoading)) {
-    return <PageLoader />;
+    return <AuthSessionBootstrapFallback />;
   }
 
   if (!session?.user) {
@@ -46,7 +47,7 @@ function AppHostHomeRedirect() {
     if (authBootstrapped && !authLoading) {
       return <Navigate to={ROUTES.dashboard} replace />;
     }
-    return <PageLoader />;
+    return <AuthSessionBootstrapFallback />;
   }
 
   const role = normalizeProfileRole(profile.role);

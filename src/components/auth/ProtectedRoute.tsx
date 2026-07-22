@@ -1,13 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { PageLoader } from '@/components/common/PageLoader';
+import { AuthSessionBootstrapFallback } from '@/components/home/AuthSessionBootstrapFallback';
+import { HomeDashboardRoutePlaceholder } from '@/components/home/HomeDashboardShellContext';
+import { AppShellGenericSkeleton } from '@/components/home/AppShellGenericSkeleton';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
-import { isFluxAdmin } from '@/utils/adminAccess';
 import { ROUTES } from '@/utils/constants';
 import { isAuthCallbackPath } from '@/utils/authStorage';
+import { isAppShellPath } from '@/utils/navigation';
+import { isAuthenticatedHomeDashboardPath } from '@/utils/homeDashboardPaths';
 import { getAuthLoginPathForRoute, sanitizeReturnTo } from '@/utils/fluxRedirect';
+import type { ReactNode } from 'react';
+
+function protectedRoutePlaceholder(pathname: string, hasSession: boolean): ReactNode {
+  if (isAuthenticatedHomeDashboardPath(pathname)) {
+    return <HomeDashboardRoutePlaceholder />;
+  }
+  if (!isAppShellPath(pathname)) {
+    return <AuthSessionBootstrapFallback />;
+  }
+  if (hasSession) {
+    return <AppShellGenericSkeleton />;
+  }
+  return <AuthSessionBootstrapFallback />;
+}
 
 /** Require Supabase env, real session, and a `profiles` row for workspace routes. */
 export function ProtectedRoute() {
@@ -17,7 +34,6 @@ export function ProtectedRoute() {
   const location = useLocation();
   const profileKick = useRef(0);
   const [sessionRecoveryBusy, setSessionRecoveryBusy] = useState(false);
-  /** After bootstrap, wait until recovery has run once before sending an unauthenticated user to login. */
   const [sessionRecoveryAttempted, setSessionRecoveryAttempted] = useState(false);
 
   useEffect(() => {
@@ -98,7 +114,7 @@ export function ProtectedRoute() {
     (authLoading && !hasEstablishedWorkspace);
 
   if (showBlockingLoader) {
-    return <PageLoader />;
+    return protectedRoutePlaceholder(location.pathname, Boolean(session?.user));
   }
 
   if (!session) {
@@ -132,6 +148,9 @@ export function ProtectedRoute() {
       userId: session.user.id,
       reason: 'profile_not_loaded',
     });
+    if (profileKick.current < 4) {
+      return protectedRoutePlaceholder(location.pathname, true);
+    }
     return (
       <div className="min-h-[40vh] flex flex-col items-center justify-center gap-4 px-4 text-center">
         <p className="text-sm font-semibold text-slate-700">{t('auth.profile_load_failed')}</p>

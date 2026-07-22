@@ -19,6 +19,8 @@ import { AppModeProvider, AppModeRouterBridge } from '@/context/AppModeContext';
 import { CreditProvider } from '@/context/CreditContext';
 import { ServiceReviewProvider } from '@/context/ServiceReviewContext';
 import { AppRoutes } from '@/routes/AppRoutes';
+import { DashboardPreloadEffect } from '@/components/routing/DashboardPreloadEffect';
+import { HomeDashboardShellProvider } from '@/components/home/HomeDashboardShellContext';
 import { TutorialProvider } from '@/context/TutorialContext';
 import { AppTutorialModal } from '@/components/tutorial/AppTutorialModal';
 import { MedalThemeBridge } from '@/theme/MedalThemeBridge';
@@ -53,13 +55,16 @@ export default function App() {
                 <JobReminderBridge />
                 <AppModeProvider>
                   <BrowserRouter>
+                    <HomeDashboardShellProvider>
                     <ServiceReviewProvider>
                       <AppModeRouterBridge />
+                      <DashboardPreloadEffect />
                       <TutorialProvider>
                         <AppRoutes />
                         <AppTutorialModal />
                       </TutorialProvider>
                     </ServiceReviewProvider>
+                    </HomeDashboardShellProvider>
                   </BrowserRouter>
                 </AppModeProvider>
               </AppDataProvider>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { PageLoader } from '@/components/common/PageLoader';
+import { AuthSessionBootstrapFallback } from '@/components/home/AuthSessionBootstrapFallback';
+import { AuthenticatedHomeShellSkeleton } from '@/components/home/AuthenticatedHomeShellSkeleton';
 import { OAuthRolePicker } from '@/components/auth/OAuthRolePicker';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
@@ -110,7 +111,7 @@ export default function DashboardEntryPage() {
   }
 
   if (!authBootstrapped) {
-    return <PageLoader />;
+    return <AuthSessionBootstrapFallback />;
   }
 
   if (!session?.user) {
@@ -152,8 +153,8 @@ export default function DashboardEntryPage() {
         </div>
       );
     }
-    return <PageLoader />;
+    return <AuthenticatedHomeShellSkeleton variant="neutral" />;
   }
 
-  return <PageLoader />;
+  return <AuthenticatedHomeShellSkeleton variant="neutral" />;
 }

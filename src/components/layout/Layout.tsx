@@ -2,7 +2,8 @@ import { Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
-import { PageLoader } from '@/components/common/PageLoader';
+import { MainSuspenseFallback } from '@/components/routing/MainSuspenseFallback';
+import { PersistentHomeDashboardShell } from '@/components/home/HomeDashboardShellContext';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { MobileProfileMenu } from '@/components/layout/MobileProfileMenu';
 import { MobileGuestDrawer } from '@/components/layout/MobileGuestDrawer';
@@ -84,9 +85,14 @@ export default function Layout() {
           body={t('route_error.body')}
           reloadLabel={t('route_error.reload')}
         >
-          <Suspense fallback={<PageLoader />}>
-            <Outlet />
-          </Suspense>
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            <PersistentHomeDashboardShell />
+            <div className="relative z-[2] flex min-h-0 flex-1 flex-col">
+              <Suspense fallback={<MainSuspenseFallback />}>
+                <Outlet />
+              </Suspense>
+            </div>
+          </div>
         </AppErrorBoundary>
       </main>
       {!isAdmin ? (

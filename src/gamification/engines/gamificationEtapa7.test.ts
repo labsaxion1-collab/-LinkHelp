@@ -31,14 +31,20 @@ describe('Etapa 7 — 11 heroes registradas', () => {
     expect([...KNOWN_HERO_KEYS].sort()).toEqual([...EXPECTED_HERO_KEYS].sort());
   });
 
-  it('DynamicHeroRenderer registry cobre todas as hero keys', async () => {
+  it('hero lazy registry cobre todas as hero keys', async () => {
+    const src = await readFile(resolve('src/gamification/hero/heroLazyRegistry.tsx'), 'utf8');
+    for (const key of EXPECTED_HERO_KEYS) {
+      expect(src).toContain(`${key}:`);
+    }
+  });
+
+  it('DynamicHeroRenderer não importa heroes eager', async () => {
     const src = await readFile(
       resolve('src/gamification/components/DynamicHeroRenderer.tsx'),
       'utf8',
     );
-    for (const key of EXPECTED_HERO_KEYS) {
-      expect(src).toContain(`${key}:`);
-    }
+    expect(src).not.toMatch(/from '@\/components\/hero\//);
+    expect(src).toContain('GamificationHeroGate');
   });
 
   it('resolveHeroKey retorna uma única key válida por nível', () => {

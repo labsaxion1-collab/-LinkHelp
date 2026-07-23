@@ -239,19 +239,16 @@ export default function ProfileDashboardPage() {
     (isHelper && UI_VISIBILITY.helperCredits) || (!isHelper && UI_VISIBILITY.clientCredits);
 
   return (
-    <AppPageShell className="w-full bg-[#F4F7FC]">
-      <div className="mb-3 hidden items-center justify-between gap-3 lg:flex">
+    <AppPageShell className="w-full bg-[#F4F7FC] !px-0 !pt-0">
+      <div className="mx-auto mb-3 hidden w-full max-w-6xl items-center justify-between gap-3 px-7 pt-7 lg:flex">
         <DesktopBackButton alwaysVisible />
         <CloseToHomeButton />
       </div>
 
       <div
         data-testid="profile-dashboard-v2"
-        className="mx-auto flex w-full max-w-lg flex-col gap-4 px-1 pb-28 md:pb-10"
+        className="flex w-full flex-col pb-28 md:pb-10"
       >
-        <div className="flex justify-end lg:hidden">
-          <CloseToHomeButton />
-        </div>
 
         <ProfileIdentityHero
           name={displayName}
@@ -270,6 +267,7 @@ export default function ProfileDashboardPage() {
         />
 
         <ProfileGamificationSection userType={userType} />
+        <div className="mx-auto mt-5 flex w-full max-w-lg flex-col gap-4 px-4 sm:px-5">
 
         {showCredits ? (
           <ProfileLinkCreditsCard
@@ -330,6 +328,7 @@ export default function ProfileDashboardPage() {
           }}
         />
       </div>
+        </div>
 
       <PublicProfileSheetFrame open={publicOpen} onClose={() => setPublicOpen(false)}>
         <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[1.5rem] bg-white shadow-2xl">

@@ -11,4 +11,6 @@ export const UI_VISIBILITY = {
   helperCreditPurchase: true,
   /** Spend credits to unlock opportunities — off until Phase 2. */
   helperCreditUnlock: false,
+  /** Helper training entry in settings — off until route ships. */
+  training: false,
 } as const;

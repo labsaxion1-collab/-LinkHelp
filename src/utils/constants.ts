@@ -37,6 +37,8 @@ export const ROUTES = {
   helperCredits: '/helper/credits',
   helperLinkCredits: '/helper/linkcredits',
   helperCreditsSuccess: '/helper/credits/success',
+  /** Reserved for helper training module (settings teaser when UI_VISIBILITY.training) */
+  helperTraining: '/helper/training',
   profile: '/profile',
   /** Edit own public presentation (bio, categories, preview) */
   profilePublicEdit: '/profile/public',

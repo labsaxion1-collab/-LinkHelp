@@ -16,6 +16,8 @@ export type AppHomeClientQuickStripProps = {
   className?: string;
 };
 
+import { useDevRenderCount } from '@/utils/devRenderCount';
+
 export function AppHomeClientQuickStrip({
   activeJobsCount,
   pendingApplicationsCount,
@@ -27,6 +29,7 @@ export function AppHomeClientQuickStrip({
   onCreateRequest,
   className = '',
 }: AppHomeClientQuickStripProps) {
+  useDevRenderCount('AppHomeClientQuickStrip');
   const { t } = useLanguage();
 
   const tiles = [

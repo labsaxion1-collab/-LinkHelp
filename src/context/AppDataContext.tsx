@@ -138,7 +138,31 @@ interface AppDataContextData {
   }) => Promise<void>;
 }
 
-const AppDataContext = createContext<AppDataContextData>({} as AppDataContextData);
+type AppDataActionMethods = Pick<
+  AppDataContextData,
+  | 'createJob'
+  | 'applyForJob'
+  | 'updateJobStatus'
+  | 'updateApplicationStatus'
+  | 'officiallyHireHelper'
+  | 'getHelperApplications'
+  | 'getJobApplications'
+  | 'getUpcomingJobsForHelper'
+  | 'updateUpcomingWorkflow'
+  | 'confirmServiceCompleted'
+  | 'finalizeServiceCompletion'
+  | 'addNotification'
+  | 'markNotificationAsRead'
+  | 'markAllAsRead'
+  | 'clearAllNotifications'
+  | 'submitServiceReview'
+>;
+
+export type AppDataCoreState = Omit<AppDataContextData, keyof AppDataActionMethods | 'notifications'>;
+
+const AppDataCoreContext = createContext<AppDataCoreState | null>(null);
+const AppDataNotificationsContext = createContext<AppNotification[] | null>(null);
+const AppDataActionsContext = createContext<React.MutableRefObject<AppDataActionMethods> | null>(null);
 
 function upsertJob(list: Job[], job: Job): Job[] {
   const next = list.filter((j) => j.id !== job.id);
@@ -1315,41 +1339,89 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     [upcomingJobs, jobs],
   );
 
+  const coreState = useMemo(
+    (): AppDataCoreState => ({
+      jobs,
+      applications,
+      upcomingJobs: upcomingJobsEnriched,
+      dataLoading,
+      reviews,
+      pendingServiceReviews,
+    }),
+    [jobs, applications, upcomingJobsEnriched, dataLoading, reviews, pendingServiceReviews],
+  );
+
+  const actionsRef = useRef<AppDataActionMethods>(null!);
+  actionsRef.current = {
+    createJob,
+    applyForJob,
+    updateJobStatus,
+    updateApplicationStatus,
+    officiallyHireHelper,
+    getHelperApplications,
+    getJobApplications,
+    getUpcomingJobsForHelper,
+    updateUpcomingWorkflow,
+    confirmServiceCompleted,
+    finalizeServiceCompletion,
+    addNotification,
+    markNotificationAsRead,
+    markAllAsRead,
+    clearAllNotifications,
+    submitServiceReview,
+  };
+
   return (
-    <AppDataContext.Provider
-      value={{
-        jobs,
-        applications,
-        upcomingJobs: upcomingJobsEnriched,
-        notifications,
-        dataLoading,
-        createJob,
-        applyForJob,
-        updateJobStatus,
-        updateApplicationStatus,
-        officiallyHireHelper,
-        getHelperApplications,
-        getJobApplications,
-        getUpcomingJobsForHelper,
-        updateUpcomingWorkflow,
-        confirmServiceCompleted,
-        finalizeServiceCompletion,
-        addNotification,
-        markNotificationAsRead,
-        markAllAsRead,
-        clearAllNotifications,
-        reviews,
-        pendingServiceReviews,
-        submitServiceReview,
-      }}
-    >
-      {children}
-    </AppDataContext.Provider>
+    <AppDataActionsContext.Provider value={actionsRef}>
+      <AppDataNotificationsContext.Provider value={notifications}>
+        <AppDataCoreContext.Provider value={coreState}>{children}</AppDataCoreContext.Provider>
+      </AppDataNotificationsContext.Provider>
+    </AppDataActionsContext.Provider>
   );
 }
 
-export function useAppData() {
-  const context = useContext(AppDataContext);
-  if (!context) throw new Error('useAppData must be used within an AppDataProvider');
-  return context;
+/** Jobs/applications/upcoming/reviews only — skips notification-only updates. */
+export function useAppDataCore(): AppDataCoreState {
+  const core = useContext(AppDataCoreContext);
+  if (!core) throw new Error('useAppDataCore must be used within an AppDataProvider');
+  return core;
+}
+
+export function useAppDataNotifications(): AppNotification[] {
+  const rows = useContext(AppDataNotificationsContext);
+  if (rows === null) throw new Error('useAppDataNotifications must be used within an AppDataProvider');
+  return rows;
+}
+
+/** Stable ref — read `.current` in handlers; does not re-render when unrelated app data changes. */
+export function useAppDataActionsRef(): React.MutableRefObject<AppDataActionMethods> {
+  const ref = useContext(AppDataActionsContext);
+  if (!ref) throw new Error('useAppDataActionsRef must be used within an AppDataProvider');
+  return ref;
+}
+
+/** Latest action methods (same ref target as useAppDataActionsRef). Prefer ref in event handlers on hot paths. */
+export function useAppDataActions(): AppDataActionMethods {
+  return useAppDataActionsRef().current;
+}
+
+/** @internal Render-isolation tests only. */
+export const appDataSplitTestContexts = {
+  core: AppDataCoreContext,
+  notifications: AppDataNotificationsContext,
+  actions: AppDataActionsContext,
+} as const;
+
+export function useAppData(): AppDataContextData {
+  const core = useAppDataCore();
+  const notifications = useAppDataNotifications();
+  const actionsRef = useAppDataActionsRef();
+  return useMemo(
+    () => ({
+      ...core,
+      notifications,
+      ...actionsRef.current,
+    }),
+    [core, notifications, actionsRef],
+  );
 }

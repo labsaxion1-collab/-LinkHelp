@@ -1200,7 +1200,7 @@ export default function ClientDashboard() {
                 { id: 'dashboard' as const, label: t('sidebar.dashboard'), icon: Icons.Home, action: () => { navigate(ROUTES.clientDashboard); setActiveSidebarTab('dashboard'); } },
                 { id: 'messages' as const, label: t('messages_page.title'), icon: Icons.MessageCircle, action: () => navigate(ROUTES.messages) },
                 { id: 'active-services' as const, label: t('sidebar.active_services'), icon: Icons.Briefcase, action: () => { navigate(ROUTES.clientJobs); setActiveSidebarTab('active-services'); } },
-                { id: 'profile' as const, label: t('nav.profile_menu_profile'), icon: Icons.UserRound, action: () => navigate(ROUTES.settings) },
+                { id: 'profile' as const, label: t('nav.profile_menu_profile'), icon: Icons.UserRound, action: () => navigate(ROUTES.profile) },
               ].map((item) => {
                 const Icon = item.icon;
                 const active = activeSidebarTab === item.id || (item.id === 'messages' && routerLocation.pathname === ROUTES.messages);

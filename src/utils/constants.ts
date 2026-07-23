@@ -38,6 +38,8 @@ export const ROUTES = {
   helperLinkCredits: '/helper/linkcredits',
   helperCreditsSuccess: '/helper/credits/success',
   profile: '/profile',
+  /** Edit own public presentation (bio, categories, preview) */
+  profilePublicEdit: '/profile/public',
   settings: '/settings',
   /** FLUX multi-app admin console */
   adminDashboard: '/admin/dashboard',

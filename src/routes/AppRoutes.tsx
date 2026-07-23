@@ -16,6 +16,7 @@ import { AppHostGuard } from '@/components/auth/AppHostGuard';
 import { HostHomeEntry } from '@/components/routing/HostHomeEntry';
 import { LegacyPaymentsRedirect } from '@/routes/LegacyPaymentsRedirect';
 import { AppCatchAllRedirect } from '@/routes/AppCatchAllRedirect';
+import ProfileDashboardPage from '@/pages/profile/ProfileDashboardPage';
 
 function lazyPage<T extends { default: ComponentType<unknown> }>(loader: () => Promise<T>) {
   return lazy(() => importWithRetry(loader));
@@ -43,7 +44,7 @@ const HelperCreditsPage = lazyPage(() => import('@/pages/helper/HelperCreditsPag
 const HelperLinkCreditsPage = lazyPage(() => import('@/pages/helper/HelperLinkCreditsPage'));
 const HelperCreditsSuccessPage = lazyPage(() => import('@/pages/helper/HelperCreditsSuccessPage'));
 const SettingsPage = lazyPage(() => import('@/pages/settings/SettingsPage'));
-const ProfilePage = lazyPage(() => import('@/pages/profile/ProfilePage'));
+const PublicProfileEditPage = lazyPage(() => import('@/pages/profile/PublicProfileEditPage'));
 
 function AdminDashboardLoadError() {
   return (
@@ -108,7 +109,8 @@ export function AppRoutes() {
         <Route element={<ProtectedRoute />}>
           <Route path={ROUTES.messages} element={<MessagesPage />} />
           <Route path={ROUTES.notifications} element={<NotificationsPage />} />
-          <Route path={ROUTES.profile} element={<ProfilePage />} />
+          <Route path={ROUTES.profile} element={<ProfileDashboardPage />} />
+          <Route path={ROUTES.profilePublicEdit} element={<PublicProfileEditPage />} />
           <Route path={ROUTES.settings} element={<SettingsPage />} />
           <Route path={ROUTES.map} element={<LiveMapPage />} />
           <Route

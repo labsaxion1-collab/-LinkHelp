@@ -19,6 +19,8 @@ type Props = {
   completedCount?: number | null;
   publishedCount?: number | null;
   className?: string;
+  /** When true, skips the identity/stats header (used under PublicProfileHero). */
+  detailsOnly?: boolean;
 };
 
 function formatMemberSince(ts: number | null, locale: string): string | null {
@@ -50,6 +52,7 @@ export function ReputationDossierPanel({
   completedCount,
   publishedCount,
   className,
+  detailsOnly = false,
 }: Props) {
   const { t, language } = useLanguage();
   const dossier = usePublicReputationDossier({
@@ -68,6 +71,7 @@ export function ReputationDossierPanel({
 
   return (
     <div className={clsx('space-y-3', className)}>
+      {!detailsOnly ? (
       <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-blue-50/40 p-4 shadow-sm">
         <div className="flex items-start gap-3">
           {avatar ? (
@@ -151,6 +155,7 @@ export function ReputationDossierPanel({
           </p>
         ) : null}
       </div>
+      ) : null}
 
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
         <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">

@@ -831,7 +831,7 @@ export default function HelperDashboard() {
               skills={sidebarSkillLines}
               onEdit={() => {
                 setShowProfileModal(false);
-                navigate(ROUTES.profile);
+                navigate(ROUTES.profilePublicEdit);
               }}
             />
           </div>
@@ -1266,7 +1266,7 @@ export default function HelperDashboard() {
                 <p className="mt-2 max-w-[18rem] text-[13px] font-medium text-[#94A3B8]">{t('helper_dashboard.empty_feed_no_categories')}</p>
                 <button
                   type="button"
-                  onClick={() => navigate(`${ROUTES.profile}#helper-categories`)}
+                  onClick={() => navigate(`${ROUTES.profilePublicEdit}#helper-categories`)}
                   className="mt-5 rounded-2xl bg-[#2563FF] px-5 py-2.5 text-[13px] font-black text-white shadow-[0_4px_14px_rgba(37,99,255,0.30)] transition-opacity hover:opacity-90 active:opacity-80"
                 >
                   {t('helper_dashboard.add_categories_cta')}

@@ -1,4 +1,5 @@
 import { ROUTES } from '@/utils/constants';
+import { isPasswordRecoveryPath } from '@/utils/passwordRecovery';
 import { isAdminRoute } from '@/utils/fluxHost';
 import {
   APP_ORIGIN,
@@ -35,13 +36,17 @@ export type HostLocationParts = {
 
 /**
  * External redirect target when crossing origins, or null to stay in-app.
- * Order: www→app, app→flux (admin), app→www (institutional pages except / handled separately).
+ * Order: www→app, flux→app (recovery), app→flux (admin), app→www (institutional).
  */
 export function resolveExternalHostRedirect(
   profile: LinkhelpHostProfile,
   location: HostLocationParts,
 ): string | null {
   const { pathname, search = '', hash = '' } = location;
+
+  if (profile === 'flux' && isPasswordRecoveryPath(pathname)) {
+    return buildExternalOriginUrl(APP_ORIGIN, pathname, search, hash);
+  }
 
   if (profile === 'www' && !isInstitutionalPath(pathname)) {
     return buildExternalOriginUrl(APP_ORIGIN, pathname, search, hash);

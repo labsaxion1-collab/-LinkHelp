@@ -25,6 +25,7 @@ const HowItWorksPage = lazyPage(() => import('@/pages/public/HowItWorksPage'));
 const ContactPage = lazyPage(() => import('@/pages/public/ContactPage'));
 const LoginPage = lazyPage(() => import('@/pages/auth/LoginPage'));
 const RegisterPage = lazyPage(() => import('@/pages/auth/RegisterPage'));
+const AuthConfirmPage = lazyPage(() => import('@/pages/auth/AuthConfirmPage'));
 const ResetPasswordPage = lazyPage(() => import('@/pages/auth/ResetPasswordPage'));
 const AuthCallbackPage = lazyPage(() => import('@/pages/auth/AuthCallbackPage'));
 const AdminLoginPage = lazyPage(() => import('@/pages/auth/AdminLoginPage'));
@@ -98,6 +99,7 @@ export function AppRoutes() {
         <Route path={ROUTES.howItWorks} element={<HowItWorksPage />} />
         <Route path={ROUTES.contact} element={<ContactPage />} />
         <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />
+        <Route path={ROUTES.authConfirm} element={<AuthConfirmPage />} />
         <Route path={ROUTES.authCallback} element={<AuthCallbackPage />} />
         <Route path={ROUTES.adminLogin} element={<AdminLoginPage />} />
         <Route path={ROUTES.fluxAccessDenied} element={<FluxAccessDeniedPage />} />

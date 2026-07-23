@@ -27,7 +27,6 @@ export function isFluxHostAllowedPath(pathname: string): boolean {
     pathname === ROUTES.adminLogin ||
     pathname === ROUTES.fluxAccessDenied ||
     pathname === ROUTES.authCallback ||
-    pathname === ROUTES.resetPassword ||
     isAdminRoute(pathname)
   );
 }

@@ -7,6 +7,11 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { ROUTES } from '@/utils/constants';
+import {
+  classifyRecoveryError,
+  exchangeRecoveryCodeForSession,
+  recoveryErrorTranslationKey,
+} from '@/utils/passwordRecovery';
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -18,6 +23,7 @@ export default function ResetPasswordPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [showResend, setShowResend] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,23 +45,45 @@ export default function ResetPasswordPage() {
       try {
         await sb.auth.initialize();
         const url = new URL(window.location.href);
-        const code = url.searchParams.get('code');
 
+        const tokenHash = url.searchParams.get('token_hash')?.trim();
+        const type = url.searchParams.get('type')?.trim();
+        if (tokenHash && type === 'recovery') {
+          navigate(`${ROUTES.authConfirm}?${url.searchParams.toString()}`, { replace: true });
+          return;
+        }
+
+        const code = url.searchParams.get('code');
         if (code) {
-          const { error: exchangeError } = await sb.auth.exchangeCodeForSession(code);
-          if (exchangeError) throw exchangeError;
+          const { error: exchangeError } = await exchangeRecoveryCodeForSession(
+            (c) => sb.auth.exchangeCodeForSession(c),
+            code,
+          );
+          if (exchangeError) {
+            const kind = classifyRecoveryError(exchangeError);
+            throw Object.assign(new Error(exchangeError.message), { kind });
+          }
           window.history.replaceState({}, document.title, ROUTES.resetPassword);
         }
 
         const { data } = await sb.auth.getSession();
         if (!cancelled) {
-          setReady(Boolean(data.session?.user));
-          if (!data.session?.user) setError(t('auth.reset_invalid_link'));
+          const hasUser = Boolean(data.session?.user);
+          setReady(hasUser);
+          if (!hasUser) {
+            setError(t('auth.reset_invalid_link'));
+            setShowResend(true);
+          }
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : t('auth.reset_invalid_link'));
+          const kind =
+            err && typeof err === 'object' && 'kind' in err
+              ? (err as { kind: ReturnType<typeof classifyRecoveryError> }).kind
+              : classifyRecoveryError(err);
+          setError(t(recoveryErrorTranslationKey(kind)));
           setReady(false);
+          setShowResend(true);
         }
       } finally {
         if (!cancelled) setCheckingLink(false);
@@ -67,7 +95,7 @@ export default function ResetPasswordPage() {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [navigate, t]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -94,10 +122,11 @@ export default function ResetPasswordPage() {
     setSubmitting(false);
 
     if (updateError) {
-      setError(updateError.message);
+      setError(t(recoveryErrorTranslationKey(classifyRecoveryError(updateError))));
       return;
     }
 
+    await sb.auth.signOut();
     showToast(t('auth.reset_success'), 'success');
     navigate(ROUTES.login, { replace: true });
   };
@@ -182,12 +211,22 @@ export default function ResetPasswordPage() {
                     </button>
                   </form>
                 ) : (
-                  <Link
-                    to={ROUTES.login}
-                    className="flex w-full justify-center rounded-2xl bg-slate-900 py-3.5 px-4 text-sm font-bold text-white shadow-lg shadow-slate-900/15 hover:bg-black transition-all"
-                  >
-                    {t('auth.reset_back_login')}
-                  </Link>
+                  <div className="space-y-3">
+                    {showResend ? (
+                      <Link
+                        to={`${ROUTES.login}?recovery=1`}
+                        className="flex w-full justify-center rounded-2xl bg-blue-600 py-3.5 px-4 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all"
+                      >
+                        {t('auth.reset_resend_link')}
+                      </Link>
+                    ) : null}
+                    <Link
+                      to={ROUTES.login}
+                      className="flex w-full justify-center rounded-2xl bg-slate-900 py-3.5 px-4 text-sm font-bold text-white shadow-lg shadow-slate-900/15 hover:bg-black transition-all"
+                    >
+                      {t('auth.reset_back_login')}
+                    </Link>
+                  </div>
                 )}
               </>
             )}

@@ -6,6 +6,8 @@ export const ROUTES = {
   login: '/auth/login',
   signup: '/auth/register',
   resetPassword: '/auth/reset-password',
+  /** Password recovery — verifyOtp(token_hash) without PKCE verifier */
+  authConfirm: '/auth/confirm',
   /** OAuth redirect target — must be allowed in Supabase Auth → URL Configuration */
   authCallback: '/auth/callback',
   /** FLUX console — admin-only sign-in (hostname-safe returnTo) */

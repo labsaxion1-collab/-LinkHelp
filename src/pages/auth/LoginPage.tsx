@@ -2,7 +2,7 @@ import type { FormEvent } from 'react';
 
 import { useEffect, useState } from 'react';
 
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 
 import { Mail, Lock, ArrowLeft, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
@@ -10,6 +10,7 @@ import { ByFluxBadge } from '@/components/brand/ByFluxBadge';
 import { BRAND } from '@/utils/brandAssets';
 
 import { ROUTES } from '@/utils/constants';
+import { buildPasswordRecoveryEmailRedirectUrl } from '@/utils/passwordRecovery';
 
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -87,9 +88,15 @@ export default function LoginPage() {
 
   const [resetSubmitting, setResetSubmitting] = useState(false);
 
-
+  const [searchParams] = useSearchParams();
 
   const from = (location.state as { from?: string } | null)?.from;
+
+  useEffect(() => {
+    if (searchParams.get('recovery') === '1') {
+      setResetOpen(true);
+    }
+  }, [searchParams]);
 
 
 
@@ -336,21 +343,15 @@ export default function LoginPage() {
     setResetSubmitting(true);
 
     const { error: resetError } = await sb.auth.resetPasswordForEmail(targetEmail, {
-
-      redirectTo: `${window.location.origin}${ROUTES.resetPassword}`,
-
+      redirectTo: buildPasswordRecoveryEmailRedirectUrl(),
     });
 
     setResetSubmitting(false);
 
     if (resetError) {
-
-      setError(resetError.message);
-
-      showToast(resetError.message, 'error');
-
+      setError(t('auth.reset_request_failed'));
+      showToast(t('auth.reset_request_failed'), 'error');
       return;
-
     }
 
     setResetOpen(false);

@@ -109,8 +109,8 @@ function acquireGamificationChannel(
  * Respostas atrasadas de outra geração ou conta não atualizam o snapshot.
  */
 export function useGamification(userType: UserType): UseGamificationResult {
-  const { user } = useAuth();
-  const userId = user?.id ?? null;
+  const { user, sessionConfirmed } = useAuth();
+  const userId = sessionConfirmed ? (user?.id ?? null) : null;
 
   const snapshot = useSyncExternalStore(
     (onStoreChange) => {
@@ -152,7 +152,9 @@ export function useGamification(userType: UserType): UseGamificationResult {
             const ensured = await fetchGamificationMe(userType);
             if (cancelled || !isGamificationGenerationCurrent(userId, userType, generation)) return;
             if (!isGamificationRecordForUser(ensured, userId, userType)) {
-              commitGamificationError(userId, userType, generation);
+              if (!getGamificationSnapshot(userId, userType).record) {
+                commitGamificationError(userId, userType, generation);
+              }
               return;
             }
             const record = normalizeGamificationRecordUserId(ensured, userId);
@@ -160,7 +162,9 @@ export function useGamification(userType: UserType): UseGamificationResult {
             scheduleGamificationRecalculate(userId, userType, generation);
           } catch {
             if (cancelled || !isGamificationGenerationCurrent(userId, userType, generation)) return;
-            commitGamificationError(userId, userType, generation);
+            if (!getGamificationSnapshot(userId, userType).record) {
+              commitGamificationError(userId, userType, generation);
+            }
           } finally {
             clearGamificationInflight(userId, userType, generation);
           }

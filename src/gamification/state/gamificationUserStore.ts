@@ -1,6 +1,9 @@
 import type { UserType } from '@/gamification/types/gamification';
 import type { UserGamificationRecord } from '@/gamification/services/gamificationService';
+import { EMPTY_GAMIFICATION_STATS } from '@/gamification/services/gamificationStatsAdapter';
 import { heroPerfMark } from '@/gamification/hero/heroPerformance';
+import { readAccountHomeSnapshot, writeAccountHomeSnapshot } from '@/utils/accountSessionSnapshot';
+import { appPerfMark } from '@/utils/appPerf';
 
 export type GamificationSnapshot = {
   userId: string | null;
@@ -29,16 +32,39 @@ export function gamificationStoreKey(userId: string, userType: UserType): string
   return `${userId}:${userType}`;
 }
 
+function hydrateRecordFromSnapshot(
+  userId: string,
+  userType: UserType,
+): UserGamificationRecord | null {
+  const snap = readAccountHomeSnapshot(userId);
+  if (!snap?.heroKey || !snap.levelKey) return null;
+  if (snap.userId !== userId || snap.role !== userType) return null;
+  return {
+    userId,
+    userType,
+    score: 0,
+    levelKey: snap.levelKey,
+    heroKey: snap.heroKey,
+    stats: EMPTY_GAMIFICATION_STATS,
+    progressPercent: 0,
+    pointsToNextLevel: 0,
+    missingRequirements: [],
+    updatedAt: '',
+  };
+}
+
 function getEntry(userId: string, userType: UserType): StoreEntry {
   const key = gamificationStoreKey(userId, userType);
   let entry = store.get(key);
   if (!entry) {
+    const cached = hydrateRecordFromSnapshot(userId, userType);
+    if (cached) appPerfMark('gamification-cache-visible', userType);
     entry = {
       snapshot: {
         userId,
         userType,
-        record: null,
-        loading: true,
+        record: cached,
+        loading: !cached,
         error: false,
         generation: 0,
       },
@@ -69,16 +95,20 @@ export function subscribeGamification(
   return () => entry.listeners.delete(listener);
 }
 
-/** Starts a fresh load for this user/type; returns generation token for stale-response guards. */
+/**
+ * Starts a network load for this user/type.
+ * Keeps the last confirmed record visible (SWR) — only shows loading when there is no record yet.
+ */
 export function beginGamificationSession(userId: string, userType: UserType): number {
   const entry = getEntry(userId, userType);
   entry.fetchGeneration += 1;
   const generation = entry.fetchGeneration;
+  const previous = entry.snapshot.record;
   entry.snapshot = {
     userId,
     userType,
-    record: null,
-    loading: true,
+    record: previous,
+    loading: previous == null,
     error: false,
     generation,
   };
@@ -113,6 +143,13 @@ export function commitGamificationSuccess(
     generation,
   };
   heroPerfMark('api-ready', record.heroKey);
+  appPerfMark('gamification-network-ready', record.heroKey);
+  writeAccountHomeSnapshot({
+    userId,
+    role: userType,
+    heroKey: record.heroKey,
+    levelKey: record.levelKey,
+  });
   notify(entry);
 }
 
@@ -231,8 +268,13 @@ export function getLoggedOutGamificationSnapshot(userType: UserType): Gamificati
   return loggedOutSnapshots[userType];
 }
 
-/** Test-only: reset module state. */
-export function resetGamificationStoreForTests(): void {
+/** Clears in-memory gamification on logout / account switch. */
+export function clearGamificationStoreOnLogout(): void {
   store.clear();
   hookEffectCounts.clear();
+}
+
+/** Test-only: reset module state. */
+export function resetGamificationStoreForTests(): void {
+  clearGamificationStoreOnLogout();
 }

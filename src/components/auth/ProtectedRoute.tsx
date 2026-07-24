@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AuthSessionBootstrapFallback } from '@/components/home/AuthSessionBootstrapFallback';
-import { HomeDashboardRoutePlaceholder } from '@/components/home/HomeDashboardShellContext';
+import {
+  HomeDashboardRoutePlaceholder,
+  SnapshotHomeRoutePaint,
+} from '@/components/home/HomeDashboardShellContext';
 import { AppShellGenericSkeleton } from '@/components/home/AppShellGenericSkeleton';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
@@ -29,8 +32,18 @@ function protectedRoutePlaceholder(pathname: string, hasSession: boolean): React
 /** Require Supabase env, real session, and a `profiles` row for workspace routes. */
 export function ProtectedRoute() {
   const { t } = useLanguage();
-  const { session, profile, authLoading, authBootstrapped, isConfigured, refreshProfile, attemptSessionRecovery } =
-    useAuth();
+  const {
+    session,
+    profile,
+    authLoading,
+    authBootstrapped,
+    sessionConfirmed,
+    snapshotVisible,
+    authNetworkPending,
+    isConfigured,
+    refreshProfile,
+    attemptSessionRecovery,
+  } = useAuth();
   const location = useLocation();
   const profileKick = useRef(0);
   const [sessionRecoveryBusy, setSessionRecoveryBusy] = useState(false);
@@ -42,10 +55,21 @@ export function ProtectedRoute() {
       search: location.search,
       authBootstrapped,
       authLoading,
+      sessionConfirmed,
+      snapshotVisible,
       hasSession: !!session,
       hasProfile: !!profile,
     });
-  }, [location.pathname, location.search, authBootstrapped, authLoading, session, profile]);
+  }, [
+    location.pathname,
+    location.search,
+    authBootstrapped,
+    authLoading,
+    sessionConfirmed,
+    snapshotVisible,
+    session,
+    profile,
+  ]);
 
   useEffect(() => {
     if (session) setSessionRecoveryAttempted(false);
@@ -56,6 +80,8 @@ export function ProtectedRoute() {
   }, [session?.user?.id]);
 
   useEffect(() => {
+    // Must kick while session exists but profile is missing — cannot wait for
+    // sessionConfirmed (it already requires profile; that was a deadlock).
     if (!authBootstrapped || authLoading || !session?.user || profile) return;
     if (profileKick.current >= 4) return;
     profileKick.current += 1;
@@ -68,6 +94,7 @@ export function ProtectedRoute() {
 
   useEffect(() => {
     if (!isConfigured || !authBootstrapped || authLoading || session) return;
+    if (authNetworkPending && snapshotVisible) return;
     if (isAuthCallbackPath(location.pathname) || location.pathname === ROUTES.login) return;
     if (location.pathname === ROUTES.adminLogin) return;
 
@@ -93,38 +120,71 @@ export function ProtectedRoute() {
     return () => {
       cancelled = true;
     };
-  }, [isConfigured, authBootstrapped, authLoading, session, location.pathname, attemptSessionRecovery]);
+  }, [
+    isConfigured,
+    authBootstrapped,
+    authLoading,
+    session,
+    authNetworkPending,
+    snapshotVisible,
+    location.pathname,
+    attemptSessionRecovery,
+  ]);
 
   if (!isConfigured) {
     authFlowLog('ProtectedRoute: redirect home (Supabase not configured)', { path: location.pathname });
     return <Navigate to={ROUTES.home} replace state={{ needSupabase: true }} />;
   }
 
+  const onHomeDashboard = isAuthenticatedHomeDashboardPath(location.pathname);
+
+  if (snapshotVisible && !sessionConfirmed && onHomeDashboard) {
+    return <SnapshotHomeRoutePaint />;
+  }
+
   const waitForSessionGate =
     authBootstrapped &&
     !authLoading &&
     !session &&
+    !authNetworkPending &&
     (!sessionRecoveryAttempted || sessionRecoveryBusy);
 
-  const hasEstablishedWorkspace = Boolean(session && profile);
   const showBlockingLoader =
-    !authBootstrapped ||
+    (!authBootstrapped && !snapshotVisible) ||
     sessionRecoveryBusy ||
     waitForSessionGate ||
-    (authLoading && !hasEstablishedWorkspace);
+    (authLoading && !sessionConfirmed && !snapshotVisible);
 
   if (showBlockingLoader) {
+    return protectedRoutePlaceholder(location.pathname, Boolean(session?.user));
+  }
+
+  if (!sessionConfirmed) {
+    if (authNetworkPending && snapshotVisible && onHomeDashboard) {
+      return <SnapshotHomeRoutePaint />;
+    }
+    if (!session && authBootstrapped) {
+      const returnPath = sanitizeReturnTo(`${location.pathname}${location.search}`) ?? location.pathname;
+      const loginTarget = getAuthLoginPathForRoute(location.pathname, returnPath);
+      authFlowLog('ProtectedRoute: redirect to login', {
+        path: location.pathname,
+        reason: 'no_confirmed_session',
+        loginTarget,
+      });
+      return (
+        <Navigate
+          to={loginTarget}
+          replace
+          state={{ from: returnPath }}
+        />
+      );
+    }
     return protectedRoutePlaceholder(location.pathname, Boolean(session?.user));
   }
 
   if (!session) {
     const returnPath = sanitizeReturnTo(`${location.pathname}${location.search}`) ?? location.pathname;
     const loginTarget = getAuthLoginPathForRoute(location.pathname, returnPath);
-    authFlowLog('ProtectedRoute: redirect to login', {
-      path: location.pathname,
-      reason: 'no_session_after_bootstrap_and_recovery',
-      loginTarget,
-    });
     return (
       <Navigate
         to={loginTarget}

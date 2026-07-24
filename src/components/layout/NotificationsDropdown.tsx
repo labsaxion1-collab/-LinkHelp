@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, memo, useCallback } from '
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Bell, ChevronRight, MessageSquare, Briefcase, DollarSign, Target, Star, X } from 'lucide-react';
-import { useAppData } from '@/context/AppDataContext';
+import { useAppDataActionsRef } from '@/context/AppDataContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { ROUTES } from '@/utils/constants';
 import { getLocalizedNotificationText, getNotificationActionUrl } from '@/utils/notificationText';
@@ -15,7 +15,10 @@ interface NotificationsDropdownProps {
   compact?: boolean;
 }
 
+import { useDevRenderCount } from '@/utils/devRenderCount';
+
 function NotificationsDropdownInner({ userId, compact = false }: NotificationsDropdownProps) {
+  useDevRenderCount('NotificationsDropdown');
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -23,7 +26,7 @@ function NotificationsDropdownInner({ userId, compact = false }: NotificationsDr
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
   const navigate = useNavigate();
   const location = useLocation();
-  const { markNotificationAsRead, markAllAsRead } = useAppData();
+  const appDataActionsRef = useAppDataActionsRef();
   const { t } = useLanguage();
 
   const userNotifications = useUserNotifications(userId);
@@ -124,12 +127,12 @@ function NotificationsDropdownInner({ userId, compact = false }: NotificationsDr
   }, [userNotifications, unreadCount]);
 
   const handleMarkAllRead = () => {
-    markAllAsRead();
+    appDataActionsRef.current.markAllAsRead();
     close();
   };
 
   const handleNotificationClick = (notificationId: string, actionUrl: string) => {
-    markNotificationAsRead(notificationId);
+    appDataActionsRef.current.markNotificationAsRead(notificationId);
     close();
     if (actionUrl) navigate(actionUrl);
   };

@@ -17,8 +17,12 @@ type Props = HeroSharedProps & {
   heroKey: string | null;
 };
 
+/** Keep last resolved Hero component across remounts of the same key (refresh / SWR). */
+const resolvedHeroByKey = new Map<string, HeroComponent>();
+
 /**
  * Skeleton único até o chunk do Hero; PNGs completam por camada após montagem.
+ * Mesmo heroKey não desmonta para skeleton se o componente já foi resolvido.
  */
 export const GamificationHeroGate = memo(function GamificationHeroGate({
   userType,
@@ -26,14 +30,32 @@ export const GamificationHeroGate = memo(function GamificationHeroGate({
   heroKey,
   ...heroProps
 }: Props) {
-  const [Hero, setHero] = useState<HeroComponent | null>(null);
-  const [visibleKey, setVisibleKey] = useState<string | null>(null);
+  const cached = heroKey ? resolvedHeroByKey.get(heroKey) ?? null : null;
+  const [Hero, setHero] = useState<HeroComponent | null>(() =>
+    phase === 'ready' ? cached : null,
+  );
+  const [visibleKey, setVisibleKey] = useState<string | null>(() =>
+    phase === 'ready' && cached && heroKey ? heroKey : null,
+  );
   const heroRootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (phase !== 'ready' || !heroKey) {
-      setHero(null);
-      setVisibleKey(null);
+      if (phase === 'loading') {
+        // Keep previous Hero painted while gamification revalidates in background.
+        return;
+      }
+      if (phase === 'error') {
+        setHero(null);
+        setVisibleKey(null);
+      }
+      return;
+    }
+
+    const fromCache = resolvedHeroByKey.get(heroKey);
+    if (fromCache) {
+      setHero(() => fromCache);
+      setVisibleKey(heroKey);
       return;
     }
 
@@ -44,6 +66,7 @@ export const GamificationHeroGate = memo(function GamificationHeroGate({
 
     void loadHeroBundle(heroKey, userType, { signal: controller.signal })
       .then((Resolved) => {
+        resolvedHeroByKey.set(heroKey, Resolved);
         setHero(() => Resolved);
         setVisibleKey(heroKey);
         heroPerfMark('mount-ready', heroKey);
@@ -60,11 +83,12 @@ export const GamificationHeroGate = memo(function GamificationHeroGate({
 
   useHeroProgressiveImages(heroRootRef, visibleKey);
 
-  if (phase === 'error') {
+  if (phase === 'error' && !Hero) {
     return <GamificationHeroUnavailable userType={userType} />;
   }
 
-  const heroReady = phase === 'ready' && Hero && visibleKey === heroKey;
+  // During loading revalidation, keep last painted Hero if same key still visible.
+  const heroReady = Boolean(Hero && visibleKey && (phase === 'ready' ? visibleKey === heroKey : true));
 
   if (!heroReady) {
     return <GamificationHeroSkeleton userType={userType} />;
@@ -76,3 +100,8 @@ export const GamificationHeroGate = memo(function GamificationHeroGate({
     </div>
   );
 });
+
+/** Test-only */
+export function resetResolvedHeroCacheForTests(): void {
+  resolvedHeroByKey.clear();
+}

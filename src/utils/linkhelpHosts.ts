@@ -32,7 +32,6 @@ export function isLocalHost(hostname: string): boolean {
 }
 
 function readSimulatedProfileFromEnv(): LinkhelpHostProfile | null {
-  if (import.meta.env.PROD) return null;
   const raw = import.meta.env.VITE_LINKHELP_HOST_PROFILE?.trim().toLowerCase();
   if (raw === 'www' || raw === 'app' || raw === 'flux') return raw;
   return null;
@@ -40,6 +39,8 @@ function readSimulatedProfileFromEnv(): LinkhelpHostProfile | null {
 
 /**
  * Maps hostname → host profile. Production real hostnames always win over simulation.
+ * Vercel Preview hosts may use VITE_LINKHELP_HOST_PROFILE (e.g. `app`) without affecting
+ * www/app/flux production domains.
  */
 export function resolveHostProfileFromHostname(
   hostname: string,
@@ -52,6 +53,14 @@ export function resolveHostProfileFromHostname(
     if (h === FLUX_HOSTNAME) return 'flux';
     if (h === APP_HOSTNAME) return 'app';
     if (h === WWW_HOSTNAME) return 'www';
+    // Preview only — never override real production hostnames above.
+    if (isPreviewHost(h)) {
+      const simulated =
+        options.simulatedProfile !== undefined
+          ? options.simulatedProfile
+          : readSimulatedProfileFromEnv();
+      if (simulated) return simulated;
+    }
     return 'combined';
   }
 

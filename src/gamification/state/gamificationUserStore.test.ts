@@ -8,7 +8,7 @@ import {
 } from '@/gamification/state/gamificationUserStore';
 
 describe('gamificationUserStore', () => {
-  it('clears record and marks loading when a new session starts', () => {
+  it('keeps confirmed record during SWR revalidation (no skeleton flash)', () => {
     resetGamificationStoreForTests();
     const userId = 'user-a';
     const gen1 = beginGamificationSession(userId, 'client');
@@ -24,8 +24,8 @@ describe('gamificationUserStore', () => {
     const gen2 = beginGamificationSession(userId, 'client');
     const snap = getGamificationSnapshot(userId, 'client');
     expect(gen2).toBeGreaterThan(gen1);
-    expect(snap.loading).toBe(true);
-    expect(snap.record).toBeNull();
+    expect(snap.loading).toBe(false);
+    expect(snap.record?.heroKey).toBe('client_confiavel');
   });
 
   it('ignores stale commits from an older generation', () => {

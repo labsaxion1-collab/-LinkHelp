@@ -1,5 +1,7 @@
 /** Marcas DEV-only para bootstrap / layout / navegação (sem logs em produção). */
 
+/** Marcas DEV-only para bootstrap / layout / navegação (sem logs em produção). */
+
 const PREFIX = 'lh-app-perf';
 
 export function appPerfMark(label: string, detail?: string): void {

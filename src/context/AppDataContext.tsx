@@ -5,6 +5,11 @@ import { avatarUrlForName } from '@/utils/avatarUrl';
 import { clearDemoLocalData } from '@/utils/clearDemoLocalData';
 import { enrichUpcomingJobsWithSubcategories, estimateScheduledAtFromJob } from '@/utils/upcomingJobUtils';
 import { ROUTES } from '@/utils/constants';
+import {
+  computeClientHomeCounts,
+  writeAccountHomeSnapshot,
+} from '@/utils/accountSessionSnapshot';
+import { appPerfMark } from '@/utils/appPerf';
 import type { Job, JobStatus, JobUrgency } from '@/types/job';
 import type { Application, ApplicationStatus } from '@/types/application';
 import type { UpcomingJob, UpcomingWorkflowStatus } from '@/types/upcoming';
@@ -199,10 +204,10 @@ function migrateJobAvatars(jobs: Job[]): Job[] {
 }
 
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
-  const { session, profile, refreshProfile } = useAuth();
+  const { session, profile, refreshProfile, sessionConfirmed } = useAuth();
   const { chargeApplicationInterest, chargeApplicationSelected } = useCredits();
-  const useRemote = isSupabaseConfigured() && !!session;
-  const userId = session?.user?.id ?? '';
+  const useRemote = isSupabaseConfigured() && sessionConfirmed;
+  const userId = sessionConfirmed ? (session?.user?.id ?? '') : '';
   const userRole = profile?.role ?? 'client';
 
   const [dataLoading, setDataLoading] = useState(false);
@@ -263,7 +268,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     if (!useRemote || !userId) return;
     const loadUserId = userId;
     bootstrapLockRef.current = true;
-    setDataLoading(true);
+    // Keep last arrays visible — do not clear before network returns.
+    const hadCache = jobsRef.current.length > 0 || applicationsRef.current.length > 0;
+    if (!hadCache) setDataLoading(true);
     try {
       const bootstrap = await fetchRemoteAppDataBootstrap();
       if (loadUserId !== userId) return;
@@ -273,6 +280,22 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       setJobs(migratedJobs);
       setApplications(bootstrap.applications);
       setUpcomingJobs(filterUpcomingByRequestStatus(bootstrap.upcomingJobs, migratedJobs));
+      appPerfMark('appdata-network-ready');
+      if (profile && profile.role === 'client') {
+        const counts = computeClientHomeCounts(
+          userId,
+          migratedJobs,
+          bootstrap.applications,
+          filterUpcomingByRequestStatus(bootstrap.upcomingJobs, migratedJobs),
+        );
+        writeAccountHomeSnapshot({
+          userId,
+          role: 'client',
+          displayName: profile.name,
+          avatarUrl: profile.avatar_url,
+          ...counts,
+        });
+      }
     } finally {
       if (loadUserId === userId) {
         bootstrapLockRef.current = false;
@@ -284,7 +307,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       }
       setDataLoading(false);
     }
-  }, [useRemote, userId, filterUpcomingByRequestStatus]);
+  }, [useRemote, userId, filterUpcomingByRequestStatus, profile]);
 
   const refreshRemoteFull = useCallback(async () => {
     if (!useRemote || !userId) return;

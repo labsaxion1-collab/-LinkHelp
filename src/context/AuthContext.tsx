@@ -13,6 +13,16 @@ import {
   markOAuthRedirectPending,
   readStoredRefreshToken,
 } from '@/utils/authStorage';
+import {
+  clearAccountHomeSnapshot,
+  clearAccountSessionHint,
+  readAccountSessionHint,
+  readSnapshotVisibleUserId,
+  writeAccountHomeSnapshot,
+  writeAccountSessionHint,
+} from '@/utils/accountSessionSnapshot';
+import { appPerfMark } from '@/utils/appPerf';
+import { clearGamificationStoreOnLogout } from '@/gamification/state/gamificationUserStore';
 import { authDevLog, authFlowLog, roleFromAuthMetadata, roleRoutingLog } from '@/lib/authDebug';
 import type { Database } from '@/types/supabase.database';
 import type { ProfileRow, UserType } from '@/types/database';
@@ -53,6 +63,12 @@ interface AuthContextValue {
   profile: AuthProfile | null;
   authLoading: boolean;
   authBootstrapped: boolean;
+  /** Supabase validated session + profile — required for private routes and mutations. */
+  sessionConfirmed: boolean;
+  /** Read-only Home paint from local snapshot while session is still confirming. */
+  snapshotVisible: boolean;
+  /** Bootstrap finished but session not yet confirmed (e.g. transient network). */
+  authNetworkPending: boolean;
   isConfigured: boolean;
   signInWithEmail: (email: string, password: string) => Promise<AuthError>;
   signUpWithEmail: (
@@ -261,12 +277,24 @@ async function ensureProfileFromUser(user: User): Promise<AuthProfile | null> {
   return null;
 }
 
+function isDefinitiveRefreshFailure(message: string | undefined): boolean {
+  if (!message) return false;
+  const m = message.toLowerCase();
+  return (
+    m.includes('invalid') ||
+    m.includes('expired') ||
+    m.includes('revoked') ||
+    m.includes('refresh_token') ||
+    m.includes('not found')
+  );
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<AuthProfile | null>(null);
-  /** True until first auth resolution for configured Supabase — avoids treating “unknown” as logged out. */
   const [authLoading, setAuthLoading] = useState(() => isSupabaseConfigured());
   const [authBootstrapped, setAuthBootstrapped] = useState(false);
+  const [authNetworkPending, setAuthNetworkPending] = useState(false);
 
   const sessionRef = useRef<Session | null>(null);
   sessionRef.current = session;
@@ -363,16 +391,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const syncSession = (next: Session | null, options?: { silent?: boolean }) => {
       if (cancelled) return;
+      setAuthNetworkPending(false);
       setSession(next);
 
       if (!next?.user) {
         profileSyncTargetRef.current = null;
         setProfile(null);
         setAuthLoading(false);
+        clearAccountHomeSnapshot();
+        clearAccountSessionHint();
+        clearGamificationStoreOnLogout();
         return;
       }
 
       const targetId = next.user.id;
+      const storedHint = readAccountSessionHint();
+      if (storedHint && storedHint.userId !== targetId) {
+        clearAccountHomeSnapshot(storedHint.userId);
+        clearAccountSessionHint();
+      }
+
       profileSyncTargetRef.current = targetId;
 
       const run = async () => {
@@ -382,6 +420,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (cancelled || profileSyncTargetRef.current !== targetId) return;
           setProfile(p);
           if (p) {
+            const role = p.role === 'helper' ? 'helper' : 'client';
+            writeAccountSessionHint({ userId: p.id, role });
+            writeAccountHomeSnapshot({
+              userId: p.id,
+              role,
+              displayName: p.name,
+              avatarUrl: p.avatar_url,
+            });
+            appPerfMark('session-confirmed');
             authFlowLog('Profile loaded', {
               userId: targetId,
               role: p.role,
@@ -493,7 +540,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           message: e instanceof Error ? e.message : String(e),
         });
         if (!cancelled) {
-          syncSession(null);
+          if (readSnapshotVisibleUserId()) {
+            setAuthNetworkPending(true);
+            setAuthLoading(false);
+            appPerfMark('auth-network-pending');
+          } else {
+            syncSession(null);
+          }
           setAuthBootstrapped(true);
         }
         return;
@@ -540,7 +593,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 err: refErr?.message,
               });
               if (refErr) {
-                clearLinkHelpAuthStorage();
+                if (isDefinitiveRefreshFailure(refErr.message)) {
+                  clearLinkHelpAuthStorage();
+                } else if (readSnapshotVisibleUserId()) {
+                  setAuthNetworkPending(true);
+                } else {
+                  clearLinkHelpAuthStorage();
+                }
               } else {
                 effectiveSession = refData.session ?? null;
               }
@@ -548,14 +607,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               authFlowLog('bootstrap: refreshSession warning', {
                 message: e instanceof Error ? e.message : String(e),
               });
-              clearLinkHelpAuthStorage();
+              if (!readSnapshotVisibleUserId()) {
+                clearLinkHelpAuthStorage();
+              } else {
+                setAuthNetworkPending(true);
+              }
             }
           }
         }
       }
 
-      syncSession(effectiveSession);
-      if (!cancelled) setAuthBootstrapped(true);
+      syncSession(effectiveSession, {
+        silent: Boolean(
+          effectiveSession?.user?.id &&
+            profileRef.current?.id === effectiveSession.user.id,
+        ),
+      });
+      if (!cancelled) {
+        setAuthBootstrapped(true);
+        appPerfMark('auth-confirmed');
+      }
     })();
 
     return () => {
@@ -757,11 +828,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    const previousId = sessionRef.current?.user?.id ?? readAccountSessionHint()?.userId ?? null;
     const sb = getSupabase();
     profileSyncTargetRef.current = null;
     setSession(null);
     setProfile(null);
     setAuthLoading(false);
+    setAuthNetworkPending(false);
+    clearAccountHomeSnapshot(previousId);
+    clearAccountSessionHint();
+    clearGamificationStoreOnLogout();
     clearLinkHelpAuthStorage();
     if (sb) {
       try {
@@ -913,6 +989,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [profile, refreshProfile],
   );
 
+  const sessionConfirmed = Boolean(
+    authBootstrapped && session?.user?.id && profile?.id && profile.id === session.user.id,
+  );
+  const snapshotVisible = Boolean(!sessionConfirmed && readSnapshotVisibleUserId());
+
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
@@ -920,6 +1001,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       authLoading,
       authBootstrapped,
+      sessionConfirmed,
+      snapshotVisible,
+      authNetworkPending,
       isConfigured: isSupabaseConfigured(),
       signInWithEmail,
       signUpWithEmail,
@@ -934,6 +1018,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       authLoading,
       authBootstrapped,
+      sessionConfirmed,
+      snapshotVisible,
+      authNetworkPending,
       signInWithEmail,
       signUpWithEmail,
       signInWithGoogle,

@@ -4,10 +4,17 @@ import {
   AuthenticatedHomeShellSkeleton,
   type AuthenticatedHomeShellVariant,
 } from '@/components/home/AuthenticatedHomeShellSkeleton';
+import { SnapshotHomePaint } from '@/components/home/SnapshotHomePaint';
 import { useAuth } from '@/context/AuthContext';
 import { isAuthenticatedHomeDashboardPath } from '@/utils/homeDashboardPaths';
 import { pathImpliesAppMode } from '@/utils/navigation';
 import { normalizeProfileRole } from '@/utils/userRole';
+import {
+  hasFreshHomeSnapshotForUser,
+  readSnapshotVisibleUserId,
+  writeAccountHomeSnapshot,
+} from '@/utils/accountSessionSnapshot';
+import { appPerfMark } from '@/utils/appPerf';
 
 type Ctx = {
   surfaceReady: boolean;
@@ -30,15 +37,34 @@ export function resolveHomeShellVariant(
   return 'neutral';
 }
 
+function readOptimisticHomeSurfaceReady(pathname: string): boolean {
+  if (!isAuthenticatedHomeDashboardPath(pathname)) return false;
+  const userId = readSnapshotVisibleUserId();
+  if (!userId) return false;
+  return hasFreshHomeSnapshotForUser(userId);
+}
+
 export function HomeDashboardShellProvider({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
-  const [surfaceReady, setSurfaceReady] = useState(false);
+  const [surfaceReady, setSurfaceReady] = useState(() => readOptimisticHomeSurfaceReady(pathname));
 
   useEffect(() => {
-    setSurfaceReady(false);
+    if (!isAuthenticatedHomeDashboardPath(pathname)) {
+      setSurfaceReady(false);
+      return;
+    }
+    if (readOptimisticHomeSurfaceReady(pathname)) {
+      setSurfaceReady(true);
+      appPerfMark('cached-home-visible');
+    } else {
+      setSurfaceReady(false);
+    }
   }, [pathname]);
 
-  const markSurfaceReady = useCallback(() => setSurfaceReady(true), []);
+  const markSurfaceReady = useCallback(() => {
+    setSurfaceReady(true);
+    appPerfMark('home-interactive');
+  }, []);
   const resetSurfaceReady = useCallback(() => setSurfaceReady(false), []);
 
   const value = useMemo(
@@ -58,20 +84,31 @@ export function useHomeDashboardShell(): Ctx {
 /** Marks dashboard route as painted — hides persistent home shell. */
 export function useMarkHomeDashboardSurfaceReady(): void {
   const { markSurfaceReady } = useHomeDashboardShell();
+  const { session, profile, sessionConfirmed } = useAuth();
+
   useEffect(() => {
+    if (!sessionConfirmed) return;
     markSurfaceReady();
-  }, [markSurfaceReady]);
+    const userId = session?.user?.id;
+    if (!userId || !profile) return;
+    writeAccountHomeSnapshot({
+      userId,
+      role: profile.role === 'helper' ? 'helper' : 'client',
+      displayName: profile.name,
+      avatarUrl: profile.avatar_url,
+      homeConfirmed: true,
+    });
+  }, [markSurfaceReady, sessionConfirmed, session?.user?.id, profile]);
 }
 
 function usePersistentHomeShellVisible(): boolean {
   const { pathname } = useLocation();
   const { surfaceReady } = useHomeDashboardShell();
-  const { session, profile, authBootstrapped } = useAuth();
+  const { snapshotVisible } = useAuth();
 
   if (!isAuthenticatedHomeDashboardPath(pathname)) return false;
   if (surfaceReady) return false;
-  if (!authBootstrapped) return true;
-  if (!session?.user) return true;
+  if (snapshotVisible) return false;
   return true;
 }
 
@@ -80,6 +117,10 @@ export function PersistentHomeDashboardShell() {
   const { pathname } = useLocation();
   const { profile } = useAuth();
   const visible = usePersistentHomeShellVisible();
+
+  useEffect(() => {
+    if (visible) appPerfMark('dashboard-shell-visible');
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -90,6 +131,16 @@ export function PersistentHomeDashboardShell() {
     <div className="relative z-[1] w-full min-w-0 flex-1" data-lh-home-shell="persistent">
       <AuthenticatedHomeShellSkeleton variant={variant} />
     </div>
+  );
+}
+
+/** Read-only snapshot paint for ProtectedRoute while session confirms. */
+export function SnapshotHomeRoutePaint() {
+  return (
+    <>
+      <SnapshotHomePaint />
+      <HomeDashboardRoutePlaceholder />
+    </>
   );
 }
 

@@ -4,6 +4,9 @@ import App from './App.tsx';
 import './index.css';
 import { shouldRegisterServiceWorker } from '@/utils/linkhelpHosts';
 import { clearChunkReloadFlag } from '@/utils/lazyWithRetry';
+import { appPerfMark } from '@/utils/appPerf';
+
+appPerfMark('app-start');
 
 function installGlobalErrorLogging() {
   if (typeof window === 'undefined') return;

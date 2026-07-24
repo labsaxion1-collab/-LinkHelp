@@ -2004,36 +2004,9 @@ export default function ClientDashboard() {
             setShowHelperProfileModal(false);
             setProfileContextRequestId(null);
           }}
-          panelClassName="h-full max-h-full rounded-t-[1.75rem] border border-gray-100/80 bg-white shadow-2xl transition-opacity duration-200 ease-out sm:rounded-3xl"
+          panelClassName="h-full max-h-full rounded-t-[1.75rem] bg-transparent shadow-2xl transition-opacity duration-200 ease-out sm:rounded-3xl md:max-w-2xl"
         >
-          <div className="shrink-0 relative rounded-t-3xl sm:rounded-t-3xl">
-              <div className="h-24 sm:h-32 bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-800 sm:rounded-t-3xl relative overflow-hidden">
-                <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_30%_20%,white,transparent_55%)] pointer-events-none" />
-                <button
-                  type="button"
-                  onClick={() => setShowHelperProfileModal(false)}
-                  className="absolute top-3 right-3 z-20 bg-black/20 hover:bg-black/30 backdrop-blur-sm p-2 rounded-full text-white transition-colors"
-                  aria-label={t('common.close')}
-                >
-                  <Icons.X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="flex justify-center px-4 sm:px-6 -mt-12 sm:-mt-14 relative z-10 pointer-events-none">
-                <div className="pointer-events-auto relative">
-                  <img
-                    src={selectedHelper.avatar}
-                    alt=""
-                    className="w-[5.5rem] h-[5.5rem] sm:w-28 sm:h-28 rounded-full object-cover ring-[3px] ring-white shadow-xl shadow-blue-900/20 bg-gray-100"
-                  />
-                  {selectedHelper.isOnline && (
-                    <div className="absolute bottom-1 right-1 w-5 h-5 sm:w-6 sm:h-6 bg-emerald-500 border-[3px] border-white rounded-full" />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <div
                 {...{ [PUBLIC_PROFILE_SCROLL_ATTR]: '' }}
                 className="ios-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-2 pt-1 sm:px-5 sm:pt-2"
@@ -2050,8 +2023,13 @@ export default function ClientDashboard() {
                       applications.find((a) => a.helperId === String(selectedHelper.id))?.helperJobs ??
                       0,
                     bio: profileApp?.message?.trim() || undefined,
-                    categories: selectedHelper.skills?.length ? [...selectedHelper.skills] : ['cleaning'],
+                    categories: selectedHelper.skills?.length ? [...selectedHelper.skills] : [],
                   }}
+                  onClose={() => {
+                    setShowHelperProfileModal(false);
+                    setProfileContextRequestId(null);
+                  }}
+                  closeLabel={t('common.close')}
                 />
               </div>
               <div className="shrink-0 flex flex-col gap-2 border-t border-gray-100 bg-white px-4 pb-3 pt-3 sm:px-6">

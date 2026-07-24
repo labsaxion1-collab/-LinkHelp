@@ -15,7 +15,6 @@ import {
   PublicProfileSheetFrame,
   PUBLIC_PROFILE_SCROLL_ATTR,
 } from '@/components/reputation/PublicProfileSheetFrame';
-import { PublicProfileCloseBar } from '@/components/reputation/PublicProfileCloseBar';
 import { useGamification } from '@/gamification/hooks/useGamification';
 import { getCurrentLevelConfig } from '@/gamification/engines/levelEngine';
 import { useAppData } from '@/context/AppDataContext';
@@ -239,32 +238,34 @@ export default function ProfileDashboardPage() {
     (isHelper && UI_VISIBILITY.helperCredits) || (!isHelper && UI_VISIBILITY.clientCredits);
 
   return (
-    <AppPageShell className="w-full bg-[#F4F7FC] !px-0 !pt-0">
-      <div className="mx-auto mb-3 hidden w-full max-w-6xl items-center justify-between gap-3 px-7 pt-7 lg:flex">
-        <DesktopBackButton alwaysVisible />
-        <CloseToHomeButton />
-      </div>
+    <AppPageShell wide className="w-full bg-[#F4F7FC] !px-0 !pt-0">
 
       <div
         data-testid="profile-dashboard-v2"
         className="flex w-full flex-col pb-28 md:pb-10"
       >
 
-        <ProfileIdentityHero
-          name={displayName}
-          email={email}
-          avatarUrl={avatarUrl}
-          roleLabel={roleLabel}
-          userType={userType}
-          city={city}
-          region={region}
-          rating={profile?.rating}
-          reviewCount={reviewCount}
-          onViewPublic={() => setPublicOpen(true)}
-          viewPublicLabel={t('profile_page.view_public')}
-          noReviewsLabel={t('profile_page.no_reviews_yet')}
-          reviewsCountLabel={(count) => t('profile_page.reviews_count', { count })}
-        />
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 mx-auto hidden w-full max-w-6xl items-center justify-between gap-3 px-8 pt-4 lg:flex [&>*]:pointer-events-auto">
+            <DesktopBackButton alwaysVisible />
+            <CloseToHomeButton />
+          </div>
+          <ProfileIdentityHero
+            name={displayName}
+            email={email}
+            avatarUrl={avatarUrl}
+            roleLabel={roleLabel}
+            userType={userType}
+            city={city}
+            region={region}
+            rating={profile?.rating}
+            reviewCount={reviewCount}
+            onViewPublic={() => setPublicOpen(true)}
+            viewPublicLabel={t('profile_page.view_public')}
+            noReviewsLabel={t('profile_page.no_reviews_yet')}
+            reviewsCountLabel={(count) => t('profile_page.reviews_count', { count })}
+          />
+        </div>
 
         <ProfileGamificationSection userType={userType} />
         <div className="mx-auto mt-5 flex w-full max-w-lg flex-col gap-4 px-4 sm:px-5">
@@ -330,15 +331,11 @@ export default function ProfileDashboardPage() {
       </div>
         </div>
 
-      <PublicProfileSheetFrame open={publicOpen} onClose={() => setPublicOpen(false)}>
-        <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[1.5rem] bg-white shadow-2xl">
-          <PublicProfileCloseBar
-            onClose={() => setPublicOpen(false)}
-            closeLabel={t('common.close')}
-          />
+      <PublicProfileSheetFrame open={publicOpen} onClose={() => setPublicOpen(false)} panelClassName="md:max-w-2xl">
+        <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[1.75rem] bg-transparent shadow-2xl">
           <div
             {...{ [PUBLIC_PROFILE_SCROLL_ATTR]: '' }}
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1 sm:p-2"
           >
             {isHelper && profile ? (
               <HelperPublicProfileView
@@ -350,14 +347,25 @@ export default function ProfileDashboardPage() {
                   jobsCompleted: completedCount,
                   bio: profile.bio ?? undefined,
                   city: [city, region].filter(Boolean).join(', ') || undefined,
+                  onCta: () => navigate(ROUTES.helperJobs),
+                  ctaLabel: t('profile_page.public_cta_services'),
                   categories: [
                     ...(profile.primary_category ? [profile.primary_category] : []),
                     ...((profile.secondary_categories as string[] | null) ?? []),
                   ],
                 }}
+                onClose={() => setPublicOpen(false)}
+                closeLabel={t('common.close')}
               />
             ) : selfJobStub ? (
-              <ClientPublicProfileView job={selfJobStub} bio={profile?.bio} />
+              <ClientPublicProfileView
+                job={selfJobStub}
+                bio={profile?.bio}
+                onClose={() => setPublicOpen(false)}
+                closeLabel={t('common.close')}
+                onCta={() => navigate(ROUTES.clientJobs)}
+                ctaLabel={t('profile_page.public_cta_orders')}
+              />
             ) : null}
           </div>
         </div>

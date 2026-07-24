@@ -303,6 +303,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   profileRef.current = profile;
 
   const profileSyncTargetRef = useRef<string | null>(null);
+  const authBootstrappedRef = useRef(false);
+  authBootstrappedRef.current = authBootstrapped;
 
   const refreshProfile = useCallback(async (userOverride?: User | null): Promise<AuthProfile | null> => {
     const user = userOverride ?? sessionRef.current?.user;
@@ -393,7 +395,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const sb = getSupabase()!;
     let cancelled = false;
 
-    const syncSession = (next: Session | null, options?: { silent?: boolean }) => {
+    const syncSession = (
+      next: Session | null,
+      options?: { silent?: boolean; /** Wipe snapshot/hint only when session is definitively gone. */ clearCaches?: boolean },
+    ) => {
       if (cancelled) return;
       setAuthNetworkPending(false);
       setSession(next);
@@ -402,9 +407,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profileSyncTargetRef.current = null;
         setProfile(null);
         setAuthLoading(false);
-        clearAccountHomeSnapshot();
-        clearAccountSessionHint();
-        clearGamificationStoreOnLogout();
+        // CRITICAL: do NOT clear visual snapshot on provisional null during bootstrap.
+        // That race caused empty light screen + dark skeleton on every refresh.
+        if (options?.clearCaches) {
+          clearAccountHomeSnapshot();
+          clearAccountSessionHint();
+          clearGamificationStoreOnLogout();
+        }
         return;
       }
 
@@ -493,7 +502,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         authFlowLog('onAuthStateChange: SIGNED_OUT — clearing session', {});
-        syncSession(null);
+        syncSession(null, { clearCaches: true });
         return;
       }
 
@@ -506,8 +515,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               userId: verify.session.user.id,
             });
             syncSession(verify.session);
+          } else if (authBootstrappedRef.current) {
+            syncSession(null, { clearCaches: true });
           } else {
-            syncSession(null);
+            // Provisional null before bootstrap finishes — keep snapshot for paint.
+            setSession(null);
+            setAuthLoading(false);
           }
         });
         return;
@@ -549,7 +562,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setAuthLoading(false);
             appPerfMark('auth-network-pending');
           } else {
-            syncSession(null);
+            syncSession(null, { clearCaches: true });
           }
           setAuthBootstrapped(true);
         }
@@ -621,12 +634,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      syncSession(effectiveSession, {
-        silent: Boolean(
-          effectiveSession?.user?.id &&
-            profileRef.current?.id === effectiveSession.user.id,
-        ),
-      });
+      if (effectiveSession) {
+        syncSession(effectiveSession, {
+          silent: Boolean(
+            effectiveSession.user?.id && profileRef.current?.id === effectiveSession.user.id,
+          ),
+        });
+      } else if (readSnapshotVisibleUserId()) {
+        // Keep snapshot paint; session still unconfirmed (network / refresh soft-fail).
+        setSession(null);
+        setAuthLoading(false);
+        setAuthNetworkPending(true);
+      } else {
+        syncSession(null, { clearCaches: true });
+      }
       if (!cancelled) {
         setAuthBootstrapped(true);
         appPerfMark('auth-confirmed');

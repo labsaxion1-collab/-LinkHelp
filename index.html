@@ -16,6 +16,28 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/linkhelp-app-180.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/linkhelp-app-192.png" />
     <title>LinkHelp</title>
+    <!-- Early paint: avoid white/cream empty frame before CSS/React (matches app shell). -->
+    <style>
+      html, body {
+        margin: 0;
+        background: #f4f6fc;
+        min-height: 100%;
+      }
+      #root {
+        min-height: 100dvh;
+        min-height: 100vh;
+        background: #f4f6fc;
+      }
+    </style>
+    <script>
+      (function () {
+        try {
+          if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+          window.scrollTo(0, 0);
+          performance.mark('lh-app-perf:html-boot');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

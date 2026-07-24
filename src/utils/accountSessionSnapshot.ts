@@ -1,5 +1,6 @@
 /**
  * Visual Home snapshot + LinkHelp session hint (SWR paint only).
+ * Uses localStorage so hard refresh / mobile tab restore keep the paint.
  * Never stores tokens, email, phone, jobs lists, or messages.
  * Authorization always requires Supabase-confirmed session (sessionConfirmed).
  */
@@ -38,6 +39,27 @@ export type AccountHomeSnapshot = {
   savedAt: number;
 };
 
+export type SnapshotDiagnoseReason =
+  | 'accepted'
+  | 'missing-hint'
+  | 'missing-snapshot'
+  | 'invalid-json'
+  | 'expired'
+  | 'schema-mismatch'
+  | 'user-mismatch'
+  | 'role-mismatch'
+  | 'missing-home-confirmation'
+  | 'invalid-shape';
+
+function storage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
 function storageKey(userId: string): string {
   return `${PREFIX}${userId}`;
 }
@@ -51,7 +73,8 @@ function isUserType(value: unknown): value is UserType {
 }
 
 export function writeAccountSessionHint(input: { userId: string; role: UserType }): void {
-  if (typeof window === 'undefined' || !input.userId || !isUserType(input.role)) return;
+  const store = storage();
+  if (!store || !input.userId || !isUserType(input.role)) return;
   try {
     const hint: AccountSessionHint = {
       schemaVersion: ACCOUNT_SNAPSHOT_SCHEMA_VERSION,
@@ -59,26 +82,27 @@ export function writeAccountSessionHint(input: { userId: string; role: UserType 
       role: input.role,
       savedAt: Date.now(),
     };
-    sessionStorage.setItem(HINT_KEY, JSON.stringify(hint));
+    store.setItem(HINT_KEY, JSON.stringify(hint));
   } catch {
     /* ignore */
   }
 }
 
 export function readAccountSessionHint(): AccountSessionHint | null {
-  if (typeof window === 'undefined') return null;
+  const store = storage();
+  if (!store) return null;
   try {
-    const raw = sessionStorage.getItem(HINT_KEY);
+    const raw = store.getItem(HINT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<AccountSessionHint>;
     if (parsed.schemaVersion !== ACCOUNT_SNAPSHOT_SCHEMA_VERSION) {
-      sessionStorage.removeItem(HINT_KEY);
+      store.removeItem(HINT_KEY);
       return null;
     }
     if (typeof parsed.userId !== 'string' || !parsed.userId) return null;
     if (!isUserType(parsed.role)) return null;
     if (typeof parsed.savedAt !== 'number' || !isFresh(parsed.savedAt)) {
-      sessionStorage.removeItem(HINT_KEY);
+      store.removeItem(HINT_KEY);
       return null;
     }
     return {
@@ -89,7 +113,7 @@ export function readAccountSessionHint(): AccountSessionHint | null {
     };
   } catch {
     try {
-      sessionStorage.removeItem(HINT_KEY);
+      store.removeItem(HINT_KEY);
     } catch {
       /* ignore */
     }
@@ -98,9 +122,10 @@ export function readAccountSessionHint(): AccountSessionHint | null {
 }
 
 export function clearAccountSessionHint(): void {
-  if (typeof window === 'undefined') return;
+  const store = storage();
+  if (!store) return;
   try {
-    sessionStorage.removeItem(HINT_KEY);
+    store.removeItem(HINT_KEY);
   } catch {
     /* ignore */
   }
@@ -136,13 +161,14 @@ function parseSnapshot(raw: string, expectedUserId: string): AccountHomeSnapshot
 }
 
 export function readAccountHomeSnapshot(userId: string): AccountHomeSnapshot | null {
-  if (typeof window === 'undefined' || !userId) return null;
+  const store = storage();
+  if (!store || !userId) return null;
   try {
-    const raw = sessionStorage.getItem(storageKey(userId));
+    const raw = store.getItem(storageKey(userId));
     if (!raw) return null;
     const snap = parseSnapshot(raw, userId);
     if (!snap) {
-      sessionStorage.removeItem(storageKey(userId));
+      store.removeItem(storageKey(userId));
       return null;
     }
     return snap;
@@ -165,6 +191,219 @@ export function readSnapshotVisibleUserId(): string | null {
   return hint.userId;
 }
 
+/**
+ * Full diagnose for Preview/debug — never includes PII.
+ * Prefer this over silent null when explaining why paint failed.
+ */
+export function diagnoseSnapshotRead(expectedRole?: UserType | null): {
+  reason: SnapshotDiagnoseReason;
+  userIdPrefix: string | null;
+  role: UserType | null;
+  ageMs: number | null;
+  homeConfirmed: boolean;
+  storage: 'localStorage';
+} {
+  const hint = (() => {
+    const store = storage();
+    if (!store) return null;
+    try {
+      const raw = store.getItem(HINT_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as Partial<AccountSessionHint>;
+    } catch {
+      return 'invalid-json' as const;
+    }
+  })();
+
+  if (hint === 'invalid-json') {
+    return {
+      reason: 'invalid-json',
+      userIdPrefix: null,
+      role: null,
+      ageMs: null,
+      homeConfirmed: false,
+      storage: 'localStorage',
+    };
+  }
+  if (!hint || typeof hint !== 'object') {
+    return {
+      reason: 'missing-hint',
+      userIdPrefix: null,
+      role: null,
+      ageMs: null,
+      homeConfirmed: false,
+      storage: 'localStorage',
+    };
+  }
+  if (hint.schemaVersion !== ACCOUNT_SNAPSHOT_SCHEMA_VERSION) {
+    return {
+      reason: 'schema-mismatch',
+      userIdPrefix: typeof hint.userId === 'string' ? hint.userId.slice(0, 8) : null,
+      role: isUserType(hint.role) ? hint.role : null,
+      ageMs: typeof hint.savedAt === 'number' ? Date.now() - hint.savedAt : null,
+      homeConfirmed: false,
+      storage: 'localStorage',
+    };
+  }
+  if (typeof hint.userId !== 'string' || !hint.userId || !isUserType(hint.role)) {
+    return {
+      reason: 'invalid-shape',
+      userIdPrefix: null,
+      role: null,
+      ageMs: null,
+      homeConfirmed: false,
+      storage: 'localStorage',
+    };
+  }
+  if (typeof hint.savedAt !== 'number' || !isFresh(hint.savedAt)) {
+    return {
+      reason: 'expired',
+      userIdPrefix: hint.userId.slice(0, 8),
+      role: hint.role,
+      ageMs: typeof hint.savedAt === 'number' ? Date.now() - hint.savedAt : null,
+      homeConfirmed: false,
+      storage: 'localStorage',
+    };
+  }
+  if (expectedRole && hint.role !== expectedRole) {
+    return {
+      reason: 'role-mismatch',
+      userIdPrefix: hint.userId.slice(0, 8),
+      role: hint.role,
+      ageMs: Date.now() - hint.savedAt,
+      homeConfirmed: false,
+      storage: 'localStorage',
+    };
+  }
+
+  const store = storage();
+  const raw = store?.getItem(storageKey(hint.userId)) ?? null;
+  if (!raw) {
+    return {
+      reason: 'missing-snapshot',
+      userIdPrefix: hint.userId.slice(0, 8),
+      role: hint.role,
+      ageMs: Date.now() - hint.savedAt,
+      homeConfirmed: false,
+      storage: 'localStorage',
+    };
+  }
+
+  let parsed: Partial<AccountHomeSnapshot>;
+  try {
+    parsed = JSON.parse(raw) as Partial<AccountHomeSnapshot>;
+  } catch {
+    return {
+      reason: 'invalid-json',
+      userIdPrefix: hint.userId.slice(0, 8),
+      role: hint.role,
+      ageMs: Date.now() - hint.savedAt,
+      homeConfirmed: false,
+      storage: 'localStorage',
+    };
+  }
+
+  if (parsed.schemaVersion !== ACCOUNT_SNAPSHOT_SCHEMA_VERSION) {
+    return {
+      reason: 'schema-mismatch',
+      userIdPrefix: hint.userId.slice(0, 8),
+      role: hint.role,
+      ageMs: Date.now() - hint.savedAt,
+      homeConfirmed: false,
+      storage: 'localStorage',
+    };
+  }
+  if (parsed.userId !== hint.userId) {
+    return {
+      reason: 'user-mismatch',
+      userIdPrefix: hint.userId.slice(0, 8),
+      role: hint.role,
+      ageMs: Date.now() - hint.savedAt,
+      homeConfirmed: false,
+      storage: 'localStorage',
+    };
+  }
+  if (!isUserType(parsed.role)) {
+    return {
+      reason: 'invalid-shape',
+      userIdPrefix: hint.userId.slice(0, 8),
+      role: hint.role,
+      ageMs: Date.now() - hint.savedAt,
+      homeConfirmed: false,
+      storage: 'localStorage',
+    };
+  }
+  if (expectedRole && parsed.role !== expectedRole) {
+    return {
+      reason: 'role-mismatch',
+      userIdPrefix: hint.userId.slice(0, 8),
+      role: parsed.role,
+      ageMs: typeof parsed.savedAt === 'number' ? Date.now() - parsed.savedAt : null,
+      homeConfirmed: false,
+      storage: 'localStorage',
+    };
+  }
+  if (typeof parsed.savedAt !== 'number' || !isFresh(parsed.savedAt)) {
+    return {
+      reason: 'expired',
+      userIdPrefix: hint.userId.slice(0, 8),
+      role: parsed.role,
+      ageMs: typeof parsed.savedAt === 'number' ? Date.now() - parsed.savedAt : null,
+      homeConfirmed: typeof parsed.homeConfirmedAt === 'number',
+      storage: 'localStorage',
+    };
+  }
+  if (typeof parsed.homeConfirmedAt !== 'number' || parsed.homeConfirmedAt <= 0) {
+    return {
+      reason: 'missing-home-confirmation',
+      userIdPrefix: hint.userId.slice(0, 8),
+      role: parsed.role,
+      ageMs: Date.now() - parsed.savedAt,
+      homeConfirmed: false,
+      storage: 'localStorage',
+    };
+  }
+  if (!isFresh(parsed.homeConfirmedAt)) {
+    return {
+      reason: 'expired',
+      userIdPrefix: hint.userId.slice(0, 8),
+      role: parsed.role,
+      ageMs: Date.now() - parsed.homeConfirmedAt,
+      homeConfirmed: true,
+      storage: 'localStorage',
+    };
+  }
+
+  return {
+    reason: 'accepted',
+    userIdPrefix: hint.userId.slice(0, 8),
+    role: parsed.role,
+    ageMs: Date.now() - parsed.savedAt,
+    homeConfirmed: true,
+    storage: 'localStorage',
+  };
+}
+
+/** @deprecated use diagnoseSnapshotRead */
+export function diagnoseAccountHomeSnapshot(
+  userId: string | null | undefined,
+  expectedRole?: UserType | null,
+): SnapshotDiagnoseReason {
+  if (!userId) return 'missing-hint';
+  const d = diagnoseSnapshotRead(expectedRole);
+  if (d.reason === 'accepted' && d.userIdPrefix && !userId.startsWith(d.userIdPrefix)) {
+    return 'user-mismatch';
+  }
+  if (d.reason === 'missing-hint' || d.reason === 'missing-snapshot') {
+    const store = storage();
+    if (store?.getItem(storageKey(userId))) {
+      const snap = readAccountHomeSnapshot(userId);
+      return snap ? 'accepted' : diagnoseSnapshotRead(expectedRole).reason;
+    }
+  }
+  return d.reason === 'missing-hint' && !userId ? 'missing-hint' : d.reason;
+}
+
 export function writeAccountHomeSnapshot(partial: {
   userId: string;
   role: UserType;
@@ -177,7 +416,8 @@ export function writeAccountHomeSnapshot(partial: {
   upcomingServicesCount?: number;
   homeConfirmed?: boolean;
 }): void {
-  if (typeof window === 'undefined' || !partial.userId || !isUserType(partial.role)) return;
+  const store = storage();
+  if (!store || !partial.userId || !isUserType(partial.role)) return;
   try {
     const prev = readAccountHomeSnapshot(partial.userId);
     const next: AccountHomeSnapshot = {
@@ -201,9 +441,10 @@ export function writeAccountHomeSnapshot(partial: {
       homeConfirmedAt: partial.homeConfirmed ? Date.now() : (prev?.homeConfirmedAt ?? 0),
       savedAt: Date.now(),
     };
+    // Never persist an incomplete first write; never wipe a confirmed snapshot with incomplete data.
     if (!next.homeConfirmedAt) return;
-    sessionStorage.setItem(storageKey(partial.userId), JSON.stringify(next));
-    sessionStorage.setItem(ACTIVE_KEY, partial.userId);
+    store.setItem(storageKey(partial.userId), JSON.stringify(next));
+    store.setItem(ACTIVE_KEY, partial.userId);
     writeAccountSessionHint({ userId: partial.userId, role: partial.role });
   } catch {
     /* quota / private mode */
@@ -211,63 +452,35 @@ export function writeAccountHomeSnapshot(partial: {
 }
 
 export function clearAccountHomeSnapshot(userId?: string | null): void {
-  if (typeof window === 'undefined') return;
+  const store = storage();
+  if (!store) return;
   try {
     if (userId) {
-      sessionStorage.removeItem(storageKey(userId));
+      store.removeItem(storageKey(userId));
     } else {
-      const active = sessionStorage.getItem(ACTIVE_KEY);
-      if (active) sessionStorage.removeItem(storageKey(active));
-      for (const key of Object.keys(sessionStorage)) {
-        if (key.startsWith('lh_account_snapshot_v')) sessionStorage.removeItem(key);
+      const active = store.getItem(ACTIVE_KEY);
+      if (active) store.removeItem(storageKey(active));
+      const toRemove: string[] = [];
+      for (let i = 0; i < store.length; i += 1) {
+        const key = store.key(i);
+        if (key && key.startsWith('lh_account_snapshot_v')) toRemove.push(key);
       }
+      // Also sweep known keys from a Map-backed test shim without length.
+      try {
+        for (const key of Object.keys(store as unknown as Record<string, unknown>)) {
+          if (key.startsWith('lh_account_snapshot_v')) toRemove.push(key);
+        }
+      } catch {
+        /* ignore */
+      }
+      for (const key of toRemove) store.removeItem(key);
     }
-    const active = sessionStorage.getItem(ACTIVE_KEY);
-    if (!userId || active === userId) sessionStorage.removeItem(ACTIVE_KEY);
+    const active = store.getItem(ACTIVE_KEY);
+    if (!userId || active === userId) store.removeItem(ACTIVE_KEY);
     const hint = readAccountSessionHint();
     if (!userId || hint?.userId === userId) clearAccountSessionHint();
   } catch {
     /* ignore */
-  }
-}
-
-export type SnapshotDiagnoseReason =
-  | 'accepted'
-  | 'missing'
-  | 'expired'
-  | 'schema-mismatch'
-  | 'user-mismatch'
-  | 'role-mismatch'
-  | 'incomplete'
-  | 'invalid-json';
-
-/** Diagnose why a snapshot was accepted or rejected (no PII). */
-export function diagnoseAccountHomeSnapshot(
-  userId: string | null | undefined,
-  expectedRole?: UserType | null,
-): SnapshotDiagnoseReason {
-  if (!userId) return 'missing';
-  if (typeof window === 'undefined') return 'missing';
-  try {
-    const raw = sessionStorage.getItem(storageKey(userId));
-    if (!raw) return 'missing';
-    let parsed: Partial<AccountHomeSnapshot>;
-    try {
-      parsed = JSON.parse(raw) as Partial<AccountHomeSnapshot>;
-    } catch {
-      return 'invalid-json';
-    }
-    if (parsed.schemaVersion !== ACCOUNT_SNAPSHOT_SCHEMA_VERSION) return 'schema-mismatch';
-    if (parsed.userId !== userId) return 'user-mismatch';
-    if (!isUserType(parsed.role)) return 'incomplete';
-    if (expectedRole && parsed.role !== expectedRole) return 'role-mismatch';
-    if (typeof parsed.savedAt !== 'number' || !isFresh(parsed.savedAt)) return 'expired';
-    if (typeof parsed.homeConfirmedAt !== 'number' || !isFresh(parsed.homeConfirmedAt)) {
-      return 'incomplete';
-    }
-    return 'accepted';
-  } catch {
-    return 'invalid-json';
   }
 }
 

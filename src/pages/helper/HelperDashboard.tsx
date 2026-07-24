@@ -779,6 +779,7 @@ export default function HelperDashboard() {
     location.pathname === ROUTES.helperOpportunities;
 
   return (
+    <div data-lh-dashboard-mounted="helper" className="min-w-0 w-full">
     <AppPageShell wide className="min-w-0 overflow-x-hidden pt-0 sm:pt-0">
       {/* Toast Notification */}
       {toastNotification.show && (
@@ -1397,5 +1398,6 @@ export default function HelperDashboard() {
       />
 
     </AppPageShell>
+    </div>
   );
 }

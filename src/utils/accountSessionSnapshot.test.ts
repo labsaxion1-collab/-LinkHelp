@@ -30,8 +30,7 @@ const memory = new Map<string, string>();
 
 function installSessionStorage() {
   memory.clear();
-  // @ts-expect-error test shim
-  globalThis.sessionStorage = {
+  const api = {
     getItem: (k: string) => memory.get(k) ?? null,
     setItem: (k: string, v: string) => {
       memory.set(k, v);
@@ -40,11 +39,18 @@ function installSessionStorage() {
       memory.delete(k);
     },
     clear: () => memory.clear(),
-    key: () => null,
-    length: 0,
+    key: (i: number) => [...memory.keys()][i] ?? null,
+    get length() {
+      return memory.size;
+    },
   };
+  // Snapshot now uses localStorage (survives hard refresh).
   // @ts-expect-error test shim
-  globalThis.window = globalThis;
+  globalThis.localStorage = api;
+  // @ts-expect-error test shim
+  globalThis.sessionStorage = api;
+  // @ts-expect-error test shim
+  globalThis.window = { localStorage: api, sessionStorage: api };
 }
 
 function seedHomeSnapshot(userId: string, role: 'client' | 'helper', extra: Record<string, unknown> = {}) {
@@ -245,11 +251,11 @@ describe('cold start security gates (source)', () => {
     expect(gamification).toContain('sessionConfirmed');
   });
 
-  it('3–4. sessão inválida limpa snapshot no AuthContext', async () => {
+  it('3–4. sessão inválida limpa snapshot no AuthContext só com clearCaches', async () => {
     const auth = await readFile(resolve('src/context/AuthContext.tsx'), 'utf8');
     expect(auth).toContain('clearAccountSessionHint');
-    expect(auth).toMatch(/if \(!next\?\.user\)/);
-    expect(auth).toContain('clearAccountHomeSnapshot()');
+    expect(auth).toContain('clearCaches: true');
+    expect(auth).toContain('do NOT clear visual snapshot on provisional null');
   });
 
   it('shell esconde com snapshot fresco da mesma conta', async () => {

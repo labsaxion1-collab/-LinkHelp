@@ -5,7 +5,18 @@
 const PREFIX = 'lh-app-perf';
 
 export function appPerfMark(label: string, detail?: string): void {
-  if (!import.meta.env.DEV || typeof performance === 'undefined') return;
+  if (typeof performance === 'undefined') return;
+  const debug =
+    import.meta.env.DEV ||
+    (typeof window !== 'undefined' &&
+      (() => {
+        try {
+          return new URLSearchParams(window.location.search).get('perfDebug') === '1';
+        } catch {
+          return false;
+        }
+      })());
+  if (!debug) return;
   const name = detail ? `${PREFIX}:${label}:${detail}` : `${PREFIX}:${label}`;
   try {
     performance.mark(name);

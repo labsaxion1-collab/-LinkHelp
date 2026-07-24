@@ -754,7 +754,7 @@ export default function ClientDashboard() {
   };
 
   return (
-    <div className="relative w-full min-w-0">
+    <div className="relative w-full min-w-0" data-lh-dashboard-mounted="client">
       <ClientAwaitingCompletionBridge clientId={me.id} onAwaitingIds={handleAwaitingCompletionIds} />
       {activeSidebarTab === 'dashboard' ? (
         <div className="pointer-events-none absolute right-3 top-3 z-[2] sm:right-5 sm:top-4">

@@ -117,13 +117,27 @@ export function HomeDashboardShellProvider({ children }: { children: ReactNode }
     }
   }, [pathname]);
 
+  // If optimistic ready relied on a snapshot that vanished (race), fall back to shell —
+  // never leave Navbar + empty light main.
+  useEffect(() => {
+    if (sessionConfirmed) return;
+    if (!isAuthenticatedHomeDashboardPath(pathname)) return;
+    if (!surfaceReady) return;
+    if (readSnapshotVisibleUserId()) return;
+    setSurfaceReady(false);
+  }, [sessionConfirmed, pathname, surfaceReady]);
+
   // Once session+profile confirmed, do not keep an empty shell forever if the
   // dashboard chunk is slow — shell stays until markSurfaceReady, failsafe UI handles stuck.
   useEffect(() => {
     if (!sessionConfirmed || !profile) return;
     if (!isAuthenticatedHomeDashboardPath(pathname)) return;
-    // Scroll to top on confirmed home entry (avoids black empty scroll region).
     if (typeof window !== 'undefined') {
+      try {
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      } catch {
+        /* ignore */
+      }
       window.scrollTo(0, 0);
     }
   }, [sessionConfirmed, profile, pathname]);

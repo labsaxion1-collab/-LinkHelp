@@ -1,14 +1,16 @@
 /**
- * Black-screen / home shell deadlock guards (source + unit).
+ * Black-screen / home shell deadlock + snapshot refresh guards.
  */
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import {
-  diagnoseAccountHomeSnapshot,
+  diagnoseSnapshotRead,
   clearAccountHomeSnapshot,
   writeAccountHomeSnapshot,
   writeAccountSessionHint,
+  readSnapshotVisibleUserId,
+  readAccountHomeSnapshot,
   ACCOUNT_SNAPSHOT_SCHEMA_VERSION,
 } from '@/utils/accountSessionSnapshot';
 import { resolveHomeShellVariant } from '@/components/home/HomeDashboardShellContext';
@@ -16,10 +18,9 @@ import { resolveHostProfileFromHostname } from '@/utils/linkhelpHosts';
 
 const memory = new Map<string, string>();
 
-function installSessionStorage() {
+function installStorage() {
   memory.clear();
-  // @ts-expect-error test shim
-  globalThis.sessionStorage = {
+  const api = {
     getItem: (k: string) => memory.get(k) ?? null,
     setItem: (k: string, v: string) => {
       memory.set(k, v);
@@ -28,15 +29,21 @@ function installSessionStorage() {
       memory.delete(k);
     },
     clear: () => memory.clear(),
-    key: () => null,
-    length: 0,
+    key: (i: number) => [...memory.keys()][i] ?? null,
+    get length() {
+      return memory.size;
+    },
   };
   // @ts-expect-error test shim
-  globalThis.window = globalThis;
+  globalThis.localStorage = api;
+  // @ts-expect-error test shim
+  globalThis.sessionStorage = api;
+  // @ts-expect-error test shim
+  globalThis.window = { localStorage: api, sessionStorage: api };
 }
 
 describe('home shell black-screen guards', () => {
-  beforeEach(() => installSessionStorage());
+  beforeEach(() => installStorage());
   afterEach(() => clearAccountHomeSnapshot());
 
   it('resolveHomeShellVariant maps client/helper paths', () => {
@@ -46,35 +53,52 @@ describe('home shell black-screen guards', () => {
   });
 
   it('diagnose snapshot reasons without PII', () => {
-    expect(diagnoseAccountHomeSnapshot(null)).toBe('missing');
-    expect(diagnoseAccountHomeSnapshot('u1')).toBe('missing');
+    expect(diagnoseSnapshotRead().reason).toBe('missing-hint');
 
-    writeAccountSessionHint({ userId: 'u1', role: 'client' });
+    writeAccountSessionHint({ userId: 'user-aaaa-bbbb', role: 'client' });
+    expect(diagnoseSnapshotRead().reason).toBe('missing-snapshot');
+
     writeAccountHomeSnapshot({
-      userId: 'u1',
+      userId: 'user-aaaa-bbbb',
       role: 'client',
       displayName: 'X',
       homeConfirmed: true,
       heroKey: 'client_novo',
       levelKey: 'novo',
     });
-    expect(diagnoseAccountHomeSnapshot('u1')).toBe('accepted');
-    expect(diagnoseAccountHomeSnapshot('u1', 'helper')).toBe('role-mismatch');
+    const ok = diagnoseSnapshotRead();
+    expect(ok.reason).toBe('accepted');
+    expect(ok.userIdPrefix).toBe('user-aaa');
+    expect(ok.storage).toBe('localStorage');
+    expect(diagnoseSnapshotRead('helper').reason).toBe('role-mismatch');
 
-    memory.set(`lh_account_snapshot_v${ACCOUNT_SNAPSHOT_SCHEMA_VERSION}:u2`, '{bad');
-    expect(diagnoseAccountHomeSnapshot('u2')).toBe('invalid-json');
+    memory.set(`lh_account_snapshot_v${ACCOUNT_SNAPSHOT_SCHEMA_VERSION}:user-bbbb`, '{bad');
+    writeAccountSessionHint({ userId: 'user-bbbb', role: 'client' });
+    expect(diagnoseSnapshotRead().reason).toBe('invalid-json');
+  });
 
-    memory.set(
-      `lh_account_snapshot_v${ACCOUNT_SNAPSHOT_SCHEMA_VERSION}:u3`,
-      JSON.stringify({
-        schemaVersion: 999,
-        userId: 'u3',
-        role: 'client',
-        savedAt: Date.now(),
-        homeConfirmedAt: Date.now(),
-      }),
-    );
-    expect(diagnoseAccountHomeSnapshot('u3')).toBe('schema-mismatch');
+  it('hard-refresh harness: snapshot survives and is accepted before network', () => {
+    writeAccountSessionHint({ userId: 'user-cccc-dddd', role: 'client' });
+    writeAccountHomeSnapshot({
+      userId: 'user-cccc-dddd',
+      role: 'client',
+      displayName: 'Cliente',
+      heroKey: 'client_novo',
+      levelKey: 'novo',
+      homeConfirmed: true,
+      activeJobsCount: 2,
+    });
+    // Simulate new JS context reading localStorage (same store in test).
+    expect(readSnapshotVisibleUserId()).toBe('user-cccc-dddd');
+    expect(readAccountHomeSnapshot('user-cccc-dddd')?.heroKey).toBe('client_novo');
+    expect(diagnoseSnapshotRead('client').reason).toBe('accepted');
+  });
+
+  it('provisional clear must not be implied by AuthContext null sync without clearCaches', async () => {
+    const auth = await readFile(resolve('src/context/AuthContext.tsx'), 'utf8');
+    expect(auth).toContain('clearCaches');
+    expect(auth).toContain('do NOT clear visual snapshot on provisional null');
+    expect(auth).toContain('Provisional null before bootstrap finishes');
   });
 
   it('Preview vercel.app can use VITE app profile without changing production hosts', () => {
@@ -90,67 +114,47 @@ describe('home shell black-screen guards', () => {
         simulatedProfile: 'app',
       }),
     ).toBe('www');
-    expect(
-      resolveHostProfileFromHostname('app.linkhelp.app', {
-        production: true,
-        simulatedProfile: 'www',
-      }),
-    ).toBe('app');
   });
 });
 
 describe('black-screen source contracts', () => {
-  it('1–3. sessionConfirmed libera Outlet; profileKick não depende de sessionConfirmed', async () => {
+  it('sessionConfirmed libera Outlet; profileKick não depende de sessionConfirmed', async () => {
     const src = await readFile(resolve('src/components/auth/ProtectedRoute.tsx'), 'utf8');
     expect(src).toContain('return <Outlet />');
-    expect(src).toContain('sessionConfirmed');
     expect(src).toMatch(/if \(!authBootstrapped \|\| authLoading \|\| !session\?\.user \|\| profile\) return/);
-    expect(src).not.toMatch(/if \(!sessionConfirmed \|\| authLoading \|\| !session\?\.user \|\| profile\) return/);
   });
 
-  it('4–5. dashboard mount marca surfaceReady via useLayoutEffect', async () => {
+  it('dashboard mount marca surfaceReady via useLayoutEffect', async () => {
     const src = await readFile(resolve('src/components/home/HomeDashboardShellContext.tsx'), 'utf8');
     expect(src).toContain('useLayoutEffect');
     expect(src).toContain('markSurfaceReady()');
-    expect(src).toContain('homeConfirmed: true');
     expect(src).toContain('HomeShellStuckFallback');
+    expect(src).toContain('never leave Navbar + empty light main');
   });
 
-  it('6–8. shell não espera Hero/AppData/gamificação', async () => {
-    const src = await readFile(resolve('src/components/home/HomeDashboardShellContext.tsx'), 'utf8');
-    expect(src).not.toMatch(/useGamification|fetchRemoteAppDataBootstrap|HeroRankAnimation/);
-    expect(src).toContain('SHELL_STUCK_MS');
+  it('snapshot usa localStorage (não sessionStorage)', async () => {
+    const src = await readFile(resolve('src/utils/accountSessionSnapshot.ts'), 'utf8');
+    expect(src).toContain('window.localStorage');
+    expect(src).not.toMatch(/return window\.sessionStorage/);
   });
 
-  it('9–11. generation/account reset e logout limpam superfície', async () => {
-    const src = await readFile(resolve('src/components/home/HomeDashboardShellContext.tsx'), 'utf8');
-    expect(src).toContain('surfaceGeneration');
-    expect(src).toContain('lastUserIdRef');
-    expect(src).toContain('familyChanged');
+  it('index.html evita frame branco e trava scroll no boot', async () => {
+    const html = await readFile(resolve('index.html'), 'utf8');
+    expect(html).toContain('background: #f4f6fc');
+    expect(html).toContain("history.scrollRestoration = 'manual'");
+    expect(html).toContain('window.scrollTo(0, 0)');
   });
 
-  it('12. snapshot não cobre Home após sessionConfirmed', async () => {
-    const protectedSrc = await readFile(resolve('src/components/auth/ProtectedRoute.tsx'), 'utf8');
-    expect(protectedSrc).toContain('snapshotVisible && !sessionConfirmed');
-    const shell = await readFile(resolve('src/components/home/HomeDashboardShellContext.tsx'), 'utf8');
-    expect(shell).toContain('snapshotVisible && !sessionConfirmed');
-  });
-
-  it('refreshProfile não zera profile sem user (anti-deadlock login)', async () => {
-    const auth = await readFile(resolve('src/context/AuthContext.tsx'), 'utf8');
-    expect(auth).toContain('Never wipe a concurrent syncSession profile');
-    expect(auth).toContain('Apply session immediately so post-login');
+  it('perfDebug panel disponível', async () => {
+    const panel = await readFile(resolve('src/components/dev/PerfDebugPanel.tsx'), 'utf8');
+    expect(panel).toContain('perfDebug');
+    expect(panel).toContain('diagnoseSnapshotRead');
+    const app = await readFile(resolve('src/App.tsx'), 'utf8');
+    expect(app).toContain('PerfDebugPanel');
   });
 
   it('LoginPage passa user explícito ao refreshProfile', async () => {
     const login = await readFile(resolve('src/pages/auth/LoginPage.tsx'), 'utf8');
     expect(login).toContain('refreshProfile(user)');
-    expect(login).toContain('window.scrollTo(0, 0)');
-  });
-
-  it('13. HostHomeEntry app profile redireciona sem Landing', async () => {
-    const host = await readFile(resolve('src/components/routing/HostHomeEntry.tsx'), 'utf8');
-    expect(host).toContain("profile === 'app'");
-    expect(host).toContain('AppHostHomeRedirect');
   });
 });

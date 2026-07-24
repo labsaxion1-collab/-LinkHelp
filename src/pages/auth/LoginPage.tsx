@@ -227,9 +227,16 @@ export default function LoginPage() {
 
     }
 
-    const recovered = await refreshProfile();
+    const sb = getSupabase();
+    const { data } = sb ? await sb.auth.getSession() : { data: { session: null } };
+    const user = data.session?.user ?? null;
+    const recovered = user ? await refreshProfile(user) : null;
 
-    goAfterLogin(recovered?.id ?? session?.user?.id, recovered);
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
+    }
+
+    goAfterLogin(recovered?.id ?? user?.id, recovered);
 
   };
 

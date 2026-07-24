@@ -231,6 +231,46 @@ export function clearAccountHomeSnapshot(userId?: string | null): void {
   }
 }
 
+export type SnapshotDiagnoseReason =
+  | 'accepted'
+  | 'missing'
+  | 'expired'
+  | 'schema-mismatch'
+  | 'user-mismatch'
+  | 'role-mismatch'
+  | 'incomplete'
+  | 'invalid-json';
+
+/** Diagnose why a snapshot was accepted or rejected (no PII). */
+export function diagnoseAccountHomeSnapshot(
+  userId: string | null | undefined,
+  expectedRole?: UserType | null,
+): SnapshotDiagnoseReason {
+  if (!userId) return 'missing';
+  if (typeof window === 'undefined') return 'missing';
+  try {
+    const raw = sessionStorage.getItem(storageKey(userId));
+    if (!raw) return 'missing';
+    let parsed: Partial<AccountHomeSnapshot>;
+    try {
+      parsed = JSON.parse(raw) as Partial<AccountHomeSnapshot>;
+    } catch {
+      return 'invalid-json';
+    }
+    if (parsed.schemaVersion !== ACCOUNT_SNAPSHOT_SCHEMA_VERSION) return 'schema-mismatch';
+    if (parsed.userId !== userId) return 'user-mismatch';
+    if (!isUserType(parsed.role)) return 'incomplete';
+    if (expectedRole && parsed.role !== expectedRole) return 'role-mismatch';
+    if (typeof parsed.savedAt !== 'number' || !isFresh(parsed.savedAt)) return 'expired';
+    if (typeof parsed.homeConfirmedAt !== 'number' || !isFresh(parsed.homeConfirmedAt)) {
+      return 'incomplete';
+    }
+    return 'accepted';
+  } catch {
+    return 'invalid-json';
+  }
+}
+
 /** Test helper — assert hint never carries secrets. */
 export function assertHintHasNoSecrets(hint: AccountSessionHint): void {
   const json = JSON.stringify(hint);

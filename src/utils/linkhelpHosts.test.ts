@@ -33,7 +33,7 @@ describe('resolveHostProfileFromHostname (production)', () => {
     expect(resolveHostProfileFromHostname('linkhelp.app', { production: true })).toBe('combined');
   });
 
-  it('production ignores simulated profile override', () => {
+  it('production ignores simulated profile on real hostnames; preview may simulate', () => {
     expect(
       resolveHostProfileFromHostname('localhost', {
         production: true,
@@ -44,6 +44,12 @@ describe('resolveHostProfileFromHostname (production)', () => {
       resolveHostProfileFromHostname(APP_HOSTNAME, {
         production: true,
         simulatedProfile: 'www',
+      }),
+    ).toBe('app');
+    expect(
+      resolveHostProfileFromHostname('link-help-git-x.vercel.app', {
+        production: true,
+        simulatedProfile: 'app',
       }),
     ).toBe('app');
   });

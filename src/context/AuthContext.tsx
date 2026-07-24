@@ -308,12 +308,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const user = userOverride ?? sessionRef.current?.user;
     const uid = user?.id;
     if (!uid || !isSupabaseConfigured()) {
-      setProfile(null);
+      // Never wipe a concurrent syncSession profile when the caller has no user yet
+      // (classic post-login race: signIn returns before React session state updates).
       return null;
     }
     let p = await fetchProfile(uid);
     if (!p && user) {
       p = await ensureProfileFromUser(user);
+    }
+    if (profileSyncTargetRef.current && profileSyncTargetRef.current !== uid) {
+      return null;
     }
     setProfile(p);
     return p;
@@ -658,6 +662,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         vars: mapped.vars,
         devRaw: import.meta.env.DEV ? error.message : undefined,
       };
+    }
+    // Apply session immediately so post-login refreshProfile / navigate do not race
+    // onAuthStateChange (which still runs and revalidates).
+    if (data.session?.user) {
+      setSession(data.session);
+      sessionRef.current = data.session;
+      profileSyncTargetRef.current = data.session.user.id;
+      setAuthLoading(true);
+      try {
+        let p = await fetchProfile(data.session.user.id);
+        if (!p) p = await ensureProfileFromUser(data.session.user);
+        if (profileSyncTargetRef.current === data.session.user.id) {
+          setProfile(p);
+          if (p) {
+            const role = p.role === 'helper' ? 'helper' : 'client';
+            writeAccountSessionHint({ userId: p.id, role });
+          }
+        }
+      } finally {
+        if (profileSyncTargetRef.current === data.session.user.id) {
+          setAuthLoading(false);
+        }
+      }
     }
     return null;
   }, []);

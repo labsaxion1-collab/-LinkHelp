@@ -80,11 +80,13 @@ export function ProtectedRoute() {
   }, [session?.user?.id]);
 
   useEffect(() => {
-    if (!sessionConfirmed || authLoading || !session?.user || profile) return;
+    // Must kick while session exists but profile is missing — cannot wait for
+    // sessionConfirmed (it already requires profile; that was a deadlock).
+    if (!authBootstrapped || authLoading || !session?.user || profile) return;
     if (profileKick.current >= 4) return;
     profileKick.current += 1;
     void refreshProfile(session.user);
-  }, [sessionConfirmed, authLoading, session, profile, refreshProfile]);
+  }, [authBootstrapped, authLoading, session, profile, refreshProfile]);
 
   useEffect(() => {
     setSessionRecoveryAttempted(false);

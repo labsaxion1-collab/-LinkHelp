@@ -65,13 +65,13 @@ export function ProfileGamificationSection({ userType }: Props) {
       <button
         type="button"
         onClick={() => setTutorialOpen(true)}
-        className="w-full rounded-[1.5rem] border border-slate-200/90 bg-white p-4 text-left shadow-[0_12px_32px_rgba(15,23,42,0.055)] transition hover:border-blue-100"
+        className="w-full rounded-[1.75rem] border border-slate-200/90 bg-white p-5 text-left shadow-[0_12px_32px_rgba(15,23,42,0.07)] transition hover:border-blue-100"
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-4">
           <img
             src={medalSrc}
             alt=""
-            className="h-14 w-14 shrink-0 object-contain drop-shadow-sm"
+            className="h-24 w-24 shrink-0 object-contain drop-shadow-[0_8px_12px_rgba(120,78,0,0.2)] sm:h-28 sm:w-28"
             loading="lazy"
           />
           <div className="min-w-0 flex-1">
@@ -89,7 +89,7 @@ export function ProfileGamificationSection({ userType }: Props) {
                   </p>
                   <div className="mt-1 inline-flex items-center gap-1.5">
                     {nextMedal ? (
-                      <img src={nextMedal} alt="" className="h-5 w-5 object-contain" loading="lazy" />
+                      <img src={nextMedal} alt="" className="h-12 w-12 object-contain drop-shadow-md" loading="lazy" />
                     ) : null}
                     <span className="text-sm font-black text-[#7C3AED]">{nextName}</span>
                   </div>
@@ -119,11 +119,11 @@ export function ProfileGamificationSection({ userType }: Props) {
           </div>
         </div>
 
-        <div className="mt-3.5 flex flex-wrap gap-2">
+        <div className="mt-4 grid grid-cols-3 gap-2">
           {BENEFIT_KEYS.map(({ icon: Icon, key }) => (
             <span
               key={key}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-[#F8FAFF] px-2.5 py-1 text-[10px] font-bold text-slate-600"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-[#F8FAFF] px-2 py-1 text-center text-[9px] font-bold leading-tight text-slate-600"
             >
               <Icon className="h-3 w-3 text-[#2563FF]" aria-hidden />
               {t(key)}

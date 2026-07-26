@@ -12,6 +12,10 @@ import {
 } from '@/services/helperLeadCredits';
 import type { CreditPackage, CreditTransaction, CreditWallet, OpportunityUnlock } from '@/types/credits';
 import { CREDIT_PACKAGES } from '@/utils/credits';
+import {
+  readAccountHomeSnapshot,
+  writeAccountHomeSnapshot,
+} from '@/utils/accountSessionSnapshot';
 
 type CreditContextValue = {
   wallet: CreditWallet | null;
@@ -30,14 +34,14 @@ type CreditContextValue = {
 const CreditContext = createContext<CreditContextValue | null>(null);
 
 export function CreditProvider({ children }: { children: React.ReactNode }) {
-  const { session, profile } = useAuth();
+  const { session, profile, sessionConfirmed } = useAuth();
 
-  const currentUserId = session?.user?.id ?? null;
+  const currentUserId = sessionConfirmed ? (session?.user?.id ?? null) : null;
   const storedMode = readStoredAppMode(currentUserId);
   const effectiveRole = resolveEffectiveRole(profile, session?.user, storedMode);
   const isHelper = effectiveRole === 'helper';
   const helperId = isHelper ? (currentUserId ?? profile?.id ?? '') : '';
-  const remote = isSupabaseConfigured() && Boolean(session);
+  const remote = isSupabaseConfigured() && Boolean(sessionConfirmed) && Boolean(session);
 
   const [wallet, setWallet] = useState<CreditWallet | null>(null);
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
@@ -45,9 +49,23 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
   const [packages, setPackages] = useState<CreditPackage[]>(CREDIT_PACKAGES);
   const [loading, setLoading] = useState(false);
   const [optimisticDelta, setOptimisticDelta] = useState(0);
+  const [cachedBalance, setCachedBalance] = useState<number | null>(() => {
+    const hintId = session?.user?.id ?? profile?.id ?? null;
+    if (!hintId) return null;
+    return readAccountHomeSnapshot(hintId)?.lcBalanceVisual ?? null;
+  });
+
+  useEffect(() => {
+    if (!currentUserId) {
+      setCachedBalance(null);
+      return;
+    }
+    const snap = readAccountHomeSnapshot(currentUserId);
+    if (snap?.lcBalanceVisual != null) setCachedBalance(snap.lcBalanceVisual);
+  }, [currentUserId]);
 
   const refreshCredits = useCallback(async () => {
-    if (!helperId || !isHelper) {
+    if (!helperId || !isHelper || !sessionConfirmed) {
       setWallet(null);
       setTransactions([]);
       setUnlocks([]);
@@ -62,6 +80,17 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
         setTransactions(state.transactions);
         setUnlocks(state.unlocks);
         setPackages(state.packages);
+        if (state.wallet && profile) {
+          const nextBalance = Math.max(0, Math.round(state.wallet.balance));
+          setCachedBalance(nextBalance);
+          writeAccountHomeSnapshot({
+            userId: helperId,
+            role: 'helper',
+            displayName: profile.name,
+            avatarUrl: profile.avatar_url,
+            lcBalanceVisual: nextBalance,
+          });
+        }
         return;
       }
 
@@ -78,7 +107,7 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [helperId, isHelper, remote, profile?.id, currentUserId]);
+  }, [helperId, isHelper, remote, profile, sessionConfirmed]);
 
   useEffect(() => {
     void refreshCredits();
@@ -88,8 +117,9 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
     setOptimisticDelta(0);
   }, [wallet?.balance, wallet?.updatedAt]);
 
+  // Prefer live wallet; keep cached visual balance to avoid flash-to-zero / null while loading.
   const displayBalance =
-    wallet != null ? Math.max(0, wallet.balance + optimisticDelta) : null;
+    wallet != null ? Math.max(0, wallet.balance + optimisticDelta) : cachedBalance;
 
   const applyOptimisticDebit = useCallback((amount: number) => {
     setOptimisticDelta((d) => d - amount);
@@ -98,6 +128,7 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
 
   const chargeApplicationInterest = useCallback(
     async (requestId: string, amount = 1) => {
+      if (!sessionConfirmed) throw new Error('SESSION_UNCONFIRMED');
       if (!helperId || !isHelper) throw new Error('NOT_HELPER');
       if (remote) {
         await remoteDebitApplicationInterest(helperId, requestId, amount);
@@ -115,11 +146,12 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
       setWallet({ ...wallet, ...next.wallet, updatedAt: Date.now() });
       setTransactions(next.transactions);
     },
-    [helperId, isHelper, remote, refreshCredits, wallet, transactions],
+    [helperId, isHelper, remote, refreshCredits, wallet, transactions, sessionConfirmed],
   );
 
   const chargeApplicationSelected = useCallback(
     async (requestId: string, applicationId: string, amount: number) => {
+      if (!sessionConfirmed) throw new Error('SESSION_UNCONFIRMED');
       if (!helperId || !isHelper) throw new Error('NOT_HELPER');
       if (remote) {
         await remoteDebitApplicationSelected(helperId, requestId, applicationId, amount);
@@ -138,7 +170,7 @@ export function CreditProvider({ children }: { children: React.ReactNode }) {
       setWallet({ ...wallet, ...next.wallet, updatedAt: Date.now() });
       setTransactions(next.transactions);
     },
-    [helperId, isHelper, remote, refreshCredits, wallet, transactions],
+    [helperId, isHelper, remote, refreshCredits, wallet, transactions, sessionConfirmed],
   );
 
   const value = useMemo(

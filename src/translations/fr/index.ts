@@ -2020,6 +2020,10 @@ export const fr = {
     current_balance_label: 'Solde actuel : {{amount}}',
     verifying_balance: 'Vérification du solde…',
     linkcredits_brand: 'LinkCredits',
+    see_all: 'Voir tout',
+    history_full_title: 'Historique complet',
+    back_to_summary: 'Retour au résumé',
+    credits_added_toast: '{{amount}} LinkCredits ajoutés avec succès.',
   },
   link_credits_store: {
     title: 'Choisissez vos LinkCredits',
@@ -2512,6 +2516,10 @@ export const fr = {
     restoring_session: 'Restauration de votre session…',
     loading_profile: 'Chargement de votre profil…',
     verifying_balance: 'Mise à jour du solde…',
+    see_all: 'Voir tout',
+    history_full_title: 'Historique complet',
+    back_to_summary: 'Retour au résumé',
+    credits_added_toast: '{{amount}} LinkCredits ajoutés avec succès.',
   },
   client_onboarding: {
     cta_start: 'Commencer',

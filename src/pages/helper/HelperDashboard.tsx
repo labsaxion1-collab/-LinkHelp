@@ -80,6 +80,8 @@ import { GamificationProgressCard } from '@/gamification/components/Gamification
 import { useGamification } from '@/gamification/hooks/useGamification';
 import { useMarkHomeDashboardSurfaceReady } from '@/components/home/HomeDashboardShellContext';
 import { useDevRenderCount } from '@/utils/devRenderCount';
+import { useProgressiveReveal } from '@/hooks/useProgressiveReveal';
+import { appPerfMark } from '@/utils/appPerf';
 
 type HelperHomeInfoSlide = {
   id: string;
@@ -754,6 +756,12 @@ export default function HelperDashboard() {
     helperEngagedJobIds,
   ]);
 
+  const progressiveFeedJobs = useProgressiveReveal(displayedJobs, 3, 700);
+
+  useEffect(() => {
+    appPerfMark('helper-home-structure');
+  }, []);
+
   const feedActiveTab =
     activeTab === 'match' || activeTab === 'recentes' || activeTab === 'emergencia' ? activeTab : 'match';
 
@@ -1216,7 +1224,7 @@ export default function HelperDashboard() {
                   applyingJobId && 'pointer-events-none brightness-[0.92] md:brightness-[0.88]',
                 )}
               >
-              {displayedJobs.map((job, idx) => (
+              {progressiveFeedJobs.map((job, idx) => (
                     <div
                       key={job.id}
                       className={clsx(

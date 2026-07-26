@@ -7,9 +7,11 @@ import { enrichUpcomingJobsWithSubcategories, estimateScheduledAtFromJob } from 
 import { ROUTES } from '@/utils/constants';
 import {
   computeClientHomeCounts,
+  buildHomeFeedPreviews,
   writeAccountHomeSnapshot,
 } from '@/utils/accountSessionSnapshot';
 import { appPerfMark } from '@/utils/appPerf';
+import { scheduleIdle } from '@/utils/scheduleIdle';
 import type { Job, JobStatus, JobUrgency } from '@/types/job';
 import type { Application, ApplicationStatus } from '@/types/application';
 import type { UpcomingJob, UpcomingWorkflowStatus } from '@/types/upcoming';
@@ -288,12 +290,30 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           bootstrap.applications,
           filterUpcomingByRequestStatus(bootstrap.upcomingJobs, migratedJobs),
         );
+        const activePreviewJobs = migratedJobs.filter(
+          (j) =>
+            j.clientId === userId &&
+            (j.status === 'open' || j.status === 'paused' || j.status === 'in_progress'),
+        );
         writeAccountHomeSnapshot({
           userId,
           role: 'client',
           displayName: profile.name,
           avatarUrl: profile.avatar_url,
+          lcBalanceVisual: typeof profile.credits === 'number' ? profile.credits : undefined,
           ...counts,
+          feedPreviews: buildHomeFeedPreviews(activePreviewJobs),
+        });
+      } else if (profile && profile.role === 'helper') {
+        const openPreviewJobs = migratedJobs.filter(
+          (j) => j.status === 'open' && j.clientId !== userId,
+        );
+        writeAccountHomeSnapshot({
+          userId,
+          role: 'helper',
+          displayName: profile.name,
+          avatarUrl: profile.avatar_url,
+          feedPreviews: buildHomeFeedPreviews(openPreviewJobs),
         });
       }
     } finally {
@@ -521,22 +541,30 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!useRemote || !userId) return;
     let cancelled = false;
-    void fetchRemoteNotifications(userId).then((rows) => {
-      if (!cancelled) setNotifications(rows);
-    });
+    const cancelIdle = scheduleIdle(() => {
+      if (cancelled) return;
+      void fetchRemoteNotifications(userId).then((rows) => {
+        if (!cancelled) setNotifications(rows);
+      });
+    }, 1600);
     return () => {
       cancelled = true;
+      cancelIdle();
     };
   }, [useRemote, userId]);
 
   useEffect(() => {
     if (!useRemote || !userId) return;
     let cancelled = false;
-    void fetchRemoteReviews().then((rows) => {
-      if (!cancelled) setReviews(rows);
-    });
+    const cancelIdle = scheduleIdle(() => {
+      if (cancelled) return;
+      void fetchRemoteReviews().then((rows) => {
+        if (!cancelled) setReviews(rows);
+      });
+    }, 2000);
     return () => {
       cancelled = true;
+      cancelIdle();
     };
   }, [useRemote, userId]);
 

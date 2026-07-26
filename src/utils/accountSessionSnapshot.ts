@@ -1,15 +1,17 @@
 /**
  * Visual Home snapshot + LinkHelp session hint (SWR paint only).
  * Uses localStorage so hard refresh / mobile tab restore keep the paint.
- * Never stores tokens, email, phone, jobs lists, or messages.
+ * Never stores tokens, email, phone, full job lists, messages, addresses,
+ * or detailed financial records. LC balance is a display integer only.
  * Authorization always requires Supabase-confirmed session (sessionConfirmed).
  */
 
 import type { UserType } from '@/types/database';
 import type { LevelKey } from '@/gamification/types/gamification';
 
-export const ACCOUNT_SNAPSHOT_SCHEMA_VERSION = 1;
+export const ACCOUNT_SNAPSHOT_SCHEMA_VERSION = 2;
 export const ACCOUNT_SNAPSHOT_TTL_MS = 15 * 60 * 1000;
+export const ACCOUNT_HOME_FEED_PREVIEW_LIMIT = 3;
 
 const HINT_KEY = 'lh_session_hint_v1';
 const ACTIVE_KEY = 'lh_account_snapshot_active_v1';
@@ -23,6 +25,14 @@ export type AccountSessionHint = {
   savedAt: number;
 };
 
+/** Safe feed card for first paint — no address, phone, email, or full description. */
+export type AccountHomeFeedPreview = {
+  id: string;
+  title: string;
+  budgetLabel: string | null;
+  status: string;
+};
+
 /** Minimal visual snapshot for first paint of the same account. */
 export type AccountHomeSnapshot = {
   schemaVersion: number;
@@ -32,9 +42,12 @@ export type AccountHomeSnapshot = {
   avatarUrl: string | null;
   heroKey: string | null;
   levelKey: LevelKey | null;
+  /** Display-only LinkCredits integer. Never a ledger or Stripe payload. */
+  lcBalanceVisual: number | null;
   activeJobsCount: number;
   pendingApplicationsCount: number;
   upcomingServicesCount: number;
+  feedPreviews: AccountHomeFeedPreview[];
   homeConfirmedAt: number;
   savedAt: number;
 };
@@ -131,6 +144,29 @@ export function clearAccountSessionHint(): void {
   }
 }
 
+function sanitizePreviewTitle(title: string): string {
+  return title.replace(/\s+/g, ' ').trim().slice(0, 80);
+}
+
+function parseFeedPreviews(value: unknown): AccountHomeFeedPreview[] {
+  if (!Array.isArray(value)) return [];
+  const out: AccountHomeFeedPreview[] = [];
+  for (const row of value) {
+    if (!row || typeof row !== 'object') continue;
+    const r = row as Partial<AccountHomeFeedPreview>;
+    if (typeof r.id !== 'string' || !r.id) continue;
+    if (typeof r.title !== 'string' || !r.title) continue;
+    out.push({
+      id: r.id.slice(0, 64),
+      title: sanitizePreviewTitle(r.title),
+      budgetLabel: typeof r.budgetLabel === 'string' ? r.budgetLabel.slice(0, 32) : null,
+      status: typeof r.status === 'string' ? r.status.slice(0, 24) : 'open',
+    });
+    if (out.length >= ACCOUNT_HOME_FEED_PREVIEW_LIMIT) break;
+  }
+  return out;
+}
+
 function parseSnapshot(raw: string, expectedUserId: string): AccountHomeSnapshot | null {
   try {
     const parsed = JSON.parse(raw) as Partial<AccountHomeSnapshot>;
@@ -139,6 +175,10 @@ function parseSnapshot(raw: string, expectedUserId: string): AccountHomeSnapshot
     if (!isUserType(parsed.role)) return null;
     if (typeof parsed.savedAt !== 'number' || !isFresh(parsed.savedAt)) return null;
     if (typeof parsed.homeConfirmedAt !== 'number' || !isFresh(parsed.homeConfirmedAt)) return null;
+    const lc =
+      typeof parsed.lcBalanceVisual === 'number' && Number.isFinite(parsed.lcBalanceVisual)
+        ? Math.max(0, Math.round(parsed.lcBalanceVisual))
+        : null;
     return {
       schemaVersion: ACCOUNT_SNAPSHOT_SCHEMA_VERSION,
       userId: expectedUserId,
@@ -147,11 +187,13 @@ function parseSnapshot(raw: string, expectedUserId: string): AccountHomeSnapshot
       avatarUrl: typeof parsed.avatarUrl === 'string' ? parsed.avatarUrl : null,
       heroKey: typeof parsed.heroKey === 'string' ? parsed.heroKey : null,
       levelKey: (typeof parsed.levelKey === 'string' ? parsed.levelKey : null) as LevelKey | null,
+      lcBalanceVisual: lc,
       activeJobsCount: typeof parsed.activeJobsCount === 'number' ? parsed.activeJobsCount : 0,
       pendingApplicationsCount:
         typeof parsed.pendingApplicationsCount === 'number' ? parsed.pendingApplicationsCount : 0,
       upcomingServicesCount:
         typeof parsed.upcomingServicesCount === 'number' ? parsed.upcomingServicesCount : 0,
+      feedPreviews: parseFeedPreviews(parsed.feedPreviews),
       homeConfirmedAt: parsed.homeConfirmedAt,
       savedAt: parsed.savedAt,
     };
@@ -411,15 +453,23 @@ export function writeAccountHomeSnapshot(partial: {
   avatarUrl?: string | null;
   heroKey?: string | null;
   levelKey?: LevelKey | null;
+  lcBalanceVisual?: number | null;
   activeJobsCount?: number;
   pendingApplicationsCount?: number;
   upcomingServicesCount?: number;
+  feedPreviews?: AccountHomeFeedPreview[];
   homeConfirmed?: boolean;
 }): void {
   const store = storage();
   if (!store || !partial.userId || !isUserType(partial.role)) return;
   try {
     const prev = readAccountHomeSnapshot(partial.userId);
+    const nextLc =
+      partial.lcBalanceVisual !== undefined
+        ? partial.lcBalanceVisual == null
+          ? null
+          : Math.max(0, Math.round(partial.lcBalanceVisual))
+        : (prev?.lcBalanceVisual ?? null);
     const next: AccountHomeSnapshot = {
       schemaVersion: ACCOUNT_SNAPSHOT_SCHEMA_VERSION,
       userId: partial.userId,
@@ -428,6 +478,7 @@ export function writeAccountHomeSnapshot(partial: {
       avatarUrl: partial.avatarUrl !== undefined ? partial.avatarUrl : (prev?.avatarUrl ?? null),
       heroKey: partial.heroKey !== undefined ? partial.heroKey : (prev?.heroKey ?? null),
       levelKey: partial.levelKey !== undefined ? partial.levelKey : (prev?.levelKey ?? null),
+      lcBalanceVisual: nextLc,
       activeJobsCount:
         partial.activeJobsCount !== undefined ? partial.activeJobsCount : (prev?.activeJobsCount ?? 0),
       pendingApplicationsCount:
@@ -438,6 +489,10 @@ export function writeAccountHomeSnapshot(partial: {
         partial.upcomingServicesCount !== undefined
           ? partial.upcomingServicesCount
           : (prev?.upcomingServicesCount ?? 0),
+      feedPreviews:
+        partial.feedPreviews !== undefined
+          ? parseFeedPreviews(partial.feedPreviews)
+          : (prev?.feedPreviews ?? []),
       homeConfirmedAt: partial.homeConfirmed ? Date.now() : (prev?.homeConfirmedAt ?? 0),
       savedAt: Date.now(),
     };
@@ -511,4 +566,51 @@ export function computeClientHomeCounts(
     ).length,
     upcomingServicesCount: upcomingJobs.filter((u) => clientJobIds.has(u.jobId)).length,
   };
+}
+
+/** Up to 3 safe Home feed previews — titles + budget label only. */
+export function buildHomeFeedPreviews(
+  jobs: {
+    id: string;
+    title: string;
+    status: string;
+    budgetAmount?: number | null;
+    budgetType?: string | null;
+    budgetMin?: number | null;
+    budgetMax?: number | null;
+  }[],
+  limit = ACCOUNT_HOME_FEED_PREVIEW_LIMIT,
+): AccountHomeFeedPreview[] {
+  return jobs.slice(0, limit).map((job) => {
+    let budgetLabel: string | null = null;
+    if (typeof job.budgetAmount === 'number' && Number.isFinite(job.budgetAmount)) {
+      budgetLabel = `$${Math.round(job.budgetAmount)}`;
+    } else if (
+      typeof job.budgetMin === 'number' &&
+      typeof job.budgetMax === 'number' &&
+      Number.isFinite(job.budgetMin) &&
+      Number.isFinite(job.budgetMax)
+    ) {
+      budgetLabel = `$${Math.round(job.budgetMin)}–$${Math.round(job.budgetMax)}`;
+    } else if (job.budgetType === 'negotiable') {
+      budgetLabel = '—';
+    }
+    return {
+      id: job.id,
+      title: sanitizePreviewTitle(job.title),
+      budgetLabel,
+      status: job.status,
+    };
+  });
+}
+
+/** Assert snapshot JSON never carries prohibited fields (tests / diagnostics). */
+export function assertSnapshotHasNoSecrets(snap: AccountHomeSnapshot): void {
+  const json = JSON.stringify(snap);
+  if (/access_token|refresh_token|password|phone|@|stripe|sk_live|pk_live/i.test(json)) {
+    throw new Error('AccountHomeSnapshot must not contain secrets or PII payloads');
+  }
+  if ('email' in snap || 'jobs' in snap || 'messages' in snap || 'address' in snap) {
+    throw new Error('AccountHomeSnapshot must not contain email/jobs/messages/address');
+  }
 }

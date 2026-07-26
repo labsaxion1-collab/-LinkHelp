@@ -269,10 +269,10 @@ describe('cold start security gates (source)', () => {
     expect(src).toContain('resolvedHeroByKey');
   });
 
-  it('SnapshotHomePaint bloqueia interação e não mostra créditos', async () => {
+  it('SnapshotHomePaint bloqueia interação e usa saldo cached read-only', async () => {
     const src = await readFile(resolve('src/components/home/SnapshotHomePaint.tsx'), 'utf8');
     expect(src).toContain('pointer-events-none');
-    expect(src).toContain('creditsBalance={null}');
+    expect(src).toContain('creditsBalance={cachedBalance}');
     expect(src).toContain('onCreateRequest={() => {}}');
   });
 

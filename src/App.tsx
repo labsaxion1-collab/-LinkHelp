@@ -20,6 +20,7 @@ import { CreditProvider } from '@/context/CreditContext';
 import { ServiceReviewProvider } from '@/context/ServiceReviewContext';
 import { AppRoutes } from '@/routes/AppRoutes';
 import { DashboardPreloadEffect } from '@/components/routing/DashboardPreloadEffect';
+import { SecondaryRoutePreloadEffect } from '@/components/routing/SecondaryRoutePreloadEffect';
 import { HomeDashboardShellProvider } from '@/components/home/HomeDashboardShellContext';
 import { TutorialProvider } from '@/context/TutorialContext';
 import { AppTutorialModal } from '@/components/tutorial/AppTutorialModal';
@@ -76,6 +77,7 @@ export default function App() {
                     <ServiceReviewProvider>
                       <AppModeRouterBridge />
                       <DashboardPreloadEffect />
+                      <SecondaryRoutePreloadEffect />
                       <TutorialProvider>
                         <AppRoutes />
                         <AppTutorialModal />

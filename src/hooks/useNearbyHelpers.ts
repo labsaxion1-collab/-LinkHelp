@@ -12,6 +12,8 @@ import { profileRegionFromRow } from '@/utils/profileLocation';
 
 type Options = {
   relatedCategoryIds?: string[];
+  /** When false, skip network — Home mounts without waiting for nearby helpers. */
+  enabled?: boolean;
 };
 
 function processNearbyHelpers(
@@ -39,14 +41,19 @@ function processNearbyHelpers(
 }
 
 export function useNearbyHelpers(options: Options = {}) {
-  const { profile, session } = useAuth();
+  const { profile, session, sessionConfirmed } = useAuth();
   const { coords, ready: locationReady, source: locationSource } = useUserLocation();
   const [rawHelpers, setRawHelpers] = useState<NearbyHelper[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(options.enabled ?? true));
+  const enabled = (options.enabled ?? true) && sessionConfirmed;
 
   const viewerId = session?.user?.id;
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     setLoading(true);
 
@@ -61,7 +68,7 @@ export function useNearbyHelpers(options: Options = {}) {
     return () => {
       cancelled = true;
     };
-  }, [viewerId]);
+  }, [viewerId, enabled]);
 
   const relatedKey = options.relatedCategoryIds?.join('|') ?? '';
 
@@ -89,10 +96,10 @@ export function useNearbyHelpers(options: Options = {}) {
   const withCoords = useMemo(() => helpers.filter((h) => h.mapPosition != null), [helpers]);
 
   return {
-    helpers,
-    helpersWithMapPosition: withCoords,
-    nearbyCount: helpers.length,
-    loading: loading || !locationReady,
+    helpers: enabled ? helpers : [],
+    helpersWithMapPosition: enabled ? withCoords : [],
+    nearbyCount: enabled ? helpers.length : 0,
+    loading: enabled ? loading || !locationReady : false,
     locationReady,
     locationSource: locationSource as UserLocationSource,
     clientCenter: coords,

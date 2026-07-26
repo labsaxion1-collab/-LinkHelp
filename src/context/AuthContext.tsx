@@ -440,6 +440,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               role,
               displayName: p.name,
               avatarUrl: p.avatar_url,
+              lcBalanceVisual: typeof p.credits === 'number' ? p.credits : undefined,
             });
             appPerfMark('session-confirmed');
             authFlowLog('Profile loaded', {

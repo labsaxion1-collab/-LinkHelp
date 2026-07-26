@@ -78,6 +78,10 @@ import { GamificationProgressCard } from '@/gamification/components/Gamification
 import { AppHomeClientQuickStrip } from '@/components/home/AppHomeClientQuickStrip';
 import { useMarkHomeDashboardSurfaceReady } from '@/components/home/HomeDashboardShellContext';
 import { useDevRenderCount } from '@/utils/devRenderCount';
+import { readAccountHomeSnapshot } from '@/utils/accountSessionSnapshot';
+import { scheduleIdle } from '@/utils/scheduleIdle';
+import { useProgressiveReveal } from '@/hooks/useProgressiveReveal';
+import { appPerfMark } from '@/utils/appPerf';
 
 const SERVICE_CONFIRM_DISMISS_PREFIX = 'lh_service_confirm_skip_';
 import { translateJobTitle } from '@/utils/translateCategory';
@@ -205,10 +209,18 @@ export default function ClientDashboard() {
 
   const { t } = useLanguage();
   const { showToast } = useToast();
-  const { profile, authLoading } = useAuth();
+  const { profile, authLoading, session } = useAuth();
   const { shouldShow: showClientOnboarding, completing: completingClientOnboarding, complete: completeClientOnboarding } =
     useClientOnboarding();
-  const clientCreditsBalance = profile?.credits ?? 0;
+  const snapshotLc = useMemo(() => {
+    const uid = profile?.id ?? session?.user?.id ?? null;
+    if (!uid) return null;
+    return readAccountHomeSnapshot(uid)?.lcBalanceVisual ?? null;
+  }, [profile?.id, session?.user?.id]);
+  // Prefer live profile credits; fall back to same-account snapshot — never flash 0 while loading.
+  const clientCreditsBalance =
+    typeof profile?.credits === 'number' ? profile.credits : snapshotLc;
+  const creditsLoading = authLoading && clientCreditsBalance == null;
   const skillChip = (skill: string) =>
     skill === 'support' ? t('skills.support') : t(`categories.${skill}`);
   const { jobs, applications, pendingServiceReviews, upcomingJobs } = useAppDataCore();
@@ -216,6 +228,15 @@ export default function ClientDashboard() {
   useDevRenderCount('ClientDashboard');
   const { openReviewByRequestId } = useServiceReview();
   const me = useSessionViewer();
+
+  const [secondaryBlocksReady, setSecondaryBlocksReady] = useState(false);
+  useEffect(() => {
+    appPerfMark('client-home-structure');
+    return scheduleIdle(() => {
+      setSecondaryBlocksReady(true);
+      appPerfMark('client-secondary-ready');
+    }, 1400);
+  }, []);
 
   const [awaitingCompletionJobIds, setAwaitingCompletionJobIds] = useState<Set<string>>(new Set());
 
@@ -476,6 +497,7 @@ export default function ClientDashboard() {
   );
   const { helpers: nearbyHelpers, loading: nearbyHelpersLoading } = useNearbyHelpers({
     relatedCategoryIds: myOpenJobCategories,
+    enabled: secondaryBlocksReady,
   });
 
   const clientJobs = useMemo(
@@ -496,6 +518,7 @@ export default function ClientDashboard() {
     [clientJobs, hiddenJobIds],
   );
   const activityTabJobs = jobsListTab === 'history' ? completedClientJobs : activeClientJobs;
+  const progressiveActivityJobs = useProgressiveReveal(activityTabJobs, 3, 800);
   const clientApplicationCount = useMemo(
     () => applications.filter((app) => clientJobs.some((job) => job.id === app.jobId)).length,
     [applications, clientJobs],
@@ -760,8 +783,8 @@ export default function ClientDashboard() {
         <div className="pointer-events-none absolute right-3 top-3 z-[2] sm:right-5 sm:top-4">
           <div className="pointer-events-auto hidden">
             <ClientCreditsWalletBadge
-              balance={authLoading ? null : clientCreditsBalance}
-              loading={authLoading}
+              balance={clientCreditsBalance}
+              loading={creditsLoading}
               t={t}
             />
           </div>
@@ -776,7 +799,7 @@ export default function ClientDashboard() {
           gamificationLoading={clientGamification.loading}
           gamificationError={clientGamification.error}
           avatarUrl={me.avatar}
-          balance={authLoading ? null : clientCreditsBalance}
+          balance={clientCreditsBalance}
         />
       )}
       {activeSidebarTab === 'dashboard' && (
@@ -1265,8 +1288,8 @@ export default function ClientDashboard() {
                   activeJobsCount={activeClientJobs.length}
                   pendingApplicationsCount={pendingApplicationsForClient}
                   upcomingServicesCount={clientUpcomingCount}
-                  creditsBalance={authLoading ? null : clientCreditsBalance}
-                  creditsLoading={authLoading}
+                  creditsBalance={clientCreditsBalance}
+                  creditsLoading={creditsLoading}
                   onOpenActiveServices={() => setActiveSidebarTab('active-services')}
                   onOpenMessages={() => navigate(ROUTES.messages)}
                   onCreateRequest={() => openCreateModal()}
@@ -1557,7 +1580,7 @@ export default function ClientDashboard() {
 
               <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
                 {activityTabJobs.length > 0 ? (
-                  activityTabJobs.map((job) => {
+                  progressiveActivityJobs.map((job) => {
                     const isHiredActivity = isHiredActivityJob(job.status);
                     const isPreHireActivity = isPreHireActivityJob(job.status);
                     const candidateApps = isPreHireActivity

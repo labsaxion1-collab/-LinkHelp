@@ -2021,8 +2021,8 @@ export const fr = {
     verifying_balance: 'Vérification du solde…',
     linkcredits_brand: 'LinkCredits',
     see_all: 'Voir tout',
-    history_full_title: 'Historique complet',
-    back_to_summary: 'Retour au résumé',
+    history_full_title: 'Historique de LinkCredits',
+    back_to_summary: 'Retour',
     credits_added_toast: '{{amount}} LinkCredits ajoutés avec succès.',
   },
   link_credits_store: {
@@ -2517,8 +2517,8 @@ export const fr = {
     loading_profile: 'Chargement de votre profil…',
     verifying_balance: 'Mise à jour du solde…',
     see_all: 'Voir tout',
-    history_full_title: 'Historique complet',
-    back_to_summary: 'Retour au résumé',
+    history_full_title: 'Historique de LinkCredits',
+    back_to_summary: 'Retour',
     credits_added_toast: '{{amount}} LinkCredits ajoutés avec succès.',
   },
   client_onboarding: {

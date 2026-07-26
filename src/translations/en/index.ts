@@ -2013,8 +2013,8 @@ export const en = {
     verifying_balance: 'Checking balance…',
     linkcredits_brand: 'LinkCredits',
     see_all: 'See all',
-    history_full_title: 'Full history',
-    back_to_summary: 'Back to summary',
+    history_full_title: 'LinkCredits history',
+    back_to_summary: 'Back',
     credits_added_toast: '{{amount}} LinkCredits added successfully.',
   },
   link_credits_store: {
@@ -2508,8 +2508,8 @@ export const en = {
     loading_profile: 'Loading your profile…',
     verifying_balance: 'Updating balance…',
     see_all: 'See all',
-    history_full_title: 'Full history',
-    back_to_summary: 'Back to summary',
+    history_full_title: 'LinkCredits history',
+    back_to_summary: 'Back',
     credits_added_toast: '{{amount}} LinkCredits added successfully.',
   },
   client_onboarding: {

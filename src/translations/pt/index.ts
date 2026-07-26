@@ -2024,8 +2024,8 @@ export const pt = {
     verifying_balance: 'Verificando saldo…',
     linkcredits_brand: 'LinkCredits',
     see_all: 'Ver tudo',
-    history_full_title: 'Histórico completo',
-    back_to_summary: 'Voltar ao resumo',
+    history_full_title: 'Histórico de LinkCredits',
+    back_to_summary: 'Voltar',
     credits_added_toast: '{{amount}} LinkCredits adicionados com sucesso.',
   },
   link_credits_store: {
@@ -2520,8 +2520,8 @@ export const pt = {
     loading_profile: 'Carregando seu perfil…',
     verifying_balance: 'Atualizando saldo…',
     see_all: 'Ver tudo',
-    history_full_title: 'Histórico completo',
-    back_to_summary: 'Voltar ao resumo',
+    history_full_title: 'Histórico de LinkCredits',
+    back_to_summary: 'Voltar',
     credits_added_toast: '{{amount}} LinkCredits adicionados com sucesso.',
   },
   client_onboarding: {

@@ -158,33 +158,31 @@ export default function ClientCreditsPage() {
 
   if (showFullHistory) {
     return (
-      <AppPageShell
-        wide
-        className="relative min-w-0 overflow-x-hidden bg-[#F8F5EE] bg-[url('/brand/linkcredits-store-background.webp')] bg-cover bg-fixed bg-center px-0 pb-28 pt-4 md:px-7 md:pb-10"
-      >
-        <div className="pointer-events-none absolute inset-0 bg-white/58 backdrop-blur-[1px]" />
-        <div className="relative mx-auto max-w-3xl px-5 md:px-0">
-          <DesktopBackButton to={ROUTES.clientCredits} />
-          <header className="mb-4 mt-2">
+      <AppPageShell wide className="relative min-w-0 overflow-x-hidden bg-[#F8FAFC] px-0 pb-28 pt-3 md:px-7 md:pb-10">
+        <div className="relative mx-auto max-w-3xl px-4 sm:px-5">
+          <header className="mb-3 flex items-start gap-3">
             <button
               type="button"
               onClick={closeHistory}
-              className="mb-2 text-xs font-bold text-slate-500 hover:text-slate-800"
+              className="mt-0.5 inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50"
             >
-              ← {t('client_credits.back_to_summary')}
+              <Icons.ArrowLeft className="h-3.5 w-3.5" />
+              {t('client_credits.back_to_summary')}
             </button>
-            <h1 className="text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
-              {t('client_credits.history_full_title')}
-            </h1>
-            <p className="mt-1 text-sm font-medium text-slate-500">
-              {authLoading || balance == null
-                ? '…'
-                : t('client_credits.balance', { amount: balance })}
-            </p>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-base font-black tracking-tight text-slate-950 sm:text-lg">
+                {t('client_credits.history_full_title')}
+              </h1>
+              <p className="mt-0.5 truncate text-[12px] font-semibold tabular-nums text-slate-500">
+                {authLoading || balance == null
+                  ? '…'
+                  : t('client_credits.balance', { amount: balance })}
+              </p>
+            </div>
           </header>
 
           {ledgerLoading ? (
-            <div className="flex items-center justify-center gap-2 py-10 text-sm font-semibold text-slate-500">
+            <div className="flex items-center justify-center gap-2 py-8 text-sm font-semibold text-slate-500">
               <Icons.Loader2 className="h-4 w-4 animate-spin" />
               …
             </div>
@@ -192,6 +190,7 @@ export default function ClientCreditsPage() {
             <ClientCreditHistoryList
               entries={sortedEntries}
               limit={sortedEntries.length}
+              density="compact"
               t={t}
               emptyLabel={t('client_credits.no_history')}
               onSelect={(entry) => {

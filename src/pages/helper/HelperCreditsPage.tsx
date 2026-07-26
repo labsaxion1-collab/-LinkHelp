@@ -71,37 +71,40 @@ export default function HelperCreditsPage() {
 
   if (showFullHistory) {
     return (
-      <AppPageShell wide className="relative min-w-0 overflow-x-hidden bg-[#030B1A] px-0 pb-24 pt-0">
-        <div className="relative mx-auto max-w-3xl px-4 sm:px-7">
-          <HelperDashboardNav activeTab="match" onSelectFeedTab={() => {}} t={t} />
-          <header className="mb-4 mt-2">
+      <AppPageShell wide className="relative min-w-0 overflow-x-hidden bg-[#030B1A] px-0 pb-24 pt-3">
+        <div className="relative mx-auto max-w-3xl px-4 sm:px-5">
+          <header className="mb-3 flex items-start gap-3">
             <button
               type="button"
               onClick={closeHistory}
-              className="mb-2 text-xs font-bold text-slate-400 hover:text-white"
+              className="mt-0.5 inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 text-xs font-bold text-slate-200 hover:bg-white/[0.08]"
             >
-              ← {t('helper_credits.back_to_summary')}
+              <Icons.ArrowLeft className="h-3.5 w-3.5" />
+              {t('helper_credits.back_to_summary')}
             </button>
-            <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">
-              {t('helper_credits.history_full_title')}
-            </h1>
-            <p className="mt-1 text-sm font-medium text-slate-400">
-              {loading && balance == null ? '…' : `${balance ?? 0} ${lcUnit}`}
-            </p>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-base font-black tracking-tight text-white sm:text-lg">
+                {t('helper_credits.history_full_title')}
+              </h1>
+              <p className="mt-0.5 truncate text-[12px] font-semibold tabular-nums text-slate-400">
+                {loading && balance == null ? '…' : `${balance ?? 0} ${lcUnit}`}
+              </p>
+            </div>
           </header>
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
-            <CreditTransactionHistoryList
-              transactions={sortedTx}
-              unlocks={unlocks}
-              limit={sortedTx.length}
-              variant="dark"
-              onSelect={setSelectedTx}
-              t={t}
-              emptyLabel={t('credits.history_empty')}
-              emptyHint={t('credits.history_empty_hint')}
-              balanceAfterLabel={(count) => t('credits.balance_after', { count })}
-            />
-          </div>
+
+          <CreditTransactionHistoryList
+            transactions={sortedTx}
+            unlocks={unlocks}
+            limit={sortedTx.length}
+            density="compact"
+            variant="dark"
+            onSelect={setSelectedTx}
+            t={t}
+            emptyLabel={t('credits.history_empty')}
+            emptyHint={t('credits.history_empty_hint')}
+            balanceAfterLabel={(count) => t('credits.balance_after', { count })}
+          />
+
           <CreditTransactionDetailModal
             tx={selectedTx}
             unlocks={unlocks}

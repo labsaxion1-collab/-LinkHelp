@@ -88,6 +88,39 @@ describe('Financeiro UX — source contracts', () => {
     expect(helper).toContain("history', '1'");
     expect(client).toContain('history_full_title');
     expect(helper).toContain('history_full_title');
+    expect(client).toContain('density="compact"');
+    expect(helper).toContain('density="compact"');
+  });
+
+  it('histórico completo usa layout compacto (sem shell da loja)', async () => {
+    const client = await readFile(resolve('src/pages/client/ClientCreditsPage.tsx'), 'utf8');
+    const helper = await readFile(resolve('src/pages/helper/HelperCreditsPage.tsx'), 'utf8');
+    const clientList = await readFile(
+      resolve('src/components/client/ClientCreditHistoryList.tsx'),
+      'utf8',
+    );
+    const helperList = await readFile(
+      resolve('src/components/credits/CreditTransactionHistoryList.tsx'),
+      'utf8',
+    );
+    // Full-history early-return branches (exclude the summary `return (` that follows).
+    const clientHistStart = client.indexOf('if (showFullHistory)');
+    const clientHistEnd = client.indexOf('\n  return (', clientHistStart + 1);
+    const historyBlockClient = client.slice(clientHistStart, clientHistEnd);
+    expect(historyBlockClient).toContain('density="compact"');
+    expect(historyBlockClient).not.toContain('linkcredits-store-background');
+    expect(historyBlockClient).not.toContain('LinkCreditsCompactBalanceCard');
+    expect(historyBlockClient).not.toContain('DesktopBackButton');
+    expect(historyBlockClient).toContain('closeHistory');
+    const helperHistStart = helper.indexOf('if (showFullHistory)');
+    const helperHistEnd = helper.indexOf('\n  return (', helperHistStart + 1);
+    const historyBlockHelper = helper.slice(helperHistStart, helperHistEnd);
+    expect(historyBlockHelper).toContain('density="compact"');
+    expect(historyBlockHelper).not.toContain('HelperDashboardNav');
+    expect(historyBlockHelper).not.toContain('LinkCreditsCompactBalanceCard');
+    expect(historyBlockHelper).toContain('closeHistory');
+    expect(clientList).toContain("density === 'compact'");
+    expect(helperList).toContain("density === 'compact'");
   });
 
   it('6 / 13. card compacto usa saldo real e botão sem truncate forçado no label', async () => {

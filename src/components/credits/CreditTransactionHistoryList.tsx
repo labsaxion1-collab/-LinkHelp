@@ -15,7 +15,7 @@ type Props = {
   unlocks: OpportunityUnlock[];
   limit?: number;
   variant?: 'dark' | 'light';
-  /** Compact rows for full-history screen (`?history=1`). */
+  /** Compact rows for full-history screen (`/credits/history`). */
   density?: 'default' | 'compact';
   onSelect?: (tx: CreditTransaction) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;

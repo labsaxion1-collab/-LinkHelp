@@ -10,7 +10,7 @@ import {
 type Props = {
   entries: ClientCreditLedgerEntry[];
   limit?: number;
-  /** Compact rows for full-history screen (`?history=1`). */
+  /** Compact rows for full-history screen (`/credits/history`). */
   density?: 'default' | 'compact';
   t: (key: string, vars?: Record<string, string | number>) => string;
   emptyLabel: string;

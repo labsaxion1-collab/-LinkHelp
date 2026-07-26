@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as Icons from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCredits } from '@/context/CreditContext';
@@ -25,12 +25,13 @@ const PREVIEW_LIMIT = 3;
 
 export default function HelperCreditsPage() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const { profile, session } = useAuth();
   const { transactions, unlocks } = useCredits();
   const { balance, wallet, loading, refresh: refreshWallet } = useWalletBalance();
   const [selectedTx, setSelectedTx] = useState<(typeof transactions)[number] | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const showFullHistory = searchParams.get('history') === '1';
+  const [searchParams] = useSearchParams();
+  const legacyHistoryQuery = searchParams.get('history') === '1';
 
   useEffect(() => {
     void refreshWallet();
@@ -58,62 +59,12 @@ export default function HelperCreditsPage() {
   );
 
   const openHistory = () => {
-    const next = new URLSearchParams(searchParams);
-    next.set('history', '1');
-    setSearchParams(next, { replace: false });
+    navigate(ROUTES.helperCreditsHistory);
   };
 
-  const closeHistory = () => {
-    const next = new URLSearchParams(searchParams);
-    next.delete('history');
-    setSearchParams(next, { replace: false });
-  };
-
-  if (showFullHistory) {
-    return (
-      <AppPageShell wide className="relative min-w-0 overflow-x-hidden bg-[#030B1A] px-0 pb-24 pt-3">
-        <div className="relative mx-auto max-w-3xl px-4 sm:px-5">
-          <header className="mb-3 flex items-start gap-3">
-            <button
-              type="button"
-              onClick={closeHistory}
-              className="mt-0.5 inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 text-xs font-bold text-slate-200 hover:bg-white/[0.08]"
-            >
-              <Icons.ArrowLeft className="h-3.5 w-3.5" />
-              {t('helper_credits.back_to_summary')}
-            </button>
-            <div className="min-w-0 flex-1">
-              <h1 className="truncate text-base font-black tracking-tight text-white sm:text-lg">
-                {t('helper_credits.history_full_title')}
-              </h1>
-              <p className="mt-0.5 truncate text-[12px] font-semibold tabular-nums text-slate-400">
-                {loading && balance == null ? '…' : `${balance ?? 0} ${lcUnit}`}
-              </p>
-            </div>
-          </header>
-
-          <CreditTransactionHistoryList
-            transactions={sortedTx}
-            unlocks={unlocks}
-            limit={sortedTx.length}
-            density="compact"
-            variant="dark"
-            onSelect={setSelectedTx}
-            t={t}
-            emptyLabel={t('credits.history_empty')}
-            emptyHint={t('credits.history_empty_hint')}
-            balanceAfterLabel={(count) => t('credits.balance_after', { count })}
-          />
-
-          <CreditTransactionDetailModal
-            tx={selectedTx}
-            unlocks={unlocks}
-            open={Boolean(selectedTx)}
-            onClose={() => setSelectedTx(null)}
-          />
-        </div>
-      </AppPageShell>
-    );
+  // Legacy deep-link compat: /helper/credits?history=1 → dedicated history route.
+  if (legacyHistoryQuery) {
+    return <Navigate to={ROUTES.helperCreditsHistory} replace />;
   }
 
   return (

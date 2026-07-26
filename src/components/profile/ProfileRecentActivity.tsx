@@ -59,7 +59,7 @@ export function ProfileRecentActivity({ role, onMonthMetrics }: Props) {
     };
   }, [role, onMonthMetrics]);
 
-  const historyRoute = role === 'client' ? ROUTES.clientCredits : ROUTES.helperCredits;
+  const historyRoute = role === 'client' ? ROUTES.clientCreditsHistory : ROUTES.helperCreditsHistory;
 
   return (
     <section>
@@ -109,7 +109,7 @@ export function ProfileRecentActivity({ role, onMonthMetrics }: Props) {
             t={t}
             emptyLabel={t('credits.history_empty')}
             balanceAfterLabel={(count) => t('credits.balance_after', { count })}
-            onSelect={() => navigate(ROUTES.helperCredits)}
+            onSelect={() => navigate(ROUTES.helperCreditsHistory)}
           />
         )}
       </div>

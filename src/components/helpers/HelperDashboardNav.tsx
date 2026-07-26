@@ -24,7 +24,13 @@ export function resolveHelperNavSection(
   pathname: string,
   locationState?: { tasksTab?: 'applications' | 'accepted' } | null,
 ): HelperNavSection {
-  if (pathname === ROUTES.helperCredits || pathname === ROUTES.helperLinkCredits) return 'credits';
+  if (
+    pathname === ROUTES.helperCredits ||
+    pathname === ROUTES.helperCreditsHistory ||
+    pathname === ROUTES.helperLinkCredits
+  ) {
+    return 'credits';
+  }
   if (pathname === ROUTES.helperJobs) {
     return locationState?.tasksTab === 'applications' ? 'applications' : 'jobs';
   }

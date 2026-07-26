@@ -33,6 +33,7 @@ const FluxAccessDeniedPage = lazyPage(() => import('@/pages/auth/FluxAccessDenie
 const DashboardEntryPage = lazyPage(() => import('@/pages/app/DashboardEntryPage'));
 const ClientDashboard = lazyPage(() => import('@/pages/client/ClientDashboard'));
 const ClientCreditsPage = lazyPage(() => import('@/pages/client/ClientCreditsPage'));
+const ClientCreditsHistoryPage = lazyPage(() => import('@/pages/client/ClientCreditsHistoryPage'));
 const ClientCreditsSuccessPage = lazyPage(() => import('@/pages/client/ClientCreditsSuccessPage'));
 const HelperDashboard = lazyPage(() => import('@/pages/helper/HelperDashboard'));
 const HelperUpcomingJobsPage = lazyPage(() => import('@/pages/helper/HelperUpcomingJobsPage'));
@@ -41,6 +42,7 @@ const IdeasPage = lazyPage(() => import('@/pages/ideas/IdeasPage'));
 const NotificationsPage = lazyPage(() => import('@/pages/notifications/NotificationsPage'));
 const LiveMapPage = lazyPage(() => import('@/pages/map/LiveMapPage'));
 const HelperCreditsPage = lazyPage(() => import('@/pages/helper/HelperCreditsPage'));
+const HelperCreditsHistoryPage = lazyPage(() => import('@/pages/helper/HelperCreditsHistoryPage'));
 const HelperLinkCreditsPage = lazyPage(() => import('@/pages/helper/HelperLinkCreditsPage'));
 const HelperCreditsSuccessPage = lazyPage(() => import('@/pages/helper/HelperCreditsSuccessPage'));
 const SettingsPage = lazyPage(() => import('@/pages/settings/SettingsPage'));
@@ -118,6 +120,12 @@ export function AppRoutes() {
             element={UI_VISIBILITY.helperCredits ? <HelperCreditsPage /> : <Navigate to={ROUTES.dashboard} replace />}
           />
           <Route
+            path={ROUTES.helperCreditsHistory}
+            element={
+              UI_VISIBILITY.helperCredits ? <HelperCreditsHistoryPage /> : <Navigate to={ROUTES.dashboard} replace />
+            }
+          />
+          <Route
             path={ROUTES.helperLinkCredits}
             element={
               UI_VISIBILITY.helperCreditPurchase ? (
@@ -133,6 +141,7 @@ export function AppRoutes() {
             <Route path={ROUTES.clientDashboard} element={<ClientDashboard />} />
             <Route path={ROUTES.clientJobs} element={<ClientDashboard />} />
             <Route path={ROUTES.clientCredits} element={<ClientCreditsPage />} />
+            <Route path={ROUTES.clientCreditsHistory} element={<ClientCreditsHistoryPage />} />
             <Route path={ROUTES.clientCreditsSuccess} element={<ClientCreditsSuccessPage />} />
             <Route
               path={ROUTES.ideas}

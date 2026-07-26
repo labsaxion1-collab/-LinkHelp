@@ -20,6 +20,7 @@ export const ROUTES = {
   clientDashboard: '/client/dashboard',
   clientJobs: '/client/jobs',
   clientCredits: '/client/credits',
+  clientCreditsHistory: '/client/credits/history',
   clientCreditsSuccess: '/client/credits/success',
   helperDashboard: '/helper/dashboard',
   helperOpportunities: '/helper/opportunities',
@@ -35,6 +36,7 @@ export const ROUTES = {
   /** @deprecated Legacy alias — AppRoutes redirects to clientCredits */
   payments: '/payments',
   helperCredits: '/helper/credits',
+  helperCreditsHistory: '/helper/credits/history',
   helperLinkCredits: '/helper/linkcredits',
   helperCreditsSuccess: '/helper/credits/success',
   /** Reserved for helper training module (settings teaser when UI_VISIBILITY.training) */

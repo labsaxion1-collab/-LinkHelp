@@ -35,7 +35,7 @@ function Tile({
       className={clsx(
         'min-w-0 rounded-xl px-2.5 py-2.5',
         isDark
-          ? 'border border-white/[0.07] bg-white/[0.035]'
+          ? 'border border-white/12 bg-[#0C1A2E] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
           : 'border border-slate-200/80 bg-white',
       )}
     >

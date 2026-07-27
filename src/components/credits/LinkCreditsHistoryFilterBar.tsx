@@ -28,7 +28,7 @@ export function LinkCreditsHistoryFilterBar({
     <div
       className={clsx(
         'flex w-full gap-1.5 rounded-xl p-1',
-        isDark ? 'bg-white/[0.04] ring-1 ring-white/[0.06]' : 'bg-slate-100/90 ring-1 ring-slate-200/80',
+        isDark ? 'bg-[#0A1628] ring-1 ring-white/12' : 'bg-slate-100/90 ring-1 ring-slate-200/80',
       )}
       role="tablist"
       aria-label="Filter"
@@ -46,10 +46,10 @@ export function LinkCreditsHistoryFilterBar({
               'min-h-9 min-w-0 flex-1 rounded-lg px-2 text-[12px] font-bold leading-tight transition',
               active
                 ? isDark
-                  ? 'bg-white/10 text-white shadow-sm'
+                  ? 'bg-blue-500/25 text-white shadow-sm ring-1 ring-blue-400/30'
                   : 'bg-white text-slate-900 shadow-sm'
                 : isDark
-                  ? 'text-slate-400 hover:text-slate-200'
+                  ? 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
                   : 'text-slate-500 hover:text-slate-800',
             )}
           >

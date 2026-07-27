@@ -6,6 +6,7 @@ import { ROUTES } from '@/utils/constants';
 import { useLanguage } from '@/context/LanguageContext';
 import { coerceLegacyLinkCreditsDisplay, formatLinkCredits } from '@/utils/formatLinkCredits';
 import { BRAND } from '@/utils/brandAssets';
+import { linkCreditsHistoryState } from '@/utils/linkCreditsHistoryNav';
 
 type Props = {
   balance: number | null;
@@ -137,6 +138,7 @@ export function HelperCreditsWalletCard({
         </button>
         <Link
           to={ROUTES.helperCreditsHistory}
+          state={linkCreditsHistoryState('credits')}
           className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
         >
           {t('helper_dashboard.view_history')}

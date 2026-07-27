@@ -124,3 +124,83 @@ describe('LinkCredits history polish — source contracts', () => {
     expect(helper).toContain("linkCreditsHistoryState('credits')");
   });
 });
+
+describe('Helper history dark parity with Client structure', () => {
+  it('1. Helper renderiza botão Voltar visível', async () => {
+    const helperHistory = await readFile(
+      resolve('src/pages/helper/HelperCreditsHistoryPage.tsx'),
+      'utf8',
+    );
+    expect(helperHistory).toContain('helper_credits.back_to_summary');
+    expect(helperHistory).toContain('Icons.ArrowLeft');
+    expect(helperHistory).toContain('aria-label={t(');
+    expect(helperHistory).toContain('border-blue-400/35');
+  });
+
+  it('2–4. Voltar Helper respeita profile / credits / fallback Perfil', () => {
+    expect(resolveLinkCreditsHistoryBackPath('helper', 'profile')).toBe(ROUTES.profile);
+    expect(resolveLinkCreditsHistoryBackPath('helper', 'credits')).toBe(ROUTES.helperCredits);
+    expect(resolveLinkCreditsHistoryBackPath('helper', null)).toBe(ROUTES.profile);
+  });
+
+  it('5–6. Helper mostra resumo e filtros (mesma estrutura do Cliente)', async () => {
+    const helperHistory = await readFile(
+      resolve('src/pages/helper/HelperCreditsHistoryPage.tsx'),
+      'utf8',
+    );
+    expect(helperHistory).toContain('LinkCreditsHistorySummary');
+    expect(helperHistory).toContain('LinkCreditsHistoryFilterBar');
+    expect(helperHistory).toContain('credits.history_total_received');
+    expect(helperHistory).toContain('credits.history_total_used');
+    expect(helperHistory).toContain('credits.history_balance_now');
+    expect(helperHistory).toContain('credits.history_filter_all');
+    expect(helperHistory).toContain('credits.history_filter_in');
+    expect(helperHistory).toContain('credits.history_filter_out');
+    expect(helperHistory).toContain('variant="dark"');
+    expect(helperHistory).toContain('bg-[#030B1A]');
+    expect(helperHistory).toContain('rounded-2xl border border-white/10');
+  });
+
+  it('7–8. filtros Entradas/Saídas (positivos/negativos)', () => {
+    const items = [
+      { amount: 20 },
+      { amount: -5 },
+      { amount: 8 },
+    ];
+    expect(filterLinkCreditsHistoryAmounts(items, 'in', (i) => i.amount).every((i) => i.amount > 0)).toBe(
+      true,
+    );
+    expect(
+      filterLinkCreditsHistoryAmounts(items, 'out', (i) => i.amount).every((i) => i.amount < 0),
+    ).toBe(true);
+  });
+
+  it('9. Helper usa credit_transactions (CreditContext list)', async () => {
+    const helperHistory = await readFile(
+      resolve('src/pages/helper/HelperCreditsHistoryPage.tsx'),
+      'utf8',
+    );
+    expect(helperHistory).toContain('useCredits');
+    expect(helperHistory).toContain('CreditTransactionHistoryList');
+    expect(helperHistory).not.toContain('fetchClientCreditLedger');
+  });
+
+  it('10. histórico Cliente permanece intacto (layout light + ledger)', async () => {
+    const clientHistory = await readFile(
+      resolve('src/pages/client/ClientCreditsHistoryPage.tsx'),
+      'utf8',
+    );
+    expect(clientHistory).toContain('bg-[#F8FAFC]');
+    expect(clientHistory).toContain('variant="light"');
+    expect(clientHistory).toContain('ClientCreditHistoryList');
+    expect(clientHistory).toContain('fetchClientCreditLedger');
+    expect(clientHistory).not.toContain('bg-[#030B1A]');
+  });
+
+  it('11–12. Stripe/regras intactos; sem SQL neste polish', async () => {
+    const webhook = await readFile(resolve('api/stripe/webhook.ts'), 'utf8');
+    const charge = await readFile(resolve('src/config/helperCreditCharge.ts'), 'utf8');
+    expect(webhook).toContain('checkout.session.completed');
+    expect(charge).toContain('getApplicationChargeLc');
+  });
+});

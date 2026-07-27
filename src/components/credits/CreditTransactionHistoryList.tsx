@@ -45,7 +45,7 @@ export function CreditTransactionHistoryList({
         className={clsx(
           'flex flex-col items-center gap-2 rounded-2xl border border-dashed text-center',
           compact ? 'px-3 py-8' : 'gap-3 px-4 py-10',
-          isDark ? 'border-white/10 text-slate-500' : 'border-slate-200 text-slate-500',
+          isDark ? 'border-white/15 bg-[#0C1A2E]/80 text-slate-400' : 'border-slate-200 text-slate-500',
         )}
       >
         <p className="text-sm font-bold">{emptyLabel}</p>
@@ -76,7 +76,7 @@ export function CreditTransactionHistoryList({
             : 'grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-xl px-4 py-3',
           isDark
             ? compact
-              ? 'border border-white/[0.07] bg-white/[0.035] hover:bg-white/[0.055]'
+              ? 'border border-white/12 bg-[#0C1A2E] hover:border-blue-400/25 hover:bg-[#102038]'
               : 'border border-white/[0.05] bg-white/[0.03] hover:bg-white/[0.06]'
             : compact
               ? 'border border-slate-200/80 bg-white hover:bg-slate-50'

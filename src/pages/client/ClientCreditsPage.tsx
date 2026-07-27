@@ -15,6 +15,7 @@ import {
 import { LinkCreditsCompactBalanceCard } from '@/components/credits/LinkCreditsCompactBalanceCard';
 import { LinkCreditsCompactStatTile } from '@/components/credits/LinkCreditsCompactStatTile';
 import { ROUTES } from '@/utils/constants';
+import { linkCreditsHistoryState } from '@/utils/linkCreditsHistoryNav';
 import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
 import { LINK_CREDIT_PACKAGES, getLinkCreditPackage } from '@/config/linkCreditPackages';
 import { startClientLinkCreditCheckout } from '@/services/clientLinkCreditsCheckout';
@@ -103,7 +104,7 @@ export default function ClientCreditsPage() {
   }, [refreshProfile, session?.user?.id, profile?.id, profile?.credits, profile?.name, profile?.avatar_url]);
 
   const openHistory = () => {
-    navigate(ROUTES.clientCreditsHistory);
+    navigate(ROUTES.clientCreditsHistory, { state: linkCreditsHistoryState('credits') });
   };
 
   const handleBuyPackage = async (packageId: string, priceId: string) => {
@@ -149,7 +150,9 @@ export default function ClientCreditsPage() {
 
   // Legacy deep-link compat: /client/credits?history=1 → dedicated history route.
   if (legacyHistoryQuery) {
-    return <Navigate to={ROUTES.clientCreditsHistory} replace />;
+    return (
+      <Navigate to={ROUTES.clientCreditsHistory} replace state={linkCreditsHistoryState('credits')} />
+    );
   }
 
   return (

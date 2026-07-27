@@ -109,12 +109,12 @@ describe('Financeiro UX — source contracts', () => {
     expect(clientHistory).not.toContain('linkcredits-store-background');
     expect(clientHistory).not.toContain('LinkCreditsCompactBalanceCard');
     expect(clientHistory).not.toContain('LINK_CREDIT_PACKAGES');
-    expect(clientHistory).toContain('ROUTES.clientCredits');
+    expect(clientHistory).toContain('resolveLinkCreditsHistoryBackPath');
     expect(helperHistory).toContain('density="compact"');
     expect(helperHistory).not.toContain('HelperDashboardNav');
     expect(helperHistory).not.toContain('LinkCreditsCompactBalanceCard');
     expect(helperHistory).not.toContain('LINK_CREDIT_PACKAGES');
-    expect(helperHistory).toContain('ROUTES.helperCredits');
+    expect(helperHistory).toContain('resolveLinkCreditsHistoryBackPath');
     expect(clientList).toContain("density === 'compact'");
     expect(helperList).toContain("density === 'compact'");
   });

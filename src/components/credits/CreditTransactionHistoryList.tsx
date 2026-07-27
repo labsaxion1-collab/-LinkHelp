@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ChevronRight } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { CreditTransaction, OpportunityUnlock } from '@/types/credits';
 import {
@@ -59,6 +59,8 @@ export function CreditTransactionHistoryList({
       {transactions.slice(0, limit).map((tx) => {
         const unlock = findUnlockForTransaction(tx, unlocks);
         const amount = resolveCreditTransactionAmount(tx, unlock);
+        const inbound = amount > 0;
+        const Icon = inbound ? ArrowDownLeft : ArrowUpRight;
         const isExclusive =
           tx.type === 'APPLICATION_INTEREST' && isExclusiveInterestDescription(tx.description);
         const summaryKey = creditTransactionSummaryKey(tx, { isExclusive });
@@ -68,8 +70,10 @@ export function CreditTransactionHistoryList({
             : t(summaryKey);
 
         const rowClass = clsx(
-          'grid w-full grid-cols-[minmax(0,1fr)_auto] text-left transition',
-          compact ? 'items-start gap-2 rounded-lg px-3 py-2' : 'gap-3 rounded-xl px-4 py-3',
+          'grid w-full text-left transition',
+          compact
+            ? 'grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2 rounded-lg px-3 py-2.5'
+            : 'grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-xl px-4 py-3',
           isDark
             ? compact
               ? 'border border-white/[0.07] bg-white/[0.035] hover:bg-white/[0.055]'
@@ -82,6 +86,22 @@ export function CreditTransactionHistoryList({
 
         const content = (
           <>
+            {compact ? (
+              <span
+                className={clsx(
+                  'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+                  inbound
+                    ? isDark
+                      ? 'bg-emerald-500/15 text-emerald-400'
+                      : 'bg-emerald-50 text-emerald-600'
+                    : isDark
+                      ? 'bg-rose-500/15 text-rose-400'
+                      : 'bg-rose-50 text-rose-600',
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" aria-hidden />
+              </span>
+            ) : null}
             <div className="min-w-0">
               <p
                 className={clsx(

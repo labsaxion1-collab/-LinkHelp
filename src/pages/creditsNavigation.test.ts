@@ -87,7 +87,7 @@ describe('LinkCredits navigation — dedicated purchase vs history', () => {
     expect(helperHistory).not.toContain('fetchClientCreditLedger');
   });
 
-  it('10. Voltar do histórico retorna para a compra da mesma role', async () => {
+  it('10. Voltar do histórico respeita origem (créditos ou perfil)', async () => {
     const clientHistory = await readFile(
       resolve('src/pages/client/ClientCreditsHistoryPage.tsx'),
       'utf8',
@@ -96,19 +96,23 @@ describe('LinkCredits navigation — dedicated purchase vs history', () => {
       resolve('src/pages/helper/HelperCreditsHistoryPage.tsx'),
       'utf8',
     );
-    expect(clientHistory).toContain('navigate(ROUTES.clientCredits)');
-    expect(helperHistory).toContain('navigate(ROUTES.helperCredits)');
-    expect(clientHistory).not.toContain('ROUTES.clientDashboard');
-    expect(helperHistory).not.toContain('ROUTES.helperDashboard');
+    expect(clientHistory).toContain('resolveLinkCreditsHistoryBackPath');
+    expect(helperHistory).toContain('resolveLinkCreditsHistoryBackPath');
+    expect(clientHistory).toContain('navigate(backPath)');
+    expect(helperHistory).toContain('navigate(backPath)');
   });
 
   it('11. links antigos ?history=1 redirecionam', async () => {
     const client = await readFile(resolve('src/pages/client/ClientCreditsPage.tsx'), 'utf8');
     const helper = await readFile(resolve('src/pages/helper/HelperCreditsPage.tsx'), 'utf8');
     expect(client).toContain("history') === '1'");
-    expect(client).toContain('<Navigate to={ROUTES.clientCreditsHistory} replace />');
     expect(helper).toContain("history') === '1'");
-    expect(helper).toContain('<Navigate to={ROUTES.helperCreditsHistory} replace />');
+    expect(client).toContain('ROUTES.clientCreditsHistory');
+    expect(client).toContain("linkCreditsHistoryState('credits')");
+    expect(helper).toContain('ROUTES.helperCreditsHistory');
+    expect(helper).toContain("linkCreditsHistoryState('credits')");
+    expect(client).toContain('<Navigate');
+    expect(helper).toContain('<Navigate');
   });
 
   it('12. success/cancel permanecem intactos', async () => {

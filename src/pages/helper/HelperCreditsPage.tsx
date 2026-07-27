@@ -20,6 +20,7 @@ import { LinkCreditsCompactBalanceCard } from '@/components/credits/LinkCreditsC
 import { LinkCreditsCompactStatTile } from '@/components/credits/LinkCreditsCompactStatTile';
 import { computeCreditsUsageSummary } from '@/utils/opportunityUnlockRefund';
 import { writeAccountHomeSnapshot } from '@/utils/accountSessionSnapshot';
+import { linkCreditsHistoryState } from '@/utils/linkCreditsHistoryNav';
 
 const PREVIEW_LIMIT = 3;
 
@@ -59,12 +60,14 @@ export default function HelperCreditsPage() {
   );
 
   const openHistory = () => {
-    navigate(ROUTES.helperCreditsHistory);
+    navigate(ROUTES.helperCreditsHistory, { state: linkCreditsHistoryState('credits') });
   };
 
   // Legacy deep-link compat: /helper/credits?history=1 → dedicated history route.
   if (legacyHistoryQuery) {
-    return <Navigate to={ROUTES.helperCreditsHistory} replace />;
+    return (
+      <Navigate to={ROUTES.helperCreditsHistory} replace state={linkCreditsHistoryState('credits')} />
+    );
   }
 
   return (

@@ -15,6 +15,7 @@ import {
 import { computeClientCreditMetrics } from '@/utils/clientCreditMetrics';
 import type { ClientCreditLedgerEntry } from '@/types/clientCredits';
 import { ROUTES } from '@/utils/constants';
+import { linkCreditsHistoryState } from '@/utils/linkCreditsHistoryNav';
 
 type Role = 'client' | 'helper';
 
@@ -68,7 +69,7 @@ export function ProfileRecentActivity({ role, onMonthMetrics }: Props) {
         action={
           <button
             type="button"
-            onClick={() => navigate(historyRoute)}
+            onClick={() => navigate(historyRoute, { state: linkCreditsHistoryState('profile') })}
             className="text-sm font-bold text-[#2563FF] transition hover:text-[#1D4ED8]"
           >
             {t('profile_page.view_all')}
@@ -109,7 +110,9 @@ export function ProfileRecentActivity({ role, onMonthMetrics }: Props) {
             t={t}
             emptyLabel={t('credits.history_empty')}
             balanceAfterLabel={(count) => t('credits.balance_after', { count })}
-            onSelect={() => navigate(ROUTES.helperCreditsHistory)}
+            onSelect={() =>
+              navigate(ROUTES.helperCreditsHistory, { state: linkCreditsHistoryState('profile') })
+            }
           />
         )}
       </div>

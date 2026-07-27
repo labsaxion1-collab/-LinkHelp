@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ChevronRight } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { ClientCreditLedgerEntry } from '@/types/clientCredits';
 import {
@@ -47,11 +47,13 @@ export function ClientCreditHistoryList({
         const label = resolveClientCreditEntryLabel(entry, t);
         const amountText = `${formatSignedClientCreditAmount(entry.amount)} ${t('credits.lc_unit')}`;
         const clickable = Boolean(entry.requestId && onSelect);
+        const inbound = entry.amount > 0;
+        const Icon = inbound ? ArrowDownLeft : ArrowUpRight;
         const rowClass = clsx(
-          'grid w-full grid-cols-[minmax(0,1fr)_auto] gap-2 text-left transition',
+          'grid w-full text-left transition',
           compact
-            ? 'items-start rounded-lg border border-slate-200/80 bg-white px-3 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.04)]'
-            : 'gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3',
+            ? 'grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2 rounded-lg border border-slate-200/80 bg-white px-3 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]'
+            : 'grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3',
           clickable &&
             (compact
               ? 'cursor-pointer hover:border-blue-200 hover:bg-blue-50/50'
@@ -60,6 +62,16 @@ export function ClientCreditHistoryList({
 
         const content = (
           <>
+            {compact ? (
+              <span
+                className={clsx(
+                  'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+                  inbound ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600',
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" aria-hidden />
+              </span>
+            ) : null}
             <div className="min-w-0">
               <p
                 className={clsx(

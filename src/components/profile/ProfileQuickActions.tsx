@@ -59,7 +59,7 @@ export function ProfileQuickActions({ title, role, labels }: Props) {
       icon: CreditCard,
       iconColor: 'text-blue-600',
       iconBg: 'bg-blue-50',
-      to: ROUTES.helperLinkCredits,
+      to: ROUTES.helperCredits,
     });
   }
 

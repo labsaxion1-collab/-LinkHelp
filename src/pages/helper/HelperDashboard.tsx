@@ -445,7 +445,7 @@ export default function HelperDashboard() {
     [walletLoading, walletBalance, interestCostForJob, openInsufficientCreditsModal, pushToast, t],
   );
   const proposalSourceRef = React.useRef<ProposalAnalyticsSource>('card');
-  const goToCredits = React.useCallback(() => navigate(ROUTES.helperLinkCredits), [navigate]);
+  const goToCredits = React.useCallback(() => navigate(ROUTES.helperCredits), [navigate]);
   const creditsUsedThisMonth = React.useMemo(() => {
     const now = new Date();
     return creditTransactions

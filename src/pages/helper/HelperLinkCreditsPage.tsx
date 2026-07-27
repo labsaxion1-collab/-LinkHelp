@@ -5,10 +5,11 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { HelperDashboardNav } from '@/components/helpers/HelperDashboardNav';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
-import { LINK_CREDIT_PACKAGES } from '@/config/linkCreditPackages';
+import { LINK_CREDIT_PACKAGES, getLinkCreditPackage } from '@/config/linkCreditPackages';
 import { startLinkCreditCheckout } from '@/services/paymentService';
 import { ROUTES } from '@/utils/constants';
 import { BRAND } from '@/utils/brandAssets';
+import { writePendingLinkCreditPurchase } from '@/utils/pendingLinkCreditPurchase';
 
 const linkCreditGlowClass = 'text-amber-300 drop-shadow-[0_0_14px_rgba(251,191,36,0.55)]';
 
@@ -101,6 +102,14 @@ export default function HelperLinkCreditsPage() {
     setError(null);
     setBusyId(packageId);
     try {
+      const pkg = getLinkCreditPackage(packageId);
+      if (pkg) {
+        writePendingLinkCreditPurchase({
+          credits: pkg.credits,
+          role: 'helper',
+          packageId: pkg.id,
+        });
+      }
       const { url } = await startLinkCreditCheckout({ packageId, priceId });
       window.location.href = url;
     } catch (e) {

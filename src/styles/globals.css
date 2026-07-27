@@ -1490,3 +1490,24 @@ body[data-public-profile-open] {
     opacity: 0.66;
   }
 }
+
+@keyframes lh-credits-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lh-credits-fade-in {
+  animation: lh-credits-fade-in 280ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lh-credits-fade-in {
+    animation: none;
+  }
+}

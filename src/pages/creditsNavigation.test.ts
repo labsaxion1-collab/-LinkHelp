@@ -11,18 +11,18 @@ describe('LinkCredits navigation — dedicated purchase vs history', () => {
     const profile = await readFile(resolve('src/pages/profile/ProfileDashboardPage.tsx'), 'utf8');
     expect(ROUTES.clientCredits).toBe('/client/credits');
     expect(ROUTES.clientCreditsHistory).toBe('/client/credits/history');
-    expect(profile).toContain('buyRoute={isHelper ? ROUTES.helperCredits : ROUTES.clientCredits}');
+    expect(profile).toContain('buyRoute={isHelper ? ROUTES.helperLinkCredits : ROUTES.clientCredits}');
     expect(profile).toContain(
       'historyRoute={isHelper ? ROUTES.helperCreditsHistory : ROUTES.clientCreditsHistory}',
     );
     expect(profile).not.toMatch(/historyRoute=\{[^}]*\?history/);
   });
 
-  it('3–4. Perfil Helper: Comprar → /helper/credits; Histórico → /helper/credits/history', async () => {
-    expect(ROUTES.helperCredits).toBe('/helper/credits');
+  it('3–4. Perfil Helper: Comprar → /helper/linkcredits; Histórico → /helper/credits/history', async () => {
+    expect(ROUTES.helperLinkCredits).toBe('/helper/linkcredits');
     expect(ROUTES.helperCreditsHistory).toBe('/helper/credits/history');
     const profile = await readFile(resolve('src/pages/profile/ProfileDashboardPage.tsx'), 'utf8');
-    expect(profile).toContain('ROUTES.helperCredits');
+    expect(profile).toContain('buyRoute={isHelper ? ROUTES.helperLinkCredits : ROUTES.clientCredits}');
     expect(profile).toContain('ROUTES.helperCreditsHistory');
     // Profile buy must not deep-link straight to legacy store-only path as history.
     expect(profile).not.toContain('historyRoute={isHelper ? ROUTES.helperCredits : ROUTES.clientCredits}');

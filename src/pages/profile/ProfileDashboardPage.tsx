@@ -275,7 +275,7 @@ export default function ProfileDashboardPage() {
             balance={creditsAmount}
             loading={creditsLoading}
             usedThisMonth={!isHelper ? usedThisMonth : null}
-            buyRoute={isHelper ? ROUTES.helperCredits : ROUTES.clientCredits}
+            buyRoute={isHelper ? ROUTES.helperLinkCredits : ROUTES.clientCredits}
             historyRoute={isHelper ? ROUTES.helperCreditsHistory : ROUTES.clientCreditsHistory}
             showBuy={
               isHelper ? UI_VISIBILITY.helperCreditPurchase : UI_VISIBILITY.clientCredits

@@ -38,11 +38,11 @@ describe('P2.4 public profile edit simplification', () => {
       ...PUBLIC_PROFILE_SPOKEN_LANGUAGE_CODES,
     ]);
     expect(PUBLIC_PROFILE_SPOKEN_LANGUAGE_CODES.filter((c) => c === 'it')).toHaveLength(1);
-    expect(resolveMessage({ en, pt, fr }, 'pt', 'languages.mandarin')).toBe('Mandarim (chinês)');
-    expect(resolveMessage({ en, pt, fr }, 'en', 'languages.mandarin')).toBe('Mandarin Chinese');
-    expect(resolveMessage({ en, pt, fr }, 'fr', 'languages.mandarin')).toBe('Chinois mandarin');
+    expect(resolveMessage({ en, pt, fr }, 'pt', 'languages.mandarin')).toBe('Mandarim');
+    expect(resolveMessage({ en, pt, fr }, 'en', 'languages.mandarin')).toBe('Mandarin');
+    expect(resolveMessage({ en, pt, fr }, 'fr', 'languages.mandarin')).toBe('Mandarin');
     const t = (key: string) => resolveMessage({ en, pt, fr }, 'pt', key);
-    expect(getSpokenLanguageLabel('zh', t)).toBe('Mandarim (chinês)');
+    expect(getSpokenLanguageLabel('zh', t)).toBe('Mandarim');
   });
 
   it('4. mergeSpokenLanguagesForSave preserves legacy codes not shown in the UI', () => {
@@ -51,32 +51,34 @@ describe('P2.4 public profile edit simplification', () => {
     expect(mergeSpokenLanguagesForSave(['it', 'it'], [])).toEqual(['it']);
   });
 
-  it('5–7. Helper primary category only; Client has no helper categories', async () => {
-    const src = await readFile(resolve(editPath), 'utf8');
-    expect(src).toContain('helper_categories.primary_label');
-    expect(src).toContain('SERVICE_CATEGORIES.map');
-    expect(src).toContain('isHelper ?');
-    expect(src).not.toContain('HelperCategoriesManager');
-    expect(src).not.toContain('secondaryCategories');
-    expect(src).not.toContain('secondary_categories');
-    expect(src).toContain('PUBLIC_PROFILE_SPOKEN_LANGUAGES');
-    // Languages shown for both roles (not wrapped only in isHelper).
-    const languagesIdx = src.indexOf('PUBLIC_PROFILE_SPOKEN_LANGUAGES.map');
-    const helperCatIdx = src.indexOf('helper_categories.primary_label');
-    expect(languagesIdx).toBeGreaterThan(0);
-    expect(helperCatIdx).toBeGreaterThan(languagesIdx);
-  });
-
   it('8–11. preview removed; photo, bio, and save remain', async () => {
     const src = await readFile(resolve(editPath), 'utf8');
     expect(src).not.toContain('PublicProfilePreviewCard');
     expect(src).not.toContain('section_public_preview');
     expect(src).not.toContain('view_public');
     expect(src).toContain('settings_avatar_choose');
-    expect(src).toContain("ROUTES.settings}#avatar");
+    expect(src).toContain('FilePickerLabel');
+    expect(src).toContain('uploadAvatarImage');
+    expect(src).not.toContain("ROUTES.settings}#avatar");
     expect(src).toContain('profile_page.bio_label');
     expect(src).toContain('profile_page.public_edit_save');
     expect(src).toContain('savePublicProfile');
+  });
+
+  it('5–7. Helper primary category only; Client has no helper categories', async () => {
+    const src = await readFile(resolve(editPath), 'utf8');
+    expect(src).toContain('helper_categories.primary_label');
+    expect(src).toContain('SERVICE_CATEGORIES.map');
+    expect(src).toContain('data-category-id={category.id}');
+    expect(src).toContain('isHelper ?');
+    expect(src).not.toContain('HelperCategoriesManager');
+    expect(src).not.toContain('secondaryCategories');
+    expect(src).not.toContain('secondary_categories');
+    expect(src).toContain('PUBLIC_PROFILE_SPOKEN_LANGUAGES');
+    const languagesIdx = src.indexOf('PUBLIC_PROFILE_SPOKEN_LANGUAGES.map');
+    const helperCatIdx = src.indexOf('helper_categories.primary_label');
+    expect(languagesIdx).toBeGreaterThan(0);
+    expect(helperCatIdx).toBeGreaterThan(languagesIdx);
   });
 
   it('12–14. edit route intact; public profile views and feed untouched by this page rewrite', async () => {

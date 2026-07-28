@@ -32,7 +32,7 @@ export const en = {
     french: 'French',
     spanish: 'Spanish',
     arabic: 'Arabic',
-    mandarin: 'Mandarin Chinese',
+    mandarin: 'Mandarin',
     japanese: 'Japanese',
     korean: 'Korean',
     hindi: 'Hindi',

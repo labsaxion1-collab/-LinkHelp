@@ -32,7 +32,7 @@ export const pt = {
     french: 'Francês',
     spanish: 'Espanhol',
     arabic: 'Árabe',
-    mandarin: 'Mandarim (chinês)',
+    mandarin: 'Mandarim',
     japanese: 'Japonês',
     korean: 'Coreano',
     hindi: 'Hindi',

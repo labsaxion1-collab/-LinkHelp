@@ -2244,6 +2244,8 @@ export const fr = {
     bio_empty: 'Ajoutez une bio pour compléter votre profil.',
     spoken_languages: 'Langues parlées',
     spoken_languages_empty: 'Ajouter des langues dans Paramètres',
+    overall_rating: 'Évaluation générale',
+    public_level: 'Niveau',
     wallet: 'Portefeuille',
     helper_specialties_subtitle: 'Spécialités visibles sur votre profil',
     stat_requests_published: 'Demandes publiées',

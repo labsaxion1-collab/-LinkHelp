@@ -2033,7 +2033,7 @@ export default function ClientDashboard() {
                       selectedHelper.jobsCompleted ??
                       applications.find((a) => a.helperId === String(selectedHelper.id))?.helperJobs ??
                       0,
-                    bio: profileApp?.message?.trim() || undefined,
+                    // Bio/city/languages come from profiles via usePublicProfileExtras — never application message.
                     categories: selectedHelper.skills?.length ? [...selectedHelper.skills] : [],
                   }}
                   onClose={() => {

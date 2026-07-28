@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ArrowRight, BadgeCheck, Calendar, MapPin, Star, ThumbsUp, Trophy, X } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Calendar, MapPin, Pencil, Star, ThumbsUp, Trophy, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { MEDAL_MAP } from '@/gamification/config/gamificationMedals';
 import type { UserType } from '@/gamification/types/gamification';
@@ -16,6 +16,7 @@ type Props = {
   location?: string | null;
   roleLabel: string;
   levelLabel?: string | null;
+  levelCaption?: string | null;
   rating?: number | null;
   reviewCount?: number;
   metrics: Metric[];
@@ -35,15 +36,17 @@ type Props = {
   closeLabel?: string;
   onCta?: () => void;
   ctaLabel?: string;
+  onEdit?: () => void;
+  editLabel?: string;
   className?: string;
 };
 
 export function PublicProfileHero({
-  userId, userType, name, avatar, location, roleLabel, levelLabel, rating,
+  userId, userType, name, avatar, location, roleLabel, levelLabel, levelCaption, rating,
   reviewCount = 0, metrics, noReviewsLabel, noReviewsLine1, noReviewsLine2, reviewsCountLabel, verified = false,
   showPositiveHistory = false, positiveHistoryLabel, memberSinceLabel,
   completedSummary, achievementsLabel, children, details, onClose, closeLabel,
-  onCta, ctaLabel, className,
+  onCta, ctaLabel, onEdit, editLabel, className,
 }: Props) {
   const { profiles } = usePublicGamificationProfiles([userId], userType);
   const publicProfile = profiles.get(userId);
@@ -87,6 +90,16 @@ export function PublicProfileHero({
               />
             ) : null}
             <div className="min-w-0">
+              {levelLabel ? (
+                <p className="mb-1.5 text-[11px] font-bold leading-tight text-white/80">
+                  {levelCaption ? (
+                    <span className="mb-0.5 block text-[9px] font-black uppercase tracking-wide text-white/45">
+                      {levelCaption}
+                    </span>
+                  ) : null}
+                  <span className="truncate">{levelLabel}</span>
+                </p>
+              ) : null}
               <div className="flex min-h-14 flex-wrap items-center gap-2">
 
                 {hasRating ? (
@@ -108,6 +121,17 @@ export function PublicProfileHero({
             </div>
           </div>
         </div>      </div>
+
+      {onEdit && editLabel ? (
+        <button
+          type="button"
+          onClick={onEdit}
+          className="relative mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 text-[11px] font-bold text-[#9CC8FF] transition hover:bg-white/12 hover:text-white"
+        >
+          <Pencil className="h-3.5 w-3.5" aria-hidden />
+          {editLabel}
+        </button>
+      ) : null}
 
       {memberSinceLabel || completedSummary ? <div className="relative mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold text-white/55">{memberSinceLabel ? <span className="inline-flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" />{memberSinceLabel}</span> : null}{completedSummary ? <span>{completedSummary}</span> : null}</div> : null}
 

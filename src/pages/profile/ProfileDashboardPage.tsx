@@ -283,6 +283,9 @@ export default function ProfileDashboardPage() {
                   jobsCompleted: completedCount,
                   bio: profile.bio ?? undefined,
                   city: [city, region].filter(Boolean).join(', ') || undefined,
+                  spokenLanguages: Array.isArray(profile.spoken_languages)
+                    ? profile.spoken_languages.filter(Boolean)
+                    : undefined,
                   onCta: () => navigate(ROUTES.helperJobs),
                   ctaLabel: t('profile_page.public_cta_services'),
                   categories: [
@@ -297,6 +300,11 @@ export default function ProfileDashboardPage() {
               <ClientPublicProfileView
                 job={selfJobStub}
                 bio={profile?.bio}
+                spokenLanguages={
+                  Array.isArray(profile?.spoken_languages)
+                    ? profile.spoken_languages.filter(Boolean)
+                    : undefined
+                }
                 onClose={() => setPublicOpen(false)}
                 closeLabel={t('common.close')}
                 onCta={() => navigate(ROUTES.clientJobs)}

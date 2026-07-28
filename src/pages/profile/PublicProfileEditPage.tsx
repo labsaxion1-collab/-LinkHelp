@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, Check, Loader2, MapPin } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, MapPin, Plus, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
@@ -15,10 +15,17 @@ import {
   mergeSpokenLanguagesForSave,
   PUBLIC_PROFILE_SPOKEN_LANGUAGES,
 } from '@/data/spokenLanguages';
-import { SERVICE_CATEGORIES, type ServiceCategoryId, isOfficialServiceCategoryId } from '@/data/serviceCategories';
+import { SERVICE_CATEGORIES, type ServiceCategoryId } from '@/data/serviceCategories';
 import { translateCategory } from '@/utils/translateCategory';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { getCategoryIconById } from '@/utils/categoryIcons';
+import {
+  MAX_PUBLIC_HELPER_CATEGORIES,
+  addPublicHelperCategory,
+  normalizePublicHelperCategorySelection,
+  removePublicHelperCategory,
+  splitPublicHelperCategories,
+} from '@/utils/publicHelperCategories';
 import { extractErrorMessage, formatAuthFlowErrorMessage } from '@/utils/errorMessage';
 import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
 import { cropSquareAvatarFromFile } from '@/utils/avatarMediaProcessing';
@@ -45,7 +52,8 @@ export default function PublicProfileEditPage() {
 
   const [bio, setBio] = useState('');
   const [spokenLanguages, setSpokenLanguages] = useState<string[]>([]);
-  const [primaryCategory, setPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
+  const [selectedCategories, setSelectedCategories] = useState<ServiceCategoryId[]>(['cleaning']);
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [avatarSelectedFile, setAvatarSelectedFile] = useState<File | null>(null);
@@ -61,6 +69,15 @@ export default function PublicProfileEditPage() {
     () => (Array.isArray(profile?.spoken_languages) ? profile.spoken_languages.filter(Boolean) : []),
     [profile?.spoken_languages],
   );
+  const { primary: primaryCategory, additional: additionalCategories } = useMemo(
+    () => splitPublicHelperCategories(selectedCategories),
+    [selectedCategories],
+  );
+  const availableToAdd = useMemo(
+    () => SERVICE_CATEGORIES.filter((cat) => !selectedCategories.includes(cat.id)),
+    [selectedCategories],
+  );
+  const canAddCategory = selectedCategories.length < MAX_PUBLIC_HELPER_CATEGORIES;
 
   const revokeAvatarObjectUrl = () => {
     if (avatarObjectUrlRef.current) {
@@ -85,9 +102,12 @@ export default function PublicProfileEditPage() {
             ? [language]
             : ['en'],
     );
-    if (isOfficialServiceCategoryId(profile.primary_category)) {
-      setPrimaryCategory(profile.primary_category);
-    }
+    setSelectedCategories(
+      normalizePublicHelperCategorySelection(
+        profile.primary_category,
+        (profile.secondary_categories as string[] | null) ?? [],
+      ),
+    );
   }, [profile, language, storedLanguages]);
 
   const toggleLanguage = (code: string) => {
@@ -109,6 +129,15 @@ export default function PublicProfileEditPage() {
     setAvatarSelectedFile(f);
     setAvatarPreviewUrl(preview);
     logMediaPicker('PREVIEW CREATED', preview);
+  };
+
+  const addCategory = (id: ServiceCategoryId) => {
+    setSelectedCategories((prev) => addPublicHelperCategory(prev, id));
+    setCategoryPickerOpen(false);
+  };
+
+  const removeCategory = (id: ServiceCategoryId) => {
+    setSelectedCategories((prev) => removePublicHelperCategory(prev, id));
   };
 
   const savePublicProfile = async () => {
@@ -147,6 +176,7 @@ export default function PublicProfileEditPage() {
             bio: bio.trim() || null,
             spoken_languages: nextLanguages.length ? nextLanguages : [language],
             primary_category: primaryCategory,
+            secondary_categories: additionalCategories,
           }
         : {
             bio: bio.trim() || null,
@@ -262,56 +292,65 @@ export default function PublicProfileEditPage() {
         {isHelper ? (
           <section className="rounded-[1.25rem] border border-slate-200/90 bg-white p-4 shadow-sm">
             <p className="text-sm font-bold text-slate-800">{t('helper_categories.primary_label')}</p>
+            <p className="mt-1 text-xs font-medium text-slate-500">{t('helper_categories.secondary_hint')}</p>
             <div
-              className="-mx-1 mt-3 flex gap-2.5 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-              role="listbox"
-              aria-label={t('helper_categories.primary_label')}
+              className="mt-3 flex flex-wrap items-center gap-2"
               data-testid="public-edit-primary-category"
             >
-              {SERVICE_CATEGORIES.map((category) => {
-                const selected = primaryCategory === category.id;
-                const theme = getCategoryFeedTheme(category.id);
-                const Icon = getCategoryIconById(category.id);
+              {selectedCategories.map((categoryId, index) => {
+                const theme = getCategoryFeedTheme(categoryId);
+                const Icon = getCategoryIconById(categoryId);
+                const isPrimary = index === 0;
                 return (
-                  <button
-                    key={category.id}
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    data-category-id={category.id}
-                    onClick={() => setPrimaryCategory(category.id)}
+                  <div
+                    key={categoryId}
+                    data-category-id={categoryId}
+                    data-primary={isPrimary ? 'true' : 'false'}
                     className={clsx(
-                      'flex w-[4.75rem] shrink-0 flex-col items-center gap-1.5 rounded-2xl px-1.5 py-2 transition duration-200 ease-out',
-                      selected
-                        ? 'bg-blue-50/90 ring-2 ring-[#2563FF] ring-offset-1'
-                        : 'bg-transparent hover:bg-slate-50',
+                      'inline-flex max-w-full items-center gap-1.5 rounded-full border py-1.5 pl-1.5 pr-2',
+                      isPrimary
+                        ? 'border-[#2563FF]/50 bg-blue-50/90'
+                        : 'border-slate-200 bg-slate-50',
                     )}
                   >
                     <span
-                      className={clsx(
-                        'relative flex h-7 w-7 items-center justify-center rounded-full transition duration-200',
-                        selected ? 'ring-2 ring-[#2563FF]' : 'ring-1 ring-slate-200/90',
-                      )}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
                       style={{ backgroundColor: theme.iconBg, color: theme.iconColor }}
                     >
                       <Icon className="h-[15px] w-[15px]" aria-hidden />
-                      {selected ? (
-                        <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#2563FF] text-white shadow-sm">
-                          <Check className="h-2.5 w-2.5" strokeWidth={3} aria-hidden />
-                        </span>
-                      ) : null}
                     </span>
-                    <span
-                      className={clsx(
-                        'w-full truncate text-center text-[11px] font-bold leading-tight',
-                        selected ? 'text-blue-900' : 'text-slate-600',
-                      )}
-                    >
-                      {translateCategory(category.id, t)}
+                    <span className="max-w-[7.5rem] truncate text-[11px] font-bold text-slate-800">
+                      {translateCategory(categoryId, t)}
                     </span>
-                  </button>
+                    {isPrimary ? (
+                      <span className="rounded-md bg-[#2563FF]/12 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-[#2563FF]">
+                        {t('helper_categories.primary_badge')}
+                      </span>
+                    ) : null}
+                    {selectedCategories.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => removeCategory(categoryId)}
+                        className="ml-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
+                        aria-label={t('helper_categories.remove')}
+                      >
+                        <X className="h-3 w-3" strokeWidth={2.5} aria-hidden />
+                      </button>
+                    ) : null}
+                  </div>
                 );
               })}
+              {canAddCategory ? (
+                <button
+                  type="button"
+                  onClick={() => setCategoryPickerOpen(true)}
+                  data-testid="public-edit-add-category"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white text-slate-500 transition hover:border-[#2563FF] hover:text-[#2563FF]"
+                  aria-label={t('helper_categories.add_category')}
+                >
+                  <Plus className="h-4 w-4" aria-hidden />
+                </button>
+              ) : null}
             </div>
           </section>
         ) : null}
@@ -336,6 +375,64 @@ export default function PublicProfileEditPage() {
           {t('profile_page.public_edit_save')}
         </button>
       </div>
+
+      {categoryPickerOpen ? (
+        <div
+          className="fixed inset-0 z-[130] flex items-end justify-center bg-slate-900/45 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:items-center"
+          role="presentation"
+        >
+          <button
+            type="button"
+            className="absolute inset-0"
+            aria-label={t('common.close')}
+            onClick={() => setCategoryPickerOpen(false)}
+          />
+          <div
+            className="relative z-10 flex w-full max-w-lg max-h-[70dvh] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            data-testid="public-edit-category-picker"
+          >
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+              <h3 className="text-base font-black text-slate-950">{t('helper_categories.picker_title')}</h3>
+              <button
+                type="button"
+                onClick={() => setCategoryPickerOpen(false)}
+                className="rounded-full bg-slate-100 p-2 text-slate-600"
+                aria-label={t('common.close')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </header>
+            <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3">
+              {availableToAdd.map((cat) => {
+                const theme = getCategoryFeedTheme(cat.id);
+                const Icon = getCategoryIconById(cat.id);
+                return (
+                  <li key={cat.id}>
+                    <button
+                      type="button"
+                      data-picker-category-id={cat.id}
+                      onClick={() => addCategory(cat.id)}
+                      className="flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition hover:bg-slate-50"
+                    >
+                      <span
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                        style={{ backgroundColor: theme.iconBg, color: theme.iconColor }}
+                      >
+                        <Icon className="h-4 w-4" aria-hidden />
+                      </span>
+                      <span className="truncate text-sm font-bold text-slate-900">
+                        {translateCategory(cat.id, t)}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      ) : null}
     </AppPageShell>
   );
 }

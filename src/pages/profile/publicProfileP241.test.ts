@@ -33,10 +33,9 @@ describe('P2.4.1 public profile edit polish', () => {
   it('1–3. Helper persists primary_category as stable ServiceCategoryId (not translated label)', async () => {
     const src = await readFile(resolve(editPath), 'utf8');
     expect(src).toContain('primary_category: primaryCategory');
-    expect(src).toContain('setPrimaryCategory(category.id)');
-    expect(src).toContain('data-category-id={category.id}');
-    expect(src).toContain('translateCategory(category.id, t)');
-    // Translation is display-only — never written as payload value.
+    expect(src).toContain('secondary_categories: additionalCategories');
+    expect(src).toContain('data-category-id={categoryId}');
+    expect(src).toContain('translateCategory(categoryId, t)');
     expect(src).not.toMatch(/primary_category:\s*translateCategory/);
     expect(SERVICE_CATEGORIES.some((c) => c.id === 'cleaning')).toBe(true);
   });
@@ -55,11 +54,11 @@ describe('P2.4.1 public profile edit polish', () => {
     expect(filtered.map((j) => j.id)).toEqual(['1', '3']);
   });
 
-  it('6–8. Client has no category UI; secondaries hidden; HelperDashboard feed helpers unchanged', async () => {
+  it('6–8. Client has no category UI; HelperCategoriesManager unused; HelperDashboard feed helpers unchanged', async () => {
     const src = await readFile(resolve(editPath), 'utf8');
     expect(src).toContain('{isHelper ? (');
     expect(src).not.toContain('HelperCategoriesManager');
-    expect(src).not.toContain('secondary_categories');
+    expect(src).toContain('secondary_categories: additionalCategories');
     const dash = await readFile(resolve(helperDashPath), 'utf8');
     expect(dash).toContain('getHelperCategoryPreferences');
     expect(dash).toContain('sortJobsByHelperCategoryPreference');
@@ -83,14 +82,13 @@ describe('P2.4.1 public profile edit polish', () => {
     expect(storage).toContain('AVATAR_MAX_BYTES = 5 * 1024 * 1024');
   });
 
-  it('primary category UI is a compact horizontal strip (not a tall card grid)', async () => {
+  it('primary category UI uses selected chips + add picker (not full category strip)', async () => {
     const src = await readFile(resolve(editPath), 'utf8');
-    expect(src).toContain('overflow-x-auto');
-    expect(src).toContain('data-category-id={category.id}');
-    expect(src).toContain('setPrimaryCategory(category.id)');
-    expect(src).toContain('primary_category: primaryCategory');
-    expect(src).not.toContain('grid grid-cols-1 gap-2 sm:grid-cols-2');
+    expect(src).toContain('public-edit-add-category');
+    expect(src).toContain('public-edit-category-picker');
+    expect(src).toContain('addPublicHelperCategory');
+    expect(src).toContain('MAX_PUBLIC_HELPER_CATEGORIES');
+    expect(src).not.toContain('overflow-x-auto');
     expect(src).not.toContain('HelperCategoriesManager');
-    expect(src).not.toContain('secondary_categories');
   });
 });

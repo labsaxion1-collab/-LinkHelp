@@ -14,6 +14,20 @@ import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { HelperApplyConfirmModal } from '@/components/modals/HelperApplyConfirmModal';
 import { HelperOpportunityLcDebugPanel } from '@/components/opportunities/HelperOpportunityLcDebugPanel';
 import { FeedCardClientProfilePanel } from '@/components/opportunities/FeedCardClientProfilePanel';
+import {
+  FEED_CARD_PREMIUM_BACK_CLASS,
+  FEED_CARD_PREMIUM_BODY_CLASS,
+  FEED_CARD_PREMIUM_EYEBROW_CLASS,
+  FEED_CARD_PREMIUM_ICON_LIGHT_CLASS,
+  FEED_CARD_PREMIUM_ICON_WHITE_CLASS,
+  FEED_CARD_PREMIUM_INPUT_CLASS,
+  FEED_CARD_PREMIUM_MUTED_CLASS,
+  FEED_CARD_PREMIUM_QUOTE_NORMAL_CLASS,
+  FEED_CARD_PREMIUM_QUOTE_VIP_CLASS,
+  FEED_CARD_PREMIUM_SHELL_CLASS,
+  FEED_CARD_PREMIUM_SURFACE_CLASS,
+  FEED_CARD_PREMIUM_TITLE_CLASS,
+} from '@/components/opportunities/feedCardPremiumTheme';
 import { getHelperLeadCreditSummary } from '@/utils/helperCreditDisplay';
 import { isJobInterestFull } from '@/utils/applicationInterest';
 import { getRequestDescriptionForViewer } from '@/utils/requestDescriptionDisplay';
@@ -419,7 +433,7 @@ function HelperOpportunityCardInner({
 
     return (
       <div
-        className="flex h-full min-h-0 flex-col opacity-100 transition-opacity duration-200"
+        className="flex h-full min-h-0 flex-col opacity-100 transition-opacity duration-200 ease-out"
         data-testid="feed-card-description-view"
       >
         <button
@@ -429,68 +443,63 @@ function HelperOpportunityCardInner({
             e.stopPropagation();
             goBackToSummary();
           }}
-          className="mb-1.5 inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg px-1 py-1 text-[12px] font-bold text-[#64748B] transition hover:bg-slate-50 hover:text-[#0F172A]"
+          className={FEED_CARD_PREMIUM_BACK_CLASS}
         >
-          <Icons.ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+          <Icons.ArrowLeft className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
           {t('nav.back')}
         </button>
-        <p className="shrink-0 text-[10px] font-black uppercase tracking-wide text-[#94A3B8]">
+        <p className={FEED_CARD_PREMIUM_EYEBROW_CLASS}>
           {t('helper_dashboard.feed_card_details_title')}
         </p>
-        <h3 className="mt-0.5 shrink-0 text-[15px] font-bold leading-snug text-[#0F172A] sm:text-[16px]">
-          {title}
-        </h3>
+        <h3 className={FEED_CARD_PREMIUM_TITLE_CLASS}>{title}</h3>
         <div className="ios-scroll mt-2 min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-0.5">
           {requestDescription.display ? (
-            <p className="whitespace-pre-wrap text-[13px] font-medium leading-relaxed text-[#475569]">
+            <p className={clsx('whitespace-pre-wrap', FEED_CARD_PREMIUM_BODY_CLASS)}>
               {requestDescription.display}
             </p>
           ) : (
-            <p className="text-[13px] font-medium text-[#94A3B8]">
+            <p className={FEED_CARD_PREMIUM_MUTED_CLASS}>
               {t('helper_dashboard.feed_card_no_description')}
             </p>
           )}
 
-          <div className="space-y-1.5 rounded-xl border border-slate-100 bg-slate-50/70 px-2.5 py-2">
-            <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-[#475569]">
-              <span
-                className="h-1.5 w-1.5 shrink-0 rounded-full"
-                style={{ backgroundColor: categoryTheme.dotColor }}
-              />
+          <div className={FEED_CARD_PREMIUM_SURFACE_CLASS}>
+            <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-white/85">
+              <Icons.Wrench className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
               <span className="truncate">{category}</span>
             </div>
-            <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-bold text-[#0F172A]">
-              <Icons.Link2 className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
+            <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-bold text-white">
+              <Icons.Link2 className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
               <span className="truncate">
                 {t('helper_dashboard.feed_card_budget')}: {metaParts.budget}
               </span>
             </div>
             {metaParts.distance ? (
-              <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-[#64748B]">
-                <Icons.Navigation className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-white/85">
+                <Icons.Navigation className={FEED_CARD_PREMIUM_ICON_LIGHT_CLASS} aria-hidden />
                 <span className="truncate">
                   {t('helper_dashboard.feed_card_distance')}: {metaParts.distance}
                 </span>
               </div>
             ) : null}
             {metaParts.schedule ? (
-              <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-[#64748B]">
-                <Icons.Calendar className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-white/85">
+                <Icons.Calendar className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
                 <span className="truncate">
                   {t('helper_dashboard.feed_card_schedule')}: {metaParts.schedule}
                 </span>
               </div>
             ) : null}
             {loc ? (
-              <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-[#64748B]">
-                <Icons.MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-white/85">
+                <Icons.MapPin className={FEED_CARD_PREMIUM_ICON_LIGHT_CLASS} aria-hidden />
                 <span className="truncate">
                   {t('helper_dashboard.feed_card_location')}: {loc}
                 </span>
               </div>
             ) : null}
-            <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-[#64748B]">
-              <Icons.Users className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-white/85">
+              <Icons.Users className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
               <span className="truncate">
                 {t('helper_dashboard.feed_card_interested', { count: applicationsCount })}
               </span>
@@ -499,49 +508,52 @@ function HelperOpportunityCardInner({
 
           {quoteAvailable ? (
             <div className="space-y-2" data-testid="feed-card-lc-quote">
-              <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-2.5 py-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-blue-700/80">
+              <div className={FEED_CARD_PREMIUM_QUOTE_NORMAL_CLASS}>
+                <p className="text-[10px] font-black uppercase tracking-wide text-sky-100/90">
                   {t('helper_dashboard.apply_type_normal')}
                 </p>
-                <p className="mt-0.5 text-[12px] font-bold text-blue-900">
+                <p className="mt-0.5 text-[12px] font-bold text-white">
                   {t('helper_dashboard.split_normal_cost_now', { count: creditQuote.normalApplyLc })}
                 </p>
-                <p className="text-[11px] font-semibold text-blue-800/90">
+                <p className="text-[11px] font-semibold text-white/80">
                   {t('helper_dashboard.split_normal_if_hired', {
                     count: creditQuote.normalHireRemainderLc,
                   })}
                 </p>
-                <p className="text-[11px] font-semibold text-blue-800/90">
+                <p className="text-[11px] font-semibold text-white/80">
                   {t('helper_dashboard.split_normal_total', { count: creditQuote.fullRequestLc })}
                 </p>
               </div>
-              <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-2.5 py-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-amber-800/80">
+              <div className={FEED_CARD_PREMIUM_QUOTE_VIP_CLASS}>
+                <p className="text-[10px] font-black uppercase tracking-wide text-amber-100/90">
                   {t('helper_dashboard.apply_type_exclusive')}
                 </p>
-                <p className="mt-0.5 text-[12px] font-bold text-amber-900">
+                <p className="mt-0.5 text-[12px] font-bold text-white">
                   {t('helper_dashboard.split_vip_cost_now', { count: creditQuote.vipApplyLc })}
                 </p>
-                <p className="text-[11px] font-semibold text-amber-900/90">
+                <p className="text-[11px] font-semibold text-white/85">
                   {t('helper_dashboard.split_vip_breakdown', {
                     full: creditQuote.fullRequestLc,
                     surcharge: vipSurchargeLc,
                   })}
                 </p>
-                <p className="mt-0.5 text-[11px] font-semibold text-amber-900/80">
+                <p className="mt-0.5 text-[11px] font-semibold text-white/75">
                   {t('helper_dashboard.feed_card_vip_no_hire_charge')}
                 </p>
               </div>
             </div>
           ) : (
-            <p className="text-[12px] font-semibold text-[#94A3B8]" data-testid="feed-card-lc-unavailable">
+            <p
+              className="text-[12px] font-semibold text-white/55"
+              data-testid="feed-card-lc-unavailable"
+            >
               {t('helper_dashboard.feed_card_quote_unavailable')}
             </p>
           )}
 
           {showAmountInput ? (
             <div>
-              <label className="mb-1 block text-[11px] font-bold text-[#64748B]">
+              <label className="mb-1 block text-[11px] font-bold text-white/80">
                 {t('helper_proposal.your_proposal')}
               </label>
               <input
@@ -552,11 +564,11 @@ function HelperOpportunityCardInner({
                   setProposalAmountRaw(e.target.value.replace(/[^\d.,]/g, ''));
                   setAmountError('');
                 }}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-[#0F172A] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-500/10"
+                className={FEED_CARD_PREMIUM_INPUT_CLASS}
                 placeholder={t('helper_proposal.amount_placeholder')}
               />
               {amountError ? (
-                <p className="mt-1 text-[11px] font-semibold text-rose-600">{amountError}</p>
+                <p className="mt-1 text-[11px] font-semibold text-rose-300">{amountError}</p>
               ) : null}
             </div>
           ) : null}
@@ -580,7 +592,7 @@ function HelperOpportunityCardInner({
 
   const renderProfileView = () => (
     <div
-      className="flex h-full min-h-0 flex-col opacity-100 transition-opacity duration-200"
+      className="flex h-full min-h-0 flex-col opacity-100 transition-opacity duration-200 ease-out"
       data-testid="feed-card-profile-view"
     >
       <button
@@ -590,12 +602,12 @@ function HelperOpportunityCardInner({
           e.stopPropagation();
           goBackToSummary();
         }}
-        className="mb-1.5 inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg px-1 py-1 text-[12px] font-bold text-[#64748B] transition hover:bg-slate-50 hover:text-[#0F172A]"
+        className={FEED_CARD_PREMIUM_BACK_CLASS}
       >
-        <Icons.ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+        <Icons.ArrowLeft className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
         {t('nav.back')}
       </button>
-      <p className="mb-2 shrink-0 text-[10px] font-black uppercase tracking-wide text-[#94A3B8]">
+      <p className={clsx('mb-2', FEED_CARD_PREMIUM_EYEBROW_CLASS)}>
         {t('helper_dashboard.feed_card_profile_title')}
       </p>
       <div className="ios-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -781,7 +793,7 @@ function HelperOpportunityCardInner({
             {feedBody}
           </div>
           {isInternalView ? (
-            <div className="absolute inset-0 flex flex-col overflow-hidden bg-white px-3 pb-2.5 pt-2.5 sm:px-4 sm:pb-3 sm:pt-3">
+            <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="feed-card-premium-shell">
               {view === 'description' ? renderDescriptionView() : null}
               {view === 'profile' ? renderProfileView() : null}
             </div>

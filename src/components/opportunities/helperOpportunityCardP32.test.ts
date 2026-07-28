@@ -80,13 +80,18 @@ describe('P3.2 feed card description + compact profile', () => {
 
   it('11–15. Voltar + fixed height + internal scroll preserved', async () => {
     const src = await readFile(resolve(cardPath), 'utf8');
+    const theme = await readFile(
+      resolve('src/components/opportunities/feedCardPremiumTheme.ts'),
+      'utf8',
+    );
     expect(src).toContain('goBackToSummary');
     expect(src).toContain('data-testid="feed-card-back"');
     expect(src).toContain('data-feed-card-height-locked');
     expect(src).toContain('lockedHeight');
     expect(src).toContain('overflow-y-auto');
     expect(src).toContain('overscroll-contain');
-    expect(src).toContain('absolute inset-0');
+    expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
+    expect(theme).toContain('absolute inset-0');
   });
 
   it('16. PT/EN/FR feed card copy', () => {

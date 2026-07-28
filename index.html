@@ -16,6 +16,48 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/linkhelp-app-180.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/linkhelp-app-192.png" />
     <title>LinkHelp</title>
+    <!-- Staging PWA identity (teste.linkhelp.app only). Production hosts keep defaults above. -->
+    <script>
+      (function () {
+        var STAGING_HOST = 'teste.linkhelp.app';
+        function applyStagingPwaIdentity() {
+          try {
+            if (String(location.hostname || '').toLowerCase() !== STAGING_HOST) return;
+
+            var manifestHref = '/manifest-staging.webmanifest';
+            var links = document.querySelectorAll('link[rel="manifest"]');
+            if (links.length === 0) {
+              var created = document.createElement('link');
+              created.rel = 'manifest';
+              created.href = manifestHref;
+              document.head.appendChild(created);
+            } else {
+              for (var i = 0; i < links.length; i++) links[i].setAttribute('href', manifestHref);
+            }
+
+            var apple = document.querySelector('link[rel="apple-touch-icon"]');
+            if (apple) apple.setAttribute('href', '/icons/linkhelp-staging-180.png');
+
+            var favicon = document.querySelector('link[rel="icon"]');
+            if (favicon) favicon.setAttribute('href', '/icons/linkhelp-staging-192.png');
+
+            var appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+            if (appleTitle) appleTitle.setAttribute('content', 'LH Teste');
+
+            var themeLight = document.querySelector('meta[name="theme-color"][media*="light"]');
+            if (themeLight) themeLight.setAttribute('content', '#EA580C');
+            var themeDark = document.querySelector('meta[name="theme-color"][media*="dark"]');
+            if (themeDark) themeDark.setAttribute('content', '#9A3412');
+
+            document.title = 'LinkHelp Teste';
+          } catch (e) {}
+        }
+        applyStagingPwaIdentity();
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', applyStagingPwaIdentity);
+        }
+      })();
+    </script>
     <!-- Early paint: avoid white/cream empty frame before CSS/React (matches app shell). -->
     <style>
       html, body {

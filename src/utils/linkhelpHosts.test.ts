@@ -6,11 +6,13 @@ import {
   FLUX_HOSTNAME,
   FLUX_ORIGIN,
   PUBLIC_ORIGIN,
+  STAGING_TEST_HOSTNAME,
   WWW_HOSTNAME,
   isAppHost,
   isFluxHost,
   isLocalHost,
   isPreviewHost,
+  isStagingTestHost,
   isWwwHost,
   resolveHostProfileFromHostname,
   shouldRegisterServiceWorker,
@@ -94,6 +96,12 @@ describe('explicit hostname helpers', () => {
     expect(isWwwHost(WWW_HOSTNAME)).toBe(true);
     expect(isAppHost(APP_HOSTNAME)).toBe(true);
     expect(isAppHost(WWW_HOSTNAME)).toBe(false);
+  });
+
+  it('isStagingTestHost only matches teste.linkhelp.app', () => {
+    expect(isStagingTestHost(STAGING_TEST_HOSTNAME)).toBe(true);
+    expect(isStagingTestHost(APP_HOSTNAME)).toBe(false);
+    expect(isStagingTestHost(WWW_HOSTNAME)).toBe(false);
   });
 });
 
@@ -187,6 +195,12 @@ describe('shouldRegisterServiceWorker', () => {
 
   it('is true on app hostname', () => {
     vi.stubGlobal('window', { location: { hostname: APP_HOSTNAME } });
+    expect(shouldRegisterServiceWorker()).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
+  it('is true on staging test hostname for separate PWA install', () => {
+    vi.stubGlobal('window', { location: { hostname: STAGING_TEST_HOSTNAME } });
     expect(shouldRegisterServiceWorker()).toBe(true);
     vi.unstubAllGlobals();
   });

@@ -5,10 +5,13 @@ export const WWW_HOSTNAME = 'www.linkhelp.app';
 export const APEX_HOSTNAME = 'linkhelp.app';
 export const APP_HOSTNAME = 'app.linkhelp.app';
 export const FLUX_HOSTNAME = 'flux.linkhelp.app';
+/** Fixed staging / test host — PWA identity only; does not change production hosts. */
+export const STAGING_TEST_HOSTNAME = 'teste.linkhelp.app';
 
 export const PUBLIC_ORIGIN = 'https://www.linkhelp.app';
 export const APP_ORIGIN = 'https://app.linkhelp.app';
 export const FLUX_ORIGIN = 'https://flux.linkhelp.app';
+export const STAGING_TEST_ORIGIN = 'https://teste.linkhelp.app';
 
 /** @deprecated Use PUBLIC_ORIGIN — kept for fluxHost importers */
 export const LINKHELP_PUBLIC_ORIGIN = PUBLIC_ORIGIN;
@@ -107,6 +110,17 @@ export function isAppHost(hostname?: string): boolean {
   return getCurrentHostProfile() === 'app';
 }
 
+/** Fixed staging test host (teste.linkhelp.app) — used for exclusive PWA identity. */
+export function isStagingTestHost(hostname?: string): boolean {
+  const h =
+    hostname !== undefined
+      ? hostname
+      : typeof window !== 'undefined'
+        ? window.location.hostname
+        : '';
+  return h.toLowerCase() === STAGING_TEST_HOSTNAME;
+}
+
 export function getPublicOrigin(): string {
   return PUBLIC_ORIGIN;
 }
@@ -119,9 +133,12 @@ export function getFluxOrigin(): string {
   return FLUX_ORIGIN;
 }
 
-/** Service Worker — app host only (or dev/preview with simulated app profile). */
+/**
+ * Service Worker — app host (or simulated app on preview/dev),
+ * plus staging test host so LinkHelp Teste can be installed as a separate PWA.
+ */
 export function shouldRegisterServiceWorker(): boolean {
-  return getCurrentHostProfile() === 'app';
+  return getCurrentHostProfile() === 'app' || isStagingTestHost();
 }
 
 /** PWA install prompt — same rule as SW registration. */

@@ -2237,6 +2237,7 @@ export const en = {
     spoken_languages_empty: 'Add languages in Settings',
     overall_rating: 'Overall rating',
     public_level: 'Level',
+    achievements: 'Achievements',
     wallet: 'Wallet',
     helper_specialties_subtitle: 'Specialties visible on your profile',
     stat_requests_published: 'Published requests',

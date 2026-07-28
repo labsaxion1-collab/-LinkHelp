@@ -63,9 +63,9 @@ describe('P2.2 public profile completeness', () => {
     const helper = await readFile(resolve(helperViewPath), 'utf8');
     const client = await readFile(resolve(clientViewPath), 'utf8');
     const hero = await readFile(resolve(heroPath), 'utf8');
-    expect(hero).toContain('rating != null && rating > 0');
-    expect(helper).toContain("hasRating ? ratingValue!.toFixed(1) : '—'");
-    expect(client).toContain("hasRating ? ratingValue!.toFixed(1) : '—'");
+    expect(hero).toContain('rating != null && rating > 0 && reviewCount > 0');
+    expect(helper).toContain('dossier.reviewCount > 0');
+    expect(client).toContain('dossier.reviewCount > 0');
   });
 
   it('own dashboard passes spoken_languages; peer helper sheet does not use application message as bio', async () => {

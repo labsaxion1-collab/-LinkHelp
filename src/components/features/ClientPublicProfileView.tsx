@@ -58,7 +58,7 @@ export function ClientPublicProfileView({
   const languageLabels = spokenLanguages.map((code) => getSpokenLanguageLabel(code, t));
   const ratingValue =
     job.clientRating != null && job.clientRating > 0 ? job.clientRating : dossier.averageRating;
-  const hasRating = ratingValue != null && ratingValue > 0;
+  const hasRating = ratingValue != null && ratingValue > 0 && dossier.reviewCount > 0;
 
   return (
     <PublicProfileHero
@@ -70,18 +70,18 @@ export function ClientPublicProfileView({
       roleLabel={t('app_pages.settings_mode_client')}
       levelLabel={levelName}
       levelCaption={t('profile_page.public_level')}
+      scoreLabel={t('reputation_dossier.score')}
+      scoreValue={String(dossier.trustScore)}
+      overallRatingLabel={t('profile_page.overall_rating')}
       rating={hasRating ? ratingValue : null}
       reviewCount={dossier.reviewCount}
       noReviewsLabel={t('profile_page.no_reviews_yet')}
-      noReviewsLine1={t('profile_page.no_reviews_line_1')}
-      noReviewsLine2={t('profile_page.no_reviews_line_2')}
       reviewsCountLabel={(count) => t('profile_page.reviews_count', { count })}
       verified={verified}
       showPositiveHistory={showPositiveHistory}
       positiveHistoryLabel={t('profile_page.public_positive_history')}
       memberSinceLabel={memberDate ? t('reputation_dossier.member_since', { date: memberDate }) : null}
       completedSummary={dossier.completedCount > 0 ? t('profile_page.public_orders_completed_count', { count: dossier.completedCount }) : null}
-      achievementsLabel={t('gamification.achievements_title')}
       onClose={onClose}
       closeLabel={closeLabel}
       onCta={onCta}
@@ -90,8 +90,6 @@ export function ClientPublicProfileView({
       editLabel={isOwnProfile ? t('profile_page.edit_public') : undefined}
       details={<ReputationDossierPanel userId={job.clientId} role="client" displayName={job.clientName} avatar={job.clientAvatar} subtitle={location} averageRating={hasRating ? ratingValue : null} detailsOnly className={integratedDossierClasses} />}
       metrics={[
-        { key: 'rating', label: t('profile_page.overall_rating'), value: hasRating ? ratingValue!.toFixed(1) : '—' },
-        { key: 'score', label: t('reputation_dossier.score'), value: dossier.trustScore > 0 ? String(dossier.trustScore) : '—' },
         { key: 'completed', label: t('reputation_dossier.orders_completed'), value: String(dossier.completedCount) },
       ]}
     >

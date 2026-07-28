@@ -2249,6 +2249,7 @@ export const pt = {
     spoken_languages_empty: 'Adicionar idiomas em Configurações',
     overall_rating: 'Avaliação geral',
     public_level: 'Nível',
+    achievements: 'Conquistas',
     wallet: 'Carteira',
     helper_specialties_subtitle: 'Especialidades visíveis no perfil',
     stat_requests_published: 'Pedidos publicados',

@@ -2246,6 +2246,7 @@ export const fr = {
     spoken_languages_empty: 'Ajouter des langues dans Paramètres',
     overall_rating: 'Évaluation générale',
     public_level: 'Niveau',
+    achievements: 'Réalisations',
     wallet: 'Portefeuille',
     helper_specialties_subtitle: 'Spécialités visibles sur votre profil',
     stat_requests_published: 'Demandes publiées',

@@ -58,8 +58,9 @@ export function HelperPublicProfileView({ helper, onClose, closeLabel }: Props) 
           ...(extras.primaryCategory ? [extras.primaryCategory] : []),
           ...extras.secondaryCategories,
         ];
+  // Real rating only when profile/dossier rating > 0 and there is at least one review.
   const ratingValue = helper.rating > 0 ? helper.rating : dossier.averageRating;
-  const hasRating = ratingValue != null && ratingValue > 0;
+  const hasRating = ratingValue != null && ratingValue > 0 && dossier.reviewCount > 0;
   const languageLabels = spokenLanguages.map((code) => getSpokenLanguageLabel(code, t));
 
   return (
@@ -72,16 +73,16 @@ export function HelperPublicProfileView({ helper, onClose, closeLabel }: Props) 
       roleLabel={t('app_pages.settings_mode_helper')}
       levelLabel={levelName}
       levelCaption={t('profile_page.public_level')}
+      scoreLabel={t('reputation_dossier.score')}
+      scoreValue={String(dossier.trustScore)}
+      overallRatingLabel={t('profile_page.overall_rating')}
       rating={hasRating ? ratingValue : null}
       reviewCount={dossier.reviewCount}
       noReviewsLabel={t('profile_page.no_reviews_yet')}
-      noReviewsLine1={t('profile_page.no_reviews_line_1')}
-      noReviewsLine2={t('profile_page.no_reviews_line_2')}
       reviewsCountLabel={(count) => t('profile_page.reviews_count', { count })}
       verified={helper.verified}
       memberSinceLabel={memberDate ? t('reputation_dossier.member_since', { date: memberDate }) : null}
       completedSummary={dossier.completedCount > 0 ? t('profile_page.public_services_completed_count', { count: dossier.completedCount }) : null}
-      achievementsLabel={t('gamification.achievements_title')}
       onClose={onClose}
       closeLabel={closeLabel}
       onCta={helper.onCta}
@@ -90,8 +91,6 @@ export function HelperPublicProfileView({ helper, onClose, closeLabel }: Props) 
       editLabel={isOwnProfile ? t('profile_page.edit_public') : undefined}
       details={<ReputationDossierPanel userId={helper.id} role="helper" displayName={helper.name} avatar={helper.avatar} subtitle={city ?? null} averageRating={hasRating ? ratingValue : null} completedCount={helper.jobsCompleted} detailsOnly className={integratedDossierClasses} />}
       metrics={[
-        { key: 'rating', label: t('profile_page.overall_rating'), value: hasRating ? ratingValue!.toFixed(1) : '—' },
-        { key: 'score', label: t('reputation_dossier.score'), value: dossier.trustScore > 0 ? String(dossier.trustScore) : '—' },
         { key: 'completed', label: t('reputation_dossier.services_completed'), value: String(dossier.completedCount) },
       ]}
     >

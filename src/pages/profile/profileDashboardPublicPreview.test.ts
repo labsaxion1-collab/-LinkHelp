@@ -42,7 +42,8 @@ describe('ProfileDashboardPage — public profile entry', () => {
     expect(routes).toContain('ROUTES.profilePublicEdit');
     expect(routes).toContain('PublicProfileEditPage');
     const editPage = await readFile(resolve('src/pages/profile/PublicProfileEditPage.tsx'), 'utf8');
-    expect(editPage).toContain('PublicProfilePreviewCard');
+    expect(editPage).toContain('export default function PublicProfileEditPage');
+    expect(editPage).not.toContain('PublicProfilePreviewCard');
   });
 
   it('7. public profile view components are unchanged entry points', async () => {

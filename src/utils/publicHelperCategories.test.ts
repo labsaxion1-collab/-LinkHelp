@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
 import {
-  MAX_PUBLIC_HELPER_CATEGORIES,
   addPublicHelperCategory,
   normalizePublicHelperCategorySelection,
   removePublicHelperCategory,
@@ -8,20 +8,21 @@ import {
 } from '@/utils/publicHelperCategories';
 
 describe('publicHelperCategories', () => {
-  it('normalizes primary first and caps additional at 2', () => {
+  it('normalizes primary first without artificial count cap', () => {
     expect(
       normalizePublicHelperCategorySelection('cleaning', ['moving', 'beauty', 'tech', 'cleaning']),
-    ).toEqual(['cleaning', 'moving', 'beauty']);
+    ).toEqual(['cleaning', 'moving', 'beauty', 'tech']);
     expect(normalizePublicHelperCategorySelection(null, ['moving'])).toEqual(['moving']);
     expect(normalizePublicHelperCategorySelection('nope', [])).toEqual(['cleaning']);
   });
 
-  it('adds up to max 3 and never duplicates', () => {
+  it('adds without a max-3 limit and never duplicates', () => {
     let next = addPublicHelperCategory(['cleaning'], 'moving');
     next = addPublicHelperCategory(next, 'beauty');
     next = addPublicHelperCategory(next, 'tech');
-    expect(next).toEqual(['cleaning', 'moving', 'beauty']);
-    expect(next).toHaveLength(MAX_PUBLIC_HELPER_CATEGORIES);
+    next = addPublicHelperCategory(next, 'design');
+    expect(next).toEqual(['cleaning', 'moving', 'beauty', 'tech', 'design']);
+    expect(next.length).toBeGreaterThan(3);
     expect(addPublicHelperCategory(['cleaning'], 'cleaning')).toEqual(['cleaning']);
   });
 
@@ -34,10 +35,11 @@ describe('publicHelperCategories', () => {
     ]);
   });
 
-  it('split maps index 0 to primary and rest to secondary_categories payload', () => {
-    expect(splitPublicHelperCategories(['cleaning', 'moving', 'beauty'])).toEqual({
-      primary: 'cleaning',
-      additional: ['moving', 'beauty'],
+  it('split maps index 0 to primary and all rest to secondary_categories', () => {
+    const many = SERVICE_CATEGORIES.slice(0, 5).map((c) => c.id);
+    expect(splitPublicHelperCategories(many)).toEqual({
+      primary: many[0],
+      additional: many.slice(1),
     });
   });
 });

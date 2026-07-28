@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, Loader2, MapPin, Plus, X } from 'lucide-react';
+import { ArrowLeft, Camera, Check, Loader2, MapPin, Pencil, Plus, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
@@ -20,7 +20,6 @@ import { translateCategory } from '@/utils/translateCategory';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { getCategoryIconById } from '@/utils/categoryIcons';
 import {
-  MAX_PUBLIC_HELPER_CATEGORIES,
   addPublicHelperCategory,
   normalizePublicHelperCategorySelection,
   removePublicHelperCategory,
@@ -54,6 +53,8 @@ export default function PublicProfileEditPage() {
   const [spokenLanguages, setSpokenLanguages] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<ServiceCategoryId[]>(['cleaning']);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [categoryIconsEditMode, setCategoryIconsEditMode] = useState(false);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [avatarSelectedFile, setAvatarSelectedFile] = useState<File | null>(null);
@@ -77,7 +78,7 @@ export default function PublicProfileEditPage() {
     () => SERVICE_CATEGORIES.filter((cat) => !selectedCategories.includes(cat.id)),
     [selectedCategories],
   );
-  const canAddCategory = selectedCategories.length < MAX_PUBLIC_HELPER_CATEGORIES;
+  const canAddCategory = availableToAdd.length > 0;
 
   const revokeAvatarObjectUrl = () => {
     if (avatarObjectUrlRef.current) {
@@ -88,6 +89,13 @@ export default function PublicProfileEditPage() {
   };
 
   useEffect(() => () => revokeAvatarObjectUrl(), []);
+
+  useEffect(
+    () => () => {
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!profile) return;
@@ -132,12 +140,32 @@ export default function PublicProfileEditPage() {
   };
 
   const addCategory = (id: ServiceCategoryId) => {
+    if (selectedCategories.includes(id)) {
+      setCategoryPickerOpen(false);
+      return;
+    }
     setSelectedCategories((prev) => addPublicHelperCategory(prev, id));
     setCategoryPickerOpen(false);
+    setCategoryIconsEditMode(false);
   };
 
   const removeCategory = (id: ServiceCategoryId) => {
     setSelectedCategories((prev) => removePublicHelperCategory(prev, id));
+  };
+
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const startCategoryLongPress = () => {
+    clearLongPressTimer();
+    longPressTimerRef.current = setTimeout(() => {
+      setCategoryIconsEditMode(true);
+      longPressTimerRef.current = null;
+    }, 480);
   };
 
   const savePublicProfile = async () => {
@@ -291,51 +319,72 @@ export default function PublicProfileEditPage() {
 
         {isHelper ? (
           <section className="rounded-[1.25rem] border border-slate-200/90 bg-white p-4 shadow-sm">
-            <p className="text-sm font-bold text-slate-800">{t('helper_categories.primary_label')}</p>
-            <p className="mt-1 text-xs font-medium text-slate-500">{t('helper_categories.secondary_hint')}</p>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-800">{t('helper_categories.primary_label')}</p>
+                <p className="mt-1 text-xs font-medium text-slate-500">{t('helper_categories.secondary_hint')}</p>
+              </div>
+              {selectedCategories.length > 1 ? (
+                <button
+                  type="button"
+                  data-testid="public-edit-category-icons-mode"
+                  onClick={() => setCategoryIconsEditMode((v) => !v)}
+                  className={clsx(
+                    'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition',
+                    categoryIconsEditMode
+                      ? 'border-[#2563FF]/40 bg-blue-50 text-[#2563FF]'
+                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50',
+                  )}
+                  aria-label={categoryIconsEditMode ? t('common.close') : t('common.edit')}
+                  aria-pressed={categoryIconsEditMode}
+                >
+                  {categoryIconsEditMode ? (
+                    <Check className="h-3.5 w-3.5" aria-hidden />
+                  ) : (
+                    <Pencil className="h-3.5 w-3.5" aria-hidden />
+                  )}
+                </button>
+              ) : null}
+            </div>
             <div
-              className="mt-3 flex flex-wrap items-center gap-2"
+              className="mt-3 flex items-center gap-2 overflow-x-auto hide-scrollbar pb-0.5"
               data-testid="public-edit-primary-category"
+              data-icons-only="true"
             >
               {selectedCategories.map((categoryId, index) => {
                 const theme = getCategoryFeedTheme(categoryId);
                 const Icon = getCategoryIconById(categoryId);
                 const isPrimary = index === 0;
+                const canRemove = categoryIconsEditMode && selectedCategories.length > 1;
                 return (
-                  <div
-                    key={categoryId}
-                    data-category-id={categoryId}
-                    data-primary={isPrimary ? 'true' : 'false'}
-                    className={clsx(
-                      'inline-flex max-w-full items-center gap-1.5 rounded-full border py-1.5 pl-1.5 pr-2',
-                      isPrimary
-                        ? 'border-[#2563FF]/50 bg-blue-50/90'
-                        : 'border-slate-200 bg-slate-50',
-                    )}
-                  >
-                    <span
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+                  <div key={categoryId} className="relative shrink-0">
+                    <button
+                      type="button"
+                      data-category-id={categoryId}
+                      data-primary={isPrimary ? 'true' : 'false'}
+                      aria-label={translateCategory(categoryId, t)}
+                      onPointerDown={startCategoryLongPress}
+                      onPointerUp={clearLongPressTimer}
+                      onPointerLeave={clearLongPressTimer}
+                      onPointerCancel={clearLongPressTimer}
+                      onClick={() => {
+                        if (canRemove) removeCategory(categoryId);
+                      }}
+                      className={clsx(
+                        'flex h-8 w-8 items-center justify-center rounded-full border transition sm:h-[30px] sm:w-[30px]',
+                        isPrimary ? 'border-[#2563FF]/45 ring-2 ring-[#2563FF]/15' : 'border-slate-200/90',
+                      )}
                       style={{ backgroundColor: theme.iconBg, color: theme.iconColor }}
                     >
-                      <Icon className="h-[15px] w-[15px]" aria-hidden />
-                    </span>
-                    <span className="max-w-[7.5rem] truncate text-[11px] font-bold text-slate-800">
-                      {translateCategory(categoryId, t)}
-                    </span>
-                    {isPrimary ? (
-                      <span className="rounded-md bg-[#2563FF]/12 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-[#2563FF]">
-                        {t('helper_categories.primary_badge')}
-                      </span>
-                    ) : null}
-                    {selectedCategories.length > 1 ? (
-                      <button
-                        type="button"
-                        onClick={() => removeCategory(categoryId)}
-                        className="ml-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
-                        aria-label={t('helper_categories.remove')}
+                      <Icon className="h-4 w-4" aria-hidden />
+                    </button>
+                    {canRemove ? (
+                      <span
+                        className="pointer-events-none absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm"
+                        aria-hidden
                       >
-                        <X className="h-3 w-3" strokeWidth={2.5} aria-hidden />
-                      </button>
+                        <X className="h-2.5 w-2.5" strokeWidth={3} />
+                      </span>
                     ) : null}
                   </div>
                 );
@@ -343,9 +392,12 @@ export default function PublicProfileEditPage() {
               {canAddCategory ? (
                 <button
                   type="button"
-                  onClick={() => setCategoryPickerOpen(true)}
+                  onClick={() => {
+                    setCategoryIconsEditMode(false);
+                    setCategoryPickerOpen(true);
+                  }}
                   data-testid="public-edit-add-category"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white text-slate-500 transition hover:border-[#2563FF] hover:text-[#2563FF]"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white text-slate-500 transition hover:border-[#2563FF] hover:text-[#2563FF] sm:h-[30px] sm:w-[30px]"
                   aria-label={t('helper_categories.add_category')}
                 >
                   <Plus className="h-4 w-4" aria-hidden />
@@ -405,16 +457,24 @@ export default function PublicProfileEditPage() {
               </button>
             </header>
             <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3">
-              {availableToAdd.map((cat) => {
+              {SERVICE_CATEGORIES.map((cat) => {
                 const theme = getCategoryFeedTheme(cat.id);
                 const Icon = getCategoryIconById(cat.id);
+                const selected = selectedCategories.includes(cat.id);
                 return (
                   <li key={cat.id}>
                     <button
                       type="button"
                       data-picker-category-id={cat.id}
+                      data-picker-selected={selected ? 'true' : 'false'}
+                      disabled={selected}
                       onClick={() => addCategory(cat.id)}
-                      className="flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition hover:bg-slate-50"
+                      className={clsx(
+                        'flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition',
+                        selected
+                          ? 'bg-blue-50/90 ring-1 ring-inset ring-[#2563FF]/25'
+                          : 'hover:bg-slate-50',
+                      )}
                     >
                       <span
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
@@ -422,9 +482,17 @@ export default function PublicProfileEditPage() {
                       >
                         <Icon className="h-4 w-4" aria-hidden />
                       </span>
-                      <span className="truncate text-sm font-bold text-slate-900">
+                      <span
+                        className={clsx(
+                          'min-w-0 flex-1 truncate text-sm font-bold',
+                          selected ? 'text-[#2563FF]' : 'text-slate-900',
+                        )}
+                      >
                         {translateCategory(cat.id, t)}
                       </span>
+                      {selected ? (
+                        <Check className="h-4 w-4 shrink-0 text-[#2563FF]" aria-hidden />
+                      ) : null}
                     </button>
                   </li>
                 );

@@ -1,26 +1,35 @@
 /**
- * P2.4.3 — primary + up to 2 additional categories (chips + picker).
+ * P2.4.3 — primary + additional categories (updated: no artificial max of 3).
  */
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { MAX_PUBLIC_HELPER_CATEGORIES } from '@/utils/publicHelperCategories';
+import {
+  addPublicHelperCategory,
+  removePublicHelperCategory,
+  splitPublicHelperCategories,
+} from '@/utils/publicHelperCategories';
 
 const editPath = 'src/pages/profile/PublicProfileEditPage.tsx';
 const helperDashPath = 'src/pages/helper/HelperDashboard.tsx';
 const feedPrefsPath = 'src/utils/helperCategoryPreferences.ts';
 
-describe('P2.4.3 public helper category chips', () => {
-  it('1–3. max 3 categories; plus hidden at limit; last category cannot be removed', async () => {
-    const src = await readFile(resolve(editPath), 'utf8');
+describe('P2.4.3 public helper category selection', () => {
+  it('1–3. no artificial max of 3; last category cannot be removed', async () => {
     const util = await readFile(resolve('src/utils/publicHelperCategories.ts'), 'utf8');
-    expect(MAX_PUBLIC_HELPER_CATEGORIES).toBe(3);
-    expect(util).toContain('MAX_PUBLIC_HELPER_CATEGORIES = 3');
+    const src = await readFile(resolve(editPath), 'utf8');
+    expect(util).not.toContain('MAX_PUBLIC_HELPER_CATEGORIES');
+    expect(util).not.toContain('MAX_PUBLIC_HELPER_ADDITIONAL');
     expect(src).toContain('canAddCategory');
+    expect(src).toContain('availableToAdd.length > 0');
     expect(src).toContain('public-edit-add-category');
-    expect(src).toContain('selectedCategories.length < MAX_PUBLIC_HELPER_CATEGORIES');
-    expect(src).toContain('selectedCategories.length > 1');
     expect(src).toContain('removePublicHelperCategory');
+    expect(removePublicHelperCategory(['cleaning'], 'cleaning')).toEqual(['cleaning']);
+    const four = addPublicHelperCategory(
+      addPublicHelperCategory(addPublicHelperCategory(['cleaning'], 'moving'), 'beauty'),
+      'tech',
+    );
+    expect(four).toHaveLength(4);
   });
 
   it('4–5. primary is first selected; additional persist as secondary_categories', async () => {
@@ -29,7 +38,11 @@ describe('P2.4.3 public helper category chips', () => {
     expect(src).toContain('secondary_categories: additionalCategories');
     expect(src).toContain('splitPublicHelperCategories');
     expect(src).toContain("data-primary={isPrimary ? 'true' : 'false'}");
-    expect(src).toContain('normalizePublicHelperCategorySelection');
+    expect(splitPublicHelperCategories(['cleaning', 'moving', 'beauty', 'tech']).additional).toEqual([
+      'moving',
+      'beauty',
+      'tech',
+    ]);
   });
 
   it('6–7. feed preference helpers and public edit route remain intact', async () => {
@@ -42,7 +55,6 @@ describe('P2.4.3 public helper category chips', () => {
     expect(src).toContain('export default function PublicProfileEditPage');
     expect(src).toContain('FilePickerLabel');
     expect(src).toContain('PUBLIC_PROFILE_SPOKEN_LANGUAGES');
-    expect(src).not.toContain('overflow-x-auto');
     expect(src).not.toContain('HelperCategoriesManager');
   });
 });

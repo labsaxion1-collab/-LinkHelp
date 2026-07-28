@@ -82,13 +82,14 @@ describe('P2.4.1 public profile edit polish', () => {
     expect(storage).toContain('AVATAR_MAX_BYTES = 5 * 1024 * 1024');
   });
 
-  it('primary category UI uses selected chips + add picker (not full category strip)', async () => {
+  it('primary category UI uses icon strip + add picker (not named chips)', async () => {
     const src = await readFile(resolve(editPath), 'utf8');
     expect(src).toContain('public-edit-add-category');
     expect(src).toContain('public-edit-category-picker');
     expect(src).toContain('addPublicHelperCategory');
-    expect(src).toContain('MAX_PUBLIC_HELPER_CATEGORIES');
-    expect(src).not.toContain('overflow-x-auto');
+    expect(src).toContain('data-icons-only="true"');
+    expect(src).toContain('overflow-x-auto');
+    expect(src).not.toContain('MAX_PUBLIC_HELPER_CATEGORIES');
     expect(src).not.toContain('HelperCategoriesManager');
   });
 });

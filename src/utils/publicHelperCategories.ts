@@ -4,12 +4,9 @@ import {
   type ServiceCategoryId,
 } from '@/data/serviceCategories';
 
-/** 1 primary + up to 2 additional — public edit UX only. */
-export const MAX_PUBLIC_HELPER_CATEGORIES = 3;
-export const MAX_PUBLIC_HELPER_ADDITIONAL = 2;
-
 /**
  * Ordered selection: index 0 is always primary_category; the rest map to secondary_categories.
+ * No artificial count cap — limited only by official SERVICE_CATEGORIES catalog.
  */
 export function normalizePublicHelperCategorySelection(
   primaryRaw: string | null | undefined,
@@ -19,9 +16,9 @@ export function normalizePublicHelperCategorySelection(
   const secondary = (Array.isArray(secondaryRaw) ? secondaryRaw : [])
     .filter(isOfficialServiceCategoryId)
     .filter((id) => id !== primary);
-  const uniqueSecondary = [...new Set(secondary)].slice(0, MAX_PUBLIC_HELPER_ADDITIONAL);
+  const uniqueSecondary = [...new Set(secondary)];
   if (primary) return [primary, ...uniqueSecondary];
-  if (uniqueSecondary.length > 0) return uniqueSecondary.slice(0, MAX_PUBLIC_HELPER_CATEGORIES);
+  if (uniqueSecondary.length > 0) return uniqueSecondary;
   return [SERVICE_CATEGORIES[0].id];
 }
 
@@ -31,7 +28,6 @@ export function addPublicHelperCategory(
 ): ServiceCategoryId[] {
   if (!isOfficialServiceCategoryId(next)) return current;
   if (current.includes(next)) return current;
-  if (current.length >= MAX_PUBLIC_HELPER_CATEGORIES) return current;
   return [...current, next];
 }
 
@@ -50,10 +46,10 @@ export function splitPublicHelperCategories(selected: ServiceCategoryId[]): {
 } {
   const normalized =
     selected.length > 0
-      ? [...new Set(selected.filter(isOfficialServiceCategoryId))].slice(0, MAX_PUBLIC_HELPER_CATEGORIES)
+      ? [...new Set(selected.filter(isOfficialServiceCategoryId))]
       : [SERVICE_CATEGORIES[0].id];
   return {
     primary: normalized[0],
-    additional: normalized.slice(1, MAX_PUBLIC_HELPER_CATEGORIES),
+    additional: normalized.slice(1),
   };
 }

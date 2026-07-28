@@ -13,6 +13,7 @@ import { LhCard } from '@/components/design-system/LhCard';
 import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { HelperApplyConfirmModal } from '@/components/modals/HelperApplyConfirmModal';
 import { HelperOpportunityLcDebugPanel } from '@/components/opportunities/HelperOpportunityLcDebugPanel';
+import { FeedCardClientProfilePanel } from '@/components/opportunities/FeedCardClientProfilePanel';
 import { getHelperLeadCreditSummary } from '@/utils/helperCreditDisplay';
 import { isJobInterestFull } from '@/utils/applicationInterest';
 import { getRequestDescriptionForViewer } from '@/utils/requestDescriptionDisplay';
@@ -408,55 +409,159 @@ function HelperOpportunityCardInner({
     );
   };
 
-  const renderDescriptionView = () => (
-    <div
-      className="flex h-full min-h-0 flex-col opacity-100 transition-opacity duration-200"
-      data-testid="feed-card-description-view"
-    >
-      <button
-        type="button"
-        data-testid="feed-card-back"
-        onClick={(e) => {
-          e.stopPropagation();
-          goBackToSummary();
-        }}
-        className="mb-2 inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg px-1 py-1 text-[12px] font-bold text-[#64748B] transition hover:bg-slate-50 hover:text-[#0F172A]"
+  const renderDescriptionView = () => {
+    const vipSurchargeLc = Math.max(0, creditQuote.vipApplyLc - creditQuote.fullRequestLc);
+    const quoteAvailable =
+      Number.isFinite(creditQuote.normalApplyLc) &&
+      Number.isFinite(creditQuote.normalHireRemainderLc) &&
+      Number.isFinite(creditQuote.fullRequestLc) &&
+      Number.isFinite(creditQuote.vipApplyLc);
+
+    return (
+      <div
+        className="flex h-full min-h-0 flex-col opacity-100 transition-opacity duration-200"
+        data-testid="feed-card-description-view"
       >
-        <Icons.ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-        {t('nav.back')}
-      </button>
-      <h3 className="shrink-0 text-[15px] font-bold leading-snug text-[#0F172A] sm:text-[16px]">{title}</h3>
-      <div className="ios-scroll mt-2 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-0.5">
-        {requestDescription.display ? (
-          <p className="whitespace-pre-wrap text-[13px] font-medium leading-relaxed text-[#475569]">
-            {requestDescription.display}
-          </p>
-        ) : (
-          <p className="text-[13px] font-medium text-[#94A3B8]">{t('helper_dashboard.apply_no_description')}</p>
-        )}
+        <button
+          type="button"
+          data-testid="feed-card-back"
+          onClick={(e) => {
+            e.stopPropagation();
+            goBackToSummary();
+          }}
+          className="mb-1.5 inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg px-1 py-1 text-[12px] font-bold text-[#64748B] transition hover:bg-slate-50 hover:text-[#0F172A]"
+        >
+          <Icons.ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+          {t('nav.back')}
+        </button>
+        <p className="shrink-0 text-[10px] font-black uppercase tracking-wide text-[#94A3B8]">
+          {t('helper_dashboard.feed_card_details_title')}
+        </p>
+        <h3 className="mt-0.5 shrink-0 text-[15px] font-bold leading-snug text-[#0F172A] sm:text-[16px]">
+          {title}
+        </h3>
+        <div className="ios-scroll mt-2 min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-0.5">
+          {requestDescription.display ? (
+            <p className="whitespace-pre-wrap text-[13px] font-medium leading-relaxed text-[#475569]">
+              {requestDescription.display}
+            </p>
+          ) : (
+            <p className="text-[13px] font-medium text-[#94A3B8]">
+              {t('helper_dashboard.feed_card_no_description')}
+            </p>
+          )}
 
-        {showAmountInput ? (
-          <div className="mt-3">
-            <label className="mb-1 block text-[11px] font-bold text-[#64748B]">
-              {t('helper_proposal.your_proposal')}
-            </label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={proposalAmountRaw}
-              onChange={(e) => {
-                setProposalAmountRaw(e.target.value.replace(/[^\d.,]/g, ''));
-                setAmountError('');
-              }}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-[#0F172A] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-500/10"
-              placeholder={t('helper_proposal.amount_placeholder')}
-            />
-            {amountError ? <p className="mt-1 text-[11px] font-semibold text-rose-600">{amountError}</p> : null}
+          <div className="space-y-1.5 rounded-xl border border-slate-100 bg-slate-50/70 px-2.5 py-2">
+            <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-[#475569]">
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ backgroundColor: categoryTheme.dotColor }}
+              />
+              <span className="truncate">{category}</span>
+            </div>
+            <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-bold text-[#0F172A]">
+              <Icons.Link2 className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
+              <span className="truncate">
+                {t('helper_dashboard.feed_card_budget')}: {metaParts.budget}
+              </span>
+            </div>
+            {metaParts.distance ? (
+              <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-[#64748B]">
+                <Icons.Navigation className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="truncate">
+                  {t('helper_dashboard.feed_card_distance')}: {metaParts.distance}
+                </span>
+              </div>
+            ) : null}
+            {metaParts.schedule ? (
+              <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-[#64748B]">
+                <Icons.Calendar className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="truncate">
+                  {t('helper_dashboard.feed_card_schedule')}: {metaParts.schedule}
+                </span>
+              </div>
+            ) : null}
+            {loc ? (
+              <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-[#64748B]">
+                <Icons.MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="truncate">
+                  {t('helper_dashboard.feed_card_location')}: {loc}
+                </span>
+              </div>
+            ) : null}
+            <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-[#64748B]">
+              <Icons.Users className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span className="truncate">
+                {t('helper_dashboard.feed_card_interested', { count: applicationsCount })}
+              </span>
+            </div>
           </div>
-        ) : null}
 
-        {showLcDebugPanel ? (
-          <div className="mt-3">
+          {quoteAvailable ? (
+            <div className="space-y-2" data-testid="feed-card-lc-quote">
+              <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-2.5 py-2">
+                <p className="text-[10px] font-black uppercase tracking-wide text-blue-700/80">
+                  {t('helper_dashboard.apply_type_normal')}
+                </p>
+                <p className="mt-0.5 text-[12px] font-bold text-blue-900">
+                  {t('helper_dashboard.split_normal_cost_now', { count: creditQuote.normalApplyLc })}
+                </p>
+                <p className="text-[11px] font-semibold text-blue-800/90">
+                  {t('helper_dashboard.split_normal_if_hired', {
+                    count: creditQuote.normalHireRemainderLc,
+                  })}
+                </p>
+                <p className="text-[11px] font-semibold text-blue-800/90">
+                  {t('helper_dashboard.split_normal_total', { count: creditQuote.fullRequestLc })}
+                </p>
+              </div>
+              <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-2.5 py-2">
+                <p className="text-[10px] font-black uppercase tracking-wide text-amber-800/80">
+                  {t('helper_dashboard.apply_type_exclusive')}
+                </p>
+                <p className="mt-0.5 text-[12px] font-bold text-amber-900">
+                  {t('helper_dashboard.split_vip_cost_now', { count: creditQuote.vipApplyLc })}
+                </p>
+                <p className="text-[11px] font-semibold text-amber-900/90">
+                  {t('helper_dashboard.split_vip_breakdown', {
+                    full: creditQuote.fullRequestLc,
+                    surcharge: vipSurchargeLc,
+                  })}
+                </p>
+                <p className="mt-0.5 text-[11px] font-semibold text-amber-900/80">
+                  {t('helper_dashboard.feed_card_vip_no_hire_charge')}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-[12px] font-semibold text-[#94A3B8]" data-testid="feed-card-lc-unavailable">
+              {t('helper_dashboard.feed_card_quote_unavailable')}
+            </p>
+          )}
+
+          {showAmountInput ? (
+            <div>
+              <label className="mb-1 block text-[11px] font-bold text-[#64748B]">
+                {t('helper_proposal.your_proposal')}
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={proposalAmountRaw}
+                onChange={(e) => {
+                  setProposalAmountRaw(e.target.value.replace(/[^\d.,]/g, ''));
+                  setAmountError('');
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-[#0F172A] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-500/10"
+                placeholder={t('helper_proposal.amount_placeholder')}
+              />
+              {amountError ? (
+                <p className="mt-1 text-[11px] font-semibold text-rose-600">{amountError}</p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {showLcDebugPanel ? (
             <HelperOpportunityLcDebugPanel
               jobId={job.id}
               rawCategory={job.category}
@@ -467,16 +572,16 @@ function HelperOpportunityCardInner({
               normalLabelCount={normalLabelCount}
               vipLabelCount={vipLabelCount}
             />
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderProfileView = () => (
     <div
       className="flex h-full min-h-0 flex-col opacity-100 transition-opacity duration-200"
-      data-testid="feed-card-profile-placeholder"
+      data-testid="feed-card-profile-view"
     >
       <button
         type="button"
@@ -485,27 +590,16 @@ function HelperOpportunityCardInner({
           e.stopPropagation();
           goBackToSummary();
         }}
-        className="mb-2 inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg px-1 py-1 text-[12px] font-bold text-[#64748B] transition hover:bg-slate-50 hover:text-[#0F172A]"
+        className="mb-1.5 inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg px-1 py-1 text-[12px] font-bold text-[#64748B] transition hover:bg-slate-50 hover:text-[#0F172A]"
       >
         <Icons.ArrowLeft className="h-3.5 w-3.5" aria-hidden />
         {t('nav.back')}
       </button>
-      <div className="ios-scroll min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain">
-        <div className="flex items-center gap-2.5">
-          <div className="h-12 w-12 shrink-0 rounded-full bg-slate-100" aria-hidden />
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <div className="h-3.5 w-28 rounded-md bg-slate-100" />
-            <div className="h-3 w-20 rounded-md bg-slate-50" />
-          </div>
-        </div>
-        <div className="h-3 w-full rounded-md bg-slate-50" />
-        <div className="h-3 w-[80%] rounded-md bg-slate-50" />
-        <div className="flex flex-wrap gap-1.5 pt-1">
-          <div className="h-6 w-16 rounded-full bg-slate-100" />
-          <div className="h-6 w-14 rounded-full bg-slate-100" />
-          <div className="h-6 w-20 rounded-full bg-slate-100" />
-        </div>
-        <p className="pt-1 text-[11px] font-medium text-[#94A3B8]">{t('helper_public.view_profile')}</p>
+      <p className="mb-2 shrink-0 text-[10px] font-black uppercase tracking-wide text-[#94A3B8]">
+        {t('helper_dashboard.feed_card_profile_title')}
+      </p>
+      <div className="ios-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        {view === 'profile' ? <FeedCardClientProfilePanel job={job} /> : null}
       </div>
     </div>
   );
@@ -590,7 +684,7 @@ function HelperOpportunityCardInner({
               e.stopPropagation();
               goToView('profile');
             }}
-            className="shrink-0 rounded-full ring-2 ring-white shadow-sm transition hover:opacity-90"
+            className="flex min-w-0 max-w-[42%] items-center gap-2 rounded-full py-0.5 pr-1 text-left transition hover:opacity-90"
             aria-label={t('helper_public.view_profile')}
             aria-expanded={view === 'profile'}
           >
@@ -598,13 +692,13 @@ function HelperOpportunityCardInner({
               <img
                 src={job.clientAvatar}
                 alt=""
-                className="h-9 w-9 rounded-full object-cover"
+                className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white shadow-sm"
                 loading="lazy"
                 decoding="async"
               />
             ) : (
               <div
-                className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ring-2 ring-white shadow-sm"
                 style={{
                   backgroundColor: categoryTheme.iconBg,
                   color: categoryTheme.iconColor,
@@ -613,6 +707,9 @@ function HelperOpportunityCardInner({
                 {clientInitials(job.clientName)}
               </div>
             )}
+            <span className="min-w-0 truncate text-[11px] font-bold text-[#64748B]">
+              {job.clientName}
+            </span>
           </button>
           <button
             type="button"

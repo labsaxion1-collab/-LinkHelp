@@ -47,8 +47,7 @@ describe('P3.1 feed card internal navigation', () => {
     expect(src).not.toContain('ClientPublicProfileView');
     expect(src).not.toContain('PublicProfileSheetFrame');
     expect(src).not.toMatch(/\bnavigate\(/);
-    // Placeholder shell for P3.2
-    expect(src).toContain('data-testid="feed-card-profile-placeholder"');
+    expect(src).toContain('data-testid="feed-card-profile-view"');
     expect(src).toContain('data-testid="feed-card-description-view"');
   });
 

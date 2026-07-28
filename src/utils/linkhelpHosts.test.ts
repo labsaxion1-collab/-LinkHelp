@@ -185,6 +185,16 @@ describe('OAuth redirect origin', () => {
     expect(getOAuthRedirectToUrl()).toBe(`${APP_ORIGIN}${ROUTES.authCallback}`);
     vi.unstubAllGlobals();
   });
+
+  it('uses staging origin on teste.linkhelp.app', () => {
+    vi.stubGlobal('window', {
+      location: { origin: 'https://teste.linkhelp.app' },
+    });
+    expect(getOAuthRedirectToUrl()).toBe(`https://teste.linkhelp.app${ROUTES.authCallback}`);
+    expect(getOAuthRedirectToUrl()).not.toContain('www.linkhelp.app');
+    expect(getOAuthRedirectToUrl()).not.toContain('https://linkhelp.app/');
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('Stripe checkout origin allowlist', () => {

@@ -82,4 +82,15 @@ describe('P2.4.1 public profile edit polish', () => {
     expect(storage).toContain("avatars: 'avatars'");
     expect(storage).toContain('AVATAR_MAX_BYTES = 5 * 1024 * 1024');
   });
+
+  it('primary category UI is a compact horizontal strip (not a tall card grid)', async () => {
+    const src = await readFile(resolve(editPath), 'utf8');
+    expect(src).toContain('overflow-x-auto');
+    expect(src).toContain('data-category-id={category.id}');
+    expect(src).toContain('setPrimaryCategory(category.id)');
+    expect(src).toContain('primary_category: primaryCategory');
+    expect(src).not.toContain('grid grid-cols-1 gap-2 sm:grid-cols-2');
+    expect(src).not.toContain('HelperCategoriesManager');
+    expect(src).not.toContain('secondary_categories');
+  });
 });

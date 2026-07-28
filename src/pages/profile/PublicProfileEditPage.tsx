@@ -262,9 +262,8 @@ export default function PublicProfileEditPage() {
         {isHelper ? (
           <section className="rounded-[1.25rem] border border-slate-200/90 bg-white p-4 shadow-sm">
             <p className="text-sm font-bold text-slate-800">{t('helper_categories.primary_label')}</p>
-            <p className="mt-1 text-xs font-medium text-slate-500">{t('helper_categories.primary_hint')}</p>
             <div
-              className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"
+              className="-mx-1 mt-3 flex gap-2.5 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               role="listbox"
               aria-label={t('helper_categories.primary_label')}
               data-testid="public-edit-primary-category"
@@ -282,24 +281,34 @@ export default function PublicProfileEditPage() {
                     data-category-id={category.id}
                     onClick={() => setPrimaryCategory(category.id)}
                     className={clsx(
-                      'flex min-h-[3.25rem] items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition',
+                      'flex w-[4.75rem] shrink-0 flex-col items-center gap-1.5 rounded-2xl px-1.5 py-2 transition duration-200 ease-out',
                       selected
-                        ? 'border-blue-600 bg-blue-50/90 shadow-[0_0_0_1px_rgba(37,99,255,0.25)]'
-                        : 'border-slate-200 bg-slate-50/80 hover:border-slate-300 hover:bg-white',
+                        ? 'bg-blue-50/90 ring-2 ring-[#2563FF] ring-offset-1'
+                        : 'bg-transparent hover:bg-slate-50',
                     )}
                   >
                     <span
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                      className={clsx(
+                        'relative flex h-7 w-7 items-center justify-center rounded-full transition duration-200',
+                        selected ? 'ring-2 ring-[#2563FF]' : 'ring-1 ring-slate-200/90',
+                      )}
                       style={{ backgroundColor: theme.iconBg, color: theme.iconColor }}
                     >
-                      <Icon className="h-5 w-5" aria-hidden />
+                      <Icon className="h-[15px] w-[15px]" aria-hidden />
+                      {selected ? (
+                        <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#2563FF] text-white shadow-sm">
+                          <Check className="h-2.5 w-2.5" strokeWidth={3} aria-hidden />
+                        </span>
+                      ) : null}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-900">
+                    <span
+                      className={clsx(
+                        'w-full truncate text-center text-[11px] font-bold leading-tight',
+                        selected ? 'text-blue-900' : 'text-slate-600',
+                      )}
+                    >
                       {translateCategory(category.id, t)}
                     </span>
-                    {selected ? (
-                      <Check className="h-4 w-4 shrink-0 text-blue-600" aria-hidden />
-                    ) : null}
                   </button>
                 );
               })}

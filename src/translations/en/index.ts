@@ -2237,6 +2237,7 @@ export const en = {
     bio_empty: 'Add a bio to complete your profile.',
     spoken_languages: 'Spoken languages',
     spoken_languages_empty: 'Add languages in Settings',
+    add_spoken_language: 'Add language',
     overall_rating: 'Overall rating',
     public_level: 'Level',
     achievements: 'Achievements',

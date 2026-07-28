@@ -2249,6 +2249,7 @@ export const pt = {
     bio_empty: 'Adicione uma bio para completar seu perfil.',
     spoken_languages: 'Idiomas falados',
     spoken_languages_empty: 'Adicionar idiomas em Configurações',
+    add_spoken_language: 'Adicionar idioma',
     overall_rating: 'Avaliação geral',
     public_level: 'Nível',
     achievements: 'Conquistas',

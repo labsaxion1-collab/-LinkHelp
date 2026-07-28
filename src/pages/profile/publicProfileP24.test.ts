@@ -73,7 +73,8 @@ describe('P2.4 public profile edit simplification', () => {
     expect(src).not.toContain('HelperCategoriesManager');
     expect(src).toContain('secondary_categories: additionalCategories');
     expect(src).toContain('PUBLIC_PROFILE_SPOKEN_LANGUAGES');
-    const languagesIdx = src.indexOf('PUBLIC_PROFILE_SPOKEN_LANGUAGES.map');
+    expect(src).toContain('public-edit-spoken-languages');
+    const languagesIdx = src.indexOf('public-edit-spoken-languages');
     const helperCatIdx = src.indexOf('helper_categories.primary_label');
     expect(languagesIdx).toBeGreaterThan(0);
     expect(helperCatIdx).toBeGreaterThan(languagesIdx);

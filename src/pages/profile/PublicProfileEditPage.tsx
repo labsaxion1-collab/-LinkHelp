@@ -51,6 +51,8 @@ export default function PublicProfileEditPage() {
 
   const [bio, setBio] = useState('');
   const [spokenLanguages, setSpokenLanguages] = useState<string[]>([]);
+  const [languagePickerOpen, setLanguagePickerOpen] = useState(false);
+  const [languageIconsEditMode, setLanguageIconsEditMode] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<ServiceCategoryId[]>(['cleaning']);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [categoryIconsEditMode, setCategoryIconsEditMode] = useState(false);
@@ -79,6 +81,11 @@ export default function PublicProfileEditPage() {
     [selectedCategories],
   );
   const canAddCategory = availableToAdd.length > 0;
+  const availableLanguagesToAdd = useMemo(
+    () => PUBLIC_PROFILE_SPOKEN_LANGUAGES.filter((opt) => !spokenLanguages.includes(opt.code)),
+    [spokenLanguages],
+  );
+  const canAddLanguage = availableLanguagesToAdd.length > 0;
 
   const revokeAvatarObjectUrl = () => {
     if (avatarObjectUrlRef.current) {
@@ -118,10 +125,18 @@ export default function PublicProfileEditPage() {
     );
   }, [profile, language, storedLanguages]);
 
-  const toggleLanguage = (code: string) => {
-    setSpokenLanguages((prev) =>
-      prev.includes(code) ? prev.filter((id) => id !== code) : [...prev, code],
-    );
+  const addLanguage = (code: string) => {
+    if (!isPublicProfileSpokenLanguageCode(code) || spokenLanguages.includes(code)) {
+      setLanguagePickerOpen(false);
+      return;
+    }
+    setSpokenLanguages((prev) => [...prev, code]);
+    setLanguagePickerOpen(false);
+    setLanguageIconsEditMode(false);
+  };
+
+  const removeLanguage = (code: string) => {
+    setSpokenLanguages((prev) => prev.filter((id) => id !== code));
   };
 
   const onAvatarFile = (files: FileList | null) => {
@@ -164,6 +179,14 @@ export default function PublicProfileEditPage() {
     clearLongPressTimer();
     longPressTimerRef.current = setTimeout(() => {
       setCategoryIconsEditMode(true);
+      longPressTimerRef.current = null;
+    }, 480);
+  };
+
+  const startLanguageLongPress = () => {
+    clearLongPressTimer();
+    longPressTimerRef.current = setTimeout(() => {
+      setLanguageIconsEditMode(true);
       longPressTimerRef.current = null;
     }, 480);
   };
@@ -295,25 +318,79 @@ export default function PublicProfileEditPage() {
         </section>
 
         <section className="rounded-[1.25rem] border border-slate-200/90 bg-white p-4 shadow-sm">
-          <p className="mb-2 text-sm font-bold text-slate-800">{t('profile_page.spoken_languages')}</p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {PUBLIC_PROFILE_SPOKEN_LANGUAGES.map((option) => {
-              const active = spokenLanguages.includes(option.code);
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-bold text-slate-800">{t('profile_page.spoken_languages')}</p>
+            {spokenLanguages.length > 0 ? (
+              <button
+                type="button"
+                data-testid="public-edit-language-icons-mode"
+                onClick={() => setLanguageIconsEditMode((v) => !v)}
+                className={clsx(
+                  'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition',
+                  languageIconsEditMode
+                    ? 'border-[#2563FF]/40 bg-blue-50 text-[#2563FF]'
+                    : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50',
+                )}
+                aria-label={languageIconsEditMode ? t('common.close') : t('common.edit')}
+                aria-pressed={languageIconsEditMode}
+              >
+                {languageIconsEditMode ? (
+                  <Check className="h-3.5 w-3.5" aria-hidden />
+                ) : (
+                  <Pencil className="h-3.5 w-3.5" aria-hidden />
+                )}
+              </button>
+            ) : null}
+          </div>
+          <div
+            className="mt-3 flex items-center gap-2 overflow-x-auto hide-scrollbar pb-0.5"
+            data-testid="public-edit-spoken-languages"
+            data-icons-only="true"
+          >
+            {spokenLanguages.map((code) => {
+              const canRemove = languageIconsEditMode;
               return (
-                <button
-                  key={option.code}
-                  type="button"
-                  onClick={() => toggleLanguage(option.code)}
-                  className={`rounded-xl border px-3 py-2 text-left text-sm font-bold transition-colors ${
-                    active
-                      ? 'border-blue-600 bg-blue-50 text-blue-900'
-                      : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-white'
-                  }`}
-                >
-                  {getSpokenLanguageLabel(option.code, t)}
-                </button>
+                <div key={code} className="relative shrink-0">
+                  <button
+                    type="button"
+                    data-language-code={code}
+                    aria-label={getSpokenLanguageLabel(code, t)}
+                    onPointerDown={startLanguageLongPress}
+                    onPointerUp={clearLongPressTimer}
+                    onPointerLeave={clearLongPressTimer}
+                    onPointerCancel={clearLongPressTimer}
+                    onClick={() => {
+                      if (canRemove) removeLanguage(code);
+                    }}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200/90 bg-slate-50 text-[10px] font-black uppercase tracking-wide text-slate-700 transition sm:h-[30px] sm:w-[30px]"
+                  >
+                    {code.toUpperCase()}
+                  </button>
+                  {canRemove ? (
+                    <span
+                      className="pointer-events-none absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm"
+                      aria-hidden
+                    >
+                      <X className="h-2.5 w-2.5" strokeWidth={3} />
+                    </span>
+                  ) : null}
+                </div>
               );
             })}
+            {canAddLanguage ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setLanguageIconsEditMode(false);
+                  setLanguagePickerOpen(true);
+                }}
+                data-testid="public-edit-add-language"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white text-slate-500 transition hover:border-[#2563FF] hover:text-[#2563FF] sm:h-[30px] sm:w-[30px]"
+                aria-label={t('profile_page.add_spoken_language')}
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+              </button>
+            ) : null}
           </div>
         </section>
 
@@ -427,6 +504,75 @@ export default function PublicProfileEditPage() {
           {t('profile_page.public_edit_save')}
         </button>
       </div>
+
+      {languagePickerOpen ? (
+        <div
+          className="fixed inset-0 z-[130] flex items-end justify-center bg-slate-900/45 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:items-center"
+          role="presentation"
+        >
+          <button
+            type="button"
+            className="absolute inset-0"
+            aria-label={t('common.close')}
+            onClick={() => setLanguagePickerOpen(false)}
+          />
+          <div
+            className="relative z-10 flex w-full max-w-lg max-h-[70dvh] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            data-testid="public-edit-language-picker"
+          >
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+              <h3 className="text-base font-black text-slate-950">{t('profile_page.spoken_languages')}</h3>
+              <button
+                type="button"
+                onClick={() => setLanguagePickerOpen(false)}
+                className="rounded-full bg-slate-100 p-2 text-slate-600"
+                aria-label={t('common.close')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </header>
+            <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3">
+              {PUBLIC_PROFILE_SPOKEN_LANGUAGES.map((option) => {
+                const selected = spokenLanguages.includes(option.code);
+                return (
+                  <li key={option.code}>
+                    <button
+                      type="button"
+                      data-picker-language-code={option.code}
+                      data-picker-selected={selected ? 'true' : 'false'}
+                      disabled={selected}
+                      onClick={() => addLanguage(option.code)}
+                      className={clsx(
+                        'flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition',
+                        selected
+                          ? 'bg-blue-50/90 ring-1 ring-inset ring-[#2563FF]/25'
+                          : 'hover:bg-slate-50',
+                      )}
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-700">
+                        {option.code.toUpperCase()}
+                      </span>
+                      <span
+                        className={clsx(
+                          'min-w-0 flex-1 truncate text-sm font-bold',
+                          selected ? 'text-[#2563FF]' : 'text-slate-900',
+                        )}
+                      >
+                        {getSpokenLanguageLabel(option.code, t)}
+                      </span>
+                      {selected ? (
+                        <Check className="h-4 w-4 shrink-0 text-[#2563FF]" aria-hidden />
+                      ) : null}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      ) : null}
 
       {categoryPickerOpen ? (
         <div

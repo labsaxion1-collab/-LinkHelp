@@ -2273,6 +2273,7 @@ export const pt = {
     shortcut_portfolio: 'Meu portfólio',
     shortcut_help: 'Ajuda e suporte',
     shortcut_settings: 'Configurações',
+    shortcut_personal_info: 'Informações pessoais',
     public_edit_title: 'Perfil público',
     public_edit_sub: 'Construa a apresentação que outros veem na LinkHelp.',
     public_edit_progress: 'Conclusão do perfil',

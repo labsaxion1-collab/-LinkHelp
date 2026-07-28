@@ -2261,6 +2261,7 @@ export const en = {
     shortcut_portfolio: 'My portfolio',
     shortcut_help: 'Help & support',
     shortcut_settings: 'Settings',
+    shortcut_personal_info: 'Personal information',
     public_edit_title: 'Public profile',
     public_edit_sub: 'Build the presentation others see on LinkHelp.',
     public_edit_progress: 'Profile completion',

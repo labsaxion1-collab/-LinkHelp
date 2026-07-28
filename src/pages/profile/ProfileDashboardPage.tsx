@@ -5,6 +5,7 @@ import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
 import { ProfileIdentityHero } from '@/components/profile/ProfileIdentityHero';
 import { ProfileLinkCreditsCard } from '@/components/profile/ProfileLinkCreditsCard';
 import { ProfileQuickActions } from '@/components/profile/ProfileQuickActions';
+import { ProfilePersonalInfoShortcut } from '@/components/profile/ProfilePersonalInfoShortcut';
 import { ProfileRecentActivity } from '@/components/profile/ProfileRecentActivity';
 import { PROFILE_STAT_ICONS, ProfileStatsGrid } from '@/components/profile/ProfileStatsGrid';
 import { ProfileGamificationSection } from '@/components/profile/ProfileGamificationSection';
@@ -250,6 +251,8 @@ export default function ProfileDashboardPage() {
             onMonthMetrics={!isHelper ? onMonthMetrics : undefined}
           />
         ) : null}
+
+        <ProfilePersonalInfoShortcut label={t('profile_page.shortcut_personal_info')} />
 
         <ProfileQuickActions
           title={t('profile_page.section_shortcuts')}

@@ -2270,6 +2270,7 @@ export const fr = {
     shortcut_portfolio: 'Mon portfolio',
     shortcut_help: 'Aide et support',
     shortcut_settings: 'Paramètres',
+    shortcut_personal_info: 'Informations personnelles',
     public_edit_title: 'Profil public',
     public_edit_sub: 'Construisez la présentation que les autres voient sur LinkHelp.',
     public_edit_progress: 'Complétion du profil',

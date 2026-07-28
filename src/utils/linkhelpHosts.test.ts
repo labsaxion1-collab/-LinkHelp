@@ -35,6 +35,11 @@ describe('resolveHostProfileFromHostname (production)', () => {
     expect(resolveHostProfileFromHostname('linkhelp.app', { production: true })).toBe('combined');
   });
 
+  it('maps teste.linkhelp.app to app (same routing as app.linkhelp.app)', () => {
+    expect(resolveHostProfileFromHostname(STAGING_TEST_HOSTNAME, { production: true })).toBe('app');
+    expect(resolveHostProfileFromHostname(STAGING_TEST_HOSTNAME, { production: false })).toBe('app');
+  });
+
   it('production ignores simulated profile on real hostnames; preview may simulate', () => {
     expect(
       resolveHostProfileFromHostname('localhost', {
@@ -44,6 +49,12 @@ describe('resolveHostProfileFromHostname (production)', () => {
     ).toBe('combined');
     expect(
       resolveHostProfileFromHostname(APP_HOSTNAME, {
+        production: true,
+        simulatedProfile: 'www',
+      }),
+    ).toBe('app');
+    expect(
+      resolveHostProfileFromHostname(STAGING_TEST_HOSTNAME, {
         production: true,
         simulatedProfile: 'www',
       }),
@@ -95,6 +106,7 @@ describe('explicit hostname helpers', () => {
   it('isWwwHost / isAppHost with explicit hostname', () => {
     expect(isWwwHost(WWW_HOSTNAME)).toBe(true);
     expect(isAppHost(APP_HOSTNAME)).toBe(true);
+    expect(isAppHost(STAGING_TEST_HOSTNAME)).toBe(true);
     expect(isAppHost(WWW_HOSTNAME)).toBe(false);
   });
 
@@ -202,6 +214,7 @@ describe('shouldRegisterServiceWorker', () => {
   it('is true on staging test hostname for separate PWA install', () => {
     vi.stubGlobal('window', { location: { hostname: STAGING_TEST_HOSTNAME } });
     expect(shouldRegisterServiceWorker()).toBe(true);
+    expect(resolveHostProfileFromHostname(STAGING_TEST_HOSTNAME, { production: true })).toBe('app');
     vi.unstubAllGlobals();
   });
 

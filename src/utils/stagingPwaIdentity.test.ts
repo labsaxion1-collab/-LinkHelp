@@ -14,6 +14,15 @@ describe('staging PWA identity', () => {
     expect(isStagingTestHost('www.linkhelp.app')).toBe(false);
   });
 
+  it('classifies staging as app without changing production hostnames', async () => {
+    const { resolveHostProfileFromHostname, APP_HOSTNAME, WWW_HOSTNAME } = await import(
+      '@/utils/linkhelpHosts'
+    );
+    expect(resolveHostProfileFromHostname('teste.linkhelp.app', { production: true })).toBe('app');
+    expect(resolveHostProfileFromHostname(APP_HOSTNAME, { production: true })).toBe('app');
+    expect(resolveHostProfileFromHostname(WWW_HOSTNAME, { production: true })).toBe('www');
+  });
+
   it('ships a dedicated staging web manifest with unique identity', async () => {
     const raw = await readFile(resolve('public/manifest-staging.webmanifest'), 'utf8');
     const manifest = JSON.parse(raw) as {

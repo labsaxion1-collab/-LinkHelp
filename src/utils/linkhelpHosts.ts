@@ -5,7 +5,7 @@ export const WWW_HOSTNAME = 'www.linkhelp.app';
 export const APEX_HOSTNAME = 'linkhelp.app';
 export const APP_HOSTNAME = 'app.linkhelp.app';
 export const FLUX_HOSTNAME = 'flux.linkhelp.app';
-/** Fixed staging / test host — PWA identity only; does not change production hosts. */
+/** Fixed staging / test host — same app routing as app.linkhelp.app + exclusive PWA identity. */
 export const STAGING_TEST_HOSTNAME = 'teste.linkhelp.app';
 
 export const PUBLIC_ORIGIN = 'https://www.linkhelp.app';
@@ -44,6 +44,7 @@ function readSimulatedProfileFromEnv(): LinkhelpHostProfile | null {
  * Maps hostname → host profile. Production real hostnames always win over simulation.
  * Vercel Preview hosts may use VITE_LINKHELP_HOST_PROFILE (e.g. `app`) without affecting
  * www/app/flux production domains.
+ * Staging test host (teste.linkhelp.app) always maps to `app` — same routing as app.linkhelp.app.
  */
 export function resolveHostProfileFromHostname(
   hostname: string,
@@ -54,7 +55,7 @@ export function resolveHostProfileFromHostname(
 
   if (production) {
     if (h === FLUX_HOSTNAME) return 'flux';
-    if (h === APP_HOSTNAME) return 'app';
+    if (h === APP_HOSTNAME || h === STAGING_TEST_HOSTNAME) return 'app';
     if (h === WWW_HOSTNAME) return 'www';
     // Preview only — never override real production hostnames above.
     if (isPreviewHost(h)) {
@@ -68,7 +69,7 @@ export function resolveHostProfileFromHostname(
   }
 
   if (h === FLUX_HOSTNAME) return 'flux';
-  if (h === APP_HOSTNAME) return 'app';
+  if (h === APP_HOSTNAME || h === STAGING_TEST_HOSTNAME) return 'app';
   if (h === WWW_HOSTNAME) return 'www';
 
   const simulated =
@@ -105,7 +106,8 @@ export function isLegacyWwwPublicHostname(hostname: string): boolean {
 
 export function isAppHost(hostname?: string): boolean {
   if (hostname !== undefined) {
-    return hostname.toLowerCase() === APP_HOSTNAME;
+    const h = hostname.toLowerCase();
+    return h === APP_HOSTNAME || h === STAGING_TEST_HOSTNAME;
   }
   return getCurrentHostProfile() === 'app';
 }
@@ -134,11 +136,11 @@ export function getFluxOrigin(): string {
 }
 
 /**
- * Service Worker — app host (or simulated app on preview/dev),
- * plus staging test host so LinkHelp Teste can be installed as a separate PWA.
+ * Service Worker — app profile hosts (app.linkhelp.app + teste.linkhelp.app),
+ * or simulated app on preview/dev.
  */
 export function shouldRegisterServiceWorker(): boolean {
-  return getCurrentHostProfile() === 'app' || isStagingTestHost();
+  return getCurrentHostProfile() === 'app';
 }
 
 /** PWA install prompt — same rule as SW registration. */

@@ -59,6 +59,11 @@ import {
   feedCardViewFromDescriptionExpanded,
   type FeedCardView,
 } from '@/utils/feedCardView';
+import {
+  FEED_CARD_FIXED_HEIGHT_EXTRA_PX,
+  measureFeedCardNaturalHeight,
+  resolveFeedCardLockedHeight,
+} from '@/utils/feedCardFixedHeight';
 
 export type { FeedCardView } from '@/utils/feedCardView';
 export type HelperOpportunityCardTab = 'match' | 'recentes' | 'emergencia';
@@ -226,7 +231,8 @@ function HelperOpportunityCardInner({
     if (view !== 'summary') return;
     const el = contentShellRef.current;
     if (!el) return;
-    const next = Math.round(el.getBoundingClientRect().height);
+    const natural = measureFeedCardNaturalHeight(el);
+    const next = resolveFeedCardLockedHeight(natural);
     if (next > 0) setLockedHeight(next);
   }, [view, job.id, hasApplied, isApplying, applicationsCount, title, metaLine]);
 
@@ -261,7 +267,8 @@ function HelperOpportunityCardInner({
 
   const goToView = (next: FeedCardView) => {
     if (next !== 'summary' && contentShellRef.current) {
-      const h = Math.round(contentShellRef.current.getBoundingClientRect().height);
+      const natural = measureFeedCardNaturalHeight(contentShellRef.current);
+      const h = resolveFeedCardLockedHeight(natural);
       if (h > 0) setLockedHeight(h);
     }
     setView(next);
@@ -775,10 +782,11 @@ function HelperOpportunityCardInner({
         <div
           ref={contentShellRef}
           data-feed-card-view={view}
-          data-feed-card-height-locked={isInternalView ? 'true' : 'false'}
+          data-feed-card-height-locked={lockedHeight != null ? 'true' : 'false'}
+          data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
           className="relative z-20 overflow-hidden bg-white px-3 pb-2.5 pt-2.5 sm:px-4 sm:pb-3 sm:pt-3"
           style={
-            isInternalView && lockedHeight != null
+            lockedHeight != null
               ? { height: lockedHeight, minHeight: lockedHeight, maxHeight: lockedHeight }
               : undefined
           }

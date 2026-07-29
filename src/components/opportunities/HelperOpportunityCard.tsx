@@ -24,9 +24,11 @@ import {
   FEED_CARD_PREMIUM_MUTED_CLASS,
   FEED_CARD_PREMIUM_QUOTE_NORMAL_CLASS,
   FEED_CARD_PREMIUM_QUOTE_VIP_CLASS,
+  FEED_CARD_PREMIUM_SCROLL_CLASS,
   FEED_CARD_PREMIUM_SHELL_CLASS,
   FEED_CARD_PREMIUM_SURFACE_CLASS,
   FEED_CARD_PREMIUM_TITLE_CLASS,
+  FEED_CARD_PREMIUM_TOP_BAR_CLASS,
 } from '@/components/opportunities/feedCardPremiumTheme';
 import { getHelperLeadCreditSummary } from '@/utils/helperCreditDisplay';
 import { isJobInterestFull } from '@/utils/applicationInterest';
@@ -423,6 +425,23 @@ function HelperOpportunityCardInner({
     );
   };
 
+  const renderPremiumBackBar = () => (
+    <div className={FEED_CARD_PREMIUM_TOP_BAR_CLASS} data-testid="feed-card-premium-top-bar">
+      <button
+        type="button"
+        data-testid="feed-card-back"
+        onClick={(e) => {
+          e.stopPropagation();
+          goBackToSummary();
+        }}
+        className={FEED_CARD_PREMIUM_BACK_CLASS}
+      >
+        <Icons.ArrowLeft className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
+        {t('nav.back')}
+      </button>
+    </div>
+  );
+
   const renderDescriptionView = () => {
     const vipSurchargeLc = Math.max(0, creditQuote.vipApplyLc - creditQuote.fullRequestLc);
     const quoteAvailable =
@@ -433,26 +452,15 @@ function HelperOpportunityCardInner({
 
     return (
       <div
-        className="flex h-full min-h-0 flex-col opacity-100 transition-opacity duration-200 ease-out"
+        className="relative flex h-full min-h-0 flex-col opacity-100 transition-opacity duration-200 ease-out"
         data-testid="feed-card-description-view"
       >
-        <button
-          type="button"
-          data-testid="feed-card-back"
-          onClick={(e) => {
-            e.stopPropagation();
-            goBackToSummary();
-          }}
-          className={FEED_CARD_PREMIUM_BACK_CLASS}
-        >
-          <Icons.ArrowLeft className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
-          {t('nav.back')}
-        </button>
-        <p className={FEED_CARD_PREMIUM_EYEBROW_CLASS}>
-          {t('helper_dashboard.feed_card_details_title')}
-        </p>
-        <h3 className={FEED_CARD_PREMIUM_TITLE_CLASS}>{title}</h3>
-        <div className="ios-scroll mt-2 min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-0.5">
+        {renderPremiumBackBar()}
+        <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-2.5')}>
+          <p className={FEED_CARD_PREMIUM_EYEBROW_CLASS}>
+            {t('helper_dashboard.feed_card_details_title')}
+          </p>
+          <h3 className={FEED_CARD_PREMIUM_TITLE_CLASS}>{title}</h3>
           {requestDescription.display ? (
             <p className={clsx('whitespace-pre-wrap', FEED_CARD_PREMIUM_BODY_CLASS)}>
               {requestDescription.display}
@@ -592,25 +600,14 @@ function HelperOpportunityCardInner({
 
   const renderProfileView = () => (
     <div
-      className="flex h-full min-h-0 flex-col opacity-100 transition-opacity duration-200 ease-out"
+      className="relative flex h-full min-h-0 flex-col opacity-100 transition-opacity duration-200 ease-out"
       data-testid="feed-card-profile-view"
     >
-      <button
-        type="button"
-        data-testid="feed-card-back"
-        onClick={(e) => {
-          e.stopPropagation();
-          goBackToSummary();
-        }}
-        className={FEED_CARD_PREMIUM_BACK_CLASS}
-      >
-        <Icons.ArrowLeft className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
-        {t('nav.back')}
-      </button>
-      <p className={clsx('mb-2', FEED_CARD_PREMIUM_EYEBROW_CLASS)}>
-        {t('helper_dashboard.feed_card_profile_title')}
-      </p>
-      <div className="ios-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      {renderPremiumBackBar()}
+      <div className={FEED_CARD_PREMIUM_SCROLL_CLASS}>
+        <p className={clsx('mb-2', FEED_CARD_PREMIUM_EYEBROW_CLASS)}>
+          {t('helper_dashboard.feed_card_profile_title')}
+        </p>
         {view === 'profile' ? <FeedCardClientProfilePanel job={job} /> : null}
       </div>
     </div>

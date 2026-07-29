@@ -88,8 +88,9 @@ describe('P3.2 feed card description + compact profile', () => {
     expect(src).toContain('data-testid="feed-card-back"');
     expect(src).toContain('data-feed-card-height-locked');
     expect(src).toContain('lockedHeight');
-    expect(src).toContain('overflow-y-auto');
-    expect(src).toContain('overscroll-contain');
+    expect(src).toContain('FEED_CARD_PREMIUM_SCROLL_CLASS');
+    expect(theme).toContain('overflow-y-auto');
+    expect(theme).toContain('overscroll-contain');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
     expect(theme).toContain('absolute inset-0');
   });

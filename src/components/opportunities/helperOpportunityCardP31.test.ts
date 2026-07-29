@@ -26,12 +26,17 @@ describe('P3.1 feed card internal navigation', () => {
 
   it('1–3 + 8. card locks height; description/profile are internal; scroll internal', async () => {
     const src = await readFile(resolve(cardPath), 'utf8');
+    const theme = await readFile(
+      resolve('src/components/opportunities/feedCardPremiumTheme.ts'),
+      'utf8',
+    );
     expect(src).toContain("FeedCardView");
     expect(src).toContain("useState<FeedCardView>");
     expect(src).toContain('data-feed-card-view={view}');
     expect(src).toContain('data-feed-card-height-locked');
     expect(src).toContain('lockedHeight');
-    expect(src).toContain('overflow-y-auto');
+    expect(src).toContain('FEED_CARD_PREMIUM_SCROLL_CLASS');
+    expect(theme).toContain('overflow-y-auto');
     expect(src).toContain("goToView('description')");
     expect(src).toContain("goToView('profile')");
     expect(src).not.toContain('clientPanelOpen');

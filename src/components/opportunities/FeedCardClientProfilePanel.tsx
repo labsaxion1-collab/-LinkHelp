@@ -12,6 +12,7 @@ import {
   FEED_CARD_PREMIUM_ICON_LIGHT_CLASS,
   FEED_CARD_PREMIUM_ICON_WHITE_CLASS,
   FEED_CARD_PREMIUM_LEVEL_BADGE_CLASS,
+  FEED_CARD_PREMIUM_RATING_BADGE_CLASS,
   FEED_CARD_PREMIUM_SCORE_BADGE_CLASS,
 } from '@/components/opportunities/feedCardPremiumTheme';
 
@@ -56,18 +57,18 @@ export function FeedCardClientProfilePanel({ job }: Props) {
   const avatarOk = Boolean(job.clientAvatar && !job.clientAvatar.includes('pravatar'));
 
   return (
-    <div className="space-y-3" data-testid="feed-card-profile-content">
-      <div className="flex items-center gap-2.5">
+    <div className="space-y-2" data-testid="feed-card-profile-content">
+      <div className="flex items-center gap-2">
         {avatarOk ? (
           <img
             src={job.clientAvatar}
             alt=""
-            className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-white/25"
+            className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white/25"
             loading="lazy"
             decoding="async"
           />
         ) : (
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sm font-black text-white">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sm font-black text-white">
             {clientInitials(job.clientName)}
           </div>
         )}
@@ -76,7 +77,7 @@ export function FeedCardClientProfilePanel({ job }: Props) {
             <UserRound className="h-3.5 w-3.5 shrink-0 text-white" aria-hidden />
             <span className="truncate">{job.clientName}</span>
           </p>
-          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
+          <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5">
             <span className={FEED_CARD_PREMIUM_LEVEL_BADGE_CLASS} data-testid="feed-card-level-badge">
               <Medal className="h-3 w-3 shrink-0 text-amber-300" aria-hidden />
               <span className="truncate">
@@ -87,36 +88,34 @@ export function FeedCardClientProfilePanel({ job }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className={FEED_CARD_PREMIUM_SCORE_BADGE_CLASS} data-testid="feed-card-score-badge">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-sky-100/80">
+      <div className="flex flex-wrap gap-1.5">
+        <span className={FEED_CARD_PREMIUM_SCORE_BADGE_CLASS} data-testid="feed-card-score-badge">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-sky-100/85">
             {t('reputation_dossier.score')}
-          </p>
-          <p className="mt-0.5 text-[15px] font-black tabular-nums text-white">
-            {dossier.trustScore}
-          </p>
-        </div>
-        <div className="rounded-xl border border-amber-300/30 bg-amber-400/10 px-2.5 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-amber-100/80">
+          </span>
+          <span className="text-[13px] font-black tabular-nums text-white">{dossier.trustScore}</span>
+        </span>
+        <span className={FEED_CARD_PREMIUM_RATING_BADGE_CLASS} data-testid="feed-card-rating-badge">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-amber-100/85">
             {t('profile_page.overall_rating')}
-          </p>
+          </span>
           {hasRating ? (
-            <p className="mt-0.5 flex items-center gap-1 text-[13px] font-black text-white">
+            <>
               <Star
                 className={`${FEED_CARD_PREMIUM_ICON_GOLD_CLASS} fill-amber-300`}
                 aria-hidden
               />
-              {ratingValue.toFixed(1)}
-              <span className="text-[10px] font-semibold text-white/60">
-                ({dossier.reviewCount})
+              <span className="text-[13px] font-black tabular-nums text-white">
+                {ratingValue.toFixed(1)}
               </span>
-            </p>
+              <span className="text-[10px] font-semibold text-white/60">({dossier.reviewCount})</span>
+            </>
           ) : (
-            <p className="mt-0.5 text-[11px] font-semibold text-white/55">
+            <span className="text-[11px] font-semibold text-white/55">
               {t('profile_page.no_reviews_yet')}
-            </p>
+            </span>
           )}
-        </div>
+        </span>
       </div>
 
       {dossier.completedCount > 0 ? (
@@ -138,7 +137,7 @@ export function FeedCardClientProfilePanel({ job }: Props) {
             <UserRound className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
             {t('profile_page.public_about')}
           </h4>
-          <p className="mt-1 text-[12px] font-medium leading-relaxed text-white/80">{bio}</p>
+          <p className="mt-0.5 text-[12px] font-medium leading-relaxed text-white/80">{bio}</p>
         </section>
       ) : null}
 
@@ -148,7 +147,7 @@ export function FeedCardClientProfilePanel({ job }: Props) {
             <Globe className={FEED_CARD_PREMIUM_ICON_LIGHT_CLASS} aria-hidden />
             {t('profile_page.spoken_languages')}
           </h4>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
+          <div className="mt-1 flex flex-wrap gap-1.5">
             {languageLabels.map((label) => (
               <span key={label} className={FEED_CARD_PREMIUM_CHIP_CLASS}>
                 {label}

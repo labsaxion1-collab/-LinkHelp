@@ -20,6 +20,11 @@ interface ImportMetaEnv {
   readonly VITE_VERCEL_ENV?: string;
   /** Set to `false` to force PNG for Cliente Confiável hero (debug only). */
   readonly VITE_CLIENT_CONFIAVEL_HERO_WEBP?: string;
+  /**
+   * When `true`, FE sends `service_mode` and prefers server lead quotes (packs 40–50).
+   * Keep unset/false while Preview still uses the historical DB.
+   */
+  readonly VITE_LINKHELP_BASELINE_FINANCE?: string;
 }
 
 interface ImportMeta {

@@ -1,3 +1,4 @@
+import { isBaselineFinanceEnabled, type ServiceMode } from '@/config/baselineFinance';
 import { getSupabase } from '@/lib/supabase';
 import {
   recordRealtimeChannelCreated,
@@ -27,9 +28,23 @@ import { ROUTES } from '@/utils/constants';
 export const REQUEST_SELECT =
   'id, client_id, title, description, category, subcategory, urgency, budget, location, address, city, region, postal_code, latitude, longitude, preferred_date, preferred_time_window, preferred_time, budget_type, budget_amount, currency, budget_min, budget_max, accepted_amount, application_count, exclusive_helper_id, status, created_at';
 
+/** Includes pack 40 modality — only when baseline finance is enabled. */
+export const REQUEST_SELECT_BASELINE =
+  `${REQUEST_SELECT}, service_mode`;
+
 export const APPLICATION_SELECT =
   'id, request_id, helper_id, client_id, status, message, proposed_amount, is_exclusive, created_at';
 
+export const APPLICATION_SELECT_BASELINE =
+  `${APPLICATION_SELECT}, lead_total_lc, lead_debit_lc, lead_service_mode`;
+
+export function requestSelectForEnv(): string {
+  return isBaselineFinanceEnabled() ? REQUEST_SELECT_BASELINE : REQUEST_SELECT;
+}
+
+export function applicationSelectForEnv(): string {
+  return isBaselineFinanceEnabled() ? APPLICATION_SELECT_BASELINE : APPLICATION_SELECT;
+}
 export const UPCOMING_JOB_SELECT =
   'id, request_id, helper_id, client_name, client_avatar, title, category, description, location, value_hint, urgency, scheduled_at, workflow_status, completion_requested_at, review_window_ends_at, created_at';
 
@@ -103,8 +118,8 @@ export async function fetchRemoteAppDataBootstrap(): Promise<AppDataBootstrapRes
     { data: upRows },
     { data: convRows },
   ] = await Promise.all([
-    sb.from('requests').select(REQUEST_SELECT).order('created_at', { ascending: false }),
-    sb.from('applications').select(APPLICATION_SELECT).order('created_at', { ascending: false }),
+    sb.from('requests').select(requestSelectForEnv()).order('created_at', { ascending: false }),
+    sb.from('applications').select(applicationSelectForEnv()).order('created_at', { ascending: false }),
     sb.from('upcoming_jobs').select(UPCOMING_JOB_SELECT).order('scheduled_at', { ascending: true }),
     sb.from('conversations').select('request_id, helper_id, contact_unlocked'),
   ]);
@@ -112,8 +127,8 @@ export async function fetchRemoteAppDataBootstrap(): Promise<AppDataBootstrapRes
   if (reqErr) console.error('[LinkHelp] bootstrap requests', reqErr);
   if (appErr) console.error('[LinkHelp] bootstrap applications', appErr);
 
-  const requests = (reqRows ?? []) as RequestRow[];
-  const applicationsRaw = (appRows ?? []) as ApplicationRow[];
+  const requests = (reqRows ?? []) as unknown as RequestRow[];
+  const applicationsRaw = (appRows ?? []) as unknown as ApplicationRow[];
   const upcomingRaw = (upRows ?? []) as UpcomingJobRow[];
   const chatUnlockedKeys = buildChatUnlockedKeys(
     (convRows ?? []) as { request_id: string; helper_id: string; contact_unlocked: boolean }[],
@@ -351,6 +366,8 @@ export type RemoteCreateRequestInput = {
   clientId: string;
   category: string;
   subcategory?: string | null;
+  /** Canonical pack 40 values — only sent when baseline finance is enabled. */
+  serviceMode?: ServiceMode | null;
   title: string;
   description: string;
   urgency: string;
@@ -417,6 +434,11 @@ function buildRequestInsertPayload(input: RemoteCreateRequestInput, extended: bo
     budget: input.budgetHint?.trim() ? input.budgetHint : null,
     status: 'open',
   };
+
+  // Only attach service_mode when baseline finance is active — avoids breaking historical publish.
+  if (isBaselineFinanceEnabled() && (input.serviceMode === 'remote' || input.serviceMode === 'in_person')) {
+    base.service_mode = input.serviceMode;
+  }
 
   if (!extended) return base;
 

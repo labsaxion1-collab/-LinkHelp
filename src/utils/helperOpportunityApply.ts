@@ -61,6 +61,7 @@ export type OpportunityCardMetaParts = {
   budget: string;
   distance: string | null;
   schedule: string | null;
+  modality: string | null;
 };
 
 /** Budget segment for compact card meta (e.g. CAD $45–90). */
@@ -88,6 +89,13 @@ export function formatOpportunityCardScheduleCompact(job: Job, t: LocationTFn): 
   return schedule.replace(/\s*·\s*/g, ' ');
 }
 
+export function formatOpportunityCardModality(job: Job, t: LocationTFn): string | null {
+  if (job.serviceMode === 'remote') return t('helper_dashboard.feed_card_modality_remote');
+  if (job.serviceMode === 'in_person') return t('helper_dashboard.feed_card_modality_in_person');
+  if (isRemoteJob(job)) return t('helper_dashboard.feed_card_modality_remote');
+  return null;
+}
+
 export function buildOpportunityCardMetaParts(
   job: Job,
   t: LocationTFn,
@@ -97,12 +105,13 @@ export function buildOpportunityCardMetaParts(
     budget: formatOpportunityCardBudgetCompact(job, t),
     distance: formatOpportunityCardDistanceCompact(job, distanceKm),
     schedule: formatOpportunityCardScheduleCompact(job, t),
+    modality: formatOpportunityCardModality(job, t),
   };
 }
 
 /** Single compact meta line: CAD $45–90 · 5 km · 08:00 */
 export function formatOpportunityCardMetaLine(parts: OpportunityCardMetaParts): string {
-  return [parts.budget, parts.distance, parts.schedule].filter(Boolean).join(' · ');
+  return [parts.budget, parts.modality, parts.distance, parts.schedule].filter(Boolean).join(' · ');
 }
 
 /** Default proposal amount when the helper applies from the compact card flow. */

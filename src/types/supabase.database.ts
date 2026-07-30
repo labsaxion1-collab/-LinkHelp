@@ -254,6 +254,13 @@ export type Database = {
         };
         Returns: Json;
       };
+      helper_compute_lead_quote: {
+        Args: {
+          p_request_id: string;
+          p_helper_id: string;
+        };
+        Returns: Json;
+      };
       request_has_exclusive_lock: {
         Args: {
           p_request_id: string;

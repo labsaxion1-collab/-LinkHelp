@@ -55,6 +55,7 @@ import {
 import { CancelRequestModal } from '@/components/client/CancelRequestModal';
 import { PauseRequestModal } from '@/components/client/PauseRequestModal';
 import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
+import { isRequestLifecycleControlsEnabled } from '@/config/requestLifecycleCapability';
 import { extractErrorMessage } from '@/utils/errorMessage';
 import { formatHireError, formatRejectApplicationError, logAcceptProposalError } from '@/utils/formatHireError';
 import { formatRequestLifecycleError } from '@/utils/formatRequestLifecycleError';
@@ -206,6 +207,7 @@ export default function ClientDashboard() {
   const routerLocation = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const isClientJobsPage = routerLocation.pathname === ROUTES.clientJobs;
+  const lifecycleControlsEnabled = isRequestLifecycleControlsEnabled();
 
   const { t } = useLanguage();
   const { showToast } = useToast();
@@ -1613,10 +1615,16 @@ export default function ClientDashboard() {
                       isActivityPanelOpen && expandedActivityPanel?.panel === 'applications';
                     const isDescriptionOpen =
                       isActivityPanelOpen && expandedActivityPanel?.panel === 'description';
+                    const canLifecyclePauseResume =
+                      lifecycleControlsEnabled && (job.status === 'open' || job.status === 'paused');
+                    const canLifecycleCancel = lifecycleControlsEnabled;
+                    const canCompleteFromMenu =
+                      job.status === 'in_progress' &&
+                      applications.some((a) => a.jobId === job.id && a.status === 'accepted');
                     const showActivityMenu =
                       jobsListTab === 'active' &&
                       job.status !== 'completed' &&
-                      (job.status === 'open' || job.status === 'paused' || job.status === 'in_progress');
+                      (canLifecyclePauseResume || canLifecycleCancel || canCompleteFromMenu);
 
                     return (
                       <article
@@ -1644,7 +1652,7 @@ export default function ClientDashboard() {
                           </button>
                           {activityMenuJobId === job.id ? (
                             <div className="absolute right-0 top-full z-50 mt-1 min-w-[11rem] overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-[0_12px_32px_rgba(15,23,42,0.14)]">
-                              {job.status === 'paused' ? (
+                              {lifecycleControlsEnabled && job.status === 'paused' ? (
                                 <button
                                   type="button"
                                   onClick={() => void handleResumeJob(job.id)}
@@ -1653,7 +1661,7 @@ export default function ClientDashboard() {
                                   <Icons.Play className="h-4 w-4 text-blue-600" />
                                   Retorna
                                 </button>
-                              ) : job.status === 'open' ? (
+                              ) : lifecycleControlsEnabled && job.status === 'open' ? (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1682,17 +1690,19 @@ export default function ClientDashboard() {
                                   {t('upcoming_jobs.complete_work')}
                                 </button>
                               ) : null}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCancelTargetJobId(job.id);
-                                  setActivityMenuJobId(null);
-                                }}
-                                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-amber-800 hover:bg-amber-50"
-                              >
-                                <Icons.Ban className="h-4 w-4 text-amber-600" />
-                                Cancelar
-                              </button>
+                              {lifecycleControlsEnabled ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCancelTargetJobId(job.id);
+                                    setActivityMenuJobId(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-amber-800 hover:bg-amber-50"
+                                >
+                                  <Icons.Ban className="h-4 w-4 text-amber-600" />
+                                  Cancelar
+                                </button>
+                              ) : null}
                             </div>
                           ) : null}
                             </>
@@ -1910,6 +1920,18 @@ export default function ClientDashboard() {
                                   <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
                                     <span className="block font-black uppercase tracking-[0.06em] text-slate-400">Criado em</span>
                                     <span className="block font-bold text-slate-800">{createdAtLabel}</span>
+                                  </div>
+                                  <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
+                                    <span className="block font-black uppercase tracking-[0.06em] text-slate-400">
+                                      {t('client_dashboard.activity_modality')}
+                                    </span>
+                                    <span className="block font-bold text-slate-800">
+                                      {job.serviceMode === 'remote'
+                                        ? t('create_modal.service_mode_remote')
+                                        : job.serviceMode === 'in_person'
+                                          ? t('create_modal.service_mode_in_person')
+                                          : t('common.unknown')}
+                                    </span>
                                   </div>
                                   <div className="rounded-xl bg-slate-50 px-2.5 py-1.5 sm:col-span-2">
                                     <span className="block font-black uppercase tracking-[0.06em] text-slate-400">Endereço</span>

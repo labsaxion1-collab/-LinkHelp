@@ -36,6 +36,7 @@ import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsuff
 import { getApplicationChargeLc } from '@/config/helperCreditCharge';
 import { getExclusiveApplicationChargeLc } from '@/utils/helperCreditDisplay';
 import { InsufficientCreditsError, leadCostsForJob } from '@/services/helperLeadCredits';
+import { formatBaselineFinanceError } from '@/utils/formatBaselineFinanceError';
 import { recordMarketSignal } from '@/services/marketSignals';
 import { persistLocalDismissedRequest } from '@/services/supabase/helperDismissedRemote';
 import { useHelperDismissedRequests } from '@/hooks/useHelperDismissedRequests';
@@ -653,13 +654,13 @@ export default function HelperDashboard() {
         showToast(t('helper_dashboard.exclusive_application_locked'), 'error');
         return;
       }
+      const mapped = formatBaselineFinanceError(err, t, 'helper_dashboard.toast_apply_error');
       const friendlyMsg =
-        msg === 'APPLICATION_BACKEND_NOT_READY' ||
         msg.includes('helper_debit_application_interest') ||
         msg.includes('schema cache') ||
         msg.includes('APPLICATION_INSERT_FAILED')
           ? t('helper_dashboard.toast_apply_error')
-          : msg || t('helper_dashboard.toast_apply_error');
+          : mapped;
       showToast(friendlyMsg, 'error');
     } finally {
       setApplyingJobId(null);

@@ -51,6 +51,9 @@ import {
 } from '@/utils/createRequestDraft';
 import { InsufficientClientCreditsError } from '@/services/supabase/appDataRemote';
 import { buildCanonicalJobTitle } from '@/utils/translateCategory';
+import { coerceServiceMode, isBaselineFinanceEnabled, type ServiceMode } from '@/config/baselineFinance';
+import { getServiceModePolicy } from '@/config/serviceModePolicy';
+import { formatBaselineFinanceError } from '@/utils/formatBaselineFinanceError';
 
 type ModalStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
 const STEPS: ModalStep[] = ['category', 'subcategory', 'description', 'confirm', 'review'];
@@ -83,6 +86,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const [translationFromLanguage, setTranslationFromLanguage] = useState('');
   const [translationToLanguage, setTranslationToLanguage] = useState('');
   const [translationServiceMode, setTranslationServiceMode] = useState<'online' | 'in_person' | ''>('');
+  /** Canonical modality for pack 40 — collected for all categories. */
+  const [serviceMode, setServiceMode] = useState<ServiceMode | ''>('');
   const [requestAddress, setRequestAddress] = useState<RequestAddressValue>(() => emptyRequestAddress());
   const [priority, setPriority] = useState<RequestPriority>('flexible');
   const [preferredDateIso, setPreferredDateIso] = useState('');
@@ -123,6 +128,16 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   );
 
   const detailsComplete = useMemo(() => {
+    const resolvedMode: ServiceMode | '' =
+      serviceMode ||
+      (translationServiceMode === 'online'
+        ? 'remote'
+        : translationServiceMode === 'in_person'
+          ? 'in_person'
+          : '');
+
+    if (isBaselineFinanceEnabled() && !resolvedMode) return false;
+
     if (selectedCategory === 'moving') {
       if (!isValidRequestAddress(movePickupAddress) || !isValidRequestAddress(moveDeliveryAddress)) return false;
       if (needsBuildingForMoving(selectedSubcategory)) {
@@ -135,14 +150,20 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       return Boolean(cleaningAptFloor && cleaningHasElevator);
     }
     if (selectedCategory === 'translation') {
-      if (!translationServiceMode) return false;
+      if (!translationServiceMode && !serviceMode) return false;
+      // Remote may omit precise coords on historical; baseline in_person requires coords.
+      if (isBaselineFinanceEnabled() && resolvedMode === 'in_person') {
+        return isValidRequestAddress(requestAddress);
+      }
+      if (resolvedMode === 'remote' && isBaselineFinanceEnabled()) return true;
       return isValidRequestAddress(requestAddress);
     }
+    if (isBaselineFinanceEnabled() && resolvedMode === 'remote') return true;
     return isValidRequestAddress(requestAddress);
   }, [
     selectedCategory, selectedSubcategory, movePropertyType, movePickupAddress, moveDeliveryAddress,
     movePickupFloor, movePickupElevator, moveDeliveryFloor, moveDeliveryElevator,
-    cleaningHouseFloors, cleaningAptFloor, cleaningHasElevator, translationServiceMode, requestAddress,
+    cleaningHouseFloors, cleaningAptFloor, cleaningHasElevator, translationServiceMode, serviceMode, requestAddress,
   ]);
 
   const descriptionBlocked = descriptionContainsContactInfo(postText);
@@ -172,6 +193,19 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     });
   }, [selectedCategory, selectedSubcategory, translationServiceMode]);
 
+  // Auto-fill modality when pack 40 policy leaves only one option.
+  useEffect(() => {
+    if (!isBaselineFinanceEnabled() || !selectedCategory || !selectedSubcategory) return;
+    const policy = getServiceModePolicy(selectedCategory, selectedSubcategory);
+    if (policy === 'in_person_only') {
+      setServiceMode('in_person');
+      if (selectedCategory === 'translation') setTranslationServiceMode('in_person');
+    } else if (policy === 'remote_only') {
+      setServiceMode('remote');
+      if (selectedCategory === 'translation') setTranslationServiceMode('online');
+    }
+  }, [selectedCategory, selectedSubcategory]);
+
   useEffect(() => {
     if (!open || draftDialog || !selectedCategory || !marketSuggestion) return;
     const key = `${selectedCategory}|${selectedSubcategory}|${translationServiceMode}`;
@@ -193,6 +227,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setTranslationFromLanguage('');
     setTranslationToLanguage('');
     setTranslationServiceMode('');
+    setServiceMode('');
     setRequestAddress(emptyRequestAddress());
     setPriority('flexible');
     setPreferredDateIso('');
@@ -226,6 +261,13 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setTranslationFromLanguage(draft.translationFromLanguage);
     setTranslationToLanguage(draft.translationToLanguage);
     setTranslationServiceMode(draft.translationServiceMode);
+    setServiceMode(
+      draft.translationServiceMode === 'online'
+        ? 'remote'
+        : draft.translationServiceMode === 'in_person'
+          ? 'in_person'
+          : '',
+    );
     setRequestAddress(draft.requestAddress);
     setPriority(draft.priority);
     setPreferredDateIso(draft.preferredDateIso);
@@ -462,18 +504,47 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       }
       if (lines.length) extra = '\n\n—\n' + lines.join('\n');
     } else if (selectedCategory === 'translation') {
+      const modeLabel =
+        (serviceMode || coerceServiceMode(translationServiceMode)) === 'remote' ? 'Online' : 'Presencial';
       const lines = [
         t('create_modal.translation_from_language') + ': ' + translationFromLanguage,
         t('create_modal.translation_to_language') + ': ' + translationToLanguage,
-        'Tipo de atendimento: ' + (translationServiceMode === 'online' ? 'Online' : 'Presencial'),
+        'Tipo de atendimento: ' + modeLabel,
       ];
       extra = '\n\n---\n' + lines.join('\n');
     }
     const fullDescription = postText.trim() + extra;
     const addr = selectedCategory === 'moving' ? movePickupAddress : requestAddress;
+    const resolvedServiceMode: ServiceMode | null =
+      coerceServiceMode(serviceMode) ||
+      coerceServiceMode(translationServiceMode === 'online' ? 'remote' : translationServiceMode) ||
+      null;
     const locationParts = [addr.display.trim(), addr.city, addr.region].filter(Boolean);
-    const locationLabel = locationParts.join(', ') || t('jobs.remote');
+    const locationLabel =
+      resolvedServiceMode === 'remote' && isBaselineFinanceEnabled()
+        ? t('jobs.remote')
+        : locationParts.join(', ') || t('jobs.remote');
     try {
+      if (isBaselineFinanceEnabled()) {
+        if (!selectedSubcategory) {
+          showToast(t('baseline_finance.subcategory_required'), 'error');
+          setPublishing(false);
+          return;
+        }
+        if (!resolvedServiceMode) {
+          showToast(t('baseline_finance.service_mode_required'), 'error');
+          setPublishing(false);
+          return;
+        }
+        if (
+          resolvedServiceMode === 'in_person' &&
+          (addr.latitude == null || addr.longitude == null)
+        ) {
+          showToast(t('baseline_finance.service_location_required'), 'error');
+          setPublishing(false);
+          return;
+        }
+      }
       await createJob({
         clientId: me.id,
         clientName: me.name,
@@ -482,6 +553,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
         description: fullDescription,
         category: selectedCategory,
         subcategory: selectedSubcategory || null,
+        serviceMode: resolvedServiceMode,
         location: locationLabel,
         address: addr.address || addr.display.trim() || null,
         city: addr.city || null,
@@ -523,7 +595,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       if (error instanceof InsufficientClientCreditsError) {
         showToast(t('client_credits.insufficient_to_publish'), 'error');
       } else {
-        showToast(t('create_modal.publish_error'), 'error');
+        showToast(formatBaselineFinanceError(error, t, 'create_modal.publish_error'), 'error');
       }
       setPublishing(false);
     }
@@ -767,7 +839,14 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                 cleaningHasElevator={cleaningHasElevator}
                 setCleaningHasElevator={setCleaningHasElevator}
                 translationServiceMode={translationServiceMode}
-                setTranslationServiceMode={setTranslationServiceMode}
+                setTranslationServiceMode={(mode) => {
+                  setTranslationServiceMode(mode);
+                  if (mode === 'online') setServiceMode('remote');
+                  else if (mode === 'in_person') setServiceMode('in_person');
+                }}
+                serviceMode={serviceMode}
+                setServiceMode={setServiceMode}
+                requireServiceMode={isBaselineFinanceEnabled()}
               />
               <div>
                 <label className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.budget_hint_label')}</label>

@@ -497,6 +497,14 @@ function HelperOpportunityCardInner({
                 </span>
               </div>
             ) : null}
+            {metaParts.modality ? (
+              <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-white/85">
+                <Icons.Laptop className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
+                <span className="truncate">
+                  {t('helper_dashboard.feed_card_modality')}: {metaParts.modality}
+                </span>
+              </div>
+            ) : null}
             {metaParts.schedule ? (
               <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-white/85">
                 <Icons.Calendar className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
@@ -635,6 +643,15 @@ function HelperOpportunityCardInner({
           <span className="inline-flex items-center gap-1 font-semibold text-[#64748B]">
             <Icons.MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
             <span>{metaParts.distance}</span>
+          </span>
+        </>
+      ) : null}
+      {metaParts.modality ? (
+        <>
+          <PremiumMetaDot />
+          <span className="inline-flex items-center gap-1 font-semibold text-[#64748B]">
+            <Icons.Laptop className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+            <span>{metaParts.modality}</span>
           </span>
         </>
       ) : null}

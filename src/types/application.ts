@@ -11,6 +11,10 @@ export interface Application {
   proposedAmount?: number | null;
   /** Exclusive applications hide the request from other helpers. */
   isExclusive?: boolean;
+  /** Server snapshot total LC at apply time (pack 50). */
+  leadTotalLc?: number | null;
+  leadDebitLc?: number | null;
+  leadServiceMode?: 'remote' | 'in_person' | null;
   helperName: string;
   helperAvatar: string;
   helperRating: number;

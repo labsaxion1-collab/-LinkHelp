@@ -59,6 +59,11 @@ import { getHelperLeadCreditQuote } from '@/utils/helperLeadCreditQuote';
 import {
   fetchHelperBaseDistanceKm,
 } from '@/services/helperLeadCredits';
+import {
+  normalHireRemainderFromLeadTotal,
+  resolveHelperLeadCreditQuote,
+} from '@/services/leadQuoteRemote';
+import { isBaselineFinanceEnabled } from '@/config/baselineFinance';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import { markNotificationsCleared } from '@/utils/notificationVisibility';
 import { buildNotificationPayload } from '@/utils/notificationText';
@@ -657,6 +662,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         clientId: jobDetails.clientId,
         category: jobDetails.category,
         subcategory: jobDetails.subcategory ?? null,
+        serviceMode: jobDetails.serviceMode ?? null,
         title: jobDetails.title,
         description: jobDetails.description,
         urgency: jobDetails.urgency,
@@ -724,7 +730,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       throw new Error('APPLICATION_LIMIT_REACHED');
     }
 
-    const creditQuote = getHelperLeadCreditQuote(job, { distanceKm: options?.distanceKm ?? null });
+    const creditQuote = await resolveHelperLeadCreditQuote(job, helperId, {
+      distanceKm: options?.distanceKm ?? null,
+    });
     const interestCost = options?.isExclusive ? creditQuote.vipApplyLc : creditQuote.normalApplyLc;
 
     const sessionUserId = session?.user?.id ?? profile?.id ?? null;
@@ -737,6 +745,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         proposedAmount: proposedAmount ?? null,
         message: options?.message?.trim() || null,
         isExclusive: options?.isExclusive === true,
+        // When baseline finance is on, interestCost is only for wallet UI prechecks;
+        // submitHelperApplication omits p_interest_amount so the server is authoritative.
         interestCost:
           sessionUserId && helperId === sessionUserId ? interestCost : 0,
       });
@@ -1005,8 +1015,19 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     }
 
     const selectedDistanceKm = useRemote ? await fetchHelperBaseDistanceKm(helperId, jobSnapshot) : null;
-    const creditQuote = getHelperLeadCreditQuote(jobSnapshot, { distanceKm: selectedDistanceKm });
-    const chargeAmount = targetApp.isExclusive ? 0 : creditQuote.normalHireRemainderLc;
+    let chargeAmount = 0;
+    if (targetApp.isExclusive) {
+      chargeAmount = 0;
+    } else if (isBaselineFinanceEnabled()) {
+      const fromSnapshot = normalHireRemainderFromLeadTotal(targetApp.leadTotalLc);
+      if (fromSnapshot == null) {
+        throw new Error('LEAD_SNAPSHOT_MISSING');
+      }
+      chargeAmount = fromSnapshot;
+    } else {
+      const creditQuote = getHelperLeadCreditQuote(jobSnapshot, { distanceKm: selectedDistanceKm });
+      chargeAmount = creditQuote.normalHireRemainderLc;
+    }
 
     const applyOptimisticHire = () => {
       chatUnlockedKeysRef.current.add(`${requestId}:${helperId}`);

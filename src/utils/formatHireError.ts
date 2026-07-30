@@ -1,10 +1,27 @@
 import { extractErrorMessage } from '@/utils/errorMessage';
+import { formatBaselineFinanceError } from '@/utils/formatBaselineFinanceError';
 
 type TranslateFn = (key: string, vars?: Record<string, string | number>) => string;
+
+const BASELINE_HIRE_MARKERS = [
+  'SERVICE_MODE_',
+  'LEAD_',
+  'EXCLUSIVE_APPLICATION_LOCKED',
+  'VIP_',
+  'HIRE_CHARGE_MISMATCH',
+  'INTEREST_AMOUNT_MISMATCH',
+  'APPLICATION_LIMIT_REACHED',
+  'APPLICATION_BACKEND_NOT_READY',
+  'INSUFFICIENT_CLIENT_CREDITS',
+] as const;
 
 export function formatHireError(error: unknown, t: TranslateFn): string {
   const raw = extractErrorMessage(error, '');
   const upper = raw.toUpperCase();
+
+  if (BASELINE_HIRE_MARKERS.some((m) => upper.includes(m))) {
+    return formatBaselineFinanceError(error, t, 'hire_modal.error_toast');
+  }
 
   if (upper.includes('INSUFFICIENT_CREDITS')) {
     return t('hire_modal.helper_insufficient_credits');

@@ -27,6 +27,8 @@ export interface Job {
   latitude?: number | null;
   longitude?: number | null;
   subcategory?: string | null;
+  /** Canonical modality from requests.service_mode (`remote` | `in_person`). */
+  serviceMode?: 'remote' | 'in_person' | null;
   value: string;
   budgetType?: 'fixed' | 'negotiable' | null;
   budgetAmount?: number | null;

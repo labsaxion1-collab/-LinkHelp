@@ -5,8 +5,8 @@ import type { ApplicationRow, RequestRow, ReviewRow, UpcomingJobRow } from '@/ty
 import type { ServiceReview } from '@/types/review';
 import type { UpcomingJob } from '@/types/upcoming';
 import {
-  APPLICATION_SELECT,
-  REQUEST_SELECT,
+  applicationSelectForEnv,
+  requestSelectForEnv,
   UPCOMING_JOB_SELECT,
 } from '@/services/supabase/appDataRemote';
 import { resolveRequestStatusPatch } from '@/utils/statusNormalize';
@@ -176,23 +176,23 @@ export function mergeReviewRowWithReview(
 export async function fetchRequestRowById(id: string): Promise<RequestRow | null> {
   const sb = getSupabase();
   if (!sb) return null;
-  const { data, error } = await sb.from('requests').select(REQUEST_SELECT).eq('id', id).maybeSingle();
+  const { data, error } = await sb.from('requests').select(requestSelectForEnv()).eq('id', id).maybeSingle();
   if (error || !data) {
     if (error) console.warn('[LinkHelp] fetchRequestRowById', error.message);
     return null;
   }
-  return data as RequestRow;
+  return data as unknown as RequestRow;
 }
 
 export async function fetchApplicationRowById(id: string): Promise<ApplicationRow | null> {
   const sb = getSupabase();
   if (!sb) return null;
-  const { data, error } = await sb.from('applications').select(APPLICATION_SELECT).eq('id', id).maybeSingle();
+  const { data, error } = await sb.from('applications').select(applicationSelectForEnv()).eq('id', id).maybeSingle();
   if (error || !data) {
     if (error) console.warn('[LinkHelp] fetchApplicationRowById', error.message);
     return null;
   }
-  return data as ApplicationRow;
+  return data as unknown as ApplicationRow;
 }
 
 export async function fetchUpcomingJobRowById(id: string): Promise<UpcomingJobRow | null> {

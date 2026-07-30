@@ -76,6 +76,8 @@ export type RequestRow = {
   description: string;
   category: string;
   subcategory: string | null;
+  /** Present after baseline pack 40; omit/null on historical DB. */
+  service_mode?: 'remote' | 'in_person' | null;
   urgency: string;
   budget: string | null;
   location: string;
@@ -110,6 +112,10 @@ export type ApplicationRow = {
   message: string | null;
   proposed_amount: number | null;
   is_exclusive: boolean | null;
+  /** Immutable lead total snapshot (pack 40/50). */
+  lead_total_lc?: number | null;
+  lead_debit_lc?: number | null;
+  lead_service_mode?: 'remote' | 'in_person' | null;
   created_at: string;
   updated_at: string;
 };

@@ -47,6 +47,8 @@ export function requestRowToJob(row: RequestRow, client: MapperProfile): Job {
       (row as RequestRow & { preferred_period?: string | null }).preferred_period ??
       row.preferred_time_window,
     subcategory: row.subcategory,
+    serviceMode:
+      row.service_mode === 'remote' || row.service_mode === 'in_person' ? row.service_mode : null,
     budgetType: row.budget_type,
     budgetAmount: row.budget_amount,
     currency: row.currency,
@@ -72,6 +74,12 @@ export function applicationRowToApp(row: ApplicationRow, helper: MapperProfile):
     message: row.message ?? undefined,
     proposedAmount: row.proposed_amount != null ? Number(row.proposed_amount) : null,
     isExclusive: row.is_exclusive === true,
+    leadTotalLc: row.lead_total_lc != null ? Number(row.lead_total_lc) : null,
+    leadDebitLc: row.lead_debit_lc != null ? Number(row.lead_debit_lc) : null,
+    leadServiceMode:
+      row.lead_service_mode === 'remote' || row.lead_service_mode === 'in_person'
+        ? row.lead_service_mode
+        : null,
     helperName: hName,
     helperAvatar: helper.avatar_url || avatarUrlForName(hName, 'dcfce7', '14532d'),
     helperRating: helper.rating ?? 5,

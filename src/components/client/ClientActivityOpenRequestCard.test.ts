@@ -1,17 +1,23 @@
 import { describe, expect, it } from 'vitest';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import {
   MAX_HIRED_HELPERS_PER_REQUEST,
   activityCandidateCount,
   canAcceptApplicationForJob,
   countHiredHelpersForJob,
   isHireTeamComplete,
+  listCandidateApplicationsForJob,
 } from '@/utils/clientActivityApplications';
+import { resolveClientActivityBackView } from '@/utils/clientActivityCardView';
 import {
-  resolveClientActivityBackView,
-} from '@/utils/clientActivityCardView';
+  candidateRingSegmentColors,
+  firstNameFromHelperName,
+  rankAccentForApplication,
+  resolveExclusiveCandidate,
+} from '@/utils/clientActivityCandidateRing';
+import { HELPER_RANKS } from '@/utils/linkHelpRanking';
 import type { Application } from '@/types/application';
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 
 const app = (overrides: Partial<Application> = {}): Application => ({
   id: 'app-1',
@@ -92,8 +98,65 @@ describe('client activity card panel navigation', () => {
   });
 });
 
+describe('candidate ring helpers', () => {
+  it('returns first name only', () => {
+    expect(firstNameFromHelperName('Maria Silva Costa')).toBe('Maria');
+    expect(firstNameFromHelperName('  Jean  ')).toBe('Jean');
+    expect(firstNameFromHelperName('')).toBe('');
+  });
+
+  it('builds empty arc segments', () => {
+    expect(candidateRingSegmentColors([])).toEqual([null, null, null]);
+  });
+
+  it('maps one normal candidate to first segment with official rank color', () => {
+    const novo = HELPER_RANKS.find((r) => r.tier === 'novo_helper')!;
+    const colors = candidateRingSegmentColors([
+      app({ helperJobs: 0, helperRating: 0 }),
+    ]);
+    expect(colors[0]).toBe(novo.accent);
+    expect(colors[1]).toBeNull();
+    expect(colors[2]).toBeNull();
+  });
+
+  it('maps two different ranks in entry order', () => {
+    const novo = HELPER_RANKS.find((r) => r.tier === 'novo_helper')!;
+    const elite = HELPER_RANKS.find((r) => r.tier === 'elite')!;
+    const colors = candidateRingSegmentColors([
+      app({ id: 'a', helperJobs: 0, helperRating: 0, createdAt: 1 }),
+      app({ id: 'b', helperJobs: 60, helperRating: 4.7, createdAt: 2 }),
+    ]);
+    expect(colors).toEqual([novo.accent, elite.accent, null]);
+  });
+
+  it('maps three candidates in createdAt order from list helper', () => {
+    const listed = listCandidateApplicationsForJob('job-1', [
+      app({ id: 'c', helperName: 'Third', createdAt: 30, helperJobs: 0 }),
+      app({ id: 'a', helperName: 'First', createdAt: 10, helperJobs: 0 }),
+      app({ id: 'b', helperName: 'Second', createdAt: 20, helperJobs: 0 }),
+    ]);
+    expect(listed.map((a) => a.id)).toEqual(['a', 'b', 'c']);
+    const colors = candidateRingSegmentColors(listed);
+    expect(colors.every((c) => c === HELPER_RANKS[0].accent)).toBe(true);
+  });
+
+  it('resolves exclusive VIP candidate for full-arc mode', () => {
+    const exclusive = app({
+      id: 'vip',
+      isExclusive: true,
+      helperJobs: 60,
+      helperRating: 4.7,
+    });
+    expect(resolveExclusiveCandidate([exclusive], true)?.id).toBe('vip');
+    expect(resolveExclusiveCandidate([exclusive], false)).toBeNull();
+    expect(rankAccentForApplication(exclusive)).toBe(
+      HELPER_RANKS.find((r) => r.tier === 'elite')!.accent,
+    );
+  });
+});
+
 describe('ClientActivityOpenRequestCard wiring', () => {
-  it('uses internal panels and separate counters without sharing HelperOpportunityCard', async () => {
+  it('uses compact ring, description, reject, and no HelperOpportunityCard', async () => {
     const src = await readFile(
       resolve('src/components/client/ClientActivityOpenRequestCard.tsx'),
       'utf8',
@@ -102,22 +165,53 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(src).toContain('client-activity-description-view');
     expect(src).toContain('client-activity-candidates-view');
     expect(src).toContain('client-activity-profile-view');
-    expect(src).toContain('client-activity-candidates-count');
-    expect(src).toContain('client-activity-hired-count');
+    expect(src).toContain('ClientActivityCandidateRing');
+    expect(src).toContain('ClientActivityCandidateRow');
+    expect(src).toContain('onReject');
+    expect(src).toContain('reject_confirm');
+    expect(src).toContain('vip_candidate_label');
+    expect(src).toContain('back_to_candidates');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
-    expect(src).toContain('embedProfile={false}');
     expect(src).not.toContain('HelperOpportunityCard');
-    expect(src).toContain('MAX_HIRED_HELPERS_PER_REQUEST');
+    expect(src).not.toContain('InterestedRing');
+    expect(src).not.toContain('client-activity-candidates-count');
+    expect(src).not.toContain('view_candidates');
+    expect(src).not.toContain('candidates_count_zero');
   });
 
-  it('keeps HelperOpportunityCard feed path untouched by client card import', async () => {
+  it('keeps Helper feed InterestedRing path untouched', async () => {
     const feed = await readFile(
       resolve('src/components/opportunities/HelperOpportunityCard.tsx'),
       'utf8',
     );
+    expect(feed).toContain('InterestedRing');
     expect(feed).not.toContain('ClientActivityOpenRequestCard');
+    expect(feed).not.toContain('ClientActivityCandidateRing');
+    const ring = await readFile(
+      resolve('src/components/opportunities/InterestedRing.tsx'),
+      'utf8',
+    );
+    expect(ring).toContain('SEGMENT_COLORS');
     const dash = await readFile(resolve('src/pages/client/ClientDashboard.tsx'), 'utf8');
     expect(dash).toContain('ClientActivityOpenRequestCard');
+    expect(dash).toContain('onReject');
     expect(dash).toContain('isPreHireActivity');
+  });
+
+  it('ships dedicated candidate ring with exclusive gold center', async () => {
+    const ring = await readFile(
+      resolve('src/components/client/ClientActivityCandidateRing.tsx'),
+      'utf8',
+    );
+    expect(ring).toContain('client-activity-ring-vip-center');
+    expect(ring).toContain('exclusiveFullColor');
+    expect(ring).toContain('CLIENT_ACTIVITY_VIP_GOLD');
+    const row = await readFile(
+      resolve('src/components/client/ClientActivityCandidateRow.tsx'),
+      'utf8',
+    );
+    expect(row).toContain('firstNameFromHelperName');
+    expect(row).not.toContain('computeTrustScore');
+    expect(row).not.toContain('Star');
   });
 });

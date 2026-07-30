@@ -618,6 +618,7 @@ export default function ClientDashboard() {
   };
 
   const handleRejectApplication = async (applicationId: string, isExclusive: boolean) => {
+    if (acceptingApplicationId) return;
     try {
       await appDataActionsRef.current.updateApplicationStatus(applicationId, 'rejected');
       showToast(
@@ -1658,6 +1659,7 @@ export default function ClientDashboard() {
                           formatMoneyAmount={formatMoneyAmount}
                           acceptingApplicationId={acceptingApplicationId}
                           onAccept={(app) => void handleAcceptProposal(job, app)}
+                          onReject={(app) => handleRejectApplication(app.id, app.isExclusive === true)}
                           showLifecycleMenu={showActivityMenu}
                           lifecycleControlsEnabled={lifecycleControlsEnabled}
                           activityMenuOpen={activityMenuJobId === job.id}

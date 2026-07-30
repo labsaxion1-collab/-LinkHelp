@@ -3,9 +3,9 @@ import * as Icons from 'lucide-react';
 import { clsx } from 'clsx';
 import type { Application } from '@/types/application';
 import type { Job } from '@/types/job';
-import { ClientCandidateCard } from '@/components/client/ClientCandidateCard';
+import { ClientActivityCandidateRing } from '@/components/client/ClientActivityCandidateRing';
+import { ClientActivityCandidateRow } from '@/components/client/ClientActivityCandidateRow';
 import { CandidateHelperProfileExpand } from '@/components/client/CandidateHelperProfileExpand';
-import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
 import {
   FEED_CARD_PREMIUM_BACK_CLASS,
@@ -25,17 +25,21 @@ import { formatJobBudgetDisplay } from '@/utils/formatJobBudget';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
 import { isJobPaused } from '@/utils/jobVisibility';
 import { translateCategory, translateJobTitle } from '@/utils/translateCategory';
+import { getHelperRank } from '@/utils/linkHelpRanking';
 import {
-  MAX_HIRED_HELPERS_PER_REQUEST,
   activityCandidateCount,
   canAcceptApplicationForJob,
-  countHiredHelpersForJob,
   isHireTeamComplete,
 } from '@/utils/clientActivityApplications';
 import {
+  candidateRingSegmentColors,
+  firstNameFromHelperName,
+  rankAccentForApplication,
+  resolveExclusiveCandidate,
+} from '@/utils/clientActivityCandidateRing';
+import {
   CLIENT_ACTIVITY_PANEL_MAX_HEIGHT_CLASS,
   type ClientActivityCardView,
-  resolveClientActivityBackView,
 } from '@/utils/clientActivityCardView';
 import {
   measureFeedCardNaturalHeight,
@@ -53,6 +57,7 @@ export type ClientActivityOpenRequestCardProps = {
   formatMoneyAmount: (amount: number, currency: string) => string;
   acceptingApplicationId: string | null;
   onAccept: (app: Application) => void;
+  onReject: (app: Application) => Promise<void> | void;
   showLifecycleMenu: boolean;
   lifecycleControlsEnabled: boolean;
   activityMenuOpen: boolean;
@@ -63,12 +68,6 @@ export type ClientActivityOpenRequestCardProps = {
   onCancel: () => void;
 };
 
-function candidatesLabel(count: number, t: TFn): string {
-  if (count <= 0) return t('client_dashboard.candidates_count_zero');
-  if (count === 1) return t('client_dashboard.candidates_count_one');
-  return t('client_dashboard.candidates_count_other', { count });
-}
-
 export function ClientActivityOpenRequestCard({
   job,
   candidateApps,
@@ -78,6 +77,7 @@ export function ClientActivityOpenRequestCard({
   formatMoneyAmount,
   acceptingApplicationId,
   onAccept,
+  onReject,
   showLifecycleMenu,
   lifecycleControlsEnabled,
   activityMenuOpen,
@@ -89,6 +89,7 @@ export function ClientActivityOpenRequestCard({
 }: ClientActivityOpenRequestCardProps) {
   const [view, setView] = useState<ClientActivityCardView>('summary');
   const [profileAppId, setProfileAppId] = useState<string | null>(null);
+  const [rejectingApplicationId, setRejectingApplicationId] = useState<string | null>(null);
   const [lockedHeight, setLockedHeight] = useState<number | null>(null);
   const shellRef = useRef<HTMLElement | null>(null);
 
@@ -98,8 +99,10 @@ export function ClientActivityOpenRequestCard({
   const category = translateCategory(job.category, t);
   const displayCandidates = candidateApps.slice(0, 3);
   const candidateCount = activityCandidateCount(candidateApps);
-  const hiredCount = countHiredHelpersForJob(job.id, applications);
   const teamComplete = isHireTeamComplete(job.id, applications);
+  const exclusiveApp = resolveExclusiveCandidate(displayCandidates, isExclusiveLocked);
+  const segmentColors = candidateRingSegmentColors(displayCandidates);
+  const exclusiveFullColor = exclusiveApp ? rankAccentForApplication(exclusiveApp) : null;
   const profileApp = profileAppId
     ? displayCandidates.find((a) => a.id === profileAppId) ?? null
     : null;
@@ -136,11 +139,6 @@ export function ClientActivityOpenRequestCard({
   };
 
   const goBack = () => {
-    const prev = resolveClientActivityBackView(view);
-    if (prev === 'summary') setProfileAppId(null);
-    if (prev === 'candidates') {
-      /* keep profileAppId cleared only when leaving profile */
-    }
     if (view === 'profile') {
       setView('candidates');
       return;
@@ -167,6 +165,31 @@ export function ClientActivityOpenRequestCard({
     }
     onAccept(app);
   };
+
+  const tryReject = async (app: Application) => {
+    if (rejectingApplicationId || acceptingApplicationId) return;
+    const confirmKey = app.isExclusive
+      ? 'client_dashboard.reject_confirm_vip'
+      : 'client_dashboard.reject_confirm';
+    if (typeof window !== 'undefined' && !window.confirm(t(confirmKey))) return;
+    setRejectingApplicationId(app.id);
+    try {
+      await onReject(app);
+    } finally {
+      setRejectingApplicationId(null);
+    }
+  };
+
+  const openCandidatesPanel = () => {
+    goToView('candidates');
+  };
+
+  const ringAriaLabel =
+    exclusiveApp != null
+      ? t('client_dashboard.open_vip_candidate_a11y')
+      : candidateCount <= 0
+        ? t('client_dashboard.open_candidates_a11y_zero')
+        : t('client_dashboard.open_candidates_a11y', { count: candidateCount });
 
   const lockedStyle =
     lockedHeight != null
@@ -213,6 +236,35 @@ export function ClientActivityOpenRequestCard({
       </button>
     </div>
   );
+
+  const renderActionRow = (app: Application, extraClassName?: string) => {
+    const canAccept = canAcceptApplicationForJob({
+      jobStatus: job.status,
+      application: app,
+      applications,
+      acceptingApplicationId,
+    });
+    return (
+      <ClientActivityCandidateRow
+        key={app.id}
+        job={job}
+        app={app}
+        t={t}
+        formatMoneyAmount={formatMoneyAmount}
+        onOpenProfile={() => openProfile(app.id)}
+        onAccept={() => tryAccept(app)}
+        onReject={() => void tryReject(app)}
+        accepting={acceptingApplicationId === app.id}
+        rejecting={rejectingApplicationId === app.id}
+        acceptDisabled={
+          !canAccept || (acceptingApplicationId != null && acceptingApplicationId !== app.id)
+        }
+        rejectDisabled={rejectingApplicationId != null && rejectingApplicationId !== app.id}
+        teamComplete={teamComplete}
+        className={extraClassName}
+      />
+    );
+  };
 
   const renderSummary = () => (
     <div className="relative z-0" data-testid="client-activity-card-summary">
@@ -315,60 +367,26 @@ export function ClientActivityOpenRequestCard({
         </div>
 
         <div className="col-start-3 row-span-2 row-start-1 flex shrink-0 items-center justify-center self-center">
-          <InterestedRing
-            interestedCount={candidateApps.length}
-            label={t('client_dashboard.candidates_ring_label')}
+          <ClientActivityCandidateRing
+            segmentColors={segmentColors}
+            exclusiveFullColor={exclusiveFullColor}
             size={68}
+            count={candidateCount}
+            ariaLabel={ringAriaLabel}
+            onActivate={openCandidatesPanel}
           />
         </div>
 
-        <div className="col-span-3 col-start-1 row-start-3 mt-1 flex flex-col gap-2 border-t border-[rgba(15,23,42,0.06)] pt-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700"
-              data-testid="client-activity-candidates-count"
-            >
-              {candidatesLabel(candidateCount, t)}
-            </span>
-            <span
-              className={clsx(
-                'inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold',
-                teamComplete
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                  : 'border-sky-200 bg-sky-50 text-sky-800',
-              )}
-              data-testid="client-activity-hired-count"
-            >
-              {teamComplete
-                ? t('client_dashboard.team_complete')
-                : t('client_dashboard.hired_slots', {
-                    hired: hiredCount,
-                    max: MAX_HIRED_HELPERS_PER_REQUEST,
-                  })}
-            </span>
-          </div>
-
-          <div className="flex items-stretch gap-2">
-            <button
-              type="button"
-              data-testid="client-activity-open-candidates"
-              onClick={() => goToView('candidates')}
-              className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-[14px] bg-gradient-to-br from-[#2563FF] to-[#1557F0] px-3 text-[13px] font-bold text-white shadow-[0_8px_22px_rgba(37,99,255,0.28)]"
-              aria-expanded={view === 'candidates'}
-            >
-              <Icons.Users className="h-4 w-4 shrink-0" aria-hidden />
-              {t('client_dashboard.view_candidates')}
-            </button>
-            <button
-              type="button"
-              data-testid="client-activity-open-description"
-              onClick={() => goToView('description')}
-              className="inline-flex min-h-[40px] shrink-0 items-center justify-center gap-1.5 rounded-[14px] border border-slate-200 bg-white px-3 text-[13px] font-bold text-slate-800 shadow-sm hover:bg-slate-50"
-              aria-expanded={view === 'description'}
-            >
-              {t('client_dashboard.view_description')}
-            </button>
-          </div>
+        <div className="col-span-3 col-start-1 row-start-3 mt-1 flex items-center justify-end border-t border-[rgba(15,23,42,0.06)] pt-2">
+          <button
+            type="button"
+            data-testid="client-activity-open-description"
+            onClick={() => goToView('description')}
+            className="inline-flex min-h-[36px] shrink-0 items-center justify-center gap-1.5 rounded-[12px] border border-slate-200 bg-white px-3 text-[12px] font-bold text-slate-800 shadow-sm hover:bg-slate-50"
+            aria-expanded={view === 'description'}
+          >
+            {t('client_dashboard.view_description')}
+          </button>
         </div>
       </div>
     </div>
@@ -414,57 +432,75 @@ export function ClientActivityOpenRequestCard({
     </div>
   );
 
-  const renderCandidates = () => (
-    <div
-      className={clsx('relative flex h-full min-h-0 flex-col', CLIENT_ACTIVITY_PANEL_MAX_HEIGHT_CLASS)}
-      data-testid="client-activity-candidates-view"
-    >
-      {renderBackBar(t('nav.back'))}
-      <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-2')}>
-        <p className={FEED_CARD_PREMIUM_EYEBROW_CLASS}>{t('client_dashboard.candidates_panel_title')}</p>
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[11px] font-bold text-white">
-            {candidatesLabel(candidateCount, t)}
-          </span>
-          <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[11px] font-bold text-white">
-            {teamComplete
-              ? t('client_dashboard.team_complete')
-              : t('client_dashboard.hired_slots', {
-                  hired: hiredCount,
-                  max: MAX_HIRED_HELPERS_PER_REQUEST,
-                })}
-          </span>
+  const renderCandidates = () => {
+    if (exclusiveApp) {
+      const rank = getHelperRank({
+        completedCount: exclusiveApp.helperJobs ?? 0,
+        averageRating: exclusiveApp.helperRating ?? 0,
+      });
+      return (
+        <div
+          className={clsx('relative flex h-full min-h-0 flex-col', CLIENT_ACTIVITY_PANEL_MAX_HEIGHT_CLASS)}
+          data-testid="client-activity-candidates-view"
+          data-candidates-mode="exclusive"
+        >
+          {renderBackBar(t('nav.back'))}
+          <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-3')}>
+            {renderActionRow(exclusiveApp, 'border-amber-200/80')}
+            <div
+              data-testid="client-activity-vip-panel"
+              className="rounded-2xl border border-amber-300/45 bg-gradient-to-b from-amber-400/20 to-amber-500/5 px-3 py-4 text-center"
+            >
+              <Icons.Crown
+                className="mx-auto h-10 w-10 text-amber-300"
+                style={{ filter: 'drop-shadow(0 0 8px rgba(245,158,11,0.55))' }}
+                aria-hidden
+              />
+              <p className="mt-2 text-[13px] font-black tracking-wide text-amber-100">
+                {t('client_dashboard.vip_candidate_label')}
+              </p>
+              <p className="mt-1 truncate text-[15px] font-bold text-white">
+                {firstNameFromHelperName(exclusiveApp.helperName)}
+              </p>
+              <div className="mt-2 flex justify-center">
+                <LinkHelpRankBadgeFromStats
+                  completedCount={exclusiveApp.helperJobs}
+                  averageRating={exclusiveApp.helperRating}
+                  role="helper"
+                  size="md"
+                  showLabel
+                  t={t}
+                />
+              </div>
+              <p className="mt-2 text-[11px] font-semibold text-amber-100/80" style={{ color: rank.accent }}>
+                {t(`ranking.helper.${rank.tier}`)}
+              </p>
+            </div>
+          </div>
         </div>
-        {teamComplete ? (
-          <p className="rounded-xl border border-emerald-300/40 bg-emerald-400/15 px-3 py-2 text-[12px] font-bold text-emerald-50">
-            {t('client_dashboard.team_complete_hint')}
-          </p>
-        ) : null}
-        {displayCandidates.length === 0 ? (
-          <p className={FEED_CARD_PREMIUM_MUTED_CLASS}>{t('client_dashboard.candidates_count_zero')}</p>
-        ) : (
-          displayCandidates.map((app) => (
-            <ClientCandidateCard
-              key={app.id}
-              job={job}
-              app={app}
-              t={t}
-              formatMoneyAmount={formatMoneyAmount}
-              profileExpanded={false}
-              embedProfile={false}
-              onToggleProfile={() => openProfile(app.id)}
-              showAccept={app.status === 'pending' || app.status === 'viewed'}
-              accepting={acceptingApplicationId === app.id}
-              acceptDisabled={acceptingApplicationId != null && acceptingApplicationId !== app.id}
-              teamComplete={teamComplete}
-              onAccept={() => tryAccept(app)}
-              className="border-white/20 bg-white"
-            />
-          ))
-        )}
+      );
+    }
+
+    return (
+      <div
+        className={clsx('relative flex h-full min-h-0 flex-col', CLIENT_ACTIVITY_PANEL_MAX_HEIGHT_CLASS)}
+        data-testid="client-activity-candidates-view"
+        data-candidates-mode="normal"
+      >
+        {renderBackBar(t('nav.back'))}
+        <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-2')}>
+          <p className={FEED_CARD_PREMIUM_EYEBROW_CLASS}>{t('client_dashboard.candidates_panel_title')}</p>
+          {displayCandidates.length === 0 ? (
+            <p className={FEED_CARD_PREMIUM_MUTED_CLASS} data-testid="client-activity-candidates-empty">
+              {t('client_dashboard.candidates_empty_hint')}
+            </p>
+          ) : (
+            displayCandidates.map((app) => renderActionRow(app))
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderProfile = () => {
     if (!profileApp) return null;
@@ -489,11 +525,7 @@ export function ClientActivityOpenRequestCard({
             />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[15px] font-bold text-white">{profileApp.helperName}</p>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1 text-[12px] font-bold text-amber-100">
-                  <Icons.Star className="h-3.5 w-3.5 fill-amber-300 text-amber-300" aria-hidden />
-                  {Number(profileApp.helperRating ?? 0).toFixed(1)}
-                </span>
+              <div className="mt-1">
                 <LinkHelpRankBadgeFromStats
                   completedCount={profileApp.helperJobs}
                   averageRating={profileApp.helperRating}
@@ -513,21 +545,34 @@ export function ClientActivityOpenRequestCard({
             />
           </div>
           {(profileApp.status === 'pending' || profileApp.status === 'viewed') && (
-            <button
-              type="button"
-              disabled={!canAccept || acceptingApplicationId === profileApp.id}
-              onClick={() => tryAccept(profileApp)}
-              className="sticky bottom-0 inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-green-600 text-sm font-black text-white hover:bg-green-700 disabled:opacity-60"
-              aria-label={t('client_dashboard.accept_short')}
-            >
-              {acceptingApplicationId === profileApp.id ? (
-                <Icons.Loader2 className="h-5 w-5 animate-spin" aria-hidden />
-              ) : teamComplete ? (
-                t('client_dashboard.team_complete')
-              ) : (
-                t('client_dashboard.accept_short')
-              )}
-            </button>
+            <div className="sticky bottom-0 flex gap-2">
+              <button
+                type="button"
+                disabled={!canAccept || acceptingApplicationId === profileApp.id || rejectingApplicationId != null}
+                onClick={() => tryAccept(profileApp)}
+                className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-green-600 text-sm font-black text-white hover:bg-green-700 disabled:opacity-60"
+                aria-label={t('client_dashboard.accept_short')}
+              >
+                {acceptingApplicationId === profileApp.id ? (
+                  <Icons.Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+                ) : (
+                  t('client_dashboard.accept_short')
+                )}
+              </button>
+              <button
+                type="button"
+                disabled={rejectingApplicationId != null || acceptingApplicationId != null}
+                onClick={() => void tryReject(profileApp)}
+                className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-60"
+                aria-label={t('client_dashboard.reject_helper')}
+              >
+                {rejectingApplicationId === profileApp.id ? (
+                  <Icons.Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+                ) : (
+                  t('client_dashboard.reject_helper')
+                )}
+              </button>
+            </div>
           )}
         </div>
       </div>

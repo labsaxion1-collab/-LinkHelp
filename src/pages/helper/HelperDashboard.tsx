@@ -72,6 +72,11 @@ import {
   getJobServiceCategoryId,
   sortJobsByHelperCategoryPreference,
 } from '@/utils/helperCategoryPreferences';
+import {
+  explainHelperFeedJobExclusion,
+  helperHasFeedCategories,
+  resolveHelperEmptyFeedKind,
+} from '@/utils/helperFeedEligibility';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboard';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
@@ -198,7 +203,7 @@ export default function HelperDashboard() {
     () => getHelperCategoryPreferences(profile, profileSettings.skillIds),
     [profile, profileSettings.skillIds],
   );
-  const hasCategories = profileSettings.skillIds.length > 0;
+  const hasCategories = helperHasFeedCategories(profileSettings.skillIds, categoryPrefs);
   const helperBaseCoords = useMemo(() => helperBaseCoordinates(profile), [profile]);
   const hasHelperBaseAddress = useMemo(() => helperHasBaseAddress(profile), [profile]);
   const hasExactBaseCoords = useMemo(() => helperHasExactBaseCoordinates(profile), [profile]);
@@ -282,7 +287,12 @@ export default function HelperDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [isConfigured, storageUserId]);
+  }, [
+    isConfigured,
+    storageUserId,
+    profile?.primary_category,
+    profile?.secondary_categories,
+  ]);
 
   const completionBreakdown = React.useMemo(
     () => computeHelperProfileCompletion(profileSettings, helperAvatarUrl),
@@ -713,7 +723,7 @@ export default function HelperDashboard() {
   );
 
   const displayedJobs = useMemo(() => {
-    if (profileSettings.skillIds.length === 0) return [];
+    if (!helperHasFeedCategories(profileSettings.skillIds, categoryPrefs)) return [];
     const viewerId = helperUserId ?? me?.id ?? '';
     let list = jobs.filter(
       (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== viewerId,
@@ -755,6 +765,69 @@ export default function HelperDashboard() {
     dismissedJobIds,
     me?.id,
     helperEngagedJobIds,
+  ]);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || !skillsLoaded) return;
+    if (displayedJobs.length > 0) return;
+    const viewerId = helperUserId ?? me?.id ?? '';
+    const sample = jobs.slice(0, 12).map((job) => ({
+      jobId: job.id,
+      category: job.category,
+      reason: explainHelperFeedJobExclusion({
+        job,
+        viewerId,
+        prefs: categoryPrefs,
+        skillIds: profileSettings.skillIds,
+        selectedCategoryFilters,
+        dismissedJobIds,
+        engagedJobIds: helperEngagedJobIds,
+        applications,
+      }),
+    }));
+    console.debug('[LinkHelp] helper feed empty diagnostic', {
+      hasCategories,
+      primary: categoryPrefs.primaryCategory,
+      secondary: categoryPrefs.secondaryCategories,
+      skillIds: profileSettings.skillIds,
+      sample,
+    });
+  }, [
+    skillsLoaded,
+    displayedJobs.length,
+    jobs,
+    helperUserId,
+    me?.id,
+    categoryPrefs,
+    profileSettings.skillIds,
+    selectedCategoryFilters,
+    dismissedJobIds,
+    helperEngagedJobIds,
+    applications,
+    hasCategories,
+  ]);
+
+  const emptyFeedKind = useMemo(() => {
+    if (!skillsLoaded) return 'loading' as const;
+    if (!hasCategories) return 'no_categories' as const;
+    if (displayedJobs.length > 0) return 'loading' as const;
+    const viewerId = helperUserId ?? me?.id ?? '';
+    const openEligible = jobs.filter(
+      (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== viewerId,
+    ).length;
+    return resolveHelperEmptyFeedKind({
+      skillsLoaded,
+      hasCategories,
+      openEligibleBeforeSoftFilters: openEligible,
+      displayedCount: displayedJobs.length,
+    });
+  }, [
+    skillsLoaded,
+    hasCategories,
+    displayedJobs.length,
+    jobs,
+    helperUserId,
+    me?.id,
   ]);
 
   const progressiveFeedJobs = useProgressiveReveal(displayedJobs, 3, 700);
@@ -1269,7 +1342,7 @@ export default function HelperDashboard() {
                     </div>
               ))}
               </div>
-            ) : skillsLoaded && !hasCategories ? (
+            ) : emptyFeedKind === 'no_categories' ? (
               <div className="flex flex-col items-center justify-center rounded-[22px] border border-dashed border-[rgba(37,99,255,0.16)] bg-gradient-to-br from-white to-[#f4f7ff] px-6 py-14 text-center shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
                 <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 shadow-[0_8px_24px_rgba(37,99,255,0.12)]">
                   <Icons.Briefcase className="h-8 w-8 text-[#2563FF]" strokeWidth={1.75} />
@@ -1290,7 +1363,11 @@ export default function HelperDashboard() {
                   <Icons.SearchX className="h-8 w-8 text-[#2563FF]" strokeWidth={1.75} />
                 </span>
                 <p className="text-[15px] font-bold text-[#0B1220]">{t('helper_dashboard.empty_feed')}</p>
-                <p className="mt-1 text-[13px] font-medium text-[#94A3B8]">{t('helper_dashboard.empty_feed_sub')}</p>
+                <p className="mt-1 text-[13px] font-medium text-[#94A3B8]">
+                  {emptyFeedKind === 'all_filtered'
+                    ? t('helper_dashboard.empty_feed_filtered_sub')
+                    : t('helper_dashboard.empty_feed_sub')}
+                </p>
               </div>
             )}
           </div>

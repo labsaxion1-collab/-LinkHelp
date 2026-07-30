@@ -86,7 +86,7 @@ describe('P2.4.1 public profile edit polish', () => {
     const src = await readFile(resolve(editPath), 'utf8');
     expect(src).toContain('public-edit-add-category');
     expect(src).toContain('public-edit-category-picker');
-    expect(src).toContain('addPublicHelperCategory');
+    expect(src).toContain('togglePublicHelperCategoryDraft');
     expect(src).toContain('data-icons-only="true"');
     expect(src).toContain('overflow-x-auto');
     expect(src).not.toContain('MAX_PUBLIC_HELPER_CATEGORIES');

@@ -3,6 +3,7 @@ import {
   isOfficialServiceCategoryId,
   type ServiceCategoryId,
 } from '@/data/serviceCategories';
+import { skillKey } from '@/data/helperSkillsCatalog';
 
 /**
  * Ordered selection: index 0 is always primary_category; the rest map to secondary_categories.
@@ -31,6 +32,19 @@ export function addPublicHelperCategory(
   return [...current, next];
 }
 
+/** Toggle category in a draft multi-select (keeps order; first remains primary). */
+export function togglePublicHelperCategoryDraft(
+  current: ServiceCategoryId[],
+  id: ServiceCategoryId,
+): ServiceCategoryId[] {
+  if (!isOfficialServiceCategoryId(id)) return current;
+  if (current.includes(id)) {
+    if (current.length <= 1) return current;
+    return current.filter((x) => x !== id);
+  }
+  return [...current, id];
+}
+
 /** Never drops below one category; removing primary promotes the next item. */
 export function removePublicHelperCategory(
   current: ServiceCategoryId[],
@@ -52,4 +66,21 @@ export function splitPublicHelperCategories(selected: ServiceCategoryId[]): {
     primary: normalized[0],
     additional: normalized.slice(1),
   };
+}
+
+/**
+ * Minimal helper_skills rows so feed/skill gates derive the same service categories.
+ * Uses the first official subcategory per category (jobs match on primary category id).
+ */
+export function defaultSkillKeysForServiceCategories(ids: ServiceCategoryId[]): string[] {
+  const keys: string[] = [];
+  const seen = new Set<string>();
+  for (const id of ids) {
+    if (!isOfficialServiceCategoryId(id) || seen.has(id)) continue;
+    seen.add(id);
+    const cat = SERVICE_CATEGORIES.find((c) => c.id === id);
+    const firstSub = cat?.subKeys?.[0];
+    if (firstSub) keys.push(skillKey(id, firstSub));
+  }
+  return keys;
 }

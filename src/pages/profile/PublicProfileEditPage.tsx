@@ -20,16 +20,19 @@ import { translateCategory } from '@/utils/translateCategory';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { getCategoryIconById } from '@/utils/categoryIcons';
 import {
-  addPublicHelperCategory,
+  defaultSkillKeysForServiceCategories,
   normalizePublicHelperCategorySelection,
   removePublicHelperCategory,
   splitPublicHelperCategories,
+  togglePublicHelperCategoryDraft,
 } from '@/utils/publicHelperCategories';
 import { extractErrorMessage, formatAuthFlowErrorMessage } from '@/utils/errorMessage';
 import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
 import { cropSquareAvatarFromFile } from '@/utils/avatarMediaProcessing';
 import { logMediaPicker } from '@/utils/mediaPickerDebug';
 import { profileInitials } from '@/components/profile/profileDisplay';
+import { syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
+import { ROUTES } from '@/utils/constants';
 
 const AVATAR_ACCEPT = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
@@ -55,6 +58,8 @@ export default function PublicProfileEditPage() {
   const [languageIconsEditMode, setLanguageIconsEditMode] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<ServiceCategoryId[]>(['cleaning']);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [categoryDraft, setCategoryDraft] = useState<ServiceCategoryId[]>(['cleaning']);
+  const [categoryConfirming, setCategoryConfirming] = useState(false);
   const [categoryIconsEditMode, setCategoryIconsEditMode] = useState(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -76,11 +81,7 @@ export default function PublicProfileEditPage() {
     () => splitPublicHelperCategories(selectedCategories),
     [selectedCategories],
   );
-  const availableToAdd = useMemo(
-    () => SERVICE_CATEGORIES.filter((cat) => !selectedCategories.includes(cat.id)),
-    [selectedCategories],
-  );
-  const canAddCategory = availableToAdd.length > 0;
+  const canOpenCategoryPicker = true;
   const availableLanguagesToAdd = useMemo(
     () => PUBLIC_PROFILE_SPOKEN_LANGUAGES.filter((opt) => !spokenLanguages.includes(opt.code)),
     [spokenLanguages],
@@ -125,6 +126,65 @@ export default function PublicProfileEditPage() {
     );
   }, [profile, language, storedLanguages]);
 
+  useEffect(() => {
+    if (!isHelper || !profile) return;
+    if (typeof window === 'undefined') return;
+    if (window.location.hash !== '#helper-categories') return;
+    const cats = normalizePublicHelperCategorySelection(
+      profile.primary_category,
+      (profile.secondary_categories as string[] | null) ?? [],
+    );
+    setCategoryDraft(cats);
+    setCategoryPickerOpen(true);
+  }, [isHelper, profile?.id, profile?.primary_category, profile?.secondary_categories]);
+
+  const openCategoryPicker = () => {
+    setCategoryIconsEditMode(false);
+    setCategoryDraft(selectedCategories);
+    setCategoryPickerOpen(true);
+  };
+
+  const closeCategoryPicker = () => {
+    if (categoryConfirming) return;
+    setCategoryPickerOpen(false);
+  };
+
+  const toggleCategoryDraft = (id: ServiceCategoryId) => {
+    setCategoryDraft((prev) => togglePublicHelperCategoryDraft(prev, id));
+  };
+
+  const persistHelperCategories = async (categories: ServiceCategoryId[]) => {
+    const { primary, additional } = splitPublicHelperCategories(categories);
+    const err = await updateProfile({
+      primary_category: primary,
+      secondary_categories: additional,
+    });
+    if (err) throw err;
+    const helperId = session?.user?.id ?? profile?.id;
+    if (helperId && isConfigured) {
+      await syncHelperSkills(helperId, defaultSkillKeysForServiceCategories(categories));
+    }
+    await refreshProfile();
+    setSelectedCategories(categories);
+  };
+
+  const confirmCategoryDraft = async () => {
+    if (categoryConfirming || categoryDraft.length === 0) return;
+    setCategoryConfirming(true);
+    try {
+      await persistHelperCategories(categoryDraft);
+      setCategoryPickerOpen(false);
+      showToast(t('helper_categories.saved_ok'), 'success');
+      if (typeof window !== 'undefined' && window.location.hash === '#helper-categories') {
+        navigate(ROUTES.helperDashboard, { replace: true });
+      }
+    } catch (e) {
+      showToast(extractErrorMessage(e, t('helper_categories.save_error')), 'error');
+    } finally {
+      setCategoryConfirming(false);
+    }
+  };
+
   const addLanguage = (code: string) => {
     if (!isPublicProfileSpokenLanguageCode(code) || spokenLanguages.includes(code)) {
       setLanguagePickerOpen(false);
@@ -152,16 +212,6 @@ export default function PublicProfileEditPage() {
     setAvatarSelectedFile(f);
     setAvatarPreviewUrl(preview);
     logMediaPicker('PREVIEW CREATED', preview);
-  };
-
-  const addCategory = (id: ServiceCategoryId) => {
-    if (selectedCategories.includes(id)) {
-      setCategoryPickerOpen(false);
-      return;
-    }
-    setSelectedCategories((prev) => addPublicHelperCategory(prev, id));
-    setCategoryPickerOpen(false);
-    setCategoryIconsEditMode(false);
   };
 
   const removeCategory = (id: ServiceCategoryId) => {
@@ -237,6 +287,12 @@ export default function PublicProfileEditPage() {
       if (err) {
         showToast(formatAuthFlowErrorMessage(t, err), 'error');
         return;
+      }
+      if (isHelper && session?.user?.id && isConfigured) {
+        await syncHelperSkills(
+          session.user.id,
+          defaultSkillKeysForServiceCategories(selectedCategories),
+        );
       }
       await refreshProfile();
       showToast(t('app_pages.settings_saved'), 'success');
@@ -466,13 +522,10 @@ export default function PublicProfileEditPage() {
                   </div>
                 );
               })}
-              {canAddCategory ? (
+              {canOpenCategoryPicker ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    setCategoryIconsEditMode(false);
-                    setCategoryPickerOpen(true);
-                  }}
+                  onClick={openCategoryPicker}
                   data-testid="public-edit-add-category"
                   className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white text-slate-500 transition hover:border-[#2563FF] hover:text-[#2563FF] sm:h-[30px] sm:w-[30px]"
                   aria-label={t('helper_categories.add_category')}
@@ -583,7 +636,7 @@ export default function PublicProfileEditPage() {
             type="button"
             className="absolute inset-0"
             aria-label={t('common.close')}
-            onClick={() => setCategoryPickerOpen(false)}
+            onClick={closeCategoryPicker}
           />
           <div
             className="relative z-10 flex w-full max-w-lg max-h-[70dvh] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
@@ -592,11 +645,17 @@ export default function PublicProfileEditPage() {
             data-testid="public-edit-category-picker"
           >
             <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-              <h3 className="text-base font-black text-slate-950">{t('helper_categories.picker_title')}</h3>
+              <div className="min-w-0">
+                <h3 className="text-base font-black text-slate-950">{t('helper_categories.picker_title')}</h3>
+                <p className="mt-0.5 text-xs font-medium text-slate-500">
+                  {t('helper_categories.selected_count', { count: categoryDraft.length })}
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={() => setCategoryPickerOpen(false)}
-                className="rounded-full bg-slate-100 p-2 text-slate-600"
+                onClick={closeCategoryPicker}
+                disabled={categoryConfirming}
+                className="rounded-full bg-slate-100 p-2 text-slate-600 disabled:opacity-50"
                 aria-label={t('common.close')}
               >
                 <X className="h-4 w-4" />
@@ -606,15 +665,14 @@ export default function PublicProfileEditPage() {
               {SERVICE_CATEGORIES.map((cat) => {
                 const theme = getCategoryFeedTheme(cat.id);
                 const Icon = getCategoryIconById(cat.id);
-                const selected = selectedCategories.includes(cat.id);
+                const selected = categoryDraft.includes(cat.id);
                 return (
                   <li key={cat.id}>
                     <button
                       type="button"
                       data-picker-category-id={cat.id}
                       data-picker-selected={selected ? 'true' : 'false'}
-                      disabled={selected}
-                      onClick={() => addCategory(cat.id)}
+                      onClick={() => toggleCategoryDraft(cat.id)}
                       className={clsx(
                         'flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition',
                         selected
@@ -644,6 +702,23 @@ export default function PublicProfileEditPage() {
                 );
               })}
             </ul>
+            <footer className="shrink-0 border-t border-slate-100 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              <button
+                type="button"
+                data-testid="public-edit-confirm-categories"
+                disabled={categoryConfirming || categoryDraft.length === 0}
+                onClick={() => void confirmCategoryDraft()}
+                className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[#2563FF] px-4 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,255,0.28)] disabled:opacity-50"
+                aria-label={t('helper_categories.confirm_categories')}
+              >
+                {categoryConfirming ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <Check className="h-4 w-4" aria-hidden />
+                )}
+                {t('helper_categories.confirm_categories')}
+              </button>
+            </footer>
           </div>
         </div>
       ) : null}

@@ -172,11 +172,13 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(src).toContain('vip_candidate_label');
     expect(src).toContain('back_to_candidates');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
+    expect(src).toContain('invisible pointer-events-none');
     expect(src).not.toContain('HelperOpportunityCard');
     expect(src).not.toContain('InterestedRing');
     expect(src).not.toContain('client-activity-candidates-count');
     expect(src).not.toContain('view_candidates');
     expect(src).not.toContain('candidates_count_zero');
+    expect(src).not.toContain('min-h-[280px]');
   });
 
   it('keeps Helper feed InterestedRing path untouched', async () => {

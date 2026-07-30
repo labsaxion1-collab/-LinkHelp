@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import * as Icons from 'lucide-react';
 import { clsx } from 'clsx';
 import type { Application } from '@/types/application';
@@ -38,10 +38,11 @@ import {
   resolveExclusiveCandidate,
 } from '@/utils/clientActivityCandidateRing';
 import {
-  CLIENT_ACTIVITY_PANEL_MAX_HEIGHT_CLASS,
+  CLIENT_ACTIVITY_PANEL_CLASS,
   type ClientActivityCardView,
 } from '@/utils/clientActivityCardView';
 import {
+  FEED_CARD_FIXED_HEIGHT_EXTRA_PX,
   measureFeedCardNaturalHeight,
   resolveFeedCardLockedHeight,
 } from '@/utils/feedCardFixedHeight';
@@ -123,18 +124,21 @@ export function ClientActivityOpenRequestCard({
         ? t('create_modal.service_mode_in_person')
         : null;
 
-  useEffect(() => {
-    if (view === 'summary') {
-      setLockedHeight(null);
-      return;
-    }
+  useLayoutEffect(() => {
+    if (view !== 'summary') return;
     const shell = shellRef.current;
     if (!shell) return;
     const natural = measureFeedCardNaturalHeight(shell);
-    setLockedHeight(resolveFeedCardLockedHeight(Math.max(natural, 280)));
-  }, [view]);
+    const next = resolveFeedCardLockedHeight(natural);
+    if (next > 0) setLockedHeight(next);
+  }, [view, job.id, title, candidateCount, isExclusiveLocked]);
 
   const goToView = (next: ClientActivityCardView) => {
+    if (next !== 'summary' && shellRef.current) {
+      const natural = measureFeedCardNaturalHeight(shellRef.current);
+      const h = resolveFeedCardLockedHeight(natural);
+      if (h > 0) setLockedHeight(h);
+    }
     setView(next);
   };
 
@@ -394,7 +398,7 @@ export function ClientActivityOpenRequestCard({
 
   const renderDescription = () => (
     <div
-      className={clsx('relative flex h-full min-h-0 flex-col', CLIENT_ACTIVITY_PANEL_MAX_HEIGHT_CLASS)}
+      className={CLIENT_ACTIVITY_PANEL_CLASS}
       data-testid="client-activity-description-view"
     >
       {renderBackBar(t('nav.back'))}
@@ -440,7 +444,7 @@ export function ClientActivityOpenRequestCard({
       });
       return (
         <div
-          className={clsx('relative flex h-full min-h-0 flex-col', CLIENT_ACTIVITY_PANEL_MAX_HEIGHT_CLASS)}
+          className={CLIENT_ACTIVITY_PANEL_CLASS}
           data-testid="client-activity-candidates-view"
           data-candidates-mode="exclusive"
         >
@@ -483,7 +487,7 @@ export function ClientActivityOpenRequestCard({
 
     return (
       <div
-        className={clsx('relative flex h-full min-h-0 flex-col', CLIENT_ACTIVITY_PANEL_MAX_HEIGHT_CLASS)}
+        className={CLIENT_ACTIVITY_PANEL_CLASS}
         data-testid="client-activity-candidates-view"
         data-candidates-mode="normal"
       >
@@ -512,7 +516,7 @@ export function ClientActivityOpenRequestCard({
     });
     return (
       <div
-        className={clsx('relative flex h-full min-h-0 flex-col', CLIENT_ACTIVITY_PANEL_MAX_HEIGHT_CLASS)}
+        className={CLIENT_ACTIVITY_PANEL_CLASS}
         data-testid="client-activity-profile-view"
       >
         {renderBackBar(t('client_dashboard.back_to_candidates'))}
@@ -584,14 +588,21 @@ export function ClientActivityOpenRequestCard({
       ref={shellRef}
       data-testid="client-activity-open-card"
       data-client-activity-view={view}
-      data-feed-card-height-locked={lockedHeight != null ? 'true' : undefined}
+      data-feed-card-height-locked={lockedHeight != null ? 'true' : 'false'}
+      data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
       className={clsx(
         'group relative min-w-0 overflow-hidden rounded-[1.35rem] border border-slate-100 bg-white p-3 shadow-[0_10px_30px_rgba(15,23,42,0.07)] transition-shadow duration-200 sm:p-4',
         isInternalView ? 'z-30' : 'z-0 hover:shadow-[0_16px_42px_rgba(15,23,42,0.11)]',
       )}
       style={lockedStyle}
     >
-      {!isInternalView ? renderSummary() : null}
+      <div
+        className={clsx(isInternalView && 'invisible pointer-events-none select-none')}
+        aria-hidden={isInternalView}
+        data-testid="client-activity-card-summary-shell"
+      >
+        {renderSummary()}
+      </div>
       {isInternalView ? (
         <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="client-activity-premium-shell">
           {view === 'description' ? renderDescription() : null}

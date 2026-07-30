@@ -22,6 +22,10 @@ export type ClientCandidateCardProps = {
   showAccept?: boolean;
   showReject?: boolean;
   accepting?: boolean;
+  /** When false, profile is opened by the parent panel (no inline expand). Default true. */
+  embedProfile?: boolean;
+  acceptDisabled?: boolean;
+  teamComplete?: boolean;
   budgetRangeLabel?: string | null;
   className?: string;
 };
@@ -38,6 +42,9 @@ export function ClientCandidateCard({
   showAccept = false,
   showReject = false,
   accepting = false,
+  embedProfile = true,
+  acceptDisabled = false,
+  teamComplete = false,
   budgetRangeLabel,
   className,
 }: ClientCandidateCardProps) {
@@ -68,17 +75,7 @@ export function ClientCandidateCard({
           </span>
         ) : null}
 
-        <div className="flex min-w-0 items-start justify-between gap-2">
-          <p className="truncate text-sm font-black text-slate-950">{app.helperName}</p>
-          <LinkHelpRankBadgeFromStats
-            completedCount={app.helperJobs}
-            averageRating={app.helperRating}
-            role="helper"
-            size="sm"
-            showLabel
-            t={t}
-          />
-        </div>
+        <p className="truncate text-sm font-black text-slate-950">{app.helperName}</p>
 
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] font-bold text-slate-600">
           <span className="inline-flex items-center gap-1">
@@ -90,6 +87,16 @@ export function ClientCandidateCard({
               {t('candidate_profile.score_of_max', { score: trustScore })}
             </span>
           ) : null}
+        </div>
+        <div className="mt-1">
+          <LinkHelpRankBadgeFromStats
+            completedCount={app.helperJobs}
+            averageRating={app.helperRating}
+            role="helper"
+            size="sm"
+            showLabel
+            t={t}
+          />
         </div>
 
         {app.proposedAmount != null ? (
@@ -135,11 +142,18 @@ export function ClientCandidateCard({
           {showAccept ? (
             <button
               type="button"
-              disabled={accepting}
+              disabled={accepting || acceptDisabled || teamComplete}
               onClick={onAccept}
+              aria-label={t('client_dashboard.accept_short')}
               className="inline-flex min-h-[40px] min-w-[6.5rem] shrink-0 items-center justify-center rounded-xl bg-green-600 px-3 text-xs font-black text-white hover:bg-green-700 disabled:opacity-60"
             >
-              {t('client_dashboard.accept_short')}
+              {accepting ? (
+                <Icons.Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : teamComplete ? (
+                t('client_dashboard.team_complete_short')
+              ) : (
+                t('client_dashboard.accept_short')
+              )}
             </button>
           ) : null}
         </div>
@@ -162,23 +176,25 @@ export function ClientCandidateCard({
         ) : null}
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateRows: profileExpanded ? '1fr' : '0fr',
-          transition: 'grid-template-rows 280ms cubic-bezier(0.4,0,0.2,1)',
-        }}
-      >
-        <div className="overflow-hidden" style={{ minHeight: 0 }}>
-          {profileExpanded ? (
-            <CandidateHelperProfileExpand
-              helperId={app.helperId}
-              helperRating={app.helperRating}
-              helperJobs={app.helperJobs}
-            />
-          ) : null}
+      {embedProfile ? (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateRows: profileExpanded ? '1fr' : '0fr',
+            transition: 'grid-template-rows 280ms cubic-bezier(0.4,0,0.2,1)',
+          }}
+        >
+          <div className="overflow-hidden" style={{ minHeight: 0 }}>
+            {profileExpanded ? (
+              <CandidateHelperProfileExpand
+                helperId={app.helperId}
+                helperRating={app.helperRating}
+                helperJobs={app.helperJobs}
+              />
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

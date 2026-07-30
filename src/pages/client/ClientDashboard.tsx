@@ -23,6 +23,7 @@ import { ClientAwaitingCompletionBridge } from '@/components/client/ClientAwaiti
 import { ClientDashboardMapSidebar } from '@/components/client/ClientDashboardMapSidebar';
 import { ClientDashboardHeroSlot } from '@/components/client/ClientDashboardHeroSlot';
 import { ClientCandidateCard } from '@/components/client/ClientCandidateCard';
+import { ClientActivityOpenRequestCard } from '@/components/client/ClientActivityOpenRequestCard';
 import { candidateProfileExpandKey } from '@/utils/candidateProfileExpand';
 import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
 import type { NearbyHelperMapPoint } from '@/types/nearbyHelper';
@@ -61,7 +62,9 @@ import { formatHireError, formatRejectApplicationError, logAcceptProposalError }
 import { formatRequestLifecycleError } from '@/utils/formatRequestLifecycleError';
 import {
   activityCandidateCount,
+  canAcceptApplicationForJob,
   findHiredApplicationForJob,
+  isHireTeamComplete,
   isHiredActivityJob,
   isPreHireActivityJob,
   listCandidateApplicationsForJob,
@@ -680,6 +683,23 @@ export default function ClientDashboard() {
 
   const handleAcceptProposal = async (job: Job, app: Application) => {
     if (acceptingApplicationId) return;
+
+    if (
+      !canAcceptApplicationForJob({
+        jobStatus: job.status,
+        application: app,
+        applications,
+        acceptingApplicationId,
+      })
+    ) {
+      showToast(
+        isHireTeamComplete(job.id, applications)
+          ? t('client_dashboard.hire_capacity_reached_toast')
+          : t('client_dashboard.hire_unavailable_toast'),
+        'error',
+      );
+      return;
+    }
 
     const logContext = {
       requestId: job.id,
@@ -1625,6 +1645,38 @@ export default function ClientDashboard() {
                       jobsListTab === 'active' &&
                       job.status !== 'completed' &&
                       (canLifecyclePauseResume || canLifecycleCancel || canCompleteFromMenu);
+
+                    if (isPreHireActivity) {
+                      return (
+                        <ClientActivityOpenRequestCard
+                          key={job.id}
+                          job={job}
+                          candidateApps={displayCandidateApps}
+                          applications={applications}
+                          isExclusiveLocked={isExclusiveLocked}
+                          t={t}
+                          formatMoneyAmount={formatMoneyAmount}
+                          acceptingApplicationId={acceptingApplicationId}
+                          onAccept={(app) => void handleAcceptProposal(job, app)}
+                          showLifecycleMenu={showActivityMenu}
+                          lifecycleControlsEnabled={lifecycleControlsEnabled}
+                          activityMenuOpen={activityMenuJobId === job.id}
+                          onToggleActivityMenu={() =>
+                            setActivityMenuJobId((current) => (current === job.id ? null : job.id))
+                          }
+                          activityMenuRef={activityMenuJobId === job.id ? activityMenuRef : undefined}
+                          onPause={() => {
+                            setPauseTargetJobId(job.id);
+                            setActivityMenuJobId(null);
+                          }}
+                          onResume={() => void handleResumeJob(job.id)}
+                          onCancel={() => {
+                            setCancelTargetJobId(job.id);
+                            setActivityMenuJobId(null);
+                          }}
+                        />
+                      );
+                    }
 
                     return (
                       <article

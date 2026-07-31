@@ -2504,7 +2504,8 @@ export const en = {
     cancel_modal_title: 'Cancel this request?',
     cancel_modal_body:
       'This listing will be removed from active requests and interested helpers will be notified.',
-    cancel_modal_warning: 'This action cannot be undone.',
+    cancel_modal_warning:
+      'This action cannot be undone. LinkCredits spent by Helps on this request will be refunded.',
     cancel_modal_back: 'No, keep request',
     cancel_modal_confirm: 'Yes, cancel',
     remove: 'Remove',

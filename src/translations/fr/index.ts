@@ -2513,7 +2513,8 @@ export const fr = {
     cancel_modal_title: 'Annuler cette demande ?',
     cancel_modal_body:
       'Cette annonce sera retirée des demandes actives et les helpers intéressés seront avertis.',
-    cancel_modal_warning: 'Cette action est irréversible.',
+    cancel_modal_warning:
+      'Cette action est irréversible. Les LinkCredits dépensés par les Helps sur cette demande seront remboursés.',
     cancel_modal_back: 'Non, garder la demande',
     cancel_modal_confirm: 'Oui, annuler',
     remove: 'Retirer',

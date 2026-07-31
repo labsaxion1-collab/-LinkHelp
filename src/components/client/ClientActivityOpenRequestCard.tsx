@@ -21,7 +21,7 @@ import {
   FEED_CARD_PREMIUM_TITLE_CLASS,
   FEED_CARD_PREMIUM_TOP_BAR_CLASS,
 } from '@/components/opportunities/feedCardPremiumTheme';
-import { getCategoryLucideIcon } from '@/utils/categoryIcons';
+import { getCategoryIconById } from '@/utils/categoryIcons';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { formatJobBudgetAmount } from '@/utils/formatJobBudget';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
@@ -102,7 +102,7 @@ export function ClientActivityOpenRequestCard({
   const [menuCoords, setMenuCoords] = useState<{ top: number; right: number } | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const CategoryIcon = getCategoryLucideIcon(job.category) ?? Icons.Briefcase;
+  const CategoryIcon = getCategoryIconById(job.category);
   const categoryTheme = getCategoryFeedTheme(job.category);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const category = translateCategory(job.category, t);

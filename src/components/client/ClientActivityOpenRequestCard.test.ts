@@ -200,6 +200,8 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(src).toContain('budget_total_label');
     expect(src).toContain('owner_no_extra_details');
     expect(src).toContain('formatJobBudgetAmount');
+    expect(src).toContain('getCategoryIconById');
+    expect(src).not.toContain('getCategoryLucideIcon');
     expect(src).not.toContain('formatJobBudgetDisplay');
     // Arc must not live in a top-right grid column.
     expect(src).not.toContain('col-start-3');

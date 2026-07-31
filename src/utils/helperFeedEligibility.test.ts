@@ -137,7 +137,7 @@ describe('client activity fixed height wiring', () => {
       resolve('src/components/client/ClientActivityOpenRequestCard.tsx'),
       'utf8',
     );
-    expect(src).toContain('measureFeedCardNaturalHeight');
+    expect(src).toContain('feedCardLockedContentStyle');
     expect(src).toContain('invisible pointer-events-none');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
     expect(src).not.toContain('Math.max(natural, 280)');

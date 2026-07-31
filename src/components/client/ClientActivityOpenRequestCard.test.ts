@@ -173,12 +173,17 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(src).toContain('back_to_candidates');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
     expect(src).toContain('invisible pointer-events-none');
+    expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
+    expect(src).toContain('FEED_CARD_SHELL_CLASS');
+    expect(src).toContain('feedCardLockedContentStyle');
     expect(src).not.toContain('HelperOpportunityCard');
     expect(src).not.toContain('InterestedRing');
     expect(src).not.toContain('client-activity-candidates-count');
     expect(src).not.toContain('view_candidates');
     expect(src).not.toContain('candidates_count_zero');
     expect(src).not.toContain('min-h-[280px]');
+    expect(src).not.toContain('measureFeedCardNaturalHeight');
+    expect(src).not.toContain('rounded-[1.35rem]');
   });
 
   it('keeps Helper feed InterestedRing path untouched', async () => {
@@ -189,6 +194,7 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(feed).toContain('InterestedRing');
     expect(feed).not.toContain('ClientActivityOpenRequestCard');
     expect(feed).not.toContain('ClientActivityCandidateRing');
+    expect(feed).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
     const ring = await readFile(
       resolve('src/components/opportunities/InterestedRing.tsx'),
       'utf8',

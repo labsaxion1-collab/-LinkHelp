@@ -24,8 +24,8 @@ describe('P3.3 feed card premium visual panels', () => {
     expect(theme).not.toContain('backdrop-blur');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
     expect(src).toContain('data-testid="feed-card-premium-shell"');
-    // Summary shell stays white
-    expect(src).toContain('overflow-hidden bg-white px-3 pb-2.5 pt-2.5');
+    // Summary shell stays white via shared content token
+    expect(src).toContain('FEED_CARD_CONTENT_CLASS');
   });
 
   it('pins compact Voltar bar while content scrolls underneath', async () => {
@@ -46,7 +46,7 @@ describe('P3.3 feed card premium visual panels', () => {
     const theme = await readFile(resolve(themePath), 'utf8');
     expect(src).toContain('goBackToSummary');
     expect(src).toContain('data-testid="feed-card-back"');
-    expect(src).toContain('lockedHeight');
+    expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
     expect(src).toContain('FEED_CARD_PREMIUM_SCROLL_CLASS');
     expect(theme).toContain('overflow-y-auto');
     expect(src).toContain('getApplicationCreditQuote');

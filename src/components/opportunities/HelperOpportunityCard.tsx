@@ -1,4 +1,4 @@
-import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { hapticSuccess } from '@/utils/haptic';
 import * as Icons from 'lucide-react';
@@ -60,9 +60,13 @@ import {
   type FeedCardView,
 } from '@/utils/feedCardView';
 import {
+  FEED_CARD_CONTENT_CLASS,
   FEED_CARD_FIXED_HEIGHT_EXTRA_PX,
-  measureFeedCardNaturalHeight,
-  resolveFeedCardLockedHeight,
+  FEED_CARD_RING_SIZE_PX,
+  FEED_CARD_SHELL_CLASS,
+  FEED_CARD_STANDARD_CONTENT_HEIGHT_PX,
+  FEED_CARD_TOP_ACCENT_CLASS,
+  feedCardLockedContentStyle,
 } from '@/utils/feedCardFixedHeight';
 
 export type { FeedCardView } from '@/utils/feedCardView';
@@ -110,7 +114,7 @@ function jobMatchTier(job: Job, activeTab: HelperOpportunityCardTab): 'urgent' |
   return 'normal';
 }
 
-const OPPORTUNITY_RING_SIZE = 68;
+const OPPORTUNITY_RING_SIZE = FEED_CARD_RING_SIZE_PX;
 
 function PremiumMetaDot() {
   return (
@@ -166,8 +170,6 @@ function HelperOpportunityCardInner({
   const [view, setView] = useState<FeedCardView>(() =>
     feedCardViewFromDescriptionExpanded(descriptionExpanded),
   );
-  const [lockedHeight, setLockedHeight] = useState<number | null>(null);
-  const contentShellRef = useRef<HTMLDivElement>(null);
   const [applicationType, setApplicationType] = useState<HelperApplicationType | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [proposalAmountRaw, setProposalAmountRaw] = useState('');
@@ -227,15 +229,6 @@ function HelperOpportunityCardInner({
   const requestDescription = getRequestDescriptionForViewer(job.description, language);
   const showAmountInput = requiresProposalAmountInput(job);
 
-  useLayoutEffect(() => {
-    if (view !== 'summary') return;
-    const el = contentShellRef.current;
-    if (!el) return;
-    const natural = measureFeedCardNaturalHeight(el);
-    const next = resolveFeedCardLockedHeight(natural);
-    if (next > 0) setLockedHeight(next);
-  }, [view, job.id, hasApplied, isApplying, applicationsCount, title, metaLine]);
-
   useEffect(() => {
     setView(feedCardViewFromDescriptionExpanded(descriptionExpanded));
   }, [descriptionExpanded]);
@@ -266,11 +259,6 @@ function HelperOpportunityCardInner({
   }, [isApplying]);
 
   const goToView = (next: FeedCardView) => {
-    if (next !== 'summary' && contentShellRef.current) {
-      const natural = measureFeedCardNaturalHeight(contentShellRef.current);
-      const h = resolveFeedCardLockedHeight(natural);
-      if (h > 0) setLockedHeight(h);
-    }
     setView(next);
     onDescriptionExpandedChange?.(next === 'description');
   };
@@ -770,8 +758,7 @@ function HelperOpportunityCardInner({
   );
 
   const cardShell = clsx(
-    'group/card relative h-full w-full max-w-full overflow-hidden rounded-[22px] border bg-white transition-all duration-300',
-    'shadow-[0_2px_12px_rgba(15,23,42,0.05),0_6px_28px_rgba(15,23,42,0.06)]',
+    FEED_CARD_SHELL_CLASS,
     'md:hover:-translate-y-1 md:hover:shadow-[0_12px_40px_rgba(15,23,42,0.10)] motion-reduce:transform-none',
     isExiting &&
       'pointer-events-none scale-[0.88] opacity-0 -translate-x-8 -rotate-2 duration-[520ms] ease-[cubic-bezier(0.34,1.15,0.64,1)]',
@@ -779,12 +766,12 @@ function HelperOpportunityCardInner({
       ? 'border-rose-200/80'
       : tier === 'best'
         ? 'border-emerald-200/70'
-        : 'border-[rgba(15,23,42,0.08)]',
+        : null,
   );
 
   const topAccent = (
     <div
-      className="h-[4px] w-full shrink-0 rounded-t-[22px]"
+      className={FEED_CARD_TOP_ACCENT_CLASS}
       style={{
         background: `linear-gradient(90deg, ${categoryTheme.iconColor} 0%, ${categoryTheme.iconColor}55 55%, transparent 100%)`,
       }}
@@ -797,16 +784,12 @@ function HelperOpportunityCardInner({
       <LhCard padding="none" className={cardShell}>
         {topAccent}
         <div
-          ref={contentShellRef}
           data-feed-card-view={view}
-          data-feed-card-height-locked={lockedHeight != null ? 'true' : 'false'}
+          data-feed-card-height-locked="true"
           data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
-          className="relative z-20 overflow-hidden bg-white px-3 pb-2.5 pt-2.5 sm:px-4 sm:pb-3 sm:pt-3"
-          style={
-            lockedHeight != null
-              ? { height: lockedHeight, minHeight: lockedHeight, maxHeight: lockedHeight }
-              : undefined
-          }
+          data-feed-card-standard-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
+          className={FEED_CARD_CONTENT_CLASS}
+          style={feedCardLockedContentStyle()}
         >
           <div
             className={clsx(isInternalView && 'invisible pointer-events-none select-none')}

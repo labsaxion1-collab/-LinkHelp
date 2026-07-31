@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { clsx } from 'clsx';
 import type { Application } from '@/types/application';
@@ -7,6 +7,7 @@ import { ClientActivityCandidateRing } from '@/components/client/ClientActivityC
 import { ClientActivityCandidateRow } from '@/components/client/ClientActivityCandidateRow';
 import { CandidateHelperProfileExpand } from '@/components/client/CandidateHelperProfileExpand';
 import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
+import { LhCard } from '@/components/design-system/LhCard';
 import {
   FEED_CARD_PREMIUM_BACK_CLASS,
   FEED_CARD_PREMIUM_BODY_CLASS,
@@ -42,9 +43,13 @@ import {
   type ClientActivityCardView,
 } from '@/utils/clientActivityCardView';
 import {
+  FEED_CARD_CONTENT_CLASS,
   FEED_CARD_FIXED_HEIGHT_EXTRA_PX,
-  measureFeedCardNaturalHeight,
-  resolveFeedCardLockedHeight,
+  FEED_CARD_RING_SIZE_PX,
+  FEED_CARD_SHELL_CLASS,
+  FEED_CARD_STANDARD_CONTENT_HEIGHT_PX,
+  FEED_CARD_TOP_ACCENT_CLASS,
+  feedCardLockedContentStyle,
 } from '@/utils/feedCardFixedHeight';
 
 type TFn = (key: string, options?: Record<string, string | number>) => string;
@@ -91,8 +96,6 @@ export function ClientActivityOpenRequestCard({
   const [view, setView] = useState<ClientActivityCardView>('summary');
   const [profileAppId, setProfileAppId] = useState<string | null>(null);
   const [rejectingApplicationId, setRejectingApplicationId] = useState<string | null>(null);
-  const [lockedHeight, setLockedHeight] = useState<number | null>(null);
-  const shellRef = useRef<HTMLElement | null>(null);
 
   const CategoryIcon = getCategoryLucideIcon(job.category) ?? Icons.Briefcase;
   const categoryTheme = getCategoryFeedTheme(job.category);
@@ -124,21 +127,7 @@ export function ClientActivityOpenRequestCard({
         ? t('create_modal.service_mode_in_person')
         : null;
 
-  useLayoutEffect(() => {
-    if (view !== 'summary') return;
-    const shell = shellRef.current;
-    if (!shell) return;
-    const natural = measureFeedCardNaturalHeight(shell);
-    const next = resolveFeedCardLockedHeight(natural);
-    if (next > 0) setLockedHeight(next);
-  }, [view, job.id, title, candidateCount, isExclusiveLocked]);
-
   const goToView = (next: ClientActivityCardView) => {
-    if (next !== 'summary' && shellRef.current) {
-      const natural = measureFeedCardNaturalHeight(shellRef.current);
-      const h = resolveFeedCardLockedHeight(natural);
-      if (h > 0) setLockedHeight(h);
-    }
     setView(next);
   };
 
@@ -195,31 +184,24 @@ export function ClientActivityOpenRequestCard({
         ? t('client_dashboard.open_candidates_a11y_zero')
         : t('client_dashboard.open_candidates_a11y', { count: candidateCount });
 
-  const lockedStyle =
-    lockedHeight != null
-      ? {
-          height: lockedHeight,
-          minHeight: lockedHeight,
-          maxHeight: lockedHeight,
-        }
-      : undefined;
-
   const statusPill = isExclusiveLocked ? (
-    <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-800">
-      <Icons.Crown className="h-3 w-3" aria-hidden />
-      {t('client_dashboard.exclusive_application_badge')}
+    <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-800">
+      <Icons.Crown className="h-3 w-3 shrink-0" aria-hidden />
+      <span className="truncate">{t('client_dashboard.exclusive_application_badge')}</span>
     </span>
   ) : (
     <span
       className={clsx(
-        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black',
+        'inline-flex max-w-full items-center gap-1 truncate rounded-full border px-2 py-0.5 text-[10px] font-black',
         isJobPaused(job)
           ? 'border-slate-200 bg-slate-100 text-slate-700'
           : 'border-sky-200 bg-sky-50 text-sky-800',
       )}
     >
-      <Icons.Clock3 className="h-3 w-3" aria-hidden />
-      {isJobPaused(job) ? t('client_dashboard.status_paused') : t('client_dashboard.status_waiting_helpers')}
+      <Icons.Clock3 className="h-3 w-3 shrink-0" aria-hidden />
+      <span className="truncate">
+        {isJobPaused(job) ? t('client_dashboard.status_paused') : t('client_dashboard.status_waiting_helpers')}
+      </span>
     </span>
   );
 
@@ -327,7 +309,7 @@ export function ClientActivityOpenRequestCard({
 
       <div
         className={clsx(
-          'grid w-full min-w-0 grid-cols-[48px_minmax(0,1fr)_68px] grid-rows-[auto_auto_auto] gap-x-2 gap-y-1 sm:grid-cols-[56px_minmax(0,1fr)_68px]',
+          'grid w-full min-w-0 grid-cols-[48px_minmax(0,1fr)_68px] grid-rows-[auto_auto_auto] gap-x-2 gap-y-1 sm:grid-cols-[56px_minmax(0,1fr)_68px] sm:gap-x-2.5 sm:gap-y-1',
           showLifecycleMenu && 'pr-6',
         )}
       >
@@ -347,9 +329,8 @@ export function ClientActivityOpenRequestCard({
           />
         </div>
 
-        <div className="col-start-2 row-start-1 min-w-0">
-          <div className="mb-1">{statusPill}</div>
-          <h3 className="line-clamp-2 text-[15px] font-bold leading-[1.28] text-[#0F172A] sm:text-[17px]">
+        <div className="col-start-2 row-start-1 min-w-0 pr-0.5">
+          <h3 className="line-clamp-2 text-[15px] font-bold leading-[1.28] text-[#0F172A] sm:text-[17px] sm:leading-[1.3]">
             {title}
           </h3>
         </div>
@@ -362,35 +343,44 @@ export function ClientActivityOpenRequestCard({
             />
             <span className="truncate text-[11px] font-medium text-[#94A3B8]">{category}</span>
           </div>
-          <p className="truncate text-[12px] font-semibold text-[#64748B]">
-            <span className="font-bold" style={{ color: categoryTheme.budgetColor }}>
-              {budget}
-            </span>
-            {schedule ? ` · ${schedule}` : ''}
-          </p>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            <p className="min-w-0 truncate text-[12px] font-semibold text-[#64748B]">
+              <span className="font-bold" style={{ color: categoryTheme.budgetColor }}>
+                {budget}
+              </span>
+              {schedule ? ` · ${schedule}` : ''}
+            </p>
+            {statusPill}
+          </div>
         </div>
 
-        <div className="col-start-3 row-span-2 row-start-1 flex shrink-0 items-center justify-center self-center">
+        <div className="col-start-3 row-span-2 row-start-1 flex shrink-0 items-center justify-center self-center pt-0.5">
           <ClientActivityCandidateRing
             segmentColors={segmentColors}
             exclusiveFullColor={exclusiveFullColor}
-            size={68}
+            size={FEED_CARD_RING_SIZE_PX}
             count={candidateCount}
             ariaLabel={ringAriaLabel}
             onActivate={openCandidatesPanel}
           />
         </div>
 
-        <div className="col-span-3 col-start-1 row-start-3 mt-1 flex items-center justify-end border-t border-[rgba(15,23,42,0.06)] pt-2">
-          <button
-            type="button"
-            data-testid="client-activity-open-description"
-            onClick={() => goToView('description')}
-            className="inline-flex min-h-[36px] shrink-0 items-center justify-center gap-1.5 rounded-[12px] border border-slate-200 bg-white px-3 text-[12px] font-bold text-slate-800 shadow-sm hover:bg-slate-50"
-            aria-expanded={view === 'description'}
-          >
-            {t('client_dashboard.view_description')}
-          </button>
+        <div className="relative col-span-3 col-start-1 row-start-3 mt-0.5 flex flex-col gap-1.5 border-t border-[rgba(15,23,42,0.06)] pt-2">
+          <div className="flex min-h-[44px] items-center justify-end">
+            <button
+              type="button"
+              data-testid="client-activity-open-description"
+              onClick={() => goToView('description')}
+              className="inline-flex min-h-[44px] min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[rgba(15,23,42,0.08)] bg-[#f8fafc] px-3 py-2 text-[12px] font-bold text-[#0F172A] transition hover:bg-slate-50"
+              aria-expanded={view === 'description'}
+            >
+              <Icons.FileText className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
+              <span className="truncate">{t('client_dashboard.view_description')}</span>
+              <Icons.ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
+            </button>
+          </div>
+          {/* Spacer matches Helper feed apply-row height so outer card equals feed shell. */}
+          <div className="min-h-[44px]" aria-hidden />
         </div>
       </div>
     </div>
@@ -584,32 +574,38 @@ export function ClientActivityOpenRequestCard({
   };
 
   return (
-    <article
-      ref={shellRef}
+    <LhCard
+      padding="none"
+      className={clsx(FEED_CARD_SHELL_CLASS, isInternalView ? 'z-30' : 'z-0')}
       data-testid="client-activity-open-card"
       data-client-activity-view={view}
-      data-feed-card-height-locked={lockedHeight != null ? 'true' : 'false'}
+      data-feed-card-height-locked="true"
       data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
-      className={clsx(
-        'group relative min-w-0 overflow-hidden rounded-[1.35rem] border border-slate-100 bg-white p-3 shadow-[0_10px_30px_rgba(15,23,42,0.07)] transition-shadow duration-200 sm:p-4',
-        isInternalView ? 'z-30' : 'z-0 hover:shadow-[0_16px_42px_rgba(15,23,42,0.11)]',
-      )}
-      style={lockedStyle}
+      data-feed-card-standard-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
     >
       <div
-        className={clsx(isInternalView && 'invisible pointer-events-none select-none')}
-        aria-hidden={isInternalView}
-        data-testid="client-activity-card-summary-shell"
-      >
-        {renderSummary()}
-      </div>
-      {isInternalView ? (
-        <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="client-activity-premium-shell">
-          {view === 'description' ? renderDescription() : null}
-          {view === 'candidates' ? renderCandidates() : null}
-          {view === 'profile' ? renderProfile() : null}
+        className={FEED_CARD_TOP_ACCENT_CLASS}
+        style={{
+          background: `linear-gradient(90deg, ${categoryTheme.iconColor} 0%, ${categoryTheme.iconColor}55 55%, transparent 100%)`,
+        }}
+        aria-hidden
+      />
+      <div className={FEED_CARD_CONTENT_CLASS} style={feedCardLockedContentStyle()}>
+        <div
+          className={clsx(isInternalView && 'invisible pointer-events-none select-none')}
+          aria-hidden={isInternalView}
+          data-testid="client-activity-card-summary-shell"
+        >
+          {renderSummary()}
         </div>
-      ) : null}
-    </article>
+        {isInternalView ? (
+          <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="client-activity-premium-shell">
+            {view === 'description' ? renderDescription() : null}
+            {view === 'candidates' ? renderCandidates() : null}
+            {view === 'profile' ? renderProfile() : null}
+          </div>
+        ) : null}
+      </div>
+    </LhCard>
   );
 }

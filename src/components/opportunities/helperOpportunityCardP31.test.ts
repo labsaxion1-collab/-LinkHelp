@@ -34,7 +34,7 @@ describe('P3.1 feed card internal navigation', () => {
     expect(src).toContain("useState<FeedCardView>");
     expect(src).toContain('data-feed-card-view={view}');
     expect(src).toContain('data-feed-card-height-locked');
-    expect(src).toContain('lockedHeight');
+    expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
     expect(src).toContain('FEED_CARD_PREMIUM_SCROLL_CLASS');
     expect(theme).toContain('overflow-y-auto');
     expect(src).toContain("goToView('description')");

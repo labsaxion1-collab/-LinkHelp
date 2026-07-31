@@ -5,6 +5,7 @@ import type { Job } from '@/types/job';
 import type { UpcomingJob } from '@/types/upcoming';
 import type { ServiceReview } from '@/types/review';
 import { LhCard } from '@/components/design-system/LhCard';
+import { FeedCardClientProfilePanel } from '@/components/opportunities/FeedCardClientProfilePanel';
 import {
   FEED_CARD_PREMIUM_BACK_CLASS,
   FEED_CARD_PREMIUM_BODY_CLASS,
@@ -43,6 +44,8 @@ import {
 } from '@/utils/feedCardFixedHeight';
 import { CLIENT_ACTIVITY_PANEL_CLASS } from '@/utils/clientActivityCardView';
 
+type PanelView = 'summary' | 'description' | 'profile';
+
 type Props = {
   job: UpcomingJob;
   requestJob?: Job | null;
@@ -53,7 +56,7 @@ type Props = {
   reviewerId: string;
   pendingRequestIds: ReadonlySet<string>;
   onRate: () => void;
-  onOpenChat?: () => void;
+  onViewSubmittedReview: () => void;
 };
 
 function formatHistoryDate(ts: number, locale: string): string {
@@ -70,32 +73,49 @@ function formatHistoryDate(ts: number, locale: string): string {
   }
 }
 
+function peerInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
+  return (parts[0]?.slice(0, 2) ?? '?').toUpperCase();
+}
+
+function hasRealPhoto(url?: string | null): boolean {
+  const value = url?.trim() ?? '';
+  if (!value) return false;
+  if (value.includes('pravatar.cc') || value.includes('i.pravatar')) return false;
+  return true;
+}
+
 function CompactReviewAction({
   state,
   myRating,
   t,
   onRate,
+  onViewSubmitted,
 }: {
   state: CompletedReviewUiState;
   myRating: number | null;
   t: (key: string) => string;
   onRate: () => void;
+  onViewSubmitted: () => void;
 }) {
   if (state === 'submitted') {
     return (
-      <div
+      <button
+        type="button"
         data-testid="helper-review-submitted"
-        className="inline-flex min-h-[36px] max-w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-[11px] font-bold text-emerald-900"
+        onClick={onViewSubmitted}
+        className="inline-flex min-h-[36px] max-w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-[11px] font-bold text-emerald-900 hover:bg-emerald-100"
       >
         <Icons.CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
         <span className="truncate">{t('service_review.review_submitted')}</span>
         {myRating != null ? (
           <span className="inline-flex shrink-0 items-center gap-0.5">
             <Icons.Star className="h-3 w-3 fill-amber-400 text-amber-400" aria-hidden />
-            {myRating.toFixed(1)}
+            {myReviewRating(myRating)}
           </span>
         ) : null}
-      </div>
+      </button>
     );
   }
 
@@ -112,6 +132,10 @@ function CompactReviewAction({
   );
 }
 
+function myReviewRating(rating: number): string {
+  return rating.toFixed(1);
+}
+
 export function HelperCompletedHistoryCard({
   job,
   requestJob,
@@ -122,9 +146,9 @@ export function HelperCompletedHistoryCard({
   reviewerId,
   pendingRequestIds,
   onRate,
-  onOpenChat,
+  onViewSubmittedReview,
 }: Props) {
-  const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const [panel, setPanel] = useState<PanelView>('summary');
   const theme = getCategoryFeedTheme(job.category);
   const catId = resolveCategoryId(job.category) ?? 'other';
   const CategoryIcon = getCategoryIconById(catId);
@@ -163,13 +187,18 @@ export function HelperCompletedHistoryCard({
     pendingRequestIds,
   });
 
+  const showPhoto = hasRealPhoto(job.clientAvatar);
+  const isInternal = panel !== 'summary';
+  const canOpenClientProfile = Boolean(requestJob?.clientId);
+
   return (
-    <div className={clsx('relative', descriptionOpen ? 'z-30' : 'z-0')}>
+    <div className={clsx('relative', isInternal ? 'z-30' : 'z-0')}>
       <LhCard
         padding="none"
         className={FEED_CARD_SHELL_CLASS}
         data-testid="helper-completed-history-card"
         data-job-id={job.jobId}
+        data-completed-panel={panel}
         data-feed-card-height-locked="true"
         data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
         data-feed-card-standard-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
@@ -185,9 +214,9 @@ export function HelperCompletedHistoryCard({
           <div
             className={clsx(
               'flex h-full min-h-0 flex-col',
-              descriptionOpen && 'invisible pointer-events-none select-none',
+              isInternal && 'invisible pointer-events-none select-none',
             )}
-            aria-hidden={descriptionOpen}
+            aria-hidden={isInternal}
             data-testid="helper-completed-card-summary"
           >
             <div className="flex shrink-0 items-start gap-2">
@@ -221,23 +250,38 @@ export function HelperCompletedHistoryCard({
             </div>
 
             <div className="mt-2 flex min-h-0 flex-1 items-center gap-2.5">
-              <div className="flex min-w-0 flex-1 items-center gap-2">
-                <img
-                  src={job.clientAvatar || avatarUrlForName(job.clientName)}
-                  alt=""
-                  onError={(e) => {
-                    e.currentTarget.src = avatarUrlForName(job.clientName);
-                  }}
-                  className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white"
-                />
+              <button
+                type="button"
+                data-testid="helper-completed-client"
+                disabled={!canOpenClientProfile}
+                onClick={() => canOpenClientProfile && setPanel('profile')}
+                className={clsx(
+                  'flex min-w-0 flex-1 items-center gap-2 rounded-xl text-left',
+                  canOpenClientProfile && 'transition-colors hover:bg-slate-50',
+                )}
+              >
+                {showPhoto ? (
+                  <img
+                    src={job.clientAvatar || avatarUrlForName(job.clientName)}
+                    alt=""
+                    onError={(e) => {
+                      e.currentTarget.src = avatarUrlForName(job.clientName);
+                    }}
+                    className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white"
+                  />
+                ) : (
+                  <span
+                    data-testid="helper-completed-client-initials"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-black text-slate-700 ring-2 ring-white"
+                  >
+                    {peerInitials(job.clientName)}
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] font-black text-slate-950">{firstName}</p>
                   {clientRating != null && clientRating > 0 ? (
                     <p className="mt-0.5 inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-500">
-                      <Icons.Star
-                        className="h-3 w-3 fill-yellow-400 text-yellow-400"
-                        aria-hidden
-                      />
+                      <Icons.Star className="h-3 w-3 fill-yellow-400 text-yellow-400" aria-hidden />
                       {Number(clientRating).toFixed(1)}
                     </p>
                   ) : (
@@ -246,7 +290,7 @@ export function HelperCompletedHistoryCard({
                     </p>
                   )}
                 </div>
-              </div>
+              </button>
               <p className="shrink-0 truncate whitespace-nowrap text-[13px] font-black text-emerald-700">
                 {valueLabel}
               </p>
@@ -256,7 +300,7 @@ export function HelperCompletedHistoryCard({
               <button
                 type="button"
                 data-testid="helper-completed-open-description"
-                onClick={() => setDescriptionOpen(true)}
+                onClick={() => setPanel('description')}
                 className="inline-flex min-h-[36px] flex-1 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-[11px] font-bold text-slate-800 hover:bg-slate-50"
               >
                 {t('helper_tasks.description_toggle')}
@@ -267,17 +311,18 @@ export function HelperCompletedHistoryCard({
                 myRating={myRating}
                 t={t}
                 onRate={onRate}
+                onViewSubmitted={onViewSubmittedReview}
               />
             </div>
           </div>
 
-          {descriptionOpen ? (
+          {panel === 'description' ? (
             <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="helper-completed-description-panel">
               <div className={clsx(CLIENT_ACTIVITY_PANEL_CLASS, 'overflow-hidden')}>
                 <div className={FEED_CARD_PREMIUM_TOP_BAR_CLASS}>
                   <button
                     type="button"
-                    onClick={() => setDescriptionOpen(false)}
+                    onClick={() => setPanel('summary')}
                     className={FEED_CARD_PREMIUM_BACK_CLASS}
                   >
                     <Icons.ChevronLeft className="h-4 w-4" aria-hidden />
@@ -326,19 +371,29 @@ export function HelperCompletedHistoryCard({
                     </p>
                   ) : (
                     <p className={FEED_CARD_PREMIUM_MUTED_CLASS}>
-                      {t('upcoming_jobs.no_observations')}
+                      {t('client_dashboard.owner_no_extra_details')}
                     </p>
                   )}
-                  {onOpenChat ? (
-                    <button
-                      type="button"
-                      onClick={onOpenChat}
-                      className="mt-1 inline-flex min-h-[36px] w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 text-[12px] font-bold text-white hover:bg-white/15"
-                    >
-                      <Icons.MessageSquare className="h-3.5 w-3.5" aria-hidden />
-                      {t('upcoming_jobs.open_chat')}
-                    </button>
-                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {panel === 'profile' && requestJob ? (
+            <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="helper-completed-client-profile-panel">
+              <div className={clsx(CLIENT_ACTIVITY_PANEL_CLASS, 'overflow-hidden')}>
+                <div className={FEED_CARD_PREMIUM_TOP_BAR_CLASS}>
+                  <button
+                    type="button"
+                    onClick={() => setPanel('summary')}
+                    className={FEED_CARD_PREMIUM_BACK_CLASS}
+                  >
+                    <Icons.ChevronLeft className="h-4 w-4" aria-hidden />
+                    {t('nav.back')}
+                  </button>
+                </div>
+                <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'min-h-0')}>
+                  <FeedCardClientProfilePanel job={requestJob} />
                 </div>
               </div>
             </div>

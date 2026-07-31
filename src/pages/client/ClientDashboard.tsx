@@ -233,7 +233,7 @@ export default function ClientDashboard() {
   const { jobs, applications, pendingServiceReviews, upcomingJobs, reviews } = useAppDataCore();
   const appDataActionsRef = useAppDataActionsRef();
   useDevRenderCount('ClientDashboard');
-  const { openReviewByRequestId } = useServiceReview();
+  const { openReviewByRequestId, openSubmittedReviewByRequestId } = useServiceReview();
   const me = useSessionViewer();
   const pendingReviewIds = useMemo(
     () => new Set(pendingServiceReviews.map((p) => p.requestId)),
@@ -1700,9 +1700,8 @@ export default function ClientDashboard() {
                           t={t}
                           formatMoneyAmount={formatMoneyAmount}
                           locale={locale}
-                          onOpenHelperProfile={(app) => openHelperProfileFromApplication(job, app)}
-                          onOpenDetails={() => setDetailJob(job)}
                           onRate={() => openReviewByRequestId(job.id)}
+                          onViewSubmittedReview={() => openSubmittedReviewByRequestId(job.id)}
                         />
                       );
                     }

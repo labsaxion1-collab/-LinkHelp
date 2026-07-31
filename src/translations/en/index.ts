@@ -2421,6 +2421,12 @@ export const en = {
     review_submitted: 'Review submitted',
     review_pending: 'Review pending',
     service_completed: 'Service completed',
+    edit_review: 'Edit review',
+    review_updated: 'Review updated',
+    save_changes: 'Save changes',
+    no_comment: 'No comment.',
+    edit_requires_backend:
+      'Secure review editing requires a backend update RPC. Viewing your submitted review is available now.',
     profile_rating: 'Average rating',
     no_rating_yet: 'No ratings yet',
     criteria: {

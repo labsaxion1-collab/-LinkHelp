@@ -80,10 +80,12 @@ describe('completed history wiring', () => {
     expect(src).toContain('feedCardLockedContentStyle');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
     expect(src).toContain('completed-open-description');
+    expect(src).toContain('CandidateHelperProfileExpand');
     expect(src).toContain('line-clamp-2');
     expect(src).not.toContain('onAccept');
     expect(src).not.toContain('ClientActivityCandidateRing');
     expect(src).not.toContain('cancel_request');
+    expect(src).not.toContain('history_view_details');
   });
 
   it('ships helper completed history card with locked shell', async () => {
@@ -96,6 +98,7 @@ describe('completed history wiring', () => {
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
     expect(src).toContain('service_review.rate_action');
     expect(src).toContain('history_client_attended');
+    expect(src).toContain('FeedCardClientProfilePanel');
     expect(src).toContain('line-clamp-2');
   });
 
@@ -104,6 +107,7 @@ describe('completed history wiring', () => {
     expect(dash).toContain('ClientCompletedHistoryCard');
     expect(dash).toContain("job.status === 'completed'");
     expect(dash).toContain('openReviewByRequestId');
+    expect(dash).toContain('openSubmittedReviewByRequestId');
   });
 
   it('exposes helper completed tasks tab with compact history card', async () => {
@@ -112,6 +116,7 @@ describe('completed history wiring', () => {
     expect(page).toContain('upcoming_jobs.tab_completed');
     expect(page).toContain('HelperCompletedHistoryCard');
     expect(page).toContain("setActiveTab('completed')");
+    expect(page).toContain('openSubmittedReviewByRequestId');
   });
 
   it('keeps bilateral multi-criteria modal as the review form', async () => {
@@ -139,6 +144,7 @@ describe('completed history wiring', () => {
     expect(pt).toContain("rate_action: 'Avaliar'");
     expect(pt).toContain("review_submitted: 'Avaliação enviada'");
     expect(pt).toContain("service_completed: 'Serviço concluído'");
+    expect(pt).toContain("edit_review: 'Editar avaliação'");
     expect(en).toContain("tab_completed: 'Completed'");
     expect(fr).toContain("tab_completed: 'Terminés'");
     expect(pt).toContain("history_help_performed: 'Help que realizou'");

@@ -2430,6 +2430,12 @@ export const fr = {
     review_submitted: 'Évaluation envoyée',
     review_pending: 'Évaluation en attente',
     service_completed: 'Service terminé',
+    edit_review: 'Modifier l’évaluation',
+    review_updated: 'Évaluation mise à jour',
+    save_changes: 'Enregistrer les modifications',
+    no_comment: 'Aucun commentaire.',
+    edit_requires_backend:
+      'La modification sécurisée de l’évaluation nécessite une RPC de mise à jour. La consultation reste disponible.',
     profile_rating: 'Note moyenne',
     no_rating_yet: 'Pas encore d’avis',
     criteria: {

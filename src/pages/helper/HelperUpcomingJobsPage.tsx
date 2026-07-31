@@ -43,7 +43,7 @@ export default function HelperUpcomingJobsPage() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
-  const { openReviewByRequestId } = useServiceReview();
+  const { openReviewByRequestId, openSubmittedReviewByRequestId } = useServiceReview();
   const {
     jobs,
     upcomingJobs,
@@ -240,7 +240,7 @@ export default function HelperUpcomingJobsPage() {
           reviewerId={me.id}
           pendingRequestIds={pendingReviewIds}
           onRate={() => openReviewByRequestId(job.jobId)}
-          onOpenChat={() => navigate(ROUTES.messages)}
+          onViewSubmittedReview={() => openSubmittedReviewByRequestId(job.jobId)}
         />
       );
     });

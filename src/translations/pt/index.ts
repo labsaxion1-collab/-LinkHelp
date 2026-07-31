@@ -2433,6 +2433,12 @@ export const pt = {
     review_submitted: 'Avaliação enviada',
     review_pending: 'Avaliação pendente',
     service_completed: 'Serviço concluído',
+    edit_review: 'Editar avaliação',
+    review_updated: 'Avaliação atualizada',
+    save_changes: 'Salvar alterações',
+    no_comment: 'Sem comentário.',
+    edit_requires_backend:
+      'A edição segura da avaliação depende de uma RPC de atualização no backend. A consulta permanece disponível.',
     profile_rating: 'Média das avaliações',
     no_rating_yet: 'Sem avaliações ainda',
     criteria: {

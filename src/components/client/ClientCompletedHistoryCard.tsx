@@ -6,6 +6,7 @@ import type { Job } from '@/types/job';
 import type { UpcomingJob } from '@/types/upcoming';
 import type { ServiceReview } from '@/types/review';
 import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
+import { CandidateHelperProfileExpand } from '@/components/client/CandidateHelperProfileExpand';
 import { LhCard } from '@/components/design-system/LhCard';
 import {
   FEED_CARD_PREMIUM_BACK_CLASS,
@@ -21,6 +22,7 @@ import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { getCategoryIconById } from '@/utils/categoryIcons';
 import { formatJobBudgetAmount } from '@/utils/formatJobBudget';
 import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
+import { avatarUrlForName } from '@/utils/avatarUrl';
 import {
   translateCategory,
   translateJobTitle,
@@ -41,6 +43,8 @@ import {
 } from '@/utils/feedCardFixedHeight';
 import { CLIENT_ACTIVITY_PANEL_CLASS } from '@/utils/clientActivityCardView';
 
+type PanelView = 'summary' | 'description' | 'profile';
+
 type Props = {
   job: Job;
   hiredApplication: Application | undefined;
@@ -51,9 +55,8 @@ type Props = {
   t: (key: string, vars?: Record<string, string | number>) => string;
   formatMoneyAmount: (amount: number, currency: string) => string;
   locale: string;
-  onOpenHelperProfile: (app: Application) => void;
-  onOpenDetails?: () => void;
   onRate: () => void;
+  onViewSubmittedReview: () => void;
 };
 
 function formatHistoryDate(ts: number, locale: string): string {
@@ -70,22 +73,39 @@ function formatHistoryDate(ts: number, locale: string): string {
   }
 }
 
+function peerInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
+  return (parts[0]?.slice(0, 2) ?? '?').toUpperCase();
+}
+
+function hasRealPhoto(url?: string | null): boolean {
+  const value = url?.trim() ?? '';
+  if (!value) return false;
+  if (value.includes('pravatar.cc') || value.includes('i.pravatar')) return false;
+  return true;
+}
+
 function CompactReviewAction({
   state,
   myRating,
   t,
   onRate,
+  onViewSubmitted,
 }: {
   state: CompletedReviewUiState;
   myRating: number | null;
   t: (key: string) => string;
   onRate: () => void;
+  onViewSubmitted: () => void;
 }) {
   if (state === 'submitted') {
     return (
-      <div
+      <button
+        type="button"
         data-testid="completed-review-submitted"
-        className="inline-flex min-h-[36px] max-w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-[11px] font-bold text-emerald-900"
+        onClick={onViewSubmitted}
+        className="inline-flex min-h-[36px] max-w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-[11px] font-bold text-emerald-900 hover:bg-emerald-100"
       >
         <Icons.CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
         <span className="truncate">{t('service_review.review_submitted')}</span>
@@ -95,7 +115,7 @@ function CompactReviewAction({
             {myRating.toFixed(1)}
           </span>
         ) : null}
-      </div>
+      </button>
     );
   }
 
@@ -122,11 +142,10 @@ export function ClientCompletedHistoryCard({
   t,
   formatMoneyAmount,
   locale,
-  onOpenHelperProfile,
-  onOpenDetails,
   onRate,
+  onViewSubmittedReview,
 }: Props) {
-  const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const [panel, setPanel] = useState<PanelView>('summary');
   const theme = getCategoryFeedTheme(job.category);
   const CategoryIcon = getCategoryIconById(job.category);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
@@ -160,13 +179,33 @@ export function ClientCompletedHistoryCard({
     pendingRequestIds,
   });
 
+  const helperName = hiredApplication?.helperName ?? '';
+  const helperPhoto = hiredApplication?.helperAvatar ?? '';
+  const showPhoto = hasRealPhoto(helperPhoto);
+  const isInternal = panel !== 'summary';
+
+  const renderBackBar = (label: string) => (
+    <div className={FEED_CARD_PREMIUM_TOP_BAR_CLASS}>
+      <button type="button" onClick={() => setPanel('summary')} className={FEED_CARD_PREMIUM_BACK_CLASS}>
+        <Icons.ChevronLeft className="h-4 w-4" aria-hidden />
+        {label}
+      </button>
+    </div>
+  );
+
+  const openHiredProfile = () => {
+    if (!hiredApplication) return;
+    setPanel('profile');
+  };
+
   return (
-    <div className={clsx('relative', descriptionOpen ? 'z-30' : 'z-0')}>
+    <div className={clsx('relative', isInternal ? 'z-30' : 'z-0')}>
       <LhCard
         padding="none"
         className={FEED_CARD_SHELL_CLASS}
         data-testid="client-completed-history-card"
         data-job-id={job.id}
+        data-completed-panel={panel}
         data-feed-card-height-locked="true"
         data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
         data-feed-card-standard-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
@@ -182,12 +221,11 @@ export function ClientCompletedHistoryCard({
           <div
             className={clsx(
               'flex h-full min-h-0 flex-col',
-              descriptionOpen && 'invisible pointer-events-none select-none',
+              isInternal && 'invisible pointer-events-none select-none',
             )}
-            aria-hidden={descriptionOpen}
+            aria-hidden={isInternal}
             data-testid="completed-card-summary"
           >
-            {/* Header */}
             <div className="flex shrink-0 items-start gap-2">
               <div
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border sm:h-11 sm:w-11"
@@ -226,24 +264,33 @@ export function ClientCompletedHistoryCard({
               </div>
             </div>
 
-            {/* Help + value */}
             <div className="mt-2 flex min-h-0 flex-1 items-center gap-2.5">
               {hiredApplication ? (
                 <button
                   type="button"
                   data-testid="completed-hired-helper"
-                  onClick={() => onOpenHelperProfile(hiredApplication)}
+                  onClick={openHiredProfile}
                   className="flex min-w-0 flex-1 items-center gap-2 rounded-xl text-left transition-colors hover:bg-slate-50"
                 >
-                  <img
-                    src={hiredApplication.helperAvatar}
-                    alt=""
-                    className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white"
-                  />
+                  {showPhoto ? (
+                    <img
+                      src={helperPhoto}
+                      alt=""
+                      onError={(e) => {
+                        e.currentTarget.src = avatarUrlForName(helperName);
+                      }}
+                      className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white"
+                    />
+                  ) : (
+                    <span
+                      data-testid="completed-helper-initials"
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-black text-slate-700 ring-2 ring-white"
+                    >
+                      {peerInitials(helperName)}
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-black text-slate-950">
-                      {hiredApplication.helperName}
-                    </p>
+                    <p className="truncate text-[13px] font-black text-slate-950">{helperName}</p>
                     <p className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1 text-[10px] font-bold text-slate-500">
                       <Icons.Star
                         className="h-3 w-3 shrink-0 fill-yellow-400 text-yellow-400"
@@ -274,7 +321,6 @@ export function ClientCompletedHistoryCard({
               </p>
             </div>
 
-            {/* Footer actions */}
             <div
               className="mt-auto flex shrink-0 items-center gap-2 border-t border-slate-100 pt-2"
               data-testid="completed-card-footer"
@@ -282,7 +328,7 @@ export function ClientCompletedHistoryCard({
               <button
                 type="button"
                 data-testid="completed-open-description"
-                onClick={() => setDescriptionOpen(true)}
+                onClick={() => setPanel('description')}
                 className="inline-flex min-h-[36px] flex-1 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-[11px] font-bold text-slate-800 hover:bg-slate-50"
               >
                 {t('client_dashboard.view_description')}
@@ -293,23 +339,15 @@ export function ClientCompletedHistoryCard({
                 myRating={myRating}
                 t={t}
                 onRate={onRate}
+                onViewSubmitted={onViewSubmittedReview}
               />
             </div>
           </div>
 
-          {descriptionOpen ? (
+          {panel === 'description' ? (
             <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="completed-description-panel">
               <div className={clsx(CLIENT_ACTIVITY_PANEL_CLASS, 'overflow-hidden')}>
-                <div className={FEED_CARD_PREMIUM_TOP_BAR_CLASS}>
-                  <button
-                    type="button"
-                    onClick={() => setDescriptionOpen(false)}
-                    className={FEED_CARD_PREMIUM_BACK_CLASS}
-                  >
-                    <Icons.ChevronLeft className="h-4 w-4" aria-hidden />
-                    {t('nav.back')}
-                  </button>
-                </div>
+                {renderBackBar(t('nav.back'))}
                 <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'min-h-0 space-y-2')}>
                   <h3 className={FEED_CARD_PREMIUM_TITLE_CLASS}>{title}</h3>
                   <div className={FEED_CARD_PREMIUM_SURFACE_CLASS}>
@@ -352,17 +390,52 @@ export function ClientCompletedHistoryCard({
                       {t('client_dashboard.owner_no_extra_details')}
                     </p>
                   )}
-                  {onOpenDetails ? (
-                    <button
-                      type="button"
-                      data-testid="completed-open-details"
-                      onClick={onOpenDetails}
-                      className="mt-1 inline-flex min-h-[36px] w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 text-[12px] font-bold text-white hover:bg-white/15"
-                    >
-                      <Icons.FileText className="h-3.5 w-3.5" aria-hidden />
-                      {t('client_jobs.history_view_details')}
-                    </button>
-                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {panel === 'profile' && hiredApplication ? (
+            <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="completed-helper-profile-panel">
+              <div className={clsx(CLIENT_ACTIVITY_PANEL_CLASS, 'overflow-hidden')}>
+                {renderBackBar(t('nav.back'))}
+                <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'min-h-0 space-y-2')}>
+                  <div className="flex items-start gap-3">
+                    {showPhoto ? (
+                      <img
+                        src={helperPhoto}
+                        alt=""
+                        onError={(e) => {
+                          e.currentTarget.src = avatarUrlForName(helperName);
+                        }}
+                        className="h-11 w-11 rounded-full object-cover ring-2 ring-white/40"
+                      />
+                    ) : (
+                      <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/20 text-[12px] font-black text-white ring-2 ring-white/40">
+                        {peerInitials(helperName)}
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-bold text-white">{helperName}</p>
+                      <div className="mt-1">
+                        <LinkHelpRankBadgeFromStats
+                          completedCount={hiredApplication.helperJobs}
+                          averageRating={hiredApplication.helperRating}
+                          role="helper"
+                          size="sm"
+                          showLabel
+                          t={t}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="overflow-hidden rounded-2xl bg-white/95">
+                    <CandidateHelperProfileExpand
+                      helperId={hiredApplication.helperId}
+                      helperRating={hiredApplication.helperRating}
+                      helperJobs={hiredApplication.helperJobs}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

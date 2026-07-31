@@ -25,6 +25,7 @@ export const pt = {
     view_profile: 'Ver perfil',
     check_orders: 'Verifique seus pedidos',
     try_again: 'Tentar novamente',
+    more_options: 'Mais opções',
   },
   languages: {
     portuguese: 'Português',
@@ -1434,6 +1435,8 @@ export const pt = {
     candidates_empty_hint: 'Aguardando Helps se candidatarem.',
     vip_candidate_label: 'Candidato VIP',
     helper_proposal_negotiable_short: 'A combinar',
+    budget_total_label: 'Orçamento total',
+    owner_no_extra_details: 'Você não informou detalhes adicionais.',
     reject_confirm: 'Recusar este Help do chamado?',
     reject_confirm_vip: 'Recusar esta candidatura VIP exclusiva? O chamado voltará a aceitar outros Helps.',
     created_at_label: 'Criado em',
@@ -2514,8 +2517,8 @@ export const pt = {
     cancel_modal_body:
       'Este anúncio será removido dos pedidos ativos e os helpers interessados serão avisados.',
     cancel_modal_warning: 'Essa ação não pode ser desfeita.',
-    cancel_modal_back: 'Voltar',
-    cancel_modal_confirm: 'Sim, cancelar chamado',
+    cancel_modal_back: 'Não, manter chamado',
+    cancel_modal_confirm: 'Sim, cancelar',
     remove: 'Remover',
     remove_confirm: 'Remover este pedido da sua lista?',
     republish: 'Republicar',

@@ -186,6 +186,47 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(src).not.toContain('rounded-[1.35rem]');
   });
 
+  it('places candidate arc and Description on the same bottom row', async () => {
+    const src = await readFile(
+      resolve('src/components/client/ClientActivityOpenRequestCard.tsx'),
+      'utf8',
+    );
+    expect(src).toContain('client-activity-summary-footer');
+    expect(src).toContain('client-activity-footer-ring');
+    expect(src).toContain('client-activity-open-description');
+    expect(src).toContain('client-activity-more-menu');
+    expect(src).toContain('client-activity-cancel-request');
+    expect(src).toContain('BOTTOM_RING_SIZE_PX');
+    expect(src).toContain('budget_total_label');
+    expect(src).toContain('owner_no_extra_details');
+    expect(src).toContain('formatJobBudgetAmount');
+    expect(src).not.toContain('formatJobBudgetDisplay');
+    // Arc must not live in a top-right grid column.
+    expect(src).not.toContain('col-start-3');
+    expect(src).not.toContain('justify-self-end');
+    // Description must not be a lone full-width flex-1 footer action.
+    const footerIdx = src.indexOf('client-activity-summary-footer');
+    const footerBlock = src.slice(footerIdx, footerIdx + 1200);
+    expect(footerBlock).toContain('client-activity-footer-ring');
+    expect(footerBlock).toContain('client-activity-open-description');
+    expect(footerBlock).toContain('ml-auto');
+    expect(footerBlock).not.toMatch(/client-activity-open-description[\s\S]*flex-1/);
+  });
+
+  it('keeps profile without duplicate Accept/Reject actions', async () => {
+    const src = await readFile(
+      resolve('src/components/client/ClientActivityOpenRequestCard.tsx'),
+      'utf8',
+    );
+    const profileIdx = src.indexOf('client-activity-profile-view');
+    expect(profileIdx).toBeGreaterThan(-1);
+    const profileBlock = src.slice(profileIdx, profileIdx + 1600);
+    expect(profileBlock).toContain('CandidateHelperProfileExpand');
+    expect(profileBlock).not.toContain('renderActionRow');
+    expect(profileBlock).not.toContain('onAccept');
+    expect(profileBlock).not.toContain('onReject');
+  });
+
   it('keeps Helper feed InterestedRing path untouched', async () => {
     const feed = await readFile(
       resolve('src/components/opportunities/HelperOpportunityCard.tsx'),

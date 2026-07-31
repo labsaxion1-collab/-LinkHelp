@@ -25,6 +25,7 @@ export const en = {
     view_profile: 'View profile',
     check_orders: 'Check your requests',
     try_again: 'Try again',
+    more_options: 'More options',
   },
   languages: {
     portuguese: 'Portuguese',
@@ -1425,6 +1426,8 @@ export const en = {
     candidates_empty_hint: 'Waiting for helpers to apply.',
     vip_candidate_label: 'VIP Candidate',
     helper_proposal_negotiable_short: 'TBD',
+    budget_total_label: 'Total budget',
+    owner_no_extra_details: 'You did not add further details.',
     reject_confirm: 'Reject this helper from the request?',
     reject_confirm_vip: 'Reject this VIP exclusive application? The request will open to other helpers again.',
     created_at_label: 'Created',
@@ -2502,8 +2505,8 @@ export const en = {
     cancel_modal_body:
       'This listing will be removed from active requests and interested helpers will be notified.',
     cancel_modal_warning: 'This action cannot be undone.',
-    cancel_modal_back: 'Go back',
-    cancel_modal_confirm: 'Yes, cancel request',
+    cancel_modal_back: 'No, keep request',
+    cancel_modal_confirm: 'Yes, cancel',
     remove: 'Remove',
     remove_confirm: 'Remove this request from your list?',
     republish: 'Republish',

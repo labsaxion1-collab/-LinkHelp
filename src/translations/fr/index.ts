@@ -25,6 +25,7 @@ export const fr = {
     view_profile: 'Voir le profil',
     check_orders: 'Consultez vos demandes',
     try_again: 'Réessayer',
+    more_options: 'Plus d’options',
   },
   languages: {
     portuguese: 'Portugais',
@@ -1431,6 +1432,8 @@ export const fr = {
     candidates_empty_hint: 'En attente de candidatures des Helps.',
     vip_candidate_label: 'Candidat VIP',
     helper_proposal_negotiable_short: 'À convenir',
+    budget_total_label: 'Budget total',
+    owner_no_extra_details: 'Vous n’avez pas ajouté de détails supplémentaires.',
     reject_confirm: 'Refuser ce Help de la demande ?',
     reject_confirm_vip: 'Refuser cette candidature VIP exclusive ? La demande sera de nouveau ouverte aux autres Helps.',
     created_at_label: 'Créé le',
@@ -2511,8 +2514,8 @@ export const fr = {
     cancel_modal_body:
       'Cette annonce sera retirée des demandes actives et les helpers intéressés seront avertis.',
     cancel_modal_warning: 'Cette action est irréversible.',
-    cancel_modal_back: 'Retour',
-    cancel_modal_confirm: 'Oui, annuler la demande',
+    cancel_modal_back: 'Non, garder la demande',
+    cancel_modal_confirm: 'Oui, annuler',
     remove: 'Retirer',
     remove_confirm: 'Retirer cette demande de votre liste ?',
     republish: 'Republier',

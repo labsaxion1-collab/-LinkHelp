@@ -65,7 +65,7 @@ describe('P3.3 feed card premium visual panels', () => {
     expect(src).toContain('Icons.MapPin');
     expect(profile).toContain('fill-amber-300');
     expect(profile).toContain('FEED_CARD_PREMIUM_ICON_GOLD_CLASS');
-    expect(profile).toContain('Medal');
+    expect(profile).toContain('LinkHelpRankBadge');
     expect(profile).toContain('Globe');
     expect(profile).toContain('UserRound');
   });

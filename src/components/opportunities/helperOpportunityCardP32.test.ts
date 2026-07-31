@@ -69,7 +69,7 @@ describe('P3.2 feed card description + compact profile', () => {
     expect(src).not.toContain('feed-card-profile-placeholder');
     expect(profile).toContain('usePublicProfileExtras');
     expect(profile).toContain('usePublicReputationDossier');
-    expect(profile).toContain('usePublicGamificationProfiles');
+    expect(profile).toContain('LinkHelpRankBadge');
     expect(profile).toContain('data-testid="feed-card-profile-content"');
     expect(extras).toContain('spoken_languages, bio, city, region');
     expect(extras).toContain("Does not select email, phone, street address, postal, or coordinates");

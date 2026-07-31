@@ -16,6 +16,8 @@ type Props = {
   role: 'client' | 'helper';
   size?: Size;
   showLabel?: boolean;
+  /** `onDark` = white label for navy/premium feed panels. */
+  tone?: 'default' | 'onDark';
   className?: string;
   t: (key: string) => string;
 };
@@ -53,17 +55,26 @@ function RankIcon({ icon, className, color }: { icon: string; className: string;
   }
 }
 
-export function LinkHelpRankBadge({ rank, role, size = 'md', showLabel = true, className, t }: Props) {
+export function LinkHelpRankBadge({
+  rank,
+  role,
+  size = 'md',
+  showLabel = true,
+  tone = 'default',
+  className,
+  t,
+}: Props) {
   const sz = SIZE_MAP[size];
   const labelKey = role === 'helper'
     ? `ranking.helper.${(rank as HelperRankDef).tier}`
     : `ranking.client.${(rank as ClientRankDef).tier}`;
 
   return (
-    <div className={clsx('inline-flex items-center gap-2', className)}>
+    <div className={clsx('inline-flex min-w-0 items-center gap-1.5', className)} data-testid="linkhelp-rank-badge">
       <div
         className={clsx(
           'flex shrink-0 items-center justify-center rounded-xl ring-2 ring-offset-1',
+          tone === 'onDark' && 'ring-offset-transparent',
           sz.wrap,
         )}
         style={{
@@ -76,7 +87,14 @@ export function LinkHelpRankBadge({ rank, role, size = 'md', showLabel = true, c
         <RankIcon icon={rank.icon} className={sz.icon} color={rank.accent} />
       </div>
       {showLabel ? (
-        <span className={clsx('font-black uppercase tracking-wide text-slate-800', sz.text)}>
+        <span
+          className={clsx(
+            'truncate font-black tracking-wide',
+            sz.text,
+            tone === 'onDark' ? 'normal-case text-white' : 'uppercase text-slate-800',
+          )}
+          data-testid="linkhelp-rank-badge-label"
+        >
           {t(labelKey)}
         </span>
       ) : null}

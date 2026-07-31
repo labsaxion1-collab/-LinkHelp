@@ -10,6 +10,7 @@ import {
   HELPER_INICIANTE_LEVEL_VISUAL,
   HELPER_INICIANTE_SPARKLES,
 } from '@/config/helperInicianteLevelVisual';
+import { useLanguage } from '@/context/LanguageContext';
 import { BRAND } from '@/utils/brandAssets';
 
 type Props = {
@@ -21,7 +22,9 @@ type Props = {
 };
 
 export function HelperInicianteHero({ balance }: Props) {
+  const { t } = useLanguage();
   const visual = HELPER_INICIANTE_LEVEL_VISUAL;
+  const levelLabel = t('ranking.helper.iniciante');
   const displayBalance =
     balance == null ? '—' : Math.max(0, Math.round(balance)).toLocaleString('pt-BR');
 
@@ -81,7 +84,7 @@ export function HelperInicianteHero({ balance }: Props) {
 
         <GamificationHeroBody
           userType="helper"
-          levelLabel={visual.currentLevel}
+          levelLabel={levelLabel}
           description={visual.description}
           badgeVariant="blue"
           headline={
@@ -93,7 +96,7 @@ export function HelperInicianteHero({ balance }: Props) {
           medal={
             <HeroRankAnimation
               medalSrc={medalImage}
-              medalAlt={visual.medalAlt}
+              medalAlt={levelLabel}
               pedestalSrc={pedestalImage}
               colorKey="azul"
               motionIntensity={visual.motionIntensity}

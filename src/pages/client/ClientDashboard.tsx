@@ -25,6 +25,7 @@ import { ClientDashboardHeroSlot } from '@/components/client/ClientDashboardHero
 import { ClientCandidateCard } from '@/components/client/ClientCandidateCard';
 import { ClientActivityOpenRequestCard } from '@/components/client/ClientActivityOpenRequestCard';
 import { candidateProfileExpandKey } from '@/utils/candidateProfileExpand';
+import { filterClientJobsForActivityTab } from '@/utils/clientActivityJobTabs';
 import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
 import type { NearbyHelperMapPoint } from '@/types/nearbyHelper';
 import { LhCard } from '@/components/design-system/LhCard';
@@ -46,10 +47,8 @@ import { remoteGetPreMatchClientCount } from '@/services/supabase/appDataRemote'
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { PRE_HIRE_MESSAGE_LIMIT } from '@/utils/preMatchLimits';
 import {
-  isJobExpired,
   isJobCancelled,
   isJobPaused,
-  isJobVisibleToClient,
   hideJobForUser,
   readHiddenJobIds,
 } from '@/utils/jobVisibility';
@@ -187,7 +186,7 @@ export default function ClientDashboard() {
   const [showHireModal, setShowHireModal] = useState(false);
   const [hireModalKind, setHireModalKind] = useState<'hire' | 'proposal'>('hire');
   const [inviteMessage, setInviteMessage] = useState('');
-  const [jobsListTab, setJobsListTab] = useState<'active' | 'history'>('active');
+  const [jobsListTab, setJobsListTab] = useState<'waiting' | 'in_progress' | 'completed'>('waiting');
   const [expandedActivityPanel, setExpandedActivityPanel] = useState<{
     jobId: string;
     panel: 'applications' | 'description';
@@ -343,7 +342,7 @@ export default function ClientDashboard() {
         /* ignore */
       }
       setServiceConfirmJob(null);
-      setJobsListTab('history');
+      setJobsListTab('completed');
       showToast(t('service_confirm.success_toast'), 'success');
       window.setTimeout(() => openReviewByRequestId(requestId), 400);
     } catch (error) {
@@ -513,16 +512,30 @@ export default function ClientDashboard() {
     () =>
       clientJobs.filter(
         (j) =>
-          isJobVisibleToClient(j, hiddenJobIds) &&
+          !hiddenJobIds.has(j.id) &&
+          !isJobCancelled(j) &&
           (j.status === 'open' || j.status === 'paused' || j.status === 'in_progress'),
       ),
     [clientJobs, hiddenJobIds],
   );
-  const completedClientJobs = useMemo(
-    () => clientJobs.filter((j) => !isJobCancelled(j) && (hiddenJobIds.has(j.id) || j.status === 'completed' || isJobExpired(j))),
+  const waitingClientJobs = useMemo(
+    () => filterClientJobsForActivityTab(clientJobs, 'waiting', hiddenJobIds),
     [clientJobs, hiddenJobIds],
   );
-  const activityTabJobs = jobsListTab === 'history' ? completedClientJobs : activeClientJobs;
+  const inProgressClientJobs = useMemo(
+    () => filterClientJobsForActivityTab(clientJobs, 'in_progress', hiddenJobIds),
+    [clientJobs, hiddenJobIds],
+  );
+  const completedClientJobs = useMemo(
+    () => filterClientJobsForActivityTab(clientJobs, 'completed', hiddenJobIds),
+    [clientJobs, hiddenJobIds],
+  );
+  const activityTabJobs =
+    jobsListTab === 'waiting'
+      ? waitingClientJobs
+      : jobsListTab === 'in_progress'
+        ? inProgressClientJobs
+        : completedClientJobs;
   const progressiveActivityJobs = useProgressiveReveal(activityTabJobs, 3, 800);
   const clientApplicationCount = useMemo(
     () => applications.filter((app) => clientJobs.some((job) => job.id === app.jobId)).length,
@@ -1568,37 +1581,46 @@ export default function ClientDashboard() {
                 </div>
               ) : null}
 
-              <div className="mb-5 grid grid-cols-2 gap-2 rounded-[1.35rem] bg-slate-50 p-1.5 shadow-inner shadow-slate-200/50">
-                <button
-                  type="button"
-                  onClick={() => setJobsListTab('active')}
-                  className={clsx(
-                    'inline-flex min-h-[54px] items-center justify-center gap-2 rounded-[1rem] px-3 text-sm font-black transition-all',
-                    jobsListTab === 'active'
-                      ? clsx('text-white shadow-lg', clientDashboardAccent.activityGradient)
-                      : 'bg-white text-slate-600 shadow-sm hover:text-slate-900',
-                  )}
-                >
-                  {t('client_jobs.tab_active')}
-                  <span className={clsx('inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-xs font-black', jobsListTab === 'active' ? clientDashboardAccent.activityTabBadge : 'bg-slate-100 text-slate-500')}>
-                    {activeClientJobs.length}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setJobsListTab('history')}
-                  className={clsx(
-                    'inline-flex min-h-[54px] items-center justify-center gap-2 rounded-[1rem] px-3 text-sm font-black transition-all',
-                    jobsListTab === 'history'
-                      ? clsx('text-white shadow-lg', clientDashboardAccent.activityGradient)
-                      : 'bg-white text-slate-600 shadow-sm hover:text-slate-900',
-                  )}
-                >
-                  {t('client_jobs.tab_history')}
-                  <span className={clsx('inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-xs font-black', jobsListTab === 'history' ? clientDashboardAccent.activityTabBadge : 'bg-slate-100 text-slate-500')}>
-                    {completedClientJobs.length}
-                  </span>
-                </button>
+              <div className="mb-5 grid grid-cols-3 gap-1.5 rounded-[1.35rem] bg-slate-50 p-1.5 shadow-inner shadow-slate-200/50">
+                {(
+                  [
+                    { id: 'waiting' as const, labelKey: 'client_jobs.tab_waiting', count: waitingClientJobs.length },
+                    {
+                      id: 'in_progress' as const,
+                      labelKey: 'client_jobs.tab_in_progress',
+                      count: inProgressClientJobs.length,
+                    },
+                    {
+                      id: 'completed' as const,
+                      labelKey: 'client_jobs.tab_completed',
+                      count: completedClientJobs.length,
+                    },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setJobsListTab(tab.id)}
+                    className={clsx(
+                      'inline-flex min-h-[54px] flex-col items-center justify-center gap-0.5 rounded-[1rem] px-1.5 text-[11px] font-black transition-all sm:flex-row sm:gap-1.5 sm:px-2 sm:text-sm',
+                      jobsListTab === tab.id
+                        ? clsx('text-white shadow-lg', clientDashboardAccent.activityGradient)
+                        : 'bg-white text-slate-600 shadow-sm hover:text-slate-900',
+                    )}
+                  >
+                    <span className="text-center leading-tight">{t(tab.labelKey)}</span>
+                    <span
+                      className={clsx(
+                        'inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[10px] font-black sm:h-7 sm:min-w-7 sm:px-2 sm:text-xs',
+                        jobsListTab === tab.id
+                          ? clientDashboardAccent.activityTabBadge
+                          : 'bg-slate-100 text-slate-500',
+                      )}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                ))}
               </div>
 
               <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
@@ -1643,7 +1665,7 @@ export default function ClientDashboard() {
                       job.status === 'in_progress' &&
                       applications.some((a) => a.jobId === job.id && a.status === 'accepted');
                     const showActivityMenu =
-                      jobsListTab === 'active' &&
+                      jobsListTab === 'waiting' &&
                       job.status !== 'completed' &&
                       (canLifecyclePauseResume || canLifecycleCancel || canCompleteFromMenu);
 
@@ -1997,7 +2019,7 @@ export default function ClientDashboard() {
                                 </p>
                               </div>
 
-                              {jobsListTab === 'history' && job.status === 'completed' && pendingServiceReviews.some((p) => p.requestId === job.id) ? (
+                              {jobsListTab === 'completed' && job.status === 'completed' && pendingServiceReviews.some((p) => p.requestId === job.id) ? (
                                 <button
                                   type="button"
                                   onClick={() => openReviewByRequestId(job.id)}
@@ -2019,16 +2041,20 @@ export default function ClientDashboard() {
                       <Icons.Briefcase className="h-8 w-8" />
                     </div>
                     <h3 className="text-lg font-black text-slate-900">
-                      {jobsListTab === 'active'
-                        ? t('client_jobs.empty_open_title')
-                        : t('client_jobs.empty_completed_title')}
+                      {jobsListTab === 'waiting'
+                        ? t('client_jobs.empty_waiting_title')
+                        : jobsListTab === 'in_progress'
+                          ? t('client_jobs.empty_in_progress_title')
+                          : t('client_jobs.empty_completed_title')}
                     </h3>
                     <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-relaxed text-slate-500">
-                      {jobsListTab === 'active'
-                        ? t('client_jobs.empty_open_body')
-                        : t('client_jobs.empty_completed_body')}
+                      {jobsListTab === 'waiting'
+                        ? t('client_jobs.empty_waiting_body')
+                        : jobsListTab === 'in_progress'
+                          ? t('client_jobs.empty_in_progress_body')
+                          : t('client_jobs.empty_completed_body')}
                     </p>
-                    {jobsListTab === 'active' ? (
+                    {jobsListTab === 'waiting' ? (
                       <button
                         type="button"
                         onClick={() => openCreateModal()}

@@ -2369,7 +2369,7 @@ export const pt = {
   client_jobs: {
     tab_active: 'Pedidos abertos',
     tab_history: 'Concluídos',
-    tab_waiting: 'Aguardando',
+    tab_waiting: 'Aguardando Help',
     tab_in_progress: 'Em andamento',
     tab_completed: 'Concluídos',
     empty_open_title: 'Nenhum pedido aberto',

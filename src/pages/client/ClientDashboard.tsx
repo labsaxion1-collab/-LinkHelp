@@ -608,8 +608,13 @@ export default function ClientDashboard() {
         setActivityMenuJobId(null);
       }
     };
+    const onScrollClose = () => setActivityMenuJobId(null);
     document.addEventListener('mousedown', onPointerDown);
-    return () => document.removeEventListener('mousedown', onPointerDown);
+    window.addEventListener('scroll', onScrollClose, true);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      window.removeEventListener('scroll', onScrollClose, true);
+    };
   }, [activityMenuJobId]);
 
   const handleConfirmCancelJob = async () => {

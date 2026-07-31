@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import * as Icons from 'lucide-react';
 import { clsx } from 'clsx';
 import type { Application } from '@/types/application';
@@ -99,8 +98,8 @@ export function ClientActivityOpenRequestCard({
   const [view, setView] = useState<ClientActivityCardView>('summary');
   const [profileAppId, setProfileAppId] = useState<string | null>(null);
   const [rejectingApplicationId, setRejectingApplicationId] = useState<string | null>(null);
-  const [menuCoords, setMenuCoords] = useState<{ top: number; right: number } | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const cardShellRef = useRef<HTMLDivElement | null>(null);
 
   const CategoryIcon = getCategoryIconById(job.category);
   const categoryTheme = getCategoryFeedTheme(job.category);
@@ -124,16 +123,21 @@ export function ClientActivityOpenRequestCard({
       : job.address || job.city || job.location || null;
 
   useEffect(() => {
-    if (!activityMenuOpen || !menuButtonRef.current) {
-      setMenuCoords(null);
-      return;
-    }
-    const rect = menuButtonRef.current.getBoundingClientRect();
-    setMenuCoords({
-      top: rect.bottom + 4,
-      right: Math.max(8, window.innerWidth - rect.right),
-    });
-  }, [activityMenuOpen]);
+    if (!activityMenuOpen || !cardShellRef.current) return;
+
+    const node = cardShellRef.current;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Only close — never toggle open — when the card leaves the viewport.
+        if (entry && !entry.isIntersecting) {
+          onToggleActivityMenu();
+        }
+      },
+      { threshold: 0.15, rootMargin: '0px' },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [activityMenuOpen, onToggleActivityMenu]);
 
   const goToView = (next: ClientActivityCardView) => {
     setView(next);
@@ -260,14 +264,12 @@ export function ClientActivityOpenRequestCard({
     );
   };
 
-  const renderMenuPortal = () => {
-    if (!activityMenuOpen || !menuCoords || typeof document === 'undefined') return null;
-    return createPortal(
+  const renderAnchoredMenu = () => {
+    if (!activityMenuOpen) return null;
+    return (
       <div
-        ref={activityMenuOpen ? activityMenuRef : undefined}
         data-testid="client-activity-card-menu"
-        className="fixed z-[120] min-w-[12rem] overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-[0_12px_32px_rgba(15,23,42,0.14)]"
-        style={{ top: menuCoords.top, right: menuCoords.right }}
+        className="absolute right-0 top-full z-[60] mt-1 min-w-[12rem] overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-[0_12px_32px_rgba(15,23,42,0.14)]"
         onMouseDown={(e) => e.stopPropagation()}
       >
         {lifecycleControlsEnabled && job.status === 'paused' ? (
@@ -298,8 +300,7 @@ export function ClientActivityOpenRequestCard({
           <Icons.Ban className="h-4 w-4 text-amber-600" aria-hidden />
           {t('client_dashboard.cancel_request')}
         </button>
-      </div>,
-      document.body,
+      </div>
     );
   };
 
@@ -326,21 +327,28 @@ export function ClientActivityOpenRequestCard({
           />
         </div>
         <div className="min-w-0 flex-1 pt-0.5">{statusPill}</div>
-        <button
-          ref={menuButtonRef}
-          type="button"
-          data-testid="client-activity-more-menu"
-          aria-label={t('common.more_options')}
-          aria-expanded={activityMenuOpen}
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleActivityMenu();
-          }}
-          className="shrink-0 rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
+        <div
+          ref={activityMenuOpen ? activityMenuRef : undefined}
+          className="relative shrink-0"
+          data-testid="client-activity-menu-anchor"
         >
-          <Icons.MoreVertical className="h-5 w-5" />
-        </button>
+          <button
+            ref={menuButtonRef}
+            type="button"
+            data-testid="client-activity-more-menu"
+            aria-label={t('common.more_options')}
+            aria-expanded={activityMenuOpen}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleActivityMenu();
+            }}
+            className="rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
+          >
+            <Icons.MoreVertical className="h-5 w-5" />
+          </button>
+          {renderAnchoredMenu()}
+        </div>
       </div>
 
       {/* CENTER — title + meta (budget always visible) */}
@@ -403,8 +411,6 @@ export function ClientActivityOpenRequestCard({
           <Icons.ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
         </button>
       </div>
-
-      {renderMenuPortal()}
     </div>
   );
 
@@ -555,41 +561,49 @@ export function ClientActivityOpenRequestCard({
   };
 
   return (
-    <LhCard
-      padding="none"
-      className={clsx(FEED_CARD_SHELL_CLASS, isInternalView ? 'z-30' : 'z-0')}
-      data-testid="client-activity-open-card"
-      data-client-activity-view={view}
-      data-feed-card-height-locked="true"
-      data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
-      data-feed-card-standard-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
+    <div
+      ref={cardShellRef}
+      className={clsx('relative', activityMenuOpen ? 'z-40' : isInternalView ? 'z-30' : 'z-0')}
     >
-      <div
-        className={FEED_CARD_TOP_ACCENT_CLASS}
-        style={{
-          background: `linear-gradient(90deg, ${categoryTheme.iconColor} 0%, ${categoryTheme.iconColor}55 55%, transparent 100%)`,
-        }}
-        aria-hidden
-      />
-      <div className={FEED_CARD_CONTENT_CLASS} style={feedCardLockedContentStyle()}>
+      <LhCard
+        padding="none"
+        className={clsx(FEED_CARD_SHELL_CLASS, activityMenuOpen && '!overflow-visible')}
+        data-testid="client-activity-open-card"
+        data-client-activity-view={view}
+        data-feed-card-height-locked="true"
+        data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
+        data-feed-card-standard-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
+      >
         <div
-          className={clsx(
-            'h-full min-h-0',
-            isInternalView && 'invisible pointer-events-none select-none',
-          )}
-          aria-hidden={isInternalView}
-          data-testid="client-activity-card-summary-shell"
+          className={FEED_CARD_TOP_ACCENT_CLASS}
+          style={{
+            background: `linear-gradient(90deg, ${categoryTheme.iconColor} 0%, ${categoryTheme.iconColor}55 55%, transparent 100%)`,
+          }}
+          aria-hidden
+        />
+        <div
+          className={clsx(FEED_CARD_CONTENT_CLASS, activityMenuOpen && '!overflow-visible')}
+          style={feedCardLockedContentStyle()}
         >
-          {renderSummary()}
-        </div>
-        {isInternalView ? (
-          <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="client-activity-premium-shell">
-            {view === 'description' ? renderDescription() : null}
-            {view === 'candidates' ? renderCandidates() : null}
-            {view === 'profile' ? renderProfile() : null}
+          <div
+            className={clsx(
+              'h-full min-h-0',
+              isInternalView && 'invisible pointer-events-none select-none',
+            )}
+            aria-hidden={isInternalView}
+            data-testid="client-activity-card-summary-shell"
+          >
+            {renderSummary()}
           </div>
-        ) : null}
-      </div>
-    </LhCard>
+          {isInternalView ? (
+            <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="client-activity-premium-shell">
+              {view === 'description' ? renderDescription() : null}
+              {view === 'candidates' ? renderCandidates() : null}
+              {view === 'profile' ? renderProfile() : null}
+            </div>
+          ) : null}
+        </div>
+      </LhCard>
+    </div>
   );
 }

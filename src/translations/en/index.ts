@@ -2357,7 +2357,7 @@ export const en = {
   client_jobs: {
     tab_active: 'Open requests',
     tab_history: 'Completed',
-    tab_waiting: 'Waiting',
+    tab_waiting: 'Waiting for Help',
     tab_in_progress: 'In progress',
     tab_completed: 'Completed',
     empty_open_title: 'No open requests',

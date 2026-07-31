@@ -155,6 +155,23 @@ describe('candidate ring helpers', () => {
   });
 });
 
+describe('client activity tab labels', () => {
+  it('exposes Waiting for Help / In progress / Completed in PT FR EN', async () => {
+    const en = await readFile(resolve('src/translations/en/index.ts'), 'utf8');
+    const pt = await readFile(resolve('src/translations/pt/index.ts'), 'utf8');
+    const fr = await readFile(resolve('src/translations/fr/index.ts'), 'utf8');
+    expect(en).toContain("tab_waiting: 'Waiting for Help'");
+    expect(en).toContain("tab_in_progress: 'In progress'");
+    expect(en).toContain("tab_completed: 'Completed'");
+    expect(pt).toContain("tab_waiting: 'Aguardando Help'");
+    expect(pt).toContain("tab_in_progress: 'Em andamento'");
+    expect(pt).toContain("tab_completed: 'Concluídos'");
+    expect(fr).toMatch(/tab_waiting:\s*'En attente d.un Help'/);
+    expect(fr).toContain("tab_in_progress: 'En cours'");
+    expect(fr).toContain("tab_completed: 'Terminés'");
+  });
+});
+
 describe('ClientActivityOpenRequestCard wiring', () => {
   it('uses compact ring, description, reject, and no HelperOpportunityCard', async () => {
     const src = await readFile(
@@ -196,6 +213,13 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(src).toContain('client-activity-open-description');
     expect(src).toContain('client-activity-more-menu');
     expect(src).toContain('client-activity-cancel-request');
+    expect(src).toContain('client-activity-menu-anchor');
+    expect(src).toContain('absolute right-0 top-full');
+    expect(src).toContain('!overflow-visible');
+    expect(src).toContain('IntersectionObserver');
+    expect(src).not.toContain('createPortal');
+    expect(src).not.toContain('menuCoords');
+    expect(src).not.toContain('fixed z-[120]');
     expect(src).toContain('BOTTOM_RING_SIZE_PX');
     expect(src).toContain('budget_total_label');
     expect(src).toContain('owner_no_extra_details');
@@ -247,6 +271,7 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(dash).toContain('ClientActivityOpenRequestCard');
     expect(dash).toContain('onReject');
     expect(dash).toContain('isPreHireActivity');
+    expect(dash).toContain("window.addEventListener('scroll', onScrollClose, true)");
   });
 
   it('ships dedicated candidate ring with exclusive gold center', async () => {

@@ -2366,7 +2366,7 @@ export const fr = {
   client_jobs: {
     tab_active: 'Demandes ouvertes',
     tab_history: 'Terminées',
-    tab_waiting: 'En attente',
+    tab_waiting: 'En attente d’un Help',
     tab_in_progress: 'En cours',
     tab_completed: 'Terminés',
     empty_open_title: 'Aucune demande ouverte',

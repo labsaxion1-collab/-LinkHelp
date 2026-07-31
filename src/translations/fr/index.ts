@@ -2386,6 +2386,7 @@ export const fr = {
     history_help_performed: 'Help qui a réalisé',
     history_help_unknown: 'Help embauché indisponible',
     history_view_details: 'Voir les détails',
+    history_client_attended: 'Client servi',
   },
   helper_score: {
     title: 'Score helper',

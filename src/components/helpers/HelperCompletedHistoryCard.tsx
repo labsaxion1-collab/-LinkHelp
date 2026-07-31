@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { clsx } from 'clsx';
-import type { Application } from '@/types/application';
 import type { Job } from '@/types/job';
 import type { UpcomingJob } from '@/types/upcoming';
 import type { ServiceReview } from '@/types/review';
-import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
 import { LhCard } from '@/components/design-system/LhCard';
 import {
   FEED_CARD_PREMIUM_BACK_CLASS,
@@ -19,13 +17,17 @@ import {
 } from '@/components/opportunities/feedCardPremiumTheme';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { getCategoryIconById } from '@/utils/categoryIcons';
-import { formatJobBudgetAmount } from '@/utils/formatJobBudget';
-import { formatJobScheduleDisplay } from '@/utils/jobDisplay';
+import { avatarUrlForName } from '@/utils/avatarUrl';
+import { formatScheduledClock, formatScheduledDay } from '@/utils/upcomingJobUtils';
+import { getRequestDescriptionForViewer } from '@/utils/requestDescriptionDisplay';
+import type { AppLanguage } from '@/services/translationService';
 import {
   translateCategory,
   translateJobTitle,
   translateServiceSubcategory,
+  resolveCategoryId,
 } from '@/utils/translateCategory';
+import { clientFirstName } from '@/utils/helperTaskCard';
 import {
   resolveCompletedReviewUiState,
   resolveCompletionTimestamp,
@@ -42,18 +44,16 @@ import {
 import { CLIENT_ACTIVITY_PANEL_CLASS } from '@/utils/clientActivityCardView';
 
 type Props = {
-  job: Job;
-  hiredApplication: Application | undefined;
-  upcoming: UpcomingJob | undefined;
+  job: UpcomingJob;
+  requestJob?: Job | null;
+  locale: string;
+  language?: AppLanguage;
+  t: (key: string, vars?: Record<string, string | number>) => string;
   reviews: ServiceReview[];
   reviewerId: string;
   pendingRequestIds: ReadonlySet<string>;
-  t: (key: string, vars?: Record<string, string | number>) => string;
-  formatMoneyAmount: (amount: number, currency: string) => string;
-  locale: string;
-  onOpenHelperProfile: (app: Application) => void;
-  onOpenDetails?: () => void;
   onRate: () => void;
+  onOpenChat?: () => void;
 };
 
 function formatHistoryDate(ts: number, locale: string): string {
@@ -84,7 +84,7 @@ function CompactReviewAction({
   if (state === 'submitted') {
     return (
       <div
-        data-testid="completed-review-submitted"
+        data-testid="helper-review-submitted"
         className="inline-flex min-h-[36px] max-w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-[11px] font-bold text-emerald-900"
       >
         <Icons.CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -102,7 +102,7 @@ function CompactReviewAction({
   return (
     <button
       type="button"
-      data-testid="completed-review-rate"
+      data-testid="helper-review-client"
       onClick={onRate}
       className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 text-[11px] font-bold text-amber-950 hover:bg-amber-100"
     >
@@ -112,49 +112,52 @@ function CompactReviewAction({
   );
 }
 
-export function ClientCompletedHistoryCard({
+export function HelperCompletedHistoryCard({
   job,
-  hiredApplication,
-  upcoming,
+  requestJob,
+  locale,
+  language = 'pt',
+  t,
   reviews,
   reviewerId,
   pendingRequestIds,
-  t,
-  formatMoneyAmount,
-  locale,
-  onOpenHelperProfile,
-  onOpenDetails,
   onRate,
+  onOpenChat,
 }: Props) {
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const theme = getCategoryFeedTheme(job.category);
-  const CategoryIcon = getCategoryIconById(job.category);
-  const title = translateJobTitle(job.title, job.category, job.subcategory, t);
+  const catId = resolveCategoryId(job.category) ?? 'other';
+  const CategoryIcon = getCategoryIconById(catId);
+  const title = translateJobTitle(job.title, job.category, job.subcategory ?? null, t);
   const categoryLabel = translateCategory(job.category, t);
   const subcategoryLabel = job.subcategory
     ? translateServiceSubcategory(job.category, job.subcategory, t)
-    : null;
-  const schedule = formatJobScheduleDisplay(job, t);
-  const budgetAmount = formatJobBudgetAmount(job, t);
-  const agreed = hiredApplication?.proposedAmount ?? job.acceptedAmount ?? null;
-  const agreedLabel =
-    agreed != null ? formatMoneyAmount(agreed, job.currency || 'CAD') : budgetAmount;
+    : job.subcategory;
+  const firstName = clientFirstName(job.clientName);
+  const clientRating = requestJob?.clientRating ?? null;
+  const valueLabel = job.value || requestJob?.value || '—';
+  const dayLabel = job.scheduledAt ? formatScheduledDay(job.scheduledAt, locale) : '';
+  const clockLabel = job.scheduledAt ? formatScheduledClock(job.scheduledAt, locale) : '';
   const modality =
-    job.serviceMode === 'remote'
+    requestJob?.serviceMode === 'remote'
       ? t('create_modal.service_mode_remote')
-      : job.serviceMode === 'in_person'
+      : requestJob?.serviceMode === 'in_person'
         ? t('create_modal.service_mode_in_person')
-        : t('common.unknown');
-  const locationLabel =
-    job.serviceMode === 'remote'
-      ? null
-      : job.address || job.city || job.location || null;
-  const isVip = Boolean(hiredApplication?.isExclusive || job.exclusiveHelperId);
-
-  const myReview = reviews.find((r) => r.requestId === job.id && r.reviewerId === reviewerId);
-  const completionTs = resolveCompletionTimestamp(upcoming, myReview);
+        : null;
+  const locationText = requestJob?.location?.trim() || job.location?.trim() || '';
+  const locationDisplay = locationText
+    ? locationText.split(',').slice(0, 2).join(',').trim()
+    : modality === t('create_modal.service_mode_remote')
+      ? t('jobs.remote')
+      : null;
+  const descriptionView = getRequestDescriptionForViewer(
+    requestJob?.description ?? job.description ?? '',
+    language,
+  );
+  const myReview = reviews.find((r) => r.requestId === job.jobId && r.reviewerId === reviewerId);
+  const completionTs = resolveCompletionTimestamp(job, myReview);
   const { state: reviewState, myRating } = resolveCompletedReviewUiState({
-    requestId: job.id,
+    requestId: job.jobId,
     reviewerId,
     reviews,
     pendingRequestIds,
@@ -165,8 +168,8 @@ export function ClientCompletedHistoryCard({
       <LhCard
         padding="none"
         className={FEED_CARD_SHELL_CLASS}
-        data-testid="client-completed-history-card"
-        data-job-id={job.id}
+        data-testid="helper-completed-history-card"
+        data-job-id={job.jobId}
         data-feed-card-height-locked="true"
         data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
         data-feed-card-standard-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
@@ -185,9 +188,8 @@ export function ClientCompletedHistoryCard({
               descriptionOpen && 'invisible pointer-events-none select-none',
             )}
             aria-hidden={descriptionOpen}
-            data-testid="completed-card-summary"
+            data-testid="helper-completed-card-summary"
           >
-            {/* Header */}
             <div className="flex shrink-0 items-start gap-2">
               <div
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border sm:h-11 sm:w-11"
@@ -205,18 +207,10 @@ export function ClientCompletedHistoryCard({
                 />
               </div>
               <div className="min-w-0 flex-1 pt-0.5">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-black text-emerald-800">
-                    <Icons.CheckCircle2 className="h-3 w-3" aria-hidden />
-                    {t('service_review.service_completed')}
-                  </span>
-                  {isVip ? (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-800">
-                      <Icons.Crown className="h-3 w-3" aria-hidden />
-                      {t('client_dashboard.exclusive_application_badge')}
-                    </span>
-                  ) : null}
-                </div>
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-black text-emerald-800">
+                  <Icons.CheckCircle2 className="h-3 w-3" aria-hidden />
+                  {t('service_review.service_completed')}
+                </span>
                 <h3 className="mt-1 line-clamp-2 text-[14px] font-black leading-snug text-slate-950 sm:text-[15px]">
                   {title}
                 </h3>
@@ -226,66 +220,46 @@ export function ClientCompletedHistoryCard({
               </div>
             </div>
 
-            {/* Help + value */}
             <div className="mt-2 flex min-h-0 flex-1 items-center gap-2.5">
-              {hiredApplication ? (
-                <button
-                  type="button"
-                  data-testid="completed-hired-helper"
-                  onClick={() => onOpenHelperProfile(hiredApplication)}
-                  className="flex min-w-0 flex-1 items-center gap-2 rounded-xl text-left transition-colors hover:bg-slate-50"
-                >
-                  <img
-                    src={hiredApplication.helperAvatar}
-                    alt=""
-                    className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-black text-slate-950">
-                      {hiredApplication.helperName}
-                    </p>
-                    <p className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1 text-[10px] font-bold text-slate-500">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <img
+                  src={job.clientAvatar || avatarUrlForName(job.clientName)}
+                  alt=""
+                  onError={(e) => {
+                    e.currentTarget.src = avatarUrlForName(job.clientName);
+                  }}
+                  className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-black text-slate-950">{firstName}</p>
+                  {clientRating != null && clientRating > 0 ? (
+                    <p className="mt-0.5 inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-500">
                       <Icons.Star
-                        className="h-3 w-3 shrink-0 fill-yellow-400 text-yellow-400"
+                        className="h-3 w-3 fill-yellow-400 text-yellow-400"
                         aria-hidden
                       />
-                      <span>{Number(hiredApplication.helperRating || 0).toFixed(1)}</span>
-                      <LinkHelpRankBadgeFromStats
-                        completedCount={hiredApplication.helperJobs}
-                        averageRating={hiredApplication.helperRating}
-                        role="helper"
-                        size="sm"
-                        showLabel
-                        t={t}
-                      />
+                      {Number(clientRating).toFixed(1)}
                     </p>
-                  </div>
-                </button>
-              ) : (
-                <p className="min-w-0 flex-1 text-[11px] font-semibold text-slate-500">
-                  {t('client_jobs.history_help_unknown')}
-                </p>
-              )}
-              <p
-                data-testid="completed-agreed-value"
-                className="shrink-0 truncate whitespace-nowrap text-[13px] font-black text-emerald-700"
-              >
-                {agreedLabel || '—'}
+                  ) : (
+                    <p className="mt-0.5 truncate text-[10px] font-semibold text-slate-400">
+                      {t('client_jobs.history_client_attended')}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <p className="shrink-0 truncate whitespace-nowrap text-[13px] font-black text-emerald-700">
+                {valueLabel}
               </p>
             </div>
 
-            {/* Footer actions */}
-            <div
-              className="mt-auto flex shrink-0 items-center gap-2 border-t border-slate-100 pt-2"
-              data-testid="completed-card-footer"
-            >
+            <div className="mt-auto flex shrink-0 items-center gap-2 border-t border-slate-100 pt-2">
               <button
                 type="button"
-                data-testid="completed-open-description"
+                data-testid="helper-completed-open-description"
                 onClick={() => setDescriptionOpen(true)}
                 className="inline-flex min-h-[36px] flex-1 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-[11px] font-bold text-slate-800 hover:bg-slate-50"
               >
-                {t('client_dashboard.view_description')}
+                {t('helper_tasks.description_toggle')}
                 <Icons.ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
               </button>
               <CompactReviewAction
@@ -298,7 +272,7 @@ export function ClientCompletedHistoryCard({
           </div>
 
           {descriptionOpen ? (
-            <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="completed-description-panel">
+            <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="helper-completed-description-panel">
               <div className={clsx(CLIENT_ACTIVITY_PANEL_CLASS, 'overflow-hidden')}>
                 <div className={FEED_CARD_PREMIUM_TOP_BAR_CLASS}>
                   <button
@@ -314,11 +288,17 @@ export function ClientCompletedHistoryCard({
                   <h3 className={FEED_CARD_PREMIUM_TITLE_CLASS}>{title}</h3>
                   <div className={FEED_CARD_PREMIUM_SURFACE_CLASS}>
                     <p className="text-[12px] font-semibold text-white/85">
+                      {t('client_jobs.history_client_attended')}: {job.clientName}
+                    </p>
+                    <p className="text-[12px] font-semibold text-white/85">
                       {categoryLabel}
                       {subcategoryLabel ? ` · ${subcategoryLabel}` : ''}
                     </p>
                     <p className="text-[12px] font-semibold text-white/85">
-                      {t('client_jobs.history_service_date')}: {schedule || '—'}
+                      {t('helper_tasks.date_label')}: {dayLabel || '—'}
+                    </p>
+                    <p className="text-[12px] font-semibold text-white/85">
+                      {t('helper_tasks.time_label')}: {clockLabel || '—'}
                     </p>
                     <p className="text-[12px] font-semibold text-white/85">
                       {t('client_jobs.history_completed_date')}:{' '}
@@ -326,41 +306,37 @@ export function ClientCompletedHistoryCard({
                         ? formatHistoryDate(completionTs, locale)
                         : t('service_review.service_completed')}
                     </p>
-                    <p className="text-[12px] font-semibold text-white/85">
-                      {t('client_dashboard.activity_modality')}: {modality}
-                    </p>
-                    {locationLabel ? (
+                    {modality ? (
                       <p className="text-[12px] font-semibold text-white/85">
-                        {t('client_jobs.history_location')}: {locationLabel}
+                        {t('client_dashboard.activity_modality')}: {modality}
+                      </p>
+                    ) : null}
+                    {locationDisplay ? (
+                      <p className="text-[12px] font-semibold text-white/85">
+                        {t('client_jobs.history_location')}: {locationDisplay}
                       </p>
                     ) : null}
                     <p className="text-[12px] font-semibold text-white/85">
-                      {t('client_jobs.history_agreed_value')}: {agreedLabel || '—'}
+                      {t('helper_tasks.agreed_payment_label')}: {valueLabel}
                     </p>
-                    {isVip ? (
-                      <p className="text-[12px] font-semibold text-amber-200">
-                        {t('client_dashboard.exclusive_application_badge')}
-                      </p>
-                    ) : null}
                   </div>
-                  {job.description?.trim() ? (
+                  {descriptionView.display ? (
                     <p className={clsx('whitespace-pre-wrap break-words', FEED_CARD_PREMIUM_BODY_CLASS)}>
-                      {job.description}
+                      {descriptionView.display}
                     </p>
                   ) : (
                     <p className={FEED_CARD_PREMIUM_MUTED_CLASS}>
-                      {t('client_dashboard.owner_no_extra_details')}
+                      {t('upcoming_jobs.no_observations')}
                     </p>
                   )}
-                  {onOpenDetails ? (
+                  {onOpenChat ? (
                     <button
                       type="button"
-                      data-testid="completed-open-details"
-                      onClick={onOpenDetails}
+                      onClick={onOpenChat}
                       className="mt-1 inline-flex min-h-[36px] w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 text-[12px] font-bold text-white hover:bg-white/15"
                     >
-                      <Icons.FileText className="h-3.5 w-3.5" aria-hidden />
-                      {t('client_jobs.history_view_details')}
+                      <Icons.MessageSquare className="h-3.5 w-3.5" aria-hidden />
+                      {t('upcoming_jobs.open_chat')}
                     </button>
                   ) : null}
                 </div>

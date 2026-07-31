@@ -13,6 +13,7 @@ import {
 } from '@/context/AppDataContext';
 import { HelperApplicationCard } from '@/components/helpers/HelperApplicationCard';
 import { HelperAcceptedJobCard } from '@/components/helpers/HelperAcceptedJobCard';
+import { HelperCompletedHistoryCard } from '@/components/helpers/HelperCompletedHistoryCard';
 import { ROUTES } from '@/utils/constants';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
@@ -169,23 +170,19 @@ export default function HelperUpcomingJobsPage() {
     }
   };
 
-  const renderJobCards = (list: UpcomingJob[], historyMode: boolean) => {
+  const renderAcceptedCards = (list: UpcomingJob[]) => {
     if (list.length === 0) {
       return (
         <div className="px-4 py-16 text-center">
           <Icons.CalendarOff className="mx-auto mb-4 h-14 w-14 text-gray-200" />
-          <p className="mb-4 font-semibold text-gray-600">
-            {historyMode ? t('upcoming_jobs.empty_completed_title') : t('upcoming_jobs.empty_title')}
-          </p>
-          {!historyMode ? (
-            <Link
-              to={ROUTES.helperOpportunities}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-md transition-colors hover:bg-blue-700"
-            >
-              <Icons.Compass className="h-4 w-4" />
-              {t('upcoming_jobs.explore_cta')}
-            </Link>
-          ) : null}
+          <p className="mb-4 font-semibold text-gray-600">{t('upcoming_jobs.empty_title')}</p>
+          <Link
+            to={ROUTES.helperOpportunities}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-md transition-colors hover:bg-blue-700"
+          >
+            <Icons.Compass className="h-4 w-4" />
+            {t('upcoming_jobs.explore_cta')}
+          </Link>
         </div>
       );
     }
@@ -205,15 +202,45 @@ export default function HelperUpcomingJobsPage() {
           t={t}
           expandedAccordion={acceptedAccordion[accKey] ?? null}
           onToggleDescription={() => toggleAcceptedDescription(job.id)}
-          onComplete={historyMode ? undefined : () => void handleCompleteWork(job)}
+          onComplete={() => void handleCompleteWork(job)}
           onReview={() => openReviewByRequestId(job.jobId)}
           onOpenChat={() => navigate(ROUTES.messages)}
           completeLoading={completeBusyId === job.id}
           hasPendingReview={pendingReviewIds.has(job.jobId)}
           reviewSubmitted={myReviewedRequestIds.has(job.jobId)}
           myReviewRating={myRating}
-          historyMode={historyMode}
-          requestJobStatus={requestJob?.status ?? (historyMode ? 'completed' : 'in_progress')}
+          historyMode={false}
+          requestJobStatus={requestJob?.status ?? 'in_progress'}
+        />
+      );
+    });
+  };
+
+  const renderCompletedCards = (list: UpcomingJob[]) => {
+    if (list.length === 0) {
+      return (
+        <div className="px-4 py-16 text-center">
+          <Icons.CalendarOff className="mx-auto mb-4 h-14 w-14 text-gray-200" />
+          <p className="mb-4 font-semibold text-gray-600">{t('upcoming_jobs.empty_completed_title')}</p>
+        </div>
+      );
+    }
+
+    return list.map((job) => {
+      const requestJob = jobs.find((j) => j.id === job.jobId);
+      return (
+        <HelperCompletedHistoryCard
+          key={job.id}
+          job={job}
+          requestJob={requestJob}
+          locale={locale}
+          language={language}
+          t={t}
+          reviews={reviews}
+          reviewerId={me.id}
+          pendingRequestIds={pendingReviewIds}
+          onRate={() => openReviewByRequestId(job.jobId)}
+          onOpenChat={() => navigate(ROUTES.messages)}
         />
       );
     });
@@ -300,9 +327,9 @@ export default function HelperUpcomingJobsPage() {
                 })
               )
             ) : activeTab === 'completed' ? (
-              renderJobCards(completedList, true)
+              renderCompletedCards(completedList)
             ) : (
-              renderJobCards(acceptedList, false)
+              renderAcceptedCards(acceptedList)
             )}
           </div>
         </div>

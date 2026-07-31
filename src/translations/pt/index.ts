@@ -2389,6 +2389,7 @@ export const pt = {
     history_help_performed: 'Help que realizou',
     history_help_unknown: 'Help contratado indisponível',
     history_view_details: 'Ver detalhes',
+    history_client_attended: 'Cliente atendido',
   },
   helper_score: {
     title: 'Score do helper',

@@ -76,9 +76,27 @@ describe('completed history wiring', () => {
     expect(src).toContain('completed-hired-helper');
     expect(src).toContain('service_review.rate_action');
     expect(src).toContain('service_review.review_submitted');
+    expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
+    expect(src).toContain('feedCardLockedContentStyle');
+    expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
+    expect(src).toContain('completed-open-description');
+    expect(src).toContain('line-clamp-2');
     expect(src).not.toContain('onAccept');
     expect(src).not.toContain('ClientActivityCandidateRing');
     expect(src).not.toContain('cancel_request');
+  });
+
+  it('ships helper completed history card with locked shell', async () => {
+    const src = await readFile(
+      resolve('src/components/helpers/HelperCompletedHistoryCard.tsx'),
+      'utf8',
+    );
+    expect(src).toContain('helper-completed-history-card');
+    expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
+    expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
+    expect(src).toContain('service_review.rate_action');
+    expect(src).toContain('history_client_attended');
+    expect(src).toContain('line-clamp-2');
   });
 
   it('routes completed jobs to history card in ClientDashboard', async () => {
@@ -88,11 +106,11 @@ describe('completed history wiring', () => {
     expect(dash).toContain('openReviewByRequestId');
   });
 
-  it('exposes helper completed tasks tab', async () => {
+  it('exposes helper completed tasks tab with compact history card', async () => {
     const page = await readFile(resolve('src/pages/helper/HelperUpcomingJobsPage.tsx'), 'utf8');
     expect(page).toContain("'completed'");
     expect(page).toContain('upcoming_jobs.tab_completed');
-    expect(page).toContain('historyMode');
+    expect(page).toContain('HelperCompletedHistoryCard');
     expect(page).toContain("setActiveTab('completed')");
   });
 
@@ -124,5 +142,6 @@ describe('completed history wiring', () => {
     expect(en).toContain("tab_completed: 'Completed'");
     expect(fr).toContain("tab_completed: 'Terminés'");
     expect(pt).toContain("history_help_performed: 'Help que realizou'");
+    expect(pt).toContain("history_client_attended: 'Cliente atendido'");
   });
 });

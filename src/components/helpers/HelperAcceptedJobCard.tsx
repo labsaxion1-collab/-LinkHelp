@@ -33,6 +33,9 @@ type Props = {
   onOpenChat?: () => void;
   completeLoading?: boolean;
   hasPendingReview?: boolean;
+  reviewSubmitted?: boolean;
+  myReviewRating?: number | null;
+  historyMode?: boolean;
   requestJobStatus?: Job['status'];
 };
 
@@ -76,6 +79,9 @@ export function HelperAcceptedJobCard({
   onOpenChat,
   completeLoading = false,
   hasPendingReview = false,
+  reviewSubmitted = false,
+  myReviewRating = null,
+  historyMode = false,
   requestJobStatus = 'in_progress',
 }: Props) {
   const [now, setNow] = useState(() => Date.now());
@@ -108,13 +114,16 @@ export function HelperAcceptedJobCard({
   );
 
   const showComplete =
+    !historyMode &&
     onComplete &&
     !shouldHideCompleteButton(requestJobStatus, job.workflowStatus) &&
     canShowCompleteWorkButton(job.workflowStatus);
   const showReview =
     onReview &&
+    !reviewSubmitted &&
     canShowReviewButton(job.workflowStatus, requestJobStatus, hasPendingReview);
-  const awaitingClient = isAwaitingClientCompletion(job.workflowStatus);
+  const awaitingClient = !historyMode && isAwaitingClientCompletion(job.workflowStatus);
+  const clientRating = requestJob?.clientRating ?? null;
 
   return (
     <LhCard
@@ -170,6 +179,12 @@ export function HelperAcceptedJobCard({
                   className="h-5 w-5 shrink-0 rounded-full object-cover ring-1 ring-white"
                 />
                 <span className="truncate">{firstName}</span>
+                {clientRating != null && clientRating > 0 ? (
+                  <span className="inline-flex items-center gap-0.5 text-slate-500">
+                    <Icons.Star className="h-3 w-3 fill-yellow-400 text-yellow-400" aria-hidden />
+                    {Number(clientRating).toFixed(1)}
+                  </span>
+                ) : null}
               </span>
               {relativeSchedule ? (
                 <span className="inline-flex items-center gap-1 text-slate-500">
@@ -269,7 +284,7 @@ export function HelperAcceptedJobCard({
           </div>
         ) : null}
 
-        {showComplete || showReview ? (
+        {showComplete || showReview || reviewSubmitted || awaitingClient ? (
           <div className="mt-3 space-y-2">
             {showComplete ? (
               <button
@@ -293,11 +308,30 @@ export function HelperAcceptedJobCard({
               <button
                 type="button"
                 onClick={onReview}
+                data-testid="helper-review-client"
                 className={clsx(actionBtn, 'border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100')}
               >
                 <Icons.Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                {t('helper_tasks.review_client')}
+                {t('service_review.rate_action')}
               </button>
+            ) : null}
+            {reviewSubmitted ? (
+              <div
+                data-testid="helper-review-submitted"
+                className={clsx(
+                  actionBtn,
+                  'border border-emerald-200 bg-emerald-50 text-emerald-900',
+                )}
+              >
+                <Icons.CheckCircle2 className="h-4 w-4" />
+                {t('service_review.review_submitted')}
+                {myReviewRating != null ? (
+                  <span className="inline-flex items-center gap-0.5">
+                    <Icons.Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                    {myReviewRating.toFixed(1)}
+                  </span>
+                ) : null}
+              </div>
             ) : null}
             {awaitingClient && !showComplete && !showReview ? (
               <p className="text-center text-[11px] font-semibold text-blue-700">

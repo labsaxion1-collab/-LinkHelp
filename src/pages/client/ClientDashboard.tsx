@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Plus, Star, MessageSquare, ChevronRight, Bell } from 'lucide-react';
+import { Plus, MessageSquare, ChevronRight, Bell } from 'lucide-react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import * as Icons from 'lucide-react';
@@ -24,8 +24,10 @@ import { ClientDashboardMapSidebar } from '@/components/client/ClientDashboardMa
 import { ClientDashboardHeroSlot } from '@/components/client/ClientDashboardHeroSlot';
 import { ClientCandidateCard } from '@/components/client/ClientCandidateCard';
 import { ClientActivityOpenRequestCard } from '@/components/client/ClientActivityOpenRequestCard';
+import { ClientCompletedHistoryCard } from '@/components/client/ClientCompletedHistoryCard';
 import { candidateProfileExpandKey } from '@/utils/candidateProfileExpand';
 import { filterClientJobsForActivityTab } from '@/utils/clientActivityJobTabs';
+import { resolveHiredHelperForCompletedJob } from '@/utils/completedServiceHistory';
 import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
 import type { NearbyHelperMapPoint } from '@/types/nearbyHelper';
 import { LhCard } from '@/components/design-system/LhCard';
@@ -211,7 +213,8 @@ export default function ClientDashboard() {
   const isClientJobsPage = routerLocation.pathname === ROUTES.clientJobs;
   const lifecycleControlsEnabled = isRequestLifecycleControlsEnabled();
 
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const locale = language === 'fr' ? 'fr-CA' : language === 'en' ? 'en-CA' : 'pt-BR';
   const { showToast } = useToast();
   const { profile, authLoading, session } = useAuth();
   const { shouldShow: showClientOnboarding, completing: completingClientOnboarding, complete: completeClientOnboarding } =
@@ -227,11 +230,15 @@ export default function ClientDashboard() {
   const creditsLoading = authLoading && clientCreditsBalance == null;
   const skillChip = (skill: string) =>
     skill === 'support' ? t('skills.support') : t(`categories.${skill}`);
-  const { jobs, applications, pendingServiceReviews, upcomingJobs } = useAppDataCore();
+  const { jobs, applications, pendingServiceReviews, upcomingJobs, reviews } = useAppDataCore();
   const appDataActionsRef = useAppDataActionsRef();
   useDevRenderCount('ClientDashboard');
   const { openReviewByRequestId } = useServiceReview();
   const me = useSessionViewer();
+  const pendingReviewIds = useMemo(
+    () => new Set(pendingServiceReviews.map((p) => p.requestId)),
+    [pendingServiceReviews],
+  );
 
   const [secondaryBlocksReady, setSecondaryBlocksReady] = useState(false);
   useEffect(() => {
@@ -1674,6 +1681,32 @@ export default function ClientDashboard() {
                       job.status !== 'completed' &&
                       (canLifecyclePauseResume || canLifecycleCancel || canCompleteFromMenu);
 
+                    if (job.status === 'completed') {
+                      const hiredApplication = resolveHiredHelperForCompletedJob(
+                        job,
+                        applications,
+                        upcomingJobs,
+                      );
+                      const upcoming = upcomingJobs.find((u) => u.jobId === job.id);
+                      return (
+                        <ClientCompletedHistoryCard
+                          key={job.id}
+                          job={job}
+                          hiredApplication={hiredApplication}
+                          upcoming={upcoming}
+                          reviews={reviews}
+                          reviewerId={me.id}
+                          pendingRequestIds={pendingReviewIds}
+                          t={t}
+                          formatMoneyAmount={formatMoneyAmount}
+                          locale={locale}
+                          onOpenHelperProfile={(app) => openHelperProfileFromApplication(job, app)}
+                          onOpenDetails={() => setDetailJob(job)}
+                          onRate={() => openReviewByRequestId(job.id)}
+                        />
+                      );
+                    }
+
                     if (isPreHireActivity) {
                       return (
                         <ClientActivityOpenRequestCard
@@ -2023,17 +2056,6 @@ export default function ClientDashboard() {
                                   {job.description || 'Sem descrição adicional.'}
                                 </p>
                               </div>
-
-                              {jobsListTab === 'completed' && job.status === 'completed' && pendingServiceReviews.some((p) => p.requestId === job.id) ? (
-                                <button
-                                  type="button"
-                                  onClick={() => openReviewByRequestId(job.id)}
-                                  className="mt-2 inline-flex min-h-[38px] w-full items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 text-xs font-bold text-amber-900 hover:bg-amber-100"
-                                >
-                                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                                  {t('service_review.rate_now')}
-                                </button>
-                              ) : null}
                             </div>
                           ) : null}
                         </div>

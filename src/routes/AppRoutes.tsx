@@ -51,9 +51,9 @@ const PublicProfileEditPage = lazyPage(() => import('@/pages/profile/PublicProfi
 function AdminDashboardLoadError() {
   return (
     <div className="mx-auto max-w-lg rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
-      <p className="text-sm font-bold text-white">FLUX Admin unavailable</p>
+      <p className="text-sm font-bold text-white">FLUX Admin indisponível</p>
       <p className="mt-2 text-xs text-slate-500">
-        The admin dashboard module failed to load. Refresh the page or try again later.
+        Não foi possível carregar o módulo do painel. Atualize a página ou tente novamente mais tarde.
       </p>
     </div>
   );

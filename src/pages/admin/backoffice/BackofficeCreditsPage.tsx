@@ -4,6 +4,12 @@ import { backofficeFetch, BackofficeApiError } from '@/backoffice/api/backoffice
 import { parseBackofficeCreditList } from '@/backoffice/contracts/creditsContract';
 import { BackofficePageShell, BackofficeTableShell } from '@/backoffice/components/BackofficePageShell';
 import { BACKOFFICE_PT, formatBackofficeApiError } from '@/admin/fluxPtCopy';
+import {
+  CREDIT_TYPE_FILTER_OPTIONS,
+  creditTypeLabelPt,
+  formatAdminDateTime,
+  formatLc,
+} from '@/admin/fluxFormat';
 
 export default function BackofficeCreditsPage() {
   const { session } = useAuth();
@@ -29,13 +35,14 @@ export default function BackofficeCreditsPage() {
         value={typeFilter}
         onChange={(e) => setTypeFilter(e.target.value)}
         className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+        aria-label={BACKOFFICE_PT.colType}
       >
         <option value="">{BACKOFFICE_PT.filterAllTypes}</option>
-        <option value="CREDIT_PURCHASE">CREDIT_PURCHASE</option>
-        <option value="APPLICATION_INTEREST">APPLICATION_INTEREST</option>
-        <option value="APPLICATION_SELECTED">APPLICATION_SELECTED</option>
-        <option value="ADMIN_ADJUSTMENT">ADMIN_ADJUSTMENT</option>
-        <option value="REFUND">REFUND</option>
+        {CREDIT_TYPE_FILTER_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
       </select>
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}
       <BackofficeTableShell empty={(data?.transactions.length ?? 0) === 0}>
@@ -51,10 +58,10 @@ export default function BackofficeCreditsPage() {
           <tbody>
             {(data?.transactions ?? []).map((tx) => (
               <tr key={tx.id} className="border-b border-white/5">
-                <td className="px-4 py-3 text-slate-300">{tx.type}</td>
+                <td className="px-4 py-3 text-slate-300">{creditTypeLabelPt(tx.type)}</td>
                 <td className="px-4 py-3 text-slate-400">{tx.helper_name ?? tx.helper_id.slice(0, 8)}</td>
-                <td className="px-4 py-3 tabular-nums text-slate-200">{tx.amount}</td>
-                <td className="px-4 py-3 text-xs text-slate-500">{tx.created_at}</td>
+                <td className="px-4 py-3 tabular-nums text-slate-200">{formatLc(tx.amount)}</td>
+                <td className="px-4 py-3 text-xs text-slate-500">{formatAdminDateTime(tx.created_at)}</td>
               </tr>
             ))}
           </tbody>

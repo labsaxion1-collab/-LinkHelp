@@ -4,6 +4,7 @@ import { backofficeFetch, BackofficeApiError } from '@/backoffice/api/backoffice
 import { parseBackofficeAuditList } from '@/backoffice/contracts/auditContract';
 import { BackofficePageShell, BackofficeTableShell } from '@/backoffice/components/BackofficePageShell';
 import { BACKOFFICE_PT, formatBackofficeApiError } from '@/admin/fluxPtCopy';
+import { auditActionLabelPt, auditTargetTypeLabelPt, formatAdminDateTime } from '@/admin/fluxFormat';
 
 export default function BackofficeAuditPage() {
   const { session } = useAuth();
@@ -35,11 +36,11 @@ export default function BackofficeAuditPage() {
           <tbody>
             {(data?.logs ?? []).map((log) => (
               <tr key={log.id} className="border-b border-white/5">
-                <td className="px-4 py-3 text-slate-300">{log.action}</td>
+                <td className="px-4 py-3 text-slate-300">{auditActionLabelPt(log.action)}</td>
                 <td className="px-4 py-3 text-slate-500">
-                  {log.target_type ?? '—'} {log.target_id ?? ''}
+                  {auditTargetTypeLabelPt(log.target_type)} {log.target_id ?? ''}
                 </td>
-                <td className="px-4 py-3 text-xs text-slate-500">{log.created_at}</td>
+                <td className="px-4 py-3 text-xs text-slate-500">{formatAdminDateTime(log.created_at)}</td>
               </tr>
             ))}
           </tbody>

@@ -1,6 +1,13 @@
 import type { ServiceCategoryId } from '@/data/serviceCategories';
+import { pt } from '@/translations/pt';
+import { resolveMessage } from '@/services/translationService';
 
-/** Textos fixos em português — console FLUX / BackOffice (uso interno). */
+/** Resolve marketplace i18n keys always in Portuguese for admin auth errors/toasts. */
+export function adminPtMessage(key: string, variables?: Record<string, string | number>): string {
+  return resolveMessage({ en: pt, pt, fr: pt }, 'pt', key, variables);
+}
+
+/** Textos fixos em português — console FLUX / BackOffice (uso interno, independente do marketplace). */
 export const FLUX_PT = {
   brandTagline: 'Infinitas possibilidades.',
   backToApp: 'Voltar ao aplicativo',
@@ -14,7 +21,7 @@ export const FLUX_PT = {
   multiAppHint: 'Mais apps FLUX em breve. Troque entre produtos sem sair do console.',
   liveMetrics: 'Métricas ao vivo',
   overviewTitle: 'Panorama LinkHelp',
-  metricOpenRequests: 'Pedidos abertos',
+  metricOpenRequests: 'Chamados abertos',
   metricOpenDelta: 'Demanda ativa na plataforma',
   metricInProgress: 'Em andamento',
   metricPendingApps: 'Candidaturas pendentes',
@@ -22,7 +29,7 @@ export const FLUX_PT = {
   metricHiredCount: (count: number) => `${count} contratações`,
   marketPulseDemoLabel: 'Ilustrativo — não é dado ao vivo',
   marketPulseBody:
-    'Demanda estável em mudanças e limpeza. Considere campanhas para categorias com baixa oferta de helpers.',
+    'Demanda estável em mudanças e limpeza. Considere campanhas para categorias com baixa oferta de Helps.',
   aiInsightsTitle: 'Insights de IA',
   aiInsightsSub: 'Recomendações geradas a partir dos padrões da plataforma',
   aiInsightsDemoSub: 'Recomendações de exemplo apenas para pré-visualização do layout',
@@ -44,7 +51,7 @@ export const FLUX_PT = {
   loadingMetrics: 'Carregando métricas administrativas…',
   emptyTitle: 'Ainda não há atividade na plataforma',
   emptyBody:
-    'Pedidos, candidaturas e contratações estão zerados. Isso é normal após um reset — não é erro.',
+    'Chamados, candidaturas e contratações estão zerados. Isso é normal após um reset — não é erro.',
   retry: 'Tentar novamente',
   clientLinkCreditsFlag:
     'CLIENT_LINKCREDITS_ENABLED=false — clientes não são cobrados ao abrir chamados.',
@@ -56,26 +63,49 @@ export const FLUX_PT = {
   financialRange30d: '30 dias',
   financialRangeAll: 'Tudo',
   financialRevenueCad: 'Receita confirmada (CAD)',
-  financialPurchaseStats: (count: number, avg: string) =>
-    `${count} compras · média CAD $${avg}`,
+  financialPurchaseStats: (count: number, avgCadDisplay: string) =>
+    `${count} compras · média ${avgCadDisplay}`,
   financialNoPurchases: 'Nenhuma compra confirmada neste período',
   financialLcSold: 'LinkCredits vendidos',
   financialLcConsumed: 'LinkCredits consumidos',
   financialLcRefunded: 'LinkCredits reembolsados',
   financialLcGranted: 'LinkCredits bonificados',
   financialLcGrantedHint: 'Bônus de cadastro, recompensas admin, promoções',
-  financialLcCirculation: 'Créditos em circulação',
-  financialNetBurn: 'Queima líquida de créditos',
-  financialNetBurnHint: 'Consumidos menos reembolsados — economia de créditos, não lucro CAD',
+  financialLcCirculation: 'LinkCredits em circulação',
+  financialNetBurn: 'Queima líquida de LinkCredits',
+  financialNetBurnHint: 'Consumidos menos reembolsados — economia de LinkCredits, não lucro CAD',
   financialUnavailable: 'Métricas financeiras temporariamente indisponíveis.',
   loading: 'Carregando…',
+  loadErrorTitle: 'FLUX Admin indisponível',
+  loadErrorBody:
+    'Não foi possível carregar o módulo do painel. Atualize a página ou tente novamente mais tarde.',
   insight1Title: 'Pico em mudanças residenciais',
   insight1Body:
-    'Pedidos de mudança subiram 18% na última semana. Ative helpers verificados na região de Montréal.',
+    'Chamados de mudança subiram 18% na última semana. Ative Helps verificados na região de Montréal.',
   insight2Title: 'Conversão em limpeza',
   insight2Body: 'Limpeza residencial mantém a maior taxa de contratação entre categorias principais.',
   insight3Title: 'Baixa oferta em montagem',
-  insight3Body: 'Pedidos abertos de montagem superam helpers ativos. Priorize recrutamento nesta categoria.',
+  insight3Body: 'Chamados abertos de montagem superam Helps ativos. Priorize recrutamento nesta categoria.',
+} as const;
+
+/** Login / access denied — always pt-BR, independent of marketplace LanguageContext. */
+export const FLUX_AUTH_PT = {
+  kicker: 'Console FLUX',
+  title: 'Acesso administrativo',
+  subtitle: 'Entre com uma conta autorizada para acessar o painel.',
+  submit: 'Entrar no FLUX',
+  backToLinkhelp: 'Voltar ao LinkHelp',
+  emailLabel: 'E-mail',
+  passwordLabel: 'Senha',
+  showPassword: 'Mostrar senha',
+  hidePassword: 'Ocultar senha',
+  signingIn: 'Entrando…',
+  divider: 'Ou continue com',
+  google: 'Continuar com Google',
+  googleConnecting: 'Conectando ao Google…',
+  accessDeniedTitle: 'Acesso administrativo não autorizado',
+  accessDeniedBody: 'Esta área é exclusiva para administradores autorizados.',
+  accessDeniedCta: 'Voltar ao LinkHelp',
 } as const;
 
 export const BACKOFFICE_PT = {
@@ -83,22 +113,22 @@ export const BACKOFFICE_PT = {
   navOperationsLabel: 'Operações',
   navUsers: 'Usuários',
   navRequests: 'Chamados',
-  navCredits: 'Créditos',
+  navCredits: 'LinkCredits',
   navEconomy: 'Economia',
   navAudit: 'Auditoria',
   navSupport: 'Suporte',
   loading: 'Carregando…',
-  empty: 'Nenhum registro encontrado.',
+  empty: 'Nenhum resultado encontrado',
   usersTitle: 'Usuários',
-  usersSubtitle: 'Lista somente leitura de clientes e helpers',
+  usersSubtitle: 'Lista somente leitura de clientes e Helps',
   userDetail: 'Detalhes do usuário',
   backToUsers: 'Voltar para usuários',
   usersTabAll: 'Todos',
   usersTabClient: 'Clientes',
-  usersTabHelper: 'Helpers',
+  usersTabHelper: 'Helps',
   searchUsersPlaceholder: 'Pesquisar usuários…',
   requestsTitle: 'Chamados',
-  requestsSubtitle: 'Pedidos de serviço somente leitura',
+  requestsSubtitle: 'Chamados de serviço somente leitura',
   requestDetail: 'Detalhes do chamado',
   backToRequests: 'Voltar para chamados',
   searchRequestsPlaceholder: 'Pesquisar chamados…',
@@ -129,7 +159,7 @@ export const BACKOFFICE_PT = {
   colBudget: 'Orçamento',
   colLocation: 'Local',
   colType: 'Tipo',
-  colHelper: 'Helper',
+  colHelper: 'Help',
   colAmount: 'Valor',
   colDate: 'Data',
   colAction: 'Ação',
@@ -137,6 +167,7 @@ export const BACKOFFICE_PT = {
   packagesSection: 'Pacotes Stripe',
   applyRulesSection: 'Regras de candidatura',
   normalApply: 'Candidatura normal',
+  vipApply: 'Candidatura VIP',
   candidatesSection: 'Candidatos',
   walletSection: 'Carteira',
   profileSection: 'Perfil',
@@ -144,6 +175,8 @@ export const BACKOFFICE_PT = {
   recentRequests: 'Chamados recentes',
   openSupportView: 'Abrir visão de suporte',
   unavailable: 'BackOffice indisponível',
+  helpFallback: 'Help',
+  vipBadge: 'VIP',
 } as const;
 
 const SERVICE_CATEGORY_LABELS_PT: Record<ServiceCategoryId, string> = {
@@ -177,8 +210,13 @@ export function formatBackofficeApiError(code: string): string {
       return 'BackOffice ainda não está configurado no banco de dados.';
     case 'BACKOFFICE_RESOURCE_NOT_FOUND':
       return 'Recurso não encontrado.';
+    case 'USER_ID_REQUIRED':
+      return 'Informe o usuário para continuar.';
+    case 'METHOD_NOT_ALLOWED':
+      return 'Método não permitido nesta rota.';
     default:
       if (code.startsWith('BACKOFFICE_')) return BACKOFFICE_PT.unavailable;
+      // Diagnostic codes stay technical (not translated)
       return code;
   }
 }

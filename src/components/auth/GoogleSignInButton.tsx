@@ -5,10 +5,22 @@ type Props = {
   loading?: boolean;
   onClick: () => void;
   className?: string;
+  /** Optional fixed label (e.g. admin console pt-BR). Falls back to marketplace i18n. */
+  label?: string;
+  loadingLabel?: string;
 };
 
-export function GoogleSignInButton({ disabled, loading, onClick, className = '' }: Props) {
+export function GoogleSignInButton({
+  disabled,
+  loading,
+  onClick,
+  className = '',
+  label,
+  loadingLabel,
+}: Props) {
   const { t } = useLanguage();
+  const idleText = label ?? t('login_page.google');
+  const busyText = loadingLabel ?? t('auth.google_connecting');
 
   return (
     <button
@@ -39,7 +51,7 @@ export function GoogleSignInButton({ disabled, loading, onClick, className = '' 
           />
         </svg>
       )}
-      {loading ? t('auth.google_connecting') : t('login_page.google')}
+      {loading ? busyText : idleText}
     </button>
   );
 }

@@ -54,7 +54,7 @@ export function FluxAdminSidebar({ activeSection, onSectionChange }: Props) {
   return (
     <aside className="flux-admin-sidebar flex h-full w-[260px] shrink-0 flex-col border-r border-cyan-500/10 bg-[#030308]/95 backdrop-blur-xl">
       <div className="border-b border-white/8 px-5 py-5">
-        <FluxBrandMark />
+        <FluxBrandMark forcePtTagline />
       </div>
 
       <div className="border-b border-white/8 px-4 py-4">

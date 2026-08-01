@@ -7,6 +7,7 @@ import {
 } from '@/backoffice/contracts/usersContract';
 import { BackofficePageShell, BackofficeTableShell } from '@/backoffice/components/BackofficePageShell';
 import { BACKOFFICE_PT, USERS_ROLE_TAB_LABEL_PT, formatBackofficeApiError } from '@/admin/fluxPtCopy';
+import { formatLc, roleLabelPt } from '@/admin/fluxFormat';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/utils/constants';
 
@@ -82,10 +83,10 @@ export default function BackofficeUsersPage() {
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-slate-300">{u.email ?? '—'}</td>
-                <td className="px-4 py-3 capitalize text-slate-300">{u.role}</td>
+                <td className="px-4 py-3 text-slate-300">{roleLabelPt(u.role)}</td>
                 <td className="px-4 py-3 text-slate-400">{u.city ?? '—'}</td>
                 <td className="px-4 py-3 tabular-nums text-slate-300">
-                  {u.role === 'helper' ? `${u.credit_balance} LC` : '—'}
+                  {u.role === 'helper' ? formatLc(u.credit_balance) : '—'}
                 </td>
               </tr>
             ))}

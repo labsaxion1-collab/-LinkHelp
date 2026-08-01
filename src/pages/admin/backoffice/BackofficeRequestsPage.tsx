@@ -5,6 +5,7 @@ import { backofficeFetch, BackofficeApiError } from '@/backoffice/api/backoffice
 import { parseBackofficeRequestList } from '@/backoffice/contracts/requestsContract';
 import { BackofficePageShell, BackofficeTableShell } from '@/backoffice/components/BackofficePageShell';
 import { BACKOFFICE_PT, formatBackofficeApiError } from '@/admin/fluxPtCopy';
+import { requestStatusLabelPt } from '@/admin/fluxFormat';
 import { ROUTES } from '@/utils/constants';
 
 export default function BackofficeRequestsPage() {
@@ -56,7 +57,7 @@ export default function BackofficeRequestsPage() {
                     {r.title}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-slate-300">{r.status}</td>
+                <td className="px-4 py-3 text-slate-300">{requestStatusLabelPt(r.status)}</td>
                 <td className="px-4 py-3 text-slate-400">{r.client_name ?? '—'}</td>
                 <td className="px-4 py-3 tabular-nums text-slate-300">{r.application_count}</td>
               </tr>

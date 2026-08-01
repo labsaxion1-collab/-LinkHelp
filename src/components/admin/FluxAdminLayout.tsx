@@ -25,7 +25,7 @@ export function FluxAdminLayout() {
       <div className="relative flex min-w-0 flex-1 flex-col">
         <header className="flex shrink-0 items-center justify-between border-b border-cyan-500/10 bg-[#050508]/85 px-6 py-4 backdrop-blur-xl">
           <div className="flex min-w-0 items-center gap-4">
-            <FluxBrandMark compact showTagline={false} className="md:hidden" />
+            <FluxBrandMark compact showTagline={false} forcePtTagline className="md:hidden" />
             <div className="min-w-0">
               <h1 className="text-lg font-black tracking-[0.12em] text-white">FLUX</h1>
               <p className="text-xs font-medium text-cyan-300/70">{FLUX_PT.brandTagline}</p>

@@ -6,6 +6,7 @@ import { isAdminDashboardEmpty } from '@/admin/adminDashboardContract';
 import { adminDashboardErrorMessage } from '@/admin/adminDashboardErrors';
 import type { AdminFinancialTimeRange } from '@/admin/adminDashboardFinancialContract';
 import { FLUX_PT, serviceCategoryLabelPt } from '@/admin/fluxPtCopy';
+import { formatCadAmount, formatAdminPercent } from '@/admin/fluxFormat';
 import { FluxMetricCard } from '@/components/admin/FluxMetricCard';
 import { FluxAiInsightsPanel } from '@/components/admin/FluxAiInsightsPanel';
 import { FluxCategoryIntelligence, type CategoryIntelRow } from '@/components/admin/FluxCategoryIntelligence';
@@ -46,7 +47,7 @@ export default function AdminDashboard() {
         applications: aggregate?.applications ?? 0,
         hireRate: aggregate?.hireRate ?? 0,
         avgBudget: aggregate?.averageBudget != null
-          ? `CAD $${Math.round(aggregate.averageBudget)}`
+          ? formatCadAmount(Math.round(aggregate.averageBudget))
           : FLUX_PT.budgetNa,
         trend,
       };
@@ -157,7 +158,7 @@ export default function AdminDashboard() {
             />
             <FluxMetricCard
               label={FLUX_PT.metricHireRate}
-              value={`${metrics.hireRate}%`}
+              value={formatAdminPercent(metrics.hireRate)}
               delta={FLUX_PT.metricHiredCount(metrics.hiredApps)}
               deltaPositive={metrics.hireRate > 0}
               icon={Zap}

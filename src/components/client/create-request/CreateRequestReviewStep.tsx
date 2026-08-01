@@ -86,13 +86,14 @@ export function CreateRequestReviewStep({
             <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.service_mode_title')}</dt>
             <dd className="font-bold text-gray-900">{modalityLabel || '—'}</dd>
           </div>
-          <div>
-            <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.location')}</dt>
-            <dd className="font-bold flex items-center gap-1">
-              <Icons.MapPin className="w-4 h-4" />{' '}
-              {resolvedMode === 'remote' ? t('create_modal.service_mode_remote') : locationDisplay}
-            </dd>
-          </div>
+          {resolvedMode === 'remote' ? null : (
+            <div>
+              <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.location')}</dt>
+              <dd className="font-bold flex items-center gap-1">
+                <Icons.MapPin className="w-4 h-4" /> {locationDisplay}
+              </dd>
+            </div>
+          )}
           <div>
             <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.preferred_date')}</dt>
             <dd className="font-bold">{scheduleLabel}</dd>

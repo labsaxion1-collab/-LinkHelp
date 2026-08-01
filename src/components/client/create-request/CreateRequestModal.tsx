@@ -19,6 +19,11 @@ import {
 import { emptyRequestAddress, type RequestAddressValue } from '@/components/client/create-request/RequestAddressInput';
 import { TRANSLATION_REQUEST_LANGUAGES, getSpokenLanguageLabel } from '@/data/spokenLanguages';
 import { isValidRequestAddress } from '@/utils/requestAddressValidation';
+import {
+  publishCoordinatesForMode,
+  publishRequiresCoordinates,
+  publishRequiresMapAddress,
+} from '@/utils/publishAddressPolicy';
 import { descriptionContainsContactInfo } from '@/utils/descriptionContactGuard';
 import {
   buildBudgetLabelFromRange,
@@ -468,16 +473,33 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
 
   const handlePublish = async () => {
     if (publishing) return;
+    const resolvedServiceModeEarly: ServiceMode | null =
+      coerceServiceMode(serviceMode) ||
+      coerceServiceMode(translationServiceMode === 'online' ? 'remote' : translationServiceMode) ||
+      null;
+    const baselineOn = isBaselineFinanceEnabled();
+    const requiresAddress = publishRequiresMapAddress({
+      category: selectedCategory,
+      serviceMode: resolvedServiceModeEarly,
+      baselineFinanceEnabled: baselineOn,
+    });
     const needsAddress =
       selectedCategory === 'moving'
         ? !isValidRequestAddress(movePickupAddress) || !isValidRequestAddress(moveDeliveryAddress)
-        : !isValidRequestAddress(requestAddress);
+        : requiresAddress && !isValidRequestAddress(requestAddress);
     if (needsAddress) {
       showToast(t('create_modal.address_required'), 'error');
       return;
     }
     if (!rangeBudgetIsValid) {
       showToast(t('create_modal.budget_required'), 'error');
+      return;
+    }
+    if (!preferredDateIso || !preferredTimeSpecific.trim()) {
+      showToast(
+        !preferredDateIso ? t('create_modal.confirm_date_required') : t('create_modal.confirm_time_required'),
+        'error',
+      );
       return;
     }
     setPublishing(true);
@@ -519,17 +541,15 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     }
     const fullDescription = postText.trim() + extra;
     const addr = selectedCategory === 'moving' ? movePickupAddress : requestAddress;
-    const resolvedServiceMode: ServiceMode | null =
-      coerceServiceMode(serviceMode) ||
-      coerceServiceMode(translationServiceMode === 'online' ? 'remote' : translationServiceMode) ||
-      null;
+    const resolvedServiceMode: ServiceMode | null = resolvedServiceModeEarly;
     const locationParts = [addr.display.trim(), addr.city, addr.region].filter(Boolean);
     const locationLabel =
-      resolvedServiceMode === 'remote' && isBaselineFinanceEnabled()
+      resolvedServiceMode === 'remote' && baselineOn
         ? t('jobs.remote')
         : locationParts.join(', ') || t('jobs.remote');
+    const coords = publishCoordinatesForMode(resolvedServiceMode, addr.latitude, addr.longitude);
     try {
-      if (isBaselineFinanceEnabled()) {
+      if (baselineOn) {
         if (!selectedSubcategory) {
           showToast(t('baseline_finance.subcategory_required'), 'error');
           setPublishing(false);
@@ -541,8 +561,12 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
           return;
         }
         if (
-          resolvedServiceMode === 'in_person' &&
-          (addr.latitude == null || addr.longitude == null)
+          publishRequiresCoordinates({
+            category: selectedCategory,
+            serviceMode: resolvedServiceMode,
+            baselineFinanceEnabled: true,
+          }) &&
+          (coords.latitude == null || coords.longitude == null)
         ) {
           showToast(t('baseline_finance.service_location_required'), 'error');
           setPublishing(false);
@@ -559,12 +583,12 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
         subcategory: selectedSubcategory || null,
         serviceMode: resolvedServiceMode,
         location: locationLabel,
-        address: addr.address || addr.display.trim() || null,
-        city: addr.city || null,
-        region: addr.region || null,
-        postalCode: addr.postalCode?.trim() || null,
-        latitude: addr.latitude,
-        longitude: addr.longitude,
+        address: resolvedServiceMode === 'remote' ? null : addr.address || addr.display.trim() || null,
+        city: resolvedServiceMode === 'remote' ? null : addr.city || null,
+        region: resolvedServiceMode === 'remote' ? null : addr.region || null,
+        postalCode: resolvedServiceMode === 'remote' ? null : addr.postalCode?.trim() || null,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
         preferredDate: resolvePreferredDateIso(scheduleInput),
         preferredPeriod: null,
         preferredTimeWindow: null,

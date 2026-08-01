@@ -25,12 +25,18 @@ import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
 import { ROUTES } from '@/utils/constants';
 
 /** Columns required by mappers — avoids select('*') egress on bootstrap. */
-export const REQUEST_SELECT =
-  'id, client_id, title, description, category, subcategory, urgency, budget, location, address, city, region, postal_code, latitude, longitude, preferred_date, preferred_time_window, preferred_time, budget_type, budget_amount, currency, budget_min, budget_max, accepted_amount, application_count, exclusive_helper_id, status, created_at';
+export const REQUEST_SELECT_CORE =
+  'id, client_id, title, description, category, subcategory, urgency, budget, location, address, city, region, postal_code, latitude, longitude, preferred_date, preferred_time_window, preferred_time, budget_type, budget_amount, currency, budget_min, budget_max, accepted_amount, exclusive_helper_id, status, created_at';
+
+/** Optional denormalized counter — missing on some staging DBs (`apply_application_count_fix.sql`). */
+export const REQUEST_SELECT_WITH_APPLICATION_COUNT = `${REQUEST_SELECT_CORE}, application_count`;
+
+/** @deprecated Prefer REQUEST_SELECT_WITH_APPLICATION_COUNT / requestSelectForEnv */
+export const REQUEST_SELECT = REQUEST_SELECT_WITH_APPLICATION_COUNT;
 
 /** Includes pack 40 modality — only when baseline finance is enabled. */
-export const REQUEST_SELECT_BASELINE =
-  `${REQUEST_SELECT}, service_mode`;
+export const REQUEST_SELECT_BASELINE = `${REQUEST_SELECT_WITH_APPLICATION_COUNT}, service_mode`;
+export const REQUEST_SELECT_BASELINE_NO_APP_COUNT = `${REQUEST_SELECT_CORE}, service_mode`;
 
 export const APPLICATION_SELECT =
   'id, request_id, helper_id, client_id, status, message, proposed_amount, is_exclusive, created_at';
@@ -38,8 +44,33 @@ export const APPLICATION_SELECT =
 export const APPLICATION_SELECT_BASELINE =
   `${APPLICATION_SELECT}, lead_total_lc, lead_debit_lc, lead_service_mode`;
 
+/** Cached after first PostgREST "column application_count does not exist" on this session. */
+let omitApplicationCountSelect = false;
+
+export function resetRequestSelectApplicationCountCacheForTests(): void {
+  omitApplicationCountSelect = false;
+}
+
+export function markRequestsOmitApplicationCount(): void {
+  omitApplicationCountSelect = true;
+}
+
+export function requestsOmitApplicationCount(): boolean {
+  return omitApplicationCountSelect;
+}
+
+export function isMissingApplicationCountColumnError(error: { message?: string; code?: string } | null): boolean {
+  if (!error?.message) return false;
+  const msg = error.message.toLowerCase();
+  return msg.includes('application_count') && (msg.includes('column') || msg.includes('42703') || error.code === '42703');
+}
+
 export function requestSelectForEnv(): string {
-  return isBaselineFinanceEnabled() ? REQUEST_SELECT_BASELINE : REQUEST_SELECT;
+  const baseline = isBaselineFinanceEnabled();
+  if (omitApplicationCountSelect) {
+    return baseline ? REQUEST_SELECT_BASELINE_NO_APP_COUNT : REQUEST_SELECT_CORE;
+  }
+  return baseline ? REQUEST_SELECT_BASELINE : REQUEST_SELECT_WITH_APPLICATION_COUNT;
 }
 
 export function applicationSelectForEnv(): string {
@@ -112,17 +143,22 @@ export async function fetchRemoteAppDataBootstrap(): Promise<AppDataBootstrapRes
     };
   }
 
-  const [
-    { data: reqRows, error: reqErr },
-    { data: appRows, error: appErr },
-    { data: upRows },
-    { data: convRows },
-  ] = await Promise.all([
-    sb.from('requests').select(requestSelectForEnv()).order('created_at', { ascending: false }),
-    sb.from('applications').select(applicationSelectForEnv()).order('created_at', { ascending: false }),
-    sb.from('upcoming_jobs').select(UPCOMING_JOB_SELECT).order('scheduled_at', { ascending: true }),
-    sb.from('conversations').select('request_id, helper_id, contact_unlocked'),
-  ]);
+  let reqSelect = requestSelectForEnv();
+  let [{ data: reqRows, error: reqErr }, { data: appRows, error: appErr }, { data: upRows }, { data: convRows }] =
+    await Promise.all([
+      sb.from('requests').select(reqSelect).order('created_at', { ascending: false }),
+      sb.from('applications').select(applicationSelectForEnv()).order('created_at', { ascending: false }),
+      sb.from('upcoming_jobs').select(UPCOMING_JOB_SELECT).order('scheduled_at', { ascending: true }),
+      sb.from('conversations').select('request_id, helper_id, contact_unlocked'),
+    ]);
+
+  if (reqErr && isMissingApplicationCountColumnError(reqErr)) {
+    markRequestsOmitApplicationCount();
+    reqSelect = requestSelectForEnv();
+    const retry = await sb.from('requests').select(reqSelect).order('created_at', { ascending: false });
+    reqRows = retry.data;
+    reqErr = retry.error;
+  }
 
   if (reqErr) console.error('[LinkHelp] bootstrap requests', reqErr);
   if (appErr) console.error('[LinkHelp] bootstrap applications', appErr);

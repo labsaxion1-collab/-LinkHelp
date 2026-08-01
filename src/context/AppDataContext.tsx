@@ -42,6 +42,7 @@ import {
   type NotificationRow,
 } from '@/services/supabase/appDataRemote';
 import {
+  fetchRequestRowById,
   resolveApplicationRowForPatch,
   resolveRequestRowForPatch,
   resolveReviewRowForPatch,
@@ -671,7 +672,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   const createJob = async (jobDetails: Omit<Job, 'id' | 'createdAt' | 'status'>) => {
     if (useRemote) {
-      await remoteCreateRequest({
+      const published = await remoteCreateRequest({
         clientId: jobDetails.clientId,
         category: jobDetails.category,
         subcategory: jobDetails.subcategory ?? null,
@@ -700,6 +701,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         timezone: jobDetails.timezone ?? jobDetails.createdTimezone ?? null,
         createdTimezone: jobDetails.createdTimezone ?? jobDetails.timezone ?? null,
       });
+      // Refresh list/counters from DB before UI success — RPC alone does not patch local jobs.
+      await refreshRemoteBootstrap();
+      if (published.requestId && !jobsRef.current.some((j) => j.id === published.requestId)) {
+        // Bootstrap may race; ensure the just-published row is present when SELECT works.
+        const row = await fetchRequestRowById(published.requestId).catch(() => null);
+        if (row) {
+          await patchRequestRow(row);
+        }
+      }
       await refreshProfile();
       triggerGamificationRecalculate('request_published', 'client');
       return;

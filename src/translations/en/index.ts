@@ -164,6 +164,10 @@ export const en = {
         'Supabase is not configured. Create a `.env` file in the project root (not `.env.example`) with your real project URL and anon key from Supabase → Settings → API, then restart `npm run dev`. Add redirect URLs for http://localhost:3000 and http://localhost:3000/auth/callback.',
       email_taken: 'This email is already registered. Use Sign in if you already have an account.',
       invalid_credentials: 'Invalid email or password.',
+      email_required: 'Please enter your email.',
+      email_invalid_format: 'That email does not look valid. Double-check the spelling.',
+      email_domain_typo:
+        'The email domain looks mistyped (e.g. linkhep instead of linkhelp). Correct it and try again.',
       email_not_confirmed: 'Confirm your email before signing in (check your inbox).',
       weak_password: 'Password is too weak. Use a longer, stronger password.',
       rate_limit: 'Too many attempts. Wait a moment and try again.',

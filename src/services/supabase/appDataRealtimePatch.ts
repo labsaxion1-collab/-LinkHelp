@@ -6,6 +6,8 @@ import type { ServiceReview } from '@/types/review';
 import type { UpcomingJob } from '@/types/upcoming';
 import {
   applicationSelectForEnv,
+  isMissingApplicationCountColumnError,
+  markRequestsOmitApplicationCount,
   requestSelectForEnv,
   UPCOMING_JOB_SELECT,
 } from '@/services/supabase/appDataRemote';
@@ -176,7 +178,13 @@ export function mergeReviewRowWithReview(
 export async function fetchRequestRowById(id: string): Promise<RequestRow | null> {
   const sb = getSupabase();
   if (!sb) return null;
-  const { data, error } = await sb.from('requests').select(requestSelectForEnv()).eq('id', id).maybeSingle();
+  let select = requestSelectForEnv();
+  let { data, error } = await sb.from('requests').select(select).eq('id', id).maybeSingle();
+  if (error && isMissingApplicationCountColumnError(error)) {
+    markRequestsOmitApplicationCount();
+    select = requestSelectForEnv();
+    ({ data, error } = await sb.from('requests').select(select).eq('id', id).maybeSingle());
+  }
   if (error || !data) {
     if (error) console.warn('[LinkHelp] fetchRequestRowById', error.message);
     return null;

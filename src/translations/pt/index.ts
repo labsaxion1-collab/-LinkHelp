@@ -164,6 +164,10 @@ export const pt = {
         'O Supabase não está configurado. Crie um ficheiro `.env` na raiz (não use só o `.env.example`) com o URL do projeto e a chave anon reais em Supabase → Definições → API e reinicie o `npm run dev`. Em Authentication → URL Configuration, inclua http://localhost:3000 e http://localhost:3000/auth/callback.',
       email_taken: 'Este e-mail já está cadastrado. Use Entrar se já tiver conta.',
       invalid_credentials: 'E-mail ou senha inválidos.',
+      email_required: 'Informe seu e-mail.',
+      email_invalid_format: 'Esse e-mail não parece válido. Confira se digitou corretamente.',
+      email_domain_typo:
+        'O domínio do e-mail parece digitado errado (ex.: linkhep em vez de linkhelp). Corrija e tente de novo.',
       email_not_confirmed: 'Confirme seu e-mail antes de entrar (verifique a caixa de entrada).',
       weak_password: 'Senha fraca. Use uma senha mais longa e forte.',
       rate_limit: 'Muitas tentativas. Aguarde um instante e tente de novo.',

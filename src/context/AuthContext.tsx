@@ -28,6 +28,7 @@ import type { Database } from '@/types/supabase.database';
 import type { ProfileRow, UserType } from '@/types/database';
 import type { AuthFlowError } from '@/types/authFlowError';
 import { mapProfileWriteError, mapSupabaseAuthError } from '@/services/authErrorMap';
+import { getAuthEmailIssue, authEmailIssueMessageKey, normalizeAuthEmail } from '@/utils/authEmail';
 import { getEmailAuthRedirectToUrl, getOAuthRedirectToUrl } from '@/utils/oauthRedirect';
 import { triggerGamificationRecalculate } from '@/gamification/services/triggerGamificationRecalculate';
 
@@ -667,7 +668,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authDevLog('signInWithPassword:aborted', { reason: 'supabase_client_null' });
       return { code: 'unavailable', messageKey: 'auth.errors.env_not_ready' };
     }
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    const normalizedEmail = normalizeAuthEmail(email);
+    const emailIssue = getAuthEmailIssue(normalizedEmail);
+    if (emailIssue) {
+      return { code: 'auth_failed', messageKey: authEmailIssueMessageKey(emailIssue) };
+    }
+    const { data, error } = await sb.auth.signInWithPassword({ email: normalizedEmail, password });
     const status = error && 'status' in error ? (error as { status?: number }).status : undefined;
     authDevLog('signInWithPassword:result', {
       errorMessage: error?.message,
@@ -734,11 +740,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         authDevLog('signUp:aborted', { reason: 'supabase_client_null' });
         return { code: 'unavailable', messageKey: 'auth.errors.env_not_ready' };
       }
+      const normalizedEmail = normalizeAuthEmail(email);
+      const emailIssue = getAuthEmailIssue(normalizedEmail);
+      if (emailIssue) {
+        return { code: 'auth_failed', messageKey: authEmailIssueMessageKey(emailIssue) };
+      }
       const now = new Date().toISOString();
       const emailRedirectTo = getEmailAuthRedirectToUrl();
       authDevLog('signUp:emailRedirectTo', { emailRedirectTo });
       const { data, error } = await sb.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
         options: {
           emailRedirectTo,

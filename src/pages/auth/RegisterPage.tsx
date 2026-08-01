@@ -29,6 +29,11 @@ import { getSupabase } from '@/lib/supabase';
 import { HelperTermsGateModal } from '@/components/auth/HelperTermsGateModal';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { clearOAuthRedirectPending, isOAuthRedirectPending } from '@/utils/authStorage';
+import {
+  authEmailIssueMessageKey,
+  getAuthEmailIssue,
+  normalizeAuthEmail,
+} from '@/utils/authEmail';
 import type { AppLanguage } from '@/services/translationService';
 
 export default function RegisterPage() {
@@ -77,7 +82,7 @@ export default function RegisterPage() {
     setSubmitting(true);
     const now = new Date().toISOString();
     const ut = userMode === 'helper' ? 'helper' : 'client';
-    const err = await signUpWithEmail(email, password, {
+    const err = await signUpWithEmail(normalizeAuthEmail(email), password, {
       fullName,
       userType: ut,
       city: cityCanon.trim() || city.trim(),
@@ -134,6 +139,12 @@ export default function RegisterPage() {
     }
     if (password !== confirmPassword) {
       setError(t('register_page.password_mismatch'));
+      return;
+    }
+    const emailIssue = getAuthEmailIssue(email);
+    if (emailIssue) {
+      setError(t(authEmailIssueMessageKey(emailIssue)));
+      setErrorKey(authEmailIssueMessageKey(emailIssue));
       return;
     }
     if (!isConfigured) {

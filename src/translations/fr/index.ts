@@ -164,6 +164,10 @@ export const fr = {
         'Supabase n’est pas configuré. Créez un fichier `.env` à la racine (pas seulement `.env.example`) avec l’URL du projet et la clé anon réelles (Supabase → Settings → API), puis redémarrez `npm run dev`. Dans Authentication → URL Configuration, ajoutez http://localhost:3000 et http://localhost:3000/auth/callback.',
       email_taken: 'Cette adresse e-mail est déjà enregistrée. Utilisez Connexion si vous avez déjà un compte.',
       invalid_credentials: 'E-mail ou mot de passe invalide.',
+      email_required: 'Veuillez saisir votre e-mail.',
+      email_invalid_format: "Cet e-mail ne semble pas valide. Vérifiez l'orthographe.",
+      email_domain_typo:
+        'Le domaine de l\'e-mail semble mal saisi (ex. : linkhep au lieu de linkhelp). Corrigez et réessayez.',
       email_not_confirmed: "Confirmez votre e-mail avant de vous connecter (vérifiez votre boîte de réception).",
       weak_password: 'Mot de passe trop faible. Utilisez un mot de passe plus long et robuste.',
       rate_limit: 'Trop de tentatives. Patientez puis réessayez.',

@@ -21,6 +21,12 @@ import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 
 import { oauthErrorMessageKey, type OAuthCallbackErrorCode } from '@/utils/parseOAuthCallbackError';
 
+import {
+  authEmailIssueMessageKey,
+  getAuthEmailIssue,
+  normalizeAuthEmail,
+} from '@/utils/authEmail';
+
 import { readKeepSignedIn, writeKeepSignedIn } from '@/utils/rememberSession';
 
 import { clearAdminOAuthState } from '@/utils/fluxRedirect';
@@ -320,7 +326,7 @@ export default function LoginPage() {
 
     }
 
-    const targetEmail = (resetEmail || email).trim();
+    const targetEmail = normalizeAuthEmail(resetEmail || email);
 
     if (!targetEmail) {
 
@@ -328,6 +334,12 @@ export default function LoginPage() {
 
       return;
 
+    }
+
+    const emailIssue = getAuthEmailIssue(targetEmail);
+    if (emailIssue) {
+      showToast(t(authEmailIssueMessageKey(emailIssue)), 'error');
+      return;
     }
 
     const sb = getSupabase();

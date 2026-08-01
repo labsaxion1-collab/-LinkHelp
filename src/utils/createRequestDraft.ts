@@ -1,5 +1,6 @@
 import type { RequestAddressValue } from '@/components/client/create-request/RequestAddressInput';
 import type { MovePropertyType } from '@/components/client/create-request/CreateRequestScheduleStep';
+import type { ServiceMode } from '@/config/baselineFinance';
 import type { BudgetMode } from '@/utils/formatJobBudget';
 import type { RequestPriority } from '@/utils/requestSchedule';
 
@@ -18,6 +19,8 @@ export type CreateRequestDraft = {
   translationFromLanguage: string;
   translationToLanguage: string;
   translationServiceMode: 'online' | 'in_person' | '';
+  /** Canonical modality (`remote` | `in_person`) for baseline finance publish. */
+  serviceMode: ServiceMode | '';
   requestAddress: RequestAddressValue;
   priority: RequestPriority;
   preferredDateIso: string;
@@ -87,6 +90,14 @@ function parseDraft(raw: string): CreateRequestDraft | null {
         data.translationServiceMode === 'online' || data.translationServiceMode === 'in_person'
           ? data.translationServiceMode
           : '',
+      serviceMode:
+        data.serviceMode === 'remote' || data.serviceMode === 'in_person'
+          ? data.serviceMode
+          : data.translationServiceMode === 'online'
+            ? 'remote'
+            : data.translationServiceMode === 'in_person'
+              ? 'in_person'
+              : '',
       requestAddress: normalizeAddress(data.requestAddress),
       priority:
         data.priority === 'emergency' ||
@@ -161,6 +172,7 @@ export function hasMeaningfulCreateRequestDraft(draft: CreateRequestDraft): bool
       draft.translationFromLanguage ||
       draft.translationToLanguage ||
       draft.translationServiceMode ||
+      draft.serviceMode ||
       draft.preferredDateIso ||
       draft.preferredTimeSpecific ||
       draft.step !== 'category',

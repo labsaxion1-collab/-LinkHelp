@@ -28,7 +28,7 @@ import type { Database } from '@/types/supabase.database';
 import type { ProfileRow, UserType } from '@/types/database';
 import type { AuthFlowError } from '@/types/authFlowError';
 import { mapProfileWriteError, mapSupabaseAuthError } from '@/services/authErrorMap';
-import { getOAuthRedirectToUrl } from '@/utils/oauthRedirect';
+import { getEmailAuthRedirectToUrl, getOAuthRedirectToUrl } from '@/utils/oauthRedirect';
 import { triggerGamificationRecalculate } from '@/gamification/services/triggerGamificationRecalculate';
 
 export type AuthProfile = ProfileRow;
@@ -735,10 +735,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { code: 'unavailable', messageKey: 'auth.errors.env_not_ready' };
       }
       const now = new Date().toISOString();
+      const emailRedirectTo = getEmailAuthRedirectToUrl();
+      authDevLog('signUp:emailRedirectTo', { emailRedirectTo });
       const { data, error } = await sb.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo,
           data: {
             full_name: meta.fullName,
             user_type: meta.userType,

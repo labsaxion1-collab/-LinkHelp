@@ -1,13 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { coerceServiceMode, isBaselineFinanceEnabled, isServiceMode } from '@/config/baselineFinance';
+import { STAGING_TEST_HOSTNAME } from '@/utils/linkhelpHosts';
 
 describe('baselineFinance', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
   });
 
-  it('defaults to disabled when env unset', () => {
+  it('defaults to disabled when env unset and not on staging host', () => {
     vi.stubEnv('VITE_LINKHELP_BASELINE_FINANCE', undefined);
+    vi.stubGlobal('window', { location: { hostname: 'app.linkhelp.app' } });
     expect(isBaselineFinanceEnabled()).toBe(false);
   });
 
@@ -16,6 +19,12 @@ describe('baselineFinance', () => {
       vi.stubEnv('VITE_LINKHELP_BASELINE_FINANCE', value);
       expect(isBaselineFinanceEnabled()).toBe(true);
     }
+  });
+
+  it('enables on teste.linkhelp.app even when env unset', () => {
+    vi.stubEnv('VITE_LINKHELP_BASELINE_FINANCE', undefined);
+    vi.stubGlobal('window', { location: { hostname: STAGING_TEST_HOSTNAME } });
+    expect(isBaselineFinanceEnabled()).toBe(true);
   });
 
   it('coerces legacy labels to canonical service_mode', () => {

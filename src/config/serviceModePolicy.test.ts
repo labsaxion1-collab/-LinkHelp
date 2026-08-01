@@ -17,6 +17,16 @@ describe('serviceModePolicy', () => {
     expect(allowedServiceModes('translation', 'consultation')).toEqual(['remote', 'in_person']);
   });
 
+  it('marks beauty waxing (Depilação) as in-person only', () => {
+    expect(getServiceModePolicy('beauty', 'waxing')).toBe('in_person_only');
+    expect(allowedServiceModes('beauty', 'waxing')).toEqual(['in_person']);
+  });
+
+  it('marks tech format as both', () => {
+    expect(getServiceModePolicy('tech', 'format')).toBe('both');
+    expect(allowedServiceModes('tech', 'format')).toEqual(['remote', 'in_person']);
+  });
+
   it('requires choice when subcategory missing', () => {
     expect(getServiceModePolicy('cleaning', '')).toBe('both');
   });

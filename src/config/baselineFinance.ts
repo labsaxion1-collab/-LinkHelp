@@ -1,16 +1,23 @@
 /**
  * Gates UI/RPC payloads that require the staging baseline (packs 40–60).
  *
- * Default OFF so teste.linkhelp.app / Preview keep working against the historical DB
- * (no `service_mode` column / publish contract).
+ * Default OFF so Production (`app.linkhelp.app`) keeps working against the historical DB
+ * (no `service_mode` column / publish contract) until Production DB is upgraded.
  *
- * Activate at Preview cutover by setting Preview-only:
- *   VITE_LINKHELP_BASELINE_FINANCE=true
- * Never enable on Production until Production DB has the same baseline.
+ * Enabled when:
+ * - Preview/build sets `VITE_LINKHELP_BASELINE_FINANCE=true`, or
+ * - Runtime host is `teste.linkhelp.app` (staging DB already has pack 40).
  */
+import { STAGING_TEST_HOSTNAME } from '@/utils/linkhelpHosts';
+
 export function isBaselineFinanceEnabled(): boolean {
   const raw = (import.meta.env.VITE_LINKHELP_BASELINE_FINANCE as string | undefined)?.trim().toLowerCase();
-  return raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on';
+  if (raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on') return true;
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname.toLowerCase();
+    if (host === STAGING_TEST_HOSTNAME) return true;
+  }
+  return false;
 }
 
 /** Canonical SQL values for requests.service_mode (pack 40). */

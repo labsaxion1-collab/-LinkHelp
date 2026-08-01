@@ -262,11 +262,13 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setTranslationToLanguage(draft.translationToLanguage);
     setTranslationServiceMode(draft.translationServiceMode);
     setServiceMode(
-      draft.translationServiceMode === 'online'
-        ? 'remote'
-        : draft.translationServiceMode === 'in_person'
-          ? 'in_person'
-          : '',
+      draft.serviceMode === 'remote' || draft.serviceMode === 'in_person'
+        ? draft.serviceMode
+        : draft.translationServiceMode === 'online'
+          ? 'remote'
+          : draft.translationServiceMode === 'in_person'
+            ? 'in_person'
+            : '',
     );
     setRequestAddress(draft.requestAddress);
     setPriority(draft.priority);
@@ -300,6 +302,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       translationFromLanguage,
       translationToLanguage,
       translationServiceMode,
+      serviceMode,
       requestAddress,
       priority,
       preferredDateIso,
@@ -327,6 +330,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     translationFromLanguage,
     translationToLanguage,
     translationServiceMode,
+    serviceMode,
     requestAddress,
     priority,
     preferredDateIso,
@@ -602,11 +606,21 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   };
 
   const addressStepComplete = useMemo(() => {
+    const resolvedMode: ServiceMode | '' =
+      serviceMode ||
+      (translationServiceMode === 'online'
+        ? 'remote'
+        : translationServiceMode === 'in_person'
+          ? 'in_person'
+          : '');
     if (selectedCategory === 'moving') {
       return isValidRequestAddress(movePickupAddress) && isValidRequestAddress(moveDeliveryAddress);
     }
+    if (isBaselineFinanceEnabled() && resolvedMode === 'remote') return true;
     if (selectedCategory === 'translation') {
-      return Boolean(translationServiceMode) && isValidRequestAddress(requestAddress);
+      return Boolean(translationServiceMode || serviceMode) && (
+        resolvedMode === 'remote' || isValidRequestAddress(requestAddress)
+      );
     }
     return isValidRequestAddress(requestAddress);
   }, [
@@ -614,6 +628,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     movePickupAddress,
     moveDeliveryAddress,
     translationServiceMode,
+    serviceMode,
     requestAddress,
   ]);
 
@@ -644,6 +659,13 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       if (selectedCategory === 'translation' && !translationLanguagesComplete) {
         return t('create_modal.translation_languages_required');
       }
+      if (
+        isBaselineFinanceEnabled() &&
+        !serviceMode &&
+        !(selectedCategory === 'translation' && translationServiceMode)
+      ) {
+        return t('baseline_finance.service_mode_required');
+      }
       if (!addressStepComplete) return t('create_modal.address_required_continue');
       if (!categoryFieldsComplete) return t('create_modal.category_fields_required');
       if (!budgetStepComplete) return t('create_modal.budget_required_continue');
@@ -659,6 +681,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     descriptionBlocked,
     selectedCategory,
     translationLanguagesComplete,
+    serviceMode,
+    translationServiceMode,
     addressStepComplete,
     categoryFieldsComplete,
     budgetStepComplete,
@@ -1032,6 +1056,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               budgetHint={budgetLabel}
               translationFromLanguage={translationFromLanguage}
               translationToLanguage={translationToLanguage}
+              translationServiceMode={translationServiceMode}
+              serviceMode={serviceMode}
               requestAddress={requestAddress}
               movePickupAddress={movePickupAddress}
               moveDeliveryAddress={moveDeliveryAddress}

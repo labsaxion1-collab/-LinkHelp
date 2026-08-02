@@ -12,6 +12,8 @@ import {
   resolveAdminOAuthReturnTo,
   resolveAuthCallbackDestination,
 } from '@/utils/fluxRedirect';
+import { acceptAdminInvite } from '@/admin/administrators/acceptAdminInvite';
+import { isFluxAdmin } from '@/utils/adminAccess';
 import { writeStoredAppMode } from '@/utils/appModeStorage';
 import { dashboardPathForRole, normalizeProfileRole } from '@/utils/userRole';
 import {
@@ -155,6 +157,15 @@ export default function AuthCallbackPage() {
 
         stripAuthParamsFromUrl();
 
+        const adminOAuthPending = isAdminOAuthFlowPending() || Boolean(resolveAdminOAuthReturnTo(next));
+        if (adminOAuthPending && session.access_token) {
+          await acceptAdminInvite(session.access_token);
+          const { data: refreshed } = await sb.auth.getSession();
+          if (refreshed.session?.user) {
+            session = refreshed.session;
+          }
+        }
+
         const synced = await attemptSessionRecovery();
         if (!synced) {
           authFlowLog('AuthCallback: session not synced to app context', {});
@@ -165,16 +176,20 @@ export default function AuthCallbackPage() {
         await waitForAuthBootstrapped(() => bootstrappedRef.current);
 
         let profileRow: AuthProfile | null = null;
-        for (let attempt = 0; attempt < 5 && !profileRow; attempt++) {
-          if (attempt > 0) {
-            await new Promise((r) => window.setTimeout(r, 180 * attempt));
+        if (!adminOAuthPending && !isFluxAdmin(session)) {
+          for (let attempt = 0; attempt < 5 && !profileRow; attempt++) {
+            if (attempt > 0) {
+              await new Promise((r) => window.setTimeout(r, 180 * attempt));
+            }
+            profileRow = await refreshProfile(session.user);
           }
+        } else {
           profileRow = await refreshProfile(session.user);
         }
 
         if (cancelled) return;
 
-        if (userNeedsRoleSelection(session.user, profileRow)) {
+        if (!adminOAuthPending && !isFluxAdmin(session) && userNeedsRoleSelection(session.user, profileRow)) {
           authFlowLog('OAuth user needs role selection', { userId: session.user.id, deleted: Boolean(profileRow?.deleted_at) });
           clearOAuthCallbackActive();
           clearOAuthRedirectPending();
@@ -183,7 +198,9 @@ export default function AuthCallbackPage() {
         }
 
         const role = normalizeProfileRole(profileRow?.role ?? session.user.user_metadata?.user_type);
-        writeStoredAppMode(role, session.user.id);
+        if (profileRow?.role === 'client' || profileRow?.role === 'helper') {
+          writeStoredAppMode(role, session.user.id);
+        }
 
         const adminReturnResolved = resolveAdminOAuthReturnTo(next);
         const dest = resolveAuthCallbackDestination({

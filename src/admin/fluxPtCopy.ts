@@ -117,8 +117,39 @@ export const BACKOFFICE_PT = {
   navEconomy: 'Economia',
   navAudit: 'Auditoria',
   navSupport: 'Suporte',
+  navAdministrators: 'Administradores',
   loading: 'Carregando…',
   empty: 'Nenhum resultado encontrado',
+  administratorsTitle: 'Administradores',
+  administratorsSubtitle: 'Convide e gerencie quem acessa o console FLUX',
+  addAdministrator: 'Adicionar administrador',
+  inviteEmailLabel: 'E-mail',
+  inviteRoleLabel: 'Função',
+  inviteSubmit: 'Enviar convite',
+  inviteCancel: 'Cancelar',
+  inviteSuccess: 'Convite criado. A pessoa precisa entrar no FLUX com Google usando este e-mail.',
+  invitePendingSection: 'Convites pendentes',
+  adminsSection: 'Administradores ativos',
+  revokeInvite: 'Revogar convite',
+  changeRole: 'Alterar função',
+  activate: 'Ativar',
+  deactivate: 'Desativar',
+  revokeAccess: 'Revogar acesso',
+  roleSuperAdmin: 'Superadministrador',
+  roleOperationsAdmin: 'Administrador',
+  statusActive: 'Ativo',
+  statusInactive: 'Inativo',
+  statusRevoked: 'Revogado',
+  statusPending: 'Pendente',
+  colGrantedAt: 'Concedido em',
+  colExpiresAt: 'Expira em',
+  confirmDeactivate: 'Desativar este administrador?',
+  confirmRevoke: 'Revogar o acesso deste administrador?',
+  confirmRevokeInvite: 'Revogar este convite?',
+  noAdministrators: 'Nenhum administrador cadastrado',
+  noPendingInvites: 'Nenhum convite pendente',
+  saveChanges: 'Salvar',
+  actions: 'Ações',
   usersTitle: 'Usuários',
   usersSubtitle: 'Lista somente leitura de clientes e Helps',
   userDetail: 'Detalhes do usuário',
@@ -214,6 +245,26 @@ export function formatBackofficeApiError(code: string): string {
       return 'Informe o usuário para continuar.';
     case 'METHOD_NOT_ALLOWED':
       return 'Método não permitido nesta rota.';
+    case 'INVALID_EMAIL':
+      return 'Informe um e-mail válido.';
+    case 'INVALID_ROLE':
+      return 'Função inválida para administrador.';
+    case 'INVITE_ALREADY_PENDING':
+      return 'Já existe um convite pendente para este e-mail.';
+    case 'INVITE_NOT_FOUND':
+      return 'Convite não encontrado.';
+    case 'INVITE_NOT_PENDING':
+      return 'Este convite não está mais pendente.';
+    case 'INVITE_EXPIRED':
+      return 'Este convite expirou.';
+    case 'EMAIL_MISMATCH':
+      return 'O e-mail da sessão não corresponde ao convite.';
+    case 'LAST_SUPER_ADMIN':
+      return 'Não é possível remover o último Superadministrador ativo.';
+    case 'SELF_REMOVAL_FORBIDDEN':
+      return 'Você não pode remover o próprio acesso de Superadministrador.';
+    case 'ADMIN_NOT_FOUND':
+      return 'Administrador não encontrado.';
     default:
       if (code.startsWith('BACKOFFICE_')) return BACKOFFICE_PT.unavailable;
       // Diagnostic codes stay technical (not translated)

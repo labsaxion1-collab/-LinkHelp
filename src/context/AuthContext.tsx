@@ -31,6 +31,8 @@ import { mapProfileWriteError, mapSupabaseAuthError } from '@/services/authError
 import { getAuthEmailIssue, authEmailIssueMessageKey, normalizeAuthEmail } from '@/utils/authEmail';
 import { getEmailAuthRedirectToUrl, getOAuthRedirectToUrl } from '@/utils/oauthRedirect';
 import { triggerGamificationRecalculate } from '@/gamification/services/triggerGamificationRecalculate';
+import { isFluxAdminAppMetadata } from '@/backoffice/permissions/roles';
+import { isAdminOAuthFlowPending } from '@/utils/fluxRedirect';
 
 export type AuthProfile = ProfileRow;
 export type AuthError = AuthFlowError;
@@ -233,6 +235,12 @@ async function ensureProfileViaRpc(user: User, row: ProfileInsert): Promise<Auth
 async function ensureProfileFromUser(user: User): Promise<AuthProfile | null> {
   const sb = getSupabase();
   if (!sb) return null;
+
+  // FLUX admins / pending admin OAuth must not become Client/Help via upsert.
+  if (isFluxAdminAppMetadata(user.app_metadata?.role) || isAdminOAuthFlowPending()) {
+    authDevLog('ensureProfileFromUser:skip:admin', { userId: user.id });
+    return fetchProfile(user.id);
+  }
 
   const row = buildProfileInsert(user);
   authDevLog('ensureProfileFromUser:upsert:start', {

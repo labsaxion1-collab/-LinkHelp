@@ -14,9 +14,12 @@ function mockAuth(user: unknown, error: unknown = null) {
 }
 
 function mockRoles(rows: { role_id: string }[] | null, error: { code?: string; message?: string } | null = null) {
+  const result = { data: rows, error };
   const chain = {
     select: vi.fn(() => chain),
-    eq: vi.fn(async () => ({ data: rows, error })),
+    eq: vi.fn(() => chain),
+    then: (resolve: (value: typeof result) => unknown, reject?: (reason: unknown) => unknown) =>
+      Promise.resolve(result).then(resolve, reject),
   };
   vi.mocked(createSupabaseServiceRoleClient).mockReturnValue({ from: vi.fn(() => chain) } as never);
 }
@@ -35,18 +38,17 @@ describe('authorizeBackoffice', () => {
     await expect(authorizeBackoffice('Bearer tok')).resolves.toEqual({ ok: false, status: 403, error: 'FORBIDDEN' });
   });
 
-  it('falls back to super_admin when legacy admin has no role rows', async () => {
+  it('returns 403 when JWT admin has no active role rows (no bootstrap)', async () => {
     mockAuth({ id: 'admin-1', app_metadata: { role: 'admin' } });
     mockRoles([]);
-    const result = await authorizeBackoffice('Bearer tok', 'users.read');
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.roles).toEqual(['super_admin']);
-      expect(result.permissions).toContain('users.read');
-    }
+    await expect(authorizeBackoffice('Bearer tok', 'users.read')).resolves.toEqual({
+      ok: false,
+      status: 403,
+      error: 'FORBIDDEN',
+    });
   });
 
-  it('accepts flux_admin legacy role', async () => {
+  it('accepts flux_admin with active role rows', async () => {
     mockAuth({ id: 'flux-1', app_metadata: { role: 'flux_admin' } });
     mockRoles([{ role_id: 'support_agent' }]);
     const result = await authorizeBackoffice('Bearer tok', 'support.view');
@@ -62,6 +64,22 @@ describe('authorizeBackoffice', () => {
       status: 403,
       error: 'FORBIDDEN',
     });
+  });
+
+  it('grants admins.manage only when super_admin is active', async () => {
+    mockAuth({ id: 'ops-1', app_metadata: { role: 'admin' } });
+    mockRoles([{ role_id: 'operations_admin' }]);
+    await expect(authorizeBackoffice('Bearer tok', 'admins.manage')).resolves.toEqual({
+      ok: false,
+      status: 403,
+      error: 'FORBIDDEN',
+    });
+
+    mockAuth({ id: 'super-1', app_metadata: { role: 'admin' } });
+    mockRoles([{ role_id: 'super_admin' }]);
+    const ok = await authorizeBackoffice('Bearer tok', 'admins.manage');
+    expect(ok.ok).toBe(true);
+    if (ok.ok) expect(ok.permissions).toContain('admins.manage');
   });
 
   it('returns 503 when admin_user_roles table is missing', async () => {

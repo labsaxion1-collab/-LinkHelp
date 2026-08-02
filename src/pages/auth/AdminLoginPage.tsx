@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { authFlowLog } from '@/lib/authDebug';
 import { getSupabase } from '@/lib/supabase';
+import { acceptAdminInvite } from '@/admin/administrators/acceptAdminInvite';
 import { isFluxAdmin } from '@/utils/adminAccess';
 import { ROUTES } from '@/utils/constants';
 import { LINKHELP_PUBLIC_ORIGIN } from '@/utils/fluxHost';
@@ -35,7 +36,6 @@ export default function AdminLoginPage() {
     signInWithGoogle,
     isConfigured,
     session,
-    profile,
     authBootstrapped,
     authLoading,
     refreshProfile,
@@ -66,8 +66,16 @@ export default function AdminLoginPage() {
 
   const redirectedRef = useRef(false);
 
-  const finishAdminLogin = (activeSession: Session) => {
+  const finishAdminLogin = async (activeSession: Session) => {
     if (redirectedRef.current) return;
+
+    // Accept pending invite (email match) before the admin gate — refreshes JWT claim.
+    if (activeSession.access_token) {
+      await acceptAdminInvite(activeSession.access_token);
+      const sb = getSupabase();
+      const { data } = sb ? await sb.auth.getSession() : { data: { session: null } };
+      if (data.session) activeSession = data.session;
+    }
 
     if (!isFluxAdmin(activeSession)) {
       authFlowLog('AdminLogin: access denied — not admin', { userId: activeSession.user.id });
@@ -93,13 +101,10 @@ export default function AdminLoginPage() {
       const { data } = await sb.auth.getSession();
       const activeSession = data.session;
       if (!activeSession?.user) return;
-      if (!profile) {
-        void refreshProfile(activeSession.user);
-        return;
-      }
-      finishAdminLogin(activeSession);
+      // Admins may have no marketplace profile — do not block FLUX login on profile.
+      await finishAdminLogin(activeSession);
     })();
-  }, [isConfigured, authBootstrapped, authLoading, session, profile, effectiveReturnTo, submitting, googleLoading]);
+  }, [isConfigured, authBootstrapped, authLoading, session, effectiveReturnTo, submitting, googleLoading]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -122,7 +127,7 @@ export default function AdminLoginPage() {
     setSubmitting(false);
 
     if (sessionData.session?.user) {
-      finishAdminLogin(sessionData.session);
+      await finishAdminLogin(sessionData.session);
     }
   };
 

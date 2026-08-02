@@ -470,6 +470,7 @@ describe('FluxAdminSidebar routes', () => {
   it('backoffice sidebar still references admin routes', () => {
     expect(ROUTES.adminUsers).toBe('/admin/users');
     expect(ROUTES.adminDashboard).toBe('/admin/dashboard');
+    expect(ROUTES.adminAdministrators).toBe('/admin/administrators');
     expect(FluxAdminSidebar).toBeDefined();
   });
 });

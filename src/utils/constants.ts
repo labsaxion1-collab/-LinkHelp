@@ -56,6 +56,8 @@ export const ROUTES = {
   adminEconomy: '/admin/economy',
   adminAudit: '/admin/audit',
   adminSupport: '/admin/support',
+  /** FLUX — gestão de administradores (admins.manage) */
+  adminAdministrators: '/admin/administrators',
   /** Dev-only push notification diagnostics */
   adminPushTest: '/admin/push-test',
 } as const;

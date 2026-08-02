@@ -10,12 +10,15 @@ import {
   LineChart,
   Shield,
   Headphones,
+  UserCog,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { BACKOFFICE_PT, FLUX_PT, fluxAppStatusLabelPt } from '@/admin/fluxPtCopy';
+import { canManageAdmins, fetchAdminMe } from '@/admin/administrators/adminMeClient';
 import { FLUX_ADMIN_APPS, DEFAULT_FLUX_APP_ID } from '@/config/fluxAdminApps';
 import { FluxBrandMark } from '@/components/brand/FluxBrandMark';
+import { useAuth } from '@/context/AuthContext';
 import { ROUTES } from '@/utils/constants';
 
 type Props = {
@@ -26,10 +29,31 @@ type Props = {
 export function FluxAdminSidebar({ activeSection, onSectionChange }: Props) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [activeAppId, setActiveAppId] = useState(DEFAULT_FLUX_APP_ID);
   const [appPickerOpen, setAppPickerOpen] = useState(false);
+  const [showAdministrators, setShowAdministrators] = useState(false);
   const activeApp = FLUX_ADMIN_APPS.find((a) => a.id === activeAppId) ?? FLUX_ADMIN_APPS[0];
   const onDashboard = location.pathname === ROUTES.adminDashboard;
+
+  useEffect(() => {
+    const token = session?.access_token;
+    if (!token) {
+      setShowAdministrators(false);
+      return;
+    }
+    let cancelled = false;
+    void fetchAdminMe(token)
+      .then((me) => {
+        if (!cancelled) setShowAdministrators(canManageAdmins(me.permissions));
+      })
+      .catch(() => {
+        if (!cancelled) setShowAdministrators(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.access_token]);
 
   const navItems = [
     { id: 'overview' as const, label: FLUX_PT.navOverview, icon: LayoutDashboard },
@@ -44,6 +68,9 @@ export function FluxAdminSidebar({ activeSection, onSectionChange }: Props) {
     { to: ROUTES.adminEconomy, label: BACKOFFICE_PT.navEconomy, icon: LineChart },
     { to: ROUTES.adminAudit, label: BACKOFFICE_PT.navAudit, icon: Shield },
     { to: ROUTES.adminSupport, label: BACKOFFICE_PT.navSupport, icon: Headphones },
+    ...(showAdministrators
+      ? [{ to: ROUTES.adminAdministrators, label: BACKOFFICE_PT.navAdministrators, icon: UserCog }]
+      : []),
   ];
 
   const goToDashboardSection = (section: 'overview' | 'insights' | 'categories') => {

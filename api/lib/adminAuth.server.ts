@@ -3,11 +3,11 @@ import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { createSupabaseAuthVerifier, createSupabaseServiceRoleClient } from './supabaseAdmin.server.js';
 import {
   isFluxAdminAppMetadata,
-  isLegacyFluxAdminRole,
   roleGrantsPermission,
   type BackofficePermission,
   type BackofficeRoleId,
 } from '../../src/backoffice/permissions/roles.js';
+import { ADMINS_MANAGE_PERMISSION } from '../../src/admin/administrators/adminInviteHelpers.js';
 
 export type AdminAuthorization =
   | { ok: true; user: User }
@@ -37,12 +37,13 @@ export async function authorizeAdmin(
   return { ok: true, user: data.user };
 }
 
-async function resolveAdminRoles(userId: string): Promise<BackofficeRoleId[]> {
+async function resolveActiveAdminRoles(userId: string): Promise<BackofficeRoleId[]> {
   const admin = createSupabaseServiceRoleClient();
   const { data, error } = await admin
     .from('admin_user_roles')
-    .select('role_id')
-    .eq('user_id', userId);
+    .select('role_id, status')
+    .eq('user_id', userId)
+    .eq('status', 'active');
 
   if (error) {
     if (error.code === '42P01') return [];
@@ -58,39 +59,34 @@ function permissionsForRoles(roles: BackofficeRoleId[]): BackofficePermission[] 
   const set = new Set<BackofficePermission>();
   for (const role of roles) {
     if (role === 'super_admin') {
-      return [
-        'dashboard.read',
-        'users.read',
-        'requests.read',
-        'credits.read',
-        'economy.read',
-        'audit.read',
-        'support.view',
-        'users.write',
-        'credits.write',
-        'requests.write',
-        'economy.write',
-      ];
+      return [...BACKOFFICE_ALL_PERMISSIONS];
     }
-    for (const perm of [
-      'dashboard.read',
-      'users.read',
-      'requests.read',
-      'credits.read',
-      'economy.read',
-      'audit.read',
-      'support.view',
-      'users.write',
-      'credits.write',
-      'requests.write',
-      'economy.write',
-    ] as BackofficePermission[]) {
+    for (const perm of BACKOFFICE_ALL_PERMISSIONS) {
       if (roleGrantsPermission(role, perm)) set.add(perm);
     }
   }
   return [...set];
 }
 
+const BACKOFFICE_ALL_PERMISSIONS: BackofficePermission[] = [
+  'dashboard.read',
+  'users.read',
+  'requests.read',
+  'credits.read',
+  'economy.read',
+  'audit.read',
+  'support.view',
+  'users.write',
+  'credits.write',
+  'requests.write',
+  'economy.write',
+  'admins.manage',
+];
+
+/**
+ * Strict FLUX auth: valid JWT admin claim + at least one active admin_user_roles row.
+ * No empty-table bootstrap to super_admin.
+ */
 export async function authorizeBackoffice(
   authorizationHeader: string | undefined,
   requiredPermission?: BackofficePermission,
@@ -103,19 +99,19 @@ export async function authorizeBackoffice(
   if (error || !data.user) return { ok: false, status: 401, error: 'UNAUTHORIZED' };
 
   const appRole = data.user.app_metadata?.role;
-  if (!isLegacyFluxAdminRole(appRole)) {
+  if (!isFluxAdminAppMetadata(appRole)) {
     return { ok: false, status: 403, error: 'FORBIDDEN' };
   }
 
   let roles: BackofficeRoleId[] = [];
   try {
-    roles = await resolveAdminRoles(data.user.id);
+    roles = await resolveActiveAdminRoles(data.user.id);
   } catch {
     return { ok: false, status: 503, error: 'BACKOFFICE_NOT_CONFIGURED' };
   }
 
-  if (!roles.length && isLegacyFluxAdminRole(appRole)) {
-    roles = ['super_admin'];
+  if (!roles.length) {
+    return { ok: false, status: 403, error: 'FORBIDDEN' };
   }
 
   const permissions = permissionsForRoles(roles);
@@ -125,6 +121,24 @@ export async function authorizeBackoffice(
   }
 
   return { ok: true, user: data.user, roles, permissions };
+}
+
+export async function authorizeAdminManage(
+  authorizationHeader: string | undefined,
+): Promise<BackofficeAuthorization> {
+  return authorizeBackoffice(authorizationHeader, ADMINS_MANAGE_PERMISSION);
+}
+
+/** Authenticated user only (invite accept) — no admin claim required yet. */
+export async function authorizeAuthenticatedUser(
+  authorizationHeader: string | undefined,
+  verifier: Pick<SupabaseClient, 'auth'> = createSupabaseAuthVerifier(),
+): Promise<AdminAuthorization> {
+  const token = extractBearerToken(authorizationHeader);
+  if (!token) return { ok: false, status: 401, error: 'UNAUTHORIZED' };
+  const { data, error } = await verifier.auth.getUser(token);
+  if (error || !data.user) return { ok: false, status: 401, error: 'UNAUTHORIZED' };
+  return { ok: true, user: data.user };
 }
 
 export function backofficeJsonError(res: VercelResponse, status: number, error: string) {

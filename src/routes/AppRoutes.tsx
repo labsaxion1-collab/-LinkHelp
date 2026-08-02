@@ -8,6 +8,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PublicOnlyRoute } from '@/components/auth/PublicOnlyRoute';
 import { RoleRoute } from '@/components/auth/RoleRoute';
 import { AdminProtectedRoute } from '@/components/admin/AdminProtectedRoute';
+import { AdminManageProtectedRoute } from '@/components/admin/AdminManageProtectedRoute';
 import { FluxAdminLayout } from '@/components/admin/FluxAdminLayout';
 import { LoginSplashGate } from '@/components/auth/LoginSplashGate';
 import { FluxHostGuard } from '@/components/auth/FluxHostGuard';
@@ -60,6 +61,7 @@ function AdminDashboardLoadError() {
 }
 
 const PushTestPage = lazyPage(() => import('@/pages/admin/PushTestPage'));
+const AdministratorsPage = lazyPage(() => import('@/pages/admin/administrators/AdministratorsPage'));
 const BackofficeUsersPage = lazyPage(() => import('@/pages/admin/backoffice/BackofficeUsersPage'));
 const BackofficeUserDetailPage = lazyPage(() => import('@/pages/admin/backoffice/BackofficeUserDetailPage'));
 const BackofficeRequestsPage = lazyPage(() => import('@/pages/admin/backoffice/BackofficeRequestsPage'));
@@ -179,6 +181,9 @@ export function AppRoutes() {
               <Route path={ROUTES.adminEconomy} element={<BackofficeEconomyPage />} />
               <Route path={ROUTES.adminAudit} element={<BackofficeAuditPage />} />
               <Route path={ROUTES.adminSupport} element={<BackofficeSupportPage />} />
+              <Route element={<AdminManageProtectedRoute />}>
+                <Route path={ROUTES.adminAdministrators} element={<AdministratorsPage />} />
+              </Route>
               <Route path={ROUTES.adminPushTest} element={<PushTestPage />} />
             </Route>
           </Route>

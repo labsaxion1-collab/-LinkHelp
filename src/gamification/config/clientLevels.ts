@@ -18,7 +18,8 @@ export const CLIENT_LEVELS: GamificationLevel[] = [
     scoreMax: 249,
     requirements: {
       minProfilePct: 80,
-      minPublishedOrders: 1,
+      /** Trust requires a completed service — publishing alone must not promote. */
+      minTotalCompleted: 1,
     },
   },
   {

@@ -18,7 +18,7 @@ export function formatBaselineFinanceError(error: unknown, t: TranslateFn, fallb
   if (upper.includes('LEAD_PRICING_VERSION_MISSING') || upper.includes('LEAD_CATEGORY_PRICE_MISSING')) {
     return t('baseline_finance.pricing_missing');
   }
-  if (upper.includes('LEAD_LOCATION_INCOMPLETE')) return t('baseline_finance.location_incomplete');
+  if (upper.includes('LEAD_LOCATION_INCOMPLETE')) return t('baseline_finance.location_incomplete_action');
   if (upper.includes('LEAD_SNAPSHOT_MISSING')) return t('baseline_finance.snapshot_missing');
   if (upper.includes('INTEREST_AMOUNT_MISMATCH') || upper.includes('HIRE_CHARGE_MISMATCH')) {
     return t('baseline_finance.charge_mismatch');

@@ -115,6 +115,12 @@ export default function SettingsPage() {
       requestAnimationFrame(() =>
         document.getElementById('settings-account')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
       );
+      return;
+    }
+    if (hash === 'helper-base-location' || hash === 'helper-base') {
+      requestAnimationFrame(() =>
+        document.getElementById('helper-base-location')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      );
     }
   }, [location.hash, location.pathname]);
 
@@ -267,6 +273,10 @@ export default function SettingsPage() {
       if (isHelper && baseHasPendingChanges) {
         if (!helperBaseValue.address.trim() && !helperBaseValue.city.trim()) {
           showToast(t('app_pages.settings_helper_base_required'), 'error');
+          return;
+        }
+        if (helperBaseValue.latitude == null || helperBaseValue.longitude == null) {
+          showToast(t('app_pages.settings_helper_base_coords_required'), 'error');
           return;
         }
         await syncHelperBaseAddress({
@@ -475,8 +485,13 @@ export default function SettingsPage() {
           title={t('app_pages.settings_address_section')}
         >
           {isHelper ? (
-            <div>
+            <div id="helper-base-location">
               <p className="mb-3 text-[11px] text-slate-400">{t('app_pages.settings_helper_base_hint')}</p>
+              {helperBaseValue.latitude == null || helperBaseValue.longitude == null ? (
+                <p className="mb-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+                  {t('app_pages.settings_helper_base_coords_required')}
+                </p>
+              ) : null}
               {profile?.helper_base_change_unlocked_by_admin ? (
                 <p className="mb-3 rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-900">
                   {t('app_pages.settings_helper_base_admin_unlock')}

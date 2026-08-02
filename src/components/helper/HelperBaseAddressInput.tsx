@@ -169,7 +169,13 @@ function PlacesAutocompleteInner({
           disabled={disabled}
           onChange={(e) => {
             const text = e.target.value;
-            onChange({ ...value, display: text, address: text });
+            onChange({
+              ...value,
+              display: text,
+              address: text,
+              latitude: null,
+              longitude: null,
+            });
           }}
           placeholder={placeholder}
           autoComplete="off"
@@ -192,7 +198,9 @@ function PlacesAutocompleteInner({
           <input
             value={value.city}
             disabled={disabled}
-            onChange={(e) => onChange({ ...value, city: e.target.value })}
+            onChange={(e) =>
+              onChange({ ...value, city: e.target.value, latitude: null, longitude: null })
+            }
             className={fieldClass}
           />
         </label>
@@ -201,7 +209,9 @@ function PlacesAutocompleteInner({
           <input
             value={value.province}
             disabled={disabled}
-            onChange={(e) => onChange({ ...value, province: e.target.value })}
+            onChange={(e) =>
+              onChange({ ...value, province: e.target.value, latitude: null, longitude: null })
+            }
             className={fieldClass}
           />
         </label>
@@ -211,7 +221,9 @@ function PlacesAutocompleteInner({
         <input
           value={value.postalCode}
           disabled={disabled}
-          onChange={(e) => onChange({ ...value, postalCode: e.target.value })}
+          onChange={(e) =>
+            onChange({ ...value, postalCode: e.target.value, latitude: null, longitude: null })
+          }
           className={fieldClass}
         />
       </label>
@@ -257,7 +269,13 @@ function ManualAddressInput(props: Props) {
           disabled={disabled}
           onChange={(e) => {
             const text = e.target.value;
-            onChange({ ...value, display: text, address: text });
+            onChange({
+              ...value,
+              display: text,
+              address: text,
+              latitude: null,
+              longitude: null,
+            });
           }}
           placeholder={placeholder}
           className={`${fieldClass} pl-9 pr-28`}
@@ -279,7 +297,9 @@ function ManualAddressInput(props: Props) {
           <input
             value={value.city}
             disabled={disabled}
-            onChange={(e) => onChange({ ...value, city: e.target.value })}
+            onChange={(e) =>
+              onChange({ ...value, city: e.target.value, latitude: null, longitude: null })
+            }
             className={fieldClass}
           />
         </label>
@@ -288,7 +308,9 @@ function ManualAddressInput(props: Props) {
           <input
             value={value.province}
             disabled={disabled}
-            onChange={(e) => onChange({ ...value, province: e.target.value })}
+            onChange={(e) =>
+              onChange({ ...value, province: e.target.value, latitude: null, longitude: null })
+            }
             className={fieldClass}
           />
         </label>
@@ -298,7 +320,9 @@ function ManualAddressInput(props: Props) {
         <input
           value={value.postalCode}
           disabled={disabled}
-          onChange={(e) => onChange({ ...value, postalCode: e.target.value })}
+          onChange={(e) =>
+            onChange({ ...value, postalCode: e.target.value, latitude: null, longitude: null })
+          }
           className={fieldClass}
         />
       </label>

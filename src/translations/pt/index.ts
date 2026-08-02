@@ -2235,6 +2235,8 @@ export const pt = {
     settings_helper_base_saved: 'Endereco base salvo',
     settings_helper_base_save_error: 'Nao foi possivel salvar o endereco base',
     settings_helper_base_required: 'Informe pelo menos endereco ou cidade',
+    settings_helper_base_coords_required:
+      'Selecione o endereço no autocomplete ou use a localização atual para salvar coordenadas válidas.',
     settings_helper_base_no_changes: 'Nenhuma alteracao no endereco base',
     settings_helper_base_setup_prompt: 'Configure seu endereco base',
     settings_helper_base_configured: 'Endereco base definido',
@@ -2305,6 +2307,10 @@ export const pt = {
     bio_empty: 'Adicione uma bio para completar seu perfil.',
     spoken_languages: 'Idiomas falados',
     spoken_languages_empty: 'Adicionar idiomas em Configurações',
+    spoken_languages_picker_hint: 'Marque todos os idiomas que você fala. Confirme ao final.',
+    confirm_spoken_languages: 'Confirmar idiomas',
+    spoken_languages_saved_ok: 'Idiomas salvos.',
+    spoken_languages_save_error: 'Não foi possível salvar os idiomas.',
     add_spoken_language: 'Adicionar idioma',
     overall_rating: 'Avaliação geral',
     public_level: 'Nível',
@@ -2904,6 +2910,8 @@ export const pt = {
     subcategory_required: 'Selecione uma subcategoria antes de publicar.',
     pricing_missing: 'A precificação do lead não está configurada. Tente novamente mais tarde.',
     location_incomplete: 'Dados de localização incompletos para calcular o lead.',
+    location_incomplete_action:
+      'Complete sua localização (com coordenadas) para se candidatar. Abrindo configurações…',
     snapshot_missing: 'Snapshot de precificação ausente. Peça ao helper para se candidatar novamente.',
     charge_mismatch: 'A cobrança de LinkCredits não bateu com a cotação do servidor. Atualize e tente de novo.',
     exclusive_locked: 'Este chamado já tem uma candidatura exclusiva (VIP).',

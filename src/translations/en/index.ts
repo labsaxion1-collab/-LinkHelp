@@ -2223,6 +2223,8 @@ export const en = {
     settings_helper_base_saved: 'Base address saved',
     settings_helper_base_save_error: 'Could not save base address',
     settings_helper_base_required: 'Enter at least a street address or city',
+    settings_helper_base_coords_required:
+      'Pick the address from autocomplete or use current location to save valid coordinates.',
     settings_helper_base_no_changes: 'No changes to base address',
     settings_helper_base_setup_prompt: 'Set up your base address',
     settings_helper_base_configured: 'Base address set',
@@ -2293,6 +2295,10 @@ export const en = {
     bio_empty: 'Add a bio to complete your profile.',
     spoken_languages: 'Spoken languages',
     spoken_languages_empty: 'Add languages in Settings',
+    spoken_languages_picker_hint: 'Select every language you speak. Confirm when done.',
+    confirm_spoken_languages: 'Confirm languages',
+    spoken_languages_saved_ok: 'Languages saved.',
+    spoken_languages_save_error: 'Could not save languages.',
     add_spoken_language: 'Add language',
     overall_rating: 'Overall rating',
     public_level: 'Level',
@@ -2892,6 +2898,8 @@ export const en = {
     subcategory_required: 'Select a subcategory before publishing.',
     pricing_missing: 'Lead pricing is not configured. Please try again later.',
     location_incomplete: 'Location data is incomplete for this lead quote.',
+    location_incomplete_action:
+      'Complete your location (with coordinates) to apply. Opening settings…',
     snapshot_missing: 'Lead pricing snapshot is missing. Ask the helper to re-apply.',
     charge_mismatch: 'LinkCredits charge did not match the server quote. Refresh and try again.',
     exclusive_locked: 'This request already has an exclusive (VIP) application.',

@@ -2233,6 +2233,8 @@ export const fr = {
     settings_helper_base_saved: 'Adresse de base enregistrée',
     settings_helper_base_save_error: "Impossible d'enregistrer l'adresse de base",
     settings_helper_base_required: 'Indiquez au moins une adresse ou une ville',
+    settings_helper_base_coords_required:
+      'Sélectionnez l’adresse via l’autocomplétion ou utilisez la position actuelle pour enregistrer des coordonnées valides.',
     settings_helper_base_no_changes: "Aucun changement sur l'adresse de base",
     settings_helper_base_setup_prompt: 'Configurez votre adresse de base',
     settings_helper_base_configured: 'Adresse de base définie',
@@ -2302,6 +2304,10 @@ export const fr = {
     bio_empty: 'Ajoutez une bio pour compléter votre profil.',
     spoken_languages: 'Langues parlées',
     spoken_languages_empty: 'Ajouter des langues dans Paramètres',
+    spoken_languages_picker_hint: 'Cochez toutes les langues que vous parlez. Confirmez à la fin.',
+    confirm_spoken_languages: 'Confirmer les langues',
+    spoken_languages_saved_ok: 'Langues enregistrées.',
+    spoken_languages_save_error: 'Impossible d’enregistrer les langues.',
     add_spoken_language: 'Ajouter une langue',
     overall_rating: 'Évaluation générale',
     public_level: 'Niveau',
@@ -2901,6 +2907,8 @@ export const fr = {
     subcategory_required: 'Sélectionnez une sous-catégorie avant de publier.',
     pricing_missing: 'La tarification du lead n’est pas configurée. Réessayez plus tard.',
     location_incomplete: 'Données de localisation incomplètes pour le devis du lead.',
+    location_incomplete_action:
+      'Complétez votre localisation (avec coordonnées) pour postuler. Ouverture des paramètres…',
     snapshot_missing: 'Instantané de tarification manquant. Demandez au helper de postuler à nouveau.',
     charge_mismatch: 'Le débit LinkCredits ne correspond pas au devis serveur. Actualisez et réessayez.',
     exclusive_locked: 'Cette demande a déjà une candidature exclusive (VIP).',

@@ -5,6 +5,7 @@ import { clsx } from 'clsx';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { FilePickerLabel } from '@/components/common/HiddenFileInput';
+import { ProfileMultiSelectSheet } from '@/components/profile/ProfileMultiSelectSheet';
 import { useAuth } from '@/context/AuthContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -55,6 +56,8 @@ export default function PublicProfileEditPage() {
   const [bio, setBio] = useState('');
   const [spokenLanguages, setSpokenLanguages] = useState<string[]>([]);
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false);
+  const [languageDraft, setLanguageDraft] = useState<string[]>([]);
+  const [languageConfirming, setLanguageConfirming] = useState(false);
   const [languageIconsEditMode, setLanguageIconsEditMode] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<ServiceCategoryId[]>(['cleaning']);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
@@ -82,11 +85,7 @@ export default function PublicProfileEditPage() {
     [selectedCategories],
   );
   const canOpenCategoryPicker = true;
-  const availableLanguagesToAdd = useMemo(
-    () => PUBLIC_PROFILE_SPOKEN_LANGUAGES.filter((opt) => !spokenLanguages.includes(opt.code)),
-    [spokenLanguages],
-  );
-  const canAddLanguage = availableLanguagesToAdd.length > 0;
+  const canAddLanguage = PUBLIC_PROFILE_SPOKEN_LANGUAGES.length > 0;
 
   const revokeAvatarObjectUrl = () => {
     if (avatarObjectUrlRef.current) {
@@ -149,6 +148,24 @@ export default function PublicProfileEditPage() {
     setCategoryPickerOpen(false);
   };
 
+  const openLanguagePicker = () => {
+    setLanguageIconsEditMode(false);
+    setLanguageDraft(spokenLanguages);
+    setLanguagePickerOpen(true);
+  };
+
+  const closeLanguagePicker = () => {
+    if (languageConfirming) return;
+    setLanguagePickerOpen(false);
+  };
+
+  const toggleLanguageDraft = (code: string) => {
+    if (!isPublicProfileSpokenLanguageCode(code)) return;
+    setLanguageDraft((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
+    );
+  };
+
   const toggleCategoryDraft = (id: ServiceCategoryId) => {
     setCategoryDraft((prev) => togglePublicHelperCategoryDraft(prev, id));
   };
@@ -185,14 +202,29 @@ export default function PublicProfileEditPage() {
     }
   };
 
-  const addLanguage = (code: string) => {
-    if (!isPublicProfileSpokenLanguageCode(code) || spokenLanguages.includes(code)) {
+  const confirmLanguageDraft = async () => {
+    if (languageConfirming) return;
+    setLanguageConfirming(true);
+    try {
+      const next = languageDraft.filter(isPublicProfileSpokenLanguageCode);
+      if (!isConfigured || !profile) {
+        setSpokenLanguages(next);
+        setLanguagePickerOpen(false);
+        return;
+      }
+      const err = await updateProfile({
+        spoken_languages: mergeSpokenLanguagesForSave(next, storedLanguages),
+      });
+      if (err) throw err;
+      await refreshProfile();
+      setSpokenLanguages(next);
       setLanguagePickerOpen(false);
-      return;
+      showToast(t('profile_page.spoken_languages_saved_ok'), 'success');
+    } catch (e) {
+      showToast(extractErrorMessage(e, t('profile_page.spoken_languages_save_error')), 'error');
+    } finally {
+      setLanguageConfirming(false);
     }
-    setSpokenLanguages((prev) => [...prev, code]);
-    setLanguagePickerOpen(false);
-    setLanguageIconsEditMode(false);
   };
 
   const removeLanguage = (code: string) => {
@@ -436,10 +468,7 @@ export default function PublicProfileEditPage() {
             {canAddLanguage ? (
               <button
                 type="button"
-                onClick={() => {
-                  setLanguageIconsEditMode(false);
-                  setLanguagePickerOpen(true);
-                }}
+                onClick={openLanguagePicker}
                 data-testid="public-edit-add-language"
                 className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white text-slate-500 transition hover:border-[#2563FF] hover:text-[#2563FF] sm:h-[30px] sm:w-[30px]"
                 aria-label={t('profile_page.add_spoken_language')}
@@ -558,170 +587,146 @@ export default function PublicProfileEditPage() {
         </button>
       </div>
 
-      {languagePickerOpen ? (
-        <div
-          className="fixed inset-0 z-[130] flex items-end justify-center bg-slate-900/45 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:items-center"
-          role="presentation"
-        >
-          <button
-            type="button"
-            className="absolute inset-0"
-            aria-label={t('common.close')}
-            onClick={() => setLanguagePickerOpen(false)}
-          />
-          <div
-            className="relative z-10 flex w-full max-w-lg max-h-[70dvh] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
-            role="dialog"
-            aria-modal="true"
-            data-testid="public-edit-language-picker"
-          >
-            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-              <h3 className="text-base font-black text-slate-950">{t('profile_page.spoken_languages')}</h3>
-              <button
-                type="button"
-                onClick={() => setLanguagePickerOpen(false)}
-                className="rounded-full bg-slate-100 p-2 text-slate-600"
-                aria-label={t('common.close')}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </header>
-            <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3">
-              {PUBLIC_PROFILE_SPOKEN_LANGUAGES.map((option) => {
-                const selected = spokenLanguages.includes(option.code);
-                return (
-                  <li key={option.code}>
-                    <button
-                      type="button"
-                      data-picker-language-code={option.code}
-                      data-picker-selected={selected ? 'true' : 'false'}
-                      disabled={selected}
-                      onClick={() => addLanguage(option.code)}
-                      className={clsx(
-                        'flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition',
-                        selected
-                          ? 'bg-blue-50/90 ring-1 ring-inset ring-[#2563FF]/25'
-                          : 'hover:bg-slate-50',
-                      )}
-                    >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-700">
-                        {option.code.toUpperCase()}
-                      </span>
-                      <span
-                        className={clsx(
-                          'min-w-0 flex-1 truncate text-sm font-bold',
-                          selected ? 'text-[#2563FF]' : 'text-slate-900',
-                        )}
-                      >
-                        {getSpokenLanguageLabel(option.code, t)}
-                      </span>
-                      {selected ? (
-                        <Check className="h-4 w-4 shrink-0 text-[#2563FF]" aria-hidden />
-                      ) : null}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+      <ProfileMultiSelectSheet
+        open={languagePickerOpen}
+        onClose={closeLanguagePicker}
+        title={t('profile_page.spoken_languages')}
+        subtitle={t('profile_page.spoken_languages_picker_hint')}
+        closeLabel={t('common.cancel')}
+        testId="public-edit-language-picker"
+        busy={languageConfirming}
+        footer={
+          <div className="flex gap-2">
+            <button
+              type="button"
+              data-testid="public-edit-cancel-languages"
+              disabled={languageConfirming}
+              onClick={closeLanguagePicker}
+              className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 disabled:opacity-50"
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              type="button"
+              data-testid="public-edit-confirm-languages"
+              disabled={languageConfirming}
+              onClick={() => void confirmLanguageDraft()}
+              className="inline-flex min-h-[48px] flex-[1.4] items-center justify-center gap-2 rounded-2xl bg-[#2563FF] px-4 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,255,0.28)] disabled:opacity-50"
+              aria-label={t('profile_page.confirm_spoken_languages')}
+            >
+              {languageConfirming ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Check className="h-4 w-4" aria-hidden />
+              )}
+              {t('profile_page.confirm_spoken_languages')}
+            </button>
           </div>
-        </div>
-      ) : null}
+        }
+      >
+        <ul className="space-y-1">
+          {PUBLIC_PROFILE_SPOKEN_LANGUAGES.map((option) => {
+            const selected = languageDraft.includes(option.code);
+            return (
+              <li key={option.code}>
+                <button
+                  type="button"
+                  data-picker-language-code={option.code}
+                  data-picker-selected={selected ? 'true' : 'false'}
+                  onClick={() => toggleLanguageDraft(option.code)}
+                  className={clsx(
+                    'flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition',
+                    selected
+                      ? 'bg-blue-50/90 ring-1 ring-inset ring-[#2563FF]/25'
+                      : 'hover:bg-slate-50',
+                  )}
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-700">
+                    {option.code.toUpperCase()}
+                  </span>
+                  <span
+                    className={clsx(
+                      'min-w-0 flex-1 truncate text-sm font-bold',
+                      selected ? 'text-[#2563FF]' : 'text-slate-900',
+                    )}
+                  >
+                    <span className="mr-1.5 font-black uppercase text-slate-500">{option.code}</span>
+                    — {getSpokenLanguageLabel(option.code, t)}
+                  </span>
+                  {selected ? <Check className="h-4 w-4 shrink-0 text-[#2563FF]" aria-hidden /> : null}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </ProfileMultiSelectSheet>
 
-      {categoryPickerOpen ? (
-        <div
-          className="fixed inset-0 z-[130] flex items-end justify-center bg-slate-900/45 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:items-center"
-          role="presentation"
-        >
+      <ProfileMultiSelectSheet
+        open={categoryPickerOpen}
+        onClose={closeCategoryPicker}
+        title={t('helper_categories.picker_title')}
+        subtitle={t('helper_categories.selected_count', { count: categoryDraft.length })}
+        closeLabel={t('common.cancel')}
+        testId="public-edit-category-picker"
+        busy={categoryConfirming}
+        footer={
           <button
             type="button"
-            className="absolute inset-0"
-            aria-label={t('common.close')}
-            onClick={closeCategoryPicker}
-          />
-          <div
-            className="relative z-10 flex w-full max-w-lg max-h-[70dvh] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
-            role="dialog"
-            aria-modal="true"
-            data-testid="public-edit-category-picker"
+            data-testid="public-edit-confirm-categories"
+            disabled={categoryConfirming || categoryDraft.length === 0}
+            onClick={() => void confirmCategoryDraft()}
+            className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[#2563FF] px-4 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,255,0.28)] disabled:opacity-50"
+            aria-label={t('helper_categories.confirm_categories')}
           >
-            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-              <div className="min-w-0">
-                <h3 className="text-base font-black text-slate-950">{t('helper_categories.picker_title')}</h3>
-                <p className="mt-0.5 text-xs font-medium text-slate-500">
-                  {t('helper_categories.selected_count', { count: categoryDraft.length })}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeCategoryPicker}
-                disabled={categoryConfirming}
-                className="rounded-full bg-slate-100 p-2 text-slate-600 disabled:opacity-50"
-                aria-label={t('common.close')}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </header>
-            <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3">
-              {SERVICE_CATEGORIES.map((cat) => {
-                const theme = getCategoryFeedTheme(cat.id);
-                const Icon = getCategoryIconById(cat.id);
-                const selected = categoryDraft.includes(cat.id);
-                return (
-                  <li key={cat.id}>
-                    <button
-                      type="button"
-                      data-picker-category-id={cat.id}
-                      data-picker-selected={selected ? 'true' : 'false'}
-                      onClick={() => toggleCategoryDraft(cat.id)}
-                      className={clsx(
-                        'flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition',
-                        selected
-                          ? 'bg-blue-50/90 ring-1 ring-inset ring-[#2563FF]/25'
-                          : 'hover:bg-slate-50',
-                      )}
-                    >
-                      <span
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                        style={{ backgroundColor: theme.iconBg, color: theme.iconColor }}
-                      >
-                        <Icon className="h-4 w-4" aria-hidden />
-                      </span>
-                      <span
-                        className={clsx(
-                          'min-w-0 flex-1 truncate text-sm font-bold',
-                          selected ? 'text-[#2563FF]' : 'text-slate-900',
-                        )}
-                      >
-                        {translateCategory(cat.id, t)}
-                      </span>
-                      {selected ? (
-                        <Check className="h-4 w-4 shrink-0 text-[#2563FF]" aria-hidden />
-                      ) : null}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-            <footer className="shrink-0 border-t border-slate-100 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-              <button
-                type="button"
-                data-testid="public-edit-confirm-categories"
-                disabled={categoryConfirming || categoryDraft.length === 0}
-                onClick={() => void confirmCategoryDraft()}
-                className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[#2563FF] px-4 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,255,0.28)] disabled:opacity-50"
-                aria-label={t('helper_categories.confirm_categories')}
-              >
-                {categoryConfirming ? (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                ) : (
-                  <Check className="h-4 w-4" aria-hidden />
-                )}
-                {t('helper_categories.confirm_categories')}
-              </button>
-            </footer>
-          </div>
-        </div>
-      ) : null}
+            {categoryConfirming ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Check className="h-4 w-4" aria-hidden />
+            )}
+            {t('helper_categories.confirm_categories')}
+          </button>
+        }
+      >
+        <ul className="space-y-1">
+          {SERVICE_CATEGORIES.map((cat) => {
+            const theme = getCategoryFeedTheme(cat.id);
+            const Icon = getCategoryIconById(cat.id);
+            const selected = categoryDraft.includes(cat.id);
+            return (
+              <li key={cat.id}>
+                <button
+                  type="button"
+                  data-picker-category-id={cat.id}
+                  data-picker-selected={selected ? 'true' : 'false'}
+                  onClick={() => toggleCategoryDraft(cat.id)}
+                  className={clsx(
+                    'flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition',
+                    selected
+                      ? 'bg-blue-50/90 ring-1 ring-inset ring-[#2563FF]/25'
+                      : 'hover:bg-slate-50',
+                  )}
+                >
+                  <span
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                    style={{ backgroundColor: theme.iconBg, color: theme.iconColor }}
+                  >
+                    <Icon className="h-4 w-4" aria-hidden />
+                  </span>
+                  <span
+                    className={clsx(
+                      'min-w-0 flex-1 truncate text-sm font-bold',
+                      selected ? 'text-[#2563FF]' : 'text-slate-900',
+                    )}
+                  >
+                    {translateCategory(cat.id, t)}
+                  </span>
+                  {selected ? <Check className="h-4 w-4 shrink-0 text-[#2563FF]" aria-hidden /> : null}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </ProfileMultiSelectSheet>
     </AppPageShell>
   );
 }

@@ -665,6 +665,11 @@ export default function HelperDashboard() {
         return;
       }
       const mapped = formatBaselineFinanceError(err, t, 'helper_dashboard.toast_apply_error');
+      if (msg.toUpperCase().includes('LEAD_LOCATION_INCOMPLETE') || mapped === t('baseline_finance.location_incomplete')) {
+        showToast(t('baseline_finance.location_incomplete_action'), 'error');
+        navigate(`${ROUTES.settings}#helper-base-location`);
+        return;
+      }
       const friendlyMsg =
         msg.includes('helper_debit_application_interest') ||
         msg.includes('schema cache') ||

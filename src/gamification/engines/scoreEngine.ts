@@ -103,11 +103,8 @@ export function computeClientScore(stats: GamificationStats): number {
 
   const cancellationScore = computeCancellationScore(stats.cancelCount, 150, stats.totalCompleted);
 
-  // Histórico positivo: baseado em pedidos publicados.
-  let historyScore = 0;
-  if (stats.publishedOrdersCount >= 10) historyScore = 50;
-  else if (stats.publishedOrdersCount >= 3) historyScore = 35;
-  else if (stats.publishedOrdersCount >= 1) historyScore = 20;
+  // Publishing alone must not grant trust score (prevents Novo → Confiável on first request).
+  const historyScore = 0;
 
   const total =
     servicesScore +

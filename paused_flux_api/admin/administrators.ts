@@ -1,11 +1,17 @@
+/**
+ * PAUSED (Hobby plan): temporarily outside /api so Vercel does not count this
+ * file toward the 12 Serverless Functions limit. Restore to
+ * api/admin/administrators.ts when the limit allows (or after consolidating
+ * admin routes). Code and security checks are preserved intact.
+ */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { User } from '@supabase/supabase-js';
 import {
   authorizeAdminManage,
   authorizeAuthenticatedUser,
   backofficeJsonError,
-} from '../lib/adminAuth.server.js';
-import { createSupabaseServiceRoleClient } from '../lib/supabaseAdmin.server.js';
+} from '../../api/lib/adminAuth.server.js';
+import { createSupabaseServiceRoleClient } from '../../api/lib/supabaseAdmin.server.js';
 import {
   assertAdminRoleMutationAllowed,
   defaultInviteExpiresAt,

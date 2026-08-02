@@ -1,5 +1,10 @@
+/**
+ * PAUSED (Hobby plan): temporarily outside /api so Vercel does not count this
+ * file toward the 12 Serverless Functions limit. Restore to api/admin/me.ts
+ * when the limit allows (or after consolidating admin routes).
+ */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { authorizeBackoffice, backofficeJsonError } from '../lib/adminAuth.server.js';
+import { authorizeBackoffice, backofficeJsonError } from '../../api/lib/adminAuth.server.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {

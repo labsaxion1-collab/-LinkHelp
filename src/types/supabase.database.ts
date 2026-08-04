@@ -31,6 +31,12 @@ export type Database = {
         Update: Partial<ProfileRow>;
         Relationships: [];
       };
+      waitlist: {
+        Row: { id: string; first_name: string; email: string; city: string; user_type: string; language: string; source: string | null; campaign: string | null; utm_medium: string | null; referrer: string | null; consent_marketing: boolean; status: string; created_at: string };
+        Insert: { id?: string; first_name: string; email: string; city: string; user_type: string; language?: string; source?: string | null; campaign?: string | null; utm_medium?: string | null; referrer?: string | null; consent_marketing: boolean; status?: string; created_at?: string };
+        Update: Partial<{ first_name: string; email: string; city: string; user_type: string; language: string; source: string | null; campaign: string | null; utm_medium: string | null; referrer: string | null; consent_marketing: boolean; status: string }>;
+        Relationships: [];
+      };
       requests: {
         Row: RequestRow;
         Insert: Record<string, unknown>;

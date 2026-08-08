@@ -14,6 +14,7 @@ import { ReviewSubmitError } from '@/utils/reviewSubmitErrors';
 import { findHiredApplicationForJob } from '@/utils/clientActivityApplications';
 
 const DISMISS_PREFIX = 'lh_review_skip_';
+const DONE_PREFIX = 'lh_review_done_';
 
 type ServiceReviewContextValue = {
   pendingServiceReviews: PendingServiceReview[];
@@ -33,6 +34,22 @@ function isAlreadyReviewedError(error: unknown): boolean {
   return false;
 }
 
+function readSessionFlag(prefix: string, requestId: string): boolean {
+  try {
+    return sessionStorage.getItem(`${prefix}${requestId}`) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeSessionFlag(prefix: string, requestId: string): void {
+  try {
+    sessionStorage.setItem(`${prefix}${requestId}`, '1');
+  } catch {
+    /* ignore */
+  }
+}
+
 export function ServiceReviewProvider({ children }: { children: React.ReactNode }) {
   const { profile, refreshProfile } = useAuth();
   const { t } = useLanguage();
@@ -50,35 +67,39 @@ export function ServiceReviewProvider({ children }: { children: React.ReactNode 
   const [active, setActive] = useState<PendingServiceReview | null>(null);
   const [viewing, setViewing] = useState<SubmittedReviewViewModel | null>(null);
   const autoOpenedRef = useRef<Set<string>>(new Set());
+  const thankedToastRef = useRef<Set<string>>(new Set());
+
+  const myReviewedIds = useMemo(() => {
+    if (!profile?.id) return new Set<string>();
+    return new Set(reviews.filter((r) => r.reviewerId === profile.id).map((r) => r.requestId));
+  }, [profile?.id, reviews]);
 
   const visiblePending = useMemo(
     () =>
       pendingServiceReviews.filter((p) => {
-        try {
-          return sessionStorage.getItem(`${DISMISS_PREFIX}${p.requestId}`) !== '1';
-        } catch {
-          return true;
-        }
+        if (myReviewedIds.has(p.requestId)) return false;
+        if (readSessionFlag(DONE_PREFIX, p.requestId)) return false;
+        if (readSessionFlag(DISMISS_PREFIX, p.requestId)) return false;
+        return true;
       }),
-    [pendingServiceReviews],
+    [pendingServiceReviews, myReviewedIds],
   );
 
   const openReview = useCallback((item: PendingServiceReview) => {
-    try {
-      sessionStorage.removeItem(`${DISMISS_PREFIX}${item.requestId}`);
-    } catch {
-      /* ignore */
+    if (myReviewedIds.has(item.requestId) || readSessionFlag(DONE_PREFIX, item.requestId)) {
+      return;
     }
     setViewing(null);
     setActive(item);
-  }, []);
+  }, [myReviewedIds]);
 
   const openReviewByRequestId = useCallback(
     (requestId: string) => {
+      if (myReviewedIds.has(requestId) || readSessionFlag(DONE_PREFIX, requestId)) return;
       const item = pendingServiceReviews.find((p) => p.requestId === requestId);
       if (item) openReview(item);
     },
-    [pendingServiceReviews, openReview],
+    [pendingServiceReviews, openReview, myReviewedIds],
   );
 
   const openSubmittedReviewByRequestId = useCallback(
@@ -121,22 +142,17 @@ export function ServiceReviewProvider({ children }: { children: React.ReactNode 
     setActive(next);
   }, [reviewsLoaded, visiblePending, active, viewing, profile]);
 
-  // Drop auto-open memory for requests that are no longer pending (already reviewed).
+  // Keep auto-open memory for done reviews so remount+refetch cannot reopen them this session.
   useEffect(() => {
     if (!reviewsLoaded) return;
-    const pendingIds = new Set(pendingServiceReviews.map((p) => p.requestId));
-    for (const id of [...autoOpenedRef.current]) {
-      if (!pendingIds.has(id)) autoOpenedRef.current.delete(id);
+    for (const id of myReviewedIds) {
+      autoOpenedRef.current.add(id);
     }
-  }, [reviewsLoaded, pendingServiceReviews]);
+  }, [reviewsLoaded, myReviewedIds]);
 
   const handleClose = useCallback(() => {
     if (active) {
-      try {
-        sessionStorage.setItem(`${DISMISS_PREFIX}${active.requestId}`, '1');
-      } catch {
-        /* ignore */
-      }
+      writeSessionFlag(DISMISS_PREFIX, active.requestId);
     }
     setActive(null);
   }, [active]);
@@ -152,42 +168,42 @@ export function ServiceReviewProvider({ children }: { children: React.ReactNode 
       criteriaScores: Record<ReviewCriterionKey, number>;
     }) => {
       if (!active || !profile) return;
+      const requestId = active.requestId;
       try {
         await submitServiceReview({
-          requestId: active.requestId,
+          requestId,
           targetUserId: active.targetUserId,
           rating,
           comment,
           criteriaScores,
           reviewerRole: profile.role === 'helper' ? 'helper' : 'client',
         });
-        try {
-          sessionStorage.removeItem(`${DISMISS_PREFIX}${active.requestId}`);
-        } catch {
-          /* ignore */
-        }
+        writeSessionFlag(DONE_PREFIX, requestId);
+        writeSessionFlag(DISMISS_PREFIX, requestId);
+        autoOpenedRef.current.add(requestId);
         void refreshProfile().catch((e) => {
           console.warn('[LinkHelp] refresh profile after review', e);
         });
-        showToast(t('service_review.thanks'), 'success');
+        if (!thankedToastRef.current.has(requestId)) {
+          thankedToastRef.current.add(requestId);
+          showToast(t('service_review.thanks'), 'success');
+        }
         setActive(null);
       } catch (error) {
         if (isAlreadyReviewedError(error)) {
           console.warn('[LinkHelp] ALREADY_REVIEWED — syncing reviews and closing modal', {
-            requestId: active.requestId,
+            requestId,
           });
-          try {
-            sessionStorage.setItem(`${DISMISS_PREFIX}${active.requestId}`, '1');
-          } catch {
-            /* ignore */
-          }
+          writeSessionFlag(DONE_PREFIX, requestId);
+          writeSessionFlag(DISMISS_PREFIX, requestId);
+          autoOpenedRef.current.add(requestId);
           await refreshReviews();
           setActive(null);
           showToast(t('service_review.error_already_reviewed'), 'info');
           return;
         }
         console.error('[LinkHelp] service review submit failed', {
-          requestId: active.requestId,
+          requestId,
           targetUserId: active.targetUserId,
           reviewerRole: profile.role,
           error,

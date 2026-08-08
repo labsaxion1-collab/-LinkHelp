@@ -2,7 +2,7 @@ import type { Application } from '@/types/application';
 import type { Job } from '@/types/job';
 import type { PendingServiceReview, ServiceReview } from '@/types/review';
 import type { UpcomingJob } from '@/types/upcoming';
-import { isAwaitingClientCompletion } from '@/utils/serviceWorkflow';
+import { isOfficiallyCompletedForReview } from '@/utils/upcomingJobsPartition';
 
 function hiredApplication(apps: Application[], jobId: string): Application | undefined {
   return apps.find(
@@ -10,7 +10,7 @@ function hiredApplication(apps: Application[], jobId: string): Application | und
   );
 }
 
-/** Completed jobs where the user still needs to submit a review. */
+/** Completed jobs where the user still needs to submit a review (DB reviews = source of truth). */
 export function buildPendingServiceReviews(
   userId: string,
   role: 'client' | 'helper',
@@ -32,9 +32,7 @@ export function buildPendingServiceReviews(
       if (reviewedRequestIds.has(job.id)) continue;
 
       const upcoming = upcomingJobs.find((u) => u.jobId === job.id);
-      const awaiting = upcoming ? isAwaitingClientCompletion(upcoming.workflowStatus) : false;
-      const canReview = job.status === 'completed' || awaiting;
-      if (!canReview) continue;
+      if (!isOfficiallyCompletedForReview(job.status, upcoming?.workflowStatus)) continue;
 
       pending.push({
         requestId: job.id,
@@ -59,11 +57,8 @@ export function buildPendingServiceReviews(
     if (!app) continue;
     if (reviewedRequestIds.has(job.id)) continue;
 
-    const awaitingCompletion = upcomingJobs.some(
-      (u) => u.jobId === job.id && u.helperId === userId && isAwaitingClientCompletion(u.workflowStatus),
-    );
-    const canReview = job.status === 'completed' || awaitingCompletion;
-    if (!canReview) continue;
+    const upcoming = upcomingJobs.find((u) => u.jobId === job.id && u.helperId === userId);
+    if (!isOfficiallyCompletedForReview(job.status, upcoming?.workflowStatus)) continue;
 
     pending.push({
       requestId: job.id,

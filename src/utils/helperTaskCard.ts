@@ -6,7 +6,6 @@ import { getApplicationChargeLc } from '@/config/helperCreditCharge';
 import { getVipApplicationChargeLc } from '@/utils/vipApplicationCredits';
 import {
   canHelperRequestCompletion,
-  isAwaitingClientCompletion,
   isTerminalWorkflow,
 } from '@/utils/serviceWorkflow';
 
@@ -67,7 +66,7 @@ export function canShowReviewButton(
 ): boolean {
   if (!hasPendingReview) return false;
   if (jobStatus === 'completed') return true;
-  return isAwaitingClientCompletion(workflowStatus);
+  return workflowStatus === 'completed' || workflowStatus === 'auto_completed';
 }
 
 export function isAcceptedJobActive(workflowStatus: UpcomingWorkflowStatus): boolean {

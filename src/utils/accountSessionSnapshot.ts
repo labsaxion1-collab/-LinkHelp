@@ -547,12 +547,14 @@ export function assertHintHasNoSecrets(hint: AccountSessionHint): void {
   }
 }
 
+const TERMINAL_UPCOMING_WORKFLOWS = new Set(['completed', 'auto_completed', 'cancelled']);
+
 /** Approximate client Home strip counts — visual only, no job payloads. */
 export function computeClientHomeCounts(
   userId: string,
   jobs: { clientId?: string | null; id: string; status: string }[],
   applications: { jobId: string; status: string }[],
-  upcomingJobs: { jobId: string }[],
+  upcomingJobs: { jobId: string; workflowStatus?: string }[],
 ): Pick<AccountHomeSnapshot, 'activeJobsCount' | 'pendingApplicationsCount' | 'upcomingServicesCount'> {
   const clientJobs = jobs.filter((j) => j.clientId === userId);
   const clientJobIds = new Set(clientJobs.map((j) => j.id));
@@ -564,7 +566,11 @@ export function computeClientHomeCounts(
       (a) =>
         (a.status === 'pending' || a.status === 'viewed') && clientJobIds.has(a.jobId),
     ).length,
-    upcomingServicesCount: upcomingJobs.filter((u) => clientJobIds.has(u.jobId)).length,
+    upcomingServicesCount: upcomingJobs.filter((u) => {
+      if (!clientJobIds.has(u.jobId)) return false;
+      if (u.workflowStatus && TERMINAL_UPCOMING_WORKFLOWS.has(u.workflowStatus)) return false;
+      return true;
+    }).length,
   };
 }
 

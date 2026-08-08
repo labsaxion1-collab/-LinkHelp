@@ -187,13 +187,17 @@ export function UpcomingJobDetailModal({
     if (completeLoading || !requestJob?.clientId) return;
     setCompleteLoading(true);
     try {
-      await finalizeServiceCompletion({
+      const result = await finalizeServiceCompletion({
         requestId: job.jobId,
         upcomingJobId: job.id,
         role: 'helper',
       });
-      showToast(t('upcoming_jobs.complete_work_success'), 'success');
-      window.setTimeout(() => openReviewByRequestId(job.jobId), 400);
+      if (result.outcome === 'completed') {
+        showToast(t('upcoming_jobs.complete_work_success'), 'success');
+        window.setTimeout(() => openReviewByRequestId(job.jobId), 400);
+      } else {
+        showToast(t('upcoming_jobs.awaiting_client_note'), 'info');
+      }
     } catch (e) {
       console.error('[LinkHelp] complete work', e);
       showToast(t('upcoming_jobs.complete_work_error'), 'error');

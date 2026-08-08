@@ -558,7 +558,13 @@ export default function ClientDashboard() {
     [applications, clientJobs],
   );
   const clientUpcomingCount = useMemo(
-    () => upcomingJobs.filter((uj) => clientJobs.some((job) => job.id === uj.jobId)).length,
+    () =>
+      upcomingJobs.filter((uj) => {
+        if (uj.workflowStatus === 'completed' || uj.workflowStatus === 'auto_completed' || uj.workflowStatus === 'cancelled') {
+          return false;
+        }
+        return clientJobs.some((job) => job.id === uj.jobId);
+      }).length,
     [upcomingJobs, clientJobs],
   );
 

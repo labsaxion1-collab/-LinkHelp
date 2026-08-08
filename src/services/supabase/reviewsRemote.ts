@@ -78,7 +78,7 @@ export async function fetchRemoteReviews(): Promise<ServiceReview[]> {
   const { data, error } = await sb.from('reviews').select(REVIEW_SELECT).order('created_at', { ascending: false });
   if (error) {
     console.error('[LinkHelp] fetch reviews', error);
-    return [];
+    throw error;
   }
   return ((data ?? []) as ReviewRow[]).map(reviewRowToServiceReview);
 }

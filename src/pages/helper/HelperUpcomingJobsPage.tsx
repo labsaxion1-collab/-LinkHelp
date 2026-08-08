@@ -24,7 +24,7 @@ import {
   toggleHelperTaskAccordion,
   type HelperTaskAccordion,
 } from '@/utils/helperTaskCard';
-import { isCompletedWorkflowStatus } from '@/utils/completedServiceHistory';
+import { buildHelperCompletedHistoryList } from '@/utils/upcomingJobsPartition';
 import { clsx } from 'clsx';
 
 const ACTIVE_WORKFLOW: UpcomingWorkflowStatus[] = [
@@ -52,6 +52,7 @@ export default function HelperUpcomingJobsPage() {
     finalizeServiceCompletion,
     pendingServiceReviews,
     reviews,
+    applications,
   } = useAppData();
 
   const [activeTab, setActiveTab] = useState<TasksTab>(() => {
@@ -102,16 +103,13 @@ export default function HelperUpcomingJobsPage() {
 
   const completedList = useMemo(
     () =>
-      upcomingJobs
-        .filter((j) => {
-          if (j.helperId !== me.id) return false;
-          const request = jobs.find((r) => r.id === j.jobId);
-          if (request && isJobCancelled(request)) return false;
-          if (isCompletedWorkflowStatus(j.workflowStatus)) return true;
-          return request?.status === 'completed';
-        })
-        .sort((a, b) => b.scheduledAt - a.scheduledAt),
-    [upcomingJobs, me.id, jobs],
+      buildHelperCompletedHistoryList({
+        helperId: me.id,
+        upcomingJobs,
+        jobs,
+        applications,
+      }),
+    [upcomingJobs, me.id, jobs, applications],
   );
 
   const pendingReviewIds = useMemo(
@@ -154,14 +152,18 @@ export default function HelperUpcomingJobsPage() {
   const handleCompleteWork = async (job: UpcomingJob) => {
     setCompleteBusyId(job.id);
     try {
-      await finalizeServiceCompletion({
+      const result = await finalizeServiceCompletion({
         requestId: job.jobId,
         upcomingJobId: job.id,
         role: 'helper',
       });
-      showToast(t('upcoming_jobs.complete_work_success'), 'success');
-      setActiveTab('completed');
-      window.setTimeout(() => openReviewByRequestId(job.jobId), 400);
+      if (result.outcome === 'completed') {
+        showToast(t('upcoming_jobs.complete_work_success'), 'success');
+        setActiveTab('completed');
+        window.setTimeout(() => openReviewByRequestId(job.jobId), 400);
+      } else {
+        showToast(t('upcoming_jobs.awaiting_client_note'), 'info');
+      }
     } catch (e) {
       console.error('[LinkHelp] complete work', e);
       showToast(t('upcoming_jobs.complete_work_error'), 'error');

@@ -134,7 +134,7 @@ interface AppDataContextData {
     requestId: string;
     upcomingJobId: string;
     role: 'client' | 'helper';
-  }) => Promise<void>;
+  }) => Promise<{ outcome: 'completed' | 'awaiting_client' }>;
   addNotification: (notification: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => void;
   markNotificationAsRead: (id: string) => void;
   markAllAsRead: () => void;
@@ -230,10 +230,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [reviews, setReviews] = useState<ServiceReview[]>([]);
   const [reviewsLoaded, setReviewsLoaded] = useState(() => !isSupabaseConfigured());
 
+  /** Drop cancelled only — keep completed/auto_completed for Help history. Active lists filter separately. */
   const filterUpcomingByRequestStatus = useCallback((rows: UpcomingJob[], jobRows: Job[]) => {
     const jobStatusById = new Map(jobRows.map((j) => [j.id, j.status]));
     return rows.filter((u) => {
-      if (u.workflowStatus === 'cancelled' || u.workflowStatus === 'completed') return false;
+      if (u.workflowStatus === 'cancelled') return false;
       const jobStatus = jobStatusById.get(u.jobId);
       return !jobStatus || !isJobCancelled({ status: jobStatus });
     });
@@ -347,10 +348,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     bootstrapLockRef.current = true;
     setDataLoading(true);
     try {
-      const [bootstrap, notifs, reviewRows] = await Promise.all([
+      const [bootstrap, notifs, reviewResult] = await Promise.all([
         fetchRemoteAppDataBootstrap(),
         fetchRemoteNotifications(userId),
-        fetchRemoteReviews(),
+        fetchRemoteReviews()
+          .then((rows) => ({ ok: true as const, rows }))
+          .catch((error) => {
+            console.error('[LinkHelp] refreshRemoteFull reviews', error);
+            return { ok: false as const };
+          }),
       ]);
       if (loadUserId !== userId) return;
       profilesCacheRef.current = bootstrap.profilesMap;
@@ -360,7 +366,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       setApplications(bootstrap.applications);
       setUpcomingJobs(filterUpcomingByRequestStatus(bootstrap.upcomingJobs, migratedJobs));
       setNotifications(notifs);
-      setReviews(reviewRows);
+      if (reviewResult.ok) {
+        setReviews(reviewResult.rows);
+      }
       setReviewsLoaded(true);
     } finally {
       if (loadUserId === userId) {
@@ -579,7 +587,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       .catch((error) => {
         console.error('[LinkHelp] fetch reviews on session', error);
         if (cancelled) return;
-        setReviews([]);
+        // Keep any prior reviews — empty wipe would re-open the review modal.
         setReviewsLoaded(true);
       });
     return () => {
@@ -1314,7 +1322,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     requestId: string;
     upcomingJobId: string;
     role: 'client' | 'helper';
-  }) => {
+  }): Promise<{ outcome: 'completed' | 'awaiting_client' }> => {
     const { requestId, upcomingJobId, role } = input;
     if (isSupabaseConfigured() && !session) {
       throw new Error('AUTH_REQUIRED');
@@ -1327,7 +1335,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       try {
         await remoteFinalizeServiceCompletion(requestId);
         applyLocalServiceCompleted(requestId);
-        return;
+        return { outcome: 'completed' };
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg !== 'FINALIZE_RPC_NOT_DEPLOYED') {
@@ -1362,13 +1370,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             ...completionLink,
           });
         }
-        return;
+        return { outcome: 'awaiting_client' };
       }
 
       const awaiting = upcoming && isAwaitingClientCompletion(upcoming.workflowStatus);
       if (awaiting) {
         await confirmServiceCompleted(requestId);
-        return;
+        return { outcome: 'completed' };
       }
 
       throw new Error('CLIENT_COMPLETE_REQUIRES_FINALIZE_RPC');
@@ -1379,6 +1387,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     }
 
     applyLocalServiceCompleted(requestId);
+    return { outcome: 'completed' };
   };
 
   const pendingServiceReviews = useMemo(
@@ -1406,6 +1415,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       setReviews(rows);
     } catch (error) {
       console.error('[LinkHelp] refreshReviews', error);
+      // Do not wipe reviews on failure — pending queue would reopen.
     } finally {
       setReviewsLoaded(true);
     }

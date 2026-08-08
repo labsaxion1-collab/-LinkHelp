@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { profileRegionFromRow } from '@/utils/profileLocation';
 import { useLanguage } from '@/context/LanguageContext';
@@ -24,8 +24,19 @@ export function useProfileForm() {
   const [saving, setSaving] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
 
+  const hydratedProfileIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!profile && !session) return;
+    if (!profile && !session) {
+      hydratedProfileIdRef.current = null;
+      return;
+    }
+    const profileId = profile?.id ?? session?.user?.id ?? null;
+    if (!profileId) return;
+    // Once per account — avoid wiping phone mid-typing on session/profile refresh.
+    if (hydratedProfileIdRef.current === profileId) return;
+    hydratedProfileIdRef.current = profileId;
+
     const meta = (session?.user?.user_metadata ?? {}) as Record<string, unknown>;
     const metaName = typeof meta.full_name === 'string' ? meta.full_name : typeof meta.name === 'string' ? meta.name : '';
     setName(profile?.name?.trim() || metaName || '');

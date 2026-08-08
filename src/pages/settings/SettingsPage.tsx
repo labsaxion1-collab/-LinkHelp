@@ -79,11 +79,21 @@ export default function SettingsPage() {
     helperBaseAddressFromProfile({}),
   );
   const [initialLanguage, setInitialLanguage] = useState<'en' | 'pt' | 'fr'>(language);
+  /** Prevents session/profile token refresh from wiping in-progress phone/address edits. */
+  const hydratedProfileIdRef = useRef<string | null>(null);
 
   const isHelper = profile?.role === 'helper';
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile) {
+      hydratedProfileIdRef.current = null;
+      return;
+    }
+    // Hydrate once per account. Re-running on every `session`/`profile` reference churn
+    // (TOKEN_REFRESHED, silent refreshProfile) was clearing phone + address mid-typing.
+    if (hydratedProfileIdRef.current === profile.id) return;
+    hydratedProfileIdRef.current = profile.id;
+
     const meta = (session?.user?.user_metadata ?? {}) as Record<string, unknown>;
     const metaName =
       typeof meta.full_name === 'string' ? meta.full_name : typeof meta.name === 'string' ? meta.name : '';

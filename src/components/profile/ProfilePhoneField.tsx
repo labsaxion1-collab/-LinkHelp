@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { clsx } from 'clsx';
 import {
   PHONE_COUNTRIES,
@@ -27,22 +27,31 @@ const COUNTRY_FLAGS: Record<PhoneCountryId, string> = {
 export function ProfilePhoneField({ label, value, onChange, disabled, t }: Props) {
   const selectId = useId();
   const inputId = `${selectId}-number`;
+  const focusedRef = useRef(false);
+  const lastEmittedRef = useRef<string | null | undefined>(value);
 
-  const parsed = useMemo(() => parseStoredPhone(value), [value]);
-  const [countryId, setCountryId] = useState<PhoneCountryId>(parsed.countryId);
-  const [nationalNumber, setNationalNumber] = useState(parsed.nationalNumber);
+  const initial = parseStoredPhone(value);
+  const [countryId, setCountryId] = useState<PhoneCountryId>(initial.countryId);
+  const [nationalNumber, setNationalNumber] = useState(initial.nationalNumber);
   const [touched, setTouched] = useState(false);
 
   useEffect(() => {
+    // Ignore echoes of our own onChange. Never clobber digits while the user is typing.
+    if (value === lastEmittedRef.current) return;
+    if (focusedRef.current) return;
+    const parsed = parseStoredPhone(value);
     setCountryId(parsed.countryId);
     setNationalNumber(parsed.nationalNumber);
-  }, [parsed.countryId, parsed.nationalNumber]);
+    lastEmittedRef.current = value;
+  }, [value]);
 
   const validation = validatePhoneNumber(countryId, nationalNumber);
   const showError = touched && !validation.valid;
 
   const emitChange = (nextCountry: PhoneCountryId, nextNational: string) => {
-    onChange(buildFullPhone(nextCountry, nextNational));
+    const full = buildFullPhone(nextCountry, nextNational);
+    lastEmittedRef.current = full;
+    onChange(full);
   };
 
   return (
@@ -82,12 +91,18 @@ export function ProfilePhoneField({ label, value, onChange, disabled, t }: Props
           autoComplete="tel-national"
           disabled={disabled}
           value={nationalNumber}
+          onFocus={() => {
+            focusedRef.current = true;
+          }}
           onChange={(e) => {
             const next = e.target.value.replace(/\D/g, '');
             setNationalNumber(next);
             emitChange(countryId, next);
           }}
-          onBlur={() => setTouched(true)}
+          onBlur={() => {
+            focusedRef.current = false;
+            setTouched(true);
+          }}
           placeholder={t('profile_form.phone_placeholder')}
           className={clsx(
             'flex-1 min-h-[48px] min-w-0 rounded-xl border-2 bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-50 disabled:opacity-60',

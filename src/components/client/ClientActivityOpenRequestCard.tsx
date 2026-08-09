@@ -9,7 +9,7 @@ import { CandidateHelperProfileExpand } from '@/components/client/CandidateHelpe
 import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
 import { LhCard } from '@/components/design-system/LhCard';
 import {
-  FEED_CARD_PREMIUM_BACK_CLASS,
+  FEED_CARD_PREMIUM,
   FEED_CARD_PREMIUM_BODY_CLASS,
   FEED_CARD_PREMIUM_EYEBROW_CLASS,
   FEED_CARD_PREMIUM_ICON_WHITE_CLASS,
@@ -18,7 +18,6 @@ import {
   FEED_CARD_PREMIUM_SHELL_CLASS,
   FEED_CARD_PREMIUM_SURFACE_CLASS,
   FEED_CARD_PREMIUM_TITLE_CLASS,
-  FEED_CARD_PREMIUM_TOP_BAR_CLASS,
 } from '@/components/opportunities/feedCardPremiumTheme';
 import { getCategoryIconById } from '@/utils/categoryIcons';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
@@ -217,8 +216,13 @@ export function ClientActivityOpenRequestCard({
     </span>
   );
 
-  const renderBackBar = (label: string) => (
-    <div className={FEED_CARD_PREMIUM_TOP_BAR_CLASS} data-testid="client-activity-card-top-bar">
+  /**
+   * Compact floating back chip — not a full-width bar.
+   * Absolute so scroll content can pass underneath; opaque fill keeps label readable.
+   */
+  const renderBackControl = () => {
+    const label = t('nav.back');
+    return (
       <button
         type="button"
         data-testid="client-activity-card-back"
@@ -226,14 +230,21 @@ export function ClientActivityOpenRequestCard({
           e.stopPropagation();
           goBack();
         }}
-        className={FEED_CARD_PREMIUM_BACK_CLASS}
+        className={clsx(
+          'absolute left-3 z-20 inline-flex min-h-10 min-w-10 items-center gap-1.5 rounded-full',
+          'px-3 py-2 text-[12px] font-bold text-white shadow-[0_2px_10px_rgba(8,20,36,0.38)]',
+          'ring-1 ring-white/25 transition hover:brightness-110',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/90',
+          'top-[max(0.5rem,env(safe-area-inset-top,0px))] sm:left-4',
+        )}
+        style={{ backgroundColor: FEED_CARD_PREMIUM.topBar }}
         aria-label={label}
       >
         <Icons.ArrowLeft className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
-        {label}
+        <span data-testid="client-activity-card-back-label">{label}</span>
       </button>
-    </div>
-  );
+    );
+  };
 
   const renderActionRow = (app: Application, extraClassName?: string) => {
     const canAccept = canAcceptApplicationForJob({
@@ -419,7 +430,7 @@ export function ClientActivityOpenRequestCard({
       className={clsx(CLIENT_ACTIVITY_PANEL_CLASS, 'overflow-hidden')}
       data-testid="client-activity-description-view"
     >
-      {renderBackBar(t('nav.back'))}
+      {renderBackControl()}
       <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'min-h-0 space-y-2')}>
         <h3 className={FEED_CARD_PREMIUM_TITLE_CLASS}>{title}</h3>
         <div className={FEED_CARD_PREMIUM_SURFACE_CLASS}>
@@ -461,7 +472,7 @@ export function ClientActivityOpenRequestCard({
           data-testid="client-activity-candidates-view"
           data-candidates-mode="exclusive"
         >
-          {renderBackBar(t('nav.back'))}
+          {renderBackControl()}
           <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'min-h-0 space-y-2')}>
             {renderActionRow(exclusiveApp, 'border-amber-200/80')}
             <div
@@ -504,7 +515,7 @@ export function ClientActivityOpenRequestCard({
         data-testid="client-activity-candidates-view"
         data-candidates-mode="normal"
       >
-        {renderBackBar(t('nav.back'))}
+        {renderBackControl()}
         <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'min-h-0 space-y-2')}>
           <p className={FEED_CARD_PREMIUM_EYEBROW_CLASS}>{t('client_dashboard.candidates_panel_title')}</p>
           {displayCandidates.length === 0 ? (
@@ -526,7 +537,7 @@ export function ClientActivityOpenRequestCard({
         className={CLIENT_ACTIVITY_PANEL_CLASS}
         data-testid="client-activity-profile-view"
       >
-        {renderBackBar(t('client_dashboard.back_to_candidates'))}
+        {renderBackControl()}
         <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'min-h-0 space-y-2')}>
           <div className="flex items-start gap-3">
             <img

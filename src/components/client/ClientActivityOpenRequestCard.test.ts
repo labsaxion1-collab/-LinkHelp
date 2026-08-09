@@ -187,7 +187,8 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(src).toContain('onReject');
     expect(src).toContain('reject_confirm');
     expect(src).toContain('vip_candidate_label');
-    expect(src).toContain('back_to_candidates');
+    expect(src).toContain("t('nav.back')");
+    expect(src).toContain('client-activity-card-back');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
     expect(src).toContain('invisible pointer-events-none');
     expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
@@ -201,6 +202,57 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(src).not.toContain('min-h-[280px]');
     expect(src).not.toContain('measureFeedCardNaturalHeight');
     expect(src).not.toContain('rounded-[1.35rem]');
+  });
+
+  it('uses a compact floating Voltar chip instead of a full-width back bar', async () => {
+    const src = await readFile(
+      resolve('src/components/client/ClientActivityOpenRequestCard.tsx'),
+      'utf8',
+    );
+    expect(src).toContain('renderBackControl');
+    expect(src).toContain('client-activity-card-back');
+    expect(src).toContain('client-activity-card-back-label');
+    expect(src).toContain("t('nav.back')");
+    expect(src).toContain('FEED_CARD_PREMIUM.topBar');
+    expect(src).toContain('safe-area-inset-top');
+    expect(src).toContain('min-h-10');
+    expect(src).toContain('FEED_CARD_PREMIUM_SCROLL_CLASS');
+    expect(src).not.toContain('FEED_CARD_PREMIUM_TOP_BAR_CLASS');
+    expect(src).not.toContain('client-activity-card-top-bar');
+    expect(src).not.toContain('back_to_candidates');
+    expect(src).not.toContain('inset-x-0 top-0');
+    // Scroll stays on the shared premium scroll token (single vertical scroller).
+    const scrollToken = await readFile(
+      resolve('src/components/opportunities/feedCardPremiumTheme.ts'),
+      'utf8',
+    );
+    expect(scrollToken).toMatch(/FEED_CARD_PREMIUM_SCROLL_CLASS[\s\S]*overflow-y-auto/);
+    const profileIdx = src.indexOf('client-activity-profile-view');
+    const profileBlock = src.slice(profileIdx, profileIdx + 900);
+    expect(profileBlock).toContain('renderBackControl()');
+    expect(profileBlock).toContain('FEED_CARD_PREMIUM_SCROLL_CLASS');
+    expect(profileBlock).not.toContain('FEED_CARD_PREMIUM_TOP_BAR_CLASS');
+  });
+
+  it('keeps profile back navigation to candidates (not closing the activity card)', () => {
+    expect(resolveClientActivityBackView('profile')).toBe('candidates');
+  });
+
+  it('does not alter normal/VIP accept wiring in candidate rows', async () => {
+    const src = await readFile(
+      resolve('src/components/client/ClientActivityOpenRequestCard.tsx'),
+      'utf8',
+    );
+    expect(src).toContain('tryAccept');
+    expect(src).toContain('tryReject');
+    expect(src).toContain('vip_candidate_label');
+    expect(src).toContain('reject_confirm_vip');
+    expect(src).toContain('canAcceptApplicationForJob');
+    const profileIdx = src.indexOf('client-activity-profile-view');
+    const profileBlock = src.slice(profileIdx, profileIdx + 1600);
+    expect(profileBlock).not.toContain('tryAccept');
+    expect(profileBlock).not.toContain('onAccept');
+    expect(profileBlock).not.toContain('onReject');
   });
 
   it('places candidate arc and Description on the same bottom row', async () => {

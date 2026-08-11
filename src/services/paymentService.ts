@@ -15,7 +15,6 @@ export async function createDemoPaymentIntent(amountCents: number): Promise<Paym
 /** Helper LinkCredits checkout via Vercel API route */
 export async function startLinkCreditCheckout(input: {
   packageId: string;
-  priceId: string;
 }): Promise<{ url: string }> {
   const sb = getSupabase();
   if (!sb) throw new Error('STRIPE_NOT_CONFIGURED');
@@ -33,7 +32,7 @@ export async function startLinkCreditCheckout(input: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify({ ...input, returnOrigin }),
+    body: JSON.stringify({ packageId: input.packageId, returnOrigin }),
   });
 
   const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };

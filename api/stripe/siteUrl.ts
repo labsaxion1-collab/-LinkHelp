@@ -1,4 +1,13 @@
-const DEFAULT_SITE_URL = 'https://www.linkhelp.app';
+/**
+ * Server-side site origin for Stripe redirect URLs.
+ * Never invents a production default — isolation + callers must configure SITE_URL.
+ */
+
+import {
+  resolveCheckoutReturnOrigin,
+  isAllowedCheckoutOrigin as isAllowedCheckoutOriginForTarget,
+  type LinkhelpDeployTarget,
+} from '../../shared/environmentIsolation.js';
 
 function stripWrappingQuotes(value: string): string {
   const trimmed = value.trim();
@@ -34,44 +43,45 @@ function normalizeSiteUrl(raw: string | undefined): string | null {
   return isValidAbsoluteHttpUrl(value) ? value : null;
 }
 
-/** Server-side site origin for Stripe redirect URLs. */
-export function getServerSiteUrl(): string {
+/** Env SITE_URL / VITE_SITE_URL only — no production fallback. */
+export function getServerSiteUrl(): string | null {
   const candidates = [process.env.VITE_SITE_URL, process.env.SITE_URL];
-
   for (const raw of candidates) {
     const normalized = normalizeSiteUrl(raw);
     if (normalized) return normalized;
   }
-
-  return DEFAULT_SITE_URL;
+  return null;
 }
 
-function hostnameAllowed(hostname: string): boolean {
-  if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
-  if (hostname === 'linkhelp.app' || hostname === 'www.linkhelp.app' || hostname === 'app.linkhelp.app') return true;
-  if (hostname.endsWith('.vercel.app')) return true;
-  return false;
-}
-
-/** Validates a client-provided origin for Stripe return URLs (must match logged-in domain). */
+/** @deprecated Use isAllowedCheckoutOriginForDeployTarget — kept for existing host tests. */
 export function isAllowedCheckoutOrigin(origin: string): boolean {
-  try {
-    const parsed = new URL(origin);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
-    return hostnameAllowed(parsed.hostname);
-  } catch {
-    return false;
-  }
+  return (
+    isAllowedCheckoutOriginForTarget(origin, 'staging') ||
+    isAllowedCheckoutOriginForTarget(origin, 'production') ||
+    isAllowedCheckoutOriginForTarget(origin, 'local')
+  );
+}
+
+export function isAllowedCheckoutOriginForDeployTarget(
+  origin: string,
+  deployTarget: LinkhelpDeployTarget,
+): boolean {
+  return isAllowedCheckoutOriginForTarget(origin, deployTarget);
 }
 
 /**
- * Prefer the browser origin where checkout started so Supabase session (localStorage)
- * survives the Stripe redirect. Falls back to env SITE_URL when origin is missing/invalid.
+ * Prefer a same-environment browser origin. Cross-env origins are rejected.
+ * Falls back to env SITE_URL only when that URL matches the deploy target.
  */
-export function resolveCheckoutSiteUrl(clientOrigin?: string): string {
-  const normalizedClient = normalizeSiteUrl(clientOrigin);
-  if (normalizedClient && isAllowedCheckoutOrigin(normalizedClient)) {
-    return normalizedClient;
-  }
-  return getServerSiteUrl();
+export function resolveCheckoutSiteUrl(
+  clientOrigin?: string,
+  deployTarget: LinkhelpDeployTarget = 'unknown',
+): string | null {
+  const resolved = resolveCheckoutReturnOrigin({
+    clientOrigin,
+    siteUrl: getServerSiteUrl(),
+    deployTarget,
+  });
+  if (resolved.issue) return null;
+  return resolved.origin;
 }

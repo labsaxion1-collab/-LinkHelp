@@ -1,52 +1,80 @@
-export type LinkCreditPackageId = 'starter' | 'popular' | 'pro' | 'power';
+import {
+  STRIPE_PRICE_ENV_KEYS,
+  getLinkCreditPackageDefinition,
+  isLinkCreditPackageId,
+  type LinkCreditPackageDefinition,
+  type LinkCreditPackageId,
+} from '../../shared/linkCreditCatalog.js';
 
-export type LinkCreditPackage = {
-  id: LinkCreditPackageId;
-  label: string;
-  credits: number;
-  price: number;
-  currency: 'CAD';
+export type { LinkCreditPackageId };
+
+export type ServerLinkCreditPackage = LinkCreditPackageDefinition & {
   priceId: string;
-  badge?: string;
 };
 
-export const LINK_CREDIT_PACKAGES: LinkCreditPackage[] = [
-  {
-    id: 'starter',
-    label: 'Starter',
-    credits: 35,
-    price: 14.99,
-    currency: 'CAD',
-    priceId: 'price_1TcyvbFZU1PZrMJuh6RjBReM',
-  },
-  {
-    id: 'popular',
-    label: 'Popular',
-    credits: 80,
-    price: 29.99,
-    currency: 'CAD',
-    priceId: 'price_1TcywIFZU1PZrMJuJRkyrNS7',
-    badge: 'Mais popular',
-  },
-  {
-    id: 'pro',
-    label: 'Pro',
-    credits: 180,
-    price: 59.99,
-    currency: 'CAD',
-    priceId: 'price_1TcywmFZU1PZrMJurJcV3kPi',
-  },
-  {
-    id: 'power',
-    label: 'Power',
-    credits: 400,
-    price: 119.99,
-    currency: 'CAD',
-    priceId: 'price_1TcyxzFZU1PZrMJufeX8zQ6K',
-    badge: 'Melhor valor',
-  },
-];
+function readPriceId(packageId: LinkCreditPackageId): string | null {
+  const envName = STRIPE_PRICE_ENV_KEYS[packageId];
+  const value = process.env[envName]?.trim() ?? '';
+  if (!value || !value.startsWith('price_')) return null;
+  return value;
+}
 
-export function getLinkCreditPackage(packageId: string): LinkCreditPackage | undefined {
-  return LINK_CREDIT_PACKAGES.find((p) => p.id === packageId);
+export function getLinkCreditPackage(packageId: string): ServerLinkCreditPackage | undefined {
+  if (!isLinkCreditPackageId(packageId)) return undefined;
+  const def = getLinkCreditPackageDefinition(packageId);
+  const priceId = readPriceId(packageId);
+  if (!def || !priceId) return undefined;
+  return { ...def, priceId };
+}
+
+export type PurchaseAudience = 'helper' | 'client';
+
+export type CheckoutCreditResolution =
+  | { ok: true; pkg: ServerLinkCreditPackage; audience: PurchaseAudience }
+  | {
+      ok: false;
+      code:
+        | 'PACKAGE_NOT_FOUND'
+        | 'PRICE_ID_UNCONFIGURED'
+        | 'CREDITS_MISMATCH'
+        | 'PRICE_ID_MISMATCH'
+        | 'AUDIENCE_INVALID';
+    };
+
+export function resolveCheckoutCreditFromServer(input: {
+  packageId?: string | null;
+  credits?: number | string | null;
+  priceId?: string | null;
+  audience?: string | null;
+}): CheckoutCreditResolution {
+  if (!input.packageId || !isLinkCreditPackageId(input.packageId)) {
+    return { ok: false, code: 'PACKAGE_NOT_FOUND' };
+  }
+
+  const pkg = getLinkCreditPackage(input.packageId);
+  if (!pkg) {
+    return { ok: false, code: 'PRICE_ID_UNCONFIGURED' };
+  }
+
+  if (input.credits != null && String(input.credits).trim() !== '') {
+    const claimed = Number.parseInt(String(input.credits), 10);
+    if (!Number.isFinite(claimed) || claimed !== pkg.credits) {
+      return { ok: false, code: 'CREDITS_MISMATCH' };
+    }
+  }
+
+  if (input.priceId != null && input.priceId.trim() !== '' && input.priceId.trim() !== pkg.priceId) {
+    return { ok: false, code: 'PRICE_ID_MISMATCH' };
+  }
+
+  const rawAudience = input.audience?.trim();
+  if (rawAudience && rawAudience !== 'helper' && rawAudience !== 'client') {
+    return { ok: false, code: 'AUDIENCE_INVALID' };
+  }
+
+  return {
+    ok: true,
+    pkg,
+    audience: rawAudience === 'client' ? 'client' : 'helper',
+  };
 }

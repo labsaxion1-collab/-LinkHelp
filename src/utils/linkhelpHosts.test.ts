@@ -7,6 +7,7 @@ import {
   FLUX_ORIGIN,
   PUBLIC_ORIGIN,
   STAGING_TEST_HOSTNAME,
+  STAGING_TEST_ORIGIN,
   WWW_HOSTNAME,
   isAppHost,
   isFluxHost,
@@ -198,13 +199,19 @@ describe('OAuth redirect origin', () => {
 });
 
 describe('Stripe checkout origin allowlist', () => {
-  it('accepts app.linkhelp.app', () => {
+  it('accepts app.linkhelp.app on production target', () => {
     expect(isAllowedCheckoutOrigin(APP_ORIGIN)).toBe(true);
-    expect(resolveCheckoutSiteUrl(APP_ORIGIN)).toBe(APP_ORIGIN);
+    expect(resolveCheckoutSiteUrl(APP_ORIGIN, 'production')).toBe(APP_ORIGIN);
   });
 
   it('rejects unknown origins', () => {
     expect(isAllowedCheckoutOrigin('https://evil.example')).toBe(false);
+  });
+
+  it('rejects www return on staging and teste return on production', () => {
+    expect(resolveCheckoutSiteUrl('https://www.linkhelp.app', 'staging')).toBeNull();
+    expect(resolveCheckoutSiteUrl(STAGING_TEST_ORIGIN, 'production')).toBeNull();
+    expect(resolveCheckoutSiteUrl(STAGING_TEST_ORIGIN, 'staging')).toBe(STAGING_TEST_ORIGIN);
   });
 });
 

@@ -168,7 +168,7 @@ describe('Financeiro UX — source contracts', () => {
 
   it('14–16. regras de créditos e Stripe backend intactos', async () => {
     const charge = await readFile(resolve('src/config/helperCreditCharge.ts'), 'utf8');
-    const packages = await readFile(resolve('src/config/linkCreditPackages.ts'), 'utf8');
+    const packages = await readFile(resolve('shared/linkCreditCatalog.ts'), 'utf8');
     const webhook = await readFile(resolve('api/stripe/webhook.ts'), 'utf8');
     const createHelper = await readFile(resolve('api/stripe/create-checkout-session.ts'), 'utf8');
     const createClient = await readFile(

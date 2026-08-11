@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase.database';
+import { assertBrowserEnvironmentIsolation } from '@/config/environmentIsolation';
 import { authDevLog } from '@/lib/authDebug';
 import { instrumentedSupabaseFetch } from '@/lib/dev/supabaseMetrics';
 
@@ -58,6 +59,9 @@ export function readSupabaseBrowserEnv(): { url: string; anonKey: string } | nul
   }
 
   if (rawKey.length < 20) return null;
+
+  const isolation = assertBrowserEnvironmentIsolation(url);
+  if (!isolation.ok) return null;
 
   return { url, anonKey: rawKey };
 }

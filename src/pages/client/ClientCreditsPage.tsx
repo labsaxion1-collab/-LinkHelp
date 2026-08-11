@@ -107,7 +107,7 @@ export default function ClientCreditsPage() {
     navigate(ROUTES.clientCreditsHistory, { state: linkCreditsHistoryState('credits') });
   };
 
-  const handleBuyPackage = async (packageId: string, priceId: string) => {
+  const handleBuyPackage = async (packageId: string) => {
     if (buyBusy) return;
 
     if (!CLIENT_LINKCREDITS_ENABLED) {
@@ -126,7 +126,7 @@ export default function ClientCreditsPage() {
           packageId: pkg.id,
         });
       }
-      const { url } = await startClientLinkCreditCheckout({ packageId, priceId });
+      const { url } = await startClientLinkCreditCheckout({ packageId });
       window.location.href = url;
     } catch (e) {
       console.error('[LinkHelp] client checkout', e);
@@ -273,7 +273,7 @@ export default function ClientCreditsPage() {
                     imageAlt={t('link_credits_store.package_image_alt', { label })}
                     busy={buyBusy === pkg.id}
                     disabled={buyBusy != null}
-                    onBuy={() => void handleBuyPackage(pkg.id, pkg.priceId)}
+                    onBuy={() => void handleBuyPackage(pkg.id)}
                   />
                 );
               })}

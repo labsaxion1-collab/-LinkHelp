@@ -139,7 +139,7 @@ describe('LinkCredits navigation — dedicated purchase vs history', () => {
 
   it('13–14. Stripe backend e regras de LinkCredits não foram alterados', async () => {
     const charge = await readFile(resolve('src/config/helperCreditCharge.ts'), 'utf8');
-    const packages = await readFile(resolve('src/config/linkCreditPackages.ts'), 'utf8');
+    const packages = await readFile(resolve('shared/linkCreditCatalog.ts'), 'utf8');
     const webhook = await readFile(resolve('api/stripe/webhook.ts'), 'utf8');
     const createHelper = await readFile(resolve('api/stripe/create-checkout-session.ts'), 'utf8');
     const createClient = await readFile(

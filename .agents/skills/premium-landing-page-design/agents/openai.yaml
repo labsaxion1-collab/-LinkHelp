@@ -1,0 +1,4 @@
+interface:
+  display_name: "Premium Landing Page Design"
+  short_description: "Design premium para landing pages da Link Help"
+  default_prompt: "Use $premium-landing-page-design para criar ou melhorar uma landing page premium da Link Help."

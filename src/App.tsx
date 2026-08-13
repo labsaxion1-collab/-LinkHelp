@@ -20,12 +20,16 @@ import { CreditProvider } from '@/context/CreditContext';
 import { ServiceReviewProvider } from '@/context/ServiceReviewContext';
 import { AppRoutes } from '@/routes/AppRoutes';
 import { DashboardPreloadEffect } from '@/components/routing/DashboardPreloadEffect';
+import { SecondaryRoutePreloadEffect } from '@/components/routing/SecondaryRoutePreloadEffect';
 import { HomeDashboardShellProvider } from '@/components/home/HomeDashboardShellContext';
 import { TutorialProvider } from '@/context/TutorialContext';
 import { AppTutorialModal } from '@/components/tutorial/AppTutorialModal';
 import { MedalThemeBridge } from '@/theme/MedalThemeBridge';
+import { PerfDebugPanel } from '@/components/dev/PerfDebugPanel';
 import { checkSupabaseConnection, isSupabaseConfigured } from '@/lib/supabase';
 import { authDevLog } from '@/lib/authDebug';
+import { diagnoseSnapshotRead } from '@/utils/accountSessionSnapshot';
+import { appPerfMark } from '@/utils/appPerf';
 
 function DevSupabasePing() {
   useEffect(() => {
@@ -43,6 +47,20 @@ export default function App() {
     shouldShowAppIntroVideo(readAppIntroVideoContext()),
   );
 
+  useEffect(() => {
+    const diag = diagnoseSnapshotRead();
+    if (diag.reason === 'accepted') {
+      appPerfMark('cached-home-visible');
+      document.documentElement.dataset.lhSnapshot = '1';
+    }
+    try {
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      window.scrollTo(0, 0);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   return (
     <ThemeProvider>
       <LanguageProvider>
@@ -59,11 +77,13 @@ export default function App() {
                     <ServiceReviewProvider>
                       <AppModeRouterBridge />
                       <DashboardPreloadEffect />
+                      <SecondaryRoutePreloadEffect />
                       <TutorialProvider>
                         <AppRoutes />
                         <AppTutorialModal />
                       </TutorialProvider>
                     </ServiceReviewProvider>
+                    <PerfDebugPanel />
                     </HomeDashboardShellProvider>
                   </BrowserRouter>
                 </AppModeProvider>

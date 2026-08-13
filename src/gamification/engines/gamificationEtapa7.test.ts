@@ -90,10 +90,14 @@ describe('Etapa 7 — painel mock removido', () => {
     expect(src).toContain('GamificationProgressCard');
   });
 
-  it('ProfilePage usa GamificationProgressCard', async () => {
-    const src = await readFile(resolve('src/pages/profile/ProfilePage.tsx'), 'utf8');
+  it('ProfileDashboardPage expõe gamificação real (ProfilePage re-export)', async () => {
+    const reexport = await readFile(resolve('src/pages/profile/ProfilePage.tsx'), 'utf8');
+    expect(reexport).not.toContain('HelperScorePanel');
+    expect(reexport).toContain('ProfileDashboardPage');
+    const src = await readFile(resolve('src/pages/profile/ProfileDashboardPage.tsx'), 'utf8');
     expect(src).not.toContain('HelperScorePanel');
-    expect(src).toContain('GamificationProgressCard');
+    expect(src).not.toContain('MOCK_HELPER_SCORE');
+    expect(src).toContain('ProfileGamificationSection');
   });
 
   it('HelperPublicProfileView não exibe painel mock', async () => {

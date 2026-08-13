@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { coerceLegacyLinkCreditsDisplay, formatLinkCredits } from '@/utils/formatLinkCredits';
+import { useToast } from '@/context/ToastContext';
+import { coerceLegacyLinkCreditsDisplay } from '@/utils/formatLinkCredits';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { ROUTES } from '@/utils/constants';
 import {
   fetchClientCreditLedger,
   startOfCurrentMonthIso,
 } from '@/services/supabase/clientCreditLedgerRemote';
+import {
+  clearPendingLinkCreditPurchase,
+  readPendingLinkCreditPurchase,
+} from '@/utils/pendingLinkCreditPurchase';
+import { writeAccountHomeSnapshot } from '@/utils/accountSessionSnapshot';
 
 function SuccessLoader({ message }: { message?: string }) {
   return (
@@ -21,7 +27,9 @@ function SuccessLoader({ message }: { message?: string }) {
 }
 
 export default function ClientCreditsSuccessPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const {
     session,
     profile,
@@ -33,11 +41,11 @@ export default function ClientCreditsSuccessPage() {
   const [refreshCount, setRefreshCount] = useState(0);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [recoveryAttempted, setRecoveryAttempted] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const profileKick = useRef(0);
-  const balance = profile?.credits ?? null;
-  const balanceDisplay =
-    balance == null ? null : formatLinkCredits(balance, language);
-  const balanceAmount = balance == null ? 0 : coerceLegacyLinkCreditsDisplay(balance);
+  const redirected = useRef(false);
+  const baselineBalance = useRef<number | null>(null);
+  const pendingCredits = useRef(readPendingLinkCreditPurchase('client')?.credits ?? null);
 
   useEffect(() => {
     if (!authBootstrapped || authLoading || session || recoveryAttempted) return;
@@ -66,6 +74,10 @@ export default function ClientCreditsSuccessPage() {
   useEffect(() => {
     if (!session || profile?.role !== 'client') return;
 
+    if (baselineBalance.current == null && typeof profile.credits === 'number') {
+      baselineBalance.current = coerceLegacyLinkCreditsDisplay(profile.credits);
+    }
+
     const reload = async () => {
       await refreshProfile();
       await fetchClientCreditLedger({ limit: 20 });
@@ -82,10 +94,48 @@ export default function ClientCreditsSuccessPage() {
         void reload();
         return n + 1;
       });
-    }, 4000);
+    }, 2500);
 
     return () => window.clearInterval(timer);
-  }, [session, profile?.role, refreshProfile]);
+  }, [session, profile?.role, profile?.credits, refreshProfile]);
+
+  useEffect(() => {
+    if (!session || profile?.role !== 'client' || redirected.current) return;
+    if (typeof profile.credits !== 'number') return;
+
+    const live = coerceLegacyLinkCreditsDisplay(profile.credits);
+    const baseline = baselineBalance.current;
+    const pending = pendingCredits.current;
+    const increased = baseline != null && live > baseline;
+    const timedOut = refreshCount >= 4;
+
+    if (!increased && !timedOut && pending == null) return;
+    if (!increased && !timedOut) return;
+
+    const added =
+      pending ??
+      (baseline != null && live > baseline ? live - baseline : null);
+
+    redirected.current = true;
+    setConfirmed(true);
+    clearPendingLinkCreditPurchase();
+
+    writeAccountHomeSnapshot({
+      userId: profile.id,
+      role: 'client',
+      displayName: profile.name,
+      avatarUrl: profile.avatar_url,
+      lcBalanceVisual: live,
+    });
+
+    if (added != null && added > 0) {
+      showToast(t('client_credits.credits_added_toast', { amount: added }), 'success');
+    } else {
+      showToast(t('client_credits.purchase_success_title'), 'success');
+    }
+
+    navigate(ROUTES.clientDashboard, { replace: true });
+  }, [session, profile, refreshCount, navigate, showToast, t]);
 
   const waitingForAuth =
     !authBootstrapped || authLoading || recoveryBusy || (!session && !recoveryAttempted);
@@ -117,26 +167,12 @@ export default function ClientCreditsSuccessPage() {
         <p className="mt-3 text-sm leading-relaxed text-slate-600">
           {t('client_credits.purchase_success_body')}
         </p>
-
-        {balanceDisplay ? (
-          <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700">
-            {t('client_credits.balance', { amount: balanceAmount })}
-          </p>
-        ) : null}
-
-        {refreshCount < 5 ? (
-          <p className="mt-2 flex items-center justify-center gap-1.5 text-[11px] font-medium text-slate-400">
+        {!confirmed ? (
+          <p className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-medium text-slate-400">
             <Loader2 className="h-3 w-3 animate-spin" />
             {t('client_credits.verifying_balance')}
           </p>
         ) : null}
-
-        <Link
-          to={ROUTES.clientCredits}
-          className="mt-6 inline-flex min-h-[48px] w-full items-center justify-center rounded-2xl bg-blue-600 px-4 text-sm font-black text-white hover:bg-blue-700"
-        >
-          {t('client_credits.back_to_credits')}
-        </Link>
       </div>
     </AppPageShell>
   );

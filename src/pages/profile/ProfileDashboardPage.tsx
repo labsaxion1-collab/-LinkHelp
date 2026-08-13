@@ -5,18 +5,16 @@ import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
 import { ProfileIdentityHero } from '@/components/profile/ProfileIdentityHero';
 import { ProfileLinkCreditsCard } from '@/components/profile/ProfileLinkCreditsCard';
 import { ProfileQuickActions } from '@/components/profile/ProfileQuickActions';
+import { ProfilePersonalInfoShortcut } from '@/components/profile/ProfilePersonalInfoShortcut';
 import { ProfileRecentActivity } from '@/components/profile/ProfileRecentActivity';
 import { PROFILE_STAT_ICONS, ProfileStatsGrid } from '@/components/profile/ProfileStatsGrid';
 import { ProfileGamificationSection } from '@/components/profile/ProfileGamificationSection';
-import { PublicProfilePreviewCard } from '@/components/profile/PublicProfilePreviewCard';
 import { ClientPublicProfileView } from '@/components/features/ClientPublicProfileView';
 import { HelperPublicProfileView } from '@/components/features/HelperPublicProfileView';
 import {
   PublicProfileSheetFrame,
   PUBLIC_PROFILE_SCROLL_ATTR,
 } from '@/components/reputation/PublicProfileSheetFrame';
-import { useGamification } from '@/gamification/hooks/useGamification';
-import { getCurrentLevelConfig } from '@/gamification/engines/levelEngine';
 import { useAppData } from '@/context/AppDataContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -41,7 +39,6 @@ export default function ProfileDashboardPage() {
 
   const isHelper = profile?.role === 'helper';
   const userType = isHelper ? 'helper' : 'client';
-  const { record } = useGamification(userType);
 
   const email = session?.user.email ?? profile?.email ?? '';
   const displayName =
@@ -86,8 +83,6 @@ export default function ProfileDashboardPage() {
 
   const creditsAmount = isHelper ? (balance ?? 0) : (profile?.credits ?? 0);
   const creditsLoading = isHelper ? walletLoading : authLoading;
-  const levelName = getCurrentLevelConfig(userType, record?.levelKey ?? 'novo').name;
-  const heroKey = record?.heroKey ?? `${userType}_novo`;
 
   const onMonthMetrics = useCallback((value: number) => {
     setUsedThisMonth(value);
@@ -177,41 +172,6 @@ export default function ProfileDashboardPage() {
     profile?.rating,
   ]);
 
-  const previewIndicators = useMemo(() => {
-    const items = [
-      {
-        key: 'photo',
-        label: t('profile_page.indicator_photo'),
-        active: Boolean(avatarUrl),
-      },
-      {
-        key: 'bio',
-        label: t('profile_page.indicator_bio'),
-        active: Boolean(profile?.bio?.trim()),
-      },
-      {
-        key: 'location',
-        label: t('profile_page.indicator_location'),
-        active: Boolean(city?.trim()),
-      },
-    ];
-    if (isHelper) {
-      items.push({
-        key: 'categories',
-        label: t('profile_page.indicator_categories'),
-        active: Boolean(profile?.primary_category),
-      });
-    }
-    if (profile?.phone?.trim()) {
-      items.push({
-        key: 'phone',
-        label: t('profile_page.indicator_phone'),
-        active: true,
-      });
-    }
-    return items;
-  }, [t, avatarUrl, profile?.bio, city, isHelper, profile?.primary_category, profile?.phone]);
-
   const selfJobStub: Job | null =
     !isHelper && profile
       ? {
@@ -276,7 +236,7 @@ export default function ProfileDashboardPage() {
             loading={creditsLoading}
             usedThisMonth={!isHelper ? usedThisMonth : null}
             buyRoute={isHelper ? ROUTES.helperLinkCredits : ROUTES.clientCredits}
-            historyRoute={isHelper ? ROUTES.helperCredits : ROUTES.clientCredits}
+            historyRoute={isHelper ? ROUTES.helperCreditsHistory : ROUTES.clientCreditsHistory}
             showBuy={
               isHelper ? UI_VISIBILITY.helperCreditPurchase : UI_VISIBILITY.clientCredits
             }
@@ -292,28 +252,7 @@ export default function ProfileDashboardPage() {
           />
         ) : null}
 
-        <PublicProfilePreviewCard
-          title={t('profile_page.section_public_preview')}
-          subtitle={t('profile_page.section_public_preview_sub')}
-          name={displayName}
-          email={email}
-          avatarUrl={avatarUrl}
-          roleLabel={roleLabel}
-          levelName={levelName}
-          heroKey={heroKey}
-          userType={userType}
-          city={city}
-          region={region}
-          rating={profile?.rating}
-          reviewCount={reviewCount}
-          noReviewsLabel={t('profile_page.no_reviews_yet')}
-          reviewsCountLabel={(count) => t('profile_page.reviews_count', { count })}
-          indicators={previewIndicators}
-          editLabel={t('profile_page.edit_public')}
-          viewLabel={t('profile_page.view_public')}
-          onEdit={() => navigate(ROUTES.profilePublicEdit)}
-          onView={() => setPublicOpen(true)}
-        />
+        <ProfilePersonalInfoShortcut label={t('profile_page.shortcut_personal_info')} />
 
         <ProfileQuickActions
           title={t('profile_page.section_shortcuts')}
@@ -347,6 +286,9 @@ export default function ProfileDashboardPage() {
                   jobsCompleted: completedCount,
                   bio: profile.bio ?? undefined,
                   city: [city, region].filter(Boolean).join(', ') || undefined,
+                  spokenLanguages: Array.isArray(profile.spoken_languages)
+                    ? profile.spoken_languages.filter(Boolean)
+                    : undefined,
                   onCta: () => navigate(ROUTES.helperJobs),
                   ctaLabel: t('profile_page.public_cta_services'),
                   categories: [
@@ -361,6 +303,11 @@ export default function ProfileDashboardPage() {
               <ClientPublicProfileView
                 job={selfJobStub}
                 bio={profile?.bio}
+                spokenLanguages={
+                  Array.isArray(profile?.spoken_languages)
+                    ? profile.spoken_languages.filter(Boolean)
+                    : undefined
+                }
                 onClose={() => setPublicOpen(false)}
                 closeLabel={t('common.close')}
                 onCta={() => navigate(ROUTES.clientJobs)}

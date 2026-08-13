@@ -1,136 +1,194 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Camera, Check, Loader2, MapPin, Pencil, Plus, X } from 'lucide-react';
+import { clsx } from 'clsx';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
-import { PublicProfilePreviewCard } from '@/components/profile/PublicProfilePreviewCard';
-import { HelperCategoriesManager } from '@/components/helper/HelperCategoriesManager';
+import { FilePickerLabel } from '@/components/common/HiddenFileInput';
 import { useAuth } from '@/context/AuthContext';
 import { useAppMode } from '@/context/AppModeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
-import { useGamification } from '@/gamification/hooks/useGamification';
-import { getCurrentLevelConfig } from '@/gamification/engines/levelEngine';
-import { getSpokenLanguageLabel, SPOKEN_LANGUAGES } from '@/data/spokenLanguages';
-import { type ServiceCategoryId } from '@/data/serviceCategories';
-import { filterValidSkillKeys } from '@/data/helperSkillsCatalog';
-import { fetchHelperSkills, syncHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import {
-  deriveHelperCategoriesFromSkillKeys,
-  getHelperCategoryPreferences,
-} from '@/utils/helperCategoryPreferences';
+  getSpokenLanguageLabel,
+  isPublicProfileSpokenLanguageCode,
+  mergeSpokenLanguagesForSave,
+  PUBLIC_PROFILE_SPOKEN_LANGUAGES,
+} from '@/data/spokenLanguages';
+import { SERVICE_CATEGORIES, type ServiceCategoryId } from '@/data/serviceCategories';
+import { translateCategory } from '@/utils/translateCategory';
+import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
+import { getCategoryIconById } from '@/utils/categoryIcons';
+import {
+  addPublicHelperCategory,
+  normalizePublicHelperCategorySelection,
+  removePublicHelperCategory,
+  splitPublicHelperCategories,
+} from '@/utils/publicHelperCategories';
 import { extractErrorMessage, formatAuthFlowErrorMessage } from '@/utils/errorMessage';
-import { ROUTES } from '@/utils/constants';
-import { useAppData } from '@/context/AppDataContext';
+import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
+import { cropSquareAvatarFromFile } from '@/utils/avatarMediaProcessing';
+import { logMediaPicker } from '@/utils/mediaPickerDebug';
+import { profileInitials } from '@/components/profile/profileDisplay';
+
+const AVATAR_ACCEPT = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
+const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+
+function isAllowedAvatarFile(file: File): boolean {
+  const mime = file.type.toLowerCase();
+  if (mime === 'image/jpeg' || mime === 'image/png' || mime === 'image/webp') return true;
+  const name = file.name.toLowerCase();
+  return /\.(jpe?g|png|webp)$/.test(name);
+}
 
 export default function PublicProfileEditPage() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const location = useLocation();
   const { profile, session, updateProfile, refreshProfile, isConfigured } = useAuth();
   const { isHelperMode } = useAppMode();
   const { showToast } = useToast();
-  const { reviews } = useAppData();
   const isHelper = profile?.role === 'helper' || isHelperMode;
-  const userType = isHelper ? 'helper' : 'client';
-  const { record } = useGamification(userType);
 
   const [bio, setBio] = useState('');
   const [spokenLanguages, setSpokenLanguages] = useState<string[]>([]);
-  const [helperSkillIds, setHelperSkillIds] = useState<string[]>([]);
-  const [primaryCategory, setPrimaryCategory] = useState<ServiceCategoryId>('cleaning');
-  const [secondaryCategories, setSecondaryCategories] = useState<ServiceCategoryId[]>([]);
+  const [languagePickerOpen, setLanguagePickerOpen] = useState(false);
+  const [languageIconsEditMode, setLanguageIconsEditMode] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<ServiceCategoryId[]>(['cleaning']);
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [categoryIconsEditMode, setCategoryIconsEditMode] = useState(false);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
-  const categoriesSectionRef = useRef<HTMLElement | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [avatarSelectedFile, setAvatarSelectedFile] = useState<File | null>(null);
+  const avatarObjectUrlRef = useRef<string | null>(null);
 
-  const email = session?.user.email ?? profile?.email ?? '';
-  const displayName = profile?.name?.trim() || email || 'LinkHelp';
-  const avatarUrl = profile?.avatar_url?.trim() || '';
+  const displayName = profile?.name?.trim() || session?.user.email || 'LinkHelp';
+  const savedAvatarUrl = profile?.avatar_url?.trim() || '';
+  const avatarDisplay = avatarPreviewUrl ?? (savedAvatarUrl || null);
   const city = isHelper ? profile?.helper_base_city ?? profile?.city : profile?.city;
   const region = isHelper ? profile?.helper_base_province ?? profile?.region : profile?.region;
-  const roleLabel = isHelper
-    ? t('app_pages.settings_mode_helper')
-    : t('app_pages.settings_mode_client');
-  const levelName = getCurrentLevelConfig(userType, record?.levelKey ?? 'novo').name;
-  const heroKey = record?.heroKey ?? `${userType}_novo`;
-  const reviewCount = useMemo(() => {
-    if (!profile?.id) return 0;
-    return reviews.filter((r) => r.targetUserId === profile.id).length;
-  }, [profile?.id, reviews]);
+  const locationLabel = [city, region].filter(Boolean).join(', ');
+  const storedLanguages = useMemo(
+    () => (Array.isArray(profile?.spoken_languages) ? profile.spoken_languages.filter(Boolean) : []),
+    [profile?.spoken_languages],
+  );
+  const { primary: primaryCategory, additional: additionalCategories } = useMemo(
+    () => splitPublicHelperCategories(selectedCategories),
+    [selectedCategories],
+  );
+  const availableToAdd = useMemo(
+    () => SERVICE_CATEGORIES.filter((cat) => !selectedCategories.includes(cat.id)),
+    [selectedCategories],
+  );
+  const canAddCategory = availableToAdd.length > 0;
+  const availableLanguagesToAdd = useMemo(
+    () => PUBLIC_PROFILE_SPOKEN_LANGUAGES.filter((opt) => !spokenLanguages.includes(opt.code)),
+    [spokenLanguages],
+  );
+  const canAddLanguage = availableLanguagesToAdd.length > 0;
+
+  const revokeAvatarObjectUrl = () => {
+    if (avatarObjectUrlRef.current) {
+      URL.revokeObjectURL(avatarObjectUrlRef.current);
+      avatarObjectUrlRef.current = null;
+    }
+    setAvatarPreviewUrl(null);
+  };
+
+  useEffect(() => () => revokeAvatarObjectUrl(), []);
+
+  useEffect(
+    () => () => {
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!profile) return;
     setBio(profile.bio?.trim() ?? '');
+    const fromProfile = storedLanguages.filter(isPublicProfileSpokenLanguageCode);
     setSpokenLanguages(
-      Array.isArray(profile.spoken_languages) && profile.spoken_languages.length
-        ? profile.spoken_languages
-        : profile.preferred_language
+      fromProfile.length
+        ? fromProfile
+        : profile.preferred_language && isPublicProfileSpokenLanguageCode(profile.preferred_language)
           ? [profile.preferred_language]
-          : [language],
+          : isPublicProfileSpokenLanguageCode(language)
+            ? [language]
+            : ['en'],
     );
-  }, [profile, language]);
+    setSelectedCategories(
+      normalizePublicHelperCategorySelection(
+        profile.primary_category,
+        (profile.secondary_categories as string[] | null) ?? [],
+      ),
+    );
+  }, [profile, language, storedLanguages]);
 
-  useEffect(() => {
-    if (!profile || !isHelper) return;
-    const prefs = getHelperCategoryPreferences(profile, helperSkillIds);
-    setPrimaryCategory(prefs.primaryCategory);
-    setSecondaryCategories(prefs.secondaryCategories);
-  }, [profile, isHelper, helperSkillIds]);
-
-  useEffect(() => {
-    if (!session?.user?.id || !isHelper || !isConfigured) {
-      setHelperSkillIds([]);
+  const addLanguage = (code: string) => {
+    if (!isPublicProfileSpokenLanguageCode(code) || spokenLanguages.includes(code)) {
+      setLanguagePickerOpen(false);
       return;
     }
-    void fetchHelperSkills(session.user.id).then(setHelperSkillIds);
-  }, [session?.user?.id, isHelper, isConfigured]);
+    setSpokenLanguages((prev) => [...prev, code]);
+    setLanguagePickerOpen(false);
+    setLanguageIconsEditMode(false);
+  };
 
-  useEffect(() => {
-    if (location.hash !== '#helper-categories' || !categoriesSectionRef.current) return;
-    const timer = setTimeout(() => {
-      categoriesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 120);
-    return () => clearTimeout(timer);
-  }, [location.hash]);
+  const removeLanguage = (code: string) => {
+    setSpokenLanguages((prev) => prev.filter((id) => id !== code));
+  };
 
-  const completionItems = useMemo(() => {
-    const items = [
-      { key: 'photo', label: t('profile_page.indicator_photo'), done: Boolean(avatarUrl) },
-      { key: 'bio', label: t('profile_page.indicator_bio'), done: Boolean(bio.trim()) },
-      { key: 'location', label: t('profile_page.indicator_location'), done: Boolean(city?.trim()) },
-    ];
-    if (isHelper) {
-      items.push({
-        key: 'categories',
-        label: t('profile_page.indicator_categories'),
-        done: helperSkillIds.length > 0 || Boolean(profile?.primary_category),
-      });
+  const onAvatarFile = (files: FileList | null) => {
+    const f = files?.[0];
+    if (!f) return;
+    if (!isAllowedAvatarFile(f) || f.size > AVATAR_MAX_BYTES) {
+      showToast(t('app_pages.avatar_error'), 'error');
+      return;
     }
-    return items;
-  }, [t, avatarUrl, bio, city, isHelper, helperSkillIds.length, profile?.primary_category]);
+    revokeAvatarObjectUrl();
+    const preview = URL.createObjectURL(f);
+    avatarObjectUrlRef.current = preview;
+    setAvatarSelectedFile(f);
+    setAvatarPreviewUrl(preview);
+    logMediaPicker('PREVIEW CREATED', preview);
+  };
 
-  const completionPct = Math.round(
-    (completionItems.filter((item) => item.done).length / Math.max(1, completionItems.length)) * 100,
-  );
+  const addCategory = (id: ServiceCategoryId) => {
+    if (selectedCategories.includes(id)) {
+      setCategoryPickerOpen(false);
+      return;
+    }
+    setSelectedCategories((prev) => addPublicHelperCategory(prev, id));
+    setCategoryPickerOpen(false);
+    setCategoryIconsEditMode(false);
+  };
 
-  const persistHelperSkills = async (
-    ids: string[],
-    categoryOverride?: { primary: ServiceCategoryId; secondary: ServiceCategoryId[] },
-  ) => {
-    const valid = filterValidSkillKeys(ids);
-    setHelperSkillIds(valid);
-    const { primary, secondary } =
-      categoryOverride ?? deriveHelperCategoriesFromSkillKeys(valid, primaryCategory);
-    setPrimaryCategory(primary);
-    setSecondaryCategories(secondary);
-    if (!session?.user?.id || !isConfigured) return;
-    await syncHelperSkills(session.user.id, valid);
-    const err = await updateProfile({
-      primary_category: primary,
-      secondary_categories: secondary,
-    });
-    if (err) throw new Error(formatAuthFlowErrorMessage(t, err));
-    await refreshProfile();
+  const removeCategory = (id: ServiceCategoryId) => {
+    setSelectedCategories((prev) => removePublicHelperCategory(prev, id));
+  };
+
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const startCategoryLongPress = () => {
+    clearLongPressTimer();
+    longPressTimerRef.current = setTimeout(() => {
+      setCategoryIconsEditMode(true);
+      longPressTimerRef.current = null;
+    }, 480);
+  };
+
+  const startLanguageLongPress = () => {
+    clearLongPressTimer();
+    longPressTimerRef.current = setTimeout(() => {
+      setLanguageIconsEditMode(true);
+      longPressTimerRef.current = null;
+    }, 480);
   };
 
   const savePublicProfile = async () => {
@@ -140,22 +198,42 @@ export default function PublicProfileEditPage() {
     }
     setSaving(true);
     try {
-      if (isHelper) {
-        await persistHelperSkills(helperSkillIds, {
-          primary: primaryCategory,
-          secondary: secondaryCategories,
-        });
+      if (avatarSelectedFile && session?.user?.id) {
+        let uploadFile: File = avatarSelectedFile;
+        try {
+          const cropped = await cropSquareAvatarFromFile(avatarSelectedFile);
+          uploadFile = await fileFromDataUrl(cropped, 'avatar.jpg', 'image/jpeg');
+        } catch {
+          logMediaPicker('CROP FALLBACK — uploading original file');
+        }
+        try {
+          const { publicUrl } = await uploadAvatarImage(session.user.id, uploadFile);
+          const avatarErr = await updateProfile({ avatar_url: publicUrl });
+          if (avatarErr) {
+            showToast(formatAuthFlowErrorMessage(t, avatarErr), 'error');
+            return;
+          }
+          revokeAvatarObjectUrl();
+          setAvatarSelectedFile(null);
+        } catch (e) {
+          showToast(formatStorageError(e) || t('app_pages.avatar_save_error'), 'error');
+          return;
+        }
       }
-      const err = await updateProfile(
-        isHelper
-          ? {
-              bio: bio.trim() || null,
-              spoken_languages: spokenLanguages.length ? spokenLanguages : [language],
-            }
-          : {
-              bio: bio.trim() || null,
-            },
-      );
+
+      const nextLanguages = mergeSpokenLanguagesForSave(spokenLanguages, storedLanguages);
+      const payload = isHelper
+        ? {
+            bio: bio.trim() || null,
+            spoken_languages: nextLanguages.length ? nextLanguages : [language],
+            primary_category: primaryCategory,
+            secondary_categories: additionalCategories,
+          }
+        : {
+            bio: bio.trim() || null,
+            spoken_languages: nextLanguages.length ? nextLanguages : [language],
+          };
+      const err = await updateProfile(payload);
       if (err) {
         showToast(formatAuthFlowErrorMessage(t, err), 'error');
         return;
@@ -171,7 +249,7 @@ export default function PublicProfileEditPage() {
 
   return (
     <AppPageShell className="w-full">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-1 pb-28 md:pb-10">
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-1 pb-28 md:pb-10">
         <DesktopBackButton />
         <button
           type="button"
@@ -186,64 +264,47 @@ export default function PublicProfileEditPage() {
           <h1 className="text-2xl font-black tracking-tight text-slate-950">
             {t('profile_page.public_edit_title')}
           </h1>
-          <p className="mt-1 text-sm font-medium text-slate-500">
-            {t('profile_page.public_edit_sub')}
-          </p>
+          <p className="mt-1 text-sm font-medium text-slate-500">{t('profile_page.public_edit_sub')}</p>
         </header>
 
-        <PublicProfilePreviewCard
-          title={t('profile_page.section_public_preview')}
-          subtitle={t('profile_page.section_public_preview_sub')}
-          name={displayName}
-          email={email}
-          avatarUrl={avatarUrl}
-          roleLabel={roleLabel}
-          levelName={levelName}
-          heroKey={heroKey}
-          userType={userType}
-          city={city}
-          region={region}
-          rating={profile?.rating}
-          reviewCount={reviewCount}
-          noReviewsLabel={t('profile_page.no_reviews_yet')}
-          reviewsCountLabel={(count) => t('profile_page.reviews_count', { count })}
-          indicators={completionItems.map((item) => ({
-            key: item.key,
-            label: item.label,
-            active: item.done,
-          }))}
-          editLabel={t('app_pages.settings_avatar_choose')}
-          viewLabel={t('profile_page.view_public')}
-          onEdit={() => navigate(`${ROUTES.settings}#avatar`)}
-          onView={() => navigate(ROUTES.profile)}
-        />
-
-        <section className="rounded-[1.5rem] border border-slate-200/90 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.045)]">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 className="text-sm font-black text-slate-950">
-              {t('profile_page.public_edit_progress')}
-            </h2>
-            <span className="text-sm font-black tabular-nums text-[#2563FF]">{completionPct}%</span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-            <div
-              className="h-full rounded-full bg-[#2563FF] transition-[width]"
-              style={{ width: `${completionPct}%` }}
-            />
-          </div>
-          <ul className="mt-3 space-y-1.5">
-            {completionItems.map((item) => (
-              <li
-                key={item.key}
-                className={`text-xs font-semibold ${item.done ? 'text-emerald-700' : 'text-slate-500'}`}
+        <section className="rounded-[1.25rem] border border-slate-200/90 bg-white p-4 shadow-sm">
+          <p className="text-sm font-bold text-slate-800">{t('app_pages.settings_avatar_choose')}</p>
+          <div className="mt-3 flex items-center gap-3">
+            <FilePickerLabel
+              accept={AVATAR_ACCEPT}
+              disabled={!isConfigured || saving}
+              onFiles={onAvatarFile}
+              className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-slate-100 bg-slate-100"
+            >
+              {avatarDisplay ? (
+                <img src={avatarDisplay} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-sm font-black text-slate-500">
+                  {profileInitials(displayName)}
+                </div>
+              )}
+              <span className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full bg-[#2563FF] text-white ring-2 ring-white">
+                <Camera className="h-3 w-3" aria-hidden />
+              </span>
+            </FilePickerLabel>
+            <div className="min-w-0 flex-1">
+              <FilePickerLabel
+                accept={AVATAR_ACCEPT}
+                disabled={!isConfigured || saving}
+                onFiles={onAvatarFile}
+                className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700 transition hover:bg-white"
               >
-                {item.done ? '✓' : '○'} {item.label}
-              </li>
-            ))}
-          </ul>
+                <Camera className="h-4 w-4" aria-hidden />
+                {t('app_pages.settings_avatar_choose')}
+              </FilePickerLabel>
+              <p className="mt-1.5 text-[11px] font-medium text-slate-500">
+                {t('app_pages.settings_avatar_hint')}
+              </p>
+            </div>
+          </div>
         </section>
 
-        <section className="rounded-[1.5rem] border border-slate-200/90 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.045)]">
+        <section className="rounded-[1.25rem] border border-slate-200/90 bg-white p-4 shadow-sm">
           <label className="block text-sm font-bold text-slate-800">
             {t('profile_page.bio_label')}
             <textarea
@@ -256,70 +317,181 @@ export default function PublicProfileEditPage() {
           </label>
         </section>
 
-        {isHelper ? (
-          <>
-            <section className="rounded-[1.5rem] border border-slate-200/90 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.045)]">
-              <p className="mb-2 text-sm font-bold text-slate-800">
-                {t('app_pages.settings_spoken_languages')}
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {SPOKEN_LANGUAGES.map((option) => {
-                  const active = spokenLanguages.includes(option.code);
-                  return (
-                    <button
-                      key={option.code}
-                      type="button"
-                      onClick={() =>
-                        setSpokenLanguages((prev) =>
-                          prev.includes(option.code)
-                            ? prev.filter((id) => id !== option.code)
-                            : [...prev, option.code],
-                        )
-                      }
-                      className={`rounded-xl border px-3 py-2 text-sm font-bold transition-colors ${
-                        active
-                          ? 'border-blue-600 bg-blue-50 text-blue-900'
-                          : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-white'
-                      }`}
+        <section className="rounded-[1.25rem] border border-slate-200/90 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-bold text-slate-800">{t('profile_page.spoken_languages')}</p>
+            {spokenLanguages.length > 0 ? (
+              <button
+                type="button"
+                data-testid="public-edit-language-icons-mode"
+                onClick={() => setLanguageIconsEditMode((v) => !v)}
+                className={clsx(
+                  'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition',
+                  languageIconsEditMode
+                    ? 'border-[#2563FF]/40 bg-blue-50 text-[#2563FF]'
+                    : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50',
+                )}
+                aria-label={languageIconsEditMode ? t('common.close') : t('common.edit')}
+                aria-pressed={languageIconsEditMode}
+              >
+                {languageIconsEditMode ? (
+                  <Check className="h-3.5 w-3.5" aria-hidden />
+                ) : (
+                  <Pencil className="h-3.5 w-3.5" aria-hidden />
+                )}
+              </button>
+            ) : null}
+          </div>
+          <div
+            className="mt-3 flex items-center gap-2 overflow-x-auto hide-scrollbar pb-0.5"
+            data-testid="public-edit-spoken-languages"
+            data-icons-only="true"
+          >
+            {spokenLanguages.map((code) => {
+              const canRemove = languageIconsEditMode;
+              return (
+                <div key={code} className="relative shrink-0">
+                  <button
+                    type="button"
+                    data-language-code={code}
+                    aria-label={getSpokenLanguageLabel(code, t)}
+                    onPointerDown={startLanguageLongPress}
+                    onPointerUp={clearLongPressTimer}
+                    onPointerLeave={clearLongPressTimer}
+                    onPointerCancel={clearLongPressTimer}
+                    onClick={() => {
+                      if (canRemove) removeLanguage(code);
+                    }}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200/90 bg-slate-50 text-[10px] font-black uppercase tracking-wide text-slate-700 transition sm:h-[30px] sm:w-[30px]"
+                  >
+                    {code.toUpperCase()}
+                  </button>
+                  {canRemove ? (
+                    <span
+                      className="pointer-events-none absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm"
+                      aria-hidden
                     >
-                      {getSpokenLanguageLabel(option.code, t)}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section
-              id="helper-categories"
-              ref={categoriesSectionRef}
-              className="rounded-[1.5rem] border border-slate-200/90 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.045)]"
-            >
-              <h2 className="mb-1 text-sm font-black text-slate-950">{t('helper_categories.title')}</h2>
-              <p className="mb-3 text-xs font-medium text-slate-500">
-                {t('profile_page.helper_specialties_subtitle')}
-              </p>
-              <HelperCategoriesManager
-                t={t}
-                skillIds={helperSkillIds}
-                primaryCategory={primaryCategory}
-                secondaryCategories={secondaryCategories}
-                onSkillsChange={setHelperSkillIds}
-                onCategoriesChange={(primary, secondary) => {
-                  setPrimaryCategory(primary);
-                  setSecondaryCategories(secondary);
+                      <X className="h-2.5 w-2.5" strokeWidth={3} />
+                    </span>
+                  ) : null}
+                </div>
+              );
+            })}
+            {canAddLanguage ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setLanguageIconsEditMode(false);
+                  setLanguagePickerOpen(true);
                 }}
-                onSaveAsync={persistHelperSkills}
-                iconOnlySummary
-              />
-            </section>
+                data-testid="public-edit-add-language"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white text-slate-500 transition hover:border-[#2563FF] hover:text-[#2563FF] sm:h-[30px] sm:w-[30px]"
+                aria-label={t('profile_page.add_spoken_language')}
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+              </button>
+            ) : null}
+          </div>
+        </section>
 
-            <Link
-              to={ROUTES.helperDashboard}
-              className="inline-flex min-h-[46px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+        {isHelper ? (
+          <section className="rounded-[1.25rem] border border-slate-200/90 bg-white p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-800">{t('helper_categories.primary_label')}</p>
+                <p className="mt-1 text-xs font-medium text-slate-500">{t('helper_categories.secondary_hint')}</p>
+              </div>
+              {selectedCategories.length > 1 ? (
+                <button
+                  type="button"
+                  data-testid="public-edit-category-icons-mode"
+                  onClick={() => setCategoryIconsEditMode((v) => !v)}
+                  className={clsx(
+                    'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition',
+                    categoryIconsEditMode
+                      ? 'border-[#2563FF]/40 bg-blue-50 text-[#2563FF]'
+                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50',
+                  )}
+                  aria-label={categoryIconsEditMode ? t('common.close') : t('common.edit')}
+                  aria-pressed={categoryIconsEditMode}
+                >
+                  {categoryIconsEditMode ? (
+                    <Check className="h-3.5 w-3.5" aria-hidden />
+                  ) : (
+                    <Pencil className="h-3.5 w-3.5" aria-hidden />
+                  )}
+                </button>
+              ) : null}
+            </div>
+            <div
+              className="mt-3 flex items-center gap-2 overflow-x-auto hide-scrollbar pb-0.5"
+              data-testid="public-edit-primary-category"
+              data-icons-only="true"
             >
-              {t('profile_page.public_edit_portfolio_link')}
-            </Link>
-          </>
+              {selectedCategories.map((categoryId, index) => {
+                const theme = getCategoryFeedTheme(categoryId);
+                const Icon = getCategoryIconById(categoryId);
+                const isPrimary = index === 0;
+                const canRemove = categoryIconsEditMode && selectedCategories.length > 1;
+                return (
+                  <div key={categoryId} className="relative shrink-0">
+                    <button
+                      type="button"
+                      data-category-id={categoryId}
+                      data-primary={isPrimary ? 'true' : 'false'}
+                      aria-label={translateCategory(categoryId, t)}
+                      onPointerDown={startCategoryLongPress}
+                      onPointerUp={clearLongPressTimer}
+                      onPointerLeave={clearLongPressTimer}
+                      onPointerCancel={clearLongPressTimer}
+                      onClick={() => {
+                        if (canRemove) removeCategory(categoryId);
+                      }}
+                      className={clsx(
+                        'flex h-8 w-8 items-center justify-center rounded-full border transition sm:h-[30px] sm:w-[30px]',
+                        isPrimary ? 'border-[#2563FF]/45 ring-2 ring-[#2563FF]/15' : 'border-slate-200/90',
+                      )}
+                      style={{ backgroundColor: theme.iconBg, color: theme.iconColor }}
+                    >
+                      <Icon className="h-4 w-4" aria-hidden />
+                    </button>
+                    {canRemove ? (
+                      <span
+                        className="pointer-events-none absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm"
+                        aria-hidden
+                      >
+                        <X className="h-2.5 w-2.5" strokeWidth={3} />
+                      </span>
+                    ) : null}
+                  </div>
+                );
+              })}
+              {canAddCategory ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryIconsEditMode(false);
+                    setCategoryPickerOpen(true);
+                  }}
+                  data-testid="public-edit-add-category"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white text-slate-500 transition hover:border-[#2563FF] hover:text-[#2563FF] sm:h-[30px] sm:w-[30px]"
+                  aria-label={t('helper_categories.add_category')}
+                >
+                  <Plus className="h-4 w-4" aria-hidden />
+                </button>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
+        {locationLabel ? (
+          <section className="rounded-[1.25rem] border border-slate-200/90 bg-white p-4 shadow-sm">
+            <p className="text-sm font-bold text-slate-800">{t('profile_page.indicator_location')}</p>
+            <p className="mt-2 flex min-w-0 items-center gap-1.5 text-sm font-semibold text-slate-600">
+              <MapPin className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+              <span className="truncate">{locationLabel}</span>
+            </p>
+          </section>
         ) : null}
 
         <button
@@ -332,6 +504,149 @@ export default function PublicProfileEditPage() {
           {t('profile_page.public_edit_save')}
         </button>
       </div>
+
+      {languagePickerOpen ? (
+        <div
+          className="fixed inset-0 z-[130] flex items-end justify-center bg-slate-900/45 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:items-center"
+          role="presentation"
+        >
+          <button
+            type="button"
+            className="absolute inset-0"
+            aria-label={t('common.close')}
+            onClick={() => setLanguagePickerOpen(false)}
+          />
+          <div
+            className="relative z-10 flex w-full max-w-lg max-h-[70dvh] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            data-testid="public-edit-language-picker"
+          >
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+              <h3 className="text-base font-black text-slate-950">{t('profile_page.spoken_languages')}</h3>
+              <button
+                type="button"
+                onClick={() => setLanguagePickerOpen(false)}
+                className="rounded-full bg-slate-100 p-2 text-slate-600"
+                aria-label={t('common.close')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </header>
+            <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3">
+              {PUBLIC_PROFILE_SPOKEN_LANGUAGES.map((option) => {
+                const selected = spokenLanguages.includes(option.code);
+                return (
+                  <li key={option.code}>
+                    <button
+                      type="button"
+                      data-picker-language-code={option.code}
+                      data-picker-selected={selected ? 'true' : 'false'}
+                      disabled={selected}
+                      onClick={() => addLanguage(option.code)}
+                      className={clsx(
+                        'flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition',
+                        selected
+                          ? 'bg-blue-50/90 ring-1 ring-inset ring-[#2563FF]/25'
+                          : 'hover:bg-slate-50',
+                      )}
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-700">
+                        {option.code.toUpperCase()}
+                      </span>
+                      <span
+                        className={clsx(
+                          'min-w-0 flex-1 truncate text-sm font-bold',
+                          selected ? 'text-[#2563FF]' : 'text-slate-900',
+                        )}
+                      >
+                        {getSpokenLanguageLabel(option.code, t)}
+                      </span>
+                      {selected ? (
+                        <Check className="h-4 w-4 shrink-0 text-[#2563FF]" aria-hidden />
+                      ) : null}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      ) : null}
+
+      {categoryPickerOpen ? (
+        <div
+          className="fixed inset-0 z-[130] flex items-end justify-center bg-slate-900/45 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:items-center"
+          role="presentation"
+        >
+          <button
+            type="button"
+            className="absolute inset-0"
+            aria-label={t('common.close')}
+            onClick={() => setCategoryPickerOpen(false)}
+          />
+          <div
+            className="relative z-10 flex w-full max-w-lg max-h-[70dvh] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            data-testid="public-edit-category-picker"
+          >
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+              <h3 className="text-base font-black text-slate-950">{t('helper_categories.picker_title')}</h3>
+              <button
+                type="button"
+                onClick={() => setCategoryPickerOpen(false)}
+                className="rounded-full bg-slate-100 p-2 text-slate-600"
+                aria-label={t('common.close')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </header>
+            <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3">
+              {SERVICE_CATEGORIES.map((cat) => {
+                const theme = getCategoryFeedTheme(cat.id);
+                const Icon = getCategoryIconById(cat.id);
+                const selected = selectedCategories.includes(cat.id);
+                return (
+                  <li key={cat.id}>
+                    <button
+                      type="button"
+                      data-picker-category-id={cat.id}
+                      data-picker-selected={selected ? 'true' : 'false'}
+                      disabled={selected}
+                      onClick={() => addCategory(cat.id)}
+                      className={clsx(
+                        'flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition',
+                        selected
+                          ? 'bg-blue-50/90 ring-1 ring-inset ring-[#2563FF]/25'
+                          : 'hover:bg-slate-50',
+                      )}
+                    >
+                      <span
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                        style={{ backgroundColor: theme.iconBg, color: theme.iconColor }}
+                      >
+                        <Icon className="h-4 w-4" aria-hidden />
+                      </span>
+                      <span
+                        className={clsx(
+                          'min-w-0 flex-1 truncate text-sm font-bold',
+                          selected ? 'text-[#2563FF]' : 'text-slate-900',
+                        )}
+                      >
+                        {translateCategory(cat.id, t)}
+                      </span>
+                      {selected ? (
+                        <Check className="h-4 w-4 shrink-0 text-[#2563FF]" aria-hidden />
+                      ) : null}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      ) : null}
     </AppPageShell>
   );
 }

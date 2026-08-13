@@ -18,7 +18,14 @@ export default defineConfig(({ mode }) => {
           'icons/linkhelp-app-180.png',
           'icons/linkhelp-app-192.png',
           'icons/linkhelp-app-512.png',
+          // Staging-only assets (served statically; selected at runtime on teste.linkhelp.app).
+          'icons/linkhelp-staging-180.png',
+          'icons/linkhelp-staging-192.png',
+          'icons/linkhelp-staging-512.png',
+          'manifest-staging.webmanifest',
         ],
+        // Production / default manifest — unchanged for app.linkhelp.app.
+        // Staging host swaps to /manifest-staging.webmanifest via index.html script.
         manifest: {
           id: '/',
           name: 'LinkHelp',

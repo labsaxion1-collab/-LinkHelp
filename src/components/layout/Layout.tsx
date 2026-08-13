@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
@@ -21,6 +21,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { shouldShowLegacyPwaMigration } from '@/utils/legacyPwaMigration';
 import { isWwwInstitutionalSurface } from '@/utils/marketingNav';
 import { LegacyPwaMigrationPage } from '@/pages/public/LegacyPwaMigrationPage';
+import { appPerfMark } from '@/utils/appPerf';
 
 function LayoutMobileMenus() {
   const { pathname } = useLocation();
@@ -59,6 +60,10 @@ export default function Layout() {
   const showMobileChrome = !isAdmin && isAppShellPath(pathname);
   const isAppShell = !isAdmin && isAppShellPath(pathname);
   const isLanding = pathname === ROUTES.home && !isAppShell;
+
+  useEffect(() => {
+    appPerfMark('layout-outlet', pathname);
+  }, [pathname]);
 
   return (
     <MobileProfileMenuProvider>

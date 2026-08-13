@@ -6,11 +6,13 @@ import {
   FLUX_HOSTNAME,
   FLUX_ORIGIN,
   PUBLIC_ORIGIN,
+  STAGING_TEST_HOSTNAME,
   WWW_HOSTNAME,
   isAppHost,
   isFluxHost,
   isLocalHost,
   isPreviewHost,
+  isStagingTestHost,
   isWwwHost,
   resolveHostProfileFromHostname,
   shouldRegisterServiceWorker,
@@ -33,7 +35,12 @@ describe('resolveHostProfileFromHostname (production)', () => {
     expect(resolveHostProfileFromHostname('linkhelp.app', { production: true })).toBe('combined');
   });
 
-  it('production ignores simulated profile override', () => {
+  it('maps teste.linkhelp.app to app (same routing as app.linkhelp.app)', () => {
+    expect(resolveHostProfileFromHostname(STAGING_TEST_HOSTNAME, { production: true })).toBe('app');
+    expect(resolveHostProfileFromHostname(STAGING_TEST_HOSTNAME, { production: false })).toBe('app');
+  });
+
+  it('production ignores simulated profile on real hostnames; preview may simulate', () => {
     expect(
       resolveHostProfileFromHostname('localhost', {
         production: true,
@@ -44,6 +51,18 @@ describe('resolveHostProfileFromHostname (production)', () => {
       resolveHostProfileFromHostname(APP_HOSTNAME, {
         production: true,
         simulatedProfile: 'www',
+      }),
+    ).toBe('app');
+    expect(
+      resolveHostProfileFromHostname(STAGING_TEST_HOSTNAME, {
+        production: true,
+        simulatedProfile: 'www',
+      }),
+    ).toBe('app');
+    expect(
+      resolveHostProfileFromHostname('link-help-git-x.vercel.app', {
+        production: true,
+        simulatedProfile: 'app',
       }),
     ).toBe('app');
   });
@@ -87,7 +106,14 @@ describe('explicit hostname helpers', () => {
   it('isWwwHost / isAppHost with explicit hostname', () => {
     expect(isWwwHost(WWW_HOSTNAME)).toBe(true);
     expect(isAppHost(APP_HOSTNAME)).toBe(true);
+    expect(isAppHost(STAGING_TEST_HOSTNAME)).toBe(true);
     expect(isAppHost(WWW_HOSTNAME)).toBe(false);
+  });
+
+  it('isStagingTestHost only matches teste.linkhelp.app', () => {
+    expect(isStagingTestHost(STAGING_TEST_HOSTNAME)).toBe(true);
+    expect(isStagingTestHost(APP_HOSTNAME)).toBe(false);
+    expect(isStagingTestHost(WWW_HOSTNAME)).toBe(false);
   });
 });
 
@@ -159,6 +185,16 @@ describe('OAuth redirect origin', () => {
     expect(getOAuthRedirectToUrl()).toBe(`${APP_ORIGIN}${ROUTES.authCallback}`);
     vi.unstubAllGlobals();
   });
+
+  it('uses staging origin on teste.linkhelp.app', () => {
+    vi.stubGlobal('window', {
+      location: { origin: 'https://teste.linkhelp.app' },
+    });
+    expect(getOAuthRedirectToUrl()).toBe(`https://teste.linkhelp.app${ROUTES.authCallback}`);
+    expect(getOAuthRedirectToUrl()).not.toContain('www.linkhelp.app');
+    expect(getOAuthRedirectToUrl()).not.toContain('https://linkhelp.app/');
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('Stripe checkout origin allowlist', () => {
@@ -182,6 +218,13 @@ describe('shouldRegisterServiceWorker', () => {
   it('is true on app hostname', () => {
     vi.stubGlobal('window', { location: { hostname: APP_HOSTNAME } });
     expect(shouldRegisterServiceWorker()).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
+  it('is true on staging test hostname for separate PWA install', () => {
+    vi.stubGlobal('window', { location: { hostname: STAGING_TEST_HOSTNAME } });
+    expect(shouldRegisterServiceWorker()).toBe(true);
+    expect(resolveHostProfileFromHostname(STAGING_TEST_HOSTNAME, { production: true })).toBe('app');
     vi.unstubAllGlobals();
   });
 

@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAppData, type OfficialHirePayload } from '@/context/AppDataContext';
+import { useAppDataCore, useAppDataActionsRef, type OfficialHirePayload } from '@/context/AppDataContext';
 import { useServiceReview } from '@/context/ServiceReviewContext';
 import { ServiceConfirmModal } from '@/components/modals/ServiceConfirmModal';
 import { SERVICE_CATEGORIES, isOfficialServiceCategoryId } from '@/data/serviceCategories';
@@ -19,8 +19,9 @@ import { BRAND } from '@/utils/brandAssets';
 import { avatarUrlForName } from '@/utils/avatarUrl';
 import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
 import { CreateRequestModal } from '@/components/client/create-request/CreateRequestModal';
-import { ClientMapWidget } from '@/components/client/ClientMapWidget';
-import { ClientNearbyHelpersList } from '@/components/client/ClientNearbyHelpersList';
+import { ClientAwaitingCompletionBridge } from '@/components/client/ClientAwaitingCompletionBridge';
+import { ClientDashboardMapSidebar } from '@/components/client/ClientDashboardMapSidebar';
+import { ClientDashboardHeroSlot } from '@/components/client/ClientDashboardHeroSlot';
 import { ClientCandidateCard } from '@/components/client/ClientCandidateCard';
 import { candidateProfileExpandKey } from '@/utils/candidateProfileExpand';
 import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
@@ -40,7 +41,7 @@ import {
   resolveClientHelperApplication,
 } from '@/utils/chatHireGate';
 import { ensureConversation } from '@/services/supabase/conversationEnsure';
-import { remoteGetPreMatchClientCount, remoteFetchClientAwaitingCompletionJobIds } from '@/services/supabase/appDataRemote';
+import { remoteGetPreMatchClientCount } from '@/services/supabase/appDataRemote';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { PRE_HIRE_MESSAGE_LIMIT } from '@/utils/preMatchLimits';
 import {
@@ -71,12 +72,16 @@ import { isAwaitingClientCompletion, shouldShowCompletionReminder } from '@/util
 import { ClientOnboardingCarousel } from '@/components/client/onboarding/ClientOnboardingCarousel';
 import { useClientOnboarding } from '@/hooks/useClientOnboarding';
 import { CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';
-import { DynamicHeroRenderer } from '@/gamification/components/DynamicHeroRenderer';
 import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { useGamification } from '@/gamification/hooks/useGamification';
 import { GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
 import { AppHomeClientQuickStrip } from '@/components/home/AppHomeClientQuickStrip';
 import { useMarkHomeDashboardSurfaceReady } from '@/components/home/HomeDashboardShellContext';
+import { useDevRenderCount } from '@/utils/devRenderCount';
+import { readAccountHomeSnapshot } from '@/utils/accountSessionSnapshot';
+import { scheduleIdle } from '@/utils/scheduleIdle';
+import { useProgressiveReveal } from '@/hooks/useProgressiveReveal';
+import { appPerfMark } from '@/utils/appPerf';
 
 const SERVICE_CONFIRM_DISMISS_PREFIX = 'lh_service_confirm_skip_';
 import { translateJobTitle } from '@/utils/translateCategory';
@@ -204,26 +209,42 @@ export default function ClientDashboard() {
 
   const { t } = useLanguage();
   const { showToast } = useToast();
-  const { profile, authLoading } = useAuth();
+  const { profile, authLoading, session } = useAuth();
   const { shouldShow: showClientOnboarding, completing: completingClientOnboarding, complete: completeClientOnboarding } =
     useClientOnboarding();
-  const clientCreditsBalance = profile?.credits ?? 0;
+  const snapshotLc = useMemo(() => {
+    const uid = profile?.id ?? session?.user?.id ?? null;
+    if (!uid) return null;
+    return readAccountHomeSnapshot(uid)?.lcBalanceVisual ?? null;
+  }, [profile?.id, session?.user?.id]);
+  // Prefer live profile credits; fall back to same-account snapshot — never flash 0 while loading.
+  const clientCreditsBalance =
+    typeof profile?.credits === 'number' ? profile.credits : snapshotLc;
+  const creditsLoading = authLoading && clientCreditsBalance == null;
   const skillChip = (skill: string) =>
     skill === 'support' ? t('skills.support') : t(`categories.${skill}`);
-  const { jobs, applications, notifications, updateApplicationStatus, updateJobStatus, officiallyHireHelper, pendingServiceReviews, upcomingJobs, confirmServiceCompleted, finalizeServiceCompletion } = useAppData();
+  const { jobs, applications, pendingServiceReviews, upcomingJobs } = useAppDataCore();
+  const appDataActionsRef = useAppDataActionsRef();
+  useDevRenderCount('ClientDashboard');
   const { openReviewByRequestId } = useServiceReview();
   const me = useSessionViewer();
+
+  const [secondaryBlocksReady, setSecondaryBlocksReady] = useState(false);
+  useEffect(() => {
+    appPerfMark('client-home-structure');
+    return scheduleIdle(() => {
+      setSecondaryBlocksReady(true);
+      appPerfMark('client-secondary-ready');
+    }, 1400);
+  }, []);
 
   const [awaitingCompletionJobIds, setAwaitingCompletionJobIds] = useState<Set<string>>(new Set());
 
   const myJobIds = useMemo(() => jobs.filter((j) => j.clientId === me.id).map((j) => j.id), [jobs, me.id]);
 
-  useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-    void remoteFetchClientAwaitingCompletionJobIds(me.id).then((ids) => {
-      setAwaitingCompletionJobIds(new Set(ids));
-    });
-  }, [me.id, jobs, upcomingJobs, notifications]);
+  const handleAwaitingCompletionIds = useCallback((ids: Set<string>) => {
+    setAwaitingCompletionJobIds(ids);
+  }, []);
 
   const isJobAwaitingCompletion = useCallback(
     (jobId: string) => {
@@ -303,13 +324,13 @@ export default function ClientDashboard() {
     const upcoming = upcomingJobs.find((u) => u.jobId === requestId);
     try {
       if (upcoming) {
-        await finalizeServiceCompletion({
+        await appDataActionsRef.current.finalizeServiceCompletion({
           requestId,
           upcomingJobId: upcoming.id,
           role: 'client',
         });
       } else {
-        await confirmServiceCompleted(requestId);
+        await appDataActionsRef.current.confirmServiceCompleted(requestId);
       }
       try {
         sessionStorage.removeItem(`${SERVICE_CONFIRM_DISMISS_PREFIX}${requestId}`);
@@ -476,6 +497,7 @@ export default function ClientDashboard() {
   );
   const { helpers: nearbyHelpers, loading: nearbyHelpersLoading } = useNearbyHelpers({
     relatedCategoryIds: myOpenJobCategories,
+    enabled: secondaryBlocksReady,
   });
 
   const clientJobs = useMemo(
@@ -496,6 +518,7 @@ export default function ClientDashboard() {
     [clientJobs, hiddenJobIds],
   );
   const activityTabJobs = jobsListTab === 'history' ? completedClientJobs : activeClientJobs;
+  const progressiveActivityJobs = useProgressiveReveal(activityTabJobs, 3, 800);
   const clientApplicationCount = useMemo(
     () => applications.filter((app) => clientJobs.some((job) => job.id === app.jobId)).length,
     [applications, clientJobs],
@@ -518,7 +541,7 @@ export default function ClientDashboard() {
     if (!pauseTargetJobId || pausingJobId) return;
     setPausingJobId(pauseTargetJobId);
     try {
-      await updateJobStatus(pauseTargetJobId, 'paused');
+      await appDataActionsRef.current.updateJobStatus(pauseTargetJobId, 'paused');
       showToast('Chamado pausado.', 'success');
       setPauseTargetJobId(null);
     } catch (error) {
@@ -531,7 +554,7 @@ export default function ClientDashboard() {
 
   const handleResumeJob = async (jobId: string) => {
     try {
-      const outcome = await updateJobStatus(jobId, 'open');
+      const outcome = await appDataActionsRef.current.updateJobStatus(jobId, 'open');
       if (outcome && 'expiredWhilePaused' in outcome && outcome.expiredWhilePaused) {
         showToast('Chamado cancelado porque a data prevista passou durante a pausa.', 'info');
       } else {
@@ -576,7 +599,7 @@ export default function ClientDashboard() {
     const jobId = cancelTargetJobId;
     setCancellingJobId(jobId);
     try {
-      await updateJobStatus(jobId, 'cancelled');
+      await appDataActionsRef.current.updateJobStatus(jobId, 'cancelled');
       hideJobForUser(me.id, jobId);
       setHiddenJobIds((prev) => new Set(prev).add(jobId));
       showToast(t('client_dashboard.request_cancelled_toast'), 'success');
@@ -591,7 +614,7 @@ export default function ClientDashboard() {
 
   const handleRejectApplication = async (applicationId: string, isExclusive: boolean) => {
     try {
-      await updateApplicationStatus(applicationId, 'rejected');
+      await appDataActionsRef.current.updateApplicationStatus(applicationId, 'rejected');
       showToast(
         isExclusive
           ? t('client_dashboard.exclusive_reject_success_toast')
@@ -677,7 +700,7 @@ export default function ClientDashboard() {
     };
 
     try {
-      const conversationId = await officiallyHireHelper(payload, '');
+      const conversationId = await appDataActionsRef.current.officiallyHireHelper(payload, '');
       showToast(t('client_dashboard.helper_hired_success_toast'), 'success');
       if (conversationId) {
         navigate(`${ROUTES.messages}?c=${conversationId}`);
@@ -701,7 +724,7 @@ export default function ClientDashboard() {
       return;
     }
     try {
-      const conversationId = await officiallyHireHelper(
+      const conversationId = await appDataActionsRef.current.officiallyHireHelper(
         {
           requestId: targetApp.jobId,
           applicationId: targetApp.id,
@@ -754,13 +777,14 @@ export default function ClientDashboard() {
   };
 
   return (
-    <div className="relative w-full min-w-0">
+    <div className="relative w-full min-w-0" data-lh-dashboard-mounted="client">
+      <ClientAwaitingCompletionBridge clientId={me.id} onAwaitingIds={handleAwaitingCompletionIds} />
       {activeSidebarTab === 'dashboard' ? (
         <div className="pointer-events-none absolute right-3 top-3 z-[2] sm:right-5 sm:top-4">
           <div className="pointer-events-auto hidden">
             <ClientCreditsWalletBadge
-              balance={authLoading ? null : clientCreditsBalance}
-              loading={authLoading}
+              balance={clientCreditsBalance}
+              loading={creditsLoading}
               t={t}
             />
           </div>
@@ -770,17 +794,12 @@ export default function ClientDashboard() {
       {/* Hero — fora de qualquer container com padding para ser verdadeiramente full-width.
           Dinâmica: gamification.heroKey é a única fonte da verdade. */}
       {activeSidebarTab === 'dashboard' && (
-        <DynamicHeroRenderer
-          userType="client"
+        <ClientDashboardHeroSlot
           gamification={clientGamification.record}
           gamificationLoading={clientGamification.loading}
           gamificationError={clientGamification.error}
           avatarUrl={me.avatar}
-          balance={authLoading ? null : clientCreditsBalance}
-          completedServices={0}
-          satisfactionRate={0}
-          rating={0}
-          connectedProfessionals={0}
+          balance={clientCreditsBalance}
         />
       )}
       {activeSidebarTab === 'dashboard' && (
@@ -1269,8 +1288,8 @@ export default function ClientDashboard() {
                   activeJobsCount={activeClientJobs.length}
                   pendingApplicationsCount={pendingApplicationsForClient}
                   upcomingServicesCount={clientUpcomingCount}
-                  creditsBalance={authLoading ? null : clientCreditsBalance}
-                  creditsLoading={authLoading}
+                  creditsBalance={clientCreditsBalance}
+                  creditsLoading={creditsLoading}
                   onOpenActiveServices={() => setActiveSidebarTab('active-services')}
                   onOpenMessages={() => navigate(ROUTES.messages)}
                   onCreateRequest={() => openCreateModal()}
@@ -1561,7 +1580,7 @@ export default function ClientDashboard() {
 
               <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
                 {activityTabJobs.length > 0 ? (
-                  activityTabJobs.map((job) => {
+                  progressiveActivityJobs.map((job) => {
                     const isHiredActivity = isHiredActivityJob(job.status);
                     const isPreHireActivity = isPreHireActivityJob(job.status);
                     const candidateApps = isPreHireActivity
@@ -1976,23 +1995,15 @@ export default function ClientDashboard() {
         </main>
 
         {/* Right Sidebar */}
-        <div className="hidden lg:flex flex-col sticky top-24 h-[calc(100vh-120px)] space-y-4">
-          <ClientMapWidget
-            t={t}
-            clientId={me.id}
-            jobs={jobs}
-            applications={applications}
-            notifications={notifications}
-            nearbyHelpers={nearbyHelpers}
-            nearbyHelpersLoading={nearbyHelpersLoading}
-          />
-          <ClientNearbyHelpersList
-            helpers={nearbyHelpers}
-            loading={nearbyHelpersLoading}
-            t={t}
-            onViewProfile={openNearbyHelperProfile}
-          />
-        </div>
+        <ClientDashboardMapSidebar
+          t={t}
+          clientId={me.id}
+          jobs={jobs}
+          applications={applications}
+          nearbyHelpers={nearbyHelpers}
+          nearbyHelpersLoading={nearbyHelpersLoading}
+          onViewProfile={openNearbyHelperProfile}
+        />
 
       </div>
 
@@ -2022,7 +2033,7 @@ export default function ClientDashboard() {
                       selectedHelper.jobsCompleted ??
                       applications.find((a) => a.helperId === String(selectedHelper.id))?.helperJobs ??
                       0,
-                    bio: profileApp?.message?.trim() || undefined,
+                    // Bio/city/languages come from profiles via usePublicProfileExtras — never application message.
                     categories: selectedHelper.skills?.length ? [...selectedHelper.skills] : [],
                   }}
                   onClose={() => {

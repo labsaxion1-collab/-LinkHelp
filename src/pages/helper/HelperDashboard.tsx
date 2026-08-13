@@ -11,7 +11,7 @@ import { fetchHelperSkills } from '@/services/supabase/helperSkillsRemote';
 import { parseSkillKey, skillSubLabelKey } from '@/data/helperSkillsCatalog';
 import { useLanguage } from '@/context/LanguageContext';
 import { resolveLanguageLabel } from '@/services/translationService';
-import { useAppData, type UpcomingJob } from '@/context/AppDataContext';
+import { useAppDataCore, useAppDataActionsRef, type UpcomingJob } from '@/context/AppDataContext';
 import { useToast } from '@/context/ToastContext';
 import { useCredits } from '@/context/CreditContext';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
@@ -75,10 +75,13 @@ import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboard';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { LhCard } from '@/components/design-system/LhCard';
-import { DynamicHeroRenderer } from '@/gamification/components/DynamicHeroRenderer';
+import { HelperDashboardHeroSlot } from '@/components/helper/HelperDashboardHeroSlot';
 import { GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
 import { useGamification } from '@/gamification/hooks/useGamification';
 import { useMarkHomeDashboardSurfaceReady } from '@/components/home/HomeDashboardShellContext';
+import { useDevRenderCount } from '@/utils/devRenderCount';
+import { useProgressiveReveal } from '@/hooks/useProgressiveReveal';
+import { appPerfMark } from '@/utils/appPerf';
 
 type HelperHomeInfoSlide = {
   id: string;
@@ -135,13 +138,12 @@ export default function HelperDashboard() {
   const {
     jobs,
     applications,
-    applyForJob,
-    getHelperApplications,
     upcomingJobs,
-    updateUpcomingWorkflow,
     dataLoading,
     reviews,
-  } = useAppData();
+  } = useAppDataCore();
+  const appDataActionsRef = useAppDataActionsRef();
+  useDevRenderCount('HelperDashboard');
   const reviewCountByUserId = useMemo(() => buildReviewCountByUserId(reviews), [reviews]);
   const { refreshCredits, transactions: creditTransactions, unlocks } = useCredits();
   const { balance: walletBalance, loading: walletLoading } = useWalletBalance();
@@ -393,7 +395,10 @@ export default function HelperDashboard() {
   );
 
   const upcomingLocale = language === 'fr' ? 'fr-CA' : language === 'pt' ? 'pt-BR' : 'en-CA';
-  const helperApplications = getHelperApplications(helperUserId ?? '');
+  const helperApplications = useMemo(
+    () => appDataActionsRef.current.getHelperApplications(helperUserId ?? ''),
+    [applications, helperUserId, appDataActionsRef],
+  );
   const helperEngagedJobIds = React.useMemo(() => {
     const ids = new Set<string>();
     for (const app of helperApplications) {
@@ -440,7 +445,7 @@ export default function HelperDashboard() {
     [walletLoading, walletBalance, interestCostForJob, openInsufficientCreditsModal, pushToast, t],
   );
   const proposalSourceRef = React.useRef<ProposalAnalyticsSource>('card');
-  const goToCredits = React.useCallback(() => navigate(ROUTES.helperLinkCredits), [navigate]);
+  const goToCredits = React.useCallback(() => navigate(ROUTES.helperCredits), [navigate]);
   const creditsUsedThisMonth = React.useMemo(() => {
     const now = new Date();
     return creditTransactions
@@ -602,7 +607,7 @@ export default function HelperDashboard() {
     isSubmittingApplyRef.current = true;
     setApplyingJobId(job.id);
     try {
-      await applyForJob(job.id, helperUserId, proposedAmount, {
+      await appDataActionsRef.current.applyForJob(job.id, helperUserId, proposedAmount, {
         distanceKm,
         message: proposalMessage ?? null,
         isExclusive: proposalOptions?.isExclusive === true,
@@ -751,6 +756,12 @@ export default function HelperDashboard() {
     helperEngagedJobIds,
   ]);
 
+  const progressiveFeedJobs = useProgressiveReveal(displayedJobs, 3, 700);
+
+  useEffect(() => {
+    appPerfMark('helper-home-structure');
+  }, []);
+
   const feedActiveTab =
     activeTab === 'match' || activeTab === 'recentes' || activeTab === 'emergencia' ? activeTab : 'match';
 
@@ -776,6 +787,7 @@ export default function HelperDashboard() {
     location.pathname === ROUTES.helperOpportunities;
 
   return (
+    <div data-lh-dashboard-mounted="helper" className="min-w-0 w-full">
     <AppPageShell wide className="min-w-0 overflow-x-hidden pt-0 sm:pt-0">
       {/* Toast Notification */}
       {toastNotification.show && (
@@ -1014,8 +1026,7 @@ export default function HelperDashboard() {
           ) : null}
 
           {/* Hero dinâmica: gamification.heroKey é a única fonte da verdade */}
-          <DynamicHeroRenderer
-            userType="helper"
+          <HelperDashboardHeroSlot
             gamification={helperGamification.record}
             gamificationLoading={helperGamification.loading}
             gamificationError={helperGamification.error}
@@ -1213,7 +1224,7 @@ export default function HelperDashboard() {
                   applyingJobId && 'pointer-events-none brightness-[0.92] md:brightness-[0.88]',
                 )}
               >
-              {displayedJobs.map((job, idx) => (
+              {progressiveFeedJobs.map((job, idx) => (
                     <div
                       key={job.id}
                       className={clsx(
@@ -1353,7 +1364,7 @@ export default function HelperDashboard() {
               setUpcomingModalJob(job);
               setShowUpcomingModal(true);
             }}
-            onQuickReject={(job) => updateUpcomingWorkflow(job.id, 'cancelled')}
+            onQuickReject={(job) => appDataActionsRef.current.updateUpcomingWorkflow(job.id, 'cancelled')}
           />
           
           <div className="overflow-hidden rounded-[18px] border border-[rgba(15,23,42,0.08)] bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.05)]">
@@ -1382,7 +1393,7 @@ export default function HelperDashboard() {
         t={t}
         translateCategory={translateCategory}
         locale={upcomingLocale}
-        onUpdateWorkflow={updateUpcomingWorkflow}
+        onUpdateWorkflow={(id, status) => appDataActionsRef.current.updateUpcomingWorkflow(id, status)}
       />
 
       <HelperInsufficientCreditsModal
@@ -1395,5 +1406,6 @@ export default function HelperDashboard() {
       />
 
     </AppPageShell>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import * as Icons from 'lucide-react';
-import { useAppData } from '@/context/AppDataContext';
+import { useAppDataActionsRef } from '@/context/AppDataContext';
 import { useLanguage } from '@/context/LanguageContext';
 
 type Props = {
@@ -11,14 +11,14 @@ type Props = {
 
 export function ClearNotificationsButton({ userId, variant = 'page', onCleared }: Props) {
   const { t } = useLanguage();
-  const { clearAllNotifications } = useAppData();
+  const appDataActionsRef = useAppDataActionsRef();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const confirmClear = async () => {
     setBusy(true);
     try {
-      await clearAllNotifications(userId);
+      await appDataActionsRef.current.clearAllNotifications(userId);
       setOpen(false);
       onCleared?.();
     } finally {

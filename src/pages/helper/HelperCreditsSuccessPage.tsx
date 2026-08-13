@@ -1,26 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
-import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { ROUTES } from '@/utils/constants';
+import {
+  clearPendingLinkCreditPurchase,
+  readPendingLinkCreditPurchase,
+} from '@/utils/pendingLinkCreditPurchase';
+import { writeAccountHomeSnapshot } from '@/utils/accountSessionSnapshot';
 
 function SuccessLoader({ message }: { message?: string }) {
   return (
     <AppPageShell className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
       <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      {message ? (
-        <p className="text-sm font-medium text-slate-500">{message}</p>
-      ) : null}
+      {message ? <p className="text-sm font-medium text-slate-500">{message}</p> : null}
     </AppPageShell>
   );
 }
 
 export default function HelperCreditsSuccessPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const {
     session,
     profile,
@@ -33,28 +38,29 @@ export default function HelperCreditsSuccessPage() {
   const [refreshCount, setRefreshCount] = useState(0);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [recoveryAttempted, setRecoveryAttempted] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const profileKick = useRef(0);
+  const redirected = useRef(false);
+  const baselineBalance = useRef<number | null>(null);
+  const pendingCredits = useRef(readPendingLinkCreditPurchase('helper')?.credits ?? null);
 
-  // Restore Supabase session after external Stripe redirect (same-origin return required).
   useEffect(() => {
     if (!authBootstrapped || authLoading || session || recoveryAttempted) return;
 
     let cancelled = false;
     setRecoveryBusy(true);
-    void attemptSessionRecovery()
-      .finally(() => {
-        if (!cancelled) {
-          setRecoveryBusy(false);
-          setRecoveryAttempted(true);
-        }
-      });
+    void attemptSessionRecovery().finally(() => {
+      if (!cancelled) {
+        setRecoveryBusy(false);
+        setRecoveryAttempted(true);
+      }
+    });
 
     return () => {
       cancelled = true;
     };
   }, [authBootstrapped, authLoading, session, recoveryAttempted, attemptSessionRecovery]);
 
-  // Load profile once session is available.
   useEffect(() => {
     if (!authBootstrapped || authLoading || !session?.user || profile) return;
     if (profileKick.current >= 4) return;
@@ -62,9 +68,12 @@ export default function HelperCreditsSuccessPage() {
     void refreshProfile(session.user);
   }, [authBootstrapped, authLoading, session, profile, refreshProfile]);
 
-  // Poll wallet balance after purchase (webhook may arrive shortly after redirect).
   useEffect(() => {
     if (!session || profile?.role !== 'helper') return;
+
+    if (baselineBalance.current == null && balance != null) {
+      baselineBalance.current = balance;
+    }
 
     void refresh();
     const timer = window.setInterval(() => {
@@ -76,16 +85,49 @@ export default function HelperCreditsSuccessPage() {
         void refresh();
         return n + 1;
       });
-    }, 4000);
+    }, 2500);
 
     return () => window.clearInterval(timer);
-  }, [session, profile?.role, refresh]);
+  }, [session, profile?.role, refresh, balance]);
+
+  useEffect(() => {
+    if (!session || profile?.role !== 'helper' || redirected.current) return;
+    if (balance == null) return;
+
+    const baseline = baselineBalance.current;
+    const pending = pendingCredits.current;
+    const increased = baseline != null && balance > baseline;
+    const timedOut = refreshCount >= 4;
+
+    if (!increased && !timedOut && pending == null) return;
+    if (!increased && !timedOut) return;
+
+    const added =
+      pending ?? (baseline != null && balance > baseline ? balance - baseline : null);
+
+    redirected.current = true;
+    setConfirmed(true);
+    clearPendingLinkCreditPurchase();
+
+    writeAccountHomeSnapshot({
+      userId: profile.id,
+      role: 'helper',
+      displayName: profile.name,
+      avatarUrl: profile.avatar_url,
+      lcBalanceVisual: balance,
+    });
+
+    if (added != null && added > 0) {
+      showToast(t('helper_credits.credits_added_toast', { amount: added }), 'success');
+    } else {
+      showToast(t('link_credits_store.success_title'), 'success');
+    }
+
+    navigate(ROUTES.helperDashboard, { replace: true });
+  }, [session, profile, balance, refreshCount, navigate, showToast, t]);
 
   const waitingForAuth =
-    !authBootstrapped ||
-    authLoading ||
-    recoveryBusy ||
-    (!session && !recoveryAttempted);
+    !authBootstrapped || authLoading || recoveryBusy || (!session && !recoveryAttempted);
 
   const waitingForProfile = Boolean(session?.user && !profile);
 
@@ -99,11 +141,7 @@ export default function HelperCreditsSuccessPage() {
 
   if (!session) {
     return (
-      <Navigate
-        to={ROUTES.login}
-        replace
-        state={{ from: ROUTES.helperCreditsSuccess }}
-      />
+      <Navigate to={ROUTES.login} replace state={{ from: ROUTES.helperCreditsSuccess }} />
     );
   }
 
@@ -119,26 +157,12 @@ export default function HelperCreditsSuccessPage() {
         </div>
         <h1 className="text-xl font-black text-slate-950">{t('link_credits_store.success_title')}</h1>
         <p className="mt-3 text-sm leading-relaxed text-slate-600">{t('link_credits_store.success_body')}</p>
-
-        {balance !== null && (
-          <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700">
-            {t('helper_credits.current_balance_label', { amount: formatLinkCredits(balance, language) })}
-          </p>
-        )}
-
-        {refreshCount < 5 && (
-          <p className="mt-2 flex items-center justify-center gap-1.5 text-[11px] font-medium text-slate-400">
+        {!confirmed ? (
+          <p className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-medium text-slate-400">
             <Loader2 className="h-3 w-3 animate-spin" />
             {t('helper_credits.verifying_balance')}
           </p>
-        )}
-
-        <Link
-          to={ROUTES.helperCredits}
-          className="mt-6 inline-flex min-h-[48px] w-full items-center justify-center rounded-2xl bg-blue-600 px-4 text-sm font-black text-white hover:bg-blue-700"
-        >
-          {t('link_credits_store.back_to_dashboard')}
-        </Link>
+        ) : null}
       </div>
     </AppPageShell>
   );

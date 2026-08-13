@@ -4,6 +4,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { BRAND } from '@/utils/brandAssets';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { ProfileSectionHeader } from '@/components/profile/ProfileSectionHeader';
+import { linkCreditsHistoryState } from '@/utils/linkCreditsHistoryNav';
 
 type Props = {
   balance: number;
@@ -31,7 +32,7 @@ export function ProfileLinkCreditsCard({
     <section>
       <ProfileSectionHeader title={t('profile_page.section_credits')} />
       <div className="rounded-[1.5rem] border border-slate-200/90 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.055)]">
-        <div className="flex items-center gap-3">
+        <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">
               <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-amber-50 ring-1 ring-amber-100">
@@ -56,24 +57,28 @@ export function ProfileLinkCreditsCard({
             </div>
           </div>
 
-          <div className="flex w-[9.5rem] shrink-0 flex-col gap-2 sm:w-44">
+          <div className="flex w-[10.75rem] shrink-0 flex-col gap-2 sm:w-48">
             {showBuy ? (
               <button
                 type="button"
                 onClick={() => navigate(buyRoute)}
-                className="inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-2xl bg-[#2563FF] px-3 text-[12px] font-black text-white shadow-[0_8px_20px_rgba(37,99,255,0.28)] transition hover:bg-[#1D4ED8]"
+                className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl bg-[#2563FF] px-2.5 py-2 text-center text-[11px] font-black leading-tight text-white shadow-[0_8px_20px_rgba(37,99,255,0.28)] transition hover:bg-[#1D4ED8] sm:px-3 sm:text-[12px]"
               >
                 <Wallet className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                <span className="truncate">{t('profile_page.buy_credits')}</span>
+                <span className="min-w-0 whitespace-normal text-center">
+                  {t('profile_page.buy_credits')}
+                </span>
               </button>
             ) : null}
             <button
               type="button"
-              onClick={() => navigate(historyRoute)}
-              className="inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-2xl border border-[#2563FF]/30 bg-white px-3 text-[12px] font-black text-[#2563FF] transition hover:bg-[#F5F8FF]"
+              onClick={() => navigate(historyRoute, { state: linkCreditsHistoryState('profile') })}
+              className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl border border-[#2563FF]/30 bg-white px-2.5 py-2 text-center text-[11px] font-black leading-tight text-[#2563FF] transition hover:bg-[#F5F8FF] sm:px-3 sm:text-[12px]"
             >
               <History className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              <span className="truncate">{t('profile_page.view_history')}</span>
+              <span className="min-w-0 whitespace-normal text-center">
+                {t('profile_page.view_history')}
+              </span>
             </button>
           </div>
         </div>

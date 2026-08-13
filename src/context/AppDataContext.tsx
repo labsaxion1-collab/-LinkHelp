@@ -5,6 +5,13 @@ import { avatarUrlForName } from '@/utils/avatarUrl';
 import { clearDemoLocalData } from '@/utils/clearDemoLocalData';
 import { enrichUpcomingJobsWithSubcategories, estimateScheduledAtFromJob } from '@/utils/upcomingJobUtils';
 import { ROUTES } from '@/utils/constants';
+import {
+  computeClientHomeCounts,
+  buildHomeFeedPreviews,
+  writeAccountHomeSnapshot,
+} from '@/utils/accountSessionSnapshot';
+import { appPerfMark } from '@/utils/appPerf';
+import { scheduleIdle } from '@/utils/scheduleIdle';
 import type { Job, JobStatus, JobUrgency } from '@/types/job';
 import type { Application, ApplicationStatus } from '@/types/application';
 import type { UpcomingJob, UpcomingWorkflowStatus } from '@/types/upcoming';
@@ -138,7 +145,31 @@ interface AppDataContextData {
   }) => Promise<void>;
 }
 
-const AppDataContext = createContext<AppDataContextData>({} as AppDataContextData);
+type AppDataActionMethods = Pick<
+  AppDataContextData,
+  | 'createJob'
+  | 'applyForJob'
+  | 'updateJobStatus'
+  | 'updateApplicationStatus'
+  | 'officiallyHireHelper'
+  | 'getHelperApplications'
+  | 'getJobApplications'
+  | 'getUpcomingJobsForHelper'
+  | 'updateUpcomingWorkflow'
+  | 'confirmServiceCompleted'
+  | 'finalizeServiceCompletion'
+  | 'addNotification'
+  | 'markNotificationAsRead'
+  | 'markAllAsRead'
+  | 'clearAllNotifications'
+  | 'submitServiceReview'
+>;
+
+export type AppDataCoreState = Omit<AppDataContextData, keyof AppDataActionMethods | 'notifications'>;
+
+const AppDataCoreContext = createContext<AppDataCoreState | null>(null);
+const AppDataNotificationsContext = createContext<AppNotification[] | null>(null);
+const AppDataActionsContext = createContext<React.MutableRefObject<AppDataActionMethods> | null>(null);
 
 function upsertJob(list: Job[], job: Job): Job[] {
   const next = list.filter((j) => j.id !== job.id);
@@ -175,10 +206,10 @@ function migrateJobAvatars(jobs: Job[]): Job[] {
 }
 
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
-  const { session, profile, refreshProfile } = useAuth();
+  const { session, profile, refreshProfile, sessionConfirmed } = useAuth();
   const { chargeApplicationInterest, chargeApplicationSelected } = useCredits();
-  const useRemote = isSupabaseConfigured() && !!session;
-  const userId = session?.user?.id ?? '';
+  const useRemote = isSupabaseConfigured() && sessionConfirmed;
+  const userId = sessionConfirmed ? (session?.user?.id ?? '') : '';
   const userRole = profile?.role ?? 'client';
 
   const [dataLoading, setDataLoading] = useState(false);
@@ -239,7 +270,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     if (!useRemote || !userId) return;
     const loadUserId = userId;
     bootstrapLockRef.current = true;
-    setDataLoading(true);
+    // Keep last arrays visible — do not clear before network returns.
+    const hadCache = jobsRef.current.length > 0 || applicationsRef.current.length > 0;
+    if (!hadCache) setDataLoading(true);
     try {
       const bootstrap = await fetchRemoteAppDataBootstrap();
       if (loadUserId !== userId) return;
@@ -249,6 +282,40 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       setJobs(migratedJobs);
       setApplications(bootstrap.applications);
       setUpcomingJobs(filterUpcomingByRequestStatus(bootstrap.upcomingJobs, migratedJobs));
+      appPerfMark('appdata-network-ready');
+      if (profile && profile.role === 'client') {
+        const counts = computeClientHomeCounts(
+          userId,
+          migratedJobs,
+          bootstrap.applications,
+          filterUpcomingByRequestStatus(bootstrap.upcomingJobs, migratedJobs),
+        );
+        const activePreviewJobs = migratedJobs.filter(
+          (j) =>
+            j.clientId === userId &&
+            (j.status === 'open' || j.status === 'paused' || j.status === 'in_progress'),
+        );
+        writeAccountHomeSnapshot({
+          userId,
+          role: 'client',
+          displayName: profile.name,
+          avatarUrl: profile.avatar_url,
+          lcBalanceVisual: typeof profile.credits === 'number' ? profile.credits : undefined,
+          ...counts,
+          feedPreviews: buildHomeFeedPreviews(activePreviewJobs),
+        });
+      } else if (profile && profile.role === 'helper') {
+        const openPreviewJobs = migratedJobs.filter(
+          (j) => j.status === 'open' && j.clientId !== userId,
+        );
+        writeAccountHomeSnapshot({
+          userId,
+          role: 'helper',
+          displayName: profile.name,
+          avatarUrl: profile.avatar_url,
+          feedPreviews: buildHomeFeedPreviews(openPreviewJobs),
+        });
+      }
     } finally {
       if (loadUserId === userId) {
         bootstrapLockRef.current = false;
@@ -260,7 +327,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       }
       setDataLoading(false);
     }
-  }, [useRemote, userId, filterUpcomingByRequestStatus]);
+  }, [useRemote, userId, filterUpcomingByRequestStatus, profile]);
 
   const refreshRemoteFull = useCallback(async () => {
     if (!useRemote || !userId) return;
@@ -474,22 +541,30 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!useRemote || !userId) return;
     let cancelled = false;
-    void fetchRemoteNotifications(userId).then((rows) => {
-      if (!cancelled) setNotifications(rows);
-    });
+    const cancelIdle = scheduleIdle(() => {
+      if (cancelled) return;
+      void fetchRemoteNotifications(userId).then((rows) => {
+        if (!cancelled) setNotifications(rows);
+      });
+    }, 1600);
     return () => {
       cancelled = true;
+      cancelIdle();
     };
   }, [useRemote, userId]);
 
   useEffect(() => {
     if (!useRemote || !userId) return;
     let cancelled = false;
-    void fetchRemoteReviews().then((rows) => {
-      if (!cancelled) setReviews(rows);
-    });
+    const cancelIdle = scheduleIdle(() => {
+      if (cancelled) return;
+      void fetchRemoteReviews().then((rows) => {
+        if (!cancelled) setReviews(rows);
+      });
+    }, 2000);
     return () => {
       cancelled = true;
+      cancelIdle();
     };
   }, [useRemote, userId]);
 
@@ -1315,41 +1390,89 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     [upcomingJobs, jobs],
   );
 
+  const coreState = useMemo(
+    (): AppDataCoreState => ({
+      jobs,
+      applications,
+      upcomingJobs: upcomingJobsEnriched,
+      dataLoading,
+      reviews,
+      pendingServiceReviews,
+    }),
+    [jobs, applications, upcomingJobsEnriched, dataLoading, reviews, pendingServiceReviews],
+  );
+
+  const actionsRef = useRef<AppDataActionMethods>(null!);
+  actionsRef.current = {
+    createJob,
+    applyForJob,
+    updateJobStatus,
+    updateApplicationStatus,
+    officiallyHireHelper,
+    getHelperApplications,
+    getJobApplications,
+    getUpcomingJobsForHelper,
+    updateUpcomingWorkflow,
+    confirmServiceCompleted,
+    finalizeServiceCompletion,
+    addNotification,
+    markNotificationAsRead,
+    markAllAsRead,
+    clearAllNotifications,
+    submitServiceReview,
+  };
+
   return (
-    <AppDataContext.Provider
-      value={{
-        jobs,
-        applications,
-        upcomingJobs: upcomingJobsEnriched,
-        notifications,
-        dataLoading,
-        createJob,
-        applyForJob,
-        updateJobStatus,
-        updateApplicationStatus,
-        officiallyHireHelper,
-        getHelperApplications,
-        getJobApplications,
-        getUpcomingJobsForHelper,
-        updateUpcomingWorkflow,
-        confirmServiceCompleted,
-        finalizeServiceCompletion,
-        addNotification,
-        markNotificationAsRead,
-        markAllAsRead,
-        clearAllNotifications,
-        reviews,
-        pendingServiceReviews,
-        submitServiceReview,
-      }}
-    >
-      {children}
-    </AppDataContext.Provider>
+    <AppDataActionsContext.Provider value={actionsRef}>
+      <AppDataNotificationsContext.Provider value={notifications}>
+        <AppDataCoreContext.Provider value={coreState}>{children}</AppDataCoreContext.Provider>
+      </AppDataNotificationsContext.Provider>
+    </AppDataActionsContext.Provider>
   );
 }
 
-export function useAppData() {
-  const context = useContext(AppDataContext);
-  if (!context) throw new Error('useAppData must be used within an AppDataProvider');
-  return context;
+/** Jobs/applications/upcoming/reviews only — skips notification-only updates. */
+export function useAppDataCore(): AppDataCoreState {
+  const core = useContext(AppDataCoreContext);
+  if (!core) throw new Error('useAppDataCore must be used within an AppDataProvider');
+  return core;
+}
+
+export function useAppDataNotifications(): AppNotification[] {
+  const rows = useContext(AppDataNotificationsContext);
+  if (rows === null) throw new Error('useAppDataNotifications must be used within an AppDataProvider');
+  return rows;
+}
+
+/** Stable ref — read `.current` in handlers; does not re-render when unrelated app data changes. */
+export function useAppDataActionsRef(): React.MutableRefObject<AppDataActionMethods> {
+  const ref = useContext(AppDataActionsContext);
+  if (!ref) throw new Error('useAppDataActionsRef must be used within an AppDataProvider');
+  return ref;
+}
+
+/** Latest action methods (same ref target as useAppDataActionsRef). Prefer ref in event handlers on hot paths. */
+export function useAppDataActions(): AppDataActionMethods {
+  return useAppDataActionsRef().current;
+}
+
+/** @internal Render-isolation tests only. */
+export const appDataSplitTestContexts = {
+  core: AppDataCoreContext,
+  notifications: AppDataNotificationsContext,
+  actions: AppDataActionsContext,
+} as const;
+
+export function useAppData(): AppDataContextData {
+  const core = useAppDataCore();
+  const notifications = useAppDataNotifications();
+  const actionsRef = useAppDataActionsRef();
+  return useMemo(
+    () => ({
+      ...core,
+      notifications,
+      ...actionsRef.current,
+    }),
+    [core, notifications, actionsRef],
+  );
 }

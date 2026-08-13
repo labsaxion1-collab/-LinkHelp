@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import * as Icons from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCredits } from '@/context/CreditContext';
@@ -9,7 +9,6 @@ import { HelperDashboardNav } from '@/components/helpers/HelperDashboardNav';
 import { ROUTES } from '@/utils/constants';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
-import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import { BRAND } from '@/utils/brandAssets';
 import {
   CreditRefundStatusCard,
@@ -17,254 +16,114 @@ import {
 } from '@/components/features/CreditsUsageDashboard';
 import { CreditTransactionDetailModal } from '@/components/credits/CreditTransactionDetailModal';
 import { CreditTransactionHistoryList } from '@/components/credits/CreditTransactionHistoryList';
+import { LinkCreditsCompactBalanceCard } from '@/components/credits/LinkCreditsCompactBalanceCard';
+import { LinkCreditsCompactStatTile } from '@/components/credits/LinkCreditsCompactStatTile';
 import { computeCreditsUsageSummary } from '@/utils/opportunityUnlockRefund';
+import { writeAccountHomeSnapshot } from '@/utils/accountSessionSnapshot';
+import { linkCreditsHistoryState } from '@/utils/linkCreditsHistoryNav';
 
-/** Neon ring SVG — ~310° arc with glow, gap at bottom-right */
-function NeonRing() {
-  const r = 100;
-  const cx = 110;
-  const cy = 110;
-  const circ = 2 * Math.PI * r; // ≈ 628
-  const arcLen = circ * (310 / 360); // ≈ 541
-  const gap = circ - arcLen; // ≈ 87
-
-  return (
-    <svg
-      width="220"
-      height="220"
-      viewBox="0 0 220 220"
-      className="absolute inset-0"
-      aria-hidden
-    >
-      <defs>
-        <filter id="neon-glow" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="5" result="blur1" />
-          <feGaussianBlur stdDeviation="10" result="blur2" />
-          <feMerge>
-            <feMergeNode in="blur2" />
-            <feMergeNode in="blur1" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-        <filter id="neon-glow-soft" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="3" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-
-      {/* Dark track */}
-      <circle
-        cx={cx} cy={cy} r={r}
-        fill="none"
-        stroke="rgba(30,60,120,0.35)"
-        strokeWidth="3"
-      />
-
-      {/* Outer glow arc */}
-      <circle
-        cx={cx} cy={cy} r={r}
-        fill="none"
-        stroke="rgba(59,130,246,0.45)"
-        strokeWidth="10"
-        strokeLinecap="round"
-        strokeDasharray={`${arcLen} ${gap}`}
-        transform={`rotate(-130 ${cx} ${cy})`}
-        filter="url(#neon-glow)"
-      />
-
-      {/* Main neon arc */}
-      <circle
-        cx={cx} cy={cy} r={r}
-        fill="none"
-        stroke="#3B82F6"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-        strokeDasharray={`${arcLen} ${gap}`}
-        transform={`rotate(-130 ${cx} ${cy})`}
-        filter="url(#neon-glow-soft)"
-      />
-
-      {/* Bright highlight layer */}
-      <circle
-        cx={cx} cy={cy} r={r}
-        fill="none"
-        stroke="rgba(147,197,253,0.75)"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeDasharray={`${arcLen} ${gap}`}
-        transform={`rotate(-130 ${cx} ${cy})`}
-      />
-    </svg>
-  );
-}
-
-/** 4-stat tile for the row below the hero */
-function StatTile({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  iconColor,
-  iconBg,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value?: string;
-  sub?: string;
-  iconColor: string;
-  iconBg: string;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.04] px-3 py-4 text-center backdrop-blur-sm">
-      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconBg}`}>
-        <Icon className={`h-5 w-5 ${iconColor}`} />
-      </span>
-      <p className="text-[10px] font-bold leading-tight text-slate-400">{label}</p>
-      {value !== undefined && (
-        <p className="text-lg font-black tabular-nums text-white">{value}</p>
-      )}
-      {sub && (
-        <p className="text-[10px] font-medium leading-tight text-slate-500">{sub}</p>
-      )}
-    </div>
-  );
-}
+const PREVIEW_LIMIT = 3;
 
 export default function HelperCreditsPage() {
-  const { t, language } = useLanguage();
-  const { profile } = useAuth();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { profile, session } = useAuth();
   const { transactions, unlocks } = useCredits();
   const { balance, wallet, loading, refresh: refreshWallet } = useWalletBalance();
   const [selectedTx, setSelectedTx] = useState<(typeof transactions)[number] | null>(null);
+  const [searchParams] = useSearchParams();
+  const legacyHistoryQuery = searchParams.get('history') === '1';
 
-  // Fetch fresh wallet balance every time this page is opened (prevents stale context).
   useEffect(() => {
     void refreshWallet();
   }, [refreshWallet]);
 
+  useEffect(() => {
+    const uid = session?.user?.id ?? profile?.id;
+    if (!uid || balance == null || !profile) return;
+    writeAccountHomeSnapshot({
+      userId: uid,
+      role: 'helper',
+      displayName: profile.name,
+      avatarUrl: profile.avatar_url,
+      lcBalanceVisual: balance,
+    });
+  }, [balance, session?.user?.id, profile]);
+
   const creditsUsed = wallet?.totalSpent ?? 0;
   const usageSummary = computeCreditsUsageSummary(unlocks, transactions);
-  const balanceNum = balance ?? 0;
-  const balanceDisplay = loading ? '…' : formatLinkCredits(balance ?? 0, language);
+  const lcUnit = t('credits.lc_unit');
+
+  const sortedTx = useMemo(
+    () => [...transactions].sort((a, b) => b.createdAt - a.createdAt),
+    [transactions],
+  );
+
+  const openHistory = () => {
+    navigate(ROUTES.helperCreditsHistory, { state: linkCreditsHistoryState('credits') });
+  };
+
+  // Legacy deep-link compat: /helper/credits?history=1 → dedicated history route.
+  if (legacyHistoryQuery) {
+    return (
+      <Navigate to={ROUTES.helperCreditsHistory} replace state={linkCreditsHistoryState('credits')} />
+    );
+  }
 
   return (
-    <AppPageShell
-      wide
-      className="relative min-w-0 overflow-x-hidden bg-[#030B1A] px-0 pb-24 pt-0"
-    >
-      {/* Ambient background glows */}
+    <AppPageShell wide className="relative min-w-0 overflow-x-hidden bg-[#030B1A] px-0 pb-24 pt-0">
       <div className="pointer-events-none absolute -left-40 top-20 h-[28rem] w-[28rem] rounded-full bg-blue-700/10 blur-[100px]" />
       <div className="pointer-events-none absolute -right-32 top-[36rem] h-[22rem] w-[22rem] rounded-full bg-indigo-700/8 blur-[80px]" />
 
       <div className="relative mx-auto max-w-[1600px] px-4 sm:px-7">
         <HelperDashboardNav activeTab="match" onSelectFeedTab={() => {}} t={t} />
 
-        <div className="mx-auto max-w-3xl space-y-4">
+        <div className="mx-auto max-w-3xl space-y-3.5">
+          <LinkCreditsCompactBalanceCard
+            variant="dark"
+            title={t('credits.linkcredits_brand')}
+            balance={balance}
+            loading={loading && balance == null}
+            lcUnit={lcUnit}
+            buyLabel={t('helper_credits.insufficient_buy_linkcredits')}
+            historyLabel={t('helper_dashboard.view_history')}
+            onBuy={() => {
+              window.location.assign(ROUTES.helperLinkCredits);
+            }}
+            onHistory={openHistory}
+          />
 
-          {/* ── HERO CARD ─────────────────────────────── */}
-          <div className="relative overflow-hidden rounded-3xl border border-white/[0.07] bg-gradient-to-br from-[#0A1628] via-[#071020] to-[#04091A] p-5 shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
-            {/* Subtle dot pattern top-right */}
-            <div
-              className="pointer-events-none absolute right-0 top-0 h-48 w-48 opacity-20"
-              style={{
-                backgroundImage:
-                  'radial-gradient(circle, rgba(59,130,246,0.6) 1px, transparent 1px)',
-                backgroundSize: '14px 14px',
-                maskImage: 'radial-gradient(ellipse at top right, black 30%, transparent 70%)',
-              }}
-            />
+          <p className="px-1 text-center text-sm font-medium text-slate-400 sm:text-left">
+            {t('helper_credits.page_sub')}
+          </p>
 
-            <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
-
-              {/* Left — neon ring */}
-              <div className="flex shrink-0 flex-col items-center">
-                <div className="relative flex h-[220px] w-[220px] items-center justify-center">
-                  <NeonRing />
-                  {/* Center glow */}
-                  <div className="absolute h-28 w-28 rounded-full bg-blue-600/10 blur-2xl" />
-                  {/* Content */}
-                  <div className="relative flex flex-col items-center text-center">
-                    <p className="text-[9px] font-black uppercase tracking-[0.22em] text-slate-400">
-                      {t('helper_credits.hero_saldo_label')}
-                    </p>
-                    <div className="mt-1.5 flex items-baseline gap-1.5">
-                      <span className="text-[3.2rem] font-black leading-none tabular-nums text-white drop-shadow-[0_0_20px_rgba(59,130,246,0.3)]">
-                        {loading ? '…' : balanceNum}
-                      </span>
-                      <span className="text-2xl font-black text-blue-300">{t('credits.lc_unit')}</span>
-                    </div>
-                    {/* LinkCredits badge */}
-                    <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-blue-700/50 bg-blue-950/60 px-3 py-1 text-[11px] font-bold text-blue-300 backdrop-blur-sm">
-                      <Icons.Link2 className="h-3 w-3" />
-                      {t('credits.linkcredits_brand')}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Podium */}
-                <div className="mx-auto -mt-2 h-5 w-32 rounded-t-[50%] bg-gradient-to-b from-[#1a3060]/80 to-[#0d1a38]/60 blur-[2px]" />
-                <div className="mx-auto h-3 w-20 rounded-t-[50%] bg-gradient-to-b from-[#0f1e44]/60 to-transparent blur-[2px]" />
-              </div>
-
-              {/* Right — text */}
-              <div className="flex-1 text-center sm:text-left">
-                <h2 className="text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl">
-                  {t('helper_credits.hero_tagline_1')}
-                  <br />
-                  <span className="text-blue-400">{t('helper_credits.hero_tagline_2')}</span>
-                </h2>
-                <p className="mt-4 max-w-xs text-sm font-medium leading-relaxed text-slate-400 sm:max-w-none">
-                  {t('helper_credits.page_sub')}
-                </p>
-                <div className="mt-5 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/[0.10]"
-                  >
-                    {t('helper_credits.hero_como_funciona')}
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600">
-                      <Icons.Play className="h-3 w-3 fill-white text-white" />
-                    </span>
-                  </button>
-                  <Link
-                    to={ROUTES.helperLinkCredits}
-                    className="inline-flex items-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5 text-sm font-black text-white shadow-[0_4px_18px_rgba(59,130,246,0.4)] transition hover:bg-blue-400"
-                  >
-                    <Icons.ShoppingCart className="h-4 w-4" />
-                    {t('helper_credits.insufficient_buy_linkcredits')}
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── 4 STAT TILES ─────────────────────────── */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatTile
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <LinkCreditsCompactStatTile
+              variant="dark"
               icon={Icons.Coins}
               label={t('helper_dashboard.credits_used_month')}
-              value={`${creditsUsed} ${t('credits.lc_unit')}`}
+              value={`${creditsUsed} ${lcUnit}`}
               iconColor="text-blue-400"
               iconBg="bg-blue-500/15"
             />
-            <StatTile
+            <LinkCreditsCompactStatTile
+              variant="dark"
               icon={Icons.Target}
               label={t('helper_dashboard.unlocked_count')}
               value={String(unlocks.length)}
               iconColor="text-purple-400"
               iconBg="bg-purple-500/15"
             />
-            <StatTile
+            <LinkCreditsCompactStatTile
+              variant="dark"
               icon={Icons.RefreshCw}
               label={t('credits_usage.lc_returned')}
-              value={`${usageSummary.lcReturned} ${t('credits.lc_unit')}`}
+              value={`${usageSummary.lcReturned} ${lcUnit}`}
               iconColor="text-emerald-400"
               iconBg="bg-emerald-500/15"
             />
-            <StatTile
+            <LinkCreditsCompactStatTile
+              variant="dark"
               icon={Icons.ShieldCheck}
               label={t('helper_credits.stats_economize_title')}
               sub={t('helper_credits.stats_economize_sub')}
@@ -273,47 +132,33 @@ export default function HelperCreditsPage() {
             />
           </div>
 
-          {/* ── BUY BANNER ───────────────────────────── */}
           {UI_VISIBILITY.helperCreditPurchase ? (
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1032B4] via-[#0C1E8A] to-[#091868] shadow-[0_12px_40px_rgba(10,30,120,0.55)]">
-              {/* Glow right */}
-              <div className="pointer-events-none absolute -right-8 bottom-0 h-40 w-40 rounded-full bg-blue-500/25 blur-[40px]" />
-              {/* Dot grid top-right */}
-              <div
-                className="pointer-events-none absolute right-0 top-0 h-full w-48 opacity-[0.18]"
-                style={{
-                  backgroundImage: 'radial-gradient(circle, rgba(147,197,253,0.9) 1px, transparent 1px)',
-                  backgroundSize: '12px 12px',
-                  maskImage: 'radial-gradient(ellipse at top right, black 5%, transparent 55%)',
-                }}
-              />
-
               <div className="relative flex min-h-0 items-center">
-                {/* Left */}
-                <div className="flex-1 py-4 pl-5 pr-2">
-                  <h3 className="text-[15px] font-black leading-tight text-white">
+                <div className="flex-1 py-3.5 pl-4 pr-2">
+                  <h3 className="text-[14px] font-black leading-tight text-white">
                     {t('link_credits_store.buy_banner_title')}
                   </h3>
-                  <p className="mt-0.5 text-[12px] font-medium leading-snug text-blue-200/75">
+                  <p className="mt-0.5 text-[11px] font-medium leading-snug text-blue-200/75">
                     {t('link_credits_store.no_subscription')}
                   </p>
                   <Link
                     to={ROUTES.helperLinkCredits}
-                    className="mt-3 inline-flex h-[36px] items-center gap-1.5 rounded-full bg-blue-500 px-4 text-[12px] font-black text-white shadow-[0_3px_14px_rgba(59,130,246,0.45),0_0_0_1px_rgba(59,130,246,0.25)] transition hover:bg-blue-400"
+                    className="mt-2.5 inline-flex h-[36px] items-center gap-1.5 rounded-full bg-blue-500 px-4 text-[12px] font-black text-white shadow-[0_3px_14px_rgba(59,130,246,0.45)] transition hover:bg-blue-400 active:scale-[0.98] motion-reduce:active:scale-100"
                   >
                     <Icons.ShoppingCart className="h-3.5 w-3.5" />
-                    {t('helper_credits.insufficient_buy_linkcredits')}
+                    <span className="whitespace-nowrap">
+                      {t('helper_credits.insufficient_buy_linkcredits')}
+                    </span>
                   </Link>
                 </div>
-
-                {/* Right — image clipped to show wallet body */}
-                <div className="relative shrink-0 overflow-hidden" style={{ height: '140px', width: '160px' }}>
+                <div className="relative shrink-0 overflow-hidden" style={{ height: '110px', width: '130px' }}>
                   <img
                     src={BRAND.walletIllustration}
                     alt=""
                     aria-hidden
                     className="absolute right-0 w-auto object-contain"
-                    style={{ mixBlendMode: 'screen', height: '220px', top: '-20px' }}
+                    style={{ mixBlendMode: 'screen', height: '180px', top: '-18px' }}
                     loading="lazy"
                     decoding="async"
                   />
@@ -328,18 +173,21 @@ export default function HelperCreditsPage() {
 
           <CreditRefundStatusCard unlocks={unlocks} transactions={transactions} />
 
-          {/* ── HISTORY ──────────────────────────────── */}
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-black text-white">{t('credits.history_title')}</h2>
-              <button type="button" className="text-xs font-bold text-blue-400 hover:text-blue-300">
-                {t('helper_dashboard.view_history')} →
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-base font-black text-white">{t('credits.history_title')}</h2>
+              <button
+                type="button"
+                onClick={openHistory}
+                className="text-xs font-bold text-blue-400 hover:text-blue-300"
+              >
+                {t('helper_credits.see_all')} →
               </button>
             </div>
             <CreditTransactionHistoryList
-              transactions={transactions}
+              transactions={sortedTx}
               unlocks={unlocks}
-              limit={20}
+              limit={PREVIEW_LIMIT}
               variant="dark"
               onSelect={setSelectedTx}
               t={t}
@@ -357,7 +205,6 @@ export default function HelperCreditsPage() {
           />
 
           <OpportunityUnlocksList unlocks={unlocks} />
-
         </div>
       </div>
     </AppPageShell>

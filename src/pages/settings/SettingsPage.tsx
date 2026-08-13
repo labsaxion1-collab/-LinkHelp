@@ -104,13 +104,32 @@ export default function SettingsPage() {
   }, [profile, session, language]);
 
   useEffect(() => {
-    if (location.hash === '#avatar') {
+    const hash = location.hash.replace(/^#/, '');
+    if (hash === 'avatar' || hash === 'settings-avatar') {
       requestAnimationFrame(() =>
         document.getElementById('settings-avatar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      );
+      return;
+    }
+    if (hash === 'settings-account' || hash === 'account') {
+      requestAnimationFrame(() =>
+        document.getElementById('settings-account')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
       );
     }
   }, [location.hash, location.pathname]);
 
+  const goBackFromSettings = () => {
+    const from = (location.state as { from?: string } | null)?.from;
+    if (from === ROUTES.profile) {
+      navigate(ROUTES.profile);
+      return;
+    }
+    navigate(-1);
+  };
+  const desktopBackTo =
+    (location.state as { from?: string } | null)?.from === ROUTES.profile
+      ? ROUTES.profile
+      : undefined;
   const avatarDisplay = avatarPreviewUrl ?? profile?.avatar_url?.trim() ?? null;
 
   const revokeAvatarObjectUrl = () => {
@@ -366,10 +385,10 @@ export default function SettingsPage() {
   return (
     <AppPageShell className="min-h-[calc(100dvh-64px)]">
       <div className="mx-auto max-w-lg space-y-4 pb-28">
-        <DesktopBackButton />
+        <DesktopBackButton to={desktopBackTo} />
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={goBackFromSettings}
           className="mb-1 flex items-center gap-2 text-sm font-bold text-slate-500 transition-colors hover:text-slate-900 lg:hidden"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -411,7 +430,11 @@ export default function SettingsPage() {
           <p className="mt-3 text-xs font-medium text-slate-500">{t('app_pages.settings_sub')}</p>
         </header>
 
-        <SettingsSection icon={<User className="h-5 w-5 text-blue-600" />} title={t('app_pages.settings_account')}>
+        <SettingsSection
+          id="settings-account"
+          icon={<User className="h-5 w-5 text-blue-600" />}
+          title={t('app_pages.settings_account')}
+        >
           <div className="space-y-4">
             <label className="block text-sm font-semibold text-slate-700">
               {t('app_pages.settings_name')}

@@ -1,0 +1,15 @@
+---
+description: Landing pages premium, marketing, hero, waitlist, pré-lançamento, Link Help, UI/UX, responsividade e conversão
+globs: src/**/*.{tsx,ts,jsx,js,css}
+alwaysApply: false
+---
+
+# Premium Landing Page Design
+
+Para tarefas de landing page, página de marketing, hero, waitlist, pré-lançamento, componente visual, UI/UX, responsividade, conversão ou Link Help, leia e siga:
+
+- `.agents/skills/premium-landing-page-design/SKILL.md`
+- As referências que o `SKILL.md` indicar para a tarefa.
+
+Reutilize tokens, componentes e ativos oficiais. Preserve funcionalidades. Trabalhe mobile-first, valide acessibilidade e conversão, use efeitos com moderação e nunca invente métricas, avaliações, parceiros, depoimentos, urgência ou disponibilidade.
+

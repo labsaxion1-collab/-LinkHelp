@@ -22,8 +22,32 @@ const reveal = { initial: { opacity: 0, y: 22 }, whileInView: { opacity: 1, y: 0
 
 function Navbar() {
   const [open, setOpen] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const delta = currentScrollY - lastScrollY;
+      if (currentScrollY <= 16) {
+        setVisible(true);
+        lastScrollY = currentScrollY;
+      } else if (delta > 4) {
+        setVisible(false);
+        setOpen(false);
+        lastScrollY = currentScrollY;
+      } else if (delta < -4) {
+        setVisible(true);
+        lastScrollY = currentScrollY;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const links = [['#audiences-title', 'Parcours'], ['#services', 'Services'], ['#faq', 'FAQ']] as const;
-  return <header className="sticky top-0 z-50 border-b border-[#e3eaf3] bg-white/92 backdrop-blur-2xl"><nav aria-label="Navigation principale" className="mx-auto flex h-[4.5rem] max-w-[90rem] items-center justify-between px-5 sm:px-8"><a href="#accueil" aria-label="Link Help — accueil" className="rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0866ff]/20"><Logo className="h-10 w-auto" /></a><div className="hidden items-center gap-8 lg:flex">{links.map(([href, label]) => <a key={href} href={href} className="text-sm font-semibold text-[#25364d] transition hover:text-[#0866ff]">{label}</a>)}</div><a href="#liste" className="hidden min-h-11 items-center gap-2 rounded-xl bg-[#0866ff] px-5 text-sm font-bold text-white shadow-[0_12px_26px_rgba(8,102,255,.22)] lg:inline-flex">Rejoindre la liste <ArrowRight className="h-4 w-4" /></a><button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="reference-mobile-menu" aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'} className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#dce7f3] lg:hidden">{open ? <X /> : <Menu />}</button></nav>{open && <div id="reference-mobile-menu" className="border-t border-[#e6edf5] bg-white px-5 pb-5 lg:hidden">{links.map(([href, label]) => <a key={href} href={href} onClick={() => setOpen(false)} className="block border-b border-[#edf2f7] py-4 text-sm font-semibold">{label}</a>)}<a href="#liste" onClick={() => setOpen(false)} className="mt-5 flex min-h-12 items-center justify-center rounded-xl bg-[#0866ff] text-sm font-bold text-white">Rejoindre la liste</a></div>}</header>;
+  return <motion.header initial={false} animate={{ y: visible ? 0 : '-100%' }} transition={{ duration: reduceMotion ? 0 : .28, ease: [0.22, 1, 0.36, 1] }} className="fixed inset-x-0 top-0 z-[100] border-b border-[#70a8f5]/45 bg-[linear-gradient(135deg,rgba(219,236,255,.84),rgba(137,185,247,.58))] shadow-[0_12px_38px_rgba(5,60,145,.18)] backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-[#a9cdf7]/55"><div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden"><motion.div className="absolute -inset-y-5 w-32 -skew-x-[24deg] bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.72),transparent)] blur-[2px]" initial={{ x: '-180%' }} animate={reduceMotion ? undefined : { x: ['-180%', '900%'] }} transition={reduceMotion ? undefined : { duration: 3.2, repeat: Infinity, repeatDelay: 2.4, ease: 'easeInOut' }} /></div><div aria-hidden="true" className="pointer-events-none absolute inset-x-[5%] -bottom-2 h-4 rounded-[50%] bg-[#073b88]/35 blur-[7px]" /><nav aria-label="Navigation principale" className="relative mx-auto flex h-16 max-w-[90rem] items-center justify-between px-5 sm:px-8"><a href="#accueil" aria-label="Link Help — accueil" className="inline-flex h-full items-center self-center rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0866ff]/20"><Logo iconClassName="h-14 w-14 translate-y-[1px] drop-shadow-[0_7px_11px_rgba(4,46,112,.22)]" textClassName="text-xl" className="items-center gap-2" /></a><div className="hidden items-center gap-8 lg:flex">{links.map(([href, label]) => <a key={href} href={href} className="text-sm font-semibold text-[#25364d] transition hover:text-[#0866ff]">{label}</a>)}</div><a href="#liste" className="hidden min-h-11 items-center gap-2 rounded-xl bg-[#0866ff] px-5 text-sm font-bold text-white shadow-[0_12px_26px_rgba(8,102,255,.22)] lg:inline-flex">Rejoindre la liste <ArrowRight className="h-4 w-4" /></a><button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="reference-mobile-menu" aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'} className="relative z-20 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#cfddef]/90 bg-white/60 text-[#0b1930] shadow-sm backdrop-blur-xl transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0866ff]/20 lg:hidden">{open ? <X className="h-6 w-6" /> : <Menu className="h-7 w-7" />}</button></nav>{open && <motion.div id="reference-mobile-menu" initial={{ opacity: 0, y: -10, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: .2 }} className="absolute inset-x-3 top-[calc(100%+.5rem)] z-[110] max-h-[calc(100vh-5rem)] overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white/90 p-3 shadow-[0_28px_80px_rgba(4,28,73,.24)] backdrop-blur-2xl sm:inset-x-6 lg:hidden">{links.map(([href, label]) => <a key={href} href={href} onClick={() => setOpen(false)} className="block rounded-xl px-4 py-4 text-sm font-semibold text-[#25364d] transition hover:bg-[#edf5ff] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0866ff]/15">{label}</a>)}<a href="#liste" onClick={() => setOpen(false)} className="mt-2 flex min-h-12 items-center justify-center rounded-xl bg-[#0866ff] px-4 text-sm font-bold text-white shadow-[0_12px_28px_rgba(8,102,255,.22)]">Rejoindre la liste</a></motion.div>}</motion.header>;
 }
 
 function Section({ id, eyebrow, title, children, tinted = false }: { id?: string; eyebrow: string; title: string; children: React.ReactNode; tinted?: boolean }) {
@@ -89,7 +113,7 @@ function MedalMarquee({ title, medals, reverse = false }: { title: string; medal
   </article>;
 }
 export function LandingPageReference() {
-  return <MotionConfig reducedMotion="user"><div className="min-h-screen overflow-x-hidden bg-white font-sans text-[#0b1930]"><Navbar /><main><LandingHeroShowcase />
+  return <MotionConfig reducedMotion="user"><div className="min-h-screen overflow-x-hidden bg-white font-sans text-[#0b1930]"><Navbar /><div aria-hidden="true" className="h-16" /><main><LandingHeroShowcase />
 
     <Section id="services" eyebrow="Services du quotidien" title="Des services pour vous simplifier la vie." tinted><ServicesCarousel /></Section>
 

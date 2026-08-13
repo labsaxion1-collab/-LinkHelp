@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'motion/react';
-import { ArrowRight, BadgeCheck, Check, MapPin, ShieldCheck, Sparkles, UsersRound } from 'lucide-react';
+import { ArrowRight, Check, Sparkles } from 'lucide-react';
 import { WaitlistForm } from './WaitlistForm';
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -14,76 +14,55 @@ export function LandingHeroShowcase() {
 
   return (
     <>
-      <section id="accueil" className="relative isolate overflow-hidden bg-[#063fc6] px-5 pb-14 pt-12 text-white sm:px-8 sm:pb-20 sm:pt-16 lg:pb-24">
-        <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_64%_28%,#1676ff_0%,#0759e3_28%,#063fc6_58%,#032a91_100%)]" />
-        <div className="absolute -right-28 top-8 -z-10 h-[34rem] w-[34rem] rounded-full border border-white/10 opacity-60" />
-        <div className="absolute -right-10 top-32 -z-10 h-72 w-72 rounded-full bg-white/5 blur-2xl" />
-        <div className="absolute bottom-0 left-0 right-0 -z-10 h-40 bg-[linear-gradient(180deg,transparent,rgba(0,22,87,.22))]" />
+      <section id="accueil" className="relative isolate overflow-hidden bg-[#032c82] text-white">
+        <div className="relative min-h-[24rem] sm:min-h-[36rem] lg:min-h-[46rem]">
+          <img src="/brand/landpage1.png" alt="Présentation de l’univers Link Help avec Max Québec" className="absolute inset-0 h-full w-full object-cover object-center" width="1254" height="1254" loading="eager" />
+          <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(180deg,transparent,rgba(3,44,130,.18))]" />
+          <svg aria-hidden="true" viewBox="0 0 1440 180" preserveAspectRatio="none" className="absolute -bottom-px left-0 h-24 w-full overflow-visible sm:h-32 lg:h-40">
+            <defs>
+              <linearGradient id="hero-curve-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#03348f" />
+                <stop offset="58%" stopColor="#064ab7" />
+                <stop offset="100%" stopColor="#075dd7" />
+              </linearGradient>
+            </defs>
+            <path d="M 0 0 Q 720 205 1440 0 L 1440 180 L 0 180 Z" fill="url(#hero-curve-gradient)" />
+            <path d="M 0 0 Q 720 205 1440 0" fill="none" stroke="#0877f9" strokeWidth="7" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          </svg>
+        </div>
 
-        <div className="mx-auto grid max-w-[90rem] items-center gap-10 xl:grid-cols-[.82fr_1.05fr_1.05fr]">
-          <motion.div initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.75, ease }} className="relative z-10 py-3 xl:py-10">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-bold backdrop-blur-xl"><Sparkles className="h-4 w-4" /> Bientôt au Québec</span>
-            <h1 className="mt-7 max-w-xl text-balance text-[2.85rem] font-extrabold leading-[1.02] tracking-[-.055em] sm:text-6xl xl:text-[4.1rem]">Trouvez de l’aide près de chez vous. Simplement.</h1>
-            <p className="mt-6 max-w-lg text-base leading-7 text-white/78 sm:text-lg sm:leading-8">Link Help connecte les personnes qui ont besoin d’un coup de main avec des helpers locaux de leur communauté.</p>
-            <div className="mt-8 grid max-w-lg grid-cols-3 gap-3 border-y border-white/15 py-5 text-xs font-semibold sm:text-sm">
-              <span className="flex flex-col items-center gap-2 text-center sm:flex-row sm:text-left"><ShieldCheck className="h-5 w-5" /> Confiance</span>
-              <span className="flex flex-col items-center gap-2 text-center sm:flex-row sm:text-left"><MapPin className="h-5 w-5" /> Local</span>
-              <span className="flex flex-col items-center gap-2 text-center sm:flex-row sm:text-left"><UsersRound className="h-5 w-5" /> Humain</span>
+        <div className="relative -mt-px bg-[linear-gradient(180deg,#075dd7_0%,#064ab7_24%,#043d9e_56%,#021f61_100%)] px-5 pb-14 pt-7 sm:px-8 sm:pb-20 sm:pt-9">
+          <div aria-hidden="true" className="absolute left-1/2 top-0 h-44 w-[80%] -translate-x-1/2 rounded-full bg-[#1c78f2]/18 blur-3xl" />
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease }} className="relative z-10 mx-auto -mt-16 max-w-5xl text-center sm:-mt-24 lg:-mt-32">
+            <span className="inline-flex translate-y-2 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold shadow-[inset_0_1px_0_rgba(255,255,255,.12)] backdrop-blur-xl sm:text-sm"><Sparkles className="h-4 w-4" /> Une nouvelle façon de s’entraider</span>
+            <h1 className="mx-auto mt-7 max-w-4xl text-balance text-[2.75rem] font-extrabold leading-[.98] tracking-[-.055em] sm:text-6xl lg:text-[5rem]">Le bon coup de main, <span className="bg-[linear-gradient(100deg,#fff,#8fd4ff)] bg-clip-text text-transparent">au bon moment.</span></h1>
+            <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-white/78 sm:text-xl sm:leading-8">Découvrez une expérience locale pensée pour rapprocher les besoins et les talents de votre communauté.</p>
+            <div className="mx-auto mt-8 flex max-w-2xl flex-col gap-3 sm:flex-row sm:justify-center">
+              <button onClick={focusWaitlist} className="inline-flex min-h-14 flex-1 items-center justify-center gap-3 rounded-full bg-white px-7 text-base font-bold text-[#0647c8] shadow-[0_18px_45px_rgba(0,16,66,.28)] transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/35">Rejoindre la liste d&apos;attente <ArrowRight className="h-5 w-5" /></button>
+              <a href="#audiences-title" className="inline-flex min-h-14 flex-1 items-center justify-center rounded-full border border-[#5da8ff]/70 bg-[#0754bd]/35 px-7 text-base font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,.12)] backdrop-blur transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30">Choisir votre parcours</a>
             </div>
-            <button onClick={focusWaitlist} className="mt-7 inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-full bg-white px-7 text-sm font-bold text-[#0647c8] shadow-[0_18px_38px_rgba(0,19,73,.25)] transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/35 sm:w-auto">Rejoindre la liste <ArrowRight className="h-4 w-4" /></button>
-          </motion.div>
+            <p className="mt-5 text-sm font-medium text-white/62">Inscription gratuite · Aucun engagement</p>
 
-          <div className="relative mx-auto min-h-[30rem] w-full max-w-[40rem] sm:min-h-[34rem] xl:min-h-[39rem]">
-            <div aria-hidden="true" className="absolute inset-x-[4%] bottom-[5%] top-[7%] rounded-[45%] border border-white/10 bg-[radial-gradient(circle_at_58%_42%,rgba(78,167,255,.42),rgba(4,45,151,.08)_58%,transparent_72%)] shadow-[inset_0_0_80px_rgba(255,255,255,.06)]" />
-            <div aria-hidden="true" className="absolute bottom-5 left-[14%] right-[4%] h-16 rounded-full bg-[#001650]/65 blur-2xl" />
-
-            <motion.img
-              src="/brand/max-landing.png"
-              alt="Max Québec, mascotte officielle de Link Help"
-              initial={{ opacity: 0, x: -24, y: 18, scale: 0.96 }}
-              animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-              transition={{ duration: 0.9, delay: 0.08, ease }}
-              className="absolute bottom-0 left-[-9%] z-10 w-[92%] max-w-none object-contain drop-shadow-[0_32px_34px_rgba(0,17,66,.38)] sm:left-[-7%] sm:w-[88%] xl:left-[-14%] xl:w-[102%]"
-              loading="eager"
-            />
-
-            <motion.img
-              src="/brand/phone-landing.png"
-              alt="Aperçu de l’application mobile Link Help"
-              initial={{ opacity: 0, x: 28, y: 20, rotate: 3 }}
-              animate={{ opacity: 1, x: 0, y: 0, rotate: 1.5 }}
-              transition={{ duration: 0.9, delay: 0.22, ease }}
-              className="absolute bottom-[3%] right-[-1%] z-20 h-[82%] w-auto object-contain drop-shadow-[0_36px_42px_rgba(0,12,56,.48)] sm:right-[1%] sm:h-[86%] xl:right-[-7%] xl:h-[91%]"
-              loading="eager"
-            />
-
-            <motion.div
-              aria-hidden="true"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.55, delay: 0.65, ease }}
-              className="absolute right-[18%] top-[10%] z-0 h-24 w-24 rounded-full border border-white/15 bg-white/10 blur-[1px] sm:h-32 sm:w-32"
-            />
-          </div>
-          <motion.div id="liste" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.18, ease }} className="scroll-mt-24 rounded-[2rem] bg-white p-2 text-[#0b1930] shadow-[0_35px_90px_rgba(0,20,77,.28)] xl:p-3">
-            <div className="rounded-[1.6rem] border border-[#e4ebf4] bg-white p-2 sm:p-3"><WaitlistForm /></div>
           </motion.div>
         </div>
       </section>
-
+      <section id="liste" aria-label="Liste d’attente" className="relative -mt-px scroll-mt-24 bg-[linear-gradient(180deg,#021f61_0%,#063f9f_11%,#4f8ed8_27%,#c9def6_52%,#edf5ff_78%,#f7faff_100%)] px-2 pb-10 pt-12 sm:px-5 sm:pb-14 sm:pt-16">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65, ease }} className="mx-auto w-full max-w-5xl overflow-hidden rounded-[1.75rem] bg-white text-[#0b1930] shadow-[0_22px_65px_rgba(19,60,112,.12)] sm:rounded-[2rem]">
+          <WaitlistForm />
+        </motion.div>
+      </section>
       <section aria-labelledby="audiences-title" className="relative bg-[#f7faff] px-5 py-16 sm:px-8 sm:py-20">
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto mb-10 max-w-2xl text-center"><p className="text-xs font-bold uppercase tracking-[.22em] text-[#0866ff]">Deux façons de participer</p><h2 id="audiences-title" className="mt-3 text-balance text-3xl font-bold tracking-[-.04em] sm:text-4xl">Une communauté, deux parcours.</h2></div>
-          <div className="grid gap-5 lg:grid-cols-2">
-            <motion.article initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="group relative min-h-[27rem] overflow-hidden rounded-[2rem] border border-[#dce7f3] bg-white shadow-[0_24px_65px_rgba(32,66,103,.1)]">
-              <div className="relative z-20 max-w-full p-6 sm:max-w-[44%] sm:p-8"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf3ff] text-[#0866ff]"><UsersRound /></span><p className="mt-7 text-xs font-bold uppercase tracking-[.2em] text-[#0866ff]">Pour les clients</p><h3 className="mt-3 text-[1.8rem] font-bold leading-[1.12] tracking-[-.035em] 2xl:text-3xl">Trouvez la bonne personne pour vous aider.</h3><div className="mt-6 space-y-3 text-sm font-semibold text-[#536277]">{['Profils faciles à comprendre', 'Helpers locaux', 'Choix qui vous appartient'].map((item) => <p key={item} className="flex items-center gap-2"><Check className="h-4 w-4 text-[#0866ff]" />{item}</p>)}</div></div>
-              <img src="/brand/landing-client-card.png" alt="Référence visuelle officielle du parcours client Link Help" className="absolute inset-y-0 right-0 z-10 hidden h-full w-[60%] object-cover object-center transition duration-500 group-hover:scale-[1.03] sm:block" loading="lazy" />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <motion.article initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="group overflow-hidden rounded-[2rem] border border-[#dce7f3] bg-white shadow-[0_24px_65px_rgba(32,66,103,.1)]">
+              <div className="overflow-hidden bg-[#eaf3ff]"><img src="/brand/landing-client-card.png" alt="Aperçu visuel du parcours client Link Help" className="aspect-[4/3] w-full object-cover object-center transition duration-500 group-hover:scale-[1.025] sm:aspect-[16/10]" loading="lazy" /></div>
+              <div className="p-7 sm:p-9"><p className="text-xs font-bold uppercase tracking-[.2em] text-[#0866ff]">Pour les clients</p><h3 className="mt-4 max-w-xl text-[1.85rem] font-bold leading-[1.1] tracking-[-.04em] sm:text-4xl">Trouvez la bonne personne pour vous aider.</h3><div className="mt-7 space-y-4 text-sm font-semibold text-[#536277] sm:text-base">{['Profils faciles à comprendre', 'Helpers locaux', 'Choix qui vous appartient'].map((item) => <p key={item} className="flex items-start gap-3"><Check className="mt-0.5 h-5 w-5 shrink-0 text-[#0866ff]" />{item}</p>)}</div></div>
             </motion.article>
 
-            <motion.article initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.08 }} className="group relative min-h-[27rem] overflow-hidden rounded-[2rem] bg-[#0b1930] text-white shadow-[0_28px_70px_rgba(11,25,48,.2)]">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_90%_15%,rgba(8,102,255,.42),transparent_45%)]" />
-              <div className="relative z-10 max-w-full p-6 sm:max-w-[44%] sm:p-8"><span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-[#7eb3ff]"><BadgeCheck /></span><p className="mt-7 text-xs font-bold uppercase tracking-[.2em] text-[#7eb3ff]">Pour les helpers</p><h3 className="mt-3 text-[1.8rem] font-bold leading-[1.12] tracking-[-.035em] 2xl:text-3xl">Faites reconnaître votre savoir-faire.</h3><div className="mt-6 space-y-3 text-sm font-semibold text-white/68">{['Opportunités locales', 'Profil et progression', 'Expérience pensée mobile'].map((item) => <p key={item} className="flex items-center gap-2"><Check className="h-4 w-4 text-[#7eb3ff]" />{item}</p>)}</div></div>
-              <img src="/brand/landing-helper-card.png" alt="Référence visuelle officielle du parcours helper Link Help" className="absolute inset-y-0 right-0 hidden h-full w-[56%] sm:block object-cover object-center transition duration-500 group-hover:scale-[1.03] sm:right-0" loading="lazy" />
+            <motion.article initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.08 }} className="group overflow-hidden rounded-[2rem] bg-[#0b1930] text-white shadow-[0_28px_70px_rgba(11,25,48,.2)]">
+              <div className="overflow-hidden bg-[#0e2d5d]"><img src="/brand/landing-helper-card.png" alt="Aperçu visuel du parcours helper Link Help" className="aspect-[4/3] w-full object-cover object-center transition duration-500 group-hover:scale-[1.025] sm:aspect-[16/10]" loading="lazy" /></div>
+              <div className="relative p-7 sm:p-9"><div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_0%,rgba(8,102,255,.22),transparent_50%)]" /><div className="relative"><p className="text-xs font-bold uppercase tracking-[.2em] text-[#7eb3ff]">Pour les helpers</p><h3 className="mt-4 max-w-xl text-[1.85rem] font-bold leading-[1.1] tracking-[-.04em] sm:text-4xl">Faites reconnaître votre savoir-faire.</h3><div className="mt-7 space-y-4 text-sm font-semibold text-white/72 sm:text-base">{['Opportunités locales', 'Profil et progression', 'Expérience pensée mobile'].map((item) => <p key={item} className="flex items-start gap-3"><Check className="mt-0.5 h-5 w-5 shrink-0 text-[#7eb3ff]" />{item}</p>)}</div></div></div>
             </motion.article>
           </div>
         </div>

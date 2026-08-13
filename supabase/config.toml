@@ -3,3 +3,6 @@ project_id = "mttjbaiiaeiqqmnwnzwr"
 
 [db]
 major_version = 15
+
+[functions.waitlist-signup]
+verify_jwt = false

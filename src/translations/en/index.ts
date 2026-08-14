@@ -2422,6 +2422,7 @@ export const en = {
     error_auth: 'Sign in again to submit your review.',
     error_role_mismatch: 'Your account role does not match this review.',
     error_not_found: 'This service was not found.',
+    error_invalid_target: 'You can only review the hired party on this service.',
     submit: 'Submit review',
     later: 'Rate later',
     thanks: 'Thanks for your review!',

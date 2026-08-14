@@ -2431,6 +2431,7 @@ export const fr = {
     error_auth: 'Reconnectez-vous pour envoyer votre avis.',
     error_role_mismatch: 'Le rôle de votre compte ne correspond pas à cet avis.',
     error_not_found: 'Cette demande est introuvable.',
+    error_invalid_target: 'Vous ne pouvez évaluer que l’autre partie engagée pour ce service.',
     submit: 'Envoyer l’évaluation',
     later: 'Évaluer plus tard',
     thanks: 'Merci pour votre avis !',

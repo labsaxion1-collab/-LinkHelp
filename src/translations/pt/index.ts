@@ -2434,6 +2434,7 @@ export const pt = {
     error_auth: 'Entre novamente para enviar a avaliação.',
     error_role_mismatch: 'O papel da sua conta não corresponde a esta avaliação.',
     error_not_found: 'Este chamado não foi encontrado.',
+    error_invalid_target: 'Esta avaliação só pode ser enviada para a outra parte contratada deste serviço.',
     submit: 'Enviar avaliação',
     later: 'Avaliar depois',
     thanks: 'Obrigado pela avaliação!',

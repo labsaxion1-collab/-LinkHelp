@@ -8,6 +8,7 @@ const REVIEW_ERROR_CODES = [
   'INVALID_RATING',
   'ROLE_MISMATCH',
   'NOT_FOUND',
+  'INVALID_REVIEW_TARGET',
 ] as const;
 
 export type ReviewSubmitErrorCode = (typeof REVIEW_ERROR_CODES)[number] | 'REVIEW_SUBMIT_FAILED';
@@ -131,6 +132,7 @@ const REVIEW_ERROR_I18N: Partial<Record<ReviewSubmitErrorCode, string>> = {
   INVALID_RATING: 'service_review.rating_required',
   ROLE_MISMATCH: 'service_review.error_role_mismatch',
   NOT_FOUND: 'service_review.error_not_found',
+  INVALID_REVIEW_TARGET: 'service_review.error_invalid_target',
 };
 
 export function resolveReviewSubmitErrorMessage(

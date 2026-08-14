@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { authorizeAdmin, extractBearerToken } from '../../../api/lib/adminAuth.server';
+import { authorizeAdmin, extractBearerToken } from '../../../api/_lib/adminAuth.server';
 
 function verifier(result: { data: { user: unknown }; error: unknown }) {
   return { auth: { getUser: vi.fn(async () => result) } } as never;

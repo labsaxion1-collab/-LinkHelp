@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { assertServerDataIsolation } from '../lib/environmentIsolation.js';
+import { assertServerDataIsolation } from '../environmentIsolation.js';
 
 export function getSupabaseAdmin(): SupabaseClient | null {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;

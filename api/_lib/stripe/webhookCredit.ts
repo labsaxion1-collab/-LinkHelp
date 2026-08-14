@@ -2,7 +2,7 @@ import {
   assertStripeLivemodeMatchesDeployTarget,
   isolationPublicErrorMessage,
   type LinkhelpDeployTarget,
-} from '../../shared/environmentIsolation.js';
+} from '../../../shared/environmentIsolation.js';
 import { resolveCheckoutCreditFromServer, type PurchaseAudience } from './packages.js';
 
 export type WebhookCreditDecision =

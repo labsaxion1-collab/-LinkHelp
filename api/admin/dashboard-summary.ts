@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { authorizeAdmin } from '../lib/adminAuth.server.js';
-import { createSupabaseServiceRoleClient } from '../lib/supabaseAdmin.server.js';
+import { authorizeAdmin } from '../_lib/adminAuth.server.js';
+import { createSupabaseServiceRoleClient } from '../_lib/supabaseAdmin.server.js';
 import { parseAdminDashboardSummary } from '../../src/admin/adminDashboardContract.js';
 import {
   parseAdminDashboardFinancialSummary,

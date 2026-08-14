@@ -25,7 +25,7 @@ import {
   resolveExternalHostRedirect,
 } from '@/utils/hostRouting';
 import { getOAuthRedirectToUrl } from '@/utils/oauthRedirect';
-import { isAllowedCheckoutOrigin, resolveCheckoutSiteUrl } from '../../api/stripe/siteUrl';
+import { isAllowedCheckoutOrigin, resolveCheckoutSiteUrl } from '../../api/_lib/stripe/siteUrl';
 
 describe('resolveHostProfileFromHostname (production)', () => {
   it('maps production hostnames', () => {

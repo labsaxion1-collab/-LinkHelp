@@ -4,7 +4,7 @@
  * when the limit allows (or after consolidating admin routes).
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { authorizeBackoffice, backofficeJsonError } from '../../api/lib/adminAuth.server.js';
+import { authorizeBackoffice, backofficeJsonError } from '../../api/_lib/adminAuth.server.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {

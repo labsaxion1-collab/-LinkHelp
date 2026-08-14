@@ -4,7 +4,7 @@ import {
   isLinkCreditPackageId,
   type LinkCreditPackageDefinition,
   type LinkCreditPackageId,
-} from '../../shared/linkCreditCatalog.js';
+} from '../../../shared/linkCreditCatalog.js';
 
 export type { LinkCreditPackageId };
 

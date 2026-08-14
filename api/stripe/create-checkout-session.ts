@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
-import { assertServerEnvironmentIsolation, requestHostname } from '../lib/environmentIsolation.js';
-import { resolveCheckoutCreditFromServer } from './packages.js';
-import { getServerSiteUrl, resolveCheckoutSiteUrl } from './siteUrl.js';
-import { getAuthedUserId, getSupabaseAdmin } from './supabaseAdmin.js';
+import { assertServerEnvironmentIsolation, requestHostname } from '../_lib/environmentIsolation.js';
+import { resolveCheckoutCreditFromServer } from '../_lib/stripe/packages.js';
+import { getServerSiteUrl, resolveCheckoutSiteUrl } from '../_lib/stripe/siteUrl.js';
+import { getAuthedUserId, getSupabaseAdmin } from '../_lib/stripe/supabaseAdmin.js';
 
 type Body = {
   packageId?: string;

@@ -1,6 +1,7 @@
 node_modules/
 build/
 dist/
+api/_lib/*.mjs
 api/lib/*.mjs
 .vercel/
 coverage/

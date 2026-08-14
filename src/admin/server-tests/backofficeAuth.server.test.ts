@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { authorizeBackoffice } from '../../../api/lib/adminAuth.server';
-import { createSupabaseAuthVerifier, createSupabaseServiceRoleClient } from '../../../api/lib/supabaseAdmin.server';
+import { authorizeBackoffice } from '../../../api/_lib/adminAuth.server';
+import { createSupabaseAuthVerifier, createSupabaseServiceRoleClient } from '../../../api/_lib/supabaseAdmin.server';
 
-vi.mock('../../../api/lib/supabaseAdmin.server', () => ({
+vi.mock('../../../api/_lib/supabaseAdmin.server', () => ({
   createSupabaseAuthVerifier: vi.fn(),
   createSupabaseServiceRoleClient: vi.fn(),
 }));

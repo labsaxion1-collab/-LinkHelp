@@ -4,8 +4,8 @@ import {
   backofficeJsonError,
   logBackofficeRead,
   parseLimitOffset,
-} from '../../../api/lib/adminAuth.server.js';
-import { createSupabaseServiceRoleClient } from '../../../api/lib/supabaseAdmin.server.js';
+} from '../../../api/_lib/adminAuth.server.js';
+import { createSupabaseServiceRoleClient } from '../../../api/_lib/supabaseAdmin.server.js';
 import { buildEconomySnapshot } from '../economy/economySnapshot.js';
 
 export type BackofficeResource = 'users' | 'requests' | 'credits' | 'economy' | 'audit' | 'support';

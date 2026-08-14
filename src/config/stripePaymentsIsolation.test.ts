@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import Stripe from 'stripe';
 import { LINK_CREDIT_PACKAGE_CATALOG } from '../../shared/linkCreditCatalog';
 import { LINK_CREDIT_PACKAGES, getLinkCreditPackage } from './linkCreditPackages';
-import { resolveCheckoutCreditFromServer } from '../../api/stripe/packages';
-import { creditAlreadyApplied, decideWebhookCheckoutCredit } from '../../api/stripe/webhookCredit';
+import { resolveCheckoutCreditFromServer } from '../../api/_lib/stripe/packages';
+import { creditAlreadyApplied, decideWebhookCheckoutCredit } from '../../api/_lib/stripe/webhookCredit';
 import webhookHandler from '../../api/stripe/webhook';
 
 const PRICE_ENV = {

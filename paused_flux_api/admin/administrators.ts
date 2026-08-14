@@ -10,8 +10,8 @@ import {
   authorizeAdminManage,
   authorizeAuthenticatedUser,
   backofficeJsonError,
-} from '../../api/lib/adminAuth.server.js';
-import { createSupabaseServiceRoleClient } from '../../api/lib/supabaseAdmin.server.js';
+} from '../../api/_lib/adminAuth.server.js';
+import { createSupabaseServiceRoleClient } from '../../api/_lib/supabaseAdmin.server.js';
 import {
   assertAdminRoleMutationAllowed,
   defaultInviteExpiresAt,

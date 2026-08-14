@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
-import { assertServerEnvironmentIsolation, requestHostname } from '../lib/environmentIsolation.js';
-import { decideWebhookCheckoutCredit } from './webhookCredit.js';
+import { assertServerEnvironmentIsolation, requestHostname } from '../_lib/environmentIsolation.js';
+import { decideWebhookCheckoutCredit } from '../_lib/stripe/webhookCredit.js';
 
 export const config = {
   api: {

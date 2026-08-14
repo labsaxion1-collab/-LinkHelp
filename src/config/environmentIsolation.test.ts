@@ -14,7 +14,7 @@ import {
   resolveAllowedStagingRefs,
   resolveCheckoutReturnOrigin,
 } from '../../shared/environmentIsolation';
-import { assertServerEnvironmentIsolation } from '../../api/lib/environmentIsolation';
+import { assertServerEnvironmentIsolation } from '../../api/_lib/environmentIsolation';
 
 const prodUrl = `https://${PRODUCTION_SUPABASE_REF}.supabase.co`;
 const stagingUrl = `https://${CANONICAL_STAGING_SUPABASE_REF}.supabase.co`;

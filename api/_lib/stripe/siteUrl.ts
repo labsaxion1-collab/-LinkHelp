@@ -7,7 +7,7 @@ import {
   resolveCheckoutReturnOrigin,
   isAllowedCheckoutOrigin as isAllowedCheckoutOriginForTarget,
   type LinkhelpDeployTarget,
-} from '../../shared/environmentIsolation.js';
+} from '../../../shared/environmentIsolation.js';
 
 function stripWrappingQuotes(value: string): string {
   const trimmed = value.trim();

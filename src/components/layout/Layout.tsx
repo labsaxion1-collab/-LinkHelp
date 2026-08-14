@@ -59,6 +59,7 @@ export default function Layout() {
     pathname === ROUTES.fluxAccessDenied;
   const showMobileChrome = !isAdmin && isAppShellPath(pathname);
   const isAppShell = !isAdmin && isAppShellPath(pathname);
+  const isLanding = pathname === ROUTES.home && !isAppShell;
 
   useEffect(() => {
     appPerfMark('layout-outlet', pathname);
@@ -72,7 +73,7 @@ export default function Layout() {
         isAdmin ? 'bg-[#060912]' : isAppShell ? 'lh-app-bg text-[#0D1B2A]' : 'bg-[#050816] text-[#F2F4F7]',
       )}
     >
-      {!isAdmin ? (
+      {!isAdmin && !isLanding ? (
         <div className="relative z-50">
           <Navbar />
         </div>
@@ -107,7 +108,7 @@ export default function Layout() {
           <MobileBottomNav />
         </div>
       ) : null}
-      {!isAdmin && !isAppShell ? (
+      {!isAdmin && !isAppShell && !isLanding ? (
         <div className="relative z-10">
           <Footer />
         </div>

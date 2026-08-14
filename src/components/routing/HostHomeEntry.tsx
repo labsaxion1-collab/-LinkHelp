@@ -11,7 +11,7 @@ import { getCurrentHostProfile } from '@/utils/linkhelpHosts';
 import { importWithRetry } from '@/utils/lazyWithRetry';
 import { normalizeProfileRole } from '@/utils/userRole';
 
-const LandingPage = lazy(() => importWithRetry(() => import('@/pages/LandingPage')));
+const LandingPage = lazy(() => importWithRetry(() => import('@/components/landing/LandingPageReference').then((module) => ({ default: module.LandingPageReference }))));
 
 /** `/` — landing on www/combined; app host → login or role dashboards. */
 export function HostHomeEntry() {

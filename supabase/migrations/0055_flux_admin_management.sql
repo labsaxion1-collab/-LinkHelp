@@ -1,5 +1,5 @@
 -- =============================================================================
--- 0054_flux_admin_management.sql
+-- 0055_flux_admin_management.sql
 -- FLUX Administrators — foundation mínima + invites + admins.manage (idempotent).
 -- Staging-first. service_role API only for admin_* tables.
 -- =============================================================================

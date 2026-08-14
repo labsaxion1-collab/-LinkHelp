@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /helper/
+Disallow: /client/
+
+Sitemap: https://www.linkhelp.app/sitemap.xml

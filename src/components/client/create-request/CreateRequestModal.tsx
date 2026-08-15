@@ -604,6 +604,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
         timezone: getBrowserTimezone(),
         createdTimezone: getBrowserTimezone(),
       });
+      showToast(t('create_modal.publish_success'), 'success');
       if (me.id) clearCreateRequestDraft(me.id);
       skipAutoSaveRef.current = true;
       applyFreshStart();

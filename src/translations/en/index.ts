@@ -1865,6 +1865,7 @@ export const en = {
       'For your safety, do not share phone numbers, email, or links in the description. Communication stays on LinkHelp.',
     publish_help: 'Open help request',
     publish_error: 'We could not open this request right now. Check the details and try again.',
+    publish_success: 'Request published successfully — 1 LC used',
     address_required: 'Enter a valid address (with map location) to publish this request.',
     address_required_continue: 'Enter the address to continue.',
     budget_required: 'Enter a budget range to publish this request.',

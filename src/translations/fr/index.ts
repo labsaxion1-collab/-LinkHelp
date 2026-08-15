@@ -1871,6 +1871,7 @@ export const fr = {
       'Pour votre sécurité, ne partagez pas de téléphone, e-mail ou liens dans la description. La communication se fait via LinkHelp.',
     publish_help: 'Ouvrir une demande d’aide',
     publish_error: 'Impossible d’ouvrir cette demande pour le moment. Vérifiez les détails et réessayez.',
+    publish_success: 'Demande publiée avec succès — 1 LC utilisé',
     address_required: 'Indiquez une adresse valide (avec localisation sur la carte) pour publier cette demande.',
     address_required_continue: 'Indiquez l’adresse pour continuer.',
     budget_required: 'Indiquez une fourchette de budget pour publier la demande.',

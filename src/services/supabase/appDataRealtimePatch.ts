@@ -4,13 +4,8 @@ import type { Job } from '@/types/job';
 import type { ApplicationRow, RequestRow, ReviewRow, UpcomingJobRow } from '@/types/database';
 import type { ServiceReview } from '@/types/review';
 import type { UpcomingJob } from '@/types/upcoming';
-import {
-  applicationSelectForEnv,
-  isMissingApplicationCountColumnError,
-  markRequestsOmitApplicationCount,
-  requestSelectForEnv,
-  UPCOMING_JOB_SELECT,
-} from '@/services/supabase/appDataRemote';
+import { queryWithOptionalColumnFallback } from '@/services/supabase/optionalBootstrapSelect';
+import { UPCOMING_JOB_SELECT } from '@/services/supabase/appDataRemote';
 import { resolveRequestStatusPatch } from '@/utils/statusNormalize';
 
 const REVIEW_SELECT =
@@ -178,28 +173,26 @@ export function mergeReviewRowWithReview(
 export async function fetchRequestRowById(id: string): Promise<RequestRow | null> {
   const sb = getSupabase();
   if (!sb) return null;
-  let select = requestSelectForEnv();
-  let { data, error } = await sb.from('requests').select(select).eq('id', id).maybeSingle();
-  if (error && isMissingApplicationCountColumnError(error)) {
-    markRequestsOmitApplicationCount();
-    select = requestSelectForEnv();
-    ({ data, error } = await sb.from('requests').select(select).eq('id', id).maybeSingle());
-  }
-  if (error || !data) {
-    if (error) console.warn('[LinkHelp] fetchRequestRowById', error.message);
-    return null;
-  }
+  const { data, error } = await queryWithOptionalColumnFallback('requests', 'fetchRequestRowById', async (select) => {
+    const result = await sb.from('requests').select(select).eq('id', id).maybeSingle();
+    return { data: result.data, error: result.error };
+  });
+  if (error || !data) return null;
   return data as unknown as RequestRow;
 }
 
 export async function fetchApplicationRowById(id: string): Promise<ApplicationRow | null> {
   const sb = getSupabase();
   if (!sb) return null;
-  const { data, error } = await sb.from('applications').select(applicationSelectForEnv()).eq('id', id).maybeSingle();
-  if (error || !data) {
-    if (error) console.warn('[LinkHelp] fetchApplicationRowById', error.message);
-    return null;
-  }
+  const { data, error } = await queryWithOptionalColumnFallback(
+    'applications',
+    'fetchApplicationRowById',
+    async (select) => {
+      const result = await sb.from('applications').select(select).eq('id', id).maybeSingle();
+      return { data: result.data, error: result.error };
+    },
+  );
+  if (error || !data) return null;
   return data as unknown as ApplicationRow;
 }
 

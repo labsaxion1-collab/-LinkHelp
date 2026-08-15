@@ -23,6 +23,18 @@ import { fetchProfilesAsMapperMap } from '@/services/supabase/fetchUserViews';
 import { ensureConversation } from '@/services/supabase/conversationEnsure';
 import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
 import { ROUTES } from '@/utils/constants';
+import {
+  buildApplicationSelectForEnv,
+  buildRequestSelectForEnv,
+  queryWithOptionalColumnFallback,
+} from '@/services/supabase/optionalBootstrapSelect';
+
+export {
+  isMissingApplicationCountColumnError,
+  markRequestsOmitApplicationCount,
+  resetRequestSelectApplicationCountCacheForTests,
+  requestsOmitApplicationCount,
+} from '@/services/supabase/optionalBootstrapSelect';
 
 /** Columns required by mappers — avoids select('*') egress on bootstrap. */
 export const REQUEST_SELECT_CORE =
@@ -44,37 +56,12 @@ export const APPLICATION_SELECT =
 export const APPLICATION_SELECT_BASELINE =
   `${APPLICATION_SELECT}, lead_total_lc, lead_debit_lc, lead_service_mode`;
 
-/** Cached after first PostgREST "column application_count does not exist" on this session. */
-let omitApplicationCountSelect = false;
-
-export function resetRequestSelectApplicationCountCacheForTests(): void {
-  omitApplicationCountSelect = false;
-}
-
-export function markRequestsOmitApplicationCount(): void {
-  omitApplicationCountSelect = true;
-}
-
-export function requestsOmitApplicationCount(): boolean {
-  return omitApplicationCountSelect;
-}
-
-export function isMissingApplicationCountColumnError(error: { message?: string; code?: string } | null): boolean {
-  if (!error?.message) return false;
-  const msg = error.message.toLowerCase();
-  return msg.includes('application_count') && (msg.includes('column') || msg.includes('42703') || error.code === '42703');
-}
-
 export function requestSelectForEnv(): string {
-  const baseline = isBaselineFinanceEnabled();
-  if (omitApplicationCountSelect) {
-    return baseline ? REQUEST_SELECT_BASELINE_NO_APP_COUNT : REQUEST_SELECT_CORE;
-  }
-  return baseline ? REQUEST_SELECT_BASELINE : REQUEST_SELECT_WITH_APPLICATION_COUNT;
+  return buildRequestSelectForEnv(isBaselineFinanceEnabled());
 }
 
 export function applicationSelectForEnv(): string {
-  return isBaselineFinanceEnabled() ? APPLICATION_SELECT_BASELINE : APPLICATION_SELECT;
+  return buildApplicationSelectForEnv(isBaselineFinanceEnabled());
 }
 export const UPCOMING_JOB_SELECT =
   'id, request_id, helper_id, client_name, client_avatar, title, category, description, location, value_hint, urgency, scheduled_at, workflow_status, completion_requested_at, review_window_ends_at, created_at';
@@ -143,25 +130,19 @@ export async function fetchRemoteAppDataBootstrap(): Promise<AppDataBootstrapRes
     };
   }
 
-  let reqSelect = requestSelectForEnv();
-  let [{ data: reqRows, error: reqErr }, { data: appRows, error: appErr }, { data: upRows }, { data: convRows }] =
+  const [{ data: reqRows, error: reqErr }, { data: appRows, error: appErr }, { data: upRows }, { data: convRows }] =
     await Promise.all([
-      sb.from('requests').select(reqSelect).order('created_at', { ascending: false }),
-      sb.from('applications').select(applicationSelectForEnv()).order('created_at', { ascending: false }),
+      queryWithOptionalColumnFallback('requests', 'bootstrap requests', async (select) => {
+        const result = await sb.from('requests').select(select).order('created_at', { ascending: false });
+        return { data: result.data, error: result.error };
+      }),
+      queryWithOptionalColumnFallback('applications', 'bootstrap applications', async (select) => {
+        const result = await sb.from('applications').select(select).order('created_at', { ascending: false });
+        return { data: result.data, error: result.error };
+      }),
       sb.from('upcoming_jobs').select(UPCOMING_JOB_SELECT).order('scheduled_at', { ascending: true }),
       sb.from('conversations').select('request_id, helper_id, contact_unlocked'),
     ]);
-
-  if (reqErr && isMissingApplicationCountColumnError(reqErr)) {
-    markRequestsOmitApplicationCount();
-    reqSelect = requestSelectForEnv();
-    const retry = await sb.from('requests').select(reqSelect).order('created_at', { ascending: false });
-    reqRows = retry.data;
-    reqErr = retry.error;
-  }
-
-  if (reqErr) console.error('[LinkHelp] bootstrap requests', reqErr);
-  if (appErr) console.error('[LinkHelp] bootstrap applications', appErr);
 
   const requests = (reqRows ?? []) as unknown as RequestRow[];
   const applicationsRaw = (appRows ?? []) as unknown as ApplicationRow[];

@@ -1874,6 +1874,7 @@ export const pt = {
       'Por segurança, não compartilhe telefone, email ou links na descrição. A comunicação acontece pelo LinkHelp.',
     publish_help: 'Abrir chamado de ajuda',
     publish_error: 'Não foi possível abrir o chamado agora. Confira os dados e tente novamente.',
+    publish_success: 'Pedido publicado com sucesso — 1 LC utilizado',
     address_required: 'Informe um endereço válido (com localização no mapa) para publicar este chamado.',
     address_required_continue: 'Informe o endereço para continuar.',
     budget_required: 'Informe uma faixa de orçamento para publicar o chamado.',

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { remoteCompleteClientOnboarding } from '@/services/supabase/clientOnboardingRemote';
 import { getClientDeviceFingerprint } from '@/utils/clientDeviceFingerprint';
@@ -10,6 +10,7 @@ export function useClientOnboarding() {
   const { profile, authLoading, refreshProfile } = useAuth();
   const [completing, setCompleting] = useState(false);
   const [localCompleted, setLocalCompleted] = useState(false);
+  const inFlightRef = useRef(false);
 
   const shouldShow = useMemo(() => {
     if (authLoading || localCompleted) return false;
@@ -19,18 +20,24 @@ export function useClientOnboarding() {
 
   const complete = useCallback(
     async (_action: ClientOnboardingCompleteAction): Promise<CompleteClientOnboardingResult | null> => {
-      if (!profile?.id || completing) return null;
+      if (!profile?.id || inFlightRef.current) return null;
+      inFlightRef.current = true;
       setCompleting(true);
       try {
         const result = await remoteCompleteClientOnboarding(profile.id, getClientDeviceFingerprint());
-        await refreshProfile();
         setLocalCompleted(true);
+        try {
+          await refreshProfile();
+        } catch {
+          /* Tour already completed locally; profile refresh must not freeze controls. */
+        }
         return result;
       } finally {
+        inFlightRef.current = false;
         setCompleting(false);
       }
     },
-    [completing, profile?.id, refreshProfile],
+    [profile?.id, refreshProfile],
   );
 
   return { shouldShow, completing, complete };

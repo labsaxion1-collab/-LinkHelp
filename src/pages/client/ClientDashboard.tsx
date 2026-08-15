@@ -819,7 +819,8 @@ export default function ClientDashboard() {
   const handleClientOnboardingComplete = async (action: 'explore' | 'createRequest') => {
     try {
       const result = await completeClientOnboarding(action);
-      if (result?.granted) {
+      if (!result) return;
+      if (result.granted) {
         showToast(t('client_onboarding.success_toast', { amount: CLIENT_WELCOME_30_LC }), 'success');
       }
       if (action === 'createRequest') {

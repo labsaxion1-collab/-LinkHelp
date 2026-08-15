@@ -2,6 +2,11 @@ import { useCallback, useRef, useState, type MouseEvent, type TouchEvent } from 
 
 const SWIPE_THRESHOLD = 48;
 
+export function isTutorialSwipeIgnoredTarget(target: EventTarget | null): boolean {
+  if (!target || typeof Element === 'undefined') return false;
+  return target instanceof Element && Boolean(target.closest('button, a, input, textarea, select, [role="button"]'));
+}
+
 type Options = {
   step: number;
   stepCount: number;
@@ -51,10 +56,17 @@ export function useTutorialSwipe({ step, stepCount, onStepChange }: Options) {
   );
 
   const swipeHandlers = {
-    onTouchStart: (event: TouchEvent) => onPointerDown(event.touches[0].clientX),
+    onTouchStart: (event: TouchEvent) => {
+      if (isTutorialSwipeIgnoredTarget(event.target)) return;
+      onPointerDown(event.touches[0].clientX);
+    },
     onTouchMove: (event: TouchEvent) => onPointerMove(event.touches[0].clientX),
-    onTouchEnd: (event: TouchEvent) => onPointerUp(event.changedTouches[0].clientX),
+    onTouchEnd: (event: TouchEvent) => {
+      if (!isDragging && isTutorialSwipeIgnoredTarget(event.target)) return;
+      onPointerUp(event.changedTouches[0].clientX);
+    },
     onMouseDown: (event: MouseEvent) => {
+      if (isTutorialSwipeIgnoredTarget(event.target)) return;
       onPointerDown(event.clientX);
     },
     onMouseMove: (event: MouseEvent) => {

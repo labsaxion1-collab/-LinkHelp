@@ -125,7 +125,10 @@ export function TutorialImmersiveHero({
         aria-hidden
       />
 
-      <div className="absolute inset-x-0 z-20 px-6" style={{ bottom: contentBottomOffset }}>
+      <div
+        className="pointer-events-none absolute inset-x-0 z-20 px-6"
+        style={{ bottom: contentBottomOffset }}
+      >
         {children}
       </div>
     </div>

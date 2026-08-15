@@ -95,11 +95,11 @@ function CelebrationBurst({
 }) {
   return (
     <>
-      <div className="absolute h-0 w-0 -translate-x-1/2 -translate-y-1/2" style={{ left, top }}>
+      <div className="pointer-events-none absolute h-0 w-0 -translate-x-1/2 -translate-y-1/2" style={{ left, top }}>
         {confetti.map((particle) => (
           <span
             key={particle.id}
-            className="lh-tutorial-confetti-particle absolute left-0 top-0 opacity-0"
+            className="lh-tutorial-confetti-particle pointer-events-none absolute left-0 top-0 opacity-0"
             style={
               {
                 width: particle.size,
@@ -118,11 +118,11 @@ function CelebrationBurst({
         ))}
       </div>
 
-      <div className="absolute h-0 w-0 -translate-x-1/2 -translate-y-1/2" style={{ left, top }}>
+      <div className="pointer-events-none absolute h-0 w-0 -translate-x-1/2 -translate-y-1/2" style={{ left, top }}>
         {glitter.map((spark) => (
           <span
             key={spark.id}
-            className="lh-tutorial-glitter-particle absolute rounded-full bg-white"
+            className="lh-tutorial-glitter-particle pointer-events-none absolute rounded-full bg-white"
             style={
               {
                 width: spark.size,
@@ -140,7 +140,7 @@ function CelebrationBurst({
 
       {showGiftGlow ? (
         <div
-          className={clsx('lh-tutorial-gift-bounce absolute h-14 w-14 -translate-x-1/2 -translate-y-1/2')}
+          className={clsx('lh-tutorial-gift-bounce pointer-events-none absolute h-14 w-14 -translate-x-1/2 -translate-y-1/2')}
           style={{ left, top }}
         />
       ) : null}

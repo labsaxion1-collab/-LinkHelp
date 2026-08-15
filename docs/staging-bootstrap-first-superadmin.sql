@@ -1,13 +1,13 @@
 -- =============================================================================
 -- Staging ONLY — bootstrap do primeiro Superadministrador de teste
--- Projeto linked obrigatório: neijuzpbjectelyxkapw (linkhelp-staging-db)
+-- Projeto linked obrigatório: kqwlgpnmjpohzjsrnnih (Supabase Staging)
 -- NÃO executar em Production (mttjbaiiaeiqqmnwnzwr).
 -- NÃO usar contas oficiais (leandro@linkhelp.app / vinicius@linkhelp.app).
 -- NÃO alterar fluxteste01@gmail.com.
 -- =============================================================================
 -- Pré-requisitos:
 --   1) auth.users já existe com e-mail verificado (primeiro login Google no FLUX staging)
---   2) supabase linked = neijuzpbjectelyxkapw
+--   2) supabase linked = kqwlgpnmjpohzjsrnnih
 -- Uso:
 --   npx supabase db query --linked -f docs/staging-bootstrap-first-superadmin.sql
 -- =============================================================================

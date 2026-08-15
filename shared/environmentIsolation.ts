@@ -7,16 +7,10 @@
 export const PRODUCTION_SUPABASE_REF = 'mttjbaiiaeiqqmnwnzwr';
 
 /**
- * Canonical staging Supabase for teste.linkhelp.app — project "linkhelp-staging-db".
- * Do not point Preview / teste at any other project.
+ * Canonical staging Supabase for teste.linkhelp.app.
+ * Do not point Preview / teste at any other project (including Production).
  */
-export const CANONICAL_STAGING_SUPABASE_REF = 'neijuzpbjectelyxkapw';
-
-/**
- * Legacy / unauthorized staging project ("LinkHelp Staging").
- * Documented only — never accepted by allowlists.
- */
-export const LEGACY_UNAUTHORIZED_STAGING_SUPABASE_REF = 'kqwlgpnmjpohzjsrnnih';
+export const CANONICAL_STAGING_SUPABASE_REF = 'kqwlgpnmjpohzjsrnnih';
 
 export const STAGING_TEST_HOSTNAME = 'teste.linkhelp.app';
 export const STAGING_TEST_ORIGIN = 'https://teste.linkhelp.app';
@@ -39,7 +33,6 @@ export type EnvironmentIsolationIssue = {
     | 'STAGING_HOST_USES_PRODUCTION_SUPABASE'
     | 'PRODUCTION_HOST_USES_STAGING_SUPABASE'
     | 'DEPLOY_TARGET_REF_MISMATCH'
-    | 'LEGACY_STAGING_REF_REJECTED'
     | 'STRIPE_LIVE_ON_STAGING'
     | 'STRIPE_TEST_ON_PRODUCTION'
     | 'STRIPE_MODE_UNKNOWN'
@@ -68,7 +61,7 @@ export function extractSupabaseProjectRef(url: string | null | undefined): strin
   }
 }
 
-/** Only the canonical staging ref is allowed. Legacy kqwl is never included. */
+/** Only the canonical staging ref is allowed. */
 export function resolveAllowedStagingRefs(): Set<string> {
   return new Set([CANONICAL_STAGING_SUPABASE_REF]);
 }
@@ -79,10 +72,6 @@ export function isProductionSupabaseRef(ref: string | null | undefined): boolean
 
 export function isCanonicalStagingSupabaseRef(ref: string | null | undefined): boolean {
   return Boolean(ref && ref.toLowerCase() === CANONICAL_STAGING_SUPABASE_REF);
-}
-
-export function isLegacyUnauthorizedStagingRef(ref: string | null | undefined): boolean {
-  return Boolean(ref && ref.toLowerCase() === LEGACY_UNAUTHORIZED_STAGING_SUPABASE_REF);
 }
 
 export function isStagingSupabaseRef(ref: string | null | undefined): boolean {
@@ -144,13 +133,6 @@ export function assertSupabaseRefMatchesDeployTarget(input: {
   const ref = extractSupabaseProjectRef(input.supabaseUrl);
   if (!ref) {
     return { code: 'INVALID_SUPABASE_URL', message: 'Supabase URL is invalid or not a *.supabase.co project.' };
-  }
-
-  if (isLegacyUnauthorizedStagingRef(ref)) {
-    return {
-      code: 'LEGACY_STAGING_REF_REJECTED',
-      message: 'Legacy staging Supabase project is not authorized for this environment.',
-    };
   }
 
   if (input.deployTarget === 'staging' && isProductionSupabaseRef(ref)) {
@@ -413,7 +395,6 @@ export function isolationPublicErrorMessage(issue: EnvironmentIsolationIssue): s
     case 'STAGING_HOST_USES_PRODUCTION_SUPABASE':
     case 'PRODUCTION_HOST_USES_STAGING_SUPABASE':
     case 'DEPLOY_TARGET_REF_MISMATCH':
-    case 'LEGACY_STAGING_REF_REJECTED':
     case 'FRONTEND_BACKEND_REF_MISMATCH':
     case 'STAGING_SITE_URL_MISMATCH':
     case 'PRODUCTION_SITE_URL_MISMATCH':

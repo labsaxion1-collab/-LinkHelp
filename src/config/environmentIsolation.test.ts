@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   CANONICAL_STAGING_SUPABASE_REF,
-  LEGACY_UNAUTHORIZED_STAGING_SUPABASE_REF,
   PRODUCTION_SUPABASE_REF,
   assertFrontendBackendSameProject,
   assertSiteUrlMatchesDeployTarget,
@@ -18,7 +17,9 @@ import { assertServerEnvironmentIsolation } from '../../api/_lib/environmentIsol
 
 const prodUrl = `https://${PRODUCTION_SUPABASE_REF}.supabase.co`;
 const stagingUrl = `https://${CANONICAL_STAGING_SUPABASE_REF}.supabase.co`;
-const legacyUrl = `https://${LEGACY_UNAUTHORIZED_STAGING_SUPABASE_REF}.supabase.co`;
+/** Former incorrect canonical ref — must be treated as mismatch, never allowed. */
+const formerIncorrectStagingUrl = 'https://neijuzpbjectelyxkapw.supabase.co';
+const unknownRefUrl = 'https://zzzzzzzzzzzzzzzzzzzz.supabase.co';
 
 const ENV_KEYS = [
   'LINKHELP_DEPLOY_TARGET',
@@ -72,18 +73,21 @@ function setProductionEnv(overrides?: Record<string, string>) {
 snapshotEnv();
 afterEach(restoreEnv);
 
-describe('environmentIsolation — canonical staging neij', () => {
+describe('environmentIsolation — canonical staging kqwl', () => {
   it('extracts project refs', () => {
+    expect(CANONICAL_STAGING_SUPABASE_REF).toBe('kqwlgpnmjpohzjsrnnih');
+    expect(PRODUCTION_SUPABASE_REF).toBe('mttjbaiiaeiqqmnwnzwr');
     expect(extractSupabaseProjectRef(prodUrl)).toBe(PRODUCTION_SUPABASE_REF);
     expect(extractSupabaseProjectRef(stagingUrl + '/')).toBe(CANONICAL_STAGING_SUPABASE_REF);
     expect(extractSupabaseProjectRef('https://evil.example')).toBeNull();
   });
 
-  it('allowlist is only neij (not kqwl)', () => {
+  it('allowlist is only kqwl', () => {
     const allowed = resolveAllowedStagingRefs();
     expect(allowed.has(CANONICAL_STAGING_SUPABASE_REF)).toBe(true);
-    expect(allowed.has(LEGACY_UNAUTHORIZED_STAGING_SUPABASE_REF)).toBe(false);
+    expect(allowed.has('neijuzpbjectelyxkapw')).toBe(false);
     expect(allowed.has(PRODUCTION_SUPABASE_REF)).toBe(false);
+    expect(allowed.size).toBe(1);
   });
 
   it('classifies hosts and Vercel env', () => {
@@ -110,7 +114,7 @@ describe('environmentIsolation — canonical staging neij', () => {
     ).toBe('production');
   });
 
-  it('1. staging accepts Test + neij', () => {
+  it('1. staging accepts Test + kqwl', () => {
     setStagingEnv();
     const result = assertServerEnvironmentIsolation({ stripeKey: 'sk_test_51FakeStagingOnly' });
     expect(result.ok).toBe(true);
@@ -118,6 +122,16 @@ describe('environmentIsolation — canonical staging neij', () => {
       expect(result.deployTarget).toBe('staging');
       expect(result.projectRef).toBe(CANONICAL_STAGING_SUPABASE_REF);
     }
+  });
+
+  it('teste.linkhelp.app accepts only kqwl', () => {
+    expect(classifyDeployTarget({ hostname: 'teste.linkhelp.app' })).toBe('staging');
+    expect(
+      assertSupabaseRefMatchesDeployTarget({
+        supabaseUrl: stagingUrl,
+        deployTarget: 'staging',
+      }),
+    ).toBeNull();
   });
 
   it('2. production accepts Live + mttj', () => {
@@ -151,14 +165,47 @@ describe('environmentIsolation — canonical staging neij', () => {
     if (!result.ok) expect(result.issue.code).toBe('PRODUCTION_HOST_USES_STAGING_SUPABASE');
   });
 
-  it('rejects legacy kqwl for any deploy target', () => {
+  it('teste.linkhelp.app rejects production and former/unknown refs', () => {
     expect(
-      assertSupabaseRefMatchesDeployTarget({ supabaseUrl: legacyUrl, deployTarget: 'staging' })?.code,
-    ).toBe('LEGACY_STAGING_REF_REJECTED');
+      assertSupabaseRefMatchesDeployTarget({ supabaseUrl: prodUrl, deployTarget: 'staging' })?.code,
+    ).toBe('STAGING_HOST_USES_PRODUCTION_SUPABASE');
     expect(
-      assertSupabaseRefMatchesDeployTarget({ supabaseUrl: legacyUrl, deployTarget: 'production' })
+      assertSupabaseRefMatchesDeployTarget({
+        supabaseUrl: formerIncorrectStagingUrl,
+        deployTarget: 'staging',
+      })?.code,
+    ).toBe('DEPLOY_TARGET_REF_MISMATCH');
+    expect(
+      assertSupabaseRefMatchesDeployTarget({
+        supabaseUrl: unknownRefUrl,
+        deployTarget: 'staging',
+      })?.code,
+    ).toBe('DEPLOY_TARGET_REF_MISMATCH');
+  });
+
+  it('production rejects staging kqwl, former neij, and unknown refs', () => {
+    expect(
+      assertSupabaseRefMatchesDeployTarget({ supabaseUrl: stagingUrl, deployTarget: 'production' })
         ?.code,
-    ).toBe('LEGACY_STAGING_REF_REJECTED');
+    ).toBe('PRODUCTION_HOST_USES_STAGING_SUPABASE');
+    expect(
+      assertSupabaseRefMatchesDeployTarget({
+        supabaseUrl: formerIncorrectStagingUrl,
+        deployTarget: 'production',
+      })?.code,
+    ).toBe('DEPLOY_TARGET_REF_MISMATCH');
+    expect(
+      assertSupabaseRefMatchesDeployTarget({
+        supabaseUrl: unknownRefUrl,
+        deployTarget: 'production',
+      })?.code,
+    ).toBe('DEPLOY_TARGET_REF_MISMATCH');
+  });
+
+  it('production hosts stay classified as production', () => {
+    expect(classifyDeployTarget({ hostname: 'flux.linkhelp.app' })).toBe('production');
+    expect(classifyDeployTarget({ hostname: 'app.linkhelp.app' })).toBe('production');
+    expect(classifyDeployTarget({ hostname: 'www.linkhelp.app' })).toBe('production');
   });
 
   it('frontend/backend ref mismatch blocks', () => {
@@ -279,5 +326,11 @@ describe('environmentIsolation — checkout return URLs', () => {
       message: 'internal',
     });
     expect(msg).not.toMatch(/mttj|neij|kqwl|supabase\.co|sk_live|sk_test/i);
+    expect(
+      isolationPublicErrorMessage({
+        code: 'DEPLOY_TARGET_REF_MISMATCH',
+        message: 'internal neijuzpbjectelyxkapw kqwlgpnmjpohzjsrnnih',
+      }),
+    ).not.toMatch(/neijuz|kqwlgp|mttjba/i);
   });
 });

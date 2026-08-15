@@ -14,7 +14,6 @@ import {
 export {
   CANONICAL_STAGING_SUPABASE_REF,
   PRODUCTION_SUPABASE_REF,
-  LEGACY_UNAUTHORIZED_STAGING_SUPABASE_REF,
   extractSupabaseProjectRef,
   isolationPublicErrorMessage,
 } from '../../shared/environmentIsolation';

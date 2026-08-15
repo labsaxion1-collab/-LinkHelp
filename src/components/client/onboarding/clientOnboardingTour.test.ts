@@ -63,8 +63,13 @@ describe('client onboarding tour — last-step controls', () => {
   it('welcome reward stays a single RPC complete_client_onboarding path', async () => {
     const remote = await readFile(root('src/services/supabase/clientOnboardingRemote.ts'), 'utf8');
     expect(remote).toContain("rpc('complete_client_onboarding'");
+    expect(remote).toContain('p_client_id: clientId');
+    expect(remote).toContain('p_device_fingerprint: deviceFingerprint ?? null');
     const hook = await readFile(root('src/hooks/useClientOnboarding.ts'), 'utf8');
     expect(hook).toContain('remoteCompleteClientOnboarding(profile.id');
     expect(hook).not.toContain('grantUserReward');
+    expect(remote).not.toMatch(/from\('client_credit_ledger'\)[\s\S]*\.(insert|update|delete)/);
+    expect(remote).not.toContain("from('client_onboarding_signals')");
+    expect(remote).not.toContain("from('user_bonus_rewards')");
   });
 });

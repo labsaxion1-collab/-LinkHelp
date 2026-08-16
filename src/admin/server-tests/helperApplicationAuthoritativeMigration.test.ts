@@ -118,6 +118,7 @@ describe('0061 helper application authoritative migration', () => {
   it('implements downstream hire/reject/refund compatibility', () => {
     expect(sql).toContain('create or replace function public.client_reject_application(');
     expect(sql).toContain('create or replace function public.process_vip_exclusive_partial_refunds(');
+    expect(sql).toContain('create or replace function public.charge_helper_on_client_hire(');
     expect(hireBody).toContain('LEAD_SNAPSHOT_MISSING');
     expect(hireBody).toContain('greatest(0, app.lead_total_lc - 4)');
     expect(hireBody).toContain("raise exception 'VIP_HIRE_MUST_BE_ZERO'");
@@ -125,8 +126,43 @@ describe('0061 helper application authoritative migration', () => {
     expect(rejectBody).toContain('process_vip_application_rejected_refund');
     expect(vipRejectRefundBody).toContain('ceil(debit_amount::numeric / 2)');
     expect(submitBody).toContain('process_vip_exclusive_partial_refunds');
-    expect(appDataRemote).toContain("sb.rpc('client_accept_proposal'");
-    expect(appDataRemote).toContain("sb.rpc('client_reject_application'");
+    expect(sql).toContain('refund_amount int := 2');
+    expect(appDataRemote).toContain("sb.rpc('client_accept_proposal', {");
+    expect(appDataRemote).toContain('p_application_id: applicationId');
+    expect(appDataRemote).toContain('p_charge_amount: chargeAmount');
+    expect(appDataRemote).toContain("sb.rpc('client_reject_application', {");
+    expect(appDataRemote).toContain('p_application_id: applicationId');
+  });
+
+  it('documents ACTIVE_PENDING_CHARGE as an explicit pre-apply blocker', () => {
+    expect(sql).toContain('ACTIVE_PENDING_CHARGE');
+    expect(sql).toContain('APPLY BLOCKER');
+    expect(submitBody).not.toContain("raise exception 'ACTIVE_PENDING_CHARGE'");
+    expect(quoteBody).not.toContain("raise exception 'ACTIVE_PENDING_CHARGE'");
+  });
+
+  it('protects immutable snapshots, VIP lock index, and idempotent VIP displacement refunds', () => {
+    expect(sql).toContain('protect_application_lead_snapshot');
+    expect(sql).toContain('LEAD_SNAPSHOT_IMMUTABLE');
+    expect(sql).toContain('applications_one_active_exclusive_uidx');
+    expect(sql).toContain('credit_transactions_vip_partial_refund_uidx');
+    expect(sql).toContain('credit_transactions_vip_rejected_refund_uidx');
+    expect(sql).toContain("check (lead_service_mode is null or lead_service_mode in ('remote', 'in_person'))");
+    expect(validateBody).not.toContain("lead_service_mode := 'both'");
+  });
+
+  it('uses idempotent DDL safe for empty applications ledger on Staging', () => {
+    expect(sql).toMatch(/add column if not exists/i);
+    expect(sql).toMatch(/create table if not exists/i);
+    const ddlOnly = sql.split('create or replace function public.lead_pricing_active_version_id')[0];
+    expect(ddlOnly).not.toMatch(/update public\.credit_wallets\s+set\s+balance/i);
+    expect(ddlOnly).not.toMatch(/insert into public\.applications/i);
+  });
+
+  it('rejects frontend-chosen debit amounts when p_interest_amount is supplied', () => {
+    expect(submitBody).toContain("raise exception 'INTEREST_AMOUNT_MISMATCH'");
+    expect(submitBody).toContain('if p_interest_amount is not null and p_interest_amount <> 4');
+    expect(submitBody).toContain('if p_interest_amount is not null and p_interest_amount <> authoritative_charge');
   });
 
   it('hardens SECURITY DEFINER functions with empty search_path and revokes PUBLIC execute', () => {

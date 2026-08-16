@@ -4,6 +4,12 @@
 -- Derived from baseline drafts packs 30/40/50 with frontend-aligned seeds
 -- (src/utils/calculateHelperLeadCreditCost.ts). SECURITY DEFINER uses search_path ''.
 -- Does NOT apply remotely in this commit — migration file only.
+--
+-- APPLY BLOCKER (documented): ACTIVE_PENDING_CHARGE — global helper credit obligation /
+-- pending-charge gate is NOT defined in migrations 0001–0060 nor packs 30/40/50.
+-- opportunity_unlocks.status='pending' tracks per-request refund windows only; it does NOT
+-- authorize blocking new candidatures. A future numbered migration must add the authoritative
+-- obligation model + helper_has_active_pending_charge() before enforcing ACTIVE_PENDING_CHARGE.
 -- =============================================================================
 
 -- Extend transaction types for VIP refunds (idempotent).

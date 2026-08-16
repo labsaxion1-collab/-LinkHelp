@@ -5,11 +5,24 @@ const modal = readFileSync('src/components/client/create-request/CreateRequestMo
 const bootstrap = readFileSync('src/services/supabase/appDataRemote.ts', 'utf8');
 const patch = readFileSync('src/services/supabase/appDataRealtimePatch.ts', 'utf8');
 
+function extractHandlePublishBlock(source: string): string {
+  const start = source.indexOf('const handlePublish');
+  const end = source.indexOf('const addressStepComplete', start);
+  expect(start).toBeGreaterThan(-1);
+  expect(end).toBeGreaterThan(start);
+  return source.slice(start, end);
+}
+
 describe('publish feedback and bootstrap fallback wiring', () => {
   it('shows an explicit success toast after createJob resolves', () => {
-    expect(modal).toContain("showToast(t('create_modal.publish_success'), 'success')");
-    expect(modal.indexOf('await createJob(')).toBeLessThan(modal.indexOf("showToast(t('create_modal.publish_success')"));
-    expect(modal.indexOf("showToast(t('create_modal.publish_success')")).toBeLessThan(modal.indexOf('performClose()'));
+    const publishBlock = extractHandlePublishBlock(modal);
+    expect(publishBlock).toContain("showToast(t('create_modal.publish_success'), 'success')");
+    expect(publishBlock.indexOf('await createJob(')).toBeLessThan(
+      publishBlock.indexOf("showToast(t('create_modal.publish_success')"),
+    );
+    expect(publishBlock.indexOf("showToast(t('create_modal.publish_success')")).toBeLessThan(
+      publishBlock.indexOf('performClose()'),
+    );
   });
 
   it('keeps publish disabled while publishing is in flight', () => {
@@ -20,15 +33,23 @@ describe('publish feedback and bootstrap fallback wiring', () => {
   });
 
   it('does not auto-retry publish on success path', () => {
-    const publishBlock = modal.slice(modal.indexOf('const handlePublish'), modal.indexOf('const addressStepComplete'));
+    const publishBlock = extractHandlePublishBlock(modal);
     expect(publishBlock.match(/await createJob\(/g)?.length).toBe(1);
   });
 
   it('uses shared optional-column fallback in bootstrap and fetchRequestRowById', () => {
-    expect(bootstrap).toContain("queryWithOptionalColumnFallback('requests', 'bootstrap requests'");
-    expect(bootstrap).toContain("queryWithOptionalColumnFallback('applications', 'bootstrap applications'");
-    expect(patch).toContain("queryWithOptionalColumnFallback('requests', 'fetchRequestRowById'");
-    expect(patch).toContain("queryWithOptionalColumnFallback('applications', 'fetchApplicationRowById'");
+    expect(bootstrap).toMatch(
+      /queryWithOptionalColumnFallback\(\s*'requests',\s*'bootstrap requests'/,
+    );
+    expect(bootstrap).toMatch(
+      /queryWithOptionalColumnFallback\(\s*'applications',\s*'bootstrap applications'/,
+    );
+    expect(patch).toMatch(
+      /queryWithOptionalColumnFallback\(\s*'requests',\s*'fetchRequestRowById'/,
+    );
+    expect(patch).toMatch(
+      /queryWithOptionalColumnFallback\(\s*'applications',\s*'fetchApplicationRowById'/,
+    );
   });
 });
 

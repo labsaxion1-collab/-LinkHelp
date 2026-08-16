@@ -44,10 +44,11 @@ function migrationFiles(): string[] {
 }
 
 describe('0061 helper application authoritative migration', () => {
-  it('is the next sequential migration after 0060', () => {
+  it('is the sequential migration immediately after 0060', () => {
     const files = migrationFiles();
-    expect(files.at(-1)).toBe('0061_helper_application_authoritative.sql');
-    expect(files).toContain('0060_client_publish_request.sql');
+    const idx = files.indexOf('0061_helper_application_authoritative.sql');
+    expect(idx).toBeGreaterThan(-1);
+    expect(files[idx - 1]).toBe('0060_client_publish_request.sql');
   });
 
   it('creates pricing catalog tables and lead snapshot columns idempotently', () => {

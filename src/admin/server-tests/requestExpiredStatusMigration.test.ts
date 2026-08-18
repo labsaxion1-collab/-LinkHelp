@@ -14,9 +14,10 @@ function migrationFiles(): string[] {
 describe('0062 request expired status migration', () => {
   it('is sequential after 0061', () => {
     const files = migrationFiles();
-    expect(files).toContain('0061_helper_application_authoritative.sql');
-    expect(files.at(-1)).toBe('0063_credit_obligations_foundation.sql');
-    expect(files[files.length - 2]).toBe('0062_request_expired_status.sql');
+    const idx = files.indexOf('0062_request_expired_status.sql');
+    expect(idx).toBeGreaterThan(-1);
+    expect(files[idx - 1]).toBe('0061_helper_application_authoritative.sql');
+    expect(files[idx + 1]).toBe('0063_credit_obligations_foundation.sql');
   });
 
   it('locates and replaces the requests.status check to include expired only', () => {

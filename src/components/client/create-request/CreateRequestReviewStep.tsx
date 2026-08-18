@@ -110,6 +110,16 @@ export function CreateRequestReviewStep({
           <dd className="font-bold text-gray-900">{t('client_credits.publish_cost_value')}</dd>
         </div>
 
+        <div className="rounded-2xl border border-amber-100 bg-amber-50/90 p-4 text-xs leading-relaxed text-amber-950">
+          <p className="mb-2 font-bold">{t('create_modal.publish_finance_notice_title')}</p>
+          <ul className="list-disc space-y-1 pl-4">
+            <li>{t('create_modal.publish_finance_notice_publish_1lc')}</li>
+            <li>{t('create_modal.publish_finance_notice_cancel_7lc')}</li>
+            <li>{t('create_modal.publish_finance_notice_debt_blocks')}</li>
+            <li>{t('create_modal.publish_finance_notice_expires_7d')}</li>
+          </ul>
+        </div>
+
         {selectedCategory === 'translation' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

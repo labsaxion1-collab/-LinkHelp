@@ -1875,6 +1875,12 @@ export const pt = {
     publish_help: 'Abrir chamado de ajuda',
     publish_error: 'Não foi possível abrir o chamado agora. Confira os dados e tente novamente.',
     publish_success: 'Pedido publicado com sucesso — 1 LC utilizado',
+    publish_finance_notice_title: 'Antes de publicar',
+    publish_finance_notice_publish_1lc: 'Publicar custa 1 LC.',
+    publish_finance_notice_cancel_7lc: 'Cancelar custa 7 LC.',
+    publish_finance_notice_debt_blocks:
+      'Se faltar saldo no cancelamento, o restante ficará pendente e bloqueará novos pedidos.',
+    publish_finance_notice_expires_7d: 'O chamado tem prazo de 7 dias.',
     address_required: 'Informe um endereço válido (com localização no mapa) para publicar este chamado.',
     address_required_continue: 'Informe o endereço para continuar.',
     budget_required: 'Informe uma faixa de orçamento para publicar o chamado.',
@@ -2905,6 +2911,10 @@ export const pt = {
   },
   baseline_finance: {
     insufficient_credits: 'LinkCredits insuficientes para esta ação.',
+    active_credit_obligation_client:
+      'Você possui LinkCredits pendentes. Quite o saldo antes de criar outro pedido.',
+    active_credit_obligation_helper:
+      'Você possui LinkCredits pendentes. Quite o saldo antes de enviar outra candidatura.',
     service_mode_required: 'Selecione se o serviço é remoto ou presencial.',
     service_mode_not_allowed: 'Esta modalidade não é permitida para a subcategoria escolhida.',
     service_mode_policy_missing: 'As regras de modalidade ainda não estão configuradas para esta categoria.',

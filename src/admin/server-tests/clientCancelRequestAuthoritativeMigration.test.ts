@@ -23,6 +23,7 @@ describe('0065 client cancel request authoritative migration', () => {
     const idx = files.indexOf('0065_client_cancel_request_authoritative.sql');
     expect(idx).toBeGreaterThan(-1);
     expect(files[idx - 1]).toBe('0064_credit_obligations_security_hardening.sql');
+    expect(files[idx + 1]).toBe('0066_active_credit_obligation_gates.sql');
   });
 
   it('defines client_cancel_request(uuid) as security definer with empty search_path', () => {

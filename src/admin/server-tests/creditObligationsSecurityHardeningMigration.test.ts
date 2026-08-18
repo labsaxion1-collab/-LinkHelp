@@ -30,7 +30,7 @@ describe('0064 credit obligations security hardening migration', () => {
     const idx = files.indexOf('0064_credit_obligations_security_hardening.sql');
     expect(idx).toBeGreaterThan(-1);
     expect(files[idx - 1]).toBe('0063_credit_obligations_foundation.sql');
-    expect(files.at(-1)).toBe('0065_client_cancel_request_authoritative.sql');
+    expect(files.at(-1)).toBe('0066_active_credit_obligation_gates.sql');
   });
 
   it('revokes authenticated write privileges while keeping SELECT', () => {

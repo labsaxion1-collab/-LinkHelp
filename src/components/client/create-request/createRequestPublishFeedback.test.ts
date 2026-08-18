@@ -32,6 +32,13 @@ describe('publish feedback and bootstrap fallback wiring', () => {
     expect(modal).toContain('setPublishing(false)');
   });
 
+  it('handles ACTIVE_CREDIT_OBLIGATION without publish retry', () => {
+    const publishBlock = extractHandlePublishBlock(modal);
+    expect(publishBlock).toContain('ActiveCreditObligationError');
+    expect(publishBlock).toContain('baseline_finance.active_credit_obligation_client');
+    expect(publishBlock.match(/await createJob\(/g)?.length).toBe(1);
+  });
+
   it('does not auto-retry publish on success path', () => {
     const publishBlock = extractHandlePublishBlock(modal);
     expect(publishBlock.match(/await createJob\(/g)?.length).toBe(1);

@@ -1866,6 +1866,12 @@ export const en = {
     publish_help: 'Open help request',
     publish_error: 'We could not open this request right now. Check the details and try again.',
     publish_success: 'Request published successfully — 1 LC used',
+    publish_finance_notice_title: 'Before you publish',
+    publish_finance_notice_publish_1lc: 'Publishing costs 1 LC.',
+    publish_finance_notice_cancel_7lc: 'Cancelling costs 7 LC.',
+    publish_finance_notice_debt_blocks:
+      'If your balance is insufficient when cancelling, the remainder becomes pending and blocks new requests.',
+    publish_finance_notice_expires_7d: 'The request stays open for 7 days.',
     address_required: 'Enter a valid address (with map location) to publish this request.',
     address_required_continue: 'Enter the address to continue.',
     budget_required: 'Enter a budget range to publish this request.',
@@ -2893,6 +2899,10 @@ export const en = {
   },
   baseline_finance: {
     insufficient_credits: 'Not enough LinkCredits for this action.',
+    active_credit_obligation_client:
+      'You have pending LinkCredits. Settle the balance before creating another request.',
+    active_credit_obligation_helper:
+      'You have pending LinkCredits. Settle the balance before submitting another application.',
     service_mode_required: 'Select whether the service is remote or in person.',
     service_mode_not_allowed: 'This modality is not allowed for the selected subcategory.',
     service_mode_policy_missing: 'Service modality rules are not configured for this category yet.',

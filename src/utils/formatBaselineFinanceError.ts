@@ -10,6 +10,9 @@ export function formatBaselineFinanceError(error: unknown, t: TranslateFn, fallb
   if (upper.includes('INSUFFICIENT_CREDITS') || upper.includes('INSUFFICIENT_CLIENT_CREDITS')) {
     return t('baseline_finance.insufficient_credits');
   }
+  if (upper.includes('ACTIVE_CREDIT_OBLIGATION')) {
+    return t('baseline_finance.active_credit_obligation_client');
+  }
   if (upper.includes('SERVICE_MODE_REQUIRED')) return t('baseline_finance.service_mode_required');
   if (upper.includes('SERVICE_MODE_NOT_ALLOWED')) return t('baseline_finance.service_mode_not_allowed');
   if (upper.includes('SERVICE_MODE_POLICY_MISSING')) return t('baseline_finance.service_mode_policy_missing');
@@ -37,4 +40,15 @@ export function formatBaselineFinanceError(error: unknown, t: TranslateFn, fallb
 
   if (raw.trim()) return raw;
   return t(fallbackKey);
+}
+
+/** Stable server code when publish/apply blocked by open credit_obligations (0066). */
+export function isActiveCreditObligationError(error: unknown): boolean {
+  const raw = extractErrorMessage(error, '');
+  return raw.toUpperCase().includes('ACTIVE_CREDIT_OBLIGATION');
+}
+
+/** Client-side helper message key for obligation gate (helper RPC). */
+export function formatActiveCreditObligationHelperMessage(t: TranslateFn): string {
+  return t('baseline_finance.active_credit_obligation_helper');
 }

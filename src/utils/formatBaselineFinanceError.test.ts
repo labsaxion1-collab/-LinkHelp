@@ -6,6 +6,12 @@ import { normalHireRemainderFromLeadTotal } from '@/services/leadQuoteRemote';
 const t = (key: string) => key;
 
 describe('formatBaselineFinanceError', () => {
+  it('maps ACTIVE_CREDIT_OBLIGATION to client message', () => {
+    expect(formatBaselineFinanceError(new Error('ACTIVE_CREDIT_OBLIGATION'), t, 'fallback')).toBe(
+      'baseline_finance.active_credit_obligation_client',
+    );
+  });
+
   it('maps LEAD_* and SERVICE_MODE_* codes', () => {
     expect(formatBaselineFinanceError(new Error('SERVICE_MODE_REQUIRED'), t, 'fallback')).toBe(
       'baseline_finance.service_mode_required',

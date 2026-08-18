@@ -487,6 +487,14 @@ export class InsufficientClientCreditsError extends Error {
   }
 }
 
+export class ActiveCreditObligationError extends Error {
+  readonly code = 'ACTIVE_CREDIT_OBLIGATION';
+
+  constructor() {
+    super('ACTIVE_CREDIT_OBLIGATION');
+  }
+}
+
 export type ClientPublishRequestResult = {
   requestId: string;
   balanceAfter: number;
@@ -521,6 +529,9 @@ export async function remoteCreateRequest(input: RemoteCreateRequestInput): Prom
   if (error) {
     if (import.meta.env.DEV) {
       console.error('[LinkHelp] remoteCreateRequest failed', { code: error.code, message: error.message, details: error.details });
+    }
+    if (error.message?.includes('ACTIVE_CREDIT_OBLIGATION')) {
+      throw new ActiveCreditObligationError();
     }
     if (error.message?.includes('INSUFFICIENT_CLIENT_CREDITS')) {
       throw new InsufficientClientCreditsError();

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
@@ -54,11 +55,13 @@ import {
   saveCreateRequestDraft,
   type CreateRequestDraft,
 } from '@/utils/createRequestDraft';
-import { InsufficientClientCreditsError } from '@/services/supabase/appDataRemote';
+import { InsufficientClientCreditsError, ActiveCreditObligationError } from '@/services/supabase/appDataRemote';
 import { buildCanonicalJobTitle } from '@/utils/translateCategory';
 import { coerceServiceMode, isBaselineFinanceEnabled, type ServiceMode } from '@/config/baselineFinance';
 import { getServiceModePolicy } from '@/config/serviceModePolicy';
-import { formatBaselineFinanceError } from '@/utils/formatBaselineFinanceError';
+import { formatBaselineFinanceError, isActiveCreditObligationError } from '@/utils/formatBaselineFinanceError';
+import { UI_VISIBILITY } from '@/config/uiVisibility';
+import { ROUTES } from '@/utils/constants';
 
 type ModalStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
 const STEPS: ModalStep[] = ['category', 'subcategory', 'description', 'confirm', 'review'];
@@ -77,6 +80,7 @@ type Props = {
 
 export function CreateRequestModal({ open, onClose, onPublished, initialCategory = '', initialSubcategory = '' }: Props) {
   const { t, language } = useLanguage();
+  const navigate = useNavigate();
   const { createJob } = useAppData();
   const { showToast } = useToast();
   const me = useSessionViewer();
@@ -623,6 +627,11 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       }
       if (error instanceof InsufficientClientCreditsError) {
         showToast(t('client_credits.insufficient_to_publish'), 'error');
+      } else if (error instanceof ActiveCreditObligationError || isActiveCreditObligationError(error)) {
+        showToast(t('baseline_finance.active_credit_obligation_client'), 'error');
+        if (UI_VISIBILITY.clientCredits) {
+          navigate(ROUTES.clientCredits);
+        }
       } else {
         showToast(formatBaselineFinanceError(error, t, 'create_modal.publish_error'), 'error');
       }

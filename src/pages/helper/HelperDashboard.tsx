@@ -36,7 +36,7 @@ import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsuff
 import { getApplicationChargeLc } from '@/config/helperCreditCharge';
 import { getExclusiveApplicationChargeLc } from '@/utils/helperCreditDisplay';
 import { InsufficientCreditsError, leadCostsForJob } from '@/services/helperLeadCredits';
-import { formatBaselineFinanceError } from '@/utils/formatBaselineFinanceError';
+import { formatBaselineFinanceError, isActiveCreditObligationError } from '@/utils/formatBaselineFinanceError';
 import { recordMarketSignal } from '@/services/marketSignals';
 import { persistLocalDismissedRequest } from '@/services/supabase/helperDismissedRemote';
 import { useHelperDismissedRequests } from '@/hooks/useHelperDismissedRequests';
@@ -642,16 +642,23 @@ export default function HelperDashboard() {
       setToastNotification({ message: t('helper_dashboard.toast_apply_success'), show: true });
       setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
     } catch (err: unknown) {
-      if (err instanceof InsufficientCreditsError) {
-        openInsufficientCreditsModal(job);
-        return;
-      }
       const msg =
         err instanceof Error
           ? err.message
           : err && typeof err === 'object' && 'message' in err
             ? String((err as { message?: unknown }).message ?? '')
             : '';
+      if (err instanceof InsufficientCreditsError) {
+        openInsufficientCreditsModal(job);
+        return;
+      }
+      if (msg === 'ACTIVE_CREDIT_OBLIGATION' || isActiveCreditObligationError(err)) {
+        showToast(t('baseline_finance.active_credit_obligation_helper'), 'error');
+        if (UI_VISIBILITY.helperCreditPurchase) {
+          navigate(ROUTES.helperLinkCredits);
+        }
+        return;
+      }
       if (msg === 'ALREADY_APPLIED') {
         showToast(t('helper_dashboard.already_interested'), 'error');
         return;

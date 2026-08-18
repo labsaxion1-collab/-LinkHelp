@@ -1872,6 +1872,12 @@ export const fr = {
     publish_help: 'Ouvrir une demande d’aide',
     publish_error: 'Impossible d’ouvrir cette demande pour le moment. Vérifiez les détails et réessayez.',
     publish_success: 'Demande publiée avec succès — 1 LC utilisé',
+    publish_finance_notice_title: 'Avant de publier',
+    publish_finance_notice_publish_1lc: 'Publier coûte 1 LC.',
+    publish_finance_notice_cancel_7lc: 'Annuler coûte 7 LC.',
+    publish_finance_notice_debt_blocks:
+      'Si votre solde est insuffisant lors de l’annulation, le reste restera en attente et bloquera de nouvelles demandes.',
+    publish_finance_notice_expires_7d: 'La demande reste ouverte pendant 7 jours.',
     address_required: 'Indiquez une adresse valide (avec localisation sur la carte) pour publier cette demande.',
     address_required_continue: 'Indiquez l’adresse pour continuer.',
     budget_required: 'Indiquez une fourchette de budget pour publier la demande.',
@@ -2902,6 +2908,10 @@ export const fr = {
   },
   baseline_finance: {
     insufficient_credits: 'LinkCredits insuffisants pour cette action.',
+    active_credit_obligation_client:
+      'Vous avez des LinkCredits en attente. Réglez le solde avant de créer une autre demande.',
+    active_credit_obligation_helper:
+      'Vous avez des LinkCredits en attente. Réglez le solde avant d’envoyer une autre candidature.',
     service_mode_required: 'Choisissez si le service est à distance ou en personne.',
     service_mode_not_allowed: "Cette modalité n'est pas autorisée pour la sous-catégorie sélectionnée.",
     service_mode_policy_missing: 'Les règles de modalité ne sont pas encore configurées pour cette catégorie.',

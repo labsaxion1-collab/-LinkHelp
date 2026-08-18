@@ -117,6 +117,7 @@ function isRpcExclusiveParamUnsupported(error: { code?: string; message?: string
 
 function mapRpcError(error: { message?: string }, interestCost: number): never {
   const msg = error.message ?? '';
+  if (msg.includes('ACTIVE_CREDIT_OBLIGATION')) throw new Error('ACTIVE_CREDIT_OBLIGATION');
   if (msg.includes('INSUFFICIENT_CREDITS')) {
     throw new InsufficientCreditsError(Math.max(1, interestCost));
   }

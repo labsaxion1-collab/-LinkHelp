@@ -1,5 +1,10 @@
 -- Gate client publish and helper candidatura when owner has open credit_obligations.
 -- Uses credit_obligations_open_owner_idx (0063). Does not alter has_active_credit_obligation (0064).
+-- Lock order (deadlock-safe with 0065 client_cancel_request):
+--   client_publish_request: profiles → obligation check → request insert
+--   client_cancel_request:  profiles → request → applications → helper wallets
+--   helper_submit_application: request → helper wallet → obligation check → debit
+-- Future HIRE_ARREARS settlement should follow: request/application → wallet → obligation.
 
 create or replace function public.client_publish_request(
   p_request jsonb,
@@ -307,7 +312,7 @@ declare
   snap_mode text;
   req public.requests;
   debit_result jsonb;
-  w_obligation_gate public.credit_wallets;
+  w_helper_wallet public.credit_wallets;
 begin
   select exists (
     select 1
@@ -324,30 +329,14 @@ begin
     raise exception 'SELF_REQUEST';
   end if;
 
-
-  -- LOCK 0: helper wallet before obligation check (serializes with debit/settlement)
-  perform public.ensure_helper_credit_wallet(p_helper_id);
-
-  select * into w_obligation_gate
-  from public.credit_wallets
-  where helper_id = p_helper_id
-  for update;
-
-  if w_obligation_gate.helper_id is null then
-    raise exception 'WALLET_MISSING';
-  end if;
-
-  if exists (
-    select 1
-    from public.credit_obligations as o
-    where o.owner_user_id = p_helper_id
-      and o.status = 'open'
-      and o.amount_outstanding > 0
+  if not exists (
+    select 1 from public.profiles p
+    where p.id = p_helper_id and p.role = 'helper'
   ) then
-    raise exception 'ACTIVE_CREDIT_OBLIGATION';
+    raise exception 'HELPER_ONLY';
   end if;
 
-  -- Authoritative quote BEFORE any locks/side effects (policy/location/pricing abort here)
+  -- Read-only quote for early policy/pricing abort (no locks, no debits)
   quote := public.helper_compute_lead_quote(p_request_id, p_helper_id);
   snap_total := (quote->>'totalLc')::int;
   snap_interest := (quote->>'interestLc')::int;
@@ -369,7 +358,7 @@ begin
     end if;
   end if;
 
-  -- LOCK 1: request row (serializes VIP lock + application insert race)
+  -- LOCK 1: request row (before wallet — compatible with 0065 cancel: request → wallets)
   select * into req
   from public.requests
   where id = p_request_id
@@ -385,11 +374,48 @@ begin
     raise exception 'REQUEST_EXPIRED';
   end if;
 
-  if not exists (
-    select 1 from public.profiles p
-    where p.id = p_helper_id and p.role = 'helper'
+  -- Revalidate quote/charge after request lock (authoritative financial snapshot)
+  quote := public.helper_compute_lead_quote(p_request_id, p_helper_id);
+  snap_total := (quote->>'totalLc')::int;
+  snap_interest := (quote->>'interestLc')::int;
+  snap_service := (quote->>'serviceCostLc')::int;
+  snap_distance_cost := (quote->>'distanceCostLc')::int;
+  snap_distance_km := (quote->>'distanceKm')::numeric;
+  snap_version := (quote->>'pricingVersionId')::uuid;
+  snap_mode := quote->>'serviceMode';
+
+  if coalesce(p_is_exclusive, false) then
+    authoritative_charge := snap_total + 4;
+    if p_interest_amount is not null and p_interest_amount <> authoritative_charge then
+      raise exception 'INTEREST_AMOUNT_MISMATCH';
+    end if;
+  else
+    authoritative_charge := 4;
+    if p_interest_amount is not null and p_interest_amount <> 4 then
+      raise exception 'INTEREST_AMOUNT_MISMATCH';
+    end if;
+  end if;
+
+  -- LOCK 2: helper wallet (after request; before obligation gate and debit)
+  perform public.ensure_helper_credit_wallet(p_helper_id);
+
+  select * into w_helper_wallet
+  from public.credit_wallets
+  where helper_id = p_helper_id
+  for update;
+
+  if w_helper_wallet.helper_id is null then
+    raise exception 'WALLET_MISSING';
+  end if;
+
+  if exists (
+    select 1
+    from public.credit_obligations as o
+    where o.owner_user_id = p_helper_id
+      and o.status = 'open'
+      and o.amount_outstanding > 0
   ) then
-    raise exception 'HELPER_ONLY';
+    raise exception 'ACTIVE_CREDIT_OBLIGATION';
   end if;
 
   -- Re-check after request lock (idempotent retry)
@@ -437,7 +463,7 @@ begin
     raise exception 'APPLICATION_LIMIT_REACHED';
   end if;
 
-  -- LOCK 2: acting helper wallet (inside debit) + re-check APPLICATION_INTEREST
+  -- Debit (helper_debit_application_interest re-locks wallet in same txn — safe/no-op wait)
   debit_result := public.helper_debit_application_interest(
     p_helper_id,
     p_request_id,

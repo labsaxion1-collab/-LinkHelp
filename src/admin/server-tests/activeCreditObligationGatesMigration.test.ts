@@ -38,6 +38,10 @@ function fnBody(source: string, sig: string): string {
 
 const publishBody = fnBody(sql, 'create or replace function public.client_publish_request(');
 const submitBody = fnBody(sql, 'create or replace function public.helper_submit_application(');
+const cancelSql = readFileSync(
+  new URL('0065_client_cancel_request_authoritative.sql', migrationsDir),
+  'utf8',
+);
 
 describe('0066 active credit obligation gates migration', () => {
   it('is sequential after 0065', () => {
@@ -63,21 +67,48 @@ describe('0066 active credit obligation gates migration', () => {
     expect(publishBody).toContain('v_cost int := 1');
   });
 
-  it('gates helper_submit_application before quote, debit and application insert', () => {
+  it('locks helper_submit_application request before wallet (no wallet-first)', () => {
+    expect(submitBody).toContain('w_helper_wallet public.credit_wallets');
+    expect(submitBody).not.toContain('w_obligation_gate');
+    expect(submitBody).toContain('-- LOCK 1: request row');
+    expect(submitBody).toContain('-- LOCK 2: helper wallet');
+    const requestLockPos = submitBody.indexOf('-- LOCK 1: request row');
+    const walletLockPos = submitBody.indexOf('-- LOCK 2: helper wallet');
+    expect(requestLockPos).toBeGreaterThan(-1);
+    expect(walletLockPos).toBeGreaterThan(requestLockPos);
+    const firstRequestForUpdate = submitBody.indexOf('from public.requests');
+    const firstWalletForUpdate = submitBody.indexOf('from public.credit_wallets');
+    expect(firstRequestForUpdate).toBeGreaterThan(-1);
+    expect(firstWalletForUpdate).toBeGreaterThan(firstRequestForUpdate);
+  });
+
+  it('gates ACTIVE_CREDIT_OBLIGATION after locks and before debit', () => {
     expect(submitBody).toContain("raise exception 'ACTIVE_CREDIT_OBLIGATION'");
-    expect(submitBody).toContain('w_obligation_gate public.credit_wallets');
-    expect(submitBody).toContain('for update');
-    expect(submitBody.indexOf('ACTIVE_CREDIT_OBLIGATION')).toBeLessThan(
-      submitBody.indexOf('helper_compute_lead_quote'),
-    );
-    expect(submitBody.indexOf('ACTIVE_CREDIT_OBLIGATION')).toBeLessThan(
-      submitBody.indexOf('helper_debit_application_interest'),
-    );
-    expect(submitBody.indexOf('ACTIVE_CREDIT_OBLIGATION')).toBeLessThan(
-      submitBody.indexOf('insert into public.applications'),
-    );
+    const obligationPos = submitBody.indexOf("raise exception 'ACTIVE_CREDIT_OBLIGATION'");
+    const walletLockPos = submitBody.indexOf('-- LOCK 2: helper wallet');
+    const debitPos = submitBody.indexOf('helper_debit_application_interest');
+    expect(walletLockPos).toBeLessThan(obligationPos);
+    expect(obligationPos).toBeLessThan(debitPos);
+    expect(submitBody.indexOf('insert into public.applications')).toBeGreaterThan(obligationPos);
+  });
+
+  it('revalidates quote after request lock and preserves normal/VIP charges', () => {
+    expect(submitBody).toContain('Revalidate quote/charge after request lock');
     expect(submitBody).toContain('authoritative_charge := 4');
     expect(submitBody).toContain('authoritative_charge := snap_total + 4');
+    expect(sql).toContain(
+      'create or replace function public.helper_submit_application(\r\n  p_request_id uuid,\r\n  p_helper_id uuid,\r\n  p_client_id uuid,\r\n  p_message text default null,\r\n  p_proposed_amount numeric default null,\r\n  p_interest_amount int default null,\r\n  p_is_exclusive boolean default false\r\n)',
+    );
+  });
+
+  it('documents deadlock-safe lock order shared with 0065 cancel', () => {
+    expect(sql).toContain('client_cancel_request:  profiles → request → applications → helper wallets');
+    expect(sql).toContain('helper_submit_application: request → helper wallet');
+    expect(sql).toContain('Future HIRE_ARREARS settlement should follow: request/application → wallet → obligation');
+    const cancelRequestLock = cancelSql.indexOf('-- LOCK 2: request row');
+    const cancelWalletLock = cancelSql.indexOf('from public.credit_wallets');
+    expect(cancelRequestLock).toBeGreaterThan(-1);
+    expect(cancelWalletLock).toBeGreaterThan(cancelRequestLock);
   });
 
   it('does not alter has_active_credit_obligation helper from 0064', () => {

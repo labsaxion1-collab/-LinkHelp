@@ -67,12 +67,10 @@ export type ClientActivityOpenRequestCardProps = {
   onAccept: (app: Application) => void;
   onReject: (app: Application) => Promise<void> | void;
   showLifecycleMenu: boolean;
-  lifecycleControlsEnabled: boolean;
+  cancelEnabled: boolean;
   activityMenuOpen: boolean;
   onToggleActivityMenu: () => void;
   activityMenuRef?: React.Ref<HTMLDivElement>;
-  onPause: () => void;
-  onResume: () => void;
   onCancel: () => void;
 };
 
@@ -87,12 +85,10 @@ export function ClientActivityOpenRequestCard({
   onAccept,
   onReject,
   showLifecycleMenu: _showLifecycleMenu,
-  lifecycleControlsEnabled,
+  cancelEnabled,
   activityMenuOpen,
   onToggleActivityMenu,
   activityMenuRef,
-  onPause,
-  onResume,
   onCancel,
 }: ClientActivityOpenRequestCardProps) {
   const [view, setView] = useState<ClientActivityCardView>('summary');
@@ -272,34 +268,17 @@ export function ClientActivityOpenRequestCard({
         className="absolute right-0 top-full z-[60] mt-1 min-w-[12rem] overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-[0_12px_32px_rgba(15,23,42,0.14)]"
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {lifecycleControlsEnabled && job.status === 'paused' ? (
+        {cancelEnabled ? (
           <button
             type="button"
-            onClick={() => void onResume()}
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-slate-800 hover:bg-slate-50"
+            data-testid="client-activity-cancel-request"
+            onClick={onCancel}
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-amber-800 hover:bg-amber-50"
           >
-            <Icons.Play className="h-4 w-4 text-blue-600" aria-hidden />
-            {t('client_dashboard.resume_request')}
-          </button>
-        ) : lifecycleControlsEnabled && job.status === 'open' ? (
-          <button
-            type="button"
-            onClick={onPause}
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-slate-800 hover:bg-slate-50"
-          >
-            <Icons.Pause className="h-4 w-4 text-blue-600" aria-hidden />
-            {t('client_dashboard.pause_request')}
+            <Icons.Ban className="h-4 w-4 text-amber-600" aria-hidden />
+            {t('client_dashboard.cancel_request')}
           </button>
         ) : null}
-        <button
-          type="button"
-          data-testid="client-activity-cancel-request"
-          onClick={onCancel}
-          className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-amber-800 hover:bg-amber-50"
-        >
-          <Icons.Ban className="h-4 w-4 text-amber-600" aria-hidden />
-          {t('client_dashboard.cancel_request')}
-        </button>
       </div>
     );
   };

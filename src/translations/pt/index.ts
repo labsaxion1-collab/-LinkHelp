@@ -2590,7 +2590,7 @@ export const pt = {
     cancel_modal_body:
       'Este anúncio será removido dos pedidos ativos e os helpers interessados serão avisados.',
     cancel_modal_warning:
-      'Esta ação não pode ser desfeita. Os LinkCredits gastos pelos Helps neste chamado serão devolvidos.',
+      'Cancelar custa 7 LC. Se seu saldo for insuficiente, o restante ficará pendente e bloqueará novos pedidos.',
     cancel_modal_back: 'Não, manter chamado',
     cancel_modal_confirm: 'Sim, cancelar',
     remove: 'Remover',

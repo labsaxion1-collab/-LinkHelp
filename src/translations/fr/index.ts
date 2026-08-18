@@ -2587,7 +2587,7 @@ export const fr = {
     cancel_modal_body:
       'Cette annonce sera retirée des demandes actives et les helpers intéressés seront avertis.',
     cancel_modal_warning:
-      'Cette action est irréversible. Les LinkCredits dépensés par les Helps sur cette demande seront remboursés.',
+      'L’annulation coûte 7 LC. Si votre solde est insuffisant, le reste restera en attente et bloquera de nouvelles demandes.',
     cancel_modal_back: 'Non, garder la demande',
     cancel_modal_confirm: 'Oui, annuler',
     remove: 'Retirer',

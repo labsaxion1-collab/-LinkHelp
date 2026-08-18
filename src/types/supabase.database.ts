@@ -189,6 +189,7 @@ export type Database = {
       };
       ensure_client_signup_credits: { Args: { p_client_id: string }; Returns: number };
       client_publish_request: { Args: { p_request: Json; p_extended?: boolean }; Returns: Json };
+      client_cancel_request: { Args: { p_request_id: string }; Returns: Json };
       confirm_client_stripe_linkcredit_purchase: { Args: { payload: Json }; Returns: Json };
       update_helper_base_address: {
         Args: {

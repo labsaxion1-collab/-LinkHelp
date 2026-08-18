@@ -9,29 +9,17 @@ import {
 } from '@/utils/linkhelpHosts';
 
 /**
- * Pause / resume / cancel RPCs are not in staging packs 20–60.
- * Disable those controls on staging/dev/preview hosts only.
- * Production marketplace hosts keep the controls (historical DB may still have the RPCs).
+ * Authoritative client cancel RPC (0065). Enabled on all app hosts once migration is applied.
+ */
+export function isRequestCancelEnabled(hostname?: string): boolean {
+  void hostname;
+  return true;
+}
+
+/**
+ * @deprecated Pause/resume removed from product (no paused status in DB). Use isRequestCancelEnabled.
  */
 export function isRequestLifecycleControlsEnabled(hostname?: string): boolean {
-  const host =
-    (hostname ?? (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase();
-
-  if (!host) return true;
-
-  if (isLocalHost(host) || isPreviewHost(host) || host === STAGING_TEST_HOSTNAME) {
-    return false;
-  }
-
-  // Production app / public / flux keep lifecycle UI.
-  if (
-    host === APP_HOSTNAME ||
-    host === FLUX_HOSTNAME ||
-    host === WWW_HOSTNAME ||
-    host === APEX_HOSTNAME
-  ) {
-    return true;
-  }
-
-  return true;
+  void hostname;
+  return false;
 }

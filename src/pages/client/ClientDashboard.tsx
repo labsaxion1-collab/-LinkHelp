@@ -55,9 +55,8 @@ import {
   readHiddenJobIds,
 } from '@/utils/jobVisibility';
 import { CancelRequestModal } from '@/components/client/CancelRequestModal';
-import { PauseRequestModal } from '@/components/client/PauseRequestModal';
 import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
-import { isRequestLifecycleControlsEnabled } from '@/config/requestLifecycleCapability';
+import { isRequestCancelEnabled } from '@/config/requestLifecycleCapability';
 import { extractErrorMessage } from '@/utils/errorMessage';
 import { formatHireError, formatRejectApplicationError, logAcceptProposalError } from '@/utils/formatHireError';
 import { formatRequestLifecycleError } from '@/utils/formatRequestLifecycleError';
@@ -200,8 +199,6 @@ export default function ClientDashboard() {
   const [acceptingApplicationId, setAcceptingApplicationId] = useState<string | null>(null);
   const [cancelTargetJobId, setCancelTargetJobId] = useState<string | null>(null);
   const [cancellingJobId, setCancellingJobId] = useState<string | null>(null);
-  const [pauseTargetJobId, setPauseTargetJobId] = useState<string | null>(null);
-  const [pausingJobId, setPausingJobId] = useState<string | null>(null);
   const [detailJob, setDetailJob] = useState<Job | null>(null);
   const [expandedCandidateProfileKey, setExpandedCandidateProfileKey] = useState<string | null>(null);
   const [serviceConfirmJob, setServiceConfirmJob] = useState<Job | null>(null);
@@ -211,12 +208,12 @@ export default function ClientDashboard() {
   const routerLocation = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const isClientJobsPage = routerLocation.pathname === ROUTES.clientJobs;
-  const lifecycleControlsEnabled = isRequestLifecycleControlsEnabled();
+  const cancelEnabled = isRequestCancelEnabled();
 
   const { t, language } = useLanguage();
   const locale = language === 'fr' ? 'fr-CA' : language === 'en' ? 'en-CA' : 'pt-BR';
   const { showToast } = useToast();
-  const { profile, authLoading, session } = useAuth();
+  const { profile, authLoading, session, refreshProfile } = useAuth();
   const { shouldShow: showClientOnboarding, completing: completingClientOnboarding, complete: completeClientOnboarding } =
     useClientOnboarding();
   const snapshotLc = useMemo(() => {
@@ -568,36 +565,6 @@ export default function ClientDashboard() {
     [upcomingJobs, clientJobs],
   );
 
-  const handleConfirmPauseJob = async () => {
-    if (!pauseTargetJobId || pausingJobId) return;
-    setPausingJobId(pauseTargetJobId);
-    try {
-      await appDataActionsRef.current.updateJobStatus(pauseTargetJobId, 'paused');
-      showToast('Chamado pausado.', 'success');
-      setPauseTargetJobId(null);
-    } catch (error) {
-      console.error(error);
-      showToast(formatRequestLifecycleError(error, t), 'error');
-    } finally {
-      setPausingJobId(null);
-    }
-  };
-
-  const handleResumeJob = async (jobId: string) => {
-    try {
-      const outcome = await appDataActionsRef.current.updateJobStatus(jobId, 'open');
-      if (outcome && 'expiredWhilePaused' in outcome && outcome.expiredWhilePaused) {
-        showToast('Chamado cancelado porque a data prevista passou durante a pausa.', 'info');
-      } else {
-        showToast('Chamado retomado.', 'success');
-      }
-      setActivityMenuJobId(null);
-    } catch (error) {
-      console.error(error);
-      showToast(formatRequestLifecycleError(error, t), 'error');
-    }
-  };
-
   const openHelperProfileFromApplication = (job: Job, app: Application) => {
     openHelperProfile(
       {
@@ -636,6 +603,7 @@ export default function ClientDashboard() {
     setCancellingJobId(jobId);
     try {
       await appDataActionsRef.current.updateJobStatus(jobId, 'cancelled');
+      await refreshProfile();
       hideJobForUser(me.id, jobId);
       setHiddenJobIds((prev) => new Set(prev).add(jobId));
       showToast(t('client_dashboard.request_cancelled_toast'), 'success');
@@ -1081,15 +1049,6 @@ export default function ClientDashboard() {
         }}
         onConfirm={() => void handleConfirmCancelJob()}
         confirming={cancellingJobId != null}
-      />
-
-      <PauseRequestModal
-        open={pauseTargetJobId != null}
-        onClose={() => {
-          if (!pausingJobId) setPauseTargetJobId(null);
-        }}
-        onConfirm={() => void handleConfirmPauseJob()}
-        confirming={pausingJobId != null}
       />
 
       <ServiceConfirmModal
@@ -1677,16 +1636,16 @@ export default function ClientDashboard() {
                       isActivityPanelOpen && expandedActivityPanel?.panel === 'applications';
                     const isDescriptionOpen =
                       isActivityPanelOpen && expandedActivityPanel?.panel === 'description';
-                    const canLifecyclePauseResume =
-                      lifecycleControlsEnabled && (job.status === 'open' || job.status === 'paused');
-                    const canLifecycleCancel = lifecycleControlsEnabled;
+                    const canLifecycleCancel =
+                      cancelEnabled &&
+                      (job.status === 'open' || job.status === 'in_progress');
                     const canCompleteFromMenu =
                       job.status === 'in_progress' &&
                       applications.some((a) => a.jobId === job.id && a.status === 'accepted');
                     const showActivityMenu =
                       jobsListTab === 'waiting' &&
                       job.status !== 'completed' &&
-                      (canLifecyclePauseResume || canLifecycleCancel || canCompleteFromMenu);
+                      (canLifecycleCancel || canCompleteFromMenu);
 
                     if (job.status === 'completed') {
                       const hiredApplication = resolveHiredHelperForCompletedJob(
@@ -1727,17 +1686,12 @@ export default function ClientDashboard() {
                           onAccept={(app) => void handleAcceptProposal(job, app)}
                           onReject={(app) => handleRejectApplication(app.id, app.isExclusive === true)}
                           showLifecycleMenu={showActivityMenu}
-                          lifecycleControlsEnabled={lifecycleControlsEnabled}
+                          cancelEnabled={canLifecycleCancel}
                           activityMenuOpen={activityMenuJobId === job.id}
                           onToggleActivityMenu={() =>
                             setActivityMenuJobId((current) => (current === job.id ? null : job.id))
                           }
                           activityMenuRef={activityMenuJobId === job.id ? activityMenuRef : undefined}
-                          onPause={() => {
-                            setPauseTargetJobId(job.id);
-                            setActivityMenuJobId(null);
-                          }}
-                          onResume={() => void handleResumeJob(job.id)}
                           onCancel={() => {
                             setCancelTargetJobId(job.id);
                             setActivityMenuJobId(null);
@@ -1772,32 +1726,7 @@ export default function ClientDashboard() {
                           </button>
                           {activityMenuJobId === job.id ? (
                             <div className="absolute right-0 top-full z-50 mt-1 min-w-[11rem] overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-[0_12px_32px_rgba(15,23,42,0.14)]">
-                              {lifecycleControlsEnabled && job.status === 'paused' ? (
-                                <button
-                                  type="button"
-                                  onClick={() => void handleResumeJob(job.id)}
-                                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-slate-800 hover:bg-slate-50"
-                                >
-                                  <Icons.Play className="h-4 w-4 text-blue-600" />
-                                  Retorna
-                                </button>
-                              ) : lifecycleControlsEnabled && job.status === 'open' ? (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setPauseTargetJobId(job.id);
-                                    setActivityMenuJobId(null);
-                                  }}
-                                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-slate-800 hover:bg-slate-50"
-                                >
-                                  <Icons.Pause className="h-4 w-4 text-blue-600" />
-                                  Pausar
-                                </button>
-                              ) : null}
-                              {job.status === 'in_progress' &&
-                              applications.some(
-                                (a) => a.jobId === job.id && a.status === 'accepted',
-                              ) ? (
+                              {canCompleteFromMenu ? (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1810,7 +1739,7 @@ export default function ClientDashboard() {
                                   {t('upcoming_jobs.complete_work')}
                                 </button>
                               ) : null}
-                              {lifecycleControlsEnabled ? (
+                              {canLifecycleCancel ? (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1820,7 +1749,7 @@ export default function ClientDashboard() {
                                   className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-amber-800 hover:bg-amber-50"
                                 >
                                   <Icons.Ban className="h-4 w-4 text-amber-600" />
-                                  Cancelar
+                                  {t('client_dashboard.cancel_request')}
                                 </button>
                               ) : null}
                             </div>

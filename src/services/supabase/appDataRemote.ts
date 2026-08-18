@@ -657,7 +657,39 @@ export type RequestLifecycleRpcResult = {
   status?: string;
   expiredWhilePaused?: boolean;
   alreadyCancelled?: boolean;
+  feeLc?: number;
+  debitedLc?: number;
+  debtCreatedLc?: number;
+  normalHelpersCompensated?: number;
+  normalCompensationTotalLc?: number;
+  vipRefundLc?: number;
+  balanceAfter?: number;
 };
+
+function mapCancelRpcPayload(data: Record<string, unknown> | null): RequestLifecycleRpcResult {
+  if (!data) return {};
+  return {
+    requestId: typeof data.request_id === 'string' ? data.request_id : undefined,
+    status: typeof data.status === 'string' ? data.status : undefined,
+    alreadyCancelled: data.already_cancelled === true,
+    feeLc: typeof data.fee_lc === 'number' ? data.fee_lc : Number(data.fee_lc) || undefined,
+    debitedLc: typeof data.debited_lc === 'number' ? data.debited_lc : Number(data.debited_lc) || undefined,
+    debtCreatedLc:
+      typeof data.debt_created_lc === 'number' ? data.debt_created_lc : Number(data.debt_created_lc) || undefined,
+    normalHelpersCompensated:
+      typeof data.normal_helpers_compensated === 'number'
+        ? data.normal_helpers_compensated
+        : Number(data.normal_helpers_compensated) || undefined,
+    normalCompensationTotalLc:
+      typeof data.normal_compensation_total_lc === 'number'
+        ? data.normal_compensation_total_lc
+        : Number(data.normal_compensation_total_lc) || undefined,
+    vipRefundLc:
+      typeof data.vip_refund_lc === 'number' ? data.vip_refund_lc : Number(data.vip_refund_lc) || undefined,
+    balanceAfter:
+      typeof data.balance_after === 'number' ? data.balance_after : Number(data.balance_after) || undefined,
+  };
+}
 
 function mapLifecycleRpcError(error: { message?: string }): never {
   const msg = error.message ?? '';
@@ -700,12 +732,18 @@ export async function remoteResumeClientRequest(requestId: string): Promise<Requ
   return result;
 }
 
-/** Client cancels request with full helper credit refunds — RPC required. */
+/** Client cancels request — authoritative 7 LC fee + helper compensations (0065). */
 export async function remoteCancelClientRequest(requestId: string): Promise<RequestLifecycleRpcResult> {
-  return callLifecycleRpc('client_cancel_request', {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+  const { data, error } = await sb.rpc('client_cancel_request', {
     p_request_id: requestId,
-    p_reason: 'client_cancelled',
-  });
+  } as never);
+  if (error) {
+    if (isPostgrestMissingResource(error)) lifecycleBackendNotReady();
+    mapLifecycleRpcError(error);
+  }
+  return mapCancelRpcPayload((data ?? {}) as Record<string, unknown>);
 }
 
 /** Client rejects a candidate — uses RPC for VIP lock sync + helper notification. */

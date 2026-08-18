@@ -36,20 +36,19 @@ describe('CancelRequestModal compact centered presentation', () => {
     expect(confirmIdx).toBeGreaterThan(keepIdx);
   });
 
-  it('documents helper LC refund warning aligned with remoteCancelClientRequest', async () => {
+  it('documents 7 LC cancel fee warning in pt/en/fr', async () => {
     const src = await readFile(resolve('src/components/client/CancelRequestModal.tsx'), 'utf8');
-    expect(src).toContain('helpers receive full LC refunds');
     expect(src).toContain('job_actions.cancel_modal_warning');
     const remote = await readFile(resolve('src/services/supabase/appDataRemote.ts'), 'utf8');
-    expect(remote).toContain('full helper credit refunds');
+    expect(remote).toContain("rpc('client_cancel_request'");
+    expect(remote).toContain('p_request_id');
+    expect(remote).not.toContain('p_reason');
     const en = await readFile(resolve('src/translations/en/index.ts'), 'utf8');
     const pt = await readFile(resolve('src/translations/pt/index.ts'), 'utf8');
     const fr = await readFile(resolve('src/translations/fr/index.ts'), 'utf8');
-    expect(en).toContain('LinkCredits spent by Helps on this request will be refunded');
-    expect(pt).toContain('Os LinkCredits gastos pelos Helps neste chamado serão devolvidos');
-    expect(fr).toContain('Les LinkCredits dépensés par les Helps sur cette demande seront remboursés');
-    expect(en).not.toContain('credits used on this request will not be refunded');
-    expect(pt).not.toContain('créditos utilizados neste chamado não serão devolvidos');
+    expect(en).toContain('Cancelling costs 7 LC');
+    expect(pt).toContain('Cancelar custa 7 LC');
+    expect(fr).toContain('L’annulation coûte 7 LC');
   });
 
   it('keeps ClientDashboard wiring for confirm once + toast on success', async () => {
@@ -60,5 +59,20 @@ describe('CancelRequestModal compact centered presentation', () => {
     expect(dash).toContain('request_cancelled_toast');
     expect(dash).toContain("showToast(t('client_dashboard.request_cancelled_toast'), 'success')");
     expect(dash).toContain('formatRequestLifecycleError');
+    expect(dash).toContain('refreshProfile');
+    expect(dash).not.toContain('PauseRequestModal');
+    expect(dash).not.toContain('pauseTargetJobId');
+  });
+
+  it('hides pause/resume from activity cards', async () => {
+    const card = await readFile(
+      resolve('src/components/client/ClientActivityOpenRequestCard.tsx'),
+      'utf8',
+    );
+    expect(card).toContain('cancelEnabled');
+    expect(card).not.toContain('onPause');
+    expect(card).not.toContain('onResume');
+    expect(card).not.toContain('pause_request');
+    expect(card).not.toContain('resume_request');
   });
 });

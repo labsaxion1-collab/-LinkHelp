@@ -12,11 +12,7 @@ type Props = {
 };
 
 /**
- * Compact centered cancel confirmation — not a bottom sheet, not inside the 241px card.
- *
- * Credit copy matches FE cancel path intent (`remoteCancelClientRequest`):
- * helpers receive full LC refunds; do not claim client publish LC is lost/refunded
- * until REQUEST_CANCEL_REFUND is actually wired in SQL.
+ * Compact centered cancel confirmation — 7 LC fee (0065 client_cancel_request).
  */
 export function CancelRequestModal({ open, onClose, onConfirm, confirming }: Props) {
   const { t } = useLanguage();

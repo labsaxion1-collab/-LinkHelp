@@ -99,12 +99,13 @@ describe('0067 stripe credit purchase obligation settlement', () => {
     expect(applyBody).not.toContain('total_purchased = total_purchased + v_net');
   });
 
-  it('10–12. idempotent retry, concurrency lock, paid only after ledgers', () => {
-    expect(applyBody).toContain('when unique_violation then');
+  it('10–12. idempotent retry, concurrency lock, paid only after complete accounting', () => {
+    expect(applyBody).toContain('on conflict do nothing');
     expect(applyBody).toContain('for update');
     expect(applyBody).toContain('alreadyProcessed');
-    expect(applyBody).toContain('v_purchase_complete');
-    expect(applyBody).toContain("v_pe.status = 'paid' and v_purchase_complete");
+    expect(applyBody).toContain('v_accounting_complete');
+    expect(applyBody).toContain("v_pe.status = 'paid'");
+    expect(applyBody).toContain("raise exception 'STRIPE_PURCHASE_INCOMPLETE'");
     expect(applyBody.lastIndexOf("status = 'paid'")).toBeGreaterThan(applyBody.indexOf("'OBLIGATION_SETTLEMENT'"));
     expect(sql).toContain('credit_transactions_stripe_session_purchase_uidx');
     expect(sql).toContain('client_credit_ledger_stripe_session_uidx');
@@ -163,6 +164,59 @@ describe('0067 stripe credit purchase obligation settlement', () => {
     expect(clientRpc).toContain("set search_path = ''");
     expect(sql).toContain('create or replace function public.confirm_stripe_linkcredit_purchase_apply(');
     expect(sql).toMatch(/confirm_stripe_linkcredit_purchase_apply\([\s\S]{0,400}set search_path = ''/);
+  });
+
+  it('distinguishes identical retries from Stripe idempotency collisions for helper and client', () => {
+    const collisionIdx = applyBody.indexOf("raise exception 'STRIPE_IDEMPOTENCY_COLLISION'");
+    const incompleteIdx = applyBody.indexOf("raise exception 'STRIPE_PURCHASE_INCOMPLETE'");
+    const lock2Helper = applyBody.indexOf('-- LOCK 2: helper wallet');
+    const lock2Client = applyBody.indexOf('-- LOCK 2: client profile');
+    const lock3 = applyBody.indexOf('-- LOCK 3: open obligations oldest-first');
+    const alreadyIdx = applyBody.indexOf("'alreadyProcessed', true");
+
+    expect(collisionIdx).toBeGreaterThan(-1);
+    expect(incompleteIdx).toBeGreaterThan(-1);
+    expect(lock2Helper).toBeGreaterThan(collisionIdx);
+    expect(lock2Client).toBeGreaterThan(collisionIdx);
+    expect(lock3).toBeGreaterThan(incompleteIdx);
+    expect(alreadyIdx).toBeGreaterThan(-1);
+    expect(alreadyIdx).toBeLessThan(lock2Helper);
+
+    expect(applyBody).toContain('on conflict do nothing');
+    expect(applyBody).toContain('order by id asc');
+    expect(applyBody).toContain('v_session_row_id');
+    expect(applyBody).toContain('v_event_row_id');
+    expect(applyBody).toContain('v_legacy_null_event');
+    expect(applyBody).toContain('v_accounting_complete');
+
+    expect(applyBody).toContain('v_pe.stripe_session_id is distinct from p_stripe_session_id');
+    expect(applyBody).toContain('v_pe.stripe_event_id is distinct from p_stripe_event_id');
+    expect(applyBody).toContain('v_session_row_id is distinct from v_event_row_id');
+    expect(applyBody).toContain('v_pe.user_id is distinct from p_user_id');
+    expect(applyBody).toContain('v_pe.purchase_audience is distinct from p_expected_audience');
+    expect(applyBody).toContain('v_pe.package_id is distinct from pkg.package_id');
+    expect(applyBody).toContain('v_pe.amount_cents is distinct from pkg.amount_cents');
+    expect(applyBody).toContain("upper(v_pe.currency) is distinct from 'CAD'");
+    expect(applyBody).toContain('v_pe.stripe_payment_intent is distinct from p_stripe_payment_intent');
+
+    expect(applyBody).toContain("v_pe.status = 'paid'");
+    expect(applyBody).toContain("ct.type = 'CREDIT_PURCHASE'");
+    expect(applyBody).toContain("l.type = 'CREDIT_PURCHASE'");
+    expect(applyBody).toContain("s.payment_event_id = v_pe.id");
+    expect(applyBody).toContain("'gross_lc'");
+    expect(applyBody).toContain("'settled_lc'");
+    expect(applyBody).toContain("'net_lc'");
+    expect(applyBody).toContain('v_settlement_ledger is not distinct from (-v_recorded_settled)');
+
+    expect(applyBody).toContain("if v_pe.stripe_event_id is null then");
+    expect(applyBody).toContain('v_legacy_null_event := true');
+    expect(applyBody.indexOf("if v_legacy_null_event then")).toBeGreaterThan(alreadyIdx);
+    expect(applyBody).toContain("if v_pe.status = 'paid' or v_has_purchase then");
+    expect(applyBody).not.toContain('coalesce(stripe_event_id, p_stripe_event_id)');
+
+    expect(helperRpc).toContain("public.confirm_stripe_linkcredit_purchase_apply(payload, 'helper')");
+    expect(clientRpc).toContain("public.confirm_stripe_linkcredit_purchase_apply(payload, 'client')");
+    expect(sql).toContain('revoke all on function public.confirm_stripe_linkcredit_purchase_apply(jsonb, text) from service_role');
   });
 
   it('locks payment event then buyer balance then obligations, never request', () => {

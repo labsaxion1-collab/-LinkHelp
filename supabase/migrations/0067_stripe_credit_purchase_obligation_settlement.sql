@@ -4,6 +4,14 @@
 --   client: payment_events → profiles → credit_obligations (created_at, id)
 --   helper: payment_events → credit_wallets → credit_obligations (created_at, id)
 -- Never lock request rows. Never lock obligations before the buyer balance row.
+--
+-- Idempotency:
+--   INSERT payment_events pending ON CONFLICT DO NOTHING, then lock session and/or event rows.
+--   Retry only when session_id, event_id, user_id, audience, package, credits, amount,
+--   currency and payment_intent all identify the same purchase.
+--   Any mismatch → STRIPE_IDEMPOTENCY_COLLISION (no credit, no alreadyProcessed).
+--   Legacy paid+complete rows with stripe_event_id null may alreadyProcessed by session.
+--   Incomplete legacy null event_id → STRIPE_PURCHASE_INCOMPLETE (do not fill event_id).
 
 -- ---------------------------------------------------------------------------
 -- 1) payment_events: event id + audience
@@ -274,6 +282,21 @@ declare
   v_after_purchase int;
   v_final int;
   v_purchase_complete boolean := false;
+  v_accounting_complete boolean := false;
+  v_legacy_null_event boolean := false;
+  v_has_purchase boolean := false;
+  v_pe_session public.payment_events;
+  v_pe_event public.payment_events;
+  v_pe_lock public.payment_events;
+  v_session_row_id uuid;
+  v_event_row_id uuid;
+  v_purchase_amount int;
+  v_purchase_meta jsonb;
+  v_settlement_sum int := 0;
+  v_settlement_ledger int := 0;
+  v_recorded_gross int;
+  v_recorded_settled int;
+  v_recorded_net int;
   v_meta jsonb;
 begin
   if p_expected_audience is distinct from 'helper'
@@ -341,89 +364,213 @@ begin
   v_gross := pkg.credits;
 
   -- LOCK 1: payment event / session
-  begin
-    insert into public.payment_events (
-      user_id,
-      stripe_session_id,
-      stripe_payment_intent,
-      stripe_event_id,
-      package_id,
-      price_id,
-      credits,
-      amount_cents,
-      currency,
-      status,
-      purchase_audience,
-      raw_event
-    ) values (
-      p_user_id,
-      p_stripe_session_id,
-      p_stripe_payment_intent,
-      p_stripe_event_id,
-      pkg.package_id,
-      nullif(btrim(payload->>'price_id'), ''),
-      v_gross,
-      pkg.amount_cents,
-      'CAD',
-      'pending',
-      p_expected_audience,
-      p_raw_event
-    )
-    returning * into v_pe;
-  exception
-    when unique_violation then
+  -- ON CONFLICT DO NOTHING catches every unique index (session, event, unidentified).
+  -- Unidentified unique → no session/event row → STRIPE_IDEMPOTENCY_COLLISION, never retry.
+  insert into public.payment_events (
+    user_id,
+    stripe_session_id,
+    stripe_payment_intent,
+    stripe_event_id,
+    package_id,
+    price_id,
+    credits,
+    amount_cents,
+    currency,
+    status,
+    purchase_audience,
+    raw_event
+  ) values (
+    p_user_id,
+    p_stripe_session_id,
+    p_stripe_payment_intent,
+    p_stripe_event_id,
+    pkg.package_id,
+    nullif(btrim(payload->>'price_id'), ''),
+    v_gross,
+    pkg.amount_cents,
+    'CAD',
+    'pending',
+    p_expected_audience,
+    p_raw_event
+  )
+  on conflict do nothing
+  returning * into v_pe;
+
+  if found then
+    select *
+    into v_pe
+    from public.payment_events
+    where id = v_pe.id
+    for update;
+  else
+    v_session_row_id := null;
+    v_event_row_id := null;
+
+    for v_pe_lock in
       select *
-      into v_pe
       from public.payment_events
       where stripe_session_id = p_stripe_session_id
          or stripe_event_id = p_stripe_event_id
-      for update;
-
-      if v_pe.id is null then
-        raise;
+      order by id asc
+      for update
+    loop
+      if v_pe_lock.stripe_session_id is not distinct from p_stripe_session_id then
+        if v_session_row_id is not null
+           and v_session_row_id is distinct from v_pe_lock.id then
+          raise exception 'STRIPE_IDEMPOTENCY_COLLISION';
+        end if;
+        v_session_row_id := v_pe_lock.id;
+        v_pe_session := v_pe_lock;
       end if;
-  end;
 
-  perform 1
-  from public.payment_events
-  where id = v_pe.id
-  for update;
+      if v_pe_lock.stripe_event_id is not distinct from p_stripe_event_id then
+        if v_event_row_id is not null
+           and v_event_row_id is distinct from v_pe_lock.id then
+          raise exception 'STRIPE_IDEMPOTENCY_COLLISION';
+        end if;
+        v_event_row_id := v_pe_lock.id;
+        v_pe_event := v_pe_lock;
+      end if;
+    end loop;
 
-  select *
-  into v_pe
-  from public.payment_events
-  where id = v_pe.id
-  for update;
+    if v_session_row_id is not null
+       and v_event_row_id is not null
+       and v_session_row_id is distinct from v_event_row_id then
+      raise exception 'STRIPE_IDEMPOTENCY_COLLISION';
+    end if;
+
+    if v_session_row_id is not null then
+      v_pe := v_pe_session;
+    elsif v_event_row_id is not null then
+      v_pe := v_pe_event;
+    else
+      raise exception 'STRIPE_IDEMPOTENCY_COLLISION';
+    end if;
+  end if;
+
+  if v_pe.stripe_session_id is distinct from p_stripe_session_id then
+    raise exception 'STRIPE_IDEMPOTENCY_COLLISION';
+  end if;
+
+  if v_pe.stripe_event_id is distinct from p_stripe_event_id then
+    if v_pe.stripe_event_id is null then
+      v_legacy_null_event := true;
+    else
+      raise exception 'STRIPE_IDEMPOTENCY_COLLISION';
+    end if;
+  end if;
 
   if v_pe.user_id is distinct from p_user_id then
-    raise exception 'SESSION_USER_MISMATCH';
+    raise exception 'STRIPE_IDEMPOTENCY_COLLISION';
   end if;
 
   if v_pe.purchase_audience is not null
      and v_pe.purchase_audience is distinct from p_expected_audience then
-    raise exception 'AUDIENCE_INVALID';
+    raise exception 'STRIPE_IDEMPOTENCY_COLLISION';
   end if;
+
+  if v_pe.package_id is distinct from pkg.package_id
+     or v_pe.credits is distinct from v_gross
+     or (
+       v_pe.amount_cents is not null
+       and v_pe.amount_cents is distinct from pkg.amount_cents
+     )
+     or (
+       v_pe.currency is not null
+       and upper(v_pe.currency) is distinct from 'CAD'
+     )
+     or (
+       v_pe.stripe_payment_intent is not null
+       and p_stripe_payment_intent is not null
+       and v_pe.stripe_payment_intent is distinct from p_stripe_payment_intent
+     ) then
+    raise exception 'STRIPE_IDEMPOTENCY_COLLISION';
+  end if;
+
+  v_purchase_amount := null;
+  v_purchase_meta := null;
+  v_settlement_sum := 0;
+  v_settlement_ledger := 0;
 
   if p_expected_audience = 'helper' then
-    select exists (
-      select 1
-      from public.credit_transactions ct
-      where ct.type = 'CREDIT_PURCHASE'
-        and (
-          ct.related_payment_id = p_stripe_session_id
-          or ct.metadata->>'stripe_session_id' = p_stripe_session_id
-        )
-    ) into v_purchase_complete;
+    select ct.amount, ct.metadata
+    into v_purchase_amount, v_purchase_meta
+    from public.credit_transactions ct
+    where ct.type = 'CREDIT_PURCHASE'
+      and (
+        ct.related_payment_id = p_stripe_session_id
+        or ct.metadata->>'stripe_session_id' = p_stripe_session_id
+      )
+    limit 1;
+    v_has_purchase := found;
+
+    select coalesce(sum(s.amount), 0)
+    into v_settlement_sum
+    from public.credit_obligation_settlements s
+    where s.payment_event_id = v_pe.id;
+
+    select coalesce(sum(ct.amount), 0)
+    into v_settlement_ledger
+    from public.credit_transactions ct
+    where ct.type = 'OBLIGATION_SETTLEMENT'
+      and (
+        ct.related_payment_id = p_stripe_session_id
+        or ct.metadata->>'stripe_session_id' = p_stripe_session_id
+      );
   else
-    select exists (
-      select 1
-      from public.client_credit_ledger l
-      where l.type = 'CREDIT_PURCHASE'
-        and l.metadata->>'stripe_session_id' = p_stripe_session_id
-    ) into v_purchase_complete;
+    select l.amount, l.metadata
+    into v_purchase_amount, v_purchase_meta
+    from public.client_credit_ledger l
+    where l.type = 'CREDIT_PURCHASE'
+      and l.metadata->>'stripe_session_id' = p_stripe_session_id
+    limit 1;
+    v_has_purchase := found;
+
+    select coalesce(sum(s.amount), 0)
+    into v_settlement_sum
+    from public.credit_obligation_settlements s
+    where s.payment_event_id = v_pe.id;
+
+    select coalesce(sum(l.amount), 0)
+    into v_settlement_ledger
+    from public.client_credit_ledger l
+    where l.type = 'OBLIGATION_SETTLEMENT'
+      and l.metadata->>'stripe_session_id' = p_stripe_session_id;
   end if;
 
-  if v_pe.status = 'paid' and v_purchase_complete then
+  v_purchase_complete := v_has_purchase;
+
+  if v_has_purchase then
+    if v_purchase_meta ? 'gross_lc' then
+      v_recorded_gross := (v_purchase_meta->>'gross_lc')::int;
+    else
+      v_recorded_gross := v_purchase_amount;
+    end if;
+
+    if v_purchase_meta ? 'settled_lc' then
+      v_recorded_settled := (v_purchase_meta->>'settled_lc')::int;
+    else
+      v_recorded_settled := v_settlement_sum;
+    end if;
+
+    if v_purchase_meta ? 'net_lc' then
+      v_recorded_net := (v_purchase_meta->>'net_lc')::int;
+    else
+      v_recorded_net := v_recorded_gross - v_recorded_settled;
+    end if;
+
+    v_accounting_complete :=
+      v_pe.status = 'paid'
+      and v_purchase_amount is not distinct from v_gross
+      and v_recorded_gross is not distinct from v_gross
+      and v_recorded_settled is not distinct from v_settlement_sum
+      and v_settlement_ledger is not distinct from (-v_recorded_settled)
+      and v_recorded_net is not distinct from (v_gross - v_recorded_settled);
+  else
+    v_accounting_complete := false;
+  end if;
+
+  if v_accounting_complete then
     if p_expected_audience = 'helper' then
       select coalesce(cw.balance, 0)
       into v_final
@@ -442,8 +589,19 @@ begin
       'already_processed', true,
       'credits', v_gross,
       'gross_lc', v_gross,
+      'settled_lc', v_recorded_settled,
+      'net_lc', v_recorded_net,
       'balanceAfter', coalesce(v_final, 0)
     );
+  end if;
+
+  -- Legacy paid/complete already returned. Incomplete or null event_id must not credit.
+  if v_legacy_null_event then
+    raise exception 'STRIPE_PURCHASE_INCOMPLETE';
+  end if;
+
+  if v_pe.status = 'paid' or v_has_purchase then
+    raise exception 'STRIPE_PURCHASE_INCOMPLETE';
   end if;
 
   if p_expected_audience = 'helper' then
@@ -615,7 +773,7 @@ begin
     currency = 'CAD',
     purchase_audience = p_expected_audience,
     stripe_payment_intent = coalesce(p_stripe_payment_intent, stripe_payment_intent),
-    stripe_event_id = coalesce(stripe_event_id, p_stripe_event_id),
+    stripe_event_id = p_stripe_event_id,
     raw_event = coalesce(p_raw_event, raw_event)
   where id = v_pe.id;
 

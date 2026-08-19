@@ -66,6 +66,19 @@ describe('resolveCreditTransactionAmount', () => {
     ).toBe('credits_tx.type_vip_partial_refund');
   });
 
+  it('maps obligation settlement summary key', () => {
+    expect(
+      creditTransactionSummaryKey({
+        ...baseTx,
+        type: 'OBLIGATION_SETTLEMENT',
+        amount: -2,
+        balanceBefore: 35,
+        balanceAfter: 33,
+        description: 'Credit obligation settlement via Stripe purchase',
+      }),
+    ).toBe('credits_tx.type_obligation_settlement');
+  });
+
   it('maps VIP rejected refund summary key', () => {
     expect(
       creditTransactionSummaryKey({

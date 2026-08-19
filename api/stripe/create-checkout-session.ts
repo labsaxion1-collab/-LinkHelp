@@ -57,11 +57,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const admin = getSupabaseAdmin();
-  if (admin) {
-    const { data: profile } = await admin.from('profiles').select('role').eq('id', userId).maybeSingle();
-    if (profile && (profile as { role?: string }).role === 'client') {
-      return res.status(403).json({ error: 'HELPERS_ONLY' });
-    }
+  if (!admin) {
+    return res.status(503).json({ error: 'SUPABASE_ADMIN_REQUIRED' });
+  }
+
+  const { data: profile, error: profileError } = await admin
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .maybeSingle();
+  if (profileError || !profile) {
+    return res.status(403).json({ error: 'PROFILE_REQUIRED' });
+  }
+  if ((profile as { role?: string }).role === 'client') {
+    return res.status(403).json({ error: 'HELPERS_ONLY' });
+  }
+  if ((profile as { role?: string }).role !== 'helper') {
+    return res.status(403).json({ error: 'HELPERS_ONLY' });
   }
 
   const siteUrl = resolveCheckoutSiteUrl(body.returnOrigin, isolation.deployTarget);

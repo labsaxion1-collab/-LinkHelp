@@ -30,6 +30,7 @@ export function decideWebhookCheckoutCredit(input: {
   audience?: string | null;
   sessionId?: string | null;
   paymentIntentId?: string | null;
+  eventId?: string | null;
   amountTotal?: number | null;
   currency?: string | null;
 }): WebhookCreditDecision {
@@ -59,11 +60,50 @@ export function decideWebhookCheckoutCredit(input: {
     };
   }
 
+  if (!input.sessionId?.trim()) {
+    return {
+      action: 'reject',
+      httpStatus: 400,
+      publicBody: 'Invalid payment metadata',
+      code: 'STRIPE_SESSION_ID_REQUIRED',
+    };
+  }
+
+  if (!input.eventId?.trim()) {
+    return {
+      action: 'reject',
+      httpStatus: 400,
+      publicBody: 'Invalid payment metadata',
+      code: 'STRIPE_EVENT_ID_REQUIRED',
+    };
+  }
+
+  const currency = (input.currency ?? 'CAD').trim().toUpperCase();
+  if (currency !== 'CAD') {
+    return {
+      action: 'reject',
+      httpStatus: 400,
+      publicBody: 'Invalid payment metadata',
+      code: 'CURRENCY_INVALID',
+    };
+  }
+
+  if (input.amountTotal == null || !Number.isFinite(input.amountTotal)) {
+    return {
+      action: 'reject',
+      httpStatus: 400,
+      publicBody: 'Invalid payment metadata',
+      code: 'AMOUNT_REQUIRED',
+    };
+  }
+
   const resolved = resolveCheckoutCreditFromServer({
     packageId: input.packageId,
     credits: input.credits,
     priceId: input.priceId,
     audience: input.audience,
+    amountTotal: input.amountTotal,
+    currency,
   });
 
   if (resolved.ok === false) {
@@ -80,21 +120,24 @@ export function decideWebhookCheckoutCredit(input: {
     audience: resolved.audience,
     payload: {
       user_id: input.userId.trim(),
-      stripe_session_id: input.sessionId,
+      stripe_session_id: input.sessionId.trim(),
       stripe_payment_intent_id: input.paymentIntentId,
+      stripe_event_id: input.eventId.trim(),
       package_id: resolved.pkg.id,
       price_id: resolved.pkg.priceId,
-      credits: resolved.pkg.credits,
-      amount_total: input.amountTotal,
-      currency: input.currency ?? resolved.pkg.currency,
+      amount_total: resolved.pkg.amountCents,
+      currency: resolved.pkg.currency,
       status: 'paid',
+      payment_status: 'paid',
+      purchase_audience: resolved.audience,
+      livemode: input.livemode,
     },
   };
 }
 
-/** Mirrors RPC alreadyProcessed / alreadyCredited — sequential replay must not add credits again. */
+/** Mirrors RPC alreadyProcessed / already_processed — sequential replay must not add credits again. */
 export function creditAlreadyApplied(rpcResult: unknown): boolean {
   if (!rpcResult || typeof rpcResult !== 'object') return false;
-  const row = rpcResult as { alreadyProcessed?: unknown; alreadyCredited?: unknown };
-  return row.alreadyProcessed === true || row.alreadyCredited === true;
+  const row = rpcResult as { alreadyProcessed?: unknown; already_processed?: unknown; alreadyCredited?: unknown };
+  return row.alreadyProcessed === true || row.already_processed === true || row.alreadyCredited === true;
 }

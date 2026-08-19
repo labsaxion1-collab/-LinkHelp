@@ -36,10 +36,10 @@ afterEach(installFakePrices);
 describe('LinkCredit packages', () => {
   it('keeps fixed credits and CAD prices', () => {
     expect(LINK_CREDIT_PACKAGE_CATALOG).toEqual([
-      { id: 'starter', credits: 35, price: 14.99, currency: 'CAD' },
-      { id: 'popular', credits: 80, price: 29.99, currency: 'CAD' },
-      { id: 'pro', credits: 180, price: 59.99, currency: 'CAD' },
-      { id: 'power', credits: 400, price: 119.99, currency: 'CAD' },
+      { id: 'starter', credits: 35, price: 14.99, amountCents: 1499, currency: 'CAD' },
+      { id: 'popular', credits: 80, price: 29.99, amountCents: 2999, currency: 'CAD' },
+      { id: 'pro', credits: 180, price: 59.99, amountCents: 5999, currency: 'CAD' },
+      { id: 'power', credits: 400, price: 119.99, amountCents: 11999, currency: 'CAD' },
     ]);
     expect(LINK_CREDIT_PACKAGES.map((pkg) => pkg.id)).toEqual(['starter', 'popular', 'pro', 'power']);
     expect(getLinkCreditPackage('popular')?.credits).toBe(80);
@@ -61,6 +61,8 @@ describe('LinkCredit packages', () => {
       priceId: PRICE_ENV.STRIPE_PRICE_POPULAR,
       audience: 'helper',
       sessionId: 'cs_test_fake_session_1',
+      eventId: 'evt_test_fake_session_1',
+      amountTotal: 2999,
     });
     expect(decision.action).toBe('reject');
     if (decision.action === 'reject') expect(decision.code).toBe('PACKAGE_NOT_FOUND');
@@ -71,6 +73,7 @@ describe('LinkCredit packages', () => {
       packageId: 'popular',
       credits: 999,
       priceId: PRICE_ENV.STRIPE_PRICE_POPULAR,
+      audience: 'helper',
     });
     expect(resolved.ok).toBe(false);
     if (!resolved.ok) expect(resolved.code).toBe('CREDITS_MISMATCH');
@@ -85,6 +88,8 @@ describe('LinkCredit packages', () => {
       priceId: PRICE_ENV.STRIPE_PRICE_POPULAR,
       audience: 'helper',
       sessionId: 'cs_test_fake_session_2',
+      eventId: 'evt_test_fake_session_2',
+      amountTotal: 2999,
     });
     expect(decision.action).toBe('reject');
     if (decision.action === 'reject') expect(decision.code).toBe('CREDITS_MISMATCH');
@@ -95,6 +100,7 @@ describe('LinkCredit packages', () => {
       packageId: 'popular',
       credits: 80,
       priceId: 'price_live_or_other_env_fake',
+      audience: 'helper',
     });
     expect(resolved.ok).toBe(false);
     if (!resolved.ok) expect(resolved.code).toBe('PRICE_ID_MISMATCH');
@@ -125,6 +131,8 @@ describe('LinkCredit packages', () => {
       priceId: PRICE_ENV.STRIPE_PRICE_STARTER,
       audience: 'helper',
       sessionId: 'cs_test_fake_helper',
+      eventId: 'evt_test_fake_helper',
+      amountTotal: 1499,
     });
     const clientDecision = decideWebhookCheckoutCredit({
       deployTarget: 'staging',
@@ -136,16 +144,21 @@ describe('LinkCredit packages', () => {
       priceId: PRICE_ENV.STRIPE_PRICE_STARTER,
       audience: 'client',
       sessionId: 'cs_test_fake_client',
+      eventId: 'evt_test_fake_client',
+      amountTotal: 1499,
     });
     expect(helperDecision.action).toBe('credit');
     expect(clientDecision.action).toBe('credit');
     if (helperDecision.action === 'credit') {
       expect(helperDecision.audience).toBe('helper');
-      expect(helperDecision.payload.credits).toBe(35);
+      expect(helperDecision.payload.credits).toBeUndefined();
+      expect(helperDecision.payload.amount_total).toBe(1499);
+      expect(helperDecision.payload.purchase_audience).toBe('helper');
     }
     if (clientDecision.action === 'credit') {
       expect(clientDecision.audience).toBe('client');
-      expect(clientDecision.payload.credits).toBe(35);
+      expect(clientDecision.payload.credits).toBeUndefined();
+      expect(clientDecision.payload.purchase_audience).toBe('client');
     }
   });
 });
@@ -160,11 +173,16 @@ describe('webhook credit decision', () => {
       packageId: 'pro',
       audience: 'helper',
       sessionId: 'cs_live_fake_pro',
+      eventId: 'evt_live_fake_pro',
+      amountTotal: 5999,
     });
     expect(decision.action).toBe('credit');
     if (decision.action === 'credit') {
-      expect(decision.payload.credits).toBe(180);
+      expect(decision.payload.credits).toBeUndefined();
+      expect(decision.payload.amount_total).toBe(5999);
+      expect(decision.payload.package_id).toBe('pro');
       expect(decision.payload.price_id).toBe(PRICE_ENV.STRIPE_PRICE_PRO);
+      expect(decision.payload.stripe_event_id).toBe('evt_live_fake_pro');
     }
   });
 
@@ -179,6 +197,8 @@ describe('webhook credit decision', () => {
       priceId: PRICE_ENV.STRIPE_PRICE_POPULAR,
       audience: 'helper',
       sessionId: 'cs_test_same_session',
+      eventId: 'evt_test_same_session',
+      amountTotal: 2999,
     });
     expect(first.action).toBe('credit');
 
@@ -192,6 +212,7 @@ describe('webhook credit decision', () => {
 
     expect(applyOnce('cs_test_same_session', 80)).toBe(80);
     expect(applyOnce('cs_test_same_session', 80, { alreadyProcessed: true })).toBe(80);
+    expect(applyOnce('cs_test_same_session', 80, { already_processed: true })).toBe(80);
     expect(applyOnce('cs_test_same_session', 80, { alreadyCredited: true })).toBe(80);
     expect(ledger.get('cs_test_same_session')).toBe(80);
   });
@@ -206,12 +227,71 @@ describe('webhook credit decision', () => {
       credits: 80,
       audience: 'helper',
       sessionId: 'cs_live_blocked',
+      eventId: 'evt_live_blocked',
+      amountTotal: 2999,
     });
     expect(liveOnStaging.action).toBe('reject');
     if (liveOnStaging.action === 'reject') {
       expect(liveOnStaging.code).toBe('STRIPE_LIVE_EVENT_ON_STAGING');
       expect(liveOnStaging.httpStatus).toBe(409);
     }
+  });
+
+  it('rejects wrong amount_total, currency, unpaid, and missing audience', () => {
+    const wrongAmount = decideWebhookCheckoutCredit({
+      deployTarget: 'staging',
+      livemode: false,
+      paymentStatus: 'paid',
+      userId: '00000000-0000-4000-8000-000000000001',
+      packageId: 'starter',
+      audience: 'helper',
+      sessionId: 'cs_test_wrong_amount',
+      eventId: 'evt_test_wrong_amount',
+      amountTotal: 1500,
+    });
+    expect(wrongAmount.action).toBe('reject');
+    if (wrongAmount.action === 'reject') expect(wrongAmount.code).toBe('AMOUNT_MISMATCH');
+
+    const wrongCurrency = decideWebhookCheckoutCredit({
+      deployTarget: 'staging',
+      livemode: false,
+      paymentStatus: 'paid',
+      userId: '00000000-0000-4000-8000-000000000001',
+      packageId: 'starter',
+      audience: 'helper',
+      sessionId: 'cs_test_wrong_ccy',
+      eventId: 'evt_test_wrong_ccy',
+      amountTotal: 1499,
+      currency: 'USD',
+    });
+    expect(wrongCurrency.action).toBe('reject');
+    if (wrongCurrency.action === 'reject') expect(wrongCurrency.code).toBe('CURRENCY_INVALID');
+
+    const unpaid = decideWebhookCheckoutCredit({
+      deployTarget: 'staging',
+      livemode: false,
+      paymentStatus: 'unpaid',
+      userId: '00000000-0000-4000-8000-000000000001',
+      packageId: 'starter',
+      audience: 'helper',
+      sessionId: 'cs_test_unpaid',
+      eventId: 'evt_test_unpaid',
+      amountTotal: 1499,
+    });
+    expect(unpaid).toEqual({ action: 'skip', reason: 'unpaid' });
+
+    const noAudience = decideWebhookCheckoutCredit({
+      deployTarget: 'staging',
+      livemode: false,
+      paymentStatus: 'paid',
+      userId: '00000000-0000-4000-8000-000000000001',
+      packageId: 'starter',
+      sessionId: 'cs_test_no_aud',
+      eventId: 'evt_test_no_aud',
+      amountTotal: 1499,
+    });
+    expect(noAudience.action).toBe('reject');
+    if (noAudience.action === 'reject') expect(noAudience.code).toBe('AUDIENCE_INVALID');
   });
 });
 

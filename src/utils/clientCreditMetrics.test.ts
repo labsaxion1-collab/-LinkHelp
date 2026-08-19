@@ -26,9 +26,10 @@ describe('computeClientCreditMetrics', () => {
       entry({ type: 'REQUEST_REFUND', amount: 1 }),
       entry({ type: 'MANUAL_ADJUSTMENT', amount: 2 }),
       entry({ type: 'CREDIT_PURCHASE', amount: 80 }),
+      entry({ type: 'OBLIGATION_SETTLEMENT', amount: -2 }),
     ]);
 
-    expect(metrics.usedThisMonth).toBe(2);
+    expect(metrics.usedThisMonth).toBe(4);
     expect(metrics.requestsPublishedThisMonth).toBe(2);
     expect(metrics.creditsReturned).toBe(3);
   });

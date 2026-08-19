@@ -39,7 +39,7 @@ describe('fluxFormat visual maps', () => {
   });
 
   it('maps credit types and keeps filter option values technical', () => {
-    expect(creditTypeLabelPt('CREDIT_PURCHASE')).toBe('Compra de LinkCredits');
+    expect(creditTypeLabelPt('OBLIGATION_SETTLEMENT')).toBe('Quitação de obrigação');
     expect(creditTypeLabelPt('APPLICATION_INTEREST')).toBe('Interesse em candidatura');
     expect(creditTypeLabelPt('APPLICATION_SELECTED')).toBe('Seleção da candidatura');
     expect(creditTypeLabelPt('ADMIN_ADJUSTMENT')).toBe('Ajuste administrativo');

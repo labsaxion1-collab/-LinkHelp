@@ -23,7 +23,10 @@ const BADGES: Partial<Record<LinkCreditPackageId, LinkCreditPackageBadgeKey>> = 
 
 /** Display catalog only. Stripe price IDs stay on the server. */
 export const LINK_CREDIT_PACKAGES: LinkCreditPackage[] = LINK_CREDIT_PACKAGE_CATALOG.map((pkg) => ({
-  ...pkg,
+  id: pkg.id,
+  credits: pkg.credits,
+  price: pkg.price,
+  currency: pkg.currency,
   badgeKey: BADGES[pkg.id],
 }));
 
@@ -31,7 +34,10 @@ export function getLinkCreditPackage(packageId: string): LinkCreditPackage | und
   const def = getLinkCreditPackageDefinition(packageId);
   if (!def) return undefined;
   return {
-    ...def,
+    id: def.id,
+    credits: def.credits,
+    price: def.price,
+    currency: def.currency,
     badgeKey: BADGES[def.id],
   };
 }

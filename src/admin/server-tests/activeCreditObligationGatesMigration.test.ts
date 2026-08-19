@@ -51,6 +51,7 @@ describe('0066 active credit obligation gates migration', () => {
     const idx = files.indexOf('0066_active_credit_obligation_gates.sql');
     expect(idx).toBeGreaterThan(-1);
     expect(files[idx - 1]).toBe('0065_client_cancel_request_authoritative.sql');
+    expect(files[idx + 1]).toBe('0067_stripe_credit_purchase_obligation_settlement.sql');
   });
 
   it('gates client_publish_request before balance debit and request insert', () => {

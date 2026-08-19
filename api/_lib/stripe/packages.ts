@@ -38,7 +38,9 @@ export type CheckoutCreditResolution =
         | 'PRICE_ID_UNCONFIGURED'
         | 'CREDITS_MISMATCH'
         | 'PRICE_ID_MISMATCH'
-        | 'AUDIENCE_INVALID';
+        | 'AUDIENCE_INVALID'
+        | 'AMOUNT_MISMATCH'
+        | 'CURRENCY_INVALID';
     };
 
 export function resolveCheckoutCreditFromServer(input: {
@@ -46,6 +48,8 @@ export function resolveCheckoutCreditFromServer(input: {
   credits?: number | string | null;
   priceId?: string | null;
   audience?: string | null;
+  amountTotal?: number | string | null;
+  currency?: string | null;
 }): CheckoutCreditResolution {
   if (!input.packageId || !isLinkCreditPackageId(input.packageId)) {
     return { ok: false, code: 'PACKAGE_NOT_FOUND' };
@@ -68,13 +72,26 @@ export function resolveCheckoutCreditFromServer(input: {
   }
 
   const rawAudience = input.audience?.trim();
-  if (rawAudience && rawAudience !== 'helper' && rawAudience !== 'client') {
+  if (rawAudience !== 'helper' && rawAudience !== 'client') {
     return { ok: false, code: 'AUDIENCE_INVALID' };
+  }
+
+  if (input.currency != null && input.currency.trim() !== '') {
+    if (input.currency.trim().toUpperCase() !== pkg.currency) {
+      return { ok: false, code: 'CURRENCY_INVALID' };
+    }
+  }
+
+  if (input.amountTotal != null && String(input.amountTotal).trim() !== '') {
+    const claimedAmount = Number.parseInt(String(input.amountTotal), 10);
+    if (!Number.isFinite(claimedAmount) || claimedAmount !== pkg.amountCents) {
+      return { ok: false, code: 'AMOUNT_MISMATCH' };
+    }
   }
 
   return {
     ok: true,
     pkg,
-    audience: rawAudience === 'client' ? 'client' : 'helper',
+    audience: rawAudience,
   };
 }

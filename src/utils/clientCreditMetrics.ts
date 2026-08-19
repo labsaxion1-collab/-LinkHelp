@@ -6,6 +6,8 @@ export function clientCreditLedgerTypeLabelKey(type: ClientCreditLedgerType): st
       return 'client_credits.type_free_bonus';
     case 'CREDIT_PURCHASE':
       return 'client_credits.type_credit_purchase';
+    case 'OBLIGATION_SETTLEMENT':
+      return 'client_credits.type_obligation_settlement';
     case 'REQUEST_PUBLISH':
       return 'client_credits.type_request_publish';
     case 'REQUEST_REFUND':
@@ -26,6 +28,7 @@ const KNOWN_CLIENT_CREDIT_TYPES = new Set<ClientCreditLedgerType>([
   'REQUEST_REFUND',
   'REQUEST_CANCEL_REFUND',
   'MANUAL_ADJUSTMENT',
+  'OBLIGATION_SETTLEMENT',
 ]);
 
 export function resolveClientCreditEntryLabel(

@@ -5,6 +5,7 @@ const DEBIT_TYPES: CreditTransactionType[] = [
   'APPLICATION_INTEREST',
   'APPLICATION_SELECTED',
   'OPPORTUNITY_UNLOCK',
+  'OBLIGATION_SETTLEMENT',
 ];
 
 const CREDIT_TYPES: CreditTransactionType[] = [
@@ -85,6 +86,8 @@ export function creditTransactionSummaryKey(
       return 'credits_tx.type_application_selected';
     case 'CREDIT_PURCHASE':
       return 'credits_tx.type_purchase';
+    case 'OBLIGATION_SETTLEMENT':
+      return 'credits_tx.type_obligation_settlement';
     case 'FREE_BONUS':
       return 'credits_tx.type_bonus';
     case 'OPPORTUNITY_UNLOCK':
@@ -116,6 +119,8 @@ export function creditTransactionExplanationKey(
       return 'credits_tx.explain_vip_rejected_refund';
     case 'CREDIT_PURCHASE':
       return 'credits_tx.explain_purchase';
+    case 'OBLIGATION_SETTLEMENT':
+      return 'credits_tx.explain_obligation_settlement';
     case 'FREE_BONUS':
       return 'credits_tx.explain_bonus';
     case 'OPPORTUNITY_UNLOCK':
@@ -141,6 +146,8 @@ export function creditTransactionTypeLabelKey(type: CreditTransactionType): stri
       return 'credits_tx.label_vip_rejected_refund';
     case 'CREDIT_PURCHASE':
       return 'credits_tx.label_purchase';
+    case 'OBLIGATION_SETTLEMENT':
+      return 'credits_tx.label_obligation_settlement';
     case 'FREE_BONUS':
       return 'credits_tx.label_bonus';
     case 'OPPORTUNITY_UNLOCK':

@@ -123,6 +123,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       audience: meta.purchase_audience,
       sessionId: session.id,
       paymentIntentId: paymentIntent,
+      eventId: event.id,
       amountTotal: session.amount_total,
       currency: meta.currency ?? session.currency?.toUpperCase() ?? 'CAD',
     });

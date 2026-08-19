@@ -106,6 +106,7 @@ export function applicationStatusLabelPt(status: string | null | undefined): str
 
 const CREDIT_TYPE_LABEL_PT: Record<string, string> = {
   CREDIT_PURCHASE: 'Compra de LinkCredits',
+  OBLIGATION_SETTLEMENT: 'Quitação de obrigação',
   APPLICATION_INTEREST: 'Interesse em candidatura',
   APPLICATION_SELECTED: 'Seleção da candidatura',
   ADMIN_ADJUSTMENT: 'Ajuste administrativo',

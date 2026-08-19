@@ -6,14 +6,15 @@ export type LinkCreditPackageDefinition = {
   id: LinkCreditPackageId;
   credits: number;
   price: number;
+  amountCents: number;
   currency: 'CAD';
 };
 
 export const LINK_CREDIT_PACKAGE_CATALOG: readonly LinkCreditPackageDefinition[] = [
-  { id: 'starter', credits: 35, price: 14.99, currency: 'CAD' },
-  { id: 'popular', credits: 80, price: 29.99, currency: 'CAD' },
-  { id: 'pro', credits: 180, price: 59.99, currency: 'CAD' },
-  { id: 'power', credits: 400, price: 119.99, currency: 'CAD' },
+  { id: 'starter', credits: 35, price: 14.99, amountCents: 1499, currency: 'CAD' },
+  { id: 'popular', credits: 80, price: 29.99, amountCents: 2999, currency: 'CAD' },
+  { id: 'pro', credits: 180, price: 59.99, amountCents: 5999, currency: 'CAD' },
+  { id: 'power', credits: 400, price: 119.99, amountCents: 11999, currency: 'CAD' },
 ] as const;
 
 export const STRIPE_PRICE_ENV_KEYS = {

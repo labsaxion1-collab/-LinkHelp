@@ -28,7 +28,7 @@ describe('P3.3 feed card premium visual panels', () => {
     expect(src).toContain('FEED_CARD_CONTENT_CLASS');
   });
 
-  it('uses shared LhCardOverlay with sticky header back/close while premium content scrolls', async () => {
+  it('uses shared LhCardOverlay with sticky header and premium close while content scrolls', async () => {
     const theme = await readFile(resolve(themePath), 'utf8');
     const src = await readFile(resolve(cardPath), 'utf8');
     const overlay = await readFile(resolve(overlayPath), 'utf8');
@@ -36,7 +36,9 @@ describe('P3.3 feed card premium visual panels', () => {
     expect(src).toContain('FEED_CARD_PREMIUM_SCROLL_CLASS');
     expect(src).toContain('LhCardOverlay');
     expect(overlay).toContain('sticky top-0');
-    expect(overlay).toContain('lh-card-overlay-back');
+    expect(overlay).toContain('LhPremiumCloseButton');
+    expect(overlay).not.toMatch(/lh-card-overlay-back(?!-to-candidates)/);
+    expect(src).not.toContain('onBack');
   });
 
   it('keeps LC quote logic and fixed summary height', async () => {

@@ -27,4 +27,17 @@ export const LH_CENTERED_MODAL_STANDARD_PANEL_CLASS = [
 ].join(' ');
 
 export const COMPACT_RANK_FULL_BLEED_CLASS =
-  'lh-compact-rank-bleed relative left-1/2 isolate w-[100dvw] max-w-none -translate-x-1/2 overflow-hidden lg:left-auto lg:w-full lg:translate-x-0';
+  'lh-compact-rank-bleed relative isolate overflow-hidden';
+
+/**
+ * Horizontal breakout for the compact rank strip.
+ * margin-inline uses the parent content box (50%) vs the viewport (50dvw),
+ * so padding on AppPageShell/grid cannot shift the strip off-center.
+ */
+export function compactRankBleedMetrics(viewportWidth: number, parentContentWidth: number) {
+  const marginInline = parentContentWidth / 2 - viewportWidth / 2;
+  const parentInset = (viewportWidth - parentContentWidth) / 2;
+  const left = parentInset + marginInline;
+  const right = left + viewportWidth;
+  return { marginInline, left, right, overflows: right > viewportWidth + 0.5 || left < -0.5 };
+}

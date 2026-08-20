@@ -8,6 +8,7 @@ import type { HelperLeadCreditQuote } from '@/utils/helperLeadCreditQuote';
 import type { HelperApplicationType } from '@/utils/helperOpportunityApply';
 import { getApplicationTypeLabelKey } from '@/utils/helperOpportunityApply';
 import { LH_CENTERED_MODAL_APPLY_PANEL_CLASS } from '@/components/design-system/lhCenteredModalScale';
+import { LhPremiumCloseButton } from '@/components/design-system/LhPremiumCloseButton';
 
 type Props = {
   open: boolean;
@@ -136,16 +137,12 @@ export function HelperApplyConfirmModal({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
-          data-testid="helper-apply-confirm-close"
-          aria-label={t('common.close')}
-          disabled={submitting}
+        <LhPremiumCloseButton
           onClick={onCancel}
-          className="absolute right-2.5 top-2.5 inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50"
-        >
-          <Icons.X className="h-4 w-4" aria-hidden />
-        </button>
+          label={t('common.close')}
+          disabled={submitting}
+          testId="helper-apply-confirm-close"
+        />
 
         <div className="flex flex-col items-center text-center">
           <div

@@ -1451,7 +1451,7 @@ export const pt = {
     team_complete: 'Equipe completa',
     team_complete_short: 'Completo',
     team_complete_hint: 'Este chamado já tem um Help contratado. Novos aceites estão bloqueados.',
-    back_to_candidates: 'Voltar para candidatos',
+    back_to_candidates: 'Voltar aos candidatos',
     hire_capacity_reached_toast: 'Este chamado já tem um Help contratado.',
     hire_unavailable_toast: 'Este candidato não pode mais ser contratado.',
     candidates_count_exclusive: '1 candidato exclusivo (VIP)',

@@ -76,12 +76,20 @@ describe('helper feed card overlays', () => {
 });
 
 describe('shared overlay shell', () => {
-  it('LhCardOverlay exposes accessible back and close controls', () => {
+  it('LhCardOverlay header has premium close only; nested back lives in footer', () => {
     const overlay = read('src/components/design-system/LhCardOverlay.tsx');
-    expect(overlay).toContain('lh-card-overlay-back');
+    const closeBtn = read('src/components/design-system/LhPremiumCloseButton.tsx');
+    expect(overlay).toContain('LhPremiumCloseButton');
     expect(overlay).toContain('lh-card-overlay-close');
-    expect(overlay).toContain("t('nav.back')");
     expect(overlay).toContain("t('common.close')");
+    expect(overlay).toContain('lh-card-overlay-back-to-candidates');
+    expect(overlay).toContain("t('client_dashboard.back_to_candidates')");
+    expect(overlay).not.toMatch(/lh-card-overlay-back(?!-to-candidates)/);
+    expect(overlay).not.toContain("t('nav.back')");
+    expect(overlay).not.toContain('ArrowLeft');
+    expect(closeBtn).toContain('LH_PREMIUM_CLOSE_BUTTON_CLASS');
+    expect(closeBtn).toContain('h-10 w-10');
+    expect(closeBtn).toContain('right-2.5 top-2.5');
   });
 
   it('LhCardOverlay defaults to centered presentation like HelperApplyConfirmModal', () => {

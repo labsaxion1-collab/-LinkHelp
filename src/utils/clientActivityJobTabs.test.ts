@@ -123,6 +123,8 @@ describe('HelperApplyConfirmModal centered shell', () => {
     expect(src).toContain('helper-apply-confirm-modal');
     expect(src).toContain('apply_confirm_title_vip');
     expect(src).toContain('apply_confirm_yes_vip');
+    expect(src).toContain('LhPremiumCloseButton');
+    expect(src).toContain('helper-apply-confirm-close');
     expect(src).toContain('apply_confirm_back');
     expect(src).toContain('LH_CENTERED_MODAL_APPLY_PANEL_CLASS');
     expect(src).toContain('items-center justify-center');

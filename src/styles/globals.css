@@ -132,22 +132,22 @@
   }
 }
 
-/* Compact rank: break out of page padding to viewport edges on mobile. */
+/* Compact rank: break out of page padding to viewport edges on mobile.
+   Uses margin-inline vs 50dvw — not left/transform — so ancestor padding
+   cannot shift the strip off the viewport center. */
 .lh-compact-rank-bleed {
   position: relative;
-  left: 50%;
-  width: 100dvw;
-  max-width: none;
-  transform: translateX(-50%);
   box-sizing: border-box;
+  width: auto;
+  max-width: none;
+  margin-inline: calc(50% - 50dvw);
 }
 
 @media (min-width: 1024px) {
   .lh-compact-rank-bleed {
-    left: auto;
     width: 100%;
     max-width: none;
-    transform: none;
+    margin-inline: 0;
   }
 }
 

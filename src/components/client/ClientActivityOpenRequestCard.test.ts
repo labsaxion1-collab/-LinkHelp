@@ -193,6 +193,9 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(src).toContain('client-activity-description-overlay');
     expect(src).toContain('client-activity-candidates-overlay');
     expect(src).toContain('client-activity-profile-overlay');
+    expect(src).toContain('onBack={backFromProfile}');
+    expect(src).toContain('closeOverlay');
+    expect(src).toContain('setProfileAppId(null)');
     expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
     expect(src).toContain('FEED_CARD_SHELL_CLASS');
     expect(src).toContain('feedCardLockedContentStyle');

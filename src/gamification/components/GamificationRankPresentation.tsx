@@ -174,14 +174,18 @@ export function GamificationCompactRankCardSurface({
   const medalTheme = resolveMedalTheme(record.heroKey ?? record.levelKey, userType);
 
   return (
+    <div
+      className={clsx(
+        COMPACT_RANK_FULL_BLEED_CLASS,
+        'min-h-[170px] max-h-[210px] border-y border-white/10 shadow-[0_14px_36px_rgba(0,0,0,0.28)] lg:rounded-2xl lg:border',
+        className,
+      )}
+      data-testid="gamification-compact-rank-bleed"
+    >
     <button
       type="button"
       onClick={onOpenDetails}
-      className={clsx(
-        COMPACT_RANK_FULL_BLEED_CLASS,
-        'group isolate flex min-h-[170px] max-h-[210px] items-stretch border-y border-white/10 text-left shadow-[0_14px_36px_rgba(0,0,0,0.28)] transition hover:border-white/20 hover:shadow-[0_18px_42px_rgba(0,0,0,0.34)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 lg:rounded-2xl lg:border',
-        className,
-      )}
+      className="group relative isolate flex h-full min-h-[170px] max-h-[210px] w-full items-stretch text-left transition hover:border-white/20 hover:shadow-[0_18px_42px_rgba(0,0,0,0.34)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
       data-testid="gamification-compact-rank-card"
       data-hero-key={record.heroKey}
       aria-expanded={false}
@@ -208,7 +212,7 @@ export function GamificationCompactRankCardSurface({
         decoding="async"
       />
 
-      <span className="relative z-10 flex h-full w-full items-stretch gap-2.5 px-4 py-3 sm:gap-3">
+      <span className="lh-compact-rank-inner relative z-10 mx-auto flex h-full w-full items-stretch gap-2.5 px-4 py-3 sm:gap-3">
         <span
           className="pointer-events-none relative flex w-[5.5rem] shrink-0 items-end justify-center self-stretch sm:w-[6rem]"
           aria-hidden
@@ -273,6 +277,7 @@ export function GamificationCompactRankCardSurface({
         />
       </span>
     </button>
+    </div>
   );
 }
 
@@ -282,13 +287,15 @@ export function GamificationRankLoadingCard({ className }: { className?: string 
     <div
       className={clsx(
         COMPACT_RANK_FULL_BLEED_CLASS,
-        'flex min-h-[170px] max-h-[210px] items-center justify-center gap-2 border-y border-white/10 bg-[#020804] px-4 py-3 text-white/70 shadow-[0_14px_36px_rgba(0,0,0,0.22)] lg:rounded-2xl lg:border',
+        'flex min-h-[170px] max-h-[210px] items-center justify-center border-y border-white/10 bg-[#020804] text-white/70 shadow-[0_14px_36px_rgba(0,0,0,0.22)] lg:rounded-2xl lg:border',
         className,
       )}
       data-testid="gamification-compact-rank-loading"
     >
-      <Loader2 className="h-4 w-4 animate-spin text-lime-300/80" />
-      <span className="text-sm font-medium">{t('gamification.loading_progress')}</span>
+      <div className="lh-compact-rank-inner mx-auto flex w-full items-center justify-center gap-2 px-4 py-3">
+        <Loader2 className="h-4 w-4 animate-spin text-lime-300/80" />
+        <span className="text-sm font-medium">{t('gamification.loading_progress')}</span>
+      </div>
     </div>
   );
 }
@@ -299,12 +306,14 @@ export function GamificationRankUnavailableCard({ className }: { className?: str
     <div
       className={clsx(
         COMPACT_RANK_FULL_BLEED_CLASS,
-        'flex min-h-[170px] max-h-[210px] items-center justify-center border-y border-white/10 bg-[#020804] px-4 py-3 text-sm font-medium text-white/60 shadow-[0_14px_36px_rgba(0,0,0,0.22)] lg:rounded-2xl lg:border',
+        'flex min-h-[170px] max-h-[210px] items-center justify-center border-y border-white/10 bg-[#020804] text-sm font-medium text-white/60 shadow-[0_14px_36px_rgba(0,0,0,0.22)] lg:rounded-2xl lg:border',
         className,
       )}
       data-testid="gamification-compact-rank-unavailable"
     >
-      {t('gamification.progress_load_error')}
+      <div className="lh-compact-rank-inner mx-auto w-full px-4 py-3 text-center">
+        {t('gamification.progress_load_error')}
+      </div>
     </div>
   );
 }

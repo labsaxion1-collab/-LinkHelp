@@ -4,6 +4,8 @@ import { ArrowLeft, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useLanguage } from '@/context/LanguageContext';
 
+export type LhCardOverlayPresentation = 'centered' | 'sheet';
+
 export type LhCardOverlayProps = {
   open: boolean;
   onClose: () => void;
@@ -14,9 +16,11 @@ export type LhCardOverlayProps = {
   children: ReactNode;
   footer?: ReactNode;
   layer?: 'default' | 'elevated';
+  /** centered = same shell as HelperApplyConfirmModal; sheet = legacy bottom sheet */
+  presentation?: LhCardOverlayPresentation;
   /** Desktop max width utility, default max-w-lg */
   maxWidthClass?: string;
-  /** Height cap utility, default max-h-[min(88dvh,720px)] */
+  /** Height cap utility, default max-h-[min(82dvh,720px)] */
   maxHeightClass?: string;
   testId?: string;
 };
@@ -24,6 +28,13 @@ export type LhCardOverlayProps = {
 const OVERLAY_LAYER_CLASS = {
   default: 'z-[120]',
   elevated: 'z-[1000]',
+} as const;
+
+const SAFE_AREA_STYLE = {
+  paddingTop: 'max(1rem, env(safe-area-inset-top))',
+  paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+  paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+  paddingRight: 'max(1rem, env(safe-area-inset-right))',
 } as const;
 
 export function LhCardOverlay({
@@ -35,36 +46,58 @@ export function LhCardOverlay({
   children,
   footer,
   layer = 'elevated',
+  presentation = 'centered',
   maxWidthClass = 'max-w-lg',
-  maxHeightClass = 'max-h-[min(88dvh,720px)]',
+  maxHeightClass = 'max-h-[min(82dvh,720px)]',
   testId,
 }: LhCardOverlayProps) {
   const { t } = useLanguage();
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
+  const backButtonRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
+    const focusTimer = window.setTimeout(() => {
+      backButtonRef.current?.focus();
+    }, 0);
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
 
-  useEffect(() => {
-    if (!open) return;
-    dialogRef.current?.focus();
-  }, [open]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = prev;
+      previouslyFocusedRef.current?.focus?.();
+    };
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -73,15 +106,21 @@ export function LhCardOverlay({
     else onClose();
   };
 
+  const isCentered = presentation === 'centered';
+
   return createPortal(
     <div
       className={clsx(
-        'fixed inset-0 flex items-end justify-center bg-slate-950/55 backdrop-blur-[2px] p-0 sm:items-center sm:p-4',
+        'fixed inset-0 flex justify-center bg-slate-950/55 backdrop-blur-[2px]',
+        isCentered ? 'items-center p-4' : 'items-end p-0 sm:items-center sm:p-4',
         OVERLAY_LAYER_CLASS[layer],
+        'motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200',
       )}
+      style={isCentered ? SAFE_AREA_STYLE : undefined}
       onClick={onClose}
       role="presentation"
       data-testid={testId ? `${testId}-backdrop` : undefined}
+      data-overlay-presentation={presentation}
     >
       <div
         ref={dialogRef}
@@ -90,22 +129,35 @@ export function LhCardOverlay({
         aria-labelledby={titleId}
         tabIndex={-1}
         className={clsx(
-          'relative flex w-full flex-col bg-white shadow-[0_-10px_44px_rgba(15,23,42,0.22)] outline-none',
-          'rounded-t-[1.65rem] sm:rounded-[1.65rem]',
-          maxWidthClass,
-          maxHeightClass,
-          'pb-[max(env(safe-area-inset-bottom),0.5rem)] sm:pb-0',
-          'animate-in slide-in-from-bottom-5 fade-in duration-300 sm:zoom-in-95 motion-reduce:animate-none',
+          'relative flex w-full flex-col bg-white outline-none',
+          isCentered
+            ? clsx(
+                'w-[calc(100vw-32px)] rounded-[22px] shadow-[0_18px_48px_rgba(15,23,42,0.22)]',
+                'motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:fade-in motion-safe:duration-200',
+                maxWidthClass,
+                maxHeightClass,
+              )
+            : clsx(
+                'shadow-[0_-10px_44px_rgba(15,23,42,0.22)]',
+                'rounded-t-[1.65rem] sm:rounded-[1.65rem]',
+                maxWidthClass,
+                maxHeightClass,
+                'pb-[max(env(safe-area-inset-bottom),0.5rem)] sm:pb-0',
+                'motion-safe:animate-in motion-safe:slide-in-from-bottom-5 motion-safe:fade-in motion-safe:duration-300 sm:motion-safe:zoom-in-95',
+              ),
         )}
         onClick={(e) => e.stopPropagation()}
         data-testid={testId}
       >
-        <div className="flex justify-center pt-2.5 sm:hidden" aria-hidden>
-          <span className="h-1 w-10 rounded-full bg-slate-200" />
-        </div>
+        {!isCentered ? (
+          <div className="flex justify-center pt-2.5 sm:hidden" aria-hidden>
+            <span className="h-1 w-10 rounded-full bg-slate-200" />
+          </div>
+        ) : null}
 
-        <header className="sticky top-0 z-10 flex shrink-0 items-start gap-2 border-b border-slate-100 bg-white/95 px-4 pb-3 pt-2 backdrop-blur-sm sm:px-5 sm:pt-4">
+        <header className="sticky top-0 z-10 flex shrink-0 items-start gap-2 border-b border-slate-100 bg-white/95 px-4 pb-3 pt-3 backdrop-blur-sm sm:px-5 sm:pt-4">
           <button
+            ref={backButtonRef}
             type="button"
             onClick={handleBack}
             className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2 text-xs font-black text-slate-700 transition hover:bg-slate-100"

@@ -35,6 +35,9 @@ describe('compact gamification rank on helper dashboard', () => {
     expect(compact).toContain('useGamification');
     expect(presentation).toContain('getProgressToNextLevel');
     expect(presentation).toContain('MEDAL_MAP');
+    expect(presentation).toContain('resolveCompactRankHeroVisual');
+    expect(presentation).toContain('min-h-[170px]');
+    expect(presentation).not.toContain('border-slate-200/90 bg-white');
   });
 
   it('detail panel opens tutorial at current level card id', () => {
@@ -77,6 +80,15 @@ describe('shared overlay shell', () => {
     expect(overlay).toContain('lh-card-overlay-close');
     expect(overlay).toContain("t('nav.back')");
     expect(overlay).toContain("t('common.close')");
+  });
+
+  it('LhCardOverlay defaults to centered presentation like HelperApplyConfirmModal', () => {
+    const overlay = read('src/components/design-system/LhCardOverlay.tsx');
+    expect(overlay).toContain("presentation = 'centered'");
+    expect(overlay).toContain('data-overlay-presentation={presentation}');
+    expect(overlay).toContain('w-[calc(100vw-32px)]');
+    expect(overlay).toContain('items-center p-4');
+    expect(overlay).toContain('max-h-[min(82dvh,720px)]');
   });
 });
 

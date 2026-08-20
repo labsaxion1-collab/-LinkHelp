@@ -14,6 +14,8 @@ import { EMPTY_GAMIFICATION_STATS } from '@/gamification/services/gamificationSt
 import type { UserGamificationRecord } from '@/gamification/services/gamificationService';
 import type { UserType } from '@/gamification/types/gamification';
 import { translateGamificationLevelName } from '@/utils/gamificationLevelI18n';
+import { resolveCompactRankHeroVisual } from '@/gamification/config/compactRankHeroVisual';
+import { resolveMedalTheme } from '@/theme/medalThemes';
 
 const PROGRESS_MEDAL_ACCENT = {
   textClass: 'lh-medal-primary',
@@ -166,64 +168,108 @@ export function GamificationCompactRankCardSurface({
   className,
 }: CompactCardProps) {
   const { t } = useLanguage();
-  const { medalSrc, currentLevelLabel, nextLevelLabel, progress, isMax } = model;
+  const { medalSrc, currentLevelLabel, nextLevelLabel, progress, isMax, record } = model;
+  const heroVisual = resolveCompactRankHeroVisual(userType, record.heroKey);
+  const medalTheme = resolveMedalTheme(record.heroKey ?? record.levelKey, userType);
 
   return (
     <button
       type="button"
       onClick={onOpenDetails}
       className={clsx(
-        'group relative flex w-full min-h-[110px] max-h-[140px] items-stretch gap-3 overflow-hidden rounded-2xl border border-slate-200/90 bg-white px-3 py-3 text-left shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition hover:border-blue-200 hover:shadow-[0_12px_28px_rgba(37,99,255,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400',
+        'group relative isolate flex w-full min-h-[170px] max-h-[210px] items-stretch overflow-hidden rounded-2xl border border-white/10 text-left shadow-[0_14px_36px_rgba(0,0,0,0.28)] transition hover:border-white/20 hover:shadow-[0_18px_42px_rgba(0,0,0,0.34)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
         className,
       )}
       data-testid="gamification-compact-rank-card"
+      data-hero-key={record.heroKey}
       aria-expanded={false}
     >
-      <span
-        className="pointer-events-none relative flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center self-center"
+      <img
+        src={heroVisual.background}
+        alt=""
         aria-hidden
-      >
-        <img
-          src={medalSrc}
-          alt=""
-          className="lh-rank-compact-medal h-[3.25rem] w-[3.25rem] object-contain drop-shadow-sm motion-reduce:animate-none"
-          loading="lazy"
-          decoding="async"
-        />
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col justify-center">
-        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-          {userType === 'helper'
-            ? t('gamification.helper_level_eyebrow')
-            : t('gamification.client_level_eyebrow')}
-        </span>
-        <span className="truncate text-sm font-black text-slate-950 sm:text-base">{currentLevelLabel}</span>
-        {!isMax ? (
-          <span className="truncate text-[11px] font-semibold text-slate-500">
-            {t('gamification.next_prefix', { level: nextLevelLabel })}
-          </span>
-        ) : null}
-        <span className="mt-1.5 flex items-center gap-2">
-          <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full lh-medal-light-bg">
-            <span
-              className="block h-full rounded-full lh-medal-progress-bar transition-[width] duration-500 ease-out"
-              style={{ width: `${progress.progressPercent}%` }}
-            />
-          </span>
-          <span className="shrink-0 tabular-nums text-[11px] font-black text-slate-700">
-            {progress.progressPercent}%
-          </span>
-        </span>
-        <span className="mt-0.5 truncate text-[10px] font-semibold text-slate-400">
-          {isMax
-            ? t('gamification.max_level_reached')
-            : formatProgressSubtitle(progress, 'hero', t)}
-        </span>
-      </span>
-      <ChevronRight
-        className="h-5 w-5 shrink-0 self-center text-slate-300 transition group-hover:text-blue-500"
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+        loading="lazy"
+        decoding="async"
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: heroVisual.scrim }}
         aria-hidden
       />
+      <img
+        src={heroVisual.particles}
+        alt=""
+        aria-hidden
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35 mix-blend-screen"
+        loading="lazy"
+        decoding="async"
+      />
+
+      <span className="relative z-10 flex h-full w-full items-stretch gap-2.5 px-3 py-3 sm:gap-3 sm:px-4">
+        <span
+          className="pointer-events-none relative flex w-[5.5rem] shrink-0 items-end justify-center self-stretch sm:w-[6rem]"
+          aria-hidden
+        >
+          <img
+            src={heroVisual.pedestal}
+            alt=""
+            className="absolute bottom-0 left-1/2 h-[3.1rem] w-[4.6rem] max-w-none -translate-x-1/2 object-contain opacity-95 sm:h-[3.4rem] sm:w-[5rem]"
+            loading="lazy"
+            decoding="async"
+          />
+          <img
+            src={medalSrc}
+            alt=""
+            className="lh-rank-compact-medal relative z-10 mb-[1.35rem] h-[3.5rem] w-[3.5rem] object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)] motion-reduce:animate-none sm:mb-[1.5rem] sm:h-[3.85rem] sm:w-[3.85rem]"
+            loading="lazy"
+            decoding="async"
+          />
+        </span>
+
+        <span className="flex min-w-0 flex-1 flex-col justify-center py-0.5">
+          <span className="text-[9px] font-black uppercase tracking-[0.16em] text-white/55 sm:text-[10px]">
+            {userType === 'helper'
+              ? t('gamification.helper_level_eyebrow')
+              : t('gamification.client_level_eyebrow')}
+          </span>
+          <span className="truncate text-[15px] font-black leading-tight text-white sm:text-base">
+            {currentLevelLabel}
+          </span>
+          {!isMax ? (
+            <span className="truncate text-[11px] font-semibold text-white/72">
+              {t('gamification.next_prefix', { level: nextLevelLabel })}
+            </span>
+          ) : (
+            <span className="truncate text-[11px] font-semibold text-emerald-200/90">
+              {t('gamification.max_level_reached')}
+            </span>
+          )}
+          <span className="mt-2 flex items-center gap-2">
+            <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-white/15">
+              <span
+                className="block h-full rounded-full transition-[width] duration-500 ease-out"
+                style={{
+                  width: `${progress.progressPercent}%`,
+                  background: medalTheme.gradient,
+                  boxShadow: medalTheme.glow,
+                }}
+              />
+            </span>
+            <span className="shrink-0 tabular-nums text-[11px] font-black text-white">
+              {progress.progressPercent}%
+            </span>
+          </span>
+          <span className="mt-0.5 truncate text-[10px] font-semibold text-white/55">
+            {isMax ? t('gamification.max_level_card') : formatProgressSubtitle(progress, 'hero', t)}
+          </span>
+        </span>
+
+        <ChevronRight
+          className="h-5 w-5 shrink-0 self-center text-white/35 transition group-hover:text-white/70"
+          aria-hidden
+        />
+      </span>
     </button>
   );
 }
@@ -233,13 +279,13 @@ export function GamificationRankLoadingCard({ className }: { className?: string 
   return (
     <div
       className={clsx(
-        'flex min-h-[110px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3',
+        'flex min-h-[170px] max-h-[210px] items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#020804] px-4 py-3 text-white/70 shadow-[0_14px_36px_rgba(0,0,0,0.22)]',
         className,
       )}
       data-testid="gamification-compact-rank-loading"
     >
-      <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
-      <span className="text-sm font-medium text-slate-400">{t('gamification.loading_progress')}</span>
+      <Loader2 className="h-4 w-4 animate-spin text-lime-300/80" />
+      <span className="text-sm font-medium">{t('gamification.loading_progress')}</span>
     </div>
   );
 }
@@ -249,7 +295,7 @@ export function GamificationRankUnavailableCard({ className }: { className?: str
   return (
     <div
       className={clsx(
-        'flex min-h-[110px] items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-500',
+        'flex min-h-[170px] max-h-[210px] items-center justify-center rounded-2xl border border-white/10 bg-[#020804] px-4 py-3 text-sm font-medium text-white/60 shadow-[0_14px_36px_rgba(0,0,0,0.22)]',
         className,
       )}
       data-testid="gamification-compact-rank-unavailable"

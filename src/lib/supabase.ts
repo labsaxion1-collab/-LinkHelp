@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase.database';
 import { authDevLog } from '@/lib/authDebug';
 import { instrumentedSupabaseFetch } from '@/lib/dev/supabaseMetrics';
+import { isBrowserSafeSupabaseKey } from '@/lib/supabaseKeySafety';
 
 let browserClient: SupabaseClient<Database> | null = null;
 let envLogged = false;
@@ -47,6 +48,7 @@ export function readSupabaseBrowserEnv(): { url: string; anonKey: string } | nul
 
   if (!rawUrl || !rawKey) return null;
   if (looksLikePlaceholderUrl(rawUrl) || looksLikePlaceholderKey(rawKey)) return null;
+  if (!isBrowserSafeSupabaseKey(rawKey)) return null;
 
   let url: string;
   try {
@@ -56,8 +58,6 @@ export function readSupabaseBrowserEnv(): { url: string; anonKey: string } | nul
   } catch {
     return null;
   }
-
-  if (rawKey.length < 20) return null;
 
   return { url, anonKey: rawKey };
 }

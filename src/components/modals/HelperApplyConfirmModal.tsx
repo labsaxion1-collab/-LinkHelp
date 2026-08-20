@@ -7,6 +7,7 @@ import { formatLinkCredits } from '@/utils/formatLinkCredits';
 import type { HelperLeadCreditQuote } from '@/utils/helperLeadCreditQuote';
 import type { HelperApplicationType } from '@/utils/helperOpportunityApply';
 import { getApplicationTypeLabelKey } from '@/utils/helperOpportunityApply';
+import { LH_CENTERED_MODAL_APPLY_PANEL_CLASS } from '@/components/design-system/lhCenteredModalScale';
 
 type Props = {
   open: boolean;
@@ -128,8 +129,8 @@ export function HelperApplyConfirmModal({
         data-modal-variant="centered-compact"
         data-application-type={applicationType}
         className={clsx(
-          'relative w-[calc(100vw-32px)] max-w-[360px] rounded-[22px] border bg-white',
-          'px-4 pb-4 pt-3.5 shadow-[0_18px_48px_rgba(15,23,42,0.22)]',
+          LH_CENTERED_MODAL_APPLY_PANEL_CLASS,
+          'border bg-white px-4 pb-4 pt-3.5',
           'motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:fade-in motion-safe:duration-200',
           isVip ? 'border-amber-200/90' : 'border-slate-100',
         )}

@@ -44,7 +44,6 @@ export function GamificationRankDetailPanel({ open, onClose, userType, model }: 
             : t('gamification.next_prefix', { level: model.nextLevelLabel })
         }
         testId="gamification-rank-detail-panel"
-        maxWidthClass="max-w-md"
       >
         <div className="flex items-start gap-3">
           <img

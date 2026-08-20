@@ -37,6 +37,8 @@ describe('compact gamification rank on helper dashboard', () => {
     expect(presentation).toContain('MEDAL_MAP');
     expect(presentation).toContain('resolveCompactRankHeroVisual');
     expect(presentation).toContain('min-h-[170px]');
+    expect(presentation).toContain('COMPACT_RANK_FULL_BLEED_CLASS');
+    expect(presentation).toContain('px-4');
     expect(presentation).not.toContain('border-slate-200/90 bg-white');
   });
 
@@ -86,9 +88,9 @@ describe('shared overlay shell', () => {
     const overlay = read('src/components/design-system/LhCardOverlay.tsx');
     expect(overlay).toContain("presentation = 'centered'");
     expect(overlay).toContain('data-overlay-presentation={presentation}');
-    expect(overlay).toContain('w-[calc(100vw-32px)]');
+    expect(overlay).toContain('LH_CENTERED_MODAL_STANDARD_PANEL_CLASS');
     expect(overlay).toContain('items-center p-4');
-    expect(overlay).toContain('max-h-[min(82dvh,720px)]');
+    expect(overlay).toContain("size = 'standard'");
   });
 });
 

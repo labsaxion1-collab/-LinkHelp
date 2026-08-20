@@ -124,8 +124,8 @@ describe('HelperApplyConfirmModal centered shell', () => {
     expect(src).toContain('apply_confirm_title_vip');
     expect(src).toContain('apply_confirm_yes_vip');
     expect(src).toContain('apply_confirm_back');
+    expect(src).toContain('LH_CENTERED_MODAL_APPLY_PANEL_CLASS');
     expect(src).toContain('items-center justify-center');
-    expect(src).toContain('max-w-[360px]');
     expect(src).not.toContain('PremiumResponsiveModal');
     expect(src).not.toContain('items-end');
     expect(src).not.toContain('slide-in-from-bottom');

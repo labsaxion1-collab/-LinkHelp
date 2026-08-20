@@ -770,7 +770,6 @@ function HelperOpportunityCardInner({
         title={t('helper_dashboard.feed_card_details_title')}
         subtitle={title}
         testId="feed-card-description-overlay"
-        maxWidthClass="max-w-lg"
       >
         {renderDescriptionContent()}
       </LhCardOverlay>
@@ -781,8 +780,6 @@ function HelperOpportunityCardInner({
         title={t('helper_dashboard.feed_card_profile_title')}
         subtitle={job.clientName}
         testId="feed-card-profile-overlay"
-        maxWidthClass="max-w-md"
-        maxHeightClass="max-h-[min(72dvh,560px)]"
       >
         {renderProfileContent()}
       </LhCardOverlay>

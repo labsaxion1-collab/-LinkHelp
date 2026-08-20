@@ -132,6 +132,25 @@
   }
 }
 
+/* Compact rank: break out of page padding to viewport edges on mobile. */
+.lh-compact-rank-bleed {
+  position: relative;
+  left: 50%;
+  width: 100dvw;
+  max-width: none;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+  .lh-compact-rank-bleed {
+    left: auto;
+    width: 100%;
+    max-width: none;
+    transform: none;
+  }
+}
+
 .lh-medal-card-active {
   border-color: var(--medal-border);
   box-shadow: var(--medal-glow);

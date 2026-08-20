@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { ArrowLeft, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useLanguage } from '@/context/LanguageContext';
+import { LH_CENTERED_MODAL_STANDARD_PANEL_CLASS } from '@/components/design-system/lhCenteredModalScale';
 
 export type LhCardOverlayPresentation = 'centered' | 'sheet';
 
@@ -18,10 +19,8 @@ export type LhCardOverlayProps = {
   layer?: 'default' | 'elevated';
   /** centered = same shell as HelperApplyConfirmModal; sheet = legacy bottom sheet */
   presentation?: LhCardOverlayPresentation;
-  /** Desktop max width utility, default max-w-lg */
-  maxWidthClass?: string;
-  /** Height cap utility, default max-h-[min(82dvh,720px)] */
-  maxHeightClass?: string;
+  /** standard = apply-modal width + useful min-height */
+  size?: 'standard';
   testId?: string;
 };
 
@@ -47,8 +46,7 @@ export function LhCardOverlay({
   footer,
   layer = 'elevated',
   presentation = 'centered',
-  maxWidthClass = 'max-w-lg',
-  maxHeightClass = 'max-h-[min(82dvh,720px)]',
+  size = 'standard',
   testId,
 }: LhCardOverlayProps) {
   const { t } = useLanguage();
@@ -129,25 +127,23 @@ export function LhCardOverlay({
         aria-labelledby={titleId}
         tabIndex={-1}
         className={clsx(
-          'relative flex w-full flex-col bg-white outline-none',
+          'flex flex-col bg-white outline-none',
           isCentered
             ? clsx(
-                'w-[calc(100vw-32px)] rounded-[22px] shadow-[0_18px_48px_rgba(15,23,42,0.22)]',
+                LH_CENTERED_MODAL_STANDARD_PANEL_CLASS,
                 'motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:fade-in motion-safe:duration-200',
-                maxWidthClass,
-                maxHeightClass,
               )
             : clsx(
-                'shadow-[0_-10px_44px_rgba(15,23,42,0.22)]',
+                'relative w-full max-w-[360px] shadow-[0_-10px_44px_rgba(15,23,42,0.22)]',
                 'rounded-t-[1.65rem] sm:rounded-[1.65rem]',
-                maxWidthClass,
-                maxHeightClass,
+                'max-h-[min(82dvh,720px)]',
                 'pb-[max(env(safe-area-inset-bottom),0.5rem)] sm:pb-0',
                 'motion-safe:animate-in motion-safe:slide-in-from-bottom-5 motion-safe:fade-in motion-safe:duration-300 sm:motion-safe:zoom-in-95',
               ),
         )}
         onClick={(e) => e.stopPropagation()}
         data-testid={testId}
+        data-modal-size={size}
       >
         {!isCentered ? (
           <div className="flex justify-center pt-2.5 sm:hidden" aria-hidden>

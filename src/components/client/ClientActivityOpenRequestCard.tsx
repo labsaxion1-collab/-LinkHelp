@@ -566,8 +566,6 @@ export function ClientActivityOpenRequestCard({
         title={profileApp?.helperName ?? t('client_dashboard.candidates_panel_title')}
         subtitle={title}
         testId="client-activity-profile-overlay"
-        maxWidthClass="max-w-md"
-        maxHeightClass="max-h-[min(72dvh,560px)]"
       >
         {renderProfileContent()}
       </LhCardOverlay>

@@ -447,8 +447,6 @@ export function ClientCompletedHistoryCard({
         title={helperName}
         subtitle={title}
         testId="completed-profile-overlay"
-        maxWidthClass="max-w-md"
-        maxHeightClass="max-h-[min(72dvh,560px)]"
       >
         {renderProfileContent()}
       </LhCardOverlay>

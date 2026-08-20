@@ -79,6 +79,8 @@ describe('completed history wiring', () => {
     expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
     expect(src).toContain('feedCardLockedContentStyle');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
+    expect(src).toContain('LhCardOverlay');
+    expect(src).toContain('completed-description-overlay');
     expect(src).toContain('completed-open-description');
     expect(src).toContain('CandidateHelperProfileExpand');
     expect(src).toContain('line-clamp-2');
@@ -96,9 +98,12 @@ describe('completed history wiring', () => {
     expect(src).toContain('helper-completed-history-card');
     expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
+    expect(src).toContain('LhCardOverlay');
+    expect(src).toContain('helper-completed-description-overlay');
     expect(src).toContain('service_review.rate_action');
     expect(src).toContain('history_client_attended');
     expect(src).toContain('FeedCardClientProfilePanel');
+    expect(src).not.toContain('invisible pointer-events-none');
     expect(src).toContain('line-clamp-2');
   });
 

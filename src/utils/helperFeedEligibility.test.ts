@@ -138,8 +138,9 @@ describe('client activity fixed height wiring', () => {
       'utf8',
     );
     expect(src).toContain('feedCardLockedContentStyle');
-    expect(src).toContain('invisible pointer-events-none');
+    expect(src).toContain('LhCardOverlay');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
+    expect(src).not.toContain('invisible pointer-events-none');
     expect(src).not.toContain('Math.max(natural, 280)');
     expect(src).not.toContain('min-h-[280px]');
     const feed = await readFile(

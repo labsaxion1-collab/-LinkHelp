@@ -149,4 +149,27 @@ export function getGamificationTutorialCards(userType: UserType): GamificationTu
   return userType === 'helper' ? HELPER_TUTORIAL_CARDS : CLIENT_TUTORIAL_CARDS;
 }
 
+/** Opens the carousel at the slide that matches the user's current level. */
+export function getTutorialInitialCardIdForLevel(userType: UserType, levelKey: string): string {
+  if (userType === 'helper') {
+    const map: Record<string, string> = {
+      novo: 'helper-novo-iniciante',
+      confiavel: 'profissional',
+      profissional: 'helper-profissional-elite',
+      elite: 'helper-elite-top',
+      top_helper: 'lenda',
+      lenda: 'helper-lenda-max',
+    };
+    return map[levelKey] ?? 'helper-novo-iniciante';
+  }
+  const clientMap: Record<string, string> = {
+    novo: 'reputation',
+    confiavel: 'confiavel_ouro',
+    ouro: 'vip',
+    vip: 'elite',
+    elite: 'elite',
+  };
+  return clientMap[levelKey] ?? 'reputation';
+}
+
 export const GAMIFICATION_TUTORIAL_TITLE = 'Como subir de nível?';

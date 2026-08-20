@@ -31,7 +31,6 @@ import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/Helpe
 import { HelperCreditsWalletCard } from '@/components/helpers/HelperCreditsWalletCard';
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
-import { HelperCategoryDropdown } from '@/components/helper/HelperCategoryDropdown';
 import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
 import { getApplicationChargeLc } from '@/config/helperCreditCharge';
 import { getExclusiveApplicationChargeLc } from '@/utils/helperCreditDisplay';
@@ -81,9 +80,8 @@ import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboard';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { LhCard } from '@/components/design-system/LhCard';
-import { HelperDashboardHeroSlot } from '@/components/helper/HelperDashboardHeroSlot';
+import { GamificationCompactRankCard } from '@/gamification/components/GamificationCompactRankCard';
 import { GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
-import { useGamification } from '@/gamification/hooks/useGamification';
 import { useMarkHomeDashboardSurfaceReady } from '@/components/home/HomeDashboardShellContext';
 import { useDevRenderCount } from '@/utils/devRenderCount';
 import { useProgressiveReveal } from '@/hooks/useProgressiveReveal';
@@ -125,7 +123,6 @@ export default function HelperDashboard() {
   const [activeInfoSlide, setActiveInfoSlide] = useState(0);
   const [heroParallaxOffset, setHeroParallaxOffset] = useState(0);
   const feedTabsRef = React.useRef<HTMLDivElement | null>(null);
-  const helperGamification = useGamification('helper');
 
   // Modals state
   const [profileSettings, setProfileSettings] = useState<HelperProfileSettings>(() => loadHelperProfileSettings());
@@ -1111,18 +1108,8 @@ export default function HelperDashboard() {
             </div>
           ) : null}
 
-          {/* Hero dinâmica: gamification.heroKey é a única fonte da verdade */}
-          <HelperDashboardHeroSlot
-            gamification={helperGamification.record}
-            gamificationLoading={helperGamification.loading}
-            gamificationError={helperGamification.error}
-            avatarUrl={helperAvatarUrl ?? me.avatar}
-            balance={walletBalance}
-            completedServices={helperMvpStats.completed}
-            satisfactionRate={helperMvpStats.responseRatePct}
-            rating={helperMvpStats.avgRating}
-            connectedProfessionals={helperMvpStats.accepted}
-          />
+          {/* Ranking compacto — mesma fonte de dados/cálculos da gamificação */}
+          <GamificationCompactRankCard userType="helper" className="mb-4 px-1 sm:px-0" />
           <section
               className="relative isolate hidden mb-8 w-screen min-w-[100vw] max-w-none overflow-hidden pb-8 pt-0"
               style={{ marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)' }}
@@ -1231,40 +1218,6 @@ export default function HelperDashboard() {
               </div>
 
           </section>
-
-          <section className="relative mb-8">
-              <div className="relative mb-3 flex items-center justify-between px-1 sm:px-2">
-                <h2 className="text-base font-black tracking-tight text-[#0B1220]">{t('helper_dashboard.categories_heading')}</h2>
-                {selectedCategoryFilters.length ? (
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black text-[#2563FF]">
-                    {t(
-                      selectedCategoryFilters.length === 1
-                        ? 'helper_dashboard.categories_selected_one'
-                        : 'helper_dashboard.categories_selected_other',
-                      { count: selectedCategoryFilters.length },
-                    )}
-                  </span>
-                ) : null}
-              </div>
-
-              <HelperCategoryDropdown
-                open
-                onToggle={() => undefined}
-                selectedIds={selectedCategoryFilters}
-                onToggleCategory={(categoryId) => {
-                  setSelectedCategoryFilters((current) =>
-                    current.includes(categoryId)
-                      ? current.filter((id) => id !== categoryId)
-                      : [...current, categoryId],
-                  );
-                  setActiveTab('match');
-                }}
-                onClear={() => setSelectedCategoryFilters([])}
-                t={t}
-                inline
-                className="relative mt-0"
-              />
-            </section>
 
           <div ref={feedTabsRef} className="relative mb-5 overflow-hidden rounded-[1.55rem] border border-white/45 bg-[#071D48]/92 p-1.5 shadow-[0_18px_42px_rgba(8,31,84,0.18)] backdrop-blur-xl">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(51,182,255,0.26),transparent_34%),linear-gradient(135deg,rgba(37,99,255,0.22),transparent_48%)]" />

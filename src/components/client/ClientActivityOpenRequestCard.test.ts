@@ -187,9 +187,12 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(src).toContain('onReject');
     expect(src).toContain('reject_confirm');
     expect(src).toContain('vip_candidate_label');
-    expect(src).toContain('back_to_candidates');
+    expect(src).toContain('backFromProfile');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
-    expect(src).toContain('invisible pointer-events-none');
+    expect(src).toContain('LhCardOverlay');
+    expect(src).toContain('client-activity-description-overlay');
+    expect(src).toContain('client-activity-candidates-overlay');
+    expect(src).toContain('client-activity-profile-overlay');
     expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
     expect(src).toContain('FEED_CARD_SHELL_CLASS');
     expect(src).toContain('feedCardLockedContentStyle');
@@ -217,9 +220,10 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(src).toContain('absolute right-0 top-full');
     expect(src).toContain('!overflow-visible');
     expect(src).toContain('IntersectionObserver');
-    expect(src).not.toContain('createPortal');
+    expect(src).not.toContain('client-activity-premium-shell');
+    expect(src).not.toContain('client-activity-card-back');
+    expect(src).not.toContain('invisible pointer-events-none');
     expect(src).not.toContain('menuCoords');
-    expect(src).not.toContain('fixed z-[120]');
     expect(src).toContain('BOTTOM_RING_SIZE_PX');
     expect(src).toContain('budget_total_label');
     expect(src).toContain('owner_no_extra_details');

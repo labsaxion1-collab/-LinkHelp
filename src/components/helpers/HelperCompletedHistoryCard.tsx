@@ -5,16 +5,15 @@ import type { Job } from '@/types/job';
 import type { UpcomingJob } from '@/types/upcoming';
 import type { ServiceReview } from '@/types/review';
 import { LhCard } from '@/components/design-system/LhCard';
+import { LhCardOverlay } from '@/components/design-system/LhCardOverlay';
 import { FeedCardClientProfilePanel } from '@/components/opportunities/FeedCardClientProfilePanel';
 import {
-  FEED_CARD_PREMIUM_BACK_CLASS,
   FEED_CARD_PREMIUM_BODY_CLASS,
   FEED_CARD_PREMIUM_MUTED_CLASS,
   FEED_CARD_PREMIUM_SCROLL_CLASS,
   FEED_CARD_PREMIUM_SHELL_CLASS,
   FEED_CARD_PREMIUM_SURFACE_CLASS,
   FEED_CARD_PREMIUM_TITLE_CLASS,
-  FEED_CARD_PREMIUM_TOP_BAR_CLASS,
 } from '@/components/opportunities/feedCardPremiumTheme';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { getCategoryIconById } from '@/utils/categoryIcons';
@@ -42,9 +41,8 @@ import {
   FEED_CARD_TOP_ACCENT_CLASS,
   feedCardLockedContentStyle,
 } from '@/utils/feedCardFixedHeight';
-import { CLIENT_ACTIVITY_PANEL_CLASS } from '@/utils/clientActivityCardView';
 
-type PanelView = 'summary' | 'description' | 'profile';
+type PanelView = 'description' | 'profile' | null;
 
 type Props = {
   job: UpcomingJob;
@@ -148,7 +146,7 @@ export function HelperCompletedHistoryCard({
   onRate,
   onViewSubmittedReview,
 }: Props) {
-  const [panel, setPanel] = useState<PanelView>('summary');
+  const [panel, setPanel] = useState<PanelView>(null);
   const theme = getCategoryFeedTheme(job.category);
   const catId = resolveCategoryId(job.category) ?? 'other';
   const CategoryIcon = getCategoryIconById(catId);
@@ -188,218 +186,224 @@ export function HelperCompletedHistoryCard({
   });
 
   const showPhoto = hasRealPhoto(job.clientAvatar);
-  const isInternal = panel !== 'summary';
   const canOpenClientProfile = Boolean(requestJob?.clientId);
 
-  return (
-    <div className={clsx('relative', isInternal ? 'z-30' : 'z-0')}>
-      <LhCard
-        padding="none"
-        className={FEED_CARD_SHELL_CLASS}
-        data-testid="helper-completed-history-card"
-        data-job-id={job.jobId}
-        data-completed-panel={panel}
-        data-feed-card-height-locked="true"
-        data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
-        data-feed-card-standard-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
+  const closeOverlay = () => setPanel(null);
+
+  const renderDescriptionContent = () => (
+    <div
+      className={clsx(FEED_CARD_PREMIUM_SHELL_CLASS, 'rounded-2xl p-1')}
+      data-testid="helper-completed-description-panel"
+    >
+      <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-2')}>
+        <h3 className={FEED_CARD_PREMIUM_TITLE_CLASS}>{title}</h3>
+        <div className={FEED_CARD_PREMIUM_SURFACE_CLASS}>
+          <p className="text-[12px] font-semibold text-white/85">
+            {t('client_jobs.history_client_attended')}: {job.clientName}
+          </p>
+          <p className="text-[12px] font-semibold text-white/85">
+            {categoryLabel}
+            {subcategoryLabel ? ` · ${subcategoryLabel}` : ''}
+          </p>
+          <p className="text-[12px] font-semibold text-white/85">
+            {t('helper_tasks.date_label')}: {dayLabel || '—'}
+          </p>
+          <p className="text-[12px] font-semibold text-white/85">
+            {t('helper_tasks.time_label')}: {clockLabel || '—'}
+          </p>
+          <p className="text-[12px] font-semibold text-white/85">
+            {t('client_jobs.history_completed_date')}:{' '}
+            {completionTs
+              ? formatHistoryDate(completionTs, locale)
+              : t('service_review.service_completed')}
+          </p>
+          {modality ? (
+            <p className="text-[12px] font-semibold text-white/85">
+              {t('client_dashboard.activity_modality')}: {modality}
+            </p>
+          ) : null}
+          {locationDisplay ? (
+            <p className="text-[12px] font-semibold text-white/85">
+              {t('client_jobs.history_location')}: {locationDisplay}
+            </p>
+          ) : null}
+          <p className="text-[12px] font-semibold text-white/85">
+            {t('helper_tasks.agreed_payment_label')}: {valueLabel}
+          </p>
+        </div>
+        {descriptionView.display ? (
+          <p className={clsx('whitespace-pre-wrap break-words', FEED_CARD_PREMIUM_BODY_CLASS)}>
+            {descriptionView.display}
+          </p>
+        ) : (
+          <p className={FEED_CARD_PREMIUM_MUTED_CLASS}>
+            {t('client_dashboard.owner_no_extra_details')}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderProfileContent = () => {
+    if (!requestJob) return null;
+    return (
+      <div
+        className={clsx(FEED_CARD_PREMIUM_SHELL_CLASS, 'rounded-2xl p-1')}
+        data-testid="helper-completed-client-profile-panel"
       >
-        <div
-          className={FEED_CARD_TOP_ACCENT_CLASS}
-          style={{
-            background: `linear-gradient(90deg, ${theme.iconColor} 0%, ${theme.iconColor}55 55%, transparent 100%)`,
-          }}
-          aria-hidden
-        />
-        <div className={FEED_CARD_CONTENT_CLASS} style={feedCardLockedContentStyle()}>
+        <div className={FEED_CARD_PREMIUM_SCROLL_CLASS}>
+          <FeedCardClientProfilePanel job={requestJob} />
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <div className="relative z-0">
+        <LhCard
+          padding="none"
+          className={FEED_CARD_SHELL_CLASS}
+          data-testid="helper-completed-history-card"
+          data-job-id={job.jobId}
+          data-completed-panel={panel ?? 'summary'}
+          data-feed-card-height-locked="true"
+          data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
+          data-feed-card-standard-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
+        >
           <div
-            className={clsx(
-              'flex h-full min-h-0 flex-col',
-              isInternal && 'invisible pointer-events-none select-none',
-            )}
-            aria-hidden={isInternal}
-            data-testid="helper-completed-card-summary"
-          >
-            <div className="flex shrink-0 items-start gap-2">
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border sm:h-11 sm:w-11"
-                style={{
-                  backgroundColor: theme.iconBg,
-                  borderColor: `${theme.iconColor}28`,
-                  boxShadow: `0 5px 14px ${theme.iconColor}16`,
-                }}
-              >
-                <CategoryIcon
-                  className="h-5 w-5"
-                  style={{ color: theme.iconColor }}
-                  strokeWidth={1.9}
-                  aria-hidden
-                />
+            className={FEED_CARD_TOP_ACCENT_CLASS}
+            style={{
+              background: `linear-gradient(90deg, ${theme.iconColor} 0%, ${theme.iconColor}55 55%, transparent 100%)`,
+            }}
+            aria-hidden
+          />
+          <div className={FEED_CARD_CONTENT_CLASS} style={feedCardLockedContentStyle()}>
+            <div
+              className="flex h-full min-h-0 flex-col"
+              data-testid="helper-completed-card-summary"
+            >
+              <div className="flex shrink-0 items-start gap-2">
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border sm:h-11 sm:w-11"
+                  style={{
+                    backgroundColor: theme.iconBg,
+                    borderColor: `${theme.iconColor}28`,
+                    boxShadow: `0 5px 14px ${theme.iconColor}16`,
+                  }}
+                >
+                  <CategoryIcon
+                    className="h-5 w-5"
+                    style={{ color: theme.iconColor }}
+                    strokeWidth={1.9}
+                    aria-hidden
+                  />
+                </div>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-black text-emerald-800">
+                    <Icons.CheckCircle2 className="h-3 w-3" aria-hidden />
+                    {t('service_review.service_completed')}
+                  </span>
+                  <h3 className="mt-1 line-clamp-2 text-[14px] font-black leading-snug text-slate-950 sm:text-[15px]">
+                    {title}
+                  </h3>
+                  <p className="mt-0.5 truncate text-[11px] font-semibold text-slate-500">
+                    {subcategoryLabel ? `${categoryLabel} · ${subcategoryLabel}` : categoryLabel}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1 pt-0.5">
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-black text-emerald-800">
-                  <Icons.CheckCircle2 className="h-3 w-3" aria-hidden />
-                  {t('service_review.service_completed')}
-                </span>
-                <h3 className="mt-1 line-clamp-2 text-[14px] font-black leading-snug text-slate-950 sm:text-[15px]">
-                  {title}
-                </h3>
-                <p className="mt-0.5 truncate text-[11px] font-semibold text-slate-500">
-                  {subcategoryLabel ? `${categoryLabel} · ${subcategoryLabel}` : categoryLabel}
+
+              <div className="mt-2 flex min-h-0 flex-1 items-center gap-2.5">
+                <button
+                  type="button"
+                  data-testid="helper-completed-client"
+                  disabled={!canOpenClientProfile}
+                  onClick={() => canOpenClientProfile && setPanel('profile')}
+                  className={clsx(
+                    'flex min-w-0 flex-1 items-center gap-2 rounded-xl text-left',
+                    canOpenClientProfile && 'transition-colors hover:bg-slate-50',
+                  )}
+                >
+                  {showPhoto ? (
+                    <img
+                      src={job.clientAvatar || avatarUrlForName(job.clientName)}
+                      alt=""
+                      onError={(e) => {
+                        e.currentTarget.src = avatarUrlForName(job.clientName);
+                      }}
+                      className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white"
+                    />
+                  ) : (
+                    <span
+                      data-testid="helper-completed-client-initials"
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-black text-slate-700 ring-2 ring-white"
+                    >
+                      {peerInitials(job.clientName)}
+                    </span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-black text-slate-950">{firstName}</p>
+                    {clientRating != null && clientRating > 0 ? (
+                      <p className="mt-0.5 inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-500">
+                        <Icons.Star className="h-3 w-3 fill-yellow-400 text-yellow-400" aria-hidden />
+                        {Number(clientRating).toFixed(1)}
+                      </p>
+                    ) : (
+                      <p className="mt-0.5 truncate text-[10px] font-semibold text-slate-400">
+                        {t('client_jobs.history_client_attended')}
+                      </p>
+                    )}
+                  </div>
+                </button>
+                <p className="shrink-0 truncate whitespace-nowrap text-[13px] font-black text-emerald-700">
+                  {valueLabel}
                 </p>
               </div>
-            </div>
 
-            <div className="mt-2 flex min-h-0 flex-1 items-center gap-2.5">
-              <button
-                type="button"
-                data-testid="helper-completed-client"
-                disabled={!canOpenClientProfile}
-                onClick={() => canOpenClientProfile && setPanel('profile')}
-                className={clsx(
-                  'flex min-w-0 flex-1 items-center gap-2 rounded-xl text-left',
-                  canOpenClientProfile && 'transition-colors hover:bg-slate-50',
-                )}
-              >
-                {showPhoto ? (
-                  <img
-                    src={job.clientAvatar || avatarUrlForName(job.clientName)}
-                    alt=""
-                    onError={(e) => {
-                      e.currentTarget.src = avatarUrlForName(job.clientName);
-                    }}
-                    className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white"
-                  />
-                ) : (
-                  <span
-                    data-testid="helper-completed-client-initials"
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-black text-slate-700 ring-2 ring-white"
-                  >
-                    {peerInitials(job.clientName)}
-                  </span>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-black text-slate-950">{firstName}</p>
-                  {clientRating != null && clientRating > 0 ? (
-                    <p className="mt-0.5 inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-500">
-                      <Icons.Star className="h-3 w-3 fill-yellow-400 text-yellow-400" aria-hidden />
-                      {Number(clientRating).toFixed(1)}
-                    </p>
-                  ) : (
-                    <p className="mt-0.5 truncate text-[10px] font-semibold text-slate-400">
-                      {t('client_jobs.history_client_attended')}
-                    </p>
-                  )}
-                </div>
-              </button>
-              <p className="shrink-0 truncate whitespace-nowrap text-[13px] font-black text-emerald-700">
-                {valueLabel}
-              </p>
-            </div>
-
-            <div className="mt-auto flex shrink-0 items-center gap-2 border-t border-slate-100 pt-2">
-              <button
-                type="button"
-                data-testid="helper-completed-open-description"
-                onClick={() => setPanel('description')}
-                className="inline-flex min-h-[36px] flex-1 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-[11px] font-bold text-slate-800 hover:bg-slate-50"
-              >
-                {t('helper_tasks.description_toggle')}
-                <Icons.ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
-              </button>
-              <CompactReviewAction
-                state={reviewState}
-                myRating={myRating}
-                t={t}
-                onRate={onRate}
-                onViewSubmitted={onViewSubmittedReview}
-              />
+              <div className="mt-auto flex shrink-0 items-center gap-2 border-t border-slate-100 pt-2">
+                <button
+                  type="button"
+                  data-testid="helper-completed-open-description"
+                  onClick={() => setPanel('description')}
+                  className="inline-flex min-h-[36px] flex-1 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-[11px] font-bold text-slate-800 hover:bg-slate-50"
+                >
+                  {t('helper_tasks.description_toggle')}
+                  <Icons.ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                </button>
+                <CompactReviewAction
+                  state={reviewState}
+                  myRating={myRating}
+                  t={t}
+                  onRate={onRate}
+                  onViewSubmitted={onViewSubmittedReview}
+                />
+              </div>
             </div>
           </div>
+        </LhCard>
+      </div>
 
-          {panel === 'description' ? (
-            <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="helper-completed-description-panel">
-              <div className={clsx(CLIENT_ACTIVITY_PANEL_CLASS, 'overflow-hidden')}>
-                <div className={FEED_CARD_PREMIUM_TOP_BAR_CLASS}>
-                  <button
-                    type="button"
-                    onClick={() => setPanel('summary')}
-                    className={FEED_CARD_PREMIUM_BACK_CLASS}
-                  >
-                    <Icons.ChevronLeft className="h-4 w-4" aria-hidden />
-                    {t('nav.back')}
-                  </button>
-                </div>
-                <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'min-h-0 space-y-2')}>
-                  <h3 className={FEED_CARD_PREMIUM_TITLE_CLASS}>{title}</h3>
-                  <div className={FEED_CARD_PREMIUM_SURFACE_CLASS}>
-                    <p className="text-[12px] font-semibold text-white/85">
-                      {t('client_jobs.history_client_attended')}: {job.clientName}
-                    </p>
-                    <p className="text-[12px] font-semibold text-white/85">
-                      {categoryLabel}
-                      {subcategoryLabel ? ` · ${subcategoryLabel}` : ''}
-                    </p>
-                    <p className="text-[12px] font-semibold text-white/85">
-                      {t('helper_tasks.date_label')}: {dayLabel || '—'}
-                    </p>
-                    <p className="text-[12px] font-semibold text-white/85">
-                      {t('helper_tasks.time_label')}: {clockLabel || '—'}
-                    </p>
-                    <p className="text-[12px] font-semibold text-white/85">
-                      {t('client_jobs.history_completed_date')}:{' '}
-                      {completionTs
-                        ? formatHistoryDate(completionTs, locale)
-                        : t('service_review.service_completed')}
-                    </p>
-                    {modality ? (
-                      <p className="text-[12px] font-semibold text-white/85">
-                        {t('client_dashboard.activity_modality')}: {modality}
-                      </p>
-                    ) : null}
-                    {locationDisplay ? (
-                      <p className="text-[12px] font-semibold text-white/85">
-                        {t('client_jobs.history_location')}: {locationDisplay}
-                      </p>
-                    ) : null}
-                    <p className="text-[12px] font-semibold text-white/85">
-                      {t('helper_tasks.agreed_payment_label')}: {valueLabel}
-                    </p>
-                  </div>
-                  {descriptionView.display ? (
-                    <p className={clsx('whitespace-pre-wrap break-words', FEED_CARD_PREMIUM_BODY_CLASS)}>
-                      {descriptionView.display}
-                    </p>
-                  ) : (
-                    <p className={FEED_CARD_PREMIUM_MUTED_CLASS}>
-                      {t('client_dashboard.owner_no_extra_details')}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : null}
+      <LhCardOverlay
+        open={panel === 'description'}
+        onClose={closeOverlay}
+        title={t('helper_tasks.description_toggle')}
+        subtitle={title}
+        testId="helper-completed-description-overlay"
+      >
+        {renderDescriptionContent()}
+      </LhCardOverlay>
 
-          {panel === 'profile' && requestJob ? (
-            <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="helper-completed-client-profile-panel">
-              <div className={clsx(CLIENT_ACTIVITY_PANEL_CLASS, 'overflow-hidden')}>
-                <div className={FEED_CARD_PREMIUM_TOP_BAR_CLASS}>
-                  <button
-                    type="button"
-                    onClick={() => setPanel('summary')}
-                    className={FEED_CARD_PREMIUM_BACK_CLASS}
-                  >
-                    <Icons.ChevronLeft className="h-4 w-4" aria-hidden />
-                    {t('nav.back')}
-                  </button>
-                </div>
-                <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'min-h-0')}>
-                  <FeedCardClientProfilePanel job={requestJob} />
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </LhCard>
-    </div>
+      <LhCardOverlay
+        open={panel === 'profile' && requestJob != null}
+        onClose={closeOverlay}
+        title={firstName}
+        subtitle={title}
+        testId="helper-completed-profile-overlay"
+        maxWidthClass="max-w-md"
+        maxHeightClass="max-h-[min(72dvh,560px)]"
+      >
+        {renderProfileContent()}
+      </LhCardOverlay>
+    </>
   );
 }

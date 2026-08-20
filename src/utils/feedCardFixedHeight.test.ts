@@ -44,7 +44,7 @@ describe('P3.4 / shared opportunity card shell height', () => {
     expect(src).toContain('FEED_CARD_SHELL_CLASS');
     expect(src).toContain('FEED_CARD_CONTENT_CLASS');
     expect(src).toContain('data-feed-card-height-locked');
-    expect(src).toContain('FEED_CARD_PREMIUM_TOP_BAR_CLASS');
+    expect(src).toContain('LhCardOverlay');
     expect(src).toContain('FEED_CARD_PREMIUM_SCROLL_CLASS');
     expect(src).not.toContain('measureFeedCardNaturalHeight');
     expect(src).not.toContain('setLockedHeight');
@@ -60,6 +60,7 @@ describe('P3.4 / shared opportunity card shell height', () => {
     expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
     expect(src).toContain('feedCardLockedContentStyle');
     expect(src).toContain('FEED_CARD_TOP_ACCENT_CLASS');
+    expect(src).toContain('LhCardOverlay');
     expect(src).not.toContain('rounded-[1.35rem]');
     expect(src).not.toContain('measureFeedCardNaturalHeight');
     expect(src).not.toContain('Math.max(natural, 280)');

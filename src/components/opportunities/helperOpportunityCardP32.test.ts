@@ -48,7 +48,7 @@ describe('P3.2 feed card description + compact profile', () => {
     expect(src).toContain('creditQuote.fullRequestLc');
     expect(src).toContain('creditQuote.vipApplyLc');
     expect(src).toContain('feed_card_vip_no_hire_charge');
-    expect(src).toContain("goToView('description')");
+    expect(src).toContain("openOverlay('description')");
     expect(src).not.toMatch(/helper_debit|debit_application|confirm_stripe/);
     expect(src).not.toMatch(/split_normal_cost_now',\s*\{\s*count:\s*\d+/);
     expect(src).not.toMatch(/vipApplyLc:\s*\d+/);
@@ -84,15 +84,15 @@ describe('P3.2 feed card description + compact profile', () => {
       resolve('src/components/opportunities/feedCardPremiumTheme.ts'),
       'utf8',
     );
-    expect(src).toContain('goBackToSummary');
-    expect(src).toContain('data-testid="feed-card-back"');
+    expect(src).toContain('LhCardOverlay');
+    expect(src).toContain('feed-card-description-overlay');
+    expect(src).toContain('feed-card-profile-overlay');
     expect(src).toContain('data-feed-card-height-locked');
     expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
     expect(src).toContain('FEED_CARD_PREMIUM_SCROLL_CLASS');
     expect(theme).toContain('overflow-y-auto');
     expect(theme).toContain('overscroll-contain');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
-    expect(theme).toContain('absolute inset-0');
   });
 
   it('16. PT/EN/FR feed card copy', () => {

@@ -110,6 +110,28 @@
   background-color: var(--medal-primary-light);
 }
 
+@keyframes lhRankCompactMedalFloat {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.03);
+  }
+}
+
+.lh-rank-compact-medal {
+  animation: lhRankCompactMedalFloat 4.5s ease-in-out infinite;
+  pointer-events: none;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lh-rank-compact-medal {
+    animation: none;
+  }
+}
+
 .lh-medal-card-active {
   border-color: var(--medal-border);
   box-shadow: var(--medal-glow);

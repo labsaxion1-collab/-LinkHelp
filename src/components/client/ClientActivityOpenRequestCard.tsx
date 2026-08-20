@@ -8,17 +8,15 @@ import { ClientActivityCandidateRow } from '@/components/client/ClientActivityCa
 import { CandidateHelperProfileExpand } from '@/components/client/CandidateHelperProfileExpand';
 import { LinkHelpRankBadgeFromStats } from '@/components/ranking/LinkHelpRankBadge';
 import { LhCard } from '@/components/design-system/LhCard';
+import { LhCardOverlay } from '@/components/design-system/LhCardOverlay';
 import {
-  FEED_CARD_PREMIUM_BACK_CLASS,
   FEED_CARD_PREMIUM_BODY_CLASS,
   FEED_CARD_PREMIUM_EYEBROW_CLASS,
-  FEED_CARD_PREMIUM_ICON_WHITE_CLASS,
   FEED_CARD_PREMIUM_MUTED_CLASS,
   FEED_CARD_PREMIUM_SCROLL_CLASS,
   FEED_CARD_PREMIUM_SHELL_CLASS,
   FEED_CARD_PREMIUM_SURFACE_CLASS,
   FEED_CARD_PREMIUM_TITLE_CLASS,
-  FEED_CARD_PREMIUM_TOP_BAR_CLASS,
 } from '@/components/opportunities/feedCardPremiumTheme';
 import { getCategoryIconById } from '@/utils/categoryIcons';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
@@ -39,10 +37,6 @@ import {
   resolveExclusiveCandidate,
 } from '@/utils/clientActivityCandidateRing';
 import {
-  CLIENT_ACTIVITY_PANEL_CLASS,
-  type ClientActivityCardView,
-} from '@/utils/clientActivityCardView';
-import {
   FEED_CARD_CONTENT_CLASS,
   FEED_CARD_FIXED_HEIGHT_EXTRA_PX,
   FEED_CARD_SHELL_CLASS,
@@ -53,6 +47,8 @@ import {
 
 /** Bottom-row ring — slightly smaller so arc + Description share one footer line. */
 const BOTTOM_RING_SIZE_PX = 52;
+
+type ActivityOverlay = 'description' | 'candidates' | 'profile' | null;
 
 type TFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -91,7 +87,7 @@ export function ClientActivityOpenRequestCard({
   activityMenuRef,
   onCancel,
 }: ClientActivityOpenRequestCardProps) {
-  const [view, setView] = useState<ClientActivityCardView>('summary');
+  const [overlay, setOverlay] = useState<ActivityOverlay>(null);
   const [profileAppId, setProfileAppId] = useState<string | null>(null);
   const [rejectingApplicationId, setRejectingApplicationId] = useState<string | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -110,7 +106,6 @@ export function ClientActivityOpenRequestCard({
   const profileApp = profileAppId
     ? displayCandidates.find((a) => a.id === profileAppId) ?? null
     : null;
-  const isInternalView = view !== 'summary';
   const schedule = formatJobScheduleDisplay(job, t);
   const budgetAmount = formatJobBudgetAmount(job, t);
   const locationLabel =
@@ -124,7 +119,6 @@ export function ClientActivityOpenRequestCard({
     const node = cardShellRef.current;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Only close — never toggle open — when the card leaves the viewport.
         if (entry && !entry.isIntersecting) {
           onToggleActivityMenu();
         }
@@ -135,22 +129,22 @@ export function ClientActivityOpenRequestCard({
     return () => observer.disconnect();
   }, [activityMenuOpen, onToggleActivityMenu]);
 
-  const goToView = (next: ClientActivityCardView) => {
-    setView(next);
+  const closeOverlay = () => {
+    setOverlay(null);
+    setProfileAppId(null);
   };
 
-  const goBack = () => {
-    if (view === 'profile') {
-      setView('candidates');
-      return;
-    }
-    setProfileAppId(null);
-    setView('summary');
+  const openCandidatesPanel = () => {
+    setOverlay('candidates');
   };
 
   const openProfile = (appId: string) => {
     setProfileAppId(appId);
-    setView('profile');
+    setOverlay('profile');
+  };
+
+  const backFromProfile = () => {
+    setOverlay('candidates');
   };
 
   const tryAccept = (app: Application) => {
@@ -181,10 +175,6 @@ export function ClientActivityOpenRequestCard({
     }
   };
 
-  const openCandidatesPanel = () => {
-    goToView('candidates');
-  };
-
   const ringAriaLabel =
     exclusiveApp != null
       ? t('client_dashboard.open_vip_candidate_a11y')
@@ -211,24 +201,6 @@ export function ClientActivityOpenRequestCard({
         {isJobPaused(job) ? t('client_dashboard.status_paused') : t('client_dashboard.status_waiting_helpers')}
       </span>
     </span>
-  );
-
-  const renderBackBar = (label: string) => (
-    <div className={FEED_CARD_PREMIUM_TOP_BAR_CLASS} data-testid="client-activity-card-top-bar">
-      <button
-        type="button"
-        data-testid="client-activity-card-back"
-        onClick={(e) => {
-          e.stopPropagation();
-          goBack();
-        }}
-        className={FEED_CARD_PREMIUM_BACK_CLASS}
-        aria-label={label}
-      >
-        <Icons.ArrowLeft className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
-        {label}
-      </button>
-    </div>
   );
 
   const renderActionRow = (app: Application, extraClassName?: string) => {
@@ -288,7 +260,6 @@ export function ClientActivityOpenRequestCard({
       className="relative z-0 flex h-full min-h-0 flex-col"
       data-testid="client-activity-card-summary"
     >
-      {/* TOP — icon | status | ⋮ */}
       <div className="flex shrink-0 items-start gap-2">
         <div
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border sm:h-11 sm:w-11"
@@ -330,7 +301,6 @@ export function ClientActivityOpenRequestCard({
         </div>
       </div>
 
-      {/* CENTER — title + meta (budget always visible) */}
       <div className="mt-1.5 min-h-0 flex-1 overflow-hidden">
         <h3 className="line-clamp-2 text-[15px] font-bold leading-[1.25] text-[#0F172A] sm:text-[16px]">
           {title}
@@ -363,7 +333,6 @@ export function ClientActivityOpenRequestCard({
         ) : null}
       </div>
 
-      {/* BOTTOM — [arc] [Description ›] */}
       <div
         className="mt-auto flex shrink-0 items-center gap-2 border-t border-[rgba(15,23,42,0.06)] pt-2"
         data-testid="client-activity-summary-footer"
@@ -381,9 +350,9 @@ export function ClientActivityOpenRequestCard({
         <button
           type="button"
           data-testid="client-activity-open-description"
-          onClick={() => goToView('description')}
+          onClick={() => setOverlay('description')}
           className="ml-auto inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[rgba(15,23,42,0.08)] bg-[#f8fafc] px-3 py-2 text-[12px] font-bold text-[#0F172A] transition hover:bg-slate-50"
-          aria-expanded={view === 'description'}
+          aria-expanded={overlay === 'description'}
         >
           <Icons.FileText className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
           <span>{t('client_dashboard.view_description')}</span>
@@ -393,13 +362,12 @@ export function ClientActivityOpenRequestCard({
     </div>
   );
 
-  const renderDescription = () => (
+  const renderDescriptionContent = () => (
     <div
-      className={clsx(CLIENT_ACTIVITY_PANEL_CLASS, 'overflow-hidden')}
+      className={clsx(FEED_CARD_PREMIUM_SHELL_CLASS, 'rounded-2xl p-1')}
       data-testid="client-activity-description-view"
     >
-      {renderBackBar(t('nav.back'))}
-      <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'min-h-0 space-y-2')}>
+      <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-2')}>
         <h3 className={FEED_CARD_PREMIUM_TITLE_CLASS}>{title}</h3>
         <div className={FEED_CARD_PREMIUM_SURFACE_CLASS}>
           <p className="text-[12px] font-semibold text-white/85">
@@ -428,7 +396,7 @@ export function ClientActivityOpenRequestCard({
     </div>
   );
 
-  const renderCandidates = () => {
+  const renderCandidatesContent = () => {
     if (exclusiveApp) {
       const rank = getHelperRank({
         completedCount: exclusiveApp.helperJobs ?? 0,
@@ -436,12 +404,11 @@ export function ClientActivityOpenRequestCard({
       });
       return (
         <div
-          className={CLIENT_ACTIVITY_PANEL_CLASS}
+          className={clsx(FEED_CARD_PREMIUM_SHELL_CLASS, 'rounded-2xl p-1')}
           data-testid="client-activity-candidates-view"
           data-candidates-mode="exclusive"
         >
-          {renderBackBar(t('nav.back'))}
-          <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'min-h-0 space-y-2')}>
+          <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-2')}>
             {renderActionRow(exclusiveApp, 'border-amber-200/80')}
             <div
               data-testid="client-activity-vip-panel"
@@ -479,12 +446,11 @@ export function ClientActivityOpenRequestCard({
 
     return (
       <div
-        className={CLIENT_ACTIVITY_PANEL_CLASS}
+        className={clsx(FEED_CARD_PREMIUM_SHELL_CLASS, 'rounded-2xl p-1')}
         data-testid="client-activity-candidates-view"
         data-candidates-mode="normal"
       >
-        {renderBackBar(t('nav.back'))}
-        <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'min-h-0 space-y-2')}>
+        <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-2')}>
           <p className={FEED_CARD_PREMIUM_EYEBROW_CLASS}>{t('client_dashboard.candidates_panel_title')}</p>
           {displayCandidates.length === 0 ? (
             <p className={FEED_CARD_PREMIUM_MUTED_CLASS} data-testid="client-activity-candidates-empty">
@@ -498,15 +464,14 @@ export function ClientActivityOpenRequestCard({
     );
   };
 
-  const renderProfile = () => {
+  const renderProfileContent = () => {
     if (!profileApp) return null;
     return (
       <div
-        className={CLIENT_ACTIVITY_PANEL_CLASS}
+        className={clsx(FEED_CARD_PREMIUM_SHELL_CLASS, 'rounded-2xl p-1')}
         data-testid="client-activity-profile-view"
       >
-        {renderBackBar(t('client_dashboard.back_to_candidates'))}
-        <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'min-h-0 space-y-2')}>
+        <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-2')}>
           <div className="flex items-start gap-3">
             <img
               src={profileApp.helperAvatar}
@@ -539,50 +504,73 @@ export function ClientActivityOpenRequestCard({
     );
   };
 
+  const candidatesOverlayTitle = exclusiveApp
+    ? t('client_dashboard.exclusive_application_badge')
+    : t('client_dashboard.candidates_panel_title');
+
   return (
-    <div
-      ref={cardShellRef}
-      className={clsx('relative', activityMenuOpen ? 'z-40' : isInternalView ? 'z-30' : 'z-0')}
-    >
-      <LhCard
-        padding="none"
-        className={clsx(FEED_CARD_SHELL_CLASS, activityMenuOpen && '!overflow-visible')}
-        data-testid="client-activity-open-card"
-        data-client-activity-view={view}
-        data-feed-card-height-locked="true"
-        data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
-        data-feed-card-standard-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
+    <>
+      <div
+        ref={cardShellRef}
+        className={clsx('relative', activityMenuOpen ? 'z-40' : 'z-0')}
       >
-        <div
-          className={FEED_CARD_TOP_ACCENT_CLASS}
-          style={{
-            background: `linear-gradient(90deg, ${categoryTheme.iconColor} 0%, ${categoryTheme.iconColor}55 55%, transparent 100%)`,
-          }}
-          aria-hidden
-        />
-        <div
-          className={clsx(FEED_CARD_CONTENT_CLASS, activityMenuOpen && '!overflow-visible')}
-          style={feedCardLockedContentStyle()}
+        <LhCard
+          padding="none"
+          className={clsx(FEED_CARD_SHELL_CLASS, activityMenuOpen && '!overflow-visible')}
+          data-testid="client-activity-open-card"
+          data-client-activity-overlay={overlay ?? 'summary'}
+          data-feed-card-height-locked="true"
+          data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
+          data-feed-card-standard-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
         >
           <div
-            className={clsx(
-              'h-full min-h-0',
-              isInternalView && 'invisible pointer-events-none select-none',
-            )}
-            aria-hidden={isInternalView}
-            data-testid="client-activity-card-summary-shell"
+            className={FEED_CARD_TOP_ACCENT_CLASS}
+            style={{
+              background: `linear-gradient(90deg, ${categoryTheme.iconColor} 0%, ${categoryTheme.iconColor}55 55%, transparent 100%)`,
+            }}
+            aria-hidden
+          />
+          <div
+            className={clsx(FEED_CARD_CONTENT_CLASS, activityMenuOpen && '!overflow-visible')}
+            style={feedCardLockedContentStyle()}
           >
             {renderSummary()}
           </div>
-          {isInternalView ? (
-            <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="client-activity-premium-shell">
-              {view === 'description' ? renderDescription() : null}
-              {view === 'candidates' ? renderCandidates() : null}
-              {view === 'profile' ? renderProfile() : null}
-            </div>
-          ) : null}
-        </div>
-      </LhCard>
-    </div>
+        </LhCard>
+      </div>
+
+      <LhCardOverlay
+        open={overlay === 'description'}
+        onClose={closeOverlay}
+        title={t('client_dashboard.view_description')}
+        subtitle={title}
+        testId="client-activity-description-overlay"
+      >
+        {renderDescriptionContent()}
+      </LhCardOverlay>
+
+      <LhCardOverlay
+        open={overlay === 'candidates'}
+        onClose={closeOverlay}
+        title={candidatesOverlayTitle}
+        subtitle={title}
+        testId="client-activity-candidates-overlay"
+      >
+        {renderCandidatesContent()}
+      </LhCardOverlay>
+
+      <LhCardOverlay
+        open={overlay === 'profile' && profileApp != null}
+        onClose={closeOverlay}
+        onBack={backFromProfile}
+        title={profileApp?.helperName ?? t('client_dashboard.candidates_panel_title')}
+        subtitle={title}
+        testId="client-activity-profile-overlay"
+        maxWidthClass="max-w-md"
+        maxHeightClass="max-h-[min(72dvh,560px)]"
+      >
+        {renderProfileContent()}
+      </LhCardOverlay>
+    </>
   );
 }

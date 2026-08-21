@@ -177,7 +177,7 @@ export function GamificationCompactRankCardSurface({
     <div
       className={clsx(
         COMPACT_RANK_FULL_BLEED_CLASS,
-        'min-h-[170px] max-h-[210px] border-y border-white/10 shadow-[0_14px_36px_rgba(0,0,0,0.28)] lg:rounded-2xl lg:border',
+        'min-h-[170px] max-h-[210px] rounded-b-2xl border-y border-white/10 shadow-[0_14px_36px_rgba(0,0,0,0.28)] lg:rounded-2xl lg:border',
         className,
       )}
       data-testid="gamification-compact-rank-bleed"
@@ -287,7 +287,7 @@ export function GamificationRankLoadingCard({ className }: { className?: string 
     <div
       className={clsx(
         COMPACT_RANK_FULL_BLEED_CLASS,
-        'flex min-h-[170px] max-h-[210px] items-center justify-center border-y border-white/10 bg-[#020804] text-white/70 shadow-[0_14px_36px_rgba(0,0,0,0.22)] lg:rounded-2xl lg:border',
+        'flex min-h-[170px] max-h-[210px] items-center justify-center rounded-b-2xl border-y border-white/10 bg-[#020804] text-white/70 shadow-[0_14px_36px_rgba(0,0,0,0.22)] lg:rounded-2xl lg:border',
         className,
       )}
       data-testid="gamification-compact-rank-loading"
@@ -306,7 +306,7 @@ export function GamificationRankUnavailableCard({ className }: { className?: str
     <div
       className={clsx(
         COMPACT_RANK_FULL_BLEED_CLASS,
-        'flex min-h-[170px] max-h-[210px] items-center justify-center border-y border-white/10 bg-[#020804] text-sm font-medium text-white/60 shadow-[0_14px_36px_rgba(0,0,0,0.22)] lg:rounded-2xl lg:border',
+        'flex min-h-[170px] max-h-[210px] items-center justify-center rounded-b-2xl border-y border-white/10 bg-[#020804] text-sm font-medium text-white/60 shadow-[0_14px_36px_rgba(0,0,0,0.22)] lg:rounded-2xl lg:border',
         className,
       )}
       data-testid="gamification-compact-rank-unavailable"

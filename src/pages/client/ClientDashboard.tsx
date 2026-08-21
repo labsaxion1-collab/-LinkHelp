@@ -25,6 +25,8 @@ import { ClientDashboardHeroSlot } from '@/components/client/ClientDashboardHero
 import { ClientCandidateCard } from '@/components/client/ClientCandidateCard';
 import { ClientActivityOpenRequestCard } from '@/components/client/ClientActivityOpenRequestCard';
 import { ClientCompletedHistoryCard } from '@/components/client/ClientCompletedHistoryCard';
+import { CandidateHelperProfileExpand } from '@/components/client/CandidateHelperProfileExpand';
+import { LhCardOverlay } from '@/components/design-system/LhCardOverlay';
 import { candidateProfileExpandKey } from '@/utils/candidateProfileExpand';
 import { filterClientJobsForActivityTab } from '@/utils/clientActivityJobTabs';
 import { resolveHiredHelperForCompletedJob } from '@/utils/completedServiceHistory';
@@ -964,6 +966,7 @@ export default function ClientDashboard() {
                         expandedCandidateProfileKey === candidateProfileExpandKey(detailJob.id, app.id)
                       }
                       onToggleProfile={() => toggleCandidateProfile(detailJob.id, app.id)}
+                      embedProfile={false}
                       showAccept={app.status === 'pending' || app.status === 'viewed'}
                       showReject={app.status === 'pending' || app.status === 'viewed'}
                       accepting={acceptingApplicationId === app.id}
@@ -1003,6 +1006,35 @@ export default function ClientDashboard() {
                   </div>
                 ))}
               </div>
+              {(() => {
+                const profileApp = sheetDisplayApps.find(
+                  (a) =>
+                    a &&
+                    expandedCandidateProfileKey === candidateProfileExpandKey(detailJob.id, a.id),
+                );
+                if (!profileApp) return null;
+                return (
+                  <LhCardOverlay
+                    open
+                    onClose={() => setExpandedCandidateProfileKey(null)}
+                    title={profileApp.helperName}
+                    subtitle={translateJobTitle(
+                      detailJob.title,
+                      detailJob.category,
+                      detailJob.subcategory,
+                      t,
+                    )}
+                    testId="client-dashboard-sheet-profile-overlay"
+                    layer="elevated"
+                  >
+                    <CandidateHelperProfileExpand
+                      helperId={profileApp.helperId}
+                      helperRating={profileApp.helperRating}
+                      helperJobs={profileApp.helperJobs}
+                    />
+                  </LhCardOverlay>
+                );
+              })()}
               {/* sheet footer */}
               <div className="shrink-0 border-t border-slate-100 px-5 py-4 space-y-2">
                 {jobsAwaitingServiceConfirm.some((j) => j.id === detailJob.id) ? (
@@ -1939,6 +1971,7 @@ export default function ClientDashboard() {
                                         candidateProfileExpandKey(job.id, app.id)
                                       }
                                       onToggleProfile={() => toggleCandidateProfile(job.id, app.id)}
+                                      embedProfile={false}
                                       showAccept={
                                         (app.status === 'pending' || app.status === 'viewed') &&
                                         isPreHireActivity
@@ -1947,52 +1980,88 @@ export default function ClientDashboard() {
                                       onAccept={() => void handleAcceptProposal(job, app)}
                                     />
                                   ))}
+                                  {(() => {
+                                    const profileApp = displayCandidateApps.find(
+                                      (a) =>
+                                        expandedCandidateProfileKey ===
+                                        candidateProfileExpandKey(job.id, a.id),
+                                    );
+                                    if (!profileApp) return null;
+                                    return (
+                                      <LhCardOverlay
+                                        open
+                                        onClose={() => setExpandedCandidateProfileKey(null)}
+                                        title={profileApp.helperName}
+                                        subtitle={translateJobTitle(
+                                          job.title,
+                                          job.category,
+                                          job.subcategory,
+                                          t,
+                                        )}
+                                        testId="client-dashboard-activity-profile-overlay"
+                                      >
+                                        <CandidateHelperProfileExpand
+                                          helperId={profileApp.helperId}
+                                          helperRating={profileApp.helperRating}
+                                          helperJobs={profileApp.helperJobs}
+                                        />
+                                      </LhCardOverlay>
+                                    );
+                                  })()}
                                 </div>
                               )}
                             </div>
                           ) : null}
 
-                          {isDescriptionOpen ? (
-                            <div
-                              className={clsx(
-                                'mt-2 animate-in fade-in slide-in-from-top-1 duration-200 rounded-2xl border p-2 shadow-[0_18px_50px_rgba(15,23,42,0.12)]',
-                                clientDashboardAccent.activitySoftBg,
-                                clientDashboardAccent.activitySoftBorder,
-                              )}
-                            >
-                              <div className="rounded-2xl border border-white/80 bg-white/95 px-2.5 py-2.5 text-xs font-semibold leading-snug text-slate-700 shadow-sm backdrop-blur">
-                                <div className="mb-2 grid grid-cols-1 gap-1.5 text-[11px] sm:grid-cols-2">
-                                  <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
-                                    <span className="block font-black uppercase tracking-[0.06em] text-slate-400">Orçamento</span>
-                                    <span className="block font-bold text-slate-800">{formatJobBudgetDisplay(job, t)}</span>
-                                  </div>
-                                  <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
-                                    <span className="block font-black uppercase tracking-[0.06em] text-slate-400">Criado em</span>
-                                    <span className="block font-bold text-slate-800">{createdAtLabel}</span>
-                                  </div>
-                                  <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
-                                    <span className="block font-black uppercase tracking-[0.06em] text-slate-400">
-                                      {t('client_dashboard.activity_modality')}
-                                    </span>
-                                    <span className="block font-bold text-slate-800">
-                                      {job.serviceMode === 'remote'
-                                        ? t('create_modal.service_mode_remote')
-                                        : job.serviceMode === 'in_person'
-                                          ? t('create_modal.service_mode_in_person')
-                                          : t('common.unknown')}
-                                    </span>
-                                  </div>
-                                  <div className="rounded-xl bg-slate-50 px-2.5 py-1.5 sm:col-span-2">
-                                    <span className="block font-black uppercase tracking-[0.06em] text-slate-400">Endereço</span>
-                                    <span className="block font-bold text-slate-800">{job.address || job.city || job.location}</span>
-                                  </div>
+                          <LhCardOverlay
+                            open={isDescriptionOpen}
+                            onClose={() => setExpandedActivityPanel(null)}
+                            title={t('client_dashboard.view_description')}
+                            subtitle={translateJobTitle(job.title, job.category, job.subcategory, t)}
+                            testId="client-dashboard-activity-description-overlay"
+                          >
+                            <div className="space-y-3 text-xs font-semibold leading-snug text-slate-700">
+                              <div className="grid grid-cols-1 gap-1.5 text-[11px] sm:grid-cols-2">
+                                <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
+                                  <span className="block font-black uppercase tracking-[0.06em] text-slate-400">
+                                    Orçamento
+                                  </span>
+                                  <span className="block font-bold text-slate-800">
+                                    {formatJobBudgetDisplay(job, t)}
+                                  </span>
                                 </div>
-                                <p className="whitespace-pre-line text-[12px] leading-snug">
-                                  {job.description || 'Sem descrição adicional.'}
-                                </p>
+                                <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
+                                  <span className="block font-black uppercase tracking-[0.06em] text-slate-400">
+                                    Criado em
+                                  </span>
+                                  <span className="block font-bold text-slate-800">{createdAtLabel}</span>
+                                </div>
+                                <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
+                                  <span className="block font-black uppercase tracking-[0.06em] text-slate-400">
+                                    {t('client_dashboard.activity_modality')}
+                                  </span>
+                                  <span className="block font-bold text-slate-800">
+                                    {job.serviceMode === 'remote'
+                                      ? t('create_modal.service_mode_remote')
+                                      : job.serviceMode === 'in_person'
+                                        ? t('create_modal.service_mode_in_person')
+                                        : t('common.unknown')}
+                                  </span>
+                                </div>
+                                <div className="rounded-xl bg-slate-50 px-2.5 py-1.5 sm:col-span-2">
+                                  <span className="block font-black uppercase tracking-[0.06em] text-slate-400">
+                                    Endereço
+                                  </span>
+                                  <span className="block font-bold text-slate-800">
+                                    {job.address || job.city || job.location}
+                                  </span>
+                                </div>
                               </div>
+                              <p className="whitespace-pre-line text-[12px] leading-snug">
+                                {job.description || 'Sem descrição adicional.'}
+                              </p>
                             </div>
-                          ) : null}
+                          </LhCardOverlay>
                         </div>
                       </article>
                     );

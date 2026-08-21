@@ -55,6 +55,7 @@ describe('compact gamification rank on helper dashboard', () => {
     expect(modal).toContain('onBackFromFirstStep');
     expect(modal).toContain('initialCardId');
     expect(modal).toContain('gamification-tutorial-back');
+    expect(modal).toContain('seededForOpenRef');
   });
 });
 
@@ -99,6 +100,33 @@ describe('shared overlay shell', () => {
     expect(overlay).toContain('LH_CENTERED_MODAL_STANDARD_PANEL_CLASS');
     expect(overlay).toContain('items-center p-4');
     expect(overlay).toContain("size = 'standard'");
+    expect(overlay).toContain('overflow-hidden');
+    expect(overlay).toContain('border border-slate-100');
+    expect(overlay).toContain('LH_CENTERED_MODAL_STANDARD_PANEL_CLASS');
+    expect(overlay).not.toContain('ArrowLeft');
+    const scale = read('src/components/design-system/lhCenteredModalScale.ts');
+    expect(scale).toContain("LH_CENTERED_MODAL_RADIUS_CLASS = 'rounded-[22px]'");
+    expect(scale).toContain("'overflow-hidden'");
+  });
+});
+
+describe('helper activity cards use LhCardOverlay', () => {
+  it('HelperApplicationCard opens description and profile in overlay, not inline expand', () => {
+    const src = read('src/components/helpers/HelperApplicationCard.tsx');
+    expect(src).toContain('LhCardOverlay');
+    expect(src).toContain('helper-application-description-overlay');
+    expect(src).toContain('helper-application-profile-overlay');
+    expect(src).not.toContain('CandidateClientProfileExpand clientId={job.clientId} />');
+    expect(src).not.toMatch(/descriptionOpen \? \(\s*<div className="overflow-hidden border-t/);
+  });
+
+  it('HelperAcceptedJobCard opens description in overlay, keeps complete/review handlers', () => {
+    const src = read('src/components/helpers/HelperAcceptedJobCard.tsx');
+    expect(src).toContain('LhCardOverlay');
+    expect(src).toContain('helper-accepted-description-overlay');
+    expect(src).toContain('onComplete');
+    expect(src).toContain('upcoming_jobs.complete_work');
+    expect(src).not.toMatch(/descriptionOpen \? \(\s*<div className="overflow-hidden border-t/);
   });
 });
 

@@ -10,6 +10,7 @@ import { formatJobBudgetAmount } from '@/utils/formatJobBudget';
 import { formatMoneyAmount } from '@/utils/jobProposal';
 import { isJobPaused } from '@/utils/jobVisibility';
 import { LhCard } from '@/components/design-system/LhCard';
+import { LhCardOverlay } from '@/components/design-system/LhCardOverlay';
 import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { CandidateClientProfileExpand } from '@/components/helpers/CandidateClientProfileExpand';
 import { formatLinkCredits } from '@/utils/formatLinkCredits';
@@ -96,6 +97,7 @@ export function HelperApplicationCard({
         : t('jobs.remote');
 
   return (
+    <>
     <LhCard
       padding="none"
       className={clsx(
@@ -196,6 +198,7 @@ export function HelperApplicationCard({
             type="button"
             onClick={() => onToggleAccordion('client')}
             aria-expanded={profileOpen}
+            data-testid="helper-application-open-profile"
             className={clsx(
               accordionBtn,
               profileOpen
@@ -214,16 +217,14 @@ export function HelperApplicationCard({
               </span>
             )}
             <span className="truncate">{firstName}</span>
-            <Icons.ChevronDown
-              className={clsx('h-3.5 w-3.5 shrink-0 transition-transform', profileOpen && 'rotate-180')}
-              aria-hidden
-            />
+            <Icons.ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
           </button>
 
           <button
             type="button"
             onClick={() => onToggleAccordion('description')}
             aria-expanded={descriptionOpen}
+            data-testid="helper-application-open-description"
             className={clsx(
               accordionBtn,
               'max-w-[38%] sm:max-w-none',
@@ -233,10 +234,7 @@ export function HelperApplicationCard({
             )}
           >
             <span>{t('helper_tasks.description_toggle')}</span>
-            <Icons.ChevronDown
-              className={clsx('h-3.5 w-3.5 shrink-0 transition-transform', descriptionOpen && 'rotate-180')}
-              aria-hidden
-            />
+            <Icons.ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
           </button>
 
           {canCancel ? (
@@ -261,61 +259,74 @@ export function HelperApplicationCard({
             </button>
           ) : null}
         </div>
-
-        {profileOpen && job.clientId ? (
-          <CandidateClientProfileExpand clientId={job.clientId} />
-        ) : null}
-
-        {descriptionOpen ? (
-          <div className="overflow-hidden border-t border-slate-200/80 bg-gradient-to-b from-slate-50/90 to-white px-3 py-3">
-            <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-              {t('helper_tasks.observations_label')}
-            </p>
-            <p className="mt-2 min-h-[72px] max-h-40 overflow-y-auto whitespace-pre-wrap text-[13px] font-medium leading-relaxed text-slate-800">
-              {descriptionView.display || t('upcoming_jobs.no_observations')}
-            </p>
-
-            <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-700">
-              <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                  {t('upcoming_jobs.date_time')}
-                </p>
-                <p className="mt-1 leading-snug">{scheduleLabel || '—'}</p>
-              </div>
-              <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                  {t('helper_tasks.distance_label')}
-                </p>
-                <p className="mt-1 truncate leading-snug">{distanceLabel}</p>
-              </div>
-            </div>
-
-            <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-700">
-              <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                  {t('helper_tasks.lc_debited_label')}
-                </p>
-                <p className="mt-1 tabular-nums text-emerald-700">{formatLinkCredits(debitedLc)} LC</p>
-                <p className="mt-0.5 text-[10px] font-semibold text-slate-500">
-                  {app.isExclusive ? t('helper_tasks.application_type_vip') : t('helper_tasks.application_type_normal')}
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                  {t('upcoming_jobs.status_label')}
-                </p>
-                <p className="mt-1">{statusText[app.status] ?? t('common.unknown')}</p>
-              </div>
-            </div>
-
-            {refundLc != null && refundLc > 0 ? (
-              <p className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-[11px] font-semibold text-emerald-800">
-                {t('helper_tasks.vip_refund_note', { count: formatLinkCredits(refundLc) })}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
       </div>
     </LhCard>
+
+      <LhCardOverlay
+        open={profileOpen && Boolean(job.clientId)}
+        onClose={() => onToggleAccordion('client')}
+        title={t('helper_dashboard.feed_card_profile_title')}
+        subtitle={job.clientName}
+        testId="helper-application-profile-overlay"
+      >
+        {job.clientId ? <CandidateClientProfileExpand clientId={job.clientId} className="border-0 bg-transparent px-0" /> : null}
+      </LhCardOverlay>
+
+      <LhCardOverlay
+        open={descriptionOpen}
+        onClose={() => onToggleAccordion('description')}
+        title={t('helper_tasks.description_toggle')}
+        subtitle={title}
+        testId="helper-application-description-overlay"
+      >
+        <div data-testid="helper-application-description-view">
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+            {t('helper_tasks.observations_label')}
+          </p>
+          <p className="mt-2 min-h-[72px] whitespace-pre-wrap text-[13px] font-medium leading-relaxed text-slate-800">
+            {descriptionView.display || t('upcoming_jobs.no_observations')}
+          </p>
+
+          <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-700">
+            <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                {t('upcoming_jobs.date_time')}
+              </p>
+              <p className="mt-1 leading-snug">{scheduleLabel || '—'}</p>
+            </div>
+            <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                {t('helper_tasks.distance_label')}
+              </p>
+              <p className="mt-1 truncate leading-snug">{distanceLabel}</p>
+            </div>
+          </div>
+
+          <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-700">
+            <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                {t('helper_tasks.lc_debited_label')}
+              </p>
+              <p className="mt-1 tabular-nums text-emerald-700">{formatLinkCredits(debitedLc)} LC</p>
+              <p className="mt-0.5 text-[10px] font-semibold text-slate-500">
+                {app.isExclusive ? t('helper_tasks.application_type_vip') : t('helper_tasks.application_type_normal')}
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                {t('upcoming_jobs.status_label')}
+              </p>
+              <p className="mt-1">{statusText[app.status] ?? t('common.unknown')}</p>
+            </div>
+          </div>
+
+          {refundLc != null && refundLc > 0 ? (
+            <p className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-[11px] font-semibold text-emerald-800">
+              {t('helper_tasks.vip_refund_note', { count: formatLinkCredits(refundLc) })}
+            </p>
+          ) : null}
+        </div>
+      </LhCardOverlay>
+    </>
   );
 }

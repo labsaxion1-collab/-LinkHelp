@@ -125,7 +125,8 @@ export function LhCardOverlay({
         aria-labelledby={titleId}
         tabIndex={-1}
         className={clsx(
-          'flex flex-col bg-white outline-none',
+          /* Single outer shell: radius + overflow clip header/body together (no dual card radii). */
+          'flex flex-col overflow-hidden border border-slate-100 bg-white outline-none',
           isCentered
             ? clsx(
                 LH_CENTERED_MODAL_STANDARD_PANEL_CLASS,

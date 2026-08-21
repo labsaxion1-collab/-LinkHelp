@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, ChevronLeft } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useLanguage } from '@/context/LanguageContext';
@@ -180,16 +180,38 @@ export function GamificationTutorialModal({
     : staticCards;
   const cards = userType === 'client' ? clientCards : helperCards;
   const [step, setStep] = useState(0);
+  /** Visual tutorial index — independent of the user's real gamification level. */
+  const seededForOpenRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
-    if (initialCardId) {
-      const idx = cards.findIndex((card) => card.id === initialCardId);
-      setStep(idx >= 0 ? idx : 0);
+    if (!open) {
+      seededForOpenRef.current = false;
       return;
     }
-    setStep(0);
+    // Seed only once per open session. Do not reset after Próximo/Voltar when
+    // `cards` is rebuilt from useGamification / progress context refreshes.
+    if (seededForOpenRef.current) return;
+
+    if (initialCardId) {
+      const idx = cards.findIndex((card) => card.id === initialCardId);
+      if (idx >= 0) {
+        setStep(idx);
+        seededForOpenRef.current = true;
+        return;
+      }
+      if (cards.length > 0) {
+        setStep(0);
+        seededForOpenRef.current = true;
+      }
+      return;
+    }
+
+    if (cards.length > 0) {
+      setStep(0);
+      seededForOpenRef.current = true;
+    }
   }, [open, userType, initialCardId, cards]);
+
   useEffect(() => {
     setStep((current) => Math.min(current, Math.max(0, cards.length - 1)));
   }, [cards.length]);

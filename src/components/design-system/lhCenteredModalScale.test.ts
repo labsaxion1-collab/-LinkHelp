@@ -48,9 +48,13 @@ describe('shared centered modal scale', () => {
     const completed = read('src/components/client/ClientCompletedHistoryCard.tsx');
     const helperHistory = read('src/components/helpers/HelperCompletedHistoryCard.tsx');
     expect(overlay).toContain('LH_CENTERED_MODAL_STANDARD_PANEL_CLASS');
+    expect(overlay).toContain('overflow-hidden');
+    expect(overlay).toContain('border border-slate-100');
     expect(overlay).toContain('overflow-y-auto');
     expect(overlay).toContain('z-[1000]');
     expect(overlay).toContain('LhPremiumCloseButton');
+    expect(LH_CENTERED_MODAL_STANDARD_PANEL_CLASS).toContain('overflow-hidden');
+    expect(LH_CENTERED_MODAL_STANDARD_PANEL_CLASS).toContain('rounded-[22px]');
     expect(card).toContain('feed-card-description-overlay');
     expect(card).toContain('feed-card-profile-overlay');
     expect(card).not.toContain('maxWidthClass');
@@ -76,6 +80,8 @@ describe('compact rank full-bleed', () => {
     expect(presentation).toContain('min-h-[170px]');
     expect(presentation).toContain('max-h-[210px]');
     expect(presentation).toContain('px-4');
+    expect(presentation).toContain('rounded-b-2xl');
+    expect(presentation).toContain('lg:rounded-2xl');
     expect(bleedBlock).toContain('.lh-compact-rank-bleed');
     expect(bleedBlock).toContain('margin-inline: calc(50% - 50dvw)');
     expect(bleedBlock).not.toContain('left: 50%');

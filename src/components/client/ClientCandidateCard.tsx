@@ -22,7 +22,7 @@ export type ClientCandidateCardProps = {
   showAccept?: boolean;
   showReject?: boolean;
   accepting?: boolean;
-  /** When false, profile is opened by the parent panel (no inline expand). Default true. */
+  /** When false, profile is opened by the parent panel (no inline expand). Default false — use LhCardOverlay. */
   embedProfile?: boolean;
   acceptDisabled?: boolean;
   teamComplete?: boolean;
@@ -42,7 +42,7 @@ export function ClientCandidateCard({
   showAccept = false,
   showReject = false,
   accepting = false,
-  embedProfile = true,
+  embedProfile = false,
   acceptDisabled = false,
   teamComplete = false,
   budgetRangeLabel,
@@ -133,8 +133,8 @@ export function ClientCandidateCard({
           >
             <span aria-hidden>👤</span>
             <span>{t('candidate_profile.toggle_label')}</span>
-            <Icons.ChevronDown
-              className={clsx('h-3.5 w-3.5 transition-transform duration-200', profileExpanded && 'rotate-180')}
+            <Icons.ChevronRight
+              className="h-3.5 w-3.5 text-slate-400"
               aria-hidden
             />
           </button>

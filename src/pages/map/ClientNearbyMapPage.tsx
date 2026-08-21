@@ -11,7 +11,13 @@ import { AvatarMapPin } from '@/components/map/AvatarMapPin';
 import { NearbyHelperListItem } from '@/components/map/NearbyHelperListItem';
 import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
 import { parseSkillKey, skillSubLabelKey } from '@/data/helperSkillsCatalog';
-import { getGoogleMapsApiKey, isGoogleMapsConfigured } from '@/utils/googleMapsConfig';
+import {
+  attachGoogleMapsAuthFailureListener,
+  classifyGoogleMapsLoaderError,
+  getGoogleMapsApiKey,
+  getGoogleMapsApiKeySanitizedPrefix,
+  isGoogleMapsConfigured,
+} from '@/utils/googleMapsConfig';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
 
@@ -65,6 +71,11 @@ export default function ClientNearbyMapPage() {
   const mapsReady = isGoogleMapsConfigured();
   const mapsApiKey = getGoogleMapsApiKey();
 
+  useEffect(() => {
+    if (!mapsReady) return;
+    return attachGoogleMapsAuthFailureListener();
+  }, [mapsReady]);
+
   const skillLabel = (skillId: string) => {
     const parsed = parseSkillKey(skillId);
     if (!parsed) return skillId;
@@ -105,7 +116,18 @@ export default function ClientNearbyMapPage() {
         className="relative flex-1 min-h-0 min-w-0 h-[58vh] lg:h-full shrink-0"
       >
         {mapsReady ? (
-          <APIProvider apiKey={mapsApiKey} version="weekly" libraries={['marker']}>
+          <APIProvider
+            apiKey={mapsApiKey}
+            version="weekly"
+            libraries={['marker']}
+            onError={(error) => {
+              console.error('[Google Maps] loader error (key not logged)', {
+                envVar: 'VITE_GOOGLE_MAPS_PLATFORM_KEY',
+                keyPrefix: getGoogleMapsApiKeySanitizedPrefix(mapsApiKey),
+                code: classifyGoogleMapsLoaderError(error),
+              });
+            }}
+          >
             <Map
               defaultCenter={clientCenter}
               defaultZoom={12}

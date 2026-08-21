@@ -9,6 +9,7 @@ import { getCategoryIconById } from '@/utils/categoryIcons';
 import { formatScheduledClock, formatScheduledDay } from '@/utils/upcomingJobUtils';
 import { avatarUrlForName } from '@/utils/avatarUrl';
 import { LhCard } from '@/components/design-system/LhCard';
+import { LhCardOverlay } from '@/components/design-system/LhCardOverlay';
 import { getRequestDescriptionForViewer } from '@/utils/requestDescriptionDisplay';
 import type { AppLanguage } from '@/services/translationService';
 import {
@@ -126,6 +127,7 @@ export function HelperAcceptedJobCard({
   const clientRating = requestJob?.clientRating ?? null;
 
   return (
+    <>
     <LhCard
       padding="none"
       className={clsx(
@@ -213,6 +215,7 @@ export function HelperAcceptedJobCard({
             type="button"
             onClick={onToggleDescription}
             aria-expanded={descriptionOpen}
+            data-testid="helper-accepted-open-description"
             className={clsx(
               actionBtn,
               'flex-1 border sm:flex-none sm:min-w-[140px]',
@@ -222,9 +225,7 @@ export function HelperAcceptedJobCard({
             )}
           >
             {t('helper_tasks.description_toggle')}
-            <Icons.ChevronDown
-              className={clsx('h-3.5 w-3.5 shrink-0 transition-transform', descriptionOpen && 'rotate-180')}
-            />
+            <Icons.ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
           </button>
 
           {onOpenChat ? (
@@ -238,51 +239,6 @@ export function HelperAcceptedJobCard({
             </button>
           ) : null}
         </div>
-
-        {descriptionOpen ? (
-          <div className="overflow-hidden border-t border-slate-200/80 bg-gradient-to-b from-slate-50/90 to-white px-1 py-3 sm:px-0">
-            <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-              {t('helper_tasks.observations_label')}
-            </p>
-            <p className="mt-2 min-h-[64px] max-h-36 overflow-y-auto whitespace-pre-wrap text-[13px] font-medium leading-relaxed text-slate-800">
-              {descriptionView.display || t('upcoming_jobs.no_observations')}
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-700">
-              <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                  {t('helper_tasks.date_label')}
-                </p>
-                <p className="mt-1">{dayLabel || '—'}</p>
-              </div>
-              <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                  {t('helper_tasks.time_label')}
-                </p>
-                <p className="mt-1">{clockLabel || '—'}</p>
-              </div>
-              <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                  {t('helper_tasks.distance_label')}
-                </p>
-                <p className="mt-1 truncate">{locationDisplay}</p>
-              </div>
-              <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                  {t('helper_tasks.agreed_payment_label')}
-                </p>
-                <p className="mt-1 text-emerald-700">{job.value || t('upcoming_jobs.payment_to_arrange')}</p>
-              </div>
-            </div>
-            <div className="mt-2 rounded-xl border border-slate-100 bg-white px-2.5 py-2">
-              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                {t('upcoming_jobs.status_label')}
-              </p>
-              <p className="mt-1 font-bold">
-                {t(WORKFLOW_LABEL_KEY[job.workflowStatus] ?? 'upcoming_jobs.status_scheduled')}
-              </p>
-            </div>
-          </div>
-        ) : null}
 
         {showComplete || showReview || reviewSubmitted || awaitingClient ? (
           <div className="mt-3 space-y-2">
@@ -342,5 +298,57 @@ export function HelperAcceptedJobCard({
         ) : null}
       </div>
     </LhCard>
+
+    <LhCardOverlay
+      open={descriptionOpen}
+      onClose={onToggleDescription}
+      title={t('helper_tasks.description_toggle')}
+      subtitle={title}
+      testId="helper-accepted-description-overlay"
+    >
+      <div data-testid="helper-accepted-description-view">
+        <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+          {t('helper_tasks.observations_label')}
+        </p>
+        <p className="mt-2 min-h-[64px] whitespace-pre-wrap text-[13px] font-medium leading-relaxed text-slate-800">
+          {descriptionView.display || t('upcoming_jobs.no_observations')}
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-700">
+          <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+            <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+              {t('helper_tasks.date_label')}
+            </p>
+            <p className="mt-1">{dayLabel || '—'}</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+            <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+              {t('helper_tasks.time_label')}
+            </p>
+            <p className="mt-1">{clockLabel || '—'}</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+            <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+              {t('helper_tasks.distance_label')}
+            </p>
+            <p className="mt-1 truncate">{locationDisplay}</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+            <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+              {t('helper_tasks.agreed_payment_label')}
+            </p>
+            <p className="mt-1 text-emerald-700">{job.value || t('upcoming_jobs.payment_to_arrange')}</p>
+          </div>
+        </div>
+        <div className="mt-2 rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+            {t('upcoming_jobs.status_label')}
+          </p>
+          <p className="mt-1 font-bold">
+            {t(WORKFLOW_LABEL_KEY[job.workflowStatus] ?? 'upcoming_jobs.status_scheduled')}
+          </p>
+        </div>
+      </div>
+    </LhCardOverlay>
+    </>
   );
 }

@@ -9,7 +9,13 @@ import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { translateCategory } from '@/utils/translateCategory';
 import { ROUTES } from '@/utils/constants';
-import { getGoogleMapsApiKey, isGoogleMapsConfigured } from '@/utils/googleMapsConfig';
+import {
+  attachGoogleMapsAuthFailureListener,
+  classifyGoogleMapsLoaderError,
+  getGoogleMapsApiKey,
+  getGoogleMapsApiKeySanitizedPrefix,
+  isGoogleMapsConfigured,
+} from '@/utils/googleMapsConfig';
 import { jobCoordinates } from '@/utils/geocodeLocation';
 import {
   distanceToJobKm,
@@ -63,6 +69,11 @@ export default function HelperLiveMapPage() {
   const FOCUS_ZOOM = 15;
   const mapsApiKey = getGoogleMapsApiKey();
   const mapsReady = isGoogleMapsConfigured();
+
+  useEffect(() => {
+    if (!mapsReady) return;
+    return attachGoogleMapsAuthFailureListener();
+  }, [mapsReady]);
 
   useEffect(() => {
     if (!isConfigured || !helperUserId) return;
@@ -190,7 +201,18 @@ export default function HelperLiveMapPage() {
     <div className="h-[calc(100dvh-80px)] w-full relative flex bg-[#EAF7FF] overflow-hidden lh-app-page">
       <section className="relative flex-1 min-h-0 min-w-0">
         {mapsReady ? (
-          <APIProvider apiKey={mapsApiKey} version="weekly" libraries={['marker']}>
+          <APIProvider
+            apiKey={mapsApiKey}
+            version="weekly"
+            libraries={['marker']}
+            onError={(error) => {
+              console.error('[Google Maps] loader error (key not logged)', {
+                envVar: 'VITE_GOOGLE_MAPS_PLATFORM_KEY',
+                keyPrefix: getGoogleMapsApiKeySanitizedPrefix(mapsApiKey),
+                code: classifyGoogleMapsLoaderError(error),
+              });
+            }}
+          >
             <HelperMapCanvas
               center={center}
               mapMarkerPoints={mapMarkerPoints}

@@ -24,6 +24,8 @@ export const LH_CENTERED_MODAL_STANDARD_PANEL_CLASS = [
   LH_CENTERED_MODAL_MAX_HEIGHT_CLASS,
   LH_CENTERED_MODAL_RADIUS_CLASS,
   LH_CENTERED_MODAL_SHADOW_CLASS,
+  /* Clip sticky header/body to the same rounded shell (matches apply/VIP radius). */
+  'overflow-hidden',
 ].join(' ');
 
 export const COMPACT_RANK_FULL_BLEED_CLASS =

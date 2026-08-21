@@ -84,3 +84,12 @@ export function feedCardLockedContentStyle(): {
     maxHeight: FEED_CARD_STANDARD_CONTENT_HEIGHT_PX,
   };
 }
+
+/**
+ * Activity cards (applications / accepted): same min-height as the feed,
+ * but may grow for an optional info strip (e.g. rejected application).
+ * Do not lock maxHeight — overlays must not change the card shell size.
+ */
+export function feedCardMinContentStyle(): { minHeight: number } {
+  return { minHeight: FEED_CARD_STANDARD_CONTENT_HEIGHT_PX };
+}

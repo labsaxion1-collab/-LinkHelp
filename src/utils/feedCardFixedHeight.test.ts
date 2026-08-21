@@ -7,6 +7,7 @@ import {
   FEED_CARD_STANDARD_OUTER_HEIGHT_PX,
   FEED_CARD_TOP_ACCENT_PX,
   feedCardLockedContentStyle,
+  feedCardMinContentStyle,
   resolveFeedCardLockedHeight,
 } from '@/utils/feedCardFixedHeight';
 import { readFile } from 'node:fs/promises';
@@ -30,6 +31,7 @@ describe('P3.4 / shared opportunity card shell height', () => {
       minHeight: 237,
       maxHeight: 237,
     });
+    expect(feedCardMinContentStyle()).toEqual({ minHeight: 237 });
     expect(FEED_CARD_SHELL_CLASS).toContain('rounded-[22px]');
     expect(FEED_CARD_CONTENT_CLASS).toContain('px-3');
   });

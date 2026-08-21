@@ -33,6 +33,7 @@ describe('helper activity cards align with feed geometry', () => {
     expect(src).toContain('helper-application-open-profile');
     expect(src).toContain('helper-application-open-description');
     expect(src).toContain('LhCardOverlay');
+    expect(src).toContain('mt-auto');
     expect(src).not.toContain('helper_tasks.cancel_short');
     expect(src).not.toContain('accordionBtn');
     expect(src).not.toMatch(/descriptionOpen \? \(\s*<div className="overflow-hidden border-t/);

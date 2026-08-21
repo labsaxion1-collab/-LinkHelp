@@ -72,7 +72,7 @@ describe('clientActivityJobTabs', () => {
       ...overrides,
     }) as Job;
 
-  it('keeps expired open jobs in waiting, never completed', () => {
+  it('keeps preferred-date-past open jobs in waiting when still status open, never completed', () => {
     const expiredOpen = job({ id: 'open-expired', status: 'open', preferredDate: '2020-01-01' });
     const hidden = new Set<string>();
     expect(isWaitingActivityJob('open')).toBe(true);
@@ -81,6 +81,13 @@ describe('clientActivityJobTabs', () => {
       'open-expired',
     ]);
     expect(filterClientJobsForActivityTab([expiredOpen], 'completed', hidden)).toEqual([]);
+  });
+
+  it('excludes explicit status expired from waiting tabs', () => {
+    const expired = job({ id: 'st-expired', status: 'expired' });
+    const hidden = new Set<string>();
+    expect(filterClientJobsForActivityTab([expired], 'waiting', hidden)).toEqual([]);
+    expect(filterClientJobsForActivityTab([expired], 'completed', hidden)).toEqual([]);
   });
 
   it('moves hired jobs to in_progress and completed only when status is completed', () => {

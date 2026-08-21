@@ -2,7 +2,7 @@
 
 export type ProfileRole = 'client' | 'helper';
 export type UserType = ProfileRole;
-export type RequestStatus = 'open' | 'paused' | 'in_progress' | 'completed' | 'cancelled';
+export type RequestStatus = 'open' | 'paused' | 'in_progress' | 'completed' | 'cancelled' | 'expired';
 export type DbApplicationStatus = 'pending' | 'viewed' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
 
 export type ProfileRow = {
@@ -99,6 +99,8 @@ export type RequestRow = {
   application_count: number;
   exclusive_helper_id?: string | null;
   status: RequestStatus;
+  /** Listing TTL (publish + 7 days). Optional on pre-0060 schemas. */
+  expires_at?: string | null;
   created_at: string;
   updated_at: string;
 };

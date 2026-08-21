@@ -60,6 +60,7 @@ export function requestRowToJob(row: RequestRow, client: MapperProfile): Job {
     value: budgetValue || '---',
     urgency: (row.urgency === 'high' ? 'high' : 'normal') as JobUrgency,
     status: normalizeRequestStatus(row.status),
+    expiresAt: row.expires_at ? tsFromIso(row.expires_at) : null,
     createdAt: tsFromIso(row.created_at),
   };
 }

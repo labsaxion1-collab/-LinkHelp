@@ -1,13 +1,14 @@
 import type { ElementType } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  ClipboardList,
   CreditCard,
   FileText,
   HelpCircle,
+  History,
   Images,
   Settings,
   Star,
-  ClipboardList,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { ProfileSectionHeader } from '@/components/profile/ProfileSectionHeader';
@@ -21,6 +22,7 @@ type Action = {
   iconColor: string;
   iconBg: string;
   to: string;
+  ariaLabel?: string;
 };
 
 type Props = {
@@ -33,6 +35,8 @@ type Props = {
     myReviews: string;
     portfolio: string;
     help: string;
+    history?: string;
+    historyDesc?: string;
     settings: string;
   };
 };
@@ -118,6 +122,20 @@ export function ProfileQuickActions({ title, role, labels }: Props) {
     },
   );
 
+  if (role === 'helper' && labels.history) {
+    actions.push({
+      key: 'history',
+      label: labels.history,
+      icon: History,
+      iconColor: 'text-indigo-600',
+      iconBg: 'bg-indigo-50',
+      to: ROUTES.helperHistory,
+      ariaLabel: labels.historyDesc
+        ? `${labels.history}. ${labels.historyDesc}`
+        : labels.history,
+    });
+  }
+
   return (
     <section>
       <ProfileSectionHeader title={title} />
@@ -128,6 +146,8 @@ export function ProfileQuickActions({ title, role, labels }: Props) {
             <button
               key={action.key}
               type="button"
+              data-testid={`profile-shortcut-${action.key}`}
+              aria-label={action.ariaLabel ?? action.label}
               onClick={() => navigate(action.to)}
               className="flex min-h-[88px] flex-col items-start gap-2.5 rounded-[1.25rem] border border-slate-200/90 bg-white px-3.5 py-3.5 text-left shadow-[0_8px_22px_rgba(15,23,42,0.045)] transition hover:-translate-y-0.5 hover:border-blue-100 hover:shadow-[0_12px_28px_rgba(37,99,255,0.08)] active:scale-[0.99]"
             >

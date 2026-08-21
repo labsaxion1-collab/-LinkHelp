@@ -38,6 +38,7 @@ const ClientCreditsHistoryPage = lazyPage(() => import('@/pages/client/ClientCre
 const ClientCreditsSuccessPage = lazyPage(() => import('@/pages/client/ClientCreditsSuccessPage'));
 const HelperDashboard = lazyPage(() => import('@/pages/helper/HelperDashboard'));
 const HelperUpcomingJobsPage = lazyPage(() => import('@/pages/helper/HelperUpcomingJobsPage'));
+const HelperHistoryPage = lazyPage(() => import('@/pages/helper/HelperHistoryPage'));
 const MessagesPage = lazyPage(() => import('@/pages/chat/MessagesPage'));
 const IdeasPage = lazyPage(() => import('@/pages/ideas/IdeasPage'));
 const NotificationsPage = lazyPage(() => import('@/pages/notifications/NotificationsPage'));
@@ -167,6 +168,7 @@ export function AppRoutes() {
             <Route path={ROUTES.helperOpportunities} element={<HelperDashboard />} />
             <Route path={ROUTES.helperPerformance} element={<HelperDashboard />} />
             <Route path={ROUTES.helperJobs} element={<HelperUpcomingJobsPage />} />
+            <Route path={ROUTES.helperHistory} element={<HelperHistoryPage />} />
             <Route path="/helper/jobs/upcoming" element={<Navigate to={ROUTES.helperJobs} replace />} />
           </Route>
 

@@ -47,7 +47,7 @@ export function formatJobBudgetAmount(job: BudgetFields, t: (key: string) => str
 
   if (min != null && min > 0 && max != null && max > 0) {
     if (min === max) return `${currency} $${min}`;
-    return `${currency} $${min} - ${max}`;
+    return `${currency} $${min}–${max}`;
   }
   if (min != null && min > 0) return `${currency} $${min}+`;
   if (max != null && max > 0) return `${currency} $${max}`;
@@ -82,7 +82,7 @@ export function buildBudgetLabelFromRange(
   if (budgetType === 'negotiable') return t('jobs.value_negotiable');
   if (min != null && min > 0 && max != null && max > 0) {
     if (min === max) return `${currency} $${min}`;
-    return `${currency} $${min} - ${max}`;
+    return `${currency} $${min}–${max}`;
   }
   if (min != null && min > 0) return `${currency} $${min}+`;
   if (max != null && max > 0) return `${currency} $${max}`;

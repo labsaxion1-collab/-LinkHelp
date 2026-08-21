@@ -1,7 +1,7 @@
 import type { Application } from '@/types/application';
 import type { Job } from '@/types/job';
 import { isJobInterestFull, isRequestExclusiveLockedForViewer } from '@/utils/applicationInterest';
-import { isJobCancelled } from '@/utils/jobVisibility';
+import { isJobCancelled, isJobExpired } from '@/utils/jobVisibility';
 import {
   getJobServiceCategoryId,
   type HelperCategoryPreferences,
@@ -52,7 +52,7 @@ export function explainHelperFeedJobExclusion(params: {
   } = params;
 
   if (!helperHasFeedCategories(skillIds, prefs)) return 'no_categories';
-  if (job.status !== 'open' || isJobCancelled(job)) return 'status';
+  if (job.status !== 'open' || isJobCancelled(job) || isJobExpired(job)) return 'status';
   if (job.clientId === viewerId) return 'own_job';
 
   if (prefs.hasExplicitPreference) {

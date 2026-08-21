@@ -43,6 +43,7 @@ const REQUEST_KNOWN_OPTIONAL_COLUMNS = [
   'budget_max',
   'accepted_amount',
   'exclusive_helper_id',
+  'expires_at',
   'created_at',
   'application_count',
   'service_mode',
@@ -85,6 +86,7 @@ const REQUEST_BASE_COLUMNS = [
   'accepted_amount',
   'exclusive_helper_id',
   'status',
+  'expires_at',
   'created_at',
 ] as const;
 

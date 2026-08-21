@@ -115,13 +115,13 @@ describe('completed history wiring', () => {
     expect(dash).toContain('openSubmittedReviewByRequestId');
   });
 
-  it('exposes helper completed tasks tab with compact history card', async () => {
-    const page = await readFile(resolve('src/pages/helper/HelperUpcomingJobsPage.tsx'), 'utf8');
-    expect(page).toContain("'completed'");
-    expect(page).toContain('upcoming_jobs.tab_completed');
+  it('exposes helper completed history on the dedicated history page', async () => {
+    const page = await readFile(resolve('src/pages/helper/HelperHistoryPage.tsx'), 'utf8');
     expect(page).toContain('HelperCompletedHistoryCard');
-    expect(page).toContain("setActiveTab('completed')");
+    expect(page).toContain('history_tab_completed');
     expect(page).toContain('openSubmittedReviewByRequestId');
+    const activities = await readFile(resolve('src/pages/helper/HelperUpcomingJobsPage.tsx'), 'utf8');
+    expect(activities).not.toContain('upcoming_jobs.tab_completed');
   });
 
   it('keeps bilateral multi-criteria modal as the review form', async () => {

@@ -94,6 +94,12 @@ export function mergeRequestRowWithJob(partial: Partial<RequestRow>, existing: J
     exclusive_helper_id:
       partial.exclusive_helper_id !== undefined ? partial.exclusive_helper_id : existing.exclusiveHelperId ?? null,
     status: resolveRequestStatusPatch(existing.status, (partial.status ?? existing.status) as Job['status']) as RequestRow['status'],
+    expires_at:
+      partial.expires_at !== undefined
+        ? partial.expires_at
+        : existing.expiresAt != null
+          ? new Date(existing.expiresAt).toISOString()
+          : null,
     created_at: partial.created_at ?? new Date(existing.createdAt).toISOString(),
     updated_at: partial.updated_at ?? new Date(existing.createdAt).toISOString(),
   };

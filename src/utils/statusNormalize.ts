@@ -12,6 +12,8 @@ const REQUEST_STATUS_ALIASES: Record<string, JobStatus> = {
   cancelled: 'cancelled',
   canceled: 'cancelled',
   client_cancelled: 'cancelled',
+  /** Migration 0062 — never fall through to open. */
+  expired: 'expired',
 };
 
 const APPLICATION_STATUS_ALIASES: Record<string, ApplicationStatus> = {
@@ -37,7 +39,7 @@ export function normalizeApplicationStatus(raw: string | null | undefined): Appl
   return APPLICATION_STATUS_ALIASES[key] ?? 'pending';
 }
 
-const TERMINAL_REQUEST_STATUSES = new Set<JobStatus>(['cancelled', 'completed']);
+const TERMINAL_REQUEST_STATUSES = new Set<JobStatus>(['cancelled', 'completed', 'expired']);
 
 /** Realtime patches must not revert a terminal request status to an active one. */
 export function resolveRequestStatusPatch(existing: JobStatus, incoming: JobStatus): JobStatus {

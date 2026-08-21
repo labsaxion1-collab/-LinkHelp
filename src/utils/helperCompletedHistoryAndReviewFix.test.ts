@@ -228,9 +228,10 @@ describe('bloco1 wiring contracts', () => {
 
   it('HelperUpcomingJobsPage uses history builder and terminal tab switch', async () => {
     const page = await readFile(resolve('src/pages/helper/HelperUpcomingJobsPage.tsx'), 'utf8');
-    expect(page).toContain('buildHelperCompletedHistoryList');
+    expect(page).toContain('partitionHelperHistory');
     expect(page).toContain("result.outcome === 'completed'");
     expect(page).toContain('awaiting_client_note');
+    expect(page).toContain('ROUTES.helperHistory');
   });
 
   it('ServiceReviewContext gates toast/modal with done key and reviews', async () => {

@@ -20,10 +20,16 @@ import { getRequestDescriptionForViewer } from '@/utils/requestDescriptionDispla
 import type { AppLanguage } from '@/services/translationService';
 import {
   clientInitials,
+  formatApplicationSentAgo,
   type HelperTaskAccordion,
   resolveApplicationDebitedLc,
   resolveVipRefundLc,
 } from '@/utils/helperTaskCard';
+import {
+  applicationHistoryBannerKey,
+  isWaitingApplicationStatus,
+  resolveApplicationHistoryReason,
+} from '@/utils/helperHistoryBuckets';
 import {
   FEED_CARD_CONTENT_CLASS,
   FEED_CARD_FIXED_HEIGHT_EXTRA_PX,
@@ -44,6 +50,7 @@ type Props = {
   onToggleAccordion: (panel: Exclude<HelperTaskAccordion, null>) => void;
   onCancel?: () => void;
   onOpenChat?: () => void;
+  historyMode?: boolean;
 };
 
 const STATUS_BADGE: Record<string, string> = {
@@ -51,6 +58,8 @@ const STATUS_BADGE: Record<string, string> = {
   viewed: 'bg-blue-50 text-blue-700 border-blue-200',
   rejected: 'bg-red-50 text-red-600 border-red-200',
   cancelled: 'bg-slate-100 text-slate-500 border-slate-200',
+  accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  completed: 'bg-slate-100 text-slate-600 border-slate-200',
 };
 
 export function HelperApplicationCard({
@@ -63,6 +72,7 @@ export function HelperApplicationCard({
   onToggleAccordion,
   onCancel,
   onOpenChat,
+  historyMode = false,
 }: Props) {
   const catId = resolveCategoryId(job.category) ?? 'other';
   const categoryTheme = getCategoryFeedTheme(job.category);
@@ -80,6 +90,8 @@ export function HelperApplicationCard({
     viewed: t('helper_dashboard.app_viewed'),
     rejected: t('helper_dashboard.app_rejected'),
     cancelled: t('helper_dashboard.app_cancelled'),
+    accepted: t('helper_dashboard.app_accepted'),
+    completed: t('helper_dashboard.app_completed'),
   };
 
   const proposedLabel =
@@ -87,9 +99,13 @@ export function HelperApplicationCard({
       ? formatMoneyAmount(app.proposedAmount, job.currency)
       : null;
 
-  const canCancel = (app.status === 'pending' || app.status === 'viewed') && !!onCancel;
+  const canCancel = !historyMode && (app.status === 'pending' || app.status === 'viewed') && !!onCancel;
   const canChat = !!app.chatUnlocked && !!onOpenChat;
-  const isRejected = app.status === 'rejected';
+  const historyReason = resolveApplicationHistoryReason(app, job);
+  const isRejected = historyReason === 'rejected';
+  const showWaitStrip =
+    !historyMode && isWaitingApplicationStatus(app.status) && historyReason == null;
+  const sentAgo = formatApplicationSentAgo(app.createdAt, Date.now(), t);
   const debitedLc = resolveApplicationDebitedLc(job, app, distanceKm);
   const refundLc = resolveVipRefundLc(debitedLc, app);
   const scheduleLabel = formatJobScheduleDisplay(job, t);
@@ -133,6 +149,7 @@ export function HelperApplicationCard({
         className={FEED_CARD_SHELL_CLASS}
         data-testid="helper-application-card"
         data-app-status={app.status}
+        data-history-mode={historyMode ? 'true' : 'false'}
         data-feed-card-min-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
         data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
       >
@@ -144,10 +161,13 @@ export function HelperApplicationCard({
           aria-hidden
         />
 
-        <div className={FEED_CARD_CONTENT_CLASS} style={feedCardMinContentStyle()}>
-          <div className="grid w-full min-w-0 grid-cols-[48px_minmax(0,1fr)_68px] grid-rows-[auto_auto_auto] gap-x-2 gap-y-1 sm:grid-cols-[56px_minmax(0,1fr)_68px] sm:gap-x-2.5">
+        <div
+          className={clsx(FEED_CARD_CONTENT_CLASS, 'flex min-h-0 flex-col')}
+          style={feedCardMinContentStyle()}
+        >
+          <div className="flex min-w-0 items-start gap-2">
             <div
-              className="col-start-1 row-start-1 row-span-2 flex h-[48px] w-[48px] items-center justify-center self-start rounded-xl border sm:h-[52px] sm:w-[52px] sm:rounded-[16px]"
+              className="flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-xl border sm:h-[52px] sm:w-[52px] sm:rounded-[16px]"
               style={{
                 backgroundColor: categoryTheme.iconBg,
                 borderColor: `${categoryTheme.iconColor}28`,
@@ -162,7 +182,7 @@ export function HelperApplicationCard({
               />
             </div>
 
-            <div className="col-start-2 row-start-1 min-w-0 pr-0.5">
+            <div className="min-w-0 flex-1 pr-0.5">
               <div className="flex min-w-0 items-start gap-1.5">
                 <h3 className="min-w-0 flex-1 line-clamp-2 text-[15px] font-bold leading-[1.28] text-[#0F172A] sm:text-[17px] sm:leading-[1.3]">
                   {title}
@@ -176,12 +196,12 @@ export function HelperApplicationCard({
               </div>
             </div>
 
-            <div className="col-start-3 row-start-1 flex shrink-0 flex-col items-end gap-1">
+            <div className="flex shrink-0 flex-col items-end gap-1">
               <div className="flex items-start gap-0.5">
                 <span
                   data-testid="helper-application-status"
                   className={clsx(
-                    'max-w-[4.75rem] truncate rounded-md border px-1.5 py-0.5 text-center text-[9px] font-bold uppercase tracking-wide',
+                    'shrink-0 whitespace-nowrap rounded-md border px-1.5 py-0.5 text-center text-[9px] font-bold uppercase tracking-wide',
                     STATUS_BADGE[app.status] ?? 'border-slate-200 bg-slate-50 text-slate-500',
                   )}
                 >
@@ -233,124 +253,161 @@ export function HelperApplicationCard({
                   VIP
                 </span>
               ) : null}
-            </div>
-
-            <div className="col-start-2 row-start-2 min-w-0 self-start space-y-0.5">
-              <div
-                className="flex min-w-0 items-center gap-1.5 text-[12px] font-bold sm:text-[12px]"
-                style={{ color: categoryTheme.budgetColor }}
-              >
-                <Icons.Link2 className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
-                <span className="truncate whitespace-nowrap">
-                  {budgetNotInformed
-                    ? budgetAmount
-                    : t('jobs.budget_with_amount', { amount: budgetAmount })}
-                </span>
-              </div>
-              {proposedLabel ? (
-                <div className="flex min-w-0 items-center gap-1.5 text-[11px] font-bold text-emerald-700">
-                  <Icons.Banknote className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
-                  <span className="truncate whitespace-nowrap">
-                    {t('helper_dashboard.app_your_proposal', { amount: proposedLabel })}
-                  </span>
-                </div>
-              ) : null}
-              {openedLabel ? (
-                <div className="flex min-w-0 items-center gap-1.5 text-[11px] font-medium text-[#94A3B8]">
-                  <Icons.Calendar className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-                  <span className="truncate whitespace-nowrap">{openedLabel}</span>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="col-start-3 row-start-2 flex shrink-0 items-center justify-center self-center pt-0.5">
               <InterestedRing
                 interestedCount={applicationsCount}
                 label={t('helper_dashboard.interested_ring_label')}
                 size={FEED_CARD_RING_SIZE_PX}
               />
             </div>
+          </div>
 
-            {isRejected ? (
+          <div className="mt-1.5 min-w-0 space-y-0.5">
+            <div
+              data-testid="helper-application-budget"
+              className="flex min-w-0 items-center gap-1.5 text-[12px] font-bold"
+              style={{ color: categoryTheme.budgetColor }}
+            >
+              <Icons.Link2 className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+              <span className="whitespace-nowrap">
+                {budgetNotInformed
+                  ? budgetAmount
+                  : t('jobs.budget_with_amount', { amount: budgetAmount })}
+              </span>
+            </div>
+            {proposedLabel ? (
               <div
-                className="col-span-3 col-start-1 mt-1 rounded-xl border border-rose-100 bg-rose-50/90 px-2.5 py-2"
-                data-testid="helper-application-rejected-banner"
+                data-testid="helper-application-proposal"
+                className="flex min-w-0 items-center gap-1.5 text-[11px] font-bold text-emerald-700"
               >
-                <div className="flex items-start gap-2">
-                  <Icons.Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500" aria-hidden />
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-bold leading-snug text-rose-800">
-                      {t('helper_tasks.rejected_banner_title')}
-                    </p>
-                    <p className="mt-0.5 text-[10px] font-semibold leading-snug text-rose-700/90">
-                      {t('helper_tasks.rejected_banner_body')}
-                    </p>
-                    <p className="mt-0.5 text-[10px] font-semibold leading-snug text-rose-600/85">
-                      {t('helper_tasks.rejected_banner_no_extra_charge')}
-                    </p>
-                  </div>
-                </div>
+                <Icons.Banknote className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+                <span className="whitespace-nowrap">
+                  {t('helper_dashboard.app_your_proposal', { amount: proposedLabel })}
+                </span>
               </div>
             ) : null}
-
-            <div className="relative col-span-3 col-start-1 mt-0.5 flex flex-col gap-1.5 border-t border-[rgba(15,23,42,0.06)] pt-2">
-              <div className="flex min-w-0 items-center gap-2">
-                <button
-                  type="button"
-                  data-testid="helper-application-open-profile"
-                  onClick={() => onToggleAccordion('client')}
-                  aria-expanded={profileOpen}
-                  aria-label={t('helper_public.view_profile')}
-                  className="flex min-w-0 flex-1 items-center gap-2 rounded-full py-0.5 pr-1 text-left transition hover:opacity-90"
-                >
-                  {job.clientAvatar && !job.clientAvatar.includes('pravatar') ? (
-                    <img
-                      src={job.clientAvatar}
-                      alt=""
-                      className="h-9 w-9 shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-sm ring-2 ring-white"
-                      style={{
-                        backgroundColor: categoryTheme.iconBg,
-                        color: categoryTheme.iconColor,
-                      }}
-                    >
-                      {clientInitials(job.clientName)}
-                    </span>
-                  )}
-                  <span className="min-w-0 truncate text-[12px] font-bold text-[#475569]">
-                    {clientName}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  data-testid="helper-application-open-description"
-                  onClick={() => onToggleAccordion('description')}
-                  aria-expanded={descriptionOpen}
-                  className="inline-flex min-h-[44px] w-[7.75rem] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[rgba(15,23,42,0.08)] bg-[#f8fafc] px-2.5 py-2 text-[12px] font-bold text-[#0F172A] transition hover:bg-slate-50 sm:w-[8.5rem]"
-                >
-                  <Icons.FileText className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
-                  <span className="truncate">{t('helper_tasks.description_toggle')}</span>
-                  <Icons.ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
-                </button>
+            {!showWaitStrip && openedLabel ? (
+              <div className="flex min-w-0 items-center gap-1.5 text-[11px] font-medium text-[#94A3B8]">
+                <Icons.Calendar className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+                <span className="whitespace-nowrap">{openedLabel}</span>
               </div>
+            ) : null}
+          </div>
 
-              {canChat ? (
-                <button
-                  type="button"
-                  onClick={onOpenChat}
-                  data-testid="helper-application-open-chat"
-                  className="inline-flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 text-[12px] font-bold text-blue-700 hover:bg-blue-100"
-                >
-                  <Icons.MessageSquare className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  {t('upcoming_jobs.open_chat')}
-                </button>
-              ) : null}
+          {isRejected ? (
+            <div
+              className="mt-2 rounded-xl border border-rose-100 bg-rose-50/90 px-2.5 py-2"
+              data-testid="helper-application-rejected-banner"
+            >
+              <div className="flex items-start gap-2">
+                <Icons.Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500" aria-hidden />
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold leading-snug text-rose-800">
+                    {t('helper_tasks.rejected_banner_title')}
+                  </p>
+                  <p className="mt-0.5 text-[10px] font-semibold leading-snug text-rose-700/90">
+                    {t('helper_tasks.rejected_banner_body')}
+                  </p>
+                  <p className="mt-0.5 text-[10px] font-semibold leading-snug text-rose-600/85">
+                    {t('helper_tasks.rejected_banner_no_extra_charge')}
+                  </p>
+                </div>
+              </div>
             </div>
+          ) : historyReason ? (
+            <div
+              className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2"
+              data-testid="helper-application-history-banner"
+              data-history-reason={historyReason}
+            >
+              <div className="flex items-start gap-2">
+                <Icons.Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />
+                <p className="text-[11px] font-bold leading-snug text-slate-700">
+                  {t(applicationHistoryBannerKey(historyReason))}
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          {showWaitStrip ? (
+            <div
+              className="mt-2 flex flex-1 items-center"
+              data-testid="helper-application-wait-strip"
+            >
+              <div className="flex w-full items-start gap-2 rounded-xl border border-sky-100 bg-sky-50/80 px-2.5 py-2">
+                <Icons.Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-600" aria-hidden />
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold leading-snug text-sky-900">
+                    {t('helper_tasks.waiting_client_title')}
+                  </p>
+                  {sentAgo ? (
+                    <p className="mt-0.5 text-[10px] font-semibold leading-snug text-sky-800/80">
+                      {sentAgo}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1" aria-hidden />
+          )}
+
+          <div className="relative mt-auto flex flex-col gap-1.5 border-t border-[rgba(15,23,42,0.06)] pt-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <button
+                type="button"
+                data-testid="helper-application-open-profile"
+                onClick={() => onToggleAccordion('client')}
+                aria-expanded={profileOpen}
+                aria-label={t('helper_public.view_profile')}
+                className="flex min-w-0 flex-1 items-center gap-2 rounded-full py-0.5 pr-1 text-left transition hover:opacity-90"
+              >
+                {job.clientAvatar && !job.clientAvatar.includes('pravatar') ? (
+                  <img
+                    src={job.clientAvatar}
+                    alt=""
+                    className="h-9 w-9 shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-sm ring-2 ring-white"
+                    style={{
+                      backgroundColor: categoryTheme.iconBg,
+                      color: categoryTheme.iconColor,
+                    }}
+                  >
+                    {clientInitials(job.clientName)}
+                  </span>
+                )}
+                <span className="min-w-0 flex-1 truncate text-[12px] font-bold text-[#475569]">
+                  {clientName}
+                </span>
+              </button>
+              <button
+                type="button"
+                data-testid="helper-application-open-description"
+                onClick={() => onToggleAccordion('description')}
+                aria-expanded={descriptionOpen}
+                className="inline-flex min-h-[44px] w-[7.75rem] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[rgba(15,23,42,0.08)] bg-[#f8fafc] px-2.5 py-2 text-[12px] font-bold text-[#0F172A] transition hover:bg-slate-50 sm:w-[8.5rem]"
+              >
+                <Icons.FileText className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
+                <span className="truncate">{t('helper_tasks.description_toggle')}</span>
+                <Icons.ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
+              </button>
+            </div>
+
+            {canChat ? (
+              <button
+                type="button"
+                onClick={onOpenChat}
+                data-testid="helper-application-open-chat"
+                className="inline-flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 text-[12px] font-bold text-blue-700 hover:bg-blue-100"
+              >
+                <Icons.MessageSquare className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                {t('upcoming_jobs.open_chat')}
+              </button>
+            ) : null}
           </div>
         </div>
       </LhCard>

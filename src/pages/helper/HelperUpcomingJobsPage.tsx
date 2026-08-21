@@ -9,45 +9,32 @@ import {
   useAppData,
   type Application,
   type UpcomingJob,
-  type UpcomingWorkflowStatus,
 } from '@/context/AppDataContext';
 import { HelperApplicationCard } from '@/components/helpers/HelperApplicationCard';
 import { HelperAcceptedJobCard } from '@/components/helpers/HelperAcceptedJobCard';
-import { HelperCompletedHistoryCard } from '@/components/helpers/HelperCompletedHistoryCard';
 import { ROUTES } from '@/utils/constants';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
-import { isJobCancelled } from '@/utils/jobVisibility';
 import {
   helperTaskAccordionKey,
   helperAcceptedAccordionKey,
   toggleHelperTaskAccordion,
   type HelperTaskAccordion,
 } from '@/utils/helperTaskCard';
-import { buildHelperCompletedHistoryList } from '@/utils/upcomingJobsPartition';
+import { partitionHelperHistory } from '@/utils/helperHistoryBuckets';
 import { clsx } from 'clsx';
 
-const ACTIVE_WORKFLOW: UpcomingWorkflowStatus[] = [
-  'scheduled',
-  'accepted',
-  'in_progress',
-  'arriving',
-  'awaiting_client_confirmation',
-  'completion_requested',
-];
-
-type TasksTab = 'applications' | 'accepted' | 'completed';
+type TasksTab = 'applications' | 'accepted';
 
 export default function HelperUpcomingJobsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
-  const { openReviewByRequestId, openSubmittedReviewByRequestId } = useServiceReview();
+  const { openReviewByRequestId } = useServiceReview();
   const {
     jobs,
     upcomingJobs,
-    getHelperApplications,
     updateApplicationStatus,
     finalizeServiceCompletion,
     pendingServiceReviews,
@@ -56,8 +43,8 @@ export default function HelperUpcomingJobsPage() {
   } = useAppData();
 
   const [activeTab, setActiveTab] = useState<TasksTab>(() => {
-    const st = location.state as { tasksTab?: TasksTab } | null;
-    if (st?.tasksTab === 'accepted' || st?.tasksTab === 'completed') return st.tasksTab;
+    const st = location.state as { tasksTab?: TasksTab | 'completed' } | null;
+    if (st?.tasksTab === 'accepted') return 'accepted';
     return 'applications';
   });
   const [appAccordion, setAppAccordion] = useState<Record<string, HelperTaskAccordion>>({});
@@ -70,47 +57,33 @@ export default function HelperUpcomingJobsPage() {
   const me = useSessionViewer();
 
   useEffect(() => {
-    const st = location.state as { tasksTab?: TasksTab } | null;
-    if (st?.tasksTab) setActiveTab(st.tasksTab);
-  }, [location.state]);
+    const st = location.state as { tasksTab?: TasksTab | 'completed' } | null;
+    if (st?.tasksTab === 'completed') {
+      navigate(ROUTES.helperHistory, { replace: true, state: { historyTab: 'completed' } });
+      return;
+    }
+    if (st?.tasksTab === 'accepted' || st?.tasksTab === 'applications') {
+      setActiveTab(st.tasksTab);
+    }
+  }, [location.state, navigate]);
 
-  const applicationList = useMemo(() => {
-    const apps = getHelperApplications(me.id).filter((app) => {
-      if (!['pending', 'viewed', 'rejected', 'cancelled'].includes(app.status)) return false;
-      const request = jobs.find((j) => j.id === app.jobId);
-      if (!request || isJobCancelled(request)) return false;
-      const hired = upcomingJobs.some(
-        (u) => u.jobId === app.jobId && u.helperId === me.id && ACTIVE_WORKFLOW.includes(u.workflowStatus),
-      );
-      return !hired;
-    });
-    return apps.sort((a, b) => b.createdAt - a.createdAt);
-  }, [getHelperApplications, me.id, jobs, upcomingJobs]);
-
-  const acceptedList = useMemo(
+  const partitioned = useMemo(
     () =>
-      upcomingJobs
-        .filter((j) => {
-          if (j.helperId !== me.id) return false;
-          if (!ACTIVE_WORKFLOW.includes(j.workflowStatus)) return false;
-          const request = jobs.find((r) => r.id === j.jobId);
-          if (request?.status === 'completed') return false;
-          return !request || !isJobCancelled(request);
-        })
-        .sort((a, b) => a.scheduledAt - b.scheduledAt),
-    [upcomingJobs, me.id, jobs],
-  );
-
-  const completedList = useMemo(
-    () =>
-      buildHelperCompletedHistoryList({
+      partitionHelperHistory({
         helperId: me.id,
-        upcomingJobs,
-        jobs,
         applications,
+        jobs,
+        upcomingJobs,
       }),
-    [upcomingJobs, me.id, jobs, applications],
+    [me.id, applications, jobs, upcomingJobs],
   );
+  const applicationList = partitioned.activeApplications;
+  const acceptedList = partitioned.activeAcceptedJobs;
+
+  useEffect(() => {
+    if (partitioned.diagnostics.length === 0) return;
+    console.warn('[LinkHelp] helper activity unknown statuses', partitioned.diagnostics);
+  }, [partitioned.diagnostics]);
 
   const pendingReviewIds = useMemo(
     () => new Set(pendingServiceReviews.map((p) => p.requestId)),
@@ -159,7 +132,7 @@ export default function HelperUpcomingJobsPage() {
       });
       if (result.outcome === 'completed') {
         showToast(t('upcoming_jobs.complete_work_success'), 'success');
-        setActiveTab('completed');
+        navigate(ROUTES.helperHistory, { state: { historyTab: 'completed' } });
         window.setTimeout(() => openReviewByRequestId(job.jobId), 400);
       } else {
         showToast(t('upcoming_jobs.awaiting_client_note'), 'info');
@@ -177,7 +150,7 @@ export default function HelperUpcomingJobsPage() {
       return (
         <div className="px-4 py-16 text-center">
           <Icons.CalendarOff className="mx-auto mb-4 h-14 w-14 text-gray-200" />
-          <p className="mb-4 font-semibold text-gray-600">{t('upcoming_jobs.empty_title')}</p>
+          <p className="mb-4 font-semibold text-gray-600">{t('upcoming_jobs.empty_active_jobs')}</p>
           <Link
             to={ROUTES.helperOpportunities}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-md transition-colors hover:bg-blue-700"
@@ -218,38 +191,8 @@ export default function HelperUpcomingJobsPage() {
     });
   };
 
-  const renderCompletedCards = (list: UpcomingJob[]) => {
-    if (list.length === 0) {
-      return (
-        <div className="px-4 py-16 text-center">
-          <Icons.CalendarOff className="mx-auto mb-4 h-14 w-14 text-gray-200" />
-          <p className="mb-4 font-semibold text-gray-600">{t('upcoming_jobs.empty_completed_title')}</p>
-        </div>
-      );
-    }
-
-    return list.map((job) => {
-      const requestJob = jobs.find((j) => j.id === job.jobId);
-      return (
-        <HelperCompletedHistoryCard
-          key={job.id}
-          job={job}
-          requestJob={requestJob}
-          locale={locale}
-          language={language}
-          t={t}
-          reviews={reviews}
-          reviewerId={me.id}
-          pendingRequestIds={pendingReviewIds}
-          onRate={() => openReviewByRequestId(job.jobId)}
-          onViewSubmittedReview={() => openSubmittedReviewByRequestId(job.jobId)}
-        />
-      );
-    });
-  };
-
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[#f0f2f5] px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-64px)] overflow-x-hidden bg-[#f0f2f5] px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
         <DesktopBackButton className="mb-6" />
         <Link
@@ -268,17 +211,17 @@ export default function HelperUpcomingJobsPage() {
             <p className="mt-2 text-sm font-medium text-gray-500">{t('upcoming_jobs.my_tasks_subtitle')}</p>
           </div>
 
-          <div className="flex border-b border-gray-100">
+          <div className="flex border-b border-gray-100" data-testid="helper-activities-tabs">
             {(
               [
                 { id: 'applications' as const, labelKey: 'upcoming_jobs.tab_applications' },
                 { id: 'accepted' as const, labelKey: 'upcoming_jobs.tab_accepted' },
-                { id: 'completed' as const, labelKey: 'upcoming_jobs.tab_completed' },
               ] as const
             ).map((tab) => (
               <button
                 key={tab.id}
                 type="button"
+                data-testid={`helper-activities-tab-${tab.id}`}
                 onClick={() => setActiveTab(tab.id)}
                 className={clsx(
                   'flex-1 px-2 py-3.5 text-center text-[11px] font-bold transition-colors sm:px-4 sm:text-sm',
@@ -298,7 +241,7 @@ export default function HelperUpcomingJobsPage() {
                 <div className="px-4 py-16 text-center">
                   <Icons.ClipboardList className="mx-auto mb-4 h-14 w-14 text-gray-200" />
                   <p className="mb-4 font-semibold text-gray-600">
-                    {t('helper_dashboard.empty_applications')}
+                    {t('helper_dashboard.empty_active_applications')}
                   </p>
                   <Link
                     to={ROUTES.helperOpportunities}
@@ -328,8 +271,6 @@ export default function HelperUpcomingJobsPage() {
                   );
                 })
               )
-            ) : activeTab === 'completed' ? (
-              renderCompletedCards(completedList)
             ) : (
               renderAcceptedCards(acceptedList)
             )}

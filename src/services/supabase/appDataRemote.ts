@@ -38,7 +38,7 @@ export {
 
 /** Columns required by mappers — avoids select('*') egress on bootstrap. */
 export const REQUEST_SELECT_CORE =
-  'id, client_id, title, description, category, subcategory, urgency, budget, location, address, city, region, postal_code, latitude, longitude, preferred_date, preferred_time_window, preferred_time, budget_type, budget_amount, currency, budget_min, budget_max, accepted_amount, exclusive_helper_id, status, created_at';
+  'id, client_id, title, description, category, subcategory, urgency, budget, location, address, city, region, postal_code, latitude, longitude, preferred_date, preferred_time_window, preferred_time, budget_type, budget_amount, currency, budget_min, budget_max, accepted_amount, exclusive_helper_id, status, expires_at, created_at';
 
 /** Optional denormalized counter — missing on some staging DBs (`apply_application_count_fix.sql`). */
 export const REQUEST_SELECT_WITH_APPLICATION_COUNT = `${REQUEST_SELECT_CORE}, application_count`;

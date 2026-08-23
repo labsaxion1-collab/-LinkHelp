@@ -21,7 +21,19 @@ describe('client home compact rank + history', () => {
     expect(presentation).toContain('gamification.compact_client_impact');
     expect(presentation).toContain('gamification-compact-rank-impact');
     expect(presentation).toContain('gamification-compact-rank-progress-wide');
+    expect(presentation).toContain('lh-compact-rank-stage--client-home');
+    expect(presentation).toContain('COMPACT_RANK_CLIENT_HOME_STAGE_OFFSET_Y_PX');
     expect(presentation).not.toMatch(/isClientHome[\s\S]*truncate text-base/);
+  });
+
+  it('removes duplicate white GamificationProgressCard only from ClientDashboard home', () => {
+    const dash = read('src/pages/client/ClientDashboard.tsx');
+    const profile = read('src/components/profile/ProfileGamificationSection.tsx');
+    const helperDash = read('src/pages/helper/HelperDashboard.tsx');
+    expect(dash).not.toContain('GamificationProgressCard');
+    expect(dash).toContain('AppHomeClientQuickStrip');
+    expect(profile).toContain('profile_page.section_level');
+    expect(helperDash).toContain('GamificationProgressCard');
   });
 
   it('keeps Profile Meu nível on ProfileGamificationSection', () => {

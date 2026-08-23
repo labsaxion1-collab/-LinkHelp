@@ -16,7 +16,9 @@ const t = (key: string, options?: Record<string, string | number>) => {
   const templates: Record<string, string> = {
     'gamification.compact_chip_score': '{{count}} pts',
     'gamification.compact_chip_services': '{{count}} serviços',
+    'gamification.compact_chip_orders': '{{count}} pedidos',
     'gamification.compact_chip_rating': '★ {{rating}}',
+    'gamification.compact_chip_rating_none': 'gamification.compact_chip_rating_none',
     'gamification.compact_chip_response': '{{pct}}%',
     'gamification.compact_chip_applications': '{{count}} candidaturas',
     'gamification.compact_chip_profile': 'Perfil {{pct}}%',
@@ -86,20 +88,25 @@ describe('compact gamification rank on helper dashboard', () => {
     expect(presentation).toContain('lh-rank-compact-medal-glyph');
     expect(presentation).toContain('lh-rank-compact-pedestal-glyph');
     expect(presentation).toContain('--lh-compact-emblem-scale');
+    expect(presentation).toContain('--lh-compact-emblem-offset-y');
     expect(presentation).toContain('--lh-compact-pedestal-scale');
     expect(presentation).toContain('heroVisual.pedestalScale');
     expect(presentation).toContain('heroVisual.pedestalOrigin');
+    expect(presentation).toContain('heroVisual.emblemOffsetY');
     expect(presentation).toContain('COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS');
+    expect(presentation).toContain('lh-compact-rank-stage--client-home');
+    expect(presentation).toContain('COMPACT_RANK_CLIENT_HOME_STAGE_OFFSET_Y_PX');
 
     expect(css).toContain('.lh-rank-compact-pedestal-glyph');
     expect(css).toMatch(
-      /\.lh-rank-compact-pedestal-glyph\s*\{[^}]*transform:\s*scale\(var\(--lh-compact-pedestal-scale/s,
+      /\.lh-rank-compact-medal-glyph\s*\{[^}]*translateY\(var\(--lh-compact-emblem-offset-y/s,
     );
+    expect(css).toContain('.lh-compact-rank-stage--client-home');
     expect(css).toMatch(/prefers-reduced-motion:\s*reduce/);
 
     expect(visualCfg).toContain('pedestalScale');
-    expect(visualCfg).toContain('pedestalFillW');
-    expect(visualCfg).toContain('pedestalFillH');
+    expect(visualCfg).toContain('emblemOffsetY');
+    expect(visualCfg).toContain('COMPACT_RANK_CLIENT_HOME_STAGE_OFFSET_Y_PX = 10');
     expect(visualCfg).toContain("COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS = '-mb-3.5'");
     expect(visualCfg).toContain('COMPACT_RANK_PEDESTAL_TARGET_VISIBLE_PX = 105');
     expect(presentation).toContain('buildCompactRankInsightChips');
@@ -138,6 +145,9 @@ describe('compact gamification rank on helper dashboard', () => {
       expect(visual.pedestalFillH, heroKey).toBeGreaterThan(0.2);
       expect(visual.pedestalFillH, heroKey).toBeLessThan(0.5);
       expect(visual.pedestalOrigin, heroKey).toMatch(/^center \d+(\.\d+)?%$/);
+      expect(visual.emblemOffsetY, heroKey).toBeTypeOf('number');
+      expect(visual.emblemOffsetY, heroKey).toBeGreaterThanOrEqual(0);
+      expect(visual.emblemOffsetY, heroKey).toBeLessThanOrEqual(6);
 
       const impliedFill =
         COMPACT_RANK_EMBLEM_TARGET_VISIBLE_PX / (COMPACT_RANK_EMBLEM_VIEWPORT_PX * visual.emblemScale);
@@ -157,6 +167,9 @@ describe('compact gamification rank on helper dashboard', () => {
 
     const helperConfiavel = COMPACT_RANK_BY_HERO_KEY.helper_confiavel;
     expect(helperConfiavel.emblemScale).toBeCloseTo(1.664, 3);
+    expect(helperConfiavel.emblemOffsetY).toBe(5);
+    // Offset does not change scale / pedestal optics.
+    expect(helperConfiavel.pedestalScale).toBeCloseTo(1.536, 3);
     const pedestalW = compactPedestalVisibleWidthPx(
       helperConfiavel.pedestalFillW,
       helperConfiavel.pedestalScale,
@@ -169,6 +182,11 @@ describe('compact gamification rank on helper dashboard', () => {
     expect(pedestalW / diamondApprox).toBeLessThanOrEqual(1.37);
     expect(COMPACT_RANK_PEDESTAL_TARGET_VISIBLE_PX).toBe(105);
     expect(COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS).toBe('-mb-3.5');
+    // Float peak is -3px; +5px glyph offset keeps ink inside the viewport.
+    expect(helperConfiavel.emblemOffsetY - 3).toBeGreaterThanOrEqual(0);
+    // Other keys keep zero offset (no global vertical shift).
+    expect(COMPACT_RANK_BY_HERO_KEY.helper_novo.emblemOffsetY).toBe(0);
+    expect(COMPACT_RANK_BY_HERO_KEY.client_novo.emblemOffsetY).toBe(0);
   });
 
   it('helper insight chips use real next-level metrics without hardcoding', () => {
@@ -191,13 +209,41 @@ describe('compact gamification rank on helper dashboard', () => {
     };
     const model = buildGamificationRankProgressModel('helper', record, t);
     expect(model).not.toBeNull();
-    const chips = buildCompactRankInsightChips(model!, t);
+    const chips = buildCompactRankInsightChips(model!, t, { userType: 'helper' });
     expect(chips.map((c) => c.id)).toEqual(['score', 'services', 'rating', 'response']);
     expect(chips[0].label).toContain('105');
     expect(chips.find((c) => c.id === 'services')?.label).toContain('3');
     expect(chips.find((c) => c.id === 'rating')?.label).toContain('4.5');
     expect(chips.find((c) => c.id === 'response')?.label).toContain('70');
     expect(JSON.stringify(chips)).not.toMatch(/\$\d|CAD|Stripe|credit/i);
+  });
+
+  it('client insight chips use canonical metrics and honest rating empty state', () => {
+    const record: UserGamificationRecord = {
+      userId: 'c1',
+      userType: 'client',
+      score: 40,
+      levelKey: 'novo',
+      heroKey: 'client_novo',
+      stats: {
+        ...EMPTY_GAMIFICATION_STATS,
+        totalCompleted: 0,
+        avgRating: 0,
+        profilePct: 40,
+      },
+      progressPercent: 0,
+      pointsToNextLevel: 0,
+      missingRequirements: [],
+      updatedAt: '2026-08-23T00:00:00.000Z',
+    };
+    const model = buildGamificationRankProgressModel('client', record, t);
+    expect(model).not.toBeNull();
+    const chips = buildCompactRankInsightChips(model!, t, { userType: 'client' });
+    expect(chips.map((c) => c.id)).toEqual(['score', 'services', 'rating', 'profile']);
+    expect(chips.find((c) => c.id === 'score')?.label).toContain('40');
+    expect(chips.find((c) => c.id === 'services')?.label).toContain('1');
+    expect(chips.find((c) => c.id === 'rating')?.label).toBe('gamification.compact_chip_rating_none');
+    expect(chips.find((c) => c.id === 'profile')?.label).toContain('80');
   });
 
   it('detail panel opens tutorial at current level card id', () => {

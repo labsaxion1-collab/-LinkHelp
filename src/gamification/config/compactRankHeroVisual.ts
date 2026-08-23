@@ -34,6 +34,12 @@ export type CompactRankHeroVisual = {
   /** transform-origin aligned to the opaque content center of the PNG. */
   emblemOrigin: string;
   /**
+   * Optical vertical shift of the medal glyph inside its viewport (CSS px).
+   * Positive = down. Keeps float animation clear of the top clip without
+   * changing scale, pedestal, or card height.
+   */
+  emblemOffsetY: number;
+  /**
    * Opaque fill ratios of the pedestal PNG canvas (alpha > 8).
    * Used to size the visible base without blindly enlarging the CSS box.
    */
@@ -73,6 +79,9 @@ export const COMPACT_RANK_PEDESTAL_BOX = {
 /** Medal→pedestal overlap — tight so the pair reads as one piece (≈0–4px gap). */
 export const COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS = '-mb-3.5';
 
+/** clientHome-only: lower the full medal+pedestal stage (CSS px). */
+export const COMPACT_RANK_CLIENT_HOME_STAGE_OFFSET_Y_PX = 10;
+
 /** Visible pedestal width after object-contain fit inside the viewport box. */
 export function compactPedestalVisibleWidthPx(
   fillW: number,
@@ -105,6 +114,7 @@ const HELPER_NOVO: CompactRankHeroVisual = {
     'radial-gradient(circle at 18% 40%, rgba(99,230,28,0.22), transparent 42%), linear-gradient(180deg, rgba(0,5,2,0.88) 0%, rgba(1,12,4,0.72) 45%, rgba(0,5,2,0.94) 100%)',
   emblemScale: 1.768,
   emblemOrigin: 'center 41.8%',
+  emblemOffsetY: 0,
   pedestalFillW: PEDESTAL_OPTICS.verde.fillW,
   pedestalFillH: PEDESTAL_OPTICS.verde.fillH,
   pedestalScale: PEDESTAL_OPTICS.verde.scale,
@@ -120,6 +130,8 @@ const HELPER_AZUL: CompactRankHeroVisual = {
   // ~7% below the 2D safe max (1.789) so the diamond sits lighter on the larger pedestal.
   emblemScale: 1.664,
   emblemOrigin: 'center 40.8%',
+  // Drop glyph ~5px so float peak (-3px) never clips the viewport top.
+  emblemOffsetY: 5,
   pedestalFillW: PEDESTAL_OPTICS.azul.fillW,
   pedestalFillH: PEDESTAL_OPTICS.azul.fillH,
   pedestalScale: PEDESTAL_OPTICS.azul.scale,
@@ -134,6 +146,7 @@ const HELPER_DOURADO: CompactRankHeroVisual = {
     'radial-gradient(circle at 22% 40%, rgba(251,191,36,0.2), transparent 42%), linear-gradient(180deg, rgba(24,14,2,0.9) 0%, rgba(36,20,4,0.74) 48%, rgba(18,10,2,0.95) 100%)',
   emblemScale: 1.794,
   emblemOrigin: 'center 40.9%',
+  emblemOffsetY: 0,
   pedestalFillW: PEDESTAL_OPTICS.dourado.fillW,
   pedestalFillH: PEDESTAL_OPTICS.dourado.fillH,
   pedestalScale: PEDESTAL_OPTICS.dourado.scale,
@@ -148,6 +161,7 @@ const HELPER_MAGENTA: CompactRankHeroVisual = {
     'radial-gradient(circle at 20% 40%, rgba(168,85,247,0.22), transparent 42%), linear-gradient(180deg, rgba(18,4,28,0.9) 0%, rgba(28,8,40,0.74) 48%, rgba(14,2,22,0.95) 100%)',
   emblemScale: 1.538,
   emblemOrigin: 'center 43.1%',
+  emblemOffsetY: 0,
   pedestalFillW: PEDESTAL_OPTICS.roxo.fillW,
   pedestalFillH: PEDESTAL_OPTICS.roxo.fillH,
   pedestalScale: PEDESTAL_OPTICS.roxo.scale,
@@ -162,6 +176,7 @@ const HELPER_TOP: CompactRankHeroVisual = {
     'radial-gradient(circle at 20% 40%, rgba(236,72,153,0.22), transparent 42%), linear-gradient(180deg, rgba(24,4,18,0.9) 0%, rgba(36,8,28,0.74) 48%, rgba(18,2,14,0.95) 100%)',
   emblemScale: 1.511,
   emblemOrigin: 'center 40.8%',
+  emblemOffsetY: 0,
   pedestalFillW: PEDESTAL_OPTICS.magenta.fillW,
   pedestalFillH: PEDESTAL_OPTICS.magenta.fillH,
   pedestalScale: PEDESTAL_OPTICS.magenta.scale,
@@ -176,6 +191,7 @@ const HELPER_LENDA: CompactRankHeroVisual = {
     'radial-gradient(circle at 22% 40%, rgba(34,197,94,0.18), transparent 42%), linear-gradient(180deg, rgba(8,18,10,0.9) 0%, rgba(12,28,14,0.74) 48%, rgba(4,12,6,0.95) 100%)',
   emblemScale: 1.53,
   emblemOrigin: 'center 39.9%',
+  emblemOffsetY: 0,
   pedestalFillW: PEDESTAL_OPTICS.elite.fillW,
   pedestalFillH: PEDESTAL_OPTICS.elite.fillH,
   pedestalScale: PEDESTAL_OPTICS.elite.scale,
@@ -189,6 +205,7 @@ const CLIENT_NOVO: CompactRankHeroVisual = {
   scrim: HELPER_NOVO.scrim,
   emblemScale: 1.843,
   emblemOrigin: 'center 41.5%',
+  emblemOffsetY: 0,
   pedestalFillW: PEDESTAL_OPTICS.verde.fillW,
   pedestalFillH: PEDESTAL_OPTICS.verde.fillH,
   pedestalScale: PEDESTAL_OPTICS.verde.scale,
@@ -203,6 +220,7 @@ const CLIENT_CONFIAVEL: CompactRankHeroVisual = {
     'radial-gradient(circle at 20% 42%, rgba(0,71,255,0.24), transparent 44%), linear-gradient(180deg, rgba(4,8,24,0.9) 0%, rgba(8,16,40,0.74) 48%, rgba(3,6,18,0.95) 100%)',
   emblemScale: 1.784,
   emblemOrigin: 'center 40.9%',
+  emblemOffsetY: 0,
   pedestalFillW: PEDESTAL_OPTICS.azul.fillW,
   pedestalFillH: PEDESTAL_OPTICS.azul.fillH,
   pedestalScale: PEDESTAL_OPTICS.azul.scale,
@@ -216,6 +234,7 @@ const CLIENT_OURO: CompactRankHeroVisual = {
   scrim: HELPER_DOURADO.scrim,
   emblemScale: 1.534,
   emblemOrigin: 'center 42.3%',
+  emblemOffsetY: 0,
   pedestalFillW: PEDESTAL_OPTICS.dourado.fillW,
   pedestalFillH: PEDESTAL_OPTICS.dourado.fillH,
   pedestalScale: PEDESTAL_OPTICS.dourado.scale,
@@ -230,6 +249,7 @@ const CLIENT_VIP: CompactRankHeroVisual = {
     'radial-gradient(circle at 20% 40%, rgba(124,58,237,0.22), transparent 42%), linear-gradient(180deg, rgba(14,4,28,0.9) 0%, rgba(22,8,40,0.74) 48%, rgba(10,2,20,0.95) 100%)',
   emblemScale: 1.738,
   emblemOrigin: 'center 40.8%',
+  emblemOffsetY: 0,
   pedestalFillW: PEDESTAL_OPTICS.roxo.fillW,
   pedestalFillH: PEDESTAL_OPTICS.roxo.fillH,
   pedestalScale: PEDESTAL_OPTICS.roxo.scale,
@@ -243,6 +263,7 @@ const CLIENT_ELITE: CompactRankHeroVisual = {
   scrim: HELPER_LENDA.scrim,
   emblemScale: 1.385,
   emblemOrigin: 'center 41.1%',
+  emblemOffsetY: 0,
   pedestalFillW: PEDESTAL_OPTICS.elite.fillW,
   pedestalFillH: PEDESTAL_OPTICS.elite.fillH,
   pedestalScale: PEDESTAL_OPTICS.elite.scale,

@@ -1,5 +1,6 @@
 import type { GamificationRankProgressModel } from '@/gamification/components/GamificationRankPresentation';
 import { EMPTY_GAMIFICATION_STATS } from '@/gamification/services/gamificationStatsAdapter';
+import type { UserType } from '@/gamification/types/gamification';
 
 type TFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -8,14 +9,36 @@ export type CompactRankInsightChip = {
   label: string;
 };
 
+type BuildOptions = {
+  userType: UserType;
+};
+
+function formatAvgRatingChip(
+  avgRating: number,
+  t: TFn,
+): CompactRankInsightChip {
+  if (!Number.isFinite(avgRating) || avgRating <= 0) {
+    return {
+      id: 'rating',
+      label: t('gamification.compact_chip_rating_none'),
+    };
+  }
+  const rounded = Math.round(avgRating * 10) / 10;
+  return {
+    id: 'rating',
+    label: t('gamification.compact_chip_rating', { rating: rounded }),
+  };
+}
+
 /**
- * Compact premium chips for the helper home rank card.
- * Uses the same score + next-level requirement metrics shown in the detail panel —
- * never invents values; skips metrics that do not apply to the next level.
+ * Compact premium chips for helper / client home rank cards.
+ * Uses score + next-level requirement metrics from the progress engine —
+ * never invents values. Client always surfaces rating (with honest empty fallback).
  */
 export function buildCompactRankInsightChips(
   model: NonNullable<GamificationRankProgressModel>,
   t: TFn,
+  options: BuildOptions,
 ): CompactRankInsightChip[] {
   const chips: CompactRankInsightChip[] = [
     {
@@ -24,22 +47,31 @@ export function buildCompactRankInsightChips(
     },
   ];
 
+  const stats = model.record.stats ?? EMPTY_GAMIFICATION_STATS;
+
   if (model.isMax || !model.progress.nextLevel) {
-    return chips;
+    if (options.userType === 'client') {
+      chips.push(formatAvgRatingChip(stats.avgRating, t));
+    }
+    return chips.slice(0, 4);
   }
 
   const requirements = model.progress.nextLevel.requirements;
-  const stats = model.record.stats ?? EMPTY_GAMIFICATION_STATS;
 
   if (requirements.minTotalCompleted !== undefined) {
     const remaining = Math.max(0, requirements.minTotalCompleted - stats.totalCompleted);
     chips.push({
       id: 'services',
-      label: t('gamification.compact_chip_services', { count: remaining }),
+      label:
+        options.userType === 'client'
+          ? t('gamification.compact_chip_orders', { count: remaining })
+          : t('gamification.compact_chip_services', { count: remaining }),
     });
   }
 
-  if (requirements.minAvgRating !== undefined) {
+  if (options.userType === 'client') {
+    chips.push(formatAvgRatingChip(stats.avgRating, t));
+  } else if (requirements.minAvgRating !== undefined) {
     chips.push({
       id: 'rating',
       label: t('gamification.compact_chip_rating', { rating: requirements.minAvgRating }),

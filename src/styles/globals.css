@@ -139,7 +139,8 @@
  * from compactRankHeroVisual (never a single global scale).
  */
 .lh-rank-compact-medal-glyph {
-  transform: scale(var(--lh-compact-emblem-scale, 1));
+  transform: translateY(var(--lh-compact-emblem-offset-y, 0px))
+    scale(var(--lh-compact-emblem-scale, 1));
   transform-origin: var(--lh-compact-emblem-origin, center 41%);
   will-change: transform;
 }
@@ -157,6 +158,11 @@
   transform: scale(var(--lh-compact-pedestal-scale, 1));
   transform-origin: var(--lh-compact-pedestal-origin, center 78%);
   will-change: transform;
+}
+
+/* clientHome only: lower medal+pedestal as one unit (Profile / Help untouched). */
+.lh-compact-rank-stage--client-home {
+  transform: translateY(var(--lh-compact-client-home-stage-offset-y, 10px));
 }
 
 @media (prefers-reduced-motion: reduce) {

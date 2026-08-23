@@ -78,7 +78,6 @@ import { useClientOnboarding } from '@/hooks/useClientOnboarding';
 import { CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';
 import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { useGamification } from '@/gamification/hooks/useGamification';
-import { GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
 import { AppHomeClientQuickStrip } from '@/components/home/AppHomeClientQuickStrip';
 import { useMarkHomeDashboardSurfaceReady } from '@/components/home/HomeDashboardShellContext';
 import { useDevRenderCount } from '@/utils/devRenderCount';
@@ -1330,10 +1329,6 @@ export default function ClientDashboard() {
                   onOpenMessages={() => navigate(ROUTES.messages)}
                   onCreateRequest={() => openCreateModal()}
                 />
-
-                <section className="px-4 sm:px-6 md:px-8">
-                  <GamificationProgressCard userType="client" />
-                </section>
 
                 <section className="px-4 sm:px-6 md:px-8">
                   <div className="flex items-center justify-between gap-3">

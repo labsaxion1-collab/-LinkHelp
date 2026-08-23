@@ -19,6 +19,7 @@ import {
   resolveCompactRankHeroVisual,
   COMPACT_RANK_PEDESTAL_BOX,
   COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS,
+  COMPACT_RANK_CLIENT_HOME_STAGE_OFFSET_Y_PX,
 } from '@/gamification/config/compactRankHeroVisual';
 import { buildCompactRankInsightChips } from '@/gamification/components/compactRankInsights';
 import { resolveMedalTheme } from '@/theme/medalThemes';
@@ -187,8 +188,7 @@ export function GamificationCompactRankCardSurface({
   const medalTheme = resolveMedalTheme(record.heroKey ?? record.levelKey, userType);
   const heightClass = COMPACT_RANK_HEIGHT[density];
   const isClientHome = density === 'clientHome';
-  const insightChips =
-    userType === 'helper' && !isClientHome ? buildCompactRankInsightChips(model, t) : [];
+  const insightChips = buildCompactRankInsightChips(model, t, { userType });
 
   const progressBlock = (
     <span
@@ -233,7 +233,17 @@ export function GamificationCompactRankCardSurface({
 
   const stage = (
     <span
-      className="lh-compact-rank-stage pointer-events-none relative flex w-[5.5rem] shrink-0 flex-col items-center justify-end self-stretch overflow-visible pb-0.5 pt-1.5 sm:w-[6rem]"
+      className={clsx(
+        'lh-compact-rank-stage pointer-events-none relative flex w-[5.5rem] shrink-0 flex-col items-center justify-end self-stretch overflow-visible pb-0.5 pt-1.5 sm:w-[6rem]',
+        isClientHome && 'lh-compact-rank-stage--client-home',
+      )}
+      style={
+        isClientHome
+          ? ({
+              '--lh-compact-client-home-stage-offset-y': `${COMPACT_RANK_CLIENT_HOME_STAGE_OFFSET_Y_PX}px`,
+            } as CSSProperties)
+          : undefined
+      }
       aria-hidden
     >
       {/*
@@ -241,7 +251,7 @@ export function GamificationCompactRankCardSurface({
         1. stage — medal+pedestal as one unit
         2. motion (lh-rank-compact-medal) — float keyframes only
         3. viewport — medal clip / pedestal layout box
-        4. glyph — per-heroKey emblemScale|pedestalScale + origin
+        4. glyph — per-heroKey emblemScale|pedestalScale + origin (+ emblemOffsetY)
       */}
       <span className="relative flex flex-col items-center">
         <span
@@ -259,6 +269,7 @@ export function GamificationCompactRankCardSurface({
                 {
                   '--lh-compact-emblem-scale': String(heroVisual.emblemScale),
                   '--lh-compact-emblem-origin': heroVisual.emblemOrigin,
+                  '--lh-compact-emblem-offset-y': `${heroVisual.emblemOffsetY}px`,
                 } as CSSProperties
               }
               loading="lazy"
@@ -383,7 +394,7 @@ export function GamificationCompactRankCardSurface({
 
               {!isClientHome ? progressBlock : null}
 
-              {insightChips.length > 0 ? (
+              {!isClientHome && insightChips.length > 0 ? (
                 <span
                   className="mt-1.5 flex flex-wrap gap-1"
                   data-testid="gamification-compact-rank-insights"
@@ -406,7 +417,26 @@ export function GamificationCompactRankCardSurface({
             />
           </span>
 
-          {isClientHome ? progressBlock : null}
+          {isClientHome ? (
+            <span className="flex w-full min-w-0 flex-col gap-1.5">
+              {progressBlock}
+              {insightChips.length > 0 ? (
+                <span
+                  className="flex flex-wrap gap-1"
+                  data-testid="gamification-compact-rank-insights"
+                >
+                  {insightChips.map((chip) => (
+                    <span
+                      key={chip.id}
+                      className="inline-flex max-w-full items-center rounded-full border border-white/15 bg-black/35 px-2 py-0.5 text-[10px] font-bold leading-none text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[2px]"
+                    >
+                      {chip.label}
+                    </span>
+                  ))}
+                </span>
+              ) : null}
+            </span>
+          ) : null}
         </span>
       </button>
     </div>

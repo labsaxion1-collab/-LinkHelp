@@ -126,6 +126,19 @@
   will-change: transform;
 }
 
+/**
+ * Medal PNGs ship with uneven transparent/black padding (~46–71% fill).
+ * Scale the glyph on a SEPARATE element from `.lh-rank-compact-medal`
+ * so float keyframes (transform) never fight the optical size boost.
+ * --lh-compact-emblem-scale / --lh-compact-emblem-origin come per heroKey
+ * from compactRankHeroVisual (never a single global scale).
+ */
+.lh-rank-compact-medal-glyph {
+  transform: scale(var(--lh-compact-emblem-scale, 1));
+  transform-origin: var(--lh-compact-emblem-origin, center 41%);
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lh-rank-compact-medal {
     animation: none;

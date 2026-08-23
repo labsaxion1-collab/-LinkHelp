@@ -53,32 +53,81 @@ describe('compact gamification rank on helper dashboard', () => {
     expect(presentation).toContain('w-[5.5rem] shrink-0');
     expect(presentation).toContain('sm:w-[6rem]');
 
-    // Medal ~25% larger than previous 3.5rem / 3.85rem (sm).
-    expect(presentation).toContain('h-[4.375rem] w-[4.375rem]');
-    expect(presentation).toContain('sm:h-[4.8rem] sm:w-[4.8rem]');
-    expect(presentation).not.toContain('h-[3.5rem] w-[3.5rem]');
-    expect(presentation).not.toContain('sm:h-[3.85rem] sm:w-[3.85rem]');
-
-    // Pedestal ~12–13% larger than previous 3.1×4.6 / 3.4×5 (sm).
-    expect(presentation).toContain('h-[3.5rem] w-[5.2rem]');
-    expect(presentation).toContain('sm:h-[3.85rem] sm:w-[5.65rem]');
-    expect(presentation).not.toContain('h-[3.1rem] w-[4.6rem]');
-    expect(presentation).not.toContain('sm:h-[3.4rem] sm:w-[5rem]');
-
-    // Animation + centering lift preserved (no arbitrary offsets beyond mb).
+    // Visible emblem: animation wrapper clips padding; glyph scales separately via CSS vars.
     expect(presentation).toContain('lh-rank-compact-medal');
-    expect(presentation).toContain('mb-[1.5rem]');
-    expect(presentation).toContain('sm:mb-[1.7rem]');
+    expect(presentation).toContain('lh-rank-compact-medal-glyph');
+    expect(presentation).toContain('h-[5.5rem] w-[5.5rem]');
+    expect(presentation).toContain('sm:h-[5.75rem] sm:w-[5.75rem]');
+    expect(presentation).toContain('overflow-hidden');
+    expect(presentation).toContain('mb-[0.4rem]');
+    expect(presentation).toContain('--lh-compact-emblem-scale');
+    expect(presentation).toContain('--lh-compact-emblem-origin');
+    expect(presentation).toContain('heroVisual.emblemScale');
+    expect(presentation).toContain('heroVisual.emblemOrigin');
     expect(css).toContain('@keyframes lhRankCompactMedalFloat');
     expect(css).toContain('.lh-rank-compact-medal');
+    expect(css).toContain('.lh-rank-compact-medal-glyph');
+    expect(css).not.toContain('transform: scale(2.15)');
+    expect(css).toMatch(
+      /\.lh-rank-compact-medal\s*\{[^}]*animation:\s*lhRankCompactMedalFloat/s,
+    );
+    expect(css).toMatch(
+      /\.lh-rank-compact-medal-glyph\s*\{[^}]*transform:\s*scale\(var\(--lh-compact-emblem-scale/s,
+    );
+
+    // Pedestal ~96px CSS width (visible composition with medal).
+    expect(presentation).toContain('h-[3.75rem] w-[6rem]');
+    expect(presentation).toContain('sm:h-[4rem] sm:w-[6.125rem]');
 
     // Copy + open-details handler surface unchanged.
     expect(presentation).toContain('gamification.helper_level_eyebrow');
     expect(presentation).toContain('gamification.client_level_eyebrow');
     expect(presentation).toContain('gamification.next_prefix');
-    expect(presentation).toContain('formatProgressSubtitle(progress, \'hero\', t)');
+    expect(presentation).toContain("formatProgressSubtitle(progress, 'hero', t)");
     expect(presentation).toContain('onOpenDetails');
     expect(presentation).toContain('data-testid="gamification-compact-rank-card"');
+  });
+
+  it('provides per-heroKey emblem optics for every MEDAL_MAP entry without clipping at 86px', async () => {
+    const { MEDAL_MAP } = await import('@/gamification/config/gamificationMedals');
+    const {
+      COMPACT_RANK_BY_HERO_KEY,
+      COMPACT_RANK_EMBLEM_VIEWPORT_PX,
+      COMPACT_RANK_EMBLEM_TARGET_VISIBLE_PX,
+      resolveCompactRankHeroVisual,
+    } = await import('@/gamification/config/compactRankHeroVisual');
+
+    const medalKeys = Object.keys(MEDAL_MAP).sort();
+    const visualKeys = Object.keys(COMPACT_RANK_BY_HERO_KEY).sort();
+    expect(visualKeys).toEqual(medalKeys);
+    expect(COMPACT_RANK_EMBLEM_TARGET_VISIBLE_PX).toBeLessThanOrEqual(COMPACT_RANK_EMBLEM_VIEWPORT_PX);
+
+    for (const heroKey of medalKeys) {
+      const visual = COMPACT_RANK_BY_HERO_KEY[heroKey];
+      expect(visual.emblemScale, heroKey).toBeTypeOf('number');
+      expect(visual.emblemScale, heroKey).toBeGreaterThan(1);
+      expect(visual.emblemScale, heroKey).toBeLessThan(2.5);
+      expect(visual.emblemOrigin, heroKey).toMatch(/^center \d+(\.\d+)?%$/);
+
+      // Implied fill from target: visible = viewport * scale * fill ≈ 86px, and scale*fill ≤ 1 (no clip).
+      const impliedFill =
+        COMPACT_RANK_EMBLEM_TARGET_VISIBLE_PX / (COMPACT_RANK_EMBLEM_VIEWPORT_PX * visual.emblemScale);
+      expect(impliedFill, heroKey).toBeGreaterThan(0.4);
+      expect(impliedFill, heroKey).toBeLessThanOrEqual(0.72);
+      expect(visual.emblemScale * impliedFill, heroKey).toBeLessThanOrEqual(1.001);
+      expect(COMPACT_RANK_EMBLEM_VIEWPORT_PX * visual.emblemScale * impliedFill).toBeCloseTo(
+        COMPACT_RANK_EMBLEM_TARGET_VISIBLE_PX,
+        5,
+      );
+
+      const userType = heroKey.startsWith('client') ? 'client' : 'helper';
+      const resolved = resolveCompactRankHeroVisual(userType, heroKey);
+      expect(resolved.emblemScale).toBe(visual.emblemScale);
+      expect(resolved.emblemOrigin).toBe(visual.emblemOrigin);
+    }
+
+    // helper_confiavel uses max(fillW,fillH) so height stays ≈86px (not width-only 2.131).
+    expect(COMPACT_RANK_BY_HERO_KEY.helper_confiavel.emblemScale).toBeCloseTo(1.789, 3);
   });
 
   it('detail panel opens tutorial at current level card id', () => {

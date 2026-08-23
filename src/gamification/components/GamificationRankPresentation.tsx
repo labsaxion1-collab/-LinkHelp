@@ -1,4 +1,5 @@
 import { clsx } from 'clsx';
+import type { CSSProperties } from 'react';
 import {
   AlertCircle,
   CheckCircle,
@@ -214,23 +215,31 @@ export function GamificationCompactRankCardSurface({
 
       <span className="lh-compact-rank-inner relative z-10 mx-auto flex h-full w-full items-stretch gap-2.5 px-4 py-3 sm:gap-3">
         <span
-          className="pointer-events-none relative flex w-[5.5rem] shrink-0 items-end justify-center self-stretch sm:w-[6rem]"
+          className="pointer-events-none relative flex w-[5.5rem] shrink-0 items-end justify-center self-stretch overflow-visible sm:w-[6rem]"
           aria-hidden
         >
           <img
             src={heroVisual.pedestal}
             alt=""
-            className="absolute bottom-0 left-1/2 h-[3.5rem] w-[5.2rem] max-w-none -translate-x-1/2 object-contain opacity-95 sm:h-[3.85rem] sm:w-[5.65rem]"
+            className="absolute bottom-0 left-1/2 h-[3.75rem] w-[6rem] max-w-none -translate-x-1/2 object-contain opacity-95 sm:h-[4rem] sm:w-[6.125rem]"
             loading="lazy"
             decoding="async"
           />
-          <img
-            src={medalSrc}
-            alt=""
-            className="lh-rank-compact-medal relative z-10 mb-[1.5rem] h-[4.375rem] w-[4.375rem] object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)] motion-reduce:animate-none sm:mb-[1.7rem] sm:h-[4.8rem] sm:w-[4.8rem]"
-            loading="lazy"
-            decoding="async"
-          />
+          <span className="lh-rank-compact-medal relative z-10 mb-[0.4rem] flex h-[5.5rem] w-[5.5rem] items-center justify-center overflow-hidden motion-reduce:animate-none sm:mb-[0.45rem] sm:h-[5.75rem] sm:w-[5.75rem]">
+            <img
+              src={medalSrc}
+              alt=""
+              className="lh-rank-compact-medal-glyph h-full w-full max-w-none object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)]"
+              style={
+                {
+                  '--lh-compact-emblem-scale': String(heroVisual.emblemScale),
+                  '--lh-compact-emblem-origin': heroVisual.emblemOrigin,
+                } as CSSProperties
+              }
+              loading="lazy"
+              decoding="async"
+            />
+          </span>
         </span>
 
         <span className="flex min-w-0 flex-1 flex-col justify-center py-0.5">

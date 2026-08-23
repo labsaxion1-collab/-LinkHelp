@@ -53,19 +53,23 @@ describe('compact gamification rank on helper dashboard', () => {
     expect(presentation).toContain('w-[5.5rem] shrink-0');
     expect(presentation).toContain('sm:w-[6rem]');
 
-    // Visible emblem: animation wrapper clips padding; glyph scales separately via CSS vars.
+    // Four-layer stage: stage → motion → viewport → glyph (animation ≠ optical scale).
+    expect(presentation).toContain('lh-compact-rank-stage');
     expect(presentation).toContain('lh-rank-compact-medal');
+    expect(presentation).toContain('lh-rank-compact-medal-viewport');
     expect(presentation).toContain('lh-rank-compact-medal-glyph');
     expect(presentation).toContain('h-[5.5rem] w-[5.5rem]');
     expect(presentation).toContain('sm:h-[5.75rem] sm:w-[5.75rem]');
-    expect(presentation).toContain('overflow-hidden');
-    expect(presentation).toContain('mb-[0.4rem]');
+    expect(presentation).toContain('-mb-1.5');
+    expect(presentation).toContain('pt-2');
     expect(presentation).toContain('--lh-compact-emblem-scale');
     expect(presentation).toContain('--lh-compact-emblem-origin');
     expect(presentation).toContain('heroVisual.emblemScale');
     expect(presentation).toContain('heroVisual.emblemOrigin');
+    expect(presentation).not.toContain('mb-[0.4rem]');
     expect(css).toContain('@keyframes lhRankCompactMedalFloat');
     expect(css).toContain('.lh-rank-compact-medal');
+    expect(css).toContain('.lh-rank-compact-medal-viewport');
     expect(css).toContain('.lh-rank-compact-medal-glyph');
     expect(css).not.toContain('transform: scale(2.15)');
     expect(css).toMatch(
@@ -75,9 +79,14 @@ describe('compact gamification rank on helper dashboard', () => {
       /\.lh-rank-compact-medal-glyph\s*\{[^}]*transform:\s*scale\(var\(--lh-compact-emblem-scale/s,
     );
 
-    // Pedestal ~96px CSS width (visible composition with medal).
+    // Pedestal in-flow under medal (~96px CSS width).
     expect(presentation).toContain('h-[3.75rem] w-[6rem]');
     expect(presentation).toContain('sm:h-[4rem] sm:w-[6.125rem]');
+    expect(presentation).not.toContain('absolute bottom-0 left-1/2');
+
+    // Text rhythm: progress closer to “Próximo” (mt-1, not mt-2).
+    expect(presentation).toContain('mt-1 flex items-center gap-2');
+    expect(presentation).not.toContain('mt-2 flex items-center gap-2');
 
     // Copy + open-details handler surface unchanged.
     expect(presentation).toContain('gamification.helper_level_eyebrow');

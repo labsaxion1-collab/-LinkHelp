@@ -214,53 +214,66 @@ export function GamificationCompactRankCardSurface({
       />
 
       <span className="lh-compact-rank-inner relative z-10 mx-auto flex h-full w-full items-stretch gap-2.5 px-4 py-3 sm:gap-3">
+        {/*
+          Compact rank stage layers (do not merge animation + optical scale):
+          1. stage — medal+pedestal as one unit
+          2. motion (lh-rank-compact-medal) — float keyframes only
+          3. viewport — 88×88 overflow clip for PNG padding
+          4. glyph — per-heroKey emblemScale / emblemOrigin
+        */}
         <span
-          className="pointer-events-none relative flex w-[5.5rem] shrink-0 items-end justify-center self-stretch overflow-visible sm:w-[6rem]"
+          className="lh-compact-rank-stage pointer-events-none relative flex w-[5.5rem] shrink-0 flex-col items-center justify-end self-stretch overflow-visible pb-0.5 pt-2 sm:w-[6rem]"
           aria-hidden
         >
-          <img
-            src={heroVisual.pedestal}
-            alt=""
-            className="absolute bottom-0 left-1/2 h-[3.75rem] w-[6rem] max-w-none -translate-x-1/2 object-contain opacity-95 sm:h-[4rem] sm:w-[6.125rem]"
-            loading="lazy"
-            decoding="async"
-          />
-          <span className="lh-rank-compact-medal relative z-10 mb-[0.4rem] flex h-[5.5rem] w-[5.5rem] items-center justify-center overflow-hidden motion-reduce:animate-none sm:mb-[0.45rem] sm:h-[5.75rem] sm:w-[5.75rem]">
+          <span className="relative flex flex-col items-center">
+            <span className="lh-rank-compact-medal relative z-10 -mb-1.5 flex justify-center motion-reduce:animate-none">
+              <span className="lh-rank-compact-medal-viewport relative flex h-[5.5rem] w-[5.5rem] items-center justify-center overflow-hidden sm:h-[5.75rem] sm:w-[5.75rem]">
+                <img
+                  src={medalSrc}
+                  alt=""
+                  className="lh-rank-compact-medal-glyph h-full w-full max-w-none object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)]"
+                  style={
+                    {
+                      '--lh-compact-emblem-scale': String(heroVisual.emblemScale),
+                      '--lh-compact-emblem-origin': heroVisual.emblemOrigin,
+                    } as CSSProperties
+                  }
+                  loading="lazy"
+                  decoding="async"
+                />
+              </span>
+            </span>
             <img
-              src={medalSrc}
+              src={heroVisual.pedestal}
               alt=""
-              className="lh-rank-compact-medal-glyph h-full w-full max-w-none object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)]"
-              style={
-                {
-                  '--lh-compact-emblem-scale': String(heroVisual.emblemScale),
-                  '--lh-compact-emblem-origin': heroVisual.emblemOrigin,
-                } as CSSProperties
-              }
+              className="relative z-0 h-[3.75rem] w-[6rem] max-w-none object-contain opacity-95 sm:h-[4rem] sm:w-[6.125rem]"
               loading="lazy"
               decoding="async"
             />
           </span>
         </span>
 
-        <span className="flex min-w-0 flex-1 flex-col justify-center py-0.5">
-          <span className="text-[9px] font-black uppercase tracking-[0.16em] text-white/55 sm:text-[10px]">
-            {userType === 'helper'
-              ? t('gamification.helper_level_eyebrow')
-              : t('gamification.client_level_eyebrow')}
-          </span>
-          <span className="truncate text-[15px] font-black leading-tight text-white sm:text-base">
-            {currentLevelLabel}
-          </span>
-          {!isMax ? (
-            <span className="truncate text-[11px] font-semibold text-white/72">
-              {t('gamification.next_prefix', { level: nextLevelLabel })}
+        <span className="flex min-w-0 flex-1 flex-col justify-center gap-0 py-0.5">
+          <span className="flex flex-col gap-0">
+            <span className="text-[9px] font-black uppercase tracking-[0.16em] text-white/55 sm:text-[10px]">
+              {userType === 'helper'
+                ? t('gamification.helper_level_eyebrow')
+                : t('gamification.client_level_eyebrow')}
             </span>
-          ) : (
-            <span className="truncate text-[11px] font-semibold text-emerald-200/90">
-              {t('gamification.max_level_reached')}
+            <span className="truncate text-[15px] font-black leading-tight text-white sm:text-base">
+              {currentLevelLabel}
             </span>
-          )}
-          <span className="mt-2 flex items-center gap-2">
+            {!isMax ? (
+              <span className="truncate text-[11px] font-semibold leading-snug text-white/72">
+                {t('gamification.next_prefix', { level: nextLevelLabel })}
+              </span>
+            ) : (
+              <span className="truncate text-[11px] font-semibold leading-snug text-emerald-200/90">
+                {t('gamification.max_level_reached')}
+              </span>
+            )}
+          </span>
+          <span className="mt-1 flex items-center gap-2">
             <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-white/15">
               <span
                 className="block h-full rounded-full transition-[width] duration-500 ease-out"
@@ -271,7 +284,7 @@ export function GamificationCompactRankCardSurface({
                 }}
               />
             </span>
-            <span className="shrink-0 tabular-nums text-[11px] font-black text-white">
+            <span className="shrink-0 tabular-nums text-[11px] font-black leading-none text-white">
               {progress.progressPercent}%
             </span>
           </span>

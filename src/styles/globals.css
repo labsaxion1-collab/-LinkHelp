@@ -126,6 +126,11 @@
   will-change: transform;
 }
 
+/* Optical clip only — never put the float animation on this node. */
+.lh-rank-compact-medal-viewport {
+  pointer-events: none;
+}
+
 /**
  * Medal PNGs ship with uneven transparent/black padding (~46–71% fill).
  * Scale the glyph on a SEPARATE element from `.lh-rank-compact-medal`

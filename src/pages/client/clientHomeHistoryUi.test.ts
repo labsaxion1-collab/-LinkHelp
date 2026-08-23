@@ -18,6 +18,10 @@ describe('client home compact rank + history', () => {
     expect(presentation).toContain("clientHome: 'min-h-[240px] max-h-[300px]'");
     expect(presentation).toContain('data-rank-density={density}');
     expect(presentation).toContain('whitespace-normal text-base');
+    expect(presentation).toContain('gamification.compact_client_impact');
+    expect(presentation).toContain('gamification-compact-rank-impact');
+    expect(presentation).toContain('gamification-compact-rank-progress-wide');
+    expect(presentation).not.toMatch(/isClientHome[\s\S]*truncate text-base/);
   });
 
   it('keeps Profile Meu nível on ProfileGamificationSection', () => {

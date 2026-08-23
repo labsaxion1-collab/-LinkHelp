@@ -15,7 +15,12 @@ import { EMPTY_GAMIFICATION_STATS } from '@/gamification/services/gamificationSt
 import type { UserGamificationRecord } from '@/gamification/services/gamificationService';
 import type { UserType } from '@/gamification/types/gamification';
 import { translateGamificationLevelName } from '@/utils/gamificationLevelI18n';
-import { resolveCompactRankHeroVisual, COMPACT_RANK_PEDESTAL_BOX, COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS } from '@/gamification/config/compactRankHeroVisual';
+import {
+  resolveCompactRankHeroVisual,
+  COMPACT_RANK_PEDESTAL_BOX,
+  COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS,
+} from '@/gamification/config/compactRankHeroVisual';
+import { buildCompactRankInsightChips } from '@/gamification/components/compactRankInsights';
 import { resolveMedalTheme } from '@/theme/medalThemes';
 import { COMPACT_RANK_FULL_BLEED_CLASS } from '@/components/design-system/lhCenteredModalScale';
 
@@ -182,6 +187,103 @@ export function GamificationCompactRankCardSurface({
   const medalTheme = resolveMedalTheme(record.heroKey ?? record.levelKey, userType);
   const heightClass = COMPACT_RANK_HEIGHT[density];
   const isClientHome = density === 'clientHome';
+  const insightChips =
+    userType === 'helper' && !isClientHome ? buildCompactRankInsightChips(model, t) : [];
+
+  const progressBlock = (
+    <span
+      className={clsx('flex w-full flex-col', isClientHome ? 'gap-1' : 'mt-1 gap-0.5')}
+      data-testid={isClientHome ? 'gamification-compact-rank-progress-wide' : undefined}
+    >
+      <span className="flex items-center justify-between gap-2">
+        <span
+          className={clsx(
+            'min-w-0 font-semibold leading-snug text-white/72',
+            isClientHome ? 'whitespace-normal text-xs' : 'truncate text-[11px]',
+          )}
+        >
+          {isMax
+            ? t('gamification.max_level_reached')
+            : t('gamification.next_prefix', { level: nextLevelLabel })}
+        </span>
+        <span className="shrink-0 tabular-nums text-[11px] font-black leading-none text-white">
+          {progress.progressPercent}%
+        </span>
+      </span>
+      <span className="h-1.5 w-full overflow-hidden rounded-full bg-white/15">
+        <span
+          className="block h-full rounded-full transition-[width] duration-500 ease-out"
+          style={{
+            width: `${progress.progressPercent}%`,
+            background: medalTheme.gradient,
+            boxShadow: medalTheme.glow,
+          }}
+        />
+      </span>
+      <span
+        className={clsx(
+          'font-semibold text-white/55',
+          isClientHome ? 'whitespace-normal text-[11px] leading-snug' : 'truncate text-[10px]',
+        )}
+      >
+        {isMax ? t('gamification.max_level_card') : formatProgressSubtitle(progress, 'hero', t)}
+      </span>
+    </span>
+  );
+
+  const stage = (
+    <span
+      className="lh-compact-rank-stage pointer-events-none relative flex w-[5.5rem] shrink-0 flex-col items-center justify-end self-stretch overflow-visible pb-0.5 pt-1.5 sm:w-[6rem]"
+      aria-hidden
+    >
+      {/*
+        Compact rank stage layers (do not merge animation + optical scale):
+        1. stage — medal+pedestal as one unit
+        2. motion (lh-rank-compact-medal) — float keyframes only
+        3. viewport — medal clip / pedestal layout box
+        4. glyph — per-heroKey emblemScale|pedestalScale + origin
+      */}
+      <span className="relative flex flex-col items-center">
+        <span
+          className={clsx(
+            'lh-rank-compact-medal relative z-10 flex justify-center motion-reduce:animate-none',
+            COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS,
+          )}
+        >
+          <span className="lh-rank-compact-medal-viewport relative flex h-[5.5rem] w-[5.5rem] items-center justify-center overflow-hidden sm:h-[5.75rem] sm:w-[5.75rem]">
+            <img
+              src={medalSrc}
+              alt=""
+              className="lh-rank-compact-medal-glyph h-full w-full max-w-none object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)]"
+              style={
+                {
+                  '--lh-compact-emblem-scale': String(heroVisual.emblemScale),
+                  '--lh-compact-emblem-origin': heroVisual.emblemOrigin,
+                } as CSSProperties
+              }
+              loading="lazy"
+              decoding="async"
+            />
+          </span>
+        </span>
+        <span className={COMPACT_RANK_PEDESTAL_BOX.className}>
+          <img
+            src={heroVisual.pedestal}
+            alt=""
+            className="lh-rank-compact-pedestal-glyph h-full w-full max-w-none object-contain opacity-95"
+            style={
+              {
+                '--lh-compact-pedestal-scale': String(heroVisual.pedestalScale),
+                '--lh-compact-pedestal-origin': heroVisual.pedestalOrigin,
+              } as CSSProperties
+            }
+            loading="lazy"
+            decoding="async"
+          />
+        </span>
+      </span>
+    </span>
+  );
 
   return (
     <div
@@ -194,152 +296,119 @@ export function GamificationCompactRankCardSurface({
       data-testid="gamification-compact-rank-bleed"
       data-rank-density={density}
     >
-    <button
-      type="button"
-      onClick={onOpenDetails}
-      className={clsx(
-        'group relative isolate flex h-full w-full items-stretch text-left transition hover:border-white/20 hover:shadow-[0_18px_42px_rgba(0,0,0,0.34)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
-        heightClass,
-      )}
-      data-testid="gamification-compact-rank-card"
-      data-hero-key={record.heroKey}
-      aria-expanded={false}
-      aria-label={t('gamification.compact_rank_open_details', {
-        level: currentLevelLabel,
-      })}
-    >
-      <img
-        src={heroVisual.background}
-        alt=""
-        aria-hidden
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-        loading="lazy"
-        decoding="async"
-      />
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: heroVisual.scrim }}
-        aria-hidden
-      />
-      <img
-        src={heroVisual.particles}
-        alt=""
-        aria-hidden
+      <button
+        type="button"
+        onClick={onOpenDetails}
         className={clsx(
-          'pointer-events-none absolute inset-0 h-full w-full object-cover mix-blend-screen',
-          isClientHome ? 'opacity-22' : 'opacity-35',
+          'group relative isolate flex h-full w-full items-stretch text-left transition hover:border-white/20 hover:shadow-[0_18px_42px_rgba(0,0,0,0.34)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
+          heightClass,
         )}
-        loading="lazy"
-        decoding="async"
-      />
-
-      <span className="lh-compact-rank-inner relative z-10 mx-auto flex h-full w-full items-stretch gap-2.5 px-4 py-3 sm:gap-3">
-        {/*
-          Compact rank stage layers (do not merge animation + optical scale):
-          1. stage — medal+pedestal as one unit
-          2. motion (lh-rank-compact-medal) — float keyframes only
-          3. viewport — 88×88 overflow clip for PNG padding
-          4. glyph — per-heroKey emblemScale / emblemOrigin
-        */}
-        <span
-          className="lh-compact-rank-stage pointer-events-none relative flex w-[5.5rem] shrink-0 flex-col items-center justify-end self-stretch overflow-visible pb-0.5 pt-2 sm:w-[6rem]"
+        data-testid="gamification-compact-rank-card"
+        data-hero-key={record.heroKey}
+        aria-expanded={false}
+        aria-label={t('gamification.compact_rank_open_details', {
+          level: currentLevelLabel,
+        })}
+      >
+        <img
+          src={heroVisual.background}
+          alt=""
           aria-hidden
-        >
-          <span className="relative flex flex-col items-center">
-            <span
-              className={clsx(
-                'lh-rank-compact-medal relative z-10 flex justify-center motion-reduce:animate-none',
-                COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS,
-              )}
-            >
-              <span className="lh-rank-compact-medal-viewport relative flex h-[5.5rem] w-[5.5rem] items-center justify-center overflow-hidden sm:h-[5.75rem] sm:w-[5.75rem]">
-                <img
-                  src={medalSrc}
-                  alt=""
-                  className="lh-rank-compact-medal-glyph h-full w-full max-w-none object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)]"
-                  style={
-                    {
-                      '--lh-compact-emblem-scale': String(heroVisual.emblemScale),
-                      '--lh-compact-emblem-origin': heroVisual.emblemOrigin,
-                    } as CSSProperties
-                  }
-                  loading="lazy"
-                  decoding="async"
-                />
-              </span>
-            </span>
-            <img
-              src={heroVisual.pedestal}
-              alt=""
-              className={COMPACT_RANK_PEDESTAL_BOX.className}
-              loading="lazy"
-              decoding="async"
-            />
-          </span>
-        </span>
-
-        <span className="flex min-w-0 flex-1 flex-col justify-center gap-0 py-0.5">
-          <span className="flex flex-col gap-0">
-            <span className="text-[9px] font-black uppercase tracking-[0.16em] text-white/55 sm:text-[10px]">
-              {userType === 'helper'
-                ? t('gamification.helper_level_eyebrow')
-                : t('gamification.client_level_eyebrow')}
-            </span>
-            <span
-              className={clsx(
-                'font-black leading-tight text-white',
-                isClientHome
-                  ? 'whitespace-normal text-base sm:text-lg'
-                  : 'truncate text-[15px] sm:text-base',
-              )}
-            >
-              {currentLevelLabel}
-            </span>
-            {!isMax ? (
-              <span
-                className={clsx(
-                  'font-semibold leading-snug text-white/72',
-                  isClientHome ? 'whitespace-normal text-xs' : 'truncate text-[11px]',
-                )}
-              >
-                {t('gamification.next_prefix', { level: nextLevelLabel })}
-              </span>
-            ) : (
-              <span
-                className={clsx(
-                  'font-semibold leading-snug text-emerald-200/90',
-                  isClientHome ? 'whitespace-normal text-xs' : 'truncate text-[11px]',
-                )}
-              >
-                {t('gamification.max_level_reached')}
-              </span>
-            )}          </span>
-          <span className="mt-1 flex items-center gap-2">
-            <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-white/15">
-              <span
-                className="block h-full rounded-full transition-[width] duration-500 ease-out"
-                style={{
-                  width: `${progress.progressPercent}%`,
-                  background: medalTheme.gradient,
-                  boxShadow: medalTheme.glow,
-                }}
-              />
-            </span>
-            <span className="shrink-0 tabular-nums text-[11px] font-black leading-none text-white">
-              {progress.progressPercent}%
-            </span>
-          </span>
-          <span className="mt-0.5 truncate text-[10px] font-semibold text-white/55">
-            {isMax ? t('gamification.max_level_card') : formatProgressSubtitle(progress, 'hero', t)}
-          </span>
-        </span>
-
-        <ChevronRight
-          className="h-5 w-5 shrink-0 self-center text-white/35 transition group-hover:text-white/70"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: heroVisual.scrim }}
           aria-hidden
         />
-      </span>
-    </button>
+        <img
+          src={heroVisual.particles}
+          alt=""
+          aria-hidden
+          className={clsx(
+            'pointer-events-none absolute inset-0 h-full w-full object-cover mix-blend-screen',
+            isClientHome ? 'opacity-22' : 'opacity-35',
+          )}
+          loading="lazy"
+          decoding="async"
+        />
+
+        <span
+          className={clsx(
+            'lh-compact-rank-inner relative z-10 mx-auto flex h-full w-full px-4 py-3',
+            isClientHome ? 'flex-col gap-2.5' : 'items-stretch gap-2 sm:gap-2.5',
+          )}
+        >
+          <span
+            className={clsx(
+              'flex min-h-0 min-w-0',
+              isClientHome ? 'flex-1 items-stretch gap-2' : 'h-full w-full items-stretch gap-2 sm:gap-2.5',
+            )}
+          >
+            {stage}
+
+            <span
+              className={clsx(
+                'flex min-w-0 flex-1 flex-col py-0.5',
+                isClientHome ? 'justify-center gap-1.5 text-left' : 'justify-center gap-0',
+              )}
+            >
+              <span className="flex flex-col gap-0.5 text-left">
+                <span className="text-[9px] font-black uppercase tracking-[0.16em] text-white/55 sm:text-[10px]">
+                  {userType === 'helper'
+                    ? t('gamification.helper_level_eyebrow')
+                    : t('gamification.client_level_eyebrow')}
+                </span>
+                <span
+                  className={clsx(
+                    'font-black leading-tight text-white',
+                    isClientHome
+                      ? 'whitespace-normal text-base sm:text-lg'
+                      : 'truncate text-[15px] sm:text-base',
+                  )}
+                >
+                  {currentLevelLabel}
+                </span>
+                {isClientHome ? (
+                  <span
+                    className="whitespace-normal text-[13px] font-semibold leading-snug text-white/80 sm:text-sm"
+                    data-testid="gamification-compact-rank-impact"
+                  >
+                    {t('gamification.compact_client_impact')}
+                  </span>
+                ) : null}
+              </span>
+
+              {!isClientHome ? progressBlock : null}
+
+              {insightChips.length > 0 ? (
+                <span
+                  className="mt-1.5 flex flex-wrap gap-1"
+                  data-testid="gamification-compact-rank-insights"
+                >
+                  {insightChips.map((chip) => (
+                    <span
+                      key={chip.id}
+                      className="inline-flex max-w-full items-center rounded-full border border-white/15 bg-black/35 px-2 py-0.5 text-[10px] font-bold leading-none text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[2px]"
+                    >
+                      {chip.label}
+                    </span>
+                  ))}
+                </span>
+              ) : null}
+            </span>
+
+            <ChevronRight
+              className="h-5 w-5 shrink-0 self-center text-white/35 transition group-hover:text-white/70"
+              aria-hidden
+            />
+          </span>
+
+          {isClientHome ? progressBlock : null}
+        </span>
+      </button>
     </div>
   );
 }

@@ -144,6 +144,21 @@
   will-change: transform;
 }
 
+/**
+ * Pedestal PNGs also ship with large transparent margins (fill ≈ 57–73% W,
+ * 26–40% H). Scale the glyph separately from the viewport box so optical
+ * size tracks fillW/fillH per heroKey — never a single global CSS enlarge.
+ */
+.lh-rank-compact-pedestal-viewport {
+  pointer-events: none;
+}
+
+.lh-rank-compact-pedestal-glyph {
+  transform: scale(var(--lh-compact-pedestal-scale, 1));
+  transform-origin: var(--lh-compact-pedestal-origin, center 78%);
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lh-rank-compact-medal {
     animation: none;

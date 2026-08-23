@@ -45,6 +45,7 @@ describe('compact gamification rank on helper dashboard', () => {
   it('enlarges compact medal ~25% with proportional pedestal without changing card geometry', () => {
     const presentation = read('src/gamification/components/GamificationRankPresentation.tsx');
     const css = read('src/styles/globals.css');
+    const visualCfg = read('src/gamification/config/compactRankHeroVisual.ts');
 
     // Card geometry preserved (height + full-bleed).
     expect(presentation).toContain('min-h-[170px]');
@@ -60,7 +61,7 @@ describe('compact gamification rank on helper dashboard', () => {
     expect(presentation).toContain('lh-rank-compact-medal-glyph');
     expect(presentation).toContain('h-[5.5rem] w-[5.5rem]');
     expect(presentation).toContain('sm:h-[5.75rem] sm:w-[5.75rem]');
-    expect(presentation).toContain('-mb-1.5');
+    expect(presentation).toContain('COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS');
     expect(presentation).toContain('pt-2');
     expect(presentation).toContain('--lh-compact-emblem-scale');
     expect(presentation).toContain('--lh-compact-emblem-origin');
@@ -79,10 +80,18 @@ describe('compact gamification rank on helper dashboard', () => {
       /\.lh-rank-compact-medal-glyph\s*\{[^}]*transform:\s*scale\(var\(--lh-compact-emblem-scale/s,
     );
 
-    // Pedestal in-flow under medal (~96px CSS width).
-    expect(presentation).toContain('h-[3.75rem] w-[6rem]');
-    expect(presentation).toContain('sm:h-[4rem] sm:w-[6.125rem]');
+    // Pedestal token: ~+37% width / ~+27% height vs prior 6×3.75 rem, object-contain.
+    expect(presentation).toContain('COMPACT_RANK_PEDESTAL_BOX.className');
+    expect(visualCfg).toContain("widthRem: 8.25");
+    expect(visualCfg).toContain("heightRem: 4.75");
+    expect(visualCfg).toContain("smWidthRem: 8.5");
+    expect(visualCfg).toContain("smHeightRem: 5");
+    expect(visualCfg).toContain('h-[4.75rem] w-[8.25rem]');
+    expect(visualCfg).toContain('sm:h-[5rem] sm:w-[8.5rem]');
+    expect(visualCfg).toContain('object-contain');
+    expect(visualCfg).toContain("COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS = '-mb-2.5'");
     expect(presentation).not.toContain('absolute bottom-0 left-1/2');
+    expect(presentation).not.toContain('h-[3.75rem] w-[6rem]');
 
     // Text rhythm: progress closer to “Próximo” (mt-1, not mt-2).
     expect(presentation).toContain('mt-1 flex items-center gap-2');
@@ -103,6 +112,8 @@ describe('compact gamification rank on helper dashboard', () => {
       COMPACT_RANK_BY_HERO_KEY,
       COMPACT_RANK_EMBLEM_VIEWPORT_PX,
       COMPACT_RANK_EMBLEM_TARGET_VISIBLE_PX,
+      COMPACT_RANK_PEDESTAL_BOX,
+      COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS,
       resolveCompactRankHeroVisual,
     } = await import('@/gamification/config/compactRankHeroVisual');
 
@@ -118,16 +129,12 @@ describe('compact gamification rank on helper dashboard', () => {
       expect(visual.emblemScale, heroKey).toBeLessThan(2.5);
       expect(visual.emblemOrigin, heroKey).toMatch(/^center \d+(\.\d+)?%$/);
 
-      // Implied fill from target: visible = viewport * scale * fill ≈ 86px, and scale*fill ≤ 1 (no clip).
+      // scale × impliedFill ≤ 1 → no horizontal clip at the 86px target ceiling.
       const impliedFill =
         COMPACT_RANK_EMBLEM_TARGET_VISIBLE_PX / (COMPACT_RANK_EMBLEM_VIEWPORT_PX * visual.emblemScale);
       expect(impliedFill, heroKey).toBeGreaterThan(0.4);
       expect(impliedFill, heroKey).toBeLessThanOrEqual(0.72);
       expect(visual.emblemScale * impliedFill, heroKey).toBeLessThanOrEqual(1.001);
-      expect(COMPACT_RANK_EMBLEM_VIEWPORT_PX * visual.emblemScale * impliedFill).toBeCloseTo(
-        COMPACT_RANK_EMBLEM_TARGET_VISIBLE_PX,
-        5,
-      );
 
       const userType = heroKey.startsWith('client') ? 'client' : 'helper';
       const resolved = resolveCompactRankHeroVisual(userType, heroKey);
@@ -135,8 +142,18 @@ describe('compact gamification rank on helper dashboard', () => {
       expect(resolved.emblemOrigin).toBe(visual.emblemOrigin);
     }
 
-    // helper_confiavel uses max(fillW,fillH) so height stays ≈86px (not width-only 2.131).
-    expect(COMPACT_RANK_BY_HERO_KEY.helper_confiavel.emblemScale).toBeCloseTo(1.789, 3);
+    // helper_confiavel (iniciante): intentionally ~7% under the 2D max (1.789 → 1.664).
+    expect(COMPACT_RANK_BY_HERO_KEY.helper_confiavel.emblemScale).toBeCloseTo(1.664, 3);
+    expect(COMPACT_RANK_BY_HERO_KEY.helper_confiavel.emblemScale).toBeLessThan(1.789);
+    // Other helper keys keep their prior audited scales (not globally reduced).
+    expect(COMPACT_RANK_BY_HERO_KEY.helper_novo.emblemScale).toBeCloseTo(1.768, 3);
+    expect(COMPACT_RANK_BY_HERO_KEY.helper_elite.emblemScale).toBeCloseTo(1.538, 3);
+
+    // Pedestal box proportion and overlap token.
+    expect(COMPACT_RANK_PEDESTAL_BOX.widthRem / 6).toBeCloseTo(1.375, 3);
+    expect(COMPACT_RANK_PEDESTAL_BOX.heightRem / 3.75).toBeCloseTo(1.267, 3);
+    expect(COMPACT_RANK_PEDESTAL_BOX.className).toContain('object-contain');
+    expect(COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS).toBe('-mb-2.5');
   });
 
   it('detail panel opens tutorial at current level card id', () => {

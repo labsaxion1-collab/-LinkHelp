@@ -39,6 +39,24 @@ export type CompactRankHeroVisual = {
 export const COMPACT_RANK_EMBLEM_VIEWPORT_PX = 88;
 export const COMPACT_RANK_EMBLEM_TARGET_VISIBLE_PX = 86;
 
+/**
+ * Shared pedestal box for the compact stage (CSS rem → px at 16px root).
+ * Wider than the 5.5rem column on purpose — overflows centered without
+ * shifting text. Tuned ~+37% width / ~+27% height vs the prior 6×3.75 rem box.
+ */
+export const COMPACT_RANK_PEDESTAL_BOX = {
+  widthRem: 8.25,
+  heightRem: 4.75,
+  smWidthRem: 8.5,
+  smHeightRem: 5,
+  /** Tailwind classes kept in sync with the rem tokens above. */
+  className:
+    'relative z-0 h-[4.75rem] w-[8.25rem] max-w-none object-contain opacity-95 sm:h-[5rem] sm:w-[8.5rem]',
+} as const;
+
+/** Medal→pedestal overlap (Tailwind -mb-*). */
+export const COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS = '-mb-2.5';
+
 const HELPER_NOVO: CompactRankHeroVisual = {
   background: bgVerde,
   pedestal: pedestalVerde,
@@ -55,7 +73,8 @@ const HELPER_AZUL: CompactRankHeroVisual = {
   particles: particlesImage,
   scrim:
     'radial-gradient(circle at 20% 42%, rgba(0,71,255,0.24), transparent 44%), linear-gradient(180deg, rgba(4,8,24,0.9) 0%, rgba(8,16,40,0.74) 48%, rgba(3,6,18,0.95) 100%)',
-  emblemScale: 1.789,
+  // ~7% below the 2D safe max (1.789) so the diamond sits lighter on the larger pedestal.
+  emblemScale: 1.664,
   emblemOrigin: 'center 40.8%',
 };
 

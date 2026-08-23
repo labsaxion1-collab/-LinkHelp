@@ -15,7 +15,7 @@ import { EMPTY_GAMIFICATION_STATS } from '@/gamification/services/gamificationSt
 import type { UserGamificationRecord } from '@/gamification/services/gamificationService';
 import type { UserType } from '@/gamification/types/gamification';
 import { translateGamificationLevelName } from '@/utils/gamificationLevelI18n';
-import { resolveCompactRankHeroVisual } from '@/gamification/config/compactRankHeroVisual';
+import { resolveCompactRankHeroVisual, COMPACT_RANK_PEDESTAL_BOX, COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS } from '@/gamification/config/compactRankHeroVisual';
 import { resolveMedalTheme } from '@/theme/medalThemes';
 import { COMPACT_RANK_FULL_BLEED_CLASS } from '@/components/design-system/lhCenteredModalScale';
 
@@ -226,7 +226,12 @@ export function GamificationCompactRankCardSurface({
           aria-hidden
         >
           <span className="relative flex flex-col items-center">
-            <span className="lh-rank-compact-medal relative z-10 -mb-1.5 flex justify-center motion-reduce:animate-none">
+            <span
+              className={clsx(
+                'lh-rank-compact-medal relative z-10 flex justify-center motion-reduce:animate-none',
+                COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS,
+              )}
+            >
               <span className="lh-rank-compact-medal-viewport relative flex h-[5.5rem] w-[5.5rem] items-center justify-center overflow-hidden sm:h-[5.75rem] sm:w-[5.75rem]">
                 <img
                   src={medalSrc}
@@ -246,7 +251,7 @@ export function GamificationCompactRankCardSurface({
             <img
               src={heroVisual.pedestal}
               alt=""
-              className="relative z-0 h-[3.75rem] w-[6rem] max-w-none object-contain opacity-95 sm:h-[4rem] sm:w-[6.125rem]"
+              className={COMPACT_RANK_PEDESTAL_BOX.className}
               loading="lazy"
               decoding="async"
             />

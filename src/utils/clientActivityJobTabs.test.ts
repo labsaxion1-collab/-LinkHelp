@@ -72,26 +72,33 @@ describe('clientActivityJobTabs', () => {
       ...overrides,
     }) as Job;
 
-  it('keeps preferred-date-past open jobs in waiting when still status open, never completed', () => {
+  it('excludes legacy preferred-date expiry from waiting (history owns them)', () => {
     const expiredOpen = job({ id: 'open-expired', status: 'open', preferredDate: '2020-01-01' });
     const hidden = new Set<string>();
     expect(isWaitingActivityJob('open')).toBe(true);
     expect(isCompletedActivityJob('open')).toBe(false);
-    expect(filterClientJobsForActivityTab([expiredOpen], 'waiting', hidden).map((j) => j.id)).toEqual([
-      'open-expired',
-    ]);
-    expect(filterClientJobsForActivityTab([expiredOpen], 'completed', hidden)).toEqual([]);
+    expect(filterClientJobsForActivityTab([expiredOpen], 'waiting', hidden)).toEqual([]);
+  });
+
+  it('keeps open with future expiresAt in waiting despite past preferredDate', () => {
+    const keep = job({
+      id: 'keep',
+      status: 'open',
+      preferredDate: '2020-01-01',
+      expiresAt: Date.now() + 86_400_000,
+    });
+    const hidden = new Set<string>();
+    expect(filterClientJobsForActivityTab([keep], 'waiting', hidden).map((j) => j.id)).toEqual(['keep']);
   });
 
   it('excludes explicit status expired from waiting tabs', () => {
     const expired = job({ id: 'st-expired', status: 'expired' });
     const hidden = new Set<string>();
     expect(filterClientJobsForActivityTab([expired], 'waiting', hidden)).toEqual([]);
-    expect(filterClientJobsForActivityTab([expired], 'completed', hidden)).toEqual([]);
   });
 
-  it('moves hired jobs to in_progress and completed only when status is completed', () => {
-    const waiting = job({ id: 'w', status: 'open' });
+  it('moves hired jobs to in_progress; completed never stays in activities', () => {
+    const waiting = job({ id: 'w', status: 'open', preferredDate: undefined, expiresAt: Date.now() + 1_000 });
     const hired = job({ id: 'h', status: 'in_progress' });
     const done = job({ id: 'd', status: 'completed' });
     const hidden = new Set<string>();
@@ -102,9 +109,7 @@ describe('clientActivityJobTabs', () => {
     expect(
       filterClientJobsForActivityTab([waiting, hired, done], 'in_progress', hidden).map((j) => j.id),
     ).toEqual(['h']);
-    expect(
-      filterClientJobsForActivityTab([waiting, hired, done], 'completed', hidden).map((j) => j.id),
-    ).toEqual(['d']);
+    expect(isCompletedActivityJob('completed')).toBe(true);
   });
 });
 

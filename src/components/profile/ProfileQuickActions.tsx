@@ -136,6 +136,20 @@ export function ProfileQuickActions({ title, role, labels }: Props) {
     });
   }
 
+  if (role === 'client' && labels.history) {
+    actions.push({
+      key: 'history',
+      label: labels.history,
+      icon: History,
+      iconColor: 'text-indigo-600',
+      iconBg: 'bg-indigo-50',
+      to: ROUTES.clientHistory,
+      ariaLabel: labels.historyDesc
+        ? `${labels.history}. ${labels.historyDesc}`
+        : labels.history,
+    });
+  }
+
   return (
     <section>
       <ProfileSectionHeader title={title} />

@@ -161,35 +161,52 @@ type CompactCardProps = {
   model: GamificationRankProgressModel;
   onOpenDetails: () => void;
   className?: string;
+  density?: 'default' | 'clientHome';
 };
+
+const COMPACT_RANK_HEIGHT = {
+  default: 'min-h-[170px] max-h-[210px]',
+  clientHome: 'min-h-[240px] max-h-[300px]',
+} as const;
 
 export function GamificationCompactRankCardSurface({
   userType,
   model,
   onOpenDetails,
   className,
+  density = 'default',
 }: CompactCardProps) {
   const { t } = useLanguage();
   const { medalSrc, currentLevelLabel, nextLevelLabel, progress, isMax, record } = model;
   const heroVisual = resolveCompactRankHeroVisual(userType, record.heroKey);
   const medalTheme = resolveMedalTheme(record.heroKey ?? record.levelKey, userType);
+  const heightClass = COMPACT_RANK_HEIGHT[density];
+  const isClientHome = density === 'clientHome';
 
   return (
     <div
       className={clsx(
         COMPACT_RANK_FULL_BLEED_CLASS,
-        'min-h-[170px] max-h-[210px] rounded-b-2xl border-y border-white/10 shadow-[0_14px_36px_rgba(0,0,0,0.28)] lg:rounded-2xl lg:border',
+        heightClass,
+        'rounded-b-2xl border-y border-white/10 shadow-[0_14px_36px_rgba(0,0,0,0.28)] lg:rounded-2xl lg:border',
         className,
       )}
       data-testid="gamification-compact-rank-bleed"
+      data-rank-density={density}
     >
     <button
       type="button"
       onClick={onOpenDetails}
-      className="group relative isolate flex h-full min-h-[170px] max-h-[210px] w-full items-stretch text-left transition hover:border-white/20 hover:shadow-[0_18px_42px_rgba(0,0,0,0.34)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+      className={clsx(
+        'group relative isolate flex h-full w-full items-stretch text-left transition hover:border-white/20 hover:shadow-[0_18px_42px_rgba(0,0,0,0.34)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
+        heightClass,
+      )}
       data-testid="gamification-compact-rank-card"
       data-hero-key={record.heroKey}
       aria-expanded={false}
+      aria-label={t('gamification.compact_rank_open_details', {
+        level: currentLevelLabel,
+      })}
     >
       <img
         src={heroVisual.background}
@@ -208,7 +225,10 @@ export function GamificationCompactRankCardSurface({
         src={heroVisual.particles}
         alt=""
         aria-hidden
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35 mix-blend-screen"
+        className={clsx(
+          'pointer-events-none absolute inset-0 h-full w-full object-cover mix-blend-screen',
+          isClientHome ? 'opacity-22' : 'opacity-35',
+        )}
         loading="lazy"
         decoding="async"
       />
@@ -265,19 +285,35 @@ export function GamificationCompactRankCardSurface({
                 ? t('gamification.helper_level_eyebrow')
                 : t('gamification.client_level_eyebrow')}
             </span>
-            <span className="truncate text-[15px] font-black leading-tight text-white sm:text-base">
+            <span
+              className={clsx(
+                'font-black leading-tight text-white',
+                isClientHome
+                  ? 'whitespace-normal text-base sm:text-lg'
+                  : 'truncate text-[15px] sm:text-base',
+              )}
+            >
               {currentLevelLabel}
             </span>
             {!isMax ? (
-              <span className="truncate text-[11px] font-semibold leading-snug text-white/72">
+              <span
+                className={clsx(
+                  'font-semibold leading-snug text-white/72',
+                  isClientHome ? 'whitespace-normal text-xs' : 'truncate text-[11px]',
+                )}
+              >
                 {t('gamification.next_prefix', { level: nextLevelLabel })}
               </span>
             ) : (
-              <span className="truncate text-[11px] font-semibold leading-snug text-emerald-200/90">
+              <span
+                className={clsx(
+                  'font-semibold leading-snug text-emerald-200/90',
+                  isClientHome ? 'whitespace-normal text-xs' : 'truncate text-[11px]',
+                )}
+              >
                 {t('gamification.max_level_reached')}
               </span>
-            )}
-          </span>
+            )}          </span>
           <span className="mt-1 flex items-center gap-2">
             <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-white/15">
               <span
@@ -308,16 +344,25 @@ export function GamificationCompactRankCardSurface({
   );
 }
 
-export function GamificationRankLoadingCard({ className }: { className?: string }) {
+export function GamificationRankLoadingCard({
+  className,
+  density = 'default',
+}: {
+  className?: string;
+  density?: 'default' | 'clientHome';
+}) {
   const { t } = useLanguage();
+  const heightClass = COMPACT_RANK_HEIGHT[density];
   return (
     <div
       className={clsx(
         COMPACT_RANK_FULL_BLEED_CLASS,
-        'flex min-h-[170px] max-h-[210px] items-center justify-center rounded-b-2xl border-y border-white/10 bg-[#020804] text-white/70 shadow-[0_14px_36px_rgba(0,0,0,0.22)] lg:rounded-2xl lg:border',
+        heightClass,
+        'flex items-center justify-center rounded-b-2xl border-y border-white/10 bg-[#020804] text-white/70 shadow-[0_14px_36px_rgba(0,0,0,0.22)] lg:rounded-2xl lg:border',
         className,
       )}
       data-testid="gamification-compact-rank-loading"
+      data-rank-density={density}
     >
       <div className="lh-compact-rank-inner mx-auto flex w-full items-center justify-center gap-2 px-4 py-3">
         <Loader2 className="h-4 w-4 animate-spin text-lime-300/80" />
@@ -327,16 +372,25 @@ export function GamificationRankLoadingCard({ className }: { className?: string 
   );
 }
 
-export function GamificationRankUnavailableCard({ className }: { className?: string }) {
+export function GamificationRankUnavailableCard({
+  className,
+  density = 'default',
+}: {
+  className?: string;
+  density?: 'default' | 'clientHome';
+}) {
   const { t } = useLanguage();
+  const heightClass = COMPACT_RANK_HEIGHT[density];
   return (
     <div
       className={clsx(
         COMPACT_RANK_FULL_BLEED_CLASS,
-        'flex min-h-[170px] max-h-[210px] items-center justify-center rounded-b-2xl border-y border-white/10 bg-[#020804] text-sm font-medium text-white/60 shadow-[0_14px_36px_rgba(0,0,0,0.22)] lg:rounded-2xl lg:border',
+        heightClass,
+        'flex items-center justify-center rounded-b-2xl border-y border-white/10 bg-[#020804] text-sm font-medium text-white/60 shadow-[0_14px_36px_rgba(0,0,0,0.22)] lg:rounded-2xl lg:border',
         className,
       )}
       data-testid="gamification-compact-rank-unavailable"
+      data-rank-density={density}
     >
       <div className="lh-compact-rank-inner mx-auto w-full px-4 py-3 text-center">
         {t('gamification.progress_load_error')}

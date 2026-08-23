@@ -1,7 +1,8 @@
 import type { Job, JobStatus } from '@/types/job';
-import { isJobCancelled } from '@/utils/jobVisibility';
+import { partitionClientRequests } from '@/utils/clientHistoryBuckets';
 
-export type ClientActivityJobsTab = 'waiting' | 'in_progress' | 'completed';
+/** Activities only — completed/cancelled/expired live in History. */
+export type ClientActivityJobsTab = 'waiting' | 'in_progress';
 
 /** Waiting = published / paused, still pre-hire (not listing-expired). */
 export function isWaitingActivityJob(status: JobStatus): boolean {
@@ -12,26 +13,28 @@ export function isInProgressActivityJob(status: JobStatus): boolean {
   return status === 'in_progress';
 }
 
+/** Status-only helper (history owns completed listings). */
 export function isCompletedActivityJob(status: JobStatus): boolean {
   return status === 'completed';
 }
 
 /**
- * Activity-tab membership by real request status.
- * Must NOT treat preferred-date or expiresAt presentation expiry as Completed.
- * Explicit status `expired` is excluded from waiting (not an active listing).
+ * Activity-tab membership via authoritative clientHistoryBuckets.
+ * Completed / cancelled / expired never appear here.
  */
 export function filterClientJobsForActivityTab(
   jobs: Job[],
   tab: ClientActivityJobsTab,
   hiddenJobIds: ReadonlySet<string>,
+  now = Date.now(),
 ): Job[] {
-  return jobs.filter((job) => {
-    if (hiddenJobIds.has(job.id)) return false;
-    if (isJobCancelled(job)) return false;
-    if (job.status === 'expired') return false;
-    if (tab === 'waiting') return isWaitingActivityJob(job.status);
-    if (tab === 'in_progress') return isInProgressActivityJob(job.status);
-    return isCompletedActivityJob(job.status);
-  });
+  const clientIds = [
+    ...new Set(jobs.map((j) => j.clientId).filter((id): id is string => Boolean(id))),
+  ];
+  const out: Job[] = [];
+  for (const clientId of clientIds) {
+    const part = partitionClientRequests({ jobs, clientId, hiddenJobIds, now });
+    out.push(...(tab === 'waiting' ? part.waiting : part.inProgress));
+  }
+  return out;
 }

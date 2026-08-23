@@ -29,6 +29,8 @@ export const ROUTES = {
   helperJobs: '/helper/jobs',
   /** Helper professional history — closed applications + completed services */
   helperHistory: '/helper/history',
+  /** Client request history — closed listings + completed services */
+  clientHistory: '/client/history',
   /** @deprecated Use helperJobs — kept for notification links during migration */
   helperJobsUpcoming: '/helper/jobs',
   messages: '/messages',

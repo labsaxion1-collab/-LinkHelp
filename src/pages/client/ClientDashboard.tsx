@@ -24,12 +24,10 @@ import { ClientDashboardMapSidebar } from '@/components/client/ClientDashboardMa
 import { ClientDashboardHeroSlot } from '@/components/client/ClientDashboardHeroSlot';
 import { ClientCandidateCard } from '@/components/client/ClientCandidateCard';
 import { ClientActivityOpenRequestCard } from '@/components/client/ClientActivityOpenRequestCard';
-import { ClientCompletedHistoryCard } from '@/components/client/ClientCompletedHistoryCard';
 import { CandidateHelperProfileExpand } from '@/components/client/CandidateHelperProfileExpand';
 import { LhCardOverlay } from '@/components/design-system/LhCardOverlay';
 import { candidateProfileExpandKey } from '@/utils/candidateProfileExpand';
 import { filterClientJobsForActivityTab } from '@/utils/clientActivityJobTabs';
-import { resolveHiredHelperForCompletedJob } from '@/utils/completedServiceHistory';
 import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
 import type { NearbyHelperMapPoint } from '@/types/nearbyHelper';
 import { LhCard } from '@/components/design-system/LhCard';
@@ -189,7 +187,7 @@ export default function ClientDashboard() {
   const [showHireModal, setShowHireModal] = useState(false);
   const [hireModalKind, setHireModalKind] = useState<'hire' | 'proposal'>('hire');
   const [inviteMessage, setInviteMessage] = useState('');
-  const [jobsListTab, setJobsListTab] = useState<'waiting' | 'in_progress' | 'completed'>('waiting');
+  const [jobsListTab, setJobsListTab] = useState<'waiting' | 'in_progress'>('waiting');
   const [expandedActivityPanel, setExpandedActivityPanel] = useState<{
     jobId: string;
     panel: 'applications' | 'description';
@@ -348,7 +346,7 @@ export default function ClientDashboard() {
         /* ignore */
       }
       setServiceConfirmJob(null);
-      setJobsListTab('completed');
+      navigate(ROUTES.clientHistory, { state: { historyTab: 'completed' } });
       showToast(t('service_confirm.success_toast'), 'success');
       window.setTimeout(() => openReviewByRequestId(requestId), 400);
     } catch (error) {
@@ -532,16 +530,8 @@ export default function ClientDashboard() {
     () => filterClientJobsForActivityTab(clientJobs, 'in_progress', hiddenJobIds),
     [clientJobs, hiddenJobIds],
   );
-  const completedClientJobs = useMemo(
-    () => filterClientJobsForActivityTab(clientJobs, 'completed', hiddenJobIds),
-    [clientJobs, hiddenJobIds],
-  );
   const activityTabJobs =
-    jobsListTab === 'waiting'
-      ? waitingClientJobs
-      : jobsListTab === 'in_progress'
-        ? inProgressClientJobs
-        : completedClientJobs;
+    jobsListTab === 'waiting' ? waitingClientJobs : inProgressClientJobs;
   const progressiveActivityJobs = useProgressiveReveal(activityTabJobs, 3, 800);
   const clientApplicationCount = useMemo(
     () => applications.filter((app) => clientJobs.some((job) => job.id === app.jobId)).length,
@@ -1393,37 +1383,6 @@ export default function ClientDashboard() {
                   </div>
                 </section>
 
-                <section className="relative" style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)' }}>
-                  <div className="mb-4 flex items-center justify-between gap-3 px-4 sm:px-6 md:px-8">
-                    <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_dashboard.popular_categories_title')}</h2>
-                    <button type="button" onClick={() => openCreateModal()} className={clsx('inline-flex items-center gap-1 text-sm font-black', clientDashboardAccent.actionLink)}>
-                      {t('client_dashboard.view_all_categories')} <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="overflow-x-auto pb-2 [scrollbar-width:none] [scroll-snap-type:x_mandatory] [&::-webkit-scrollbar]:hidden">
-                    <div className="flex min-w-max gap-3 px-4 sm:px-6 md:px-8">
-                    {SERVICE_CATEGORIES.slice(0, 8).map((cat, index) => {
-                      const IconComponent = getCategoryLucideIcon(cat.icon);
-                      const palette = clientDashboardAccent.categoryIcon;
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => openCreateModal(cat.id)}
-                          className={clsx('group min-h-[132px] w-[128px] shrink-0 rounded-[1.55rem] border border-white bg-white/92 p-4 text-center shadow-[0_12px_32px_rgba(15,23,42,0.055)] ring-1 ring-slate-100/70 backdrop-blur transition hover:-translate-y-0.5 [scroll-snap-align:start] sm:w-[150px]', clientDashboardAccent.categoryHover)}
-                        >
-                          <span className={clsx('mx-auto flex h-14 w-14 items-center justify-center rounded-[1.25rem] shadow-lg transition group-hover:scale-105', palette)}>
-                            <IconComponent className="h-7 w-7" />
-                          </span>
-                          <span className="mt-3 block text-sm font-black text-[#0B1220]">{t('categories.' + cat.id)}</span>
-                          <span className="mt-1 block text-xs font-semibold text-[#64748B]">{t('client_dashboard.category_order_count', { count: 120 - index * 9 })}</span>
-                        </button>
-                      );
-                    })}
-                    </div>
-                  </div>
-                </section>
-
                 <section className="relative mx-4 mt-2 overflow-visible sm:mx-6 md:mx-8">
                   {/* Max Quebec (thumbs-up) à esquerda + dica rápida à direita, atrás da barra */}
                   <div className="relative z-0 mb-[-1.35rem] h-[11.5rem] overflow-visible sm:mb-[-1.6rem] sm:h-[17.5rem]">
@@ -1591,7 +1550,7 @@ export default function ClientDashboard() {
                 </div>
               ) : null}
 
-              <div className="mb-5 grid grid-cols-3 gap-1.5 rounded-[1.35rem] bg-slate-50 p-1.5 shadow-inner shadow-slate-200/50">
+              <div className="mb-5 grid grid-cols-2 gap-1.5 rounded-[1.35rem] bg-slate-50 p-1.5 shadow-inner shadow-slate-200/50">
                 {(
                   [
                     { id: 'waiting' as const, labelKey: 'client_jobs.tab_waiting', count: waitingClientJobs.length },
@@ -1599,11 +1558,6 @@ export default function ClientDashboard() {
                       id: 'in_progress' as const,
                       labelKey: 'client_jobs.tab_in_progress',
                       count: inProgressClientJobs.length,
-                    },
-                    {
-                      id: 'completed' as const,
-                      labelKey: 'client_jobs.tab_completed',
-                      count: completedClientJobs.length,
                     },
                   ] as const
                 ).map((tab) => (
@@ -1678,31 +1632,6 @@ export default function ClientDashboard() {
                       jobsListTab === 'waiting' &&
                       job.status !== 'completed' &&
                       (canLifecycleCancel || canCompleteFromMenu);
-
-                    if (job.status === 'completed') {
-                      const hiredApplication = resolveHiredHelperForCompletedJob(
-                        job,
-                        applications,
-                        upcomingJobs,
-                      );
-                      const upcoming = upcomingJobs.find((u) => u.jobId === job.id);
-                      return (
-                        <ClientCompletedHistoryCard
-                          key={job.id}
-                          job={job}
-                          hiredApplication={hiredApplication}
-                          upcoming={upcoming}
-                          reviews={reviews}
-                          reviewerId={me.id}
-                          pendingRequestIds={pendingReviewIds}
-                          t={t}
-                          formatMoneyAmount={formatMoneyAmount}
-                          locale={locale}
-                          onRate={() => openReviewByRequestId(job.id)}
-                          onViewSubmittedReview={() => openSubmittedReviewByRequestId(job.id)}
-                        />
-                      );
-                    }
 
                     if (isPreHireActivity) {
                       return (
@@ -2074,16 +2003,12 @@ export default function ClientDashboard() {
                     <h3 className="text-lg font-black text-slate-900">
                       {jobsListTab === 'waiting'
                         ? t('client_jobs.empty_waiting_title')
-                        : jobsListTab === 'in_progress'
-                          ? t('client_jobs.empty_in_progress_title')
-                          : t('client_jobs.empty_completed_title')}
+                        : t('client_jobs.empty_in_progress_title')}
                     </h3>
                     <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-relaxed text-slate-500">
                       {jobsListTab === 'waiting'
                         ? t('client_jobs.empty_waiting_body')
-                        : jobsListTab === 'in_progress'
-                          ? t('client_jobs.empty_in_progress_body')
-                          : t('client_jobs.empty_completed_body')}
+                        : t('client_jobs.empty_in_progress_body')}
                     </p>
                     {jobsListTab === 'waiting' ? (
                       <button

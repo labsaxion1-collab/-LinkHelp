@@ -13,10 +13,12 @@ import { GamificationRankDetailPanel } from '@/gamification/components/Gamificat
 type Props = {
   userType: UserType;
   className?: string;
+  /** `clientHome` = taller compact strip (240–300px) for client dashboard entry. */
+  density?: 'default' | 'clientHome';
 };
 
 /** Compact clickable rank summary for dashboard feeds (reuses gamification hooks/calculations). */
-export function GamificationCompactRankCard({ userType, className }: Props) {
+export function GamificationCompactRankCard({ userType, className, density = 'default' }: Props) {
   const { t } = useLanguage();
   const { record, loading, error } = useGamification(userType);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -27,11 +29,11 @@ export function GamificationCompactRankCard({ userType, className }: Props) {
   );
 
   if (loading && !record) {
-    return <GamificationRankLoadingCard className={className} />;
+    return <GamificationRankLoadingCard className={className} density={density} />;
   }
 
   if (!loading && (error || !model)) {
-    return <GamificationRankUnavailableCard className={className} />;
+    return <GamificationRankUnavailableCard className={className} density={density} />;
   }
 
   return (
@@ -41,6 +43,7 @@ export function GamificationCompactRankCard({ userType, className }: Props) {
         model={model!}
         onOpenDetails={() => setDetailOpen(true)}
         className={className}
+        density={density}
       />
       <GamificationRankDetailPanel
         open={detailOpen}

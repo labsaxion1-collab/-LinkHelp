@@ -50,6 +50,7 @@ describe('compact gamification rank on helper dashboard', () => {
     // Card geometry preserved (height + full-bleed).
     expect(presentation).toContain('min-h-[170px]');
     expect(presentation).toContain('max-h-[210px]');
+    expect(presentation).toContain("clientHome: 'min-h-[240px] max-h-[300px]'");
     expect(presentation).toContain('COMPACT_RANK_FULL_BLEED_CLASS');
     expect(presentation).toContain('w-[5.5rem] shrink-0');
     expect(presentation).toContain('sm:w-[6rem]');

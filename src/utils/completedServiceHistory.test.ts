@@ -107,12 +107,15 @@ describe('completed history wiring', () => {
     expect(src).toContain('line-clamp-2');
   });
 
-  it('routes completed jobs to history card in ClientDashboard', async () => {
+  it('routes completed jobs to ClientHistoryPage with review handlers', async () => {
+    const page = await readFile(resolve('src/pages/client/ClientHistoryPage.tsx'), 'utf8');
     const dash = await readFile(resolve('src/pages/client/ClientDashboard.tsx'), 'utf8');
-    expect(dash).toContain('ClientCompletedHistoryCard');
-    expect(dash).toContain("job.status === 'completed'");
-    expect(dash).toContain('openReviewByRequestId');
-    expect(dash).toContain('openSubmittedReviewByRequestId');
+    expect(page).toContain('ClientCompletedHistoryCard');
+    expect(page).toContain('openReviewByRequestId');
+    expect(page).toContain('openSubmittedReviewByRequestId');
+    expect(page).toContain('client_history.completed_tab');
+    expect(dash).not.toContain('ClientCompletedHistoryCard');
+    expect(dash).toContain("navigate(ROUTES.clientHistory");
   });
 
   it('exposes helper completed history on the dedicated history page', async () => {

@@ -36,6 +36,7 @@ const ClientDashboard = lazyPage(() => import('@/pages/client/ClientDashboard'))
 const ClientCreditsPage = lazyPage(() => import('@/pages/client/ClientCreditsPage'));
 const ClientCreditsHistoryPage = lazyPage(() => import('@/pages/client/ClientCreditsHistoryPage'));
 const ClientCreditsSuccessPage = lazyPage(() => import('@/pages/client/ClientCreditsSuccessPage'));
+const ClientHistoryPage = lazyPage(() => import('@/pages/client/ClientHistoryPage'));
 const HelperDashboard = lazyPage(() => import('@/pages/helper/HelperDashboard'));
 const HelperUpcomingJobsPage = lazyPage(() => import('@/pages/helper/HelperUpcomingJobsPage'));
 const HelperHistoryPage = lazyPage(() => import('@/pages/helper/HelperHistoryPage'));
@@ -143,6 +144,7 @@ export function AppRoutes() {
             <Route path="/client" element={<Navigate to={ROUTES.clientDashboard} replace />} />
             <Route path={ROUTES.clientDashboard} element={<ClientDashboard />} />
             <Route path={ROUTES.clientJobs} element={<ClientDashboard />} />
+            <Route path={ROUTES.clientHistory} element={<ClientHistoryPage />} />
             <Route path={ROUTES.clientCredits} element={<ClientCreditsPage />} />
             <Route path={ROUTES.clientCreditsHistory} element={<ClientCreditsHistoryPage />} />
             <Route path={ROUTES.clientCreditsSuccess} element={<ClientCreditsSuccessPage />} />

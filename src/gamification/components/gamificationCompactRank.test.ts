@@ -42,6 +42,45 @@ describe('compact gamification rank on helper dashboard', () => {
     expect(presentation).not.toContain('border-slate-200/90 bg-white');
   });
 
+  it('enlarges compact medal ~25% with proportional pedestal without changing card geometry', () => {
+    const presentation = read('src/gamification/components/GamificationRankPresentation.tsx');
+    const css = read('src/styles/globals.css');
+
+    // Card geometry preserved (height + full-bleed).
+    expect(presentation).toContain('min-h-[170px]');
+    expect(presentation).toContain('max-h-[210px]');
+    expect(presentation).toContain('COMPACT_RANK_FULL_BLEED_CLASS');
+    expect(presentation).toContain('w-[5.5rem] shrink-0');
+    expect(presentation).toContain('sm:w-[6rem]');
+
+    // Medal ~25% larger than previous 3.5rem / 3.85rem (sm).
+    expect(presentation).toContain('h-[4.375rem] w-[4.375rem]');
+    expect(presentation).toContain('sm:h-[4.8rem] sm:w-[4.8rem]');
+    expect(presentation).not.toContain('h-[3.5rem] w-[3.5rem]');
+    expect(presentation).not.toContain('sm:h-[3.85rem] sm:w-[3.85rem]');
+
+    // Pedestal ~12–13% larger than previous 3.1×4.6 / 3.4×5 (sm).
+    expect(presentation).toContain('h-[3.5rem] w-[5.2rem]');
+    expect(presentation).toContain('sm:h-[3.85rem] sm:w-[5.65rem]');
+    expect(presentation).not.toContain('h-[3.1rem] w-[4.6rem]');
+    expect(presentation).not.toContain('sm:h-[3.4rem] sm:w-[5rem]');
+
+    // Animation + centering lift preserved (no arbitrary offsets beyond mb).
+    expect(presentation).toContain('lh-rank-compact-medal');
+    expect(presentation).toContain('mb-[1.5rem]');
+    expect(presentation).toContain('sm:mb-[1.7rem]');
+    expect(css).toContain('@keyframes lhRankCompactMedalFloat');
+    expect(css).toContain('.lh-rank-compact-medal');
+
+    // Copy + open-details handler surface unchanged.
+    expect(presentation).toContain('gamification.helper_level_eyebrow');
+    expect(presentation).toContain('gamification.client_level_eyebrow');
+    expect(presentation).toContain('gamification.next_prefix');
+    expect(presentation).toContain('formatProgressSubtitle(progress, \'hero\', t)');
+    expect(presentation).toContain('onOpenDetails');
+    expect(presentation).toContain('data-testid="gamification-compact-rank-card"');
+  });
+
   it('detail panel opens tutorial at current level card id', () => {
     const detail = read('src/gamification/components/GamificationRankDetailPanel.tsx');
     const content = read('src/gamification/config/gamificationTutorialContent.ts');

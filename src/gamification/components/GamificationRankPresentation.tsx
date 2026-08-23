@@ -220,14 +220,14 @@ export function GamificationCompactRankCardSurface({
           <img
             src={heroVisual.pedestal}
             alt=""
-            className="absolute bottom-0 left-1/2 h-[3.1rem] w-[4.6rem] max-w-none -translate-x-1/2 object-contain opacity-95 sm:h-[3.4rem] sm:w-[5rem]"
+            className="absolute bottom-0 left-1/2 h-[3.5rem] w-[5.2rem] max-w-none -translate-x-1/2 object-contain opacity-95 sm:h-[3.85rem] sm:w-[5.65rem]"
             loading="lazy"
             decoding="async"
           />
           <img
             src={medalSrc}
             alt=""
-            className="lh-rank-compact-medal relative z-10 mb-[1.35rem] h-[3.5rem] w-[3.5rem] object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)] motion-reduce:animate-none sm:mb-[1.5rem] sm:h-[3.85rem] sm:w-[3.85rem]"
+            className="lh-rank-compact-medal relative z-10 mb-[1.5rem] h-[4.375rem] w-[4.375rem] object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)] motion-reduce:animate-none sm:mb-[1.7rem] sm:h-[4.8rem] sm:w-[4.8rem]"
             loading="lazy"
             decoding="async"
           />

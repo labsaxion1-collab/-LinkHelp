@@ -165,7 +165,7 @@ export function TutorialCenterCard({
             type="button"
             onClick={onSkip}
             className={clsx(
-              'absolute left-4 top-3.5 z-40 rounded-full px-2 py-1.5 text-sm font-medium transition',
+              'absolute left-4 top-3.5 z-[60] inline-flex min-h-11 min-w-11 items-center rounded-full px-2 py-1.5 text-sm font-medium transition',
               controlsOnImage
                 ? 'text-[#0B1220]/80 hover:text-[#0B1220]'
                 : 'text-[#64748B] hover:text-[#0B1220]',
@@ -175,14 +175,14 @@ export function TutorialCenterCard({
           </button>
         ) : null}
 
-        <div className={clsx('absolute left-1/2 top-5 z-40 -translate-x-1/2', premiumStickyHeader && 'hidden')}>
+        <div className={clsx('pointer-events-none absolute left-1/2 top-5 z-[60] -translate-x-1/2', premiumStickyHeader && 'hidden')}>
           <ProgressDots total={stepCount} active={step} onImage={controlsOnImage} />
         </div>
 
         <button
           type="button"
           onClick={onDismiss}
-          className={clsx('absolute right-4 top-3.5 z-40 rounded-full bg-white/50 p-2 text-[#64748B] shadow-[0_4px_16px_rgba(15,23,42,0.08)] ring-1 ring-white/50 backdrop-blur-md transition hover:bg-white/75 hover:text-[#0B1220]', premiumStickyHeader && 'hidden')}
+          className={clsx('absolute right-4 top-3.5 z-[60] grid min-h-11 min-w-11 place-items-center rounded-full bg-white/50 p-2 text-[#64748B] shadow-[0_4px_16px_rgba(15,23,42,0.08)] ring-1 ring-white/50 backdrop-blur-md transition hover:bg-white/75 hover:text-[#0B1220]', premiumStickyHeader && 'hidden')}
           aria-label={closeLabel}
         >
           <X className="h-4 w-4" />
@@ -191,7 +191,7 @@ export function TutorialCenterCard({
         <div
           className={clsx(
             'touch-pan-y overflow-hidden',
-            immersiveLayout ? 'absolute inset-0' : 'relative min-h-0 flex-1',
+            immersiveLayout ? 'absolute inset-0 z-0' : 'relative z-0 min-h-0 flex-1',
           )}
           {...interactiveSwipeHandlers}
         >
@@ -209,9 +209,9 @@ export function TutorialCenterCard({
           className={clsx(
             'px-6 pb-[max(env(safe-area-inset-bottom),1.25rem)]',
             immersiveLayout
-              ? 'pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-transparent pt-0'
+              ? 'pointer-events-auto absolute inset-x-0 bottom-0 z-[60] bg-transparent pt-0'
               : clsx(
-                  'relative shrink-0',
+                  'relative z-[60] shrink-0',
                   footerBlurOverlay ? '-mt-[4.5rem] bg-transparent pt-0' : 'space-y-3 pt-2',
                 ),
           )}
@@ -219,7 +219,7 @@ export function TutorialCenterCard({
           <div
             className={clsx(
               'relative z-10 space-y-3',
-              immersiveLayout ? 'pointer-events-auto bg-transparent pt-0' : footerBlurOverlay && 'bg-transparent pt-0',
+              immersiveLayout ? 'bg-transparent pt-0' : footerBlurOverlay && 'bg-transparent pt-0',
             )}
           >
             {footer}

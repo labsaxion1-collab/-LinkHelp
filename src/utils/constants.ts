@@ -27,6 +27,10 @@ export const ROUTES = {
   helperPerformance: '/helper/performance',
   /** Upcoming / scheduled work for helpers */
   helperJobs: '/helper/jobs',
+  /** Helper professional history — closed applications + completed services */
+  helperHistory: '/helper/history',
+  /** Client request history — closed listings + completed services */
+  clientHistory: '/client/history',
   /** @deprecated Use helperJobs — kept for notification links during migration */
   helperJobsUpcoming: '/helper/jobs',
   messages: '/messages',
@@ -56,6 +60,8 @@ export const ROUTES = {
   adminEconomy: '/admin/economy',
   adminAudit: '/admin/audit',
   adminSupport: '/admin/support',
+  /** FLUX — gestão de administradores (admins.manage) */
+  adminAdministrators: '/admin/administrators',
   /** Dev-only push notification diagnostics */
   adminPushTest: '/admin/push-test',
 } as const;

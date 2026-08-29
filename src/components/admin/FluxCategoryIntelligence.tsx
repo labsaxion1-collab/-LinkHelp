@@ -1,5 +1,6 @@
 import { Layers } from 'lucide-react';
 import { FLUX_PT } from '@/admin/fluxPtCopy';
+import { formatAdminPercent } from '@/admin/fluxFormat';
 import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 
 export type CategoryIntelRow = {
@@ -65,7 +66,9 @@ export function FluxCategoryIntelligence({ rows }: Props) {
                   </td>
                   <td className="py-3.5 pr-4 font-semibold tabular-nums text-slate-300">{row.openRequests}</td>
                   <td className="py-3.5 pr-4 font-semibold tabular-nums text-slate-300">{row.applications}</td>
-                  <td className="py-3.5 pr-4 font-semibold tabular-nums text-slate-300">{row.hireRate}%</td>
+                  <td className="py-3.5 pr-4 font-semibold tabular-nums text-slate-300">
+                    {formatAdminPercent(row.hireRate)}
+                  </td>
                   <td className="py-3.5 pr-4 font-semibold text-slate-300">{row.avgBudget}</td>
                   <td className={`py-3.5 text-xs font-bold ${trendClass}`}>{trendLabel}</td>
                 </tr>

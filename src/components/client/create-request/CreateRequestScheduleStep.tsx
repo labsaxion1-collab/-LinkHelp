@@ -6,6 +6,8 @@ import {
 } from '@/components/client/create-request/RequestAddressInput';
 import type { RequestPriority } from '@/utils/requestSchedule';
 import { movingNeedsBuildingDetails } from '@/data/movingRequestConfig';
+import { allowedServiceModes, getServiceModePolicy } from '@/config/serviceModePolicy';
+import type { ServiceMode } from '@/config/baselineFinance';
 
 export type MovePropertyType = 'house' | 'apartment' | 'office' | 'business' | '';
 
@@ -49,6 +51,9 @@ type Props = {
   setCleaningHasElevator: (v: string) => void;
   translationServiceMode: 'online' | 'in_person' | '';
   setTranslationServiceMode: (v: 'online' | 'in_person' | '') => void;
+  serviceMode?: ServiceMode | '';
+  setServiceMode?: (v: ServiceMode | '') => void;
+  requireServiceMode?: boolean;
 };
 
 export function CreateRequestScheduleStep(props: Props) {
@@ -78,6 +83,9 @@ export function CreateRequestScheduleStep(props: Props) {
     setCleaningHasElevator,
     translationServiceMode,
     setTranslationServiceMode,
+    serviceMode = '',
+    setServiceMode,
+    requireServiceMode = false,
   } = props;
 
   const floorOptions = FLOOR_OPTIONS.map((opt) => ({
@@ -105,6 +113,38 @@ export function CreateRequestScheduleStep(props: Props) {
   );
 
   const needsBuildingAccess = selectedCategory === 'moving' && movingNeedsBuildingDetails(selectedSubcategory);
+  const policy = getServiceModePolicy(selectedCategory, selectedSubcategory);
+  const resolvedMode: ServiceMode | '' =
+    serviceMode ||
+    (translationServiceMode === 'online'
+      ? 'remote'
+      : translationServiceMode === 'in_person'
+        ? 'in_person'
+        : '');
+  /** Show modality for all policies when baseline finance is on (locked for single-option). */
+  const showBaselineModeSection = requireServiceMode && selectedCategory !== 'translation';
+  const modeLocked = policy === 'in_person_only' || policy === 'remote_only';
+  const selectableModes = allowedServiceModes(selectedCategory, selectedSubcategory);
+  const showAddress =
+    selectedCategory === 'moving' ||
+    resolvedMode !== 'remote' ||
+    !requireServiceMode ||
+    (selectedCategory === 'translation' && resolvedMode !== 'remote');
+
+  const pickMode = (mode: ServiceMode) => {
+    if (modeLocked && !selectableModes.includes(mode)) return;
+    setServiceMode?.(mode);
+    if (selectedCategory === 'translation') {
+      setTranslationServiceMode(mode === 'remote' ? 'online' : 'in_person');
+    }
+  };
+
+  const modeButtonClass = (selected: boolean, locked: boolean) =>
+    `min-h-[48px] rounded-xl border-2 px-3 text-sm font-black transition-colors ${
+      selected
+        ? 'border-blue-600 bg-blue-50 text-blue-900'
+        : 'border-gray-200 bg-white text-gray-700'
+    } ${locked ? 'cursor-not-allowed opacity-95' : ''}`;
 
   return (
     <section className="space-y-5 animate-in fade-in duration-300">
@@ -162,30 +202,72 @@ export function CreateRequestScheduleStep(props: Props) {
         <div className="space-y-3 rounded-2xl border-2 border-slate-200 bg-slate-50/80 p-4">
           <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <Icons.Languages className="w-4 h-4 text-blue-600" />
-            Tipo de atendimento
+            {t('create_modal.service_mode_title')}
           </p>
-          <div className="grid grid-cols-2 gap-2">
-            {(['online', 'in_person'] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setTranslationServiceMode(mode)}
-                className={`min-h-[48px] rounded-xl border-2 px-3 text-sm font-black transition-colors ${
-                  translationServiceMode === mode
-                    ? 'border-blue-600 bg-blue-50 text-blue-900'
-                    : 'border-gray-200 bg-white text-gray-700'
-                }`}
-              >
-                {mode === 'online' ? 'Online' : 'Presencial'}
-              </button>
-            ))}
+          <div
+            className={`grid gap-2 ${
+              (requireServiceMode ? selectableModes.length : 2) > 1 ? 'grid-cols-2' : 'grid-cols-1'
+            }`}
+          >
+            {(requireServiceMode ? selectableModes : (['remote', 'in_person'] as ServiceMode[])).map((mode) => {
+              const legacy = mode === 'remote' ? 'online' : 'in_person';
+              const selected =
+                translationServiceMode === legacy || serviceMode === mode;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  disabled={requireServiceMode && modeLocked}
+                  onClick={() => {
+                    if (requireServiceMode && modeLocked) return;
+                    setTranslationServiceMode(legacy);
+                    setServiceMode?.(mode);
+                  }}
+                  aria-pressed={selected}
+                  className={modeButtonClass(selected, Boolean(requireServiceMode && modeLocked))}
+                >
+                  {mode === 'remote'
+                    ? t('create_modal.service_mode_remote')
+                    : t('create_modal.service_mode_in_person')}
+                </button>
+              );
+            })}
           </div>
-          {translationServiceMode
+          {showAddress && (translationServiceMode || serviceMode)
             ? addressFields(t('create_modal.where'), requestAddress, setRequestAddress)
             : null}
         </div>
       ) : (
-        addressFields(t('create_modal.where'), requestAddress, setRequestAddress)
+        <div className="space-y-3">
+          {showBaselineModeSection ? (
+            <div className="space-y-3 rounded-2xl border-2 border-slate-200 bg-slate-50/80 p-4">
+              <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Icons.Laptop className="w-4 h-4 text-blue-600" />
+                {t('create_modal.service_mode_title')}
+              </p>
+              <div className={`grid gap-2 ${selectableModes.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                {selectableModes.map((mode) => {
+                  const selected = serviceMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      disabled={modeLocked}
+                      onClick={() => pickMode(mode)}
+                      aria-pressed={selected}
+                      className={modeButtonClass(selected, modeLocked)}
+                    >
+                      {mode === 'remote'
+                        ? t('create_modal.service_mode_remote')
+                        : t('create_modal.service_mode_in_person')}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+          {showAddress ? addressFields(t('create_modal.where'), requestAddress, setRequestAddress) : null}
+        </div>
       )}
 
       {selectedCategory === 'cleaning' && selectedSubcategory === 'house' && (

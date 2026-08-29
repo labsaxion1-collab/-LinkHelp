@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Plus, Star, MessageSquare, ChevronRight, Bell } from 'lucide-react';
+import { Plus, MessageSquare, ChevronRight, Bell } from 'lucide-react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
 import * as Icons from 'lucide-react';
@@ -23,7 +23,11 @@ import { ClientAwaitingCompletionBridge } from '@/components/client/ClientAwaiti
 import { ClientDashboardMapSidebar } from '@/components/client/ClientDashboardMapSidebar';
 import { ClientDashboardHeroSlot } from '@/components/client/ClientDashboardHeroSlot';
 import { ClientCandidateCard } from '@/components/client/ClientCandidateCard';
+import { ClientActivityOpenRequestCard } from '@/components/client/ClientActivityOpenRequestCard';
+import { CandidateHelperProfileExpand } from '@/components/client/CandidateHelperProfileExpand';
+import { LhCardOverlay } from '@/components/design-system/LhCardOverlay';
 import { candidateProfileExpandKey } from '@/utils/candidateProfileExpand';
+import { filterClientJobsForActivityTab } from '@/utils/clientActivityJobTabs';
 import { useNearbyHelpers } from '@/hooks/useNearbyHelpers';
 import type { NearbyHelperMapPoint } from '@/types/nearbyHelper';
 import { LhCard } from '@/components/design-system/LhCard';
@@ -45,22 +49,22 @@ import { remoteGetPreMatchClientCount } from '@/services/supabase/appDataRemote'
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { PRE_HIRE_MESSAGE_LIMIT } from '@/utils/preMatchLimits';
 import {
-  isJobExpired,
   isJobCancelled,
   isJobPaused,
-  isJobVisibleToClient,
   hideJobForUser,
   readHiddenJobIds,
 } from '@/utils/jobVisibility';
 import { CancelRequestModal } from '@/components/client/CancelRequestModal';
-import { PauseRequestModal } from '@/components/client/PauseRequestModal';
 import { CLIENT_LINKCREDITS_ENABLED } from '@/config/clientLinkCredits';
+import { isRequestCancelEnabled } from '@/config/requestLifecycleCapability';
 import { extractErrorMessage } from '@/utils/errorMessage';
 import { formatHireError, formatRejectApplicationError, logAcceptProposalError } from '@/utils/formatHireError';
 import { formatRequestLifecycleError } from '@/utils/formatRequestLifecycleError';
 import {
   activityCandidateCount,
+  canAcceptApplicationForJob,
   findHiredApplicationForJob,
+  isHireTeamComplete,
   isHiredActivityJob,
   isPreHireActivityJob,
   listCandidateApplicationsForJob,
@@ -74,7 +78,6 @@ import { useClientOnboarding } from '@/hooks/useClientOnboarding';
 import { CLIENT_WELCOME_30_LC } from '@/config/onboardingRewards';
 import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { useGamification } from '@/gamification/hooks/useGamification';
-import { GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
 import { AppHomeClientQuickStrip } from '@/components/home/AppHomeClientQuickStrip';
 import { useMarkHomeDashboardSurfaceReady } from '@/components/home/HomeDashboardShellContext';
 import { useDevRenderCount } from '@/utils/devRenderCount';
@@ -183,7 +186,7 @@ export default function ClientDashboard() {
   const [showHireModal, setShowHireModal] = useState(false);
   const [hireModalKind, setHireModalKind] = useState<'hire' | 'proposal'>('hire');
   const [inviteMessage, setInviteMessage] = useState('');
-  const [jobsListTab, setJobsListTab] = useState<'active' | 'history'>('active');
+  const [jobsListTab, setJobsListTab] = useState<'waiting' | 'in_progress'>('waiting');
   const [expandedActivityPanel, setExpandedActivityPanel] = useState<{
     jobId: string;
     panel: 'applications' | 'description';
@@ -195,8 +198,6 @@ export default function ClientDashboard() {
   const [acceptingApplicationId, setAcceptingApplicationId] = useState<string | null>(null);
   const [cancelTargetJobId, setCancelTargetJobId] = useState<string | null>(null);
   const [cancellingJobId, setCancellingJobId] = useState<string | null>(null);
-  const [pauseTargetJobId, setPauseTargetJobId] = useState<string | null>(null);
-  const [pausingJobId, setPausingJobId] = useState<string | null>(null);
   const [detailJob, setDetailJob] = useState<Job | null>(null);
   const [expandedCandidateProfileKey, setExpandedCandidateProfileKey] = useState<string | null>(null);
   const [serviceConfirmJob, setServiceConfirmJob] = useState<Job | null>(null);
@@ -206,10 +207,12 @@ export default function ClientDashboard() {
   const routerLocation = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const isClientJobsPage = routerLocation.pathname === ROUTES.clientJobs;
+  const cancelEnabled = isRequestCancelEnabled();
 
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const locale = language === 'fr' ? 'fr-CA' : language === 'en' ? 'en-CA' : 'pt-BR';
   const { showToast } = useToast();
-  const { profile, authLoading, session } = useAuth();
+  const { profile, authLoading, session, refreshProfile } = useAuth();
   const { shouldShow: showClientOnboarding, completing: completingClientOnboarding, complete: completeClientOnboarding } =
     useClientOnboarding();
   const snapshotLc = useMemo(() => {
@@ -223,11 +226,15 @@ export default function ClientDashboard() {
   const creditsLoading = authLoading && clientCreditsBalance == null;
   const skillChip = (skill: string) =>
     skill === 'support' ? t('skills.support') : t(`categories.${skill}`);
-  const { jobs, applications, pendingServiceReviews, upcomingJobs } = useAppDataCore();
+  const { jobs, applications, pendingServiceReviews, upcomingJobs, reviews } = useAppDataCore();
   const appDataActionsRef = useAppDataActionsRef();
   useDevRenderCount('ClientDashboard');
-  const { openReviewByRequestId } = useServiceReview();
+  const { openReviewByRequestId, openSubmittedReviewByRequestId } = useServiceReview();
   const me = useSessionViewer();
+  const pendingReviewIds = useMemo(
+    () => new Set(pendingServiceReviews.map((p) => p.requestId)),
+    [pendingServiceReviews],
+  );
 
   const [secondaryBlocksReady, setSecondaryBlocksReady] = useState(false);
   useEffect(() => {
@@ -338,7 +345,7 @@ export default function ClientDashboard() {
         /* ignore */
       }
       setServiceConfirmJob(null);
-      setJobsListTab('history');
+      navigate(ROUTES.clientHistory, { state: { historyTab: 'completed' } });
       showToast(t('service_confirm.success_toast'), 'success');
       window.setTimeout(() => openReviewByRequestId(requestId), 400);
     } catch (error) {
@@ -508,16 +515,22 @@ export default function ClientDashboard() {
     () =>
       clientJobs.filter(
         (j) =>
-          isJobVisibleToClient(j, hiddenJobIds) &&
+          !hiddenJobIds.has(j.id) &&
+          !isJobCancelled(j) &&
           (j.status === 'open' || j.status === 'paused' || j.status === 'in_progress'),
       ),
     [clientJobs, hiddenJobIds],
   );
-  const completedClientJobs = useMemo(
-    () => clientJobs.filter((j) => !isJobCancelled(j) && (hiddenJobIds.has(j.id) || j.status === 'completed' || isJobExpired(j))),
+  const waitingClientJobs = useMemo(
+    () => filterClientJobsForActivityTab(clientJobs, 'waiting', hiddenJobIds),
     [clientJobs, hiddenJobIds],
   );
-  const activityTabJobs = jobsListTab === 'history' ? completedClientJobs : activeClientJobs;
+  const inProgressClientJobs = useMemo(
+    () => filterClientJobsForActivityTab(clientJobs, 'in_progress', hiddenJobIds),
+    [clientJobs, hiddenJobIds],
+  );
+  const activityTabJobs =
+    jobsListTab === 'waiting' ? waitingClientJobs : inProgressClientJobs;
   const progressiveActivityJobs = useProgressiveReveal(activityTabJobs, 3, 800);
   const clientApplicationCount = useMemo(
     () => applications.filter((app) => clientJobs.some((job) => job.id === app.jobId)).length,
@@ -533,39 +546,15 @@ export default function ClientDashboard() {
     [applications, clientJobs],
   );
   const clientUpcomingCount = useMemo(
-    () => upcomingJobs.filter((uj) => clientJobs.some((job) => job.id === uj.jobId)).length,
+    () =>
+      upcomingJobs.filter((uj) => {
+        if (uj.workflowStatus === 'completed' || uj.workflowStatus === 'auto_completed' || uj.workflowStatus === 'cancelled') {
+          return false;
+        }
+        return clientJobs.some((job) => job.id === uj.jobId);
+      }).length,
     [upcomingJobs, clientJobs],
   );
-
-  const handleConfirmPauseJob = async () => {
-    if (!pauseTargetJobId || pausingJobId) return;
-    setPausingJobId(pauseTargetJobId);
-    try {
-      await appDataActionsRef.current.updateJobStatus(pauseTargetJobId, 'paused');
-      showToast('Chamado pausado.', 'success');
-      setPauseTargetJobId(null);
-    } catch (error) {
-      console.error(error);
-      showToast(formatRequestLifecycleError(error, t), 'error');
-    } finally {
-      setPausingJobId(null);
-    }
-  };
-
-  const handleResumeJob = async (jobId: string) => {
-    try {
-      const outcome = await appDataActionsRef.current.updateJobStatus(jobId, 'open');
-      if (outcome && 'expiredWhilePaused' in outcome && outcome.expiredWhilePaused) {
-        showToast('Chamado cancelado porque a data prevista passou durante a pausa.', 'info');
-      } else {
-        showToast('Chamado retomado.', 'success');
-      }
-      setActivityMenuJobId(null);
-    } catch (error) {
-      console.error(error);
-      showToast(formatRequestLifecycleError(error, t), 'error');
-    }
-  };
 
   const openHelperProfileFromApplication = (job: Job, app: Application) => {
     openHelperProfile(
@@ -590,8 +579,13 @@ export default function ClientDashboard() {
         setActivityMenuJobId(null);
       }
     };
+    const onScrollClose = () => setActivityMenuJobId(null);
     document.addEventListener('mousedown', onPointerDown);
-    return () => document.removeEventListener('mousedown', onPointerDown);
+    window.addEventListener('scroll', onScrollClose, true);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      window.removeEventListener('scroll', onScrollClose, true);
+    };
   }, [activityMenuJobId]);
 
   const handleConfirmCancelJob = async () => {
@@ -600,6 +594,7 @@ export default function ClientDashboard() {
     setCancellingJobId(jobId);
     try {
       await appDataActionsRef.current.updateJobStatus(jobId, 'cancelled');
+      await refreshProfile();
       hideJobForUser(me.id, jobId);
       setHiddenJobIds((prev) => new Set(prev).add(jobId));
       showToast(t('client_dashboard.request_cancelled_toast'), 'success');
@@ -613,6 +608,7 @@ export default function ClientDashboard() {
   };
 
   const handleRejectApplication = async (applicationId: string, isExclusive: boolean) => {
+    if (acceptingApplicationId) return;
     try {
       await appDataActionsRef.current.updateApplicationStatus(applicationId, 'rejected');
       showToast(
@@ -678,6 +674,23 @@ export default function ClientDashboard() {
 
   const handleAcceptProposal = async (job: Job, app: Application) => {
     if (acceptingApplicationId) return;
+
+    if (
+      !canAcceptApplicationForJob({
+        jobStatus: job.status,
+        application: app,
+        applications,
+        acceptingApplicationId,
+      })
+    ) {
+      showToast(
+        isHireTeamComplete(job.id, applications)
+          ? t('client_dashboard.hire_capacity_reached_toast')
+          : t('client_dashboard.hire_unavailable_toast'),
+        'error',
+      );
+      return;
+    }
 
     const logContext = {
       requestId: job.id,
@@ -765,7 +778,8 @@ export default function ClientDashboard() {
   const handleClientOnboardingComplete = async (action: 'explore' | 'createRequest') => {
     try {
       const result = await completeClientOnboarding(action);
-      if (result?.granted) {
+      if (!result) return;
+      if (result.granted) {
         showToast(t('client_onboarding.success_toast', { amount: CLIENT_WELCOME_30_LC }), 'success');
       }
       if (action === 'createRequest') {
@@ -941,6 +955,7 @@ export default function ClientDashboard() {
                         expandedCandidateProfileKey === candidateProfileExpandKey(detailJob.id, app.id)
                       }
                       onToggleProfile={() => toggleCandidateProfile(detailJob.id, app.id)}
+                      embedProfile={false}
                       showAccept={app.status === 'pending' || app.status === 'viewed'}
                       showReject={app.status === 'pending' || app.status === 'viewed'}
                       accepting={acceptingApplicationId === app.id}
@@ -980,6 +995,35 @@ export default function ClientDashboard() {
                   </div>
                 ))}
               </div>
+              {(() => {
+                const profileApp = sheetDisplayApps.find(
+                  (a) =>
+                    a &&
+                    expandedCandidateProfileKey === candidateProfileExpandKey(detailJob.id, a.id),
+                );
+                if (!profileApp) return null;
+                return (
+                  <LhCardOverlay
+                    open
+                    onClose={() => setExpandedCandidateProfileKey(null)}
+                    title={profileApp.helperName}
+                    subtitle={translateJobTitle(
+                      detailJob.title,
+                      detailJob.category,
+                      detailJob.subcategory,
+                      t,
+                    )}
+                    testId="client-dashboard-sheet-profile-overlay"
+                    layer="elevated"
+                  >
+                    <CandidateHelperProfileExpand
+                      helperId={profileApp.helperId}
+                      helperRating={profileApp.helperRating}
+                      helperJobs={profileApp.helperJobs}
+                    />
+                  </LhCardOverlay>
+                );
+              })()}
               {/* sheet footer */}
               <div className="shrink-0 border-t border-slate-100 px-5 py-4 space-y-2">
                 {jobsAwaitingServiceConfirm.some((j) => j.id === detailJob.id) ? (
@@ -1026,15 +1070,6 @@ export default function ClientDashboard() {
         }}
         onConfirm={() => void handleConfirmCancelJob()}
         confirming={cancellingJobId != null}
-      />
-
-      <PauseRequestModal
-        open={pauseTargetJobId != null}
-        onClose={() => {
-          if (!pausingJobId) setPauseTargetJobId(null);
-        }}
-        onConfirm={() => void handleConfirmPauseJob()}
-        confirming={pausingJobId != null}
       />
 
       <ServiceConfirmModal
@@ -1296,10 +1331,6 @@ export default function ClientDashboard() {
                 />
 
                 <section className="px-4 sm:px-6 md:px-8">
-                  <GamificationProgressCard userType="client" />
-                </section>
-
-                <section className="px-4 sm:px-6 md:px-8">
                   <div className="flex items-center justify-between gap-3">
                     <h2 className="text-lg font-black tracking-tight text-[#0B1220]">
                       {t('app_home.client_active_preview_title')}
@@ -1344,37 +1375,6 @@ export default function ClientDashboard() {
                         </button>
                       ))
                     )}
-                  </div>
-                </section>
-
-                <section className="relative" style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)' }}>
-                  <div className="mb-4 flex items-center justify-between gap-3 px-4 sm:px-6 md:px-8">
-                    <h2 className="text-lg font-black tracking-tight text-[#0B1220]">{t('client_dashboard.popular_categories_title')}</h2>
-                    <button type="button" onClick={() => openCreateModal()} className={clsx('inline-flex items-center gap-1 text-sm font-black', clientDashboardAccent.actionLink)}>
-                      {t('client_dashboard.view_all_categories')} <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="overflow-x-auto pb-2 [scrollbar-width:none] [scroll-snap-type:x_mandatory] [&::-webkit-scrollbar]:hidden">
-                    <div className="flex min-w-max gap-3 px-4 sm:px-6 md:px-8">
-                    {SERVICE_CATEGORIES.slice(0, 8).map((cat, index) => {
-                      const IconComponent = getCategoryLucideIcon(cat.icon);
-                      const palette = clientDashboardAccent.categoryIcon;
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => openCreateModal(cat.id)}
-                          className={clsx('group min-h-[132px] w-[128px] shrink-0 rounded-[1.55rem] border border-white bg-white/92 p-4 text-center shadow-[0_12px_32px_rgba(15,23,42,0.055)] ring-1 ring-slate-100/70 backdrop-blur transition hover:-translate-y-0.5 [scroll-snap-align:start] sm:w-[150px]', clientDashboardAccent.categoryHover)}
-                        >
-                          <span className={clsx('mx-auto flex h-14 w-14 items-center justify-center rounded-[1.25rem] shadow-lg transition group-hover:scale-105', palette)}>
-                            <IconComponent className="h-7 w-7" />
-                          </span>
-                          <span className="mt-3 block text-sm font-black text-[#0B1220]">{t('categories.' + cat.id)}</span>
-                          <span className="mt-1 block text-xs font-semibold text-[#64748B]">{t('client_dashboard.category_order_count', { count: 120 - index * 9 })}</span>
-                        </button>
-                      );
-                    })}
-                    </div>
                   </div>
                 </section>
 
@@ -1545,37 +1545,41 @@ export default function ClientDashboard() {
                 </div>
               ) : null}
 
-              <div className="mb-5 grid grid-cols-2 gap-2 rounded-[1.35rem] bg-slate-50 p-1.5 shadow-inner shadow-slate-200/50">
-                <button
-                  type="button"
-                  onClick={() => setJobsListTab('active')}
-                  className={clsx(
-                    'inline-flex min-h-[54px] items-center justify-center gap-2 rounded-[1rem] px-3 text-sm font-black transition-all',
-                    jobsListTab === 'active'
-                      ? clsx('text-white shadow-lg', clientDashboardAccent.activityGradient)
-                      : 'bg-white text-slate-600 shadow-sm hover:text-slate-900',
-                  )}
-                >
-                  {t('client_jobs.tab_active')}
-                  <span className={clsx('inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-xs font-black', jobsListTab === 'active' ? clientDashboardAccent.activityTabBadge : 'bg-slate-100 text-slate-500')}>
-                    {activeClientJobs.length}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setJobsListTab('history')}
-                  className={clsx(
-                    'inline-flex min-h-[54px] items-center justify-center gap-2 rounded-[1rem] px-3 text-sm font-black transition-all',
-                    jobsListTab === 'history'
-                      ? clsx('text-white shadow-lg', clientDashboardAccent.activityGradient)
-                      : 'bg-white text-slate-600 shadow-sm hover:text-slate-900',
-                  )}
-                >
-                  {t('client_jobs.tab_history')}
-                  <span className={clsx('inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-xs font-black', jobsListTab === 'history' ? clientDashboardAccent.activityTabBadge : 'bg-slate-100 text-slate-500')}>
-                    {completedClientJobs.length}
-                  </span>
-                </button>
+              <div className="mb-5 grid grid-cols-2 gap-1.5 rounded-[1.35rem] bg-slate-50 p-1.5 shadow-inner shadow-slate-200/50">
+                {(
+                  [
+                    { id: 'waiting' as const, labelKey: 'client_jobs.tab_waiting', count: waitingClientJobs.length },
+                    {
+                      id: 'in_progress' as const,
+                      labelKey: 'client_jobs.tab_in_progress',
+                      count: inProgressClientJobs.length,
+                    },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setJobsListTab(tab.id)}
+                    className={clsx(
+                      'inline-flex min-h-[54px] flex-col items-center justify-center gap-0.5 rounded-[1rem] px-1.5 text-[11px] font-black transition-all sm:flex-row sm:gap-1.5 sm:px-2 sm:text-sm',
+                      jobsListTab === tab.id
+                        ? clsx('text-white shadow-lg', clientDashboardAccent.activityGradient)
+                        : 'bg-white text-slate-600 shadow-sm hover:text-slate-900',
+                    )}
+                  >
+                    <span className="text-center leading-tight">{t(tab.labelKey)}</span>
+                    <span
+                      className={clsx(
+                        'inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[10px] font-black sm:h-7 sm:min-w-7 sm:px-2 sm:text-xs',
+                        jobsListTab === tab.id
+                          ? clientDashboardAccent.activityTabBadge
+                          : 'bg-slate-100 text-slate-500',
+                      )}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                ))}
               </div>
 
               <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
@@ -1613,10 +1617,44 @@ export default function ClientDashboard() {
                       isActivityPanelOpen && expandedActivityPanel?.panel === 'applications';
                     const isDescriptionOpen =
                       isActivityPanelOpen && expandedActivityPanel?.panel === 'description';
+                    const canLifecycleCancel =
+                      cancelEnabled &&
+                      (job.status === 'open' || job.status === 'in_progress');
+                    const canCompleteFromMenu =
+                      job.status === 'in_progress' &&
+                      applications.some((a) => a.jobId === job.id && a.status === 'accepted');
                     const showActivityMenu =
-                      jobsListTab === 'active' &&
+                      jobsListTab === 'waiting' &&
                       job.status !== 'completed' &&
-                      (job.status === 'open' || job.status === 'paused' || job.status === 'in_progress');
+                      (canLifecycleCancel || canCompleteFromMenu);
+
+                    if (isPreHireActivity) {
+                      return (
+                        <ClientActivityOpenRequestCard
+                          key={job.id}
+                          job={job}
+                          candidateApps={displayCandidateApps}
+                          applications={applications}
+                          isExclusiveLocked={isExclusiveLocked}
+                          t={t}
+                          formatMoneyAmount={formatMoneyAmount}
+                          acceptingApplicationId={acceptingApplicationId}
+                          onAccept={(app) => void handleAcceptProposal(job, app)}
+                          onReject={(app) => handleRejectApplication(app.id, app.isExclusive === true)}
+                          showLifecycleMenu={showActivityMenu}
+                          cancelEnabled={canLifecycleCancel}
+                          activityMenuOpen={activityMenuJobId === job.id}
+                          onToggleActivityMenu={() =>
+                            setActivityMenuJobId((current) => (current === job.id ? null : job.id))
+                          }
+                          activityMenuRef={activityMenuJobId === job.id ? activityMenuRef : undefined}
+                          onCancel={() => {
+                            setCancelTargetJobId(job.id);
+                            setActivityMenuJobId(null);
+                          }}
+                        />
+                      );
+                    }
 
                     return (
                       <article
@@ -1644,32 +1682,7 @@ export default function ClientDashboard() {
                           </button>
                           {activityMenuJobId === job.id ? (
                             <div className="absolute right-0 top-full z-50 mt-1 min-w-[11rem] overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-[0_12px_32px_rgba(15,23,42,0.14)]">
-                              {job.status === 'paused' ? (
-                                <button
-                                  type="button"
-                                  onClick={() => void handleResumeJob(job.id)}
-                                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-slate-800 hover:bg-slate-50"
-                                >
-                                  <Icons.Play className="h-4 w-4 text-blue-600" />
-                                  Retorna
-                                </button>
-                              ) : job.status === 'open' ? (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setPauseTargetJobId(job.id);
-                                    setActivityMenuJobId(null);
-                                  }}
-                                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-slate-800 hover:bg-slate-50"
-                                >
-                                  <Icons.Pause className="h-4 w-4 text-blue-600" />
-                                  Pausar
-                                </button>
-                              ) : null}
-                              {job.status === 'in_progress' &&
-                              applications.some(
-                                (a) => a.jobId === job.id && a.status === 'accepted',
-                              ) ? (
+                              {canCompleteFromMenu ? (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1682,17 +1695,19 @@ export default function ClientDashboard() {
                                   {t('upcoming_jobs.complete_work')}
                                 </button>
                               ) : null}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCancelTargetJobId(job.id);
-                                  setActivityMenuJobId(null);
-                                }}
-                                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-amber-800 hover:bg-amber-50"
-                              >
-                                <Icons.Ban className="h-4 w-4 text-amber-600" />
-                                Cancelar
-                              </button>
+                              {canLifecycleCancel ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCancelTargetJobId(job.id);
+                                    setActivityMenuJobId(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-bold text-amber-800 hover:bg-amber-50"
+                                >
+                                  <Icons.Ban className="h-4 w-4 text-amber-600" />
+                                  {t('client_dashboard.cancel_request')}
+                                </button>
+                              ) : null}
                             </div>
                           ) : null}
                             </>
@@ -1880,6 +1895,7 @@ export default function ClientDashboard() {
                                         candidateProfileExpandKey(job.id, app.id)
                                       }
                                       onToggleProfile={() => toggleCandidateProfile(job.id, app.id)}
+                                      embedProfile={false}
                                       showAccept={
                                         (app.status === 'pending' || app.status === 'viewed') &&
                                         isPreHireActivity
@@ -1888,51 +1904,88 @@ export default function ClientDashboard() {
                                       onAccept={() => void handleAcceptProposal(job, app)}
                                     />
                                   ))}
+                                  {(() => {
+                                    const profileApp = displayCandidateApps.find(
+                                      (a) =>
+                                        expandedCandidateProfileKey ===
+                                        candidateProfileExpandKey(job.id, a.id),
+                                    );
+                                    if (!profileApp) return null;
+                                    return (
+                                      <LhCardOverlay
+                                        open
+                                        onClose={() => setExpandedCandidateProfileKey(null)}
+                                        title={profileApp.helperName}
+                                        subtitle={translateJobTitle(
+                                          job.title,
+                                          job.category,
+                                          job.subcategory,
+                                          t,
+                                        )}
+                                        testId="client-dashboard-activity-profile-overlay"
+                                      >
+                                        <CandidateHelperProfileExpand
+                                          helperId={profileApp.helperId}
+                                          helperRating={profileApp.helperRating}
+                                          helperJobs={profileApp.helperJobs}
+                                        />
+                                      </LhCardOverlay>
+                                    );
+                                  })()}
                                 </div>
                               )}
                             </div>
                           ) : null}
 
-                          {isDescriptionOpen ? (
-                            <div
-                              className={clsx(
-                                'mt-2 animate-in fade-in slide-in-from-top-1 duration-200 rounded-2xl border p-2 shadow-[0_18px_50px_rgba(15,23,42,0.12)]',
-                                clientDashboardAccent.activitySoftBg,
-                                clientDashboardAccent.activitySoftBorder,
-                              )}
-                            >
-                              <div className="rounded-2xl border border-white/80 bg-white/95 px-2.5 py-2.5 text-xs font-semibold leading-snug text-slate-700 shadow-sm backdrop-blur">
-                                <div className="mb-2 grid grid-cols-1 gap-1.5 text-[11px] sm:grid-cols-2">
-                                  <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
-                                    <span className="block font-black uppercase tracking-[0.06em] text-slate-400">Orçamento</span>
-                                    <span className="block font-bold text-slate-800">{formatJobBudgetDisplay(job, t)}</span>
-                                  </div>
-                                  <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
-                                    <span className="block font-black uppercase tracking-[0.06em] text-slate-400">Criado em</span>
-                                    <span className="block font-bold text-slate-800">{createdAtLabel}</span>
-                                  </div>
-                                  <div className="rounded-xl bg-slate-50 px-2.5 py-1.5 sm:col-span-2">
-                                    <span className="block font-black uppercase tracking-[0.06em] text-slate-400">Endereço</span>
-                                    <span className="block font-bold text-slate-800">{job.address || job.city || job.location}</span>
-                                  </div>
+                          <LhCardOverlay
+                            open={isDescriptionOpen}
+                            onClose={() => setExpandedActivityPanel(null)}
+                            title={t('client_dashboard.view_description')}
+                            subtitle={translateJobTitle(job.title, job.category, job.subcategory, t)}
+                            testId="client-dashboard-activity-description-overlay"
+                          >
+                            <div className="space-y-3 text-xs font-semibold leading-snug text-slate-700">
+                              <div className="grid grid-cols-1 gap-1.5 text-[11px] sm:grid-cols-2">
+                                <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
+                                  <span className="block font-black uppercase tracking-[0.06em] text-slate-400">
+                                    Orçamento
+                                  </span>
+                                  <span className="block font-bold text-slate-800">
+                                    {formatJobBudgetDisplay(job, t)}
+                                  </span>
                                 </div>
-                                <p className="whitespace-pre-line text-[12px] leading-snug">
-                                  {job.description || 'Sem descrição adicional.'}
-                                </p>
+                                <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
+                                  <span className="block font-black uppercase tracking-[0.06em] text-slate-400">
+                                    Criado em
+                                  </span>
+                                  <span className="block font-bold text-slate-800">{createdAtLabel}</span>
+                                </div>
+                                <div className="rounded-xl bg-slate-50 px-2.5 py-1.5">
+                                  <span className="block font-black uppercase tracking-[0.06em] text-slate-400">
+                                    {t('client_dashboard.activity_modality')}
+                                  </span>
+                                  <span className="block font-bold text-slate-800">
+                                    {job.serviceMode === 'remote'
+                                      ? t('create_modal.service_mode_remote')
+                                      : job.serviceMode === 'in_person'
+                                        ? t('create_modal.service_mode_in_person')
+                                        : t('common.unknown')}
+                                  </span>
+                                </div>
+                                <div className="rounded-xl bg-slate-50 px-2.5 py-1.5 sm:col-span-2">
+                                  <span className="block font-black uppercase tracking-[0.06em] text-slate-400">
+                                    Endereço
+                                  </span>
+                                  <span className="block font-bold text-slate-800">
+                                    {job.address || job.city || job.location}
+                                  </span>
+                                </div>
                               </div>
-
-                              {jobsListTab === 'history' && job.status === 'completed' && pendingServiceReviews.some((p) => p.requestId === job.id) ? (
-                                <button
-                                  type="button"
-                                  onClick={() => openReviewByRequestId(job.id)}
-                                  className="mt-2 inline-flex min-h-[38px] w-full items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 text-xs font-bold text-amber-900 hover:bg-amber-100"
-                                >
-                                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                                  {t('service_review.rate_now')}
-                                </button>
-                              ) : null}
+                              <p className="whitespace-pre-line text-[12px] leading-snug">
+                                {job.description || 'Sem descrição adicional.'}
+                              </p>
                             </div>
-                          ) : null}
+                          </LhCardOverlay>
                         </div>
                       </article>
                     );
@@ -1943,16 +1996,16 @@ export default function ClientDashboard() {
                       <Icons.Briefcase className="h-8 w-8" />
                     </div>
                     <h3 className="text-lg font-black text-slate-900">
-                      {jobsListTab === 'active'
-                        ? t('client_jobs.empty_open_title')
-                        : t('client_jobs.empty_completed_title')}
+                      {jobsListTab === 'waiting'
+                        ? t('client_jobs.empty_waiting_title')
+                        : t('client_jobs.empty_in_progress_title')}
                     </h3>
                     <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-relaxed text-slate-500">
-                      {jobsListTab === 'active'
-                        ? t('client_jobs.empty_open_body')
-                        : t('client_jobs.empty_completed_body')}
+                      {jobsListTab === 'waiting'
+                        ? t('client_jobs.empty_waiting_body')
+                        : t('client_jobs.empty_in_progress_body')}
                     </p>
-                    {jobsListTab === 'active' ? (
+                    {jobsListTab === 'waiting' ? (
                       <button
                         type="button"
                         onClick={() => openCreateModal()}

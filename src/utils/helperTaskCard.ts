@@ -6,7 +6,6 @@ import { getApplicationChargeLc } from '@/config/helperCreditCharge';
 import { getVipApplicationChargeLc } from '@/utils/vipApplicationCredits';
 import {
   canHelperRequestCompletion,
-  isAwaitingClientCompletion,
   isTerminalWorkflow,
 } from '@/utils/serviceWorkflow';
 
@@ -67,11 +66,27 @@ export function canShowReviewButton(
 ): boolean {
   if (!hasPendingReview) return false;
   if (jobStatus === 'completed') return true;
-  return isAwaitingClientCompletion(workflowStatus);
+  return workflowStatus === 'completed' || workflowStatus === 'auto_completed';
 }
 
 export function isAcceptedJobActive(workflowStatus: UpcomingWorkflowStatus): boolean {
   return !isTerminalWorkflow(workflowStatus);
+}
+
+/** Relative "applied ago" label from the application timestamp — no live ticker. */
+export function formatApplicationSentAgo(
+  createdAt: number,
+  now: number,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): string {
+  if (!Number.isFinite(createdAt) || createdAt <= 0) return '';
+  const ageMs = Math.max(0, now - createdAt);
+  const days = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+  const hours = Math.floor(ageMs / (60 * 60 * 1000));
+  const minutes = Math.max(1, Math.floor(ageMs / (60 * 1000)));
+  if (days >= 1) return t('helper_tasks.applied_ago_days', { count: days });
+  if (hours >= 1) return t('helper_tasks.applied_ago_hours', { count: hours });
+  return t('helper_tasks.applied_ago_minutes', { count: minutes });
 }
 
 /** Relative schedule label — Tomorrow, In 5 days, Today 14:00, etc. */

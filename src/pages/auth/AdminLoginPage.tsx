@@ -5,11 +5,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, ShieldAlert } from 'lucide-react';
 import { FluxBrandMark } from '@/components/brand/FluxBrandMark';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import { FLUX_AUTH_PT, adminPtMessage } from '@/admin/fluxPtCopy';
 import { useAuth } from '@/context/AuthContext';
-import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { authFlowLog } from '@/lib/authDebug';
 import { getSupabase } from '@/lib/supabase';
+import { acceptAdminInvite } from '@/admin/administrators/acceptAdminInvite';
 import { isFluxAdmin } from '@/utils/adminAccess';
 import { ROUTES } from '@/utils/constants';
 import { LINKHELP_PUBLIC_ORIGIN } from '@/utils/fluxHost';
@@ -29,14 +30,12 @@ const INPUT_CLASS =
 export default function AdminLoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useLanguage();
   const { showToast } = useToast();
   const {
     signInWithEmail,
     signInWithGoogle,
     isConfigured,
     session,
-    profile,
     authBootstrapped,
     authLoading,
     refreshProfile,
@@ -67,8 +66,16 @@ export default function AdminLoginPage() {
 
   const redirectedRef = useRef(false);
 
-  const finishAdminLogin = (activeSession: Session) => {
+  const finishAdminLogin = async (activeSession: Session) => {
     if (redirectedRef.current) return;
+
+    // Accept pending invite (email match) before the admin gate — refreshes JWT claim.
+    if (activeSession.access_token) {
+      await acceptAdminInvite(activeSession.access_token);
+      const sb = getSupabase();
+      const { data } = sb ? await sb.auth.getSession() : { data: { session: null } };
+      if (data.session) activeSession = data.session;
+    }
 
     if (!isFluxAdmin(activeSession)) {
       authFlowLog('AdminLogin: access denied — not admin', { userId: activeSession.user.id });
@@ -94,26 +101,23 @@ export default function AdminLoginPage() {
       const { data } = await sb.auth.getSession();
       const activeSession = data.session;
       if (!activeSession?.user) return;
-      if (!profile) {
-        void refreshProfile(activeSession.user);
-        return;
-      }
-      finishAdminLogin(activeSession);
+      // Admins may have no marketplace profile — do not block FLUX login on profile.
+      await finishAdminLogin(activeSession);
     })();
-  }, [isConfigured, authBootstrapped, authLoading, session, profile, effectiveReturnTo, submitting, googleLoading]);
+  }, [isConfigured, authBootstrapped, authLoading, session, effectiveReturnTo, submitting, googleLoading]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!isConfigured) {
-      showToast(t('auth.errors.env_not_ready'), 'info');
+      showToast(adminPtMessage('auth.errors.env_not_ready'), 'info');
       return;
     }
     setSubmitting(true);
     const err = await signInWithEmail(email, password);
     if (err) {
       setSubmitting(false);
-      setError(t(err.messageKey, err.vars));
+      setError(adminPtMessage(err.messageKey, err.vars));
       return;
     }
 
@@ -123,14 +127,14 @@ export default function AdminLoginPage() {
     setSubmitting(false);
 
     if (sessionData.session?.user) {
-      finishAdminLogin(sessionData.session);
+      await finishAdminLogin(sessionData.session);
     }
   };
 
   const handleGoogle = async () => {
     setError(null);
     if (!isConfigured) {
-      showToast(t('auth.errors.env_not_ready'), 'info');
+      showToast(adminPtMessage('auth.errors.env_not_ready'), 'info');
       return;
     }
     setGoogleLoading(true);
@@ -139,7 +143,7 @@ export default function AdminLoginPage() {
       markAdminOAuthFlow();
       const err = await signInWithGoogle({ next: effectiveReturnTo });
       if (!isOAuthRedirectPending() && err) {
-        setError(t(err.messageKey, err.vars));
+        setError(adminPtMessage(err.messageKey, err.vars));
       }
     } finally {
       if (!isOAuthRedirectPending()) setGoogleLoading(false);
@@ -155,10 +159,10 @@ export default function AdminLoginPage() {
 
       <div className="relative mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-10">
         <div className="mb-8 flex flex-col items-center text-center">
-          <FluxBrandMark showTagline className="mb-4" />
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300/80">{t('flux.admin_login.kicker')}</p>
-          <h1 className="mt-2 text-2xl font-black text-white">{t('flux.admin_login.title')}</h1>
-          <p className="mt-2 text-sm text-slate-400">{t('flux.admin_login.subtitle')}</p>
+          <FluxBrandMark showTagline forcePtTagline className="mb-4" />
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300/80">{FLUX_AUTH_PT.kicker}</p>
+          <h1 className="mt-2 text-2xl font-black text-white">{FLUX_AUTH_PT.title}</h1>
+          <p className="mt-2 text-sm text-slate-400">{FLUX_AUTH_PT.subtitle}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-cyan-500/15 bg-[#050912]/90 p-6 shadow-2xl backdrop-blur-xl">
@@ -170,7 +174,7 @@ export default function AdminLoginPage() {
           ) : null}
 
           <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold text-slate-400">{t('login_page.email_label')}</span>
+            <span className="mb-1.5 block text-xs font-semibold text-slate-400">{FLUX_AUTH_PT.emailLabel}</span>
             <div className="relative">
               <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
               <input
@@ -185,7 +189,7 @@ export default function AdminLoginPage() {
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold text-slate-400">{t('login_page.password_label')}</span>
+            <span className="mb-1.5 block text-xs font-semibold text-slate-400">{FLUX_AUTH_PT.passwordLabel}</span>
             <div className="relative">
               <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
               <input
@@ -200,7 +204,7 @@ export default function AdminLoginPage() {
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                 onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? t('common.hide') : t('common.show')}
+                aria-label={showPassword ? FLUX_AUTH_PT.hidePassword : FLUX_AUTH_PT.showPassword}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -212,7 +216,7 @@ export default function AdminLoginPage() {
             disabled={submitting}
             className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-cyan-500/20 transition hover:brightness-110 disabled:opacity-60"
           >
-            {submitting ? t('auth.splash_loading') : t('flux.admin_login.submit')}
+            {submitting ? FLUX_AUTH_PT.signingIn : FLUX_AUTH_PT.submit}
           </button>
 
           <div className="relative py-2">
@@ -220,16 +224,22 @@ export default function AdminLoginPage() {
               <div className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center text-xs uppercase tracking-wider text-slate-500">
-              <span className="bg-[#050912] px-2">{t('login_page.divider')}</span>
+              <span className="bg-[#050912] px-2">{FLUX_AUTH_PT.divider}</span>
             </div>
           </div>
 
-          <GoogleSignInButton disabled={submitting} loading={googleLoading} onClick={handleGoogle} />
+          <GoogleSignInButton
+            disabled={submitting}
+            loading={googleLoading}
+            onClick={handleGoogle}
+            label={FLUX_AUTH_PT.google}
+            loadingLabel={FLUX_AUTH_PT.googleConnecting}
+          />
         </form>
 
         <p className="mt-6 text-center text-xs text-slate-500">
           <a href={LINKHELP_PUBLIC_ORIGIN} className="font-semibold text-cyan-400/90 hover:text-cyan-300">
-            {t('flux.admin_login.back_to_linkhelp')}
+            {FLUX_AUTH_PT.backToLinkhelp}
           </a>
         </p>
       </div>

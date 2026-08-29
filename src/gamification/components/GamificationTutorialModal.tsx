@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, ChevronLeft } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useLanguage } from '@/context/LanguageContext';
@@ -16,10 +16,20 @@ type Props = {
   open: boolean;
   onClose: () => void;
   userType: UserType;
+  /** When set, carousel opens on this card id (current level slide). */
+  initialCardId?: string;
+  /** Called when user taps Voltar on the first step (e.g. return to rank detail). */
+  onBackFromFirstStep?: () => void;
 };
 
 /** Tutorial de gamificação — mesmo card central do tutorial da barra superior. */
-export function GamificationTutorialModal({ open, onClose, userType }: Props) {
+export function GamificationTutorialModal({
+  open,
+  onClose,
+  userType,
+  initialCardId,
+  onBackFromFirstStep,
+}: Props) {
   const { t } = useLanguage();
   const { record } = useGamification(userType);
   const progress = record?.levelKey
@@ -170,11 +180,38 @@ export function GamificationTutorialModal({ open, onClose, userType }: Props) {
     : staticCards;
   const cards = userType === 'client' ? clientCards : helperCards;
   const [step, setStep] = useState(0);
+  /** Visual tutorial index — independent of the user's real gamification level. */
+  const seededForOpenRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
-    setStep(0);
-  }, [open, userType]);
+    if (!open) {
+      seededForOpenRef.current = false;
+      return;
+    }
+    // Seed only once per open session. Do not reset after Próximo/Voltar when
+    // `cards` is rebuilt from useGamification / progress context refreshes.
+    if (seededForOpenRef.current) return;
+
+    if (initialCardId) {
+      const idx = cards.findIndex((card) => card.id === initialCardId);
+      if (idx >= 0) {
+        setStep(idx);
+        seededForOpenRef.current = true;
+        return;
+      }
+      if (cards.length > 0) {
+        setStep(0);
+        seededForOpenRef.current = true;
+      }
+      return;
+    }
+
+    if (cards.length > 0) {
+      setStep(0);
+      seededForOpenRef.current = true;
+    }
+  }, [open, userType, initialCardId, cards]);
+
   useEffect(() => {
     setStep((current) => Math.min(current, Math.max(0, cards.length - 1)));
   }, [cards.length]);
@@ -189,7 +226,15 @@ export function GamificationTutorialModal({ open, onClose, userType }: Props) {
   };
 
   const goBack = () => {
-    if (step > 0) setStep((prev) => prev - 1);
+    if (step > 0) {
+      setStep((prev) => prev - 1);
+      return;
+    }
+    if (onBackFromFirstStep) {
+      onBackFromFirstStep();
+      return;
+    }
+    onClose();
   };
 
   const slides = useMemo(
@@ -237,13 +282,14 @@ export function GamificationTutorialModal({ open, onClose, userType }: Props) {
             {!isLastStep ? <ArrowRight className="h-5 w-5" /> : null}
           </button>
 
-          {step > 0 ? (
+          {(step > 0 || onBackFromFirstStep) ? (
             <button
               type="button"
               onClick={goBack}
               className={clsx(
                 'inline-flex min-h-[48px] w-full items-center justify-center gap-1 text-sm font-bold text-[#64748B] transition hover:text-[#0B1220]',
               )}
+              data-testid="gamification-tutorial-back"
             >
               <ChevronLeft className="h-4 w-4" />
               {t('client_onboarding_tutorial.back')}

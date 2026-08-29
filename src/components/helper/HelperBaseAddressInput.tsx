@@ -79,6 +79,20 @@ function fromParsed(parsed: ParsedPlace): HelperBaseAddressValue {
   };
 }
 
+/** Manual edits to the search line clear pin coords so stale lat/lng cannot be saved. */
+export function helperBaseAddressFromTypedDisplay(
+  prev: HelperBaseAddressValue,
+  text: string,
+): HelperBaseAddressValue {
+  return {
+    ...prev,
+    display: text,
+    address: text,
+    latitude: null,
+    longitude: null,
+  };
+}
+
 async function applyGpsToAddress(
   onChange: Props['onChange'],
   opts: {
@@ -111,6 +125,42 @@ async function applyGpsToAddress(
   opts.onLocationPartial?.();
 }
 
+const fieldClass =
+  'mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm disabled:bg-slate-100 disabled:text-slate-500';
+const derivedFieldClass =
+  'mt-1 block w-full cursor-default rounded-xl border border-gray-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-600';
+
+function DerivedFields({
+  value,
+  cityLabel,
+  provinceLabel,
+  postalCodeLabel,
+}: {
+  value: HelperBaseAddressValue;
+  cityLabel: string;
+  provinceLabel: string;
+  postalCodeLabel: string;
+}) {
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block text-sm font-semibold text-gray-700">
+          {cityLabel}
+          <input value={value.city} readOnly tabIndex={-1} className={derivedFieldClass} />
+        </label>
+        <label className="block text-sm font-semibold text-gray-700">
+          {provinceLabel}
+          <input value={value.province} readOnly tabIndex={-1} className={derivedFieldClass} />
+        </label>
+      </div>
+      <label className="block text-sm font-semibold text-gray-700">
+        {postalCodeLabel}
+        <input value={value.postalCode} readOnly tabIndex={-1} className={derivedFieldClass} />
+      </label>
+    </>
+  );
+}
+
 function PlacesAutocompleteInner({
   value,
   onChange,
@@ -128,6 +178,15 @@ function PlacesAutocompleteInner({
   const inputRef = useRef<HTMLInputElement>(null);
   const places = useMapsLibrary('places');
   const [locating, setLocating] = useState(false);
+  const [draft, setDraft] = useState(value.display);
+  const focusedRef = useRef(false);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  useEffect(() => {
+    if (focusedRef.current) return;
+    setDraft(value.display);
+  }, [value.display]);
 
   useEffect(() => {
     if (!places || !inputRef.current || disabled) return;
@@ -138,25 +197,32 @@ function PlacesAutocompleteInner({
     const listener = autocomplete.addListener('place_changed', () => {
       const place = autocomplete.getPlace();
       const parsed = parsePlaceResult(place);
-      if (parsed) onChange(fromParsed(parsed));
+      if (!parsed) return;
+      const next = fromParsed(parsed);
+      focusedRef.current = false;
+      setDraft(next.display);
+      onChangeRef.current(next);
     });
     return () => {
       listener.remove();
     };
-  }, [places, onChange, disabled]);
+  }, [places, disabled]);
 
   const useCurrentLocation = () => {
     setLocating(true);
-    void applyGpsToAddress(onChange, {
-      disabled,
-      onLocationError,
-      onLocationPartial,
-      inputRef,
-    }).finally(() => setLocating(false));
+    void applyGpsToAddress(
+      (next) => {
+        setDraft(next.display);
+        onChange(next);
+      },
+      {
+        disabled,
+        onLocationError,
+        onLocationPartial,
+        inputRef,
+      },
+    ).finally(() => setLocating(false));
   };
-
-  const fieldClass =
-    'mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm disabled:bg-slate-100 disabled:text-slate-500';
 
   return (
     <div className="space-y-3">
@@ -165,11 +231,18 @@ function PlacesAutocompleteInner({
         <input
           ref={inputRef}
           type="text"
-          value={value.display}
+          value={draft}
           disabled={disabled}
+          onFocus={() => {
+            focusedRef.current = true;
+          }}
+          onBlur={() => {
+            focusedRef.current = false;
+          }}
           onChange={(e) => {
             const text = e.target.value;
-            onChange({ ...value, display: text, address: text });
+            setDraft(text);
+            onChange(helperBaseAddressFromTypedDisplay(value, text));
           }}
           placeholder={placeholder}
           autoComplete="off"
@@ -186,35 +259,12 @@ function PlacesAutocompleteInner({
           <span className="sm:hidden">{locating ? '…' : currentLocationShortLabel}</span>
         </button>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm font-semibold text-gray-700">
-          {cityLabel}
-          <input
-            value={value.city}
-            disabled={disabled}
-            onChange={(e) => onChange({ ...value, city: e.target.value })}
-            className={fieldClass}
-          />
-        </label>
-        <label className="block text-sm font-semibold text-gray-700">
-          {provinceLabel}
-          <input
-            value={value.province}
-            disabled={disabled}
-            onChange={(e) => onChange({ ...value, province: e.target.value })}
-            className={fieldClass}
-          />
-        </label>
-      </div>
-      <label className="block text-sm font-semibold text-gray-700">
-        {postalCodeLabel}
-        <input
-          value={value.postalCode}
-          disabled={disabled}
-          onChange={(e) => onChange({ ...value, postalCode: e.target.value })}
-          className={fieldClass}
-        />
-      </label>
+      <DerivedFields
+        value={value}
+        cityLabel={cityLabel}
+        provinceLabel={provinceLabel}
+        postalCodeLabel={postalCodeLabel}
+      />
     </div>
   );
 }
@@ -235,16 +285,27 @@ function ManualAddressInput(props: Props) {
     onLocationError,
     onLocationPartial,
   } = props;
-  const fieldClass =
-    'mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm disabled:bg-slate-100 disabled:text-slate-500';
+  const [draft, setDraft] = useState(value.display);
+  const focusedRef = useRef(false);
+
+  useEffect(() => {
+    if (focusedRef.current) return;
+    setDraft(value.display);
+  }, [value.display]);
 
   const useCurrentLocation = () => {
     setLocating(true);
-    void applyGpsToAddress(onChange, {
-      disabled,
-      onLocationError,
-      onLocationPartial,
-    }).finally(() => setLocating(false));
+    void applyGpsToAddress(
+      (next) => {
+        setDraft(next.display);
+        onChange(next);
+      },
+      {
+        disabled,
+        onLocationError,
+        onLocationPartial,
+      },
+    ).finally(() => setLocating(false));
   };
 
   return (
@@ -253,11 +314,18 @@ function ManualAddressInput(props: Props) {
         <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
-          value={value.display}
+          value={draft}
           disabled={disabled}
+          onFocus={() => {
+            focusedRef.current = true;
+          }}
+          onBlur={() => {
+            focusedRef.current = false;
+          }}
           onChange={(e) => {
             const text = e.target.value;
-            onChange({ ...value, display: text, address: text });
+            setDraft(text);
+            onChange(helperBaseAddressFromTypedDisplay(value, text));
           }}
           placeholder={placeholder}
           className={`${fieldClass} pl-9 pr-28`}
@@ -273,35 +341,12 @@ function ManualAddressInput(props: Props) {
           <span className="sm:hidden">{locating ? '…' : currentLocationShortLabel}</span>
         </button>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm font-semibold text-gray-700">
-          {cityLabel}
-          <input
-            value={value.city}
-            disabled={disabled}
-            onChange={(e) => onChange({ ...value, city: e.target.value })}
-            className={fieldClass}
-          />
-        </label>
-        <label className="block text-sm font-semibold text-gray-700">
-          {provinceLabel}
-          <input
-            value={value.province}
-            disabled={disabled}
-            onChange={(e) => onChange({ ...value, province: e.target.value })}
-            className={fieldClass}
-          />
-        </label>
-      </div>
-      <label className="block text-sm font-semibold text-gray-700">
-        {postalCodeLabel}
-        <input
-          value={value.postalCode}
-          disabled={disabled}
-          onChange={(e) => onChange({ ...value, postalCode: e.target.value })}
-          className={fieldClass}
-        />
-      </label>
+      <DerivedFields
+        value={value}
+        cityLabel={cityLabel}
+        provinceLabel={provinceLabel}
+        postalCodeLabel={postalCodeLabel}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { hapticSuccess } from '@/utils/haptic';
 import * as Icons from 'lucide-react';
@@ -12,10 +12,10 @@ import { translateJobTitle, resolveCategoryId } from '@/utils/translateCategory'
 import { LhCard } from '@/components/design-system/LhCard';
 import { InterestedRing } from '@/components/opportunities/InterestedRing';
 import { HelperApplyConfirmModal } from '@/components/modals/HelperApplyConfirmModal';
+import { LhCardOverlay } from '@/components/design-system/LhCardOverlay';
 import { HelperOpportunityLcDebugPanel } from '@/components/opportunities/HelperOpportunityLcDebugPanel';
 import { FeedCardClientProfilePanel } from '@/components/opportunities/FeedCardClientProfilePanel';
 import {
-  FEED_CARD_PREMIUM_BACK_CLASS,
   FEED_CARD_PREMIUM_BODY_CLASS,
   FEED_CARD_PREMIUM_EYEBROW_CLASS,
   FEED_CARD_PREMIUM_ICON_LIGHT_CLASS,
@@ -28,7 +28,6 @@ import {
   FEED_CARD_PREMIUM_SHELL_CLASS,
   FEED_CARD_PREMIUM_SURFACE_CLASS,
   FEED_CARD_PREMIUM_TITLE_CLASS,
-  FEED_CARD_PREMIUM_TOP_BAR_CLASS,
 } from '@/components/opportunities/feedCardPremiumTheme';
 import { getHelperLeadCreditSummary } from '@/utils/helperCreditDisplay';
 import { isJobInterestFull } from '@/utils/applicationInterest';
@@ -55,14 +54,13 @@ import {
   shouldShowHelperOpportunityLcDebugPanel,
 } from '@/utils/linkCreditsDebug';
 import {
-  feedCardViewAfterBack,
-  feedCardViewFromDescriptionExpanded,
-  type FeedCardView,
-} from '@/utils/feedCardView';
-import {
+  FEED_CARD_CONTENT_CLASS,
   FEED_CARD_FIXED_HEIGHT_EXTRA_PX,
-  measureFeedCardNaturalHeight,
-  resolveFeedCardLockedHeight,
+  FEED_CARD_RING_SIZE_PX,
+  FEED_CARD_SHELL_CLASS,
+  FEED_CARD_STANDARD_CONTENT_HEIGHT_PX,
+  FEED_CARD_TOP_ACCENT_CLASS,
+  feedCardLockedContentStyle,
 } from '@/utils/feedCardFixedHeight';
 
 export type { FeedCardView } from '@/utils/feedCardView';
@@ -110,7 +108,7 @@ function jobMatchTier(job: Job, activeTab: HelperOpportunityCardTab): 'urgent' |
   return 'normal';
 }
 
-const OPPORTUNITY_RING_SIZE = 68;
+const OPPORTUNITY_RING_SIZE = FEED_CARD_RING_SIZE_PX;
 
 function PremiumMetaDot() {
   return (
@@ -163,11 +161,10 @@ function HelperOpportunityCardInner({
     baseAddressPendingCoords,
   );
   const openedLabel = formatJobOpenedAt(job.createdAt, t);
-  const [view, setView] = useState<FeedCardView>(() =>
-    feedCardViewFromDescriptionExpanded(descriptionExpanded),
+  type CardOverlay = 'description' | 'profile' | null;
+  const [overlay, setOverlay] = useState<CardOverlay>(() =>
+    descriptionExpanded ? 'description' : null,
   );
-  const [lockedHeight, setLockedHeight] = useState<number | null>(null);
-  const contentShellRef = useRef<HTMLDivElement>(null);
   const [applicationType, setApplicationType] = useState<HelperApplicationType | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [proposalAmountRaw, setProposalAmountRaw] = useState('');
@@ -190,7 +187,7 @@ function HelperOpportunityCardInner({
   const vipLabelCount = formatLinkCredits(vipCharge, language);
   const showLcDebugPanel = shouldShowHelperOpportunityLcDebugPanel(
     lcDebugEnabled,
-    view === 'description',
+    overlay === 'description',
   );
 
   useEffect(() => {
@@ -222,22 +219,12 @@ function HelperOpportunityCardInner({
   ]);
 
   const isInterestFull = isJobInterestFull(applicationsCount);
-  const isInternalView = view !== 'summary';
   const canApply = !hasApplied && !isApplying && !isInterestFull && !interactionLocked;
   const requestDescription = getRequestDescriptionForViewer(job.description, language);
   const showAmountInput = requiresProposalAmountInput(job);
 
-  useLayoutEffect(() => {
-    if (view !== 'summary') return;
-    const el = contentShellRef.current;
-    if (!el) return;
-    const natural = measureFeedCardNaturalHeight(el);
-    const next = resolveFeedCardLockedHeight(natural);
-    if (next > 0) setLockedHeight(next);
-  }, [view, job.id, hasApplied, isApplying, applicationsCount, title, metaLine]);
-
   useEffect(() => {
-    setView(feedCardViewFromDescriptionExpanded(descriptionExpanded));
+    setOverlay(descriptionExpanded ? 'description' : null);
   }, [descriptionExpanded]);
 
   useEffect(() => {
@@ -255,7 +242,7 @@ function HelperOpportunityCardInner({
   useEffect(() => {
     if (hasApplied) {
       setConfirmOpen(false);
-      setView('summary');
+      setOverlay(null);
     }
   }, [hasApplied]);
 
@@ -265,18 +252,13 @@ function HelperOpportunityCardInner({
     }
   }, [isApplying]);
 
-  const goToView = (next: FeedCardView) => {
-    if (next !== 'summary' && contentShellRef.current) {
-      const natural = measureFeedCardNaturalHeight(contentShellRef.current);
-      const h = resolveFeedCardLockedHeight(natural);
-      if (h > 0) setLockedHeight(h);
-    }
-    setView(next);
+  const openOverlay = (next: Exclude<CardOverlay, null>) => {
+    setOverlay(next);
     onDescriptionExpandedChange?.(next === 'description');
   };
 
-  const goBackToSummary = () => {
-    setView(feedCardViewAfterBack(view));
+  const closeOverlay = () => {
+    setOverlay(null);
     onDescriptionExpandedChange?.(false);
   };
 
@@ -301,7 +283,7 @@ function HelperOpportunityCardInner({
     if (walletBalance != null && walletBalance < charge) return;
     setApplicationType(type);
     if (shouldExpandDescriptionForAmountInput(showAmountInput, proposalAmountRaw)) {
-      goToView('description');
+      openOverlay('description');
       setAmountError(t('helper_proposal.error_required'));
       return;
     }
@@ -432,24 +414,7 @@ function HelperOpportunityCardInner({
     );
   };
 
-  const renderPremiumBackBar = () => (
-    <div className={FEED_CARD_PREMIUM_TOP_BAR_CLASS} data-testid="feed-card-premium-top-bar">
-      <button
-        type="button"
-        data-testid="feed-card-back"
-        onClick={(e) => {
-          e.stopPropagation();
-          goBackToSummary();
-        }}
-        className={FEED_CARD_PREMIUM_BACK_CLASS}
-      >
-        <Icons.ArrowLeft className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
-        {t('nav.back')}
-      </button>
-    </div>
-  );
-
-  const renderDescriptionView = () => {
+  const renderDescriptionContent = () => {
     const vipSurchargeLc = Math.max(0, creditQuote.vipApplyLc - creditQuote.fullRequestLc);
     const quoteAvailable =
       Number.isFinite(creditQuote.normalApplyLc) &&
@@ -458,11 +423,7 @@ function HelperOpportunityCardInner({
       Number.isFinite(creditQuote.vipApplyLc);
 
     return (
-      <div
-        className="relative flex h-full min-h-0 flex-col opacity-100 transition-opacity duration-200 ease-out"
-        data-testid="feed-card-description-view"
-      >
-        {renderPremiumBackBar()}
+      <div className={clsx(FEED_CARD_PREMIUM_SHELL_CLASS, 'rounded-2xl p-1')} data-testid="feed-card-description-view">
         <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-2.5')}>
           <p className={FEED_CARD_PREMIUM_EYEBROW_CLASS}>
             {t('helper_dashboard.feed_card_details_title')}
@@ -494,6 +455,14 @@ function HelperOpportunityCardInner({
                 <Icons.Navigation className={FEED_CARD_PREMIUM_ICON_LIGHT_CLASS} aria-hidden />
                 <span className="truncate">
                   {t('helper_dashboard.feed_card_distance')}: {metaParts.distance}
+                </span>
+              </div>
+            ) : null}
+            {metaParts.modality ? (
+              <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-white/85">
+                <Icons.Laptop className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
+                <span className="truncate">
+                  {t('helper_dashboard.feed_card_modality')}: {metaParts.modality}
                 </span>
               </div>
             ) : null}
@@ -605,17 +574,13 @@ function HelperOpportunityCardInner({
     );
   };
 
-  const renderProfileView = () => (
-    <div
-      className="relative flex h-full min-h-0 flex-col opacity-100 transition-opacity duration-200 ease-out"
-      data-testid="feed-card-profile-view"
-    >
-      {renderPremiumBackBar()}
+  const renderProfileContent = () => (
+    <div className={clsx(FEED_CARD_PREMIUM_SHELL_CLASS, 'rounded-2xl p-1')} data-testid="feed-card-profile-view">
       <div className={FEED_CARD_PREMIUM_SCROLL_CLASS}>
         <p className={clsx('mb-2', FEED_CARD_PREMIUM_EYEBROW_CLASS)}>
           {t('helper_dashboard.feed_card_profile_title')}
         </p>
-        {view === 'profile' ? <FeedCardClientProfilePanel job={job} /> : null}
+        <FeedCardClientProfilePanel job={job} />
       </div>
     </div>
   );
@@ -635,6 +600,15 @@ function HelperOpportunityCardInner({
           <span className="inline-flex items-center gap-1 font-semibold text-[#64748B]">
             <Icons.MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
             <span>{metaParts.distance}</span>
+          </span>
+        </>
+      ) : null}
+      {metaParts.modality ? (
+        <>
+          <PremiumMetaDot />
+          <span className="inline-flex items-center gap-1 font-semibold text-[#64748B]">
+            <Icons.Laptop className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+            <span>{metaParts.modality}</span>
           </span>
         </>
       ) : null}
@@ -698,11 +672,11 @@ function HelperOpportunityCardInner({
             data-testid="feed-card-open-profile"
             onClick={(e) => {
               e.stopPropagation();
-              goToView('profile');
+              openOverlay('profile');
             }}
             className="flex min-w-0 max-w-[42%] items-center gap-2 rounded-full py-0.5 pr-1 text-left transition hover:opacity-90"
             aria-label={t('helper_public.view_profile')}
-            aria-expanded={view === 'profile'}
+            aria-expanded={overlay === 'profile'}
           >
             {job.clientAvatar && !job.clientAvatar.includes('pravatar') ? (
               <img
@@ -732,10 +706,10 @@ function HelperOpportunityCardInner({
             data-testid="feed-card-open-description"
             onClick={(e) => {
               e.stopPropagation();
-              goToView('description');
+              openOverlay('description');
             }}
             className="inline-flex min-h-[44px] min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[rgba(15,23,42,0.08)] bg-[#f8fafc] px-3 py-2 text-[12px] font-bold text-[#0F172A] transition hover:bg-slate-50"
-            aria-expanded={view === 'description'}
+            aria-expanded={overlay === 'description'}
           >
             <Icons.FileText className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
             <span className="truncate">{t('helper_dashboard.apply_description_label')}</span>
@@ -753,8 +727,7 @@ function HelperOpportunityCardInner({
   );
 
   const cardShell = clsx(
-    'group/card relative h-full w-full max-w-full overflow-hidden rounded-[22px] border bg-white transition-all duration-300',
-    'shadow-[0_2px_12px_rgba(15,23,42,0.05),0_6px_28px_rgba(15,23,42,0.06)]',
+    FEED_CARD_SHELL_CLASS,
     'md:hover:-translate-y-1 md:hover:shadow-[0_12px_40px_rgba(15,23,42,0.10)] motion-reduce:transform-none',
     isExiting &&
       'pointer-events-none scale-[0.88] opacity-0 -translate-x-8 -rotate-2 duration-[520ms] ease-[cubic-bezier(0.34,1.15,0.64,1)]',
@@ -762,12 +735,12 @@ function HelperOpportunityCardInner({
       ? 'border-rose-200/80'
       : tier === 'best'
         ? 'border-emerald-200/70'
-        : 'border-[rgba(15,23,42,0.08)]',
+        : null,
   );
 
   const topAccent = (
     <div
-      className="h-[4px] w-full shrink-0 rounded-t-[22px]"
+      className={FEED_CARD_TOP_ACCENT_CLASS}
       style={{
         background: `linear-gradient(90deg, ${categoryTheme.iconColor} 0%, ${categoryTheme.iconColor}55 55%, transparent 100%)`,
       }}
@@ -780,31 +753,36 @@ function HelperOpportunityCardInner({
       <LhCard padding="none" className={cardShell}>
         {topAccent}
         <div
-          ref={contentShellRef}
-          data-feed-card-view={view}
-          data-feed-card-height-locked={lockedHeight != null ? 'true' : 'false'}
+          data-feed-card-view="summary"
+          data-feed-card-height-locked="true"
           data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
-          className="relative z-20 overflow-hidden bg-white px-3 pb-2.5 pt-2.5 sm:px-4 sm:pb-3 sm:pt-3"
-          style={
-            lockedHeight != null
-              ? { height: lockedHeight, minHeight: lockedHeight, maxHeight: lockedHeight }
-              : undefined
-          }
+          data-feed-card-standard-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
+          className={FEED_CARD_CONTENT_CLASS}
+          style={feedCardLockedContentStyle()}
         >
-          <div
-            className={clsx(isInternalView && 'invisible pointer-events-none select-none')}
-            aria-hidden={isInternalView}
-          >
-            {feedBody}
-          </div>
-          {isInternalView ? (
-            <div className={FEED_CARD_PREMIUM_SHELL_CLASS} data-testid="feed-card-premium-shell">
-              {view === 'description' ? renderDescriptionView() : null}
-              {view === 'profile' ? renderProfileView() : null}
-            </div>
-          ) : null}
+          {feedBody}
         </div>
       </LhCard>
+
+      <LhCardOverlay
+        open={overlay === 'description'}
+        onClose={closeOverlay}
+        title={t('helper_dashboard.feed_card_details_title')}
+        subtitle={title}
+        testId="feed-card-description-overlay"
+      >
+        {renderDescriptionContent()}
+      </LhCardOverlay>
+
+      <LhCardOverlay
+        open={overlay === 'profile'}
+        onClose={closeOverlay}
+        title={t('helper_dashboard.feed_card_profile_title')}
+        subtitle={job.clientName}
+        testId="feed-card-profile-overlay"
+      >
+        {renderProfileContent()}
+      </LhCardOverlay>
 
       {applicationType && confirmOpen ? (
         <HelperApplyConfirmModal

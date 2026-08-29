@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import handler from '../../../api/admin/dashboard-summary';
-import { authorizeAdmin } from '../../../api/lib/adminAuth.server';
-import { createSupabaseServiceRoleClient } from '../../../api/lib/supabaseAdmin.server';
+import { authorizeAdmin } from '../../../api/_lib/adminAuth.server';
+import { createSupabaseServiceRoleClient } from '../../../api/_lib/supabaseAdmin.server';
 
-vi.mock('../../../api/lib/adminAuth.server', () => ({ authorizeAdmin: vi.fn() }));
-vi.mock('../../../api/lib/supabaseAdmin.server', () => ({ createSupabaseServiceRoleClient: vi.fn() }));
+vi.mock('../../../api/_lib/adminAuth.server', () => ({ authorizeAdmin: vi.fn() }));
+vi.mock('../../../api/_lib/supabaseAdmin.server', () => ({ createSupabaseServiceRoleClient: vi.fn() }));
 
 const summaryRow = {
   total_requests: 1,

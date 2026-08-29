@@ -61,6 +61,9 @@ function estimateServiceValueCad(job: Job): number {
 }
 
 export function isRemoteJob(job: Job): boolean {
+  // Prefer authoritative column when present (display / estimate only — never invent hire money).
+  if (job.serviceMode === 'remote') return true;
+  if (job.serviceMode === 'in_person') return false;
   const loc = `${job.location ?? ''} ${job.address ?? ''} ${job.description ?? ''}`.toLowerCase();
   return /remot|remote|en ligne|online|à distance|a distancia|tipo de atendimento:\s*online/i.test(loc);
 }

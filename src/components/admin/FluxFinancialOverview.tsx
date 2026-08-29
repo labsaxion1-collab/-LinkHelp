@@ -1,4 +1,4 @@
-import { formatCadFromCents, type AdminDashboardFinancialSummary } from '@/admin/adminDashboardFinancialContract';
+import { formatCadFromCents, formatLc, type AdminDashboardFinancialSummary } from '@/admin/adminDashboardFinancialContract';
 import { FINANCIAL_RANGE_LABEL_PT, FLUX_PT } from '@/admin/fluxPtCopy';
 import { clsx } from 'clsx';
 import { Coins, Flame, Gift, RefreshCcw, RotateCcw, ShoppingCart, Wallet } from 'lucide-react';
@@ -93,27 +93,23 @@ export function FluxFinancialOverview({
             <MetricTile
               icon={ShoppingCart}
               label={FLUX_PT.financialRevenueCad}
-              value={`CAD $${formatCadFromCents(financial.revenueCadCents)}`}
+              value={formatCadFromCents(financial.revenueCadCents)}
               hint={
                 financial.purchaseCount > 0
-                  ? FLUX_PT.financialPurchaseStats(financial.purchaseCount, avgPurchaseCad ?? '0.00')
+                  ? FLUX_PT.financialPurchaseStats(financial.purchaseCount, avgPurchaseCad ?? formatCadFromCents(0))
                   : FLUX_PT.financialNoPurchases
               }
             />
-            <MetricTile
-              icon={Coins}
-              label={FLUX_PT.financialLcSold}
-              value={`${financial.lcSold} LC`}
-            />
+            <MetricTile icon={Coins} label={FLUX_PT.financialLcSold} value={formatLc(financial.lcSold)} />
             <MetricTile
               icon={Flame}
               label={FLUX_PT.financialLcConsumed}
-              value={`${financial.lcConsumed} LC`}
+              value={formatLc(financial.lcConsumed)}
             />
             <MetricTile
               icon={RotateCcw}
               label={FLUX_PT.financialLcRefunded}
-              value={`${financial.lcRefunded} LC`}
+              value={formatLc(financial.lcRefunded)}
             />
           </div>
 
@@ -121,18 +117,18 @@ export function FluxFinancialOverview({
             <MetricTile
               icon={Gift}
               label={FLUX_PT.financialLcGranted}
-              value={`${financial.lcGranted} LC`}
+              value={formatLc(financial.lcGranted)}
               hint={FLUX_PT.financialLcGrantedHint}
             />
             <MetricTile
               icon={Wallet}
               label={FLUX_PT.financialLcCirculation}
-              value={`${financial.lcInCirculation} LC`}
+              value={formatLc(financial.lcInCirculation)}
             />
             <MetricTile
               icon={RefreshCcw}
               label={FLUX_PT.financialNetBurn}
-              value={`${financial.netCreditBurn} LC`}
+              value={formatLc(financial.netCreditBurn)}
               hint={FLUX_PT.financialNetBurnHint}
             />
           </div>

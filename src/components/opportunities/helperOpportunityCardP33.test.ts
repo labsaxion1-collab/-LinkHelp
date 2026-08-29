@@ -1,5 +1,5 @@
 /**
- * P3.3 — premium visual for DESCRIPTION / PROFILE feed panels (style only).
+ * P3.3 — premium visual for DESCRIPTION / PROFILE feed overlays (style only).
  */
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -12,6 +12,7 @@ import {
 const cardPath = 'src/components/opportunities/HelperOpportunityCard.tsx';
 const profilePath = 'src/components/opportunities/FeedCardClientProfilePanel.tsx';
 const themePath = 'src/components/opportunities/feedCardPremiumTheme.ts';
+const overlayPath = 'src/components/design-system/LhCardOverlay.tsx';
 
 describe('P3.3 feed card premium visual panels', () => {
   it('uses mid navy solid shell (#234B72) without glass blur', async () => {
@@ -23,37 +24,32 @@ describe('P3.3 feed card premium visual panels', () => {
     expect(theme).not.toContain('backdrop-filter');
     expect(theme).not.toContain('backdrop-blur');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
-    expect(src).toContain('data-testid="feed-card-premium-shell"');
-    // Summary shell stays white
-    expect(src).toContain('overflow-hidden bg-white px-3 pb-2.5 pt-2.5');
+    expect(src).toContain('data-testid="feed-card-description-view"');
+    expect(src).toContain('FEED_CARD_CONTENT_CLASS');
   });
 
-  it('pins compact Voltar bar while content scrolls underneath', async () => {
+  it('uses shared LhCardOverlay with sticky header and premium close while content scrolls', async () => {
     const theme = await readFile(resolve(themePath), 'utf8');
     const src = await readFile(resolve(cardPath), 'utf8');
-    expect(theme).toContain('bg-[#1E3A5F]');
-    expect(theme).toContain('h-12');
-    expect(theme).toContain('pt-12');
-    expect(theme).toContain('absolute inset-x-0 top-0');
-    expect(src).toContain('FEED_CARD_PREMIUM_TOP_BAR_CLASS');
-    expect(src).toContain('data-testid="feed-card-premium-top-bar"');
+    const overlay = await readFile(resolve(overlayPath), 'utf8');
+    expect(theme).toContain('overflow-y-auto');
     expect(src).toContain('FEED_CARD_PREMIUM_SCROLL_CLASS');
-    expect(src).toContain('renderPremiumBackBar');
+    expect(src).toContain('LhCardOverlay');
+    expect(overlay).toContain('sticky top-0');
+    expect(overlay).toContain('LhPremiumCloseButton');
+    expect(overlay).not.toMatch(/lh-card-overlay-back(?!-to-candidates)/);
+    expect(src).not.toContain('onBack');
   });
 
-  it('keeps architecture / LC / Voltar / height / scroll unchanged', async () => {
+  it('keeps LC quote logic and fixed summary height', async () => {
     const src = await readFile(resolve(cardPath), 'utf8');
     const theme = await readFile(resolve(themePath), 'utf8');
-    expect(src).toContain('goBackToSummary');
-    expect(src).toContain('data-testid="feed-card-back"');
-    expect(src).toContain('lockedHeight');
+    expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
     expect(src).toContain('FEED_CARD_PREMIUM_SCROLL_CLASS');
     expect(theme).toContain('overflow-y-auto');
     expect(src).toContain('getApplicationCreditQuote');
     expect(src).toContain('creditQuote.normalApplyLc');
     expect(src).toContain('creditQuote.vipApplyLc');
-    expect(src).toContain("FeedCardView");
-    expect(src).toContain('transition-opacity duration-200');
   });
 
   it('applies differentiated icon colors and gold rating stars', async () => {
@@ -65,7 +61,7 @@ describe('P3.3 feed card premium visual panels', () => {
     expect(src).toContain('Icons.MapPin');
     expect(profile).toContain('fill-amber-300');
     expect(profile).toContain('FEED_CARD_PREMIUM_ICON_GOLD_CLASS');
-    expect(profile).toContain('Medal');
+    expect(profile).toContain('LinkHelpRankBadge');
     expect(profile).toContain('Globe');
     expect(profile).toContain('UserRound');
   });

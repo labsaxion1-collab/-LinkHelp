@@ -20,6 +20,17 @@ interface ImportMetaEnv {
   readonly VITE_VERCEL_ENV?: string;
   /** Set to `false` to force PNG for Cliente Confiável hero (debug only). */
   readonly VITE_CLIENT_CONFIAVEL_HERO_WEBP?: string;
+  /**
+   * When `true`, FE sends `service_mode` and prefers server lead quotes (packs 40–50).
+   * Keep unset/false while Preview still uses the historical DB.
+   */
+  readonly VITE_LINKHELP_BASELINE_FINANCE?: string;
+  /** Explicit deploy target override: `staging` | `production`. */
+  readonly VITE_LINKHELP_DEPLOY_TARGET?: string;
+  /** Force isolation checks even on localhost. */
+  readonly VITE_LINKHELP_ENFORCE_ISOLATION?: string;
+  /** Stripe publishable key (pk_test_ / pk_live_). Public prefix only; never a secret. */
+  readonly VITE_STRIPE_PUBLISHABLE_KEY?: string;
 }
 
 interface ImportMeta {

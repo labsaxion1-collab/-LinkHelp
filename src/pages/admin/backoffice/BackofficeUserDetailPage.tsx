@@ -5,6 +5,13 @@ import { backofficeFetch, BackofficeApiError } from '@/backoffice/api/backoffice
 import { parseBackofficeUserDetail } from '@/backoffice/contracts/usersContract';
 import { BackofficePageShell } from '@/backoffice/components/BackofficePageShell';
 import { BACKOFFICE_PT, formatBackofficeApiError } from '@/admin/fluxPtCopy';
+import {
+  creditTypeLabelPt,
+  formatAdminDateTime,
+  formatLc,
+  requestStatusLabelPt,
+  roleLabelPt,
+} from '@/admin/fluxFormat';
 import { ROUTES } from '@/utils/constants';
 
 export default function BackofficeUserDetailPage() {
@@ -43,9 +50,18 @@ export default function BackofficeUserDetailPage() {
         <section className="border border-white/10 bg-white/[0.02] p-4">
           <h3 className="text-sm font-black text-white">{BACKOFFICE_PT.profileSection}</h3>
           <dl className="mt-3 space-y-2 text-sm">
-            <div><dt className="text-slate-500">{BACKOFFICE_PT.colRole}</dt><dd className="text-slate-200 capitalize">{role}</dd></div>
-            <div><dt className="text-slate-500">{BACKOFFICE_PT.colCity}</dt><dd className="text-slate-200">{String(profile?.city ?? '—')}</dd></div>
-            <div><dt className="text-slate-500">{BACKOFFICE_PT.colPhone}</dt><dd className="text-slate-200">{String(profile?.phone ?? '—')}</dd></div>
+            <div>
+              <dt className="text-slate-500">{BACKOFFICE_PT.colRole}</dt>
+              <dd className="text-slate-200">{roleLabelPt(role)}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">{BACKOFFICE_PT.colCity}</dt>
+              <dd className="text-slate-200">{String(profile?.city ?? '—')}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">{BACKOFFICE_PT.colPhone}</dt>
+              <dd className="text-slate-200">{String(profile?.phone ?? '—')}</dd>
+            </div>
           </dl>
         </section>
 
@@ -53,7 +69,7 @@ export default function BackofficeUserDetailPage() {
           <section className="border border-white/10 bg-white/[0.02] p-4">
             <h3 className="text-sm font-black text-white">{BACKOFFICE_PT.walletSection}</h3>
             <p className="mt-2 text-2xl font-black tabular-nums text-cyan-300">
-              {String((detail.wallet as { balance?: number }).balance ?? 0)} LC
+              {formatLc(Number((detail.wallet as { balance?: number }).balance ?? 0))}
             </p>
           </section>
         ) : null}
@@ -67,7 +83,8 @@ export default function BackofficeUserDetailPage() {
               const row = tx as { type?: string; amount?: number; created_at?: string };
               return (
                 <li key={i}>
-                  {row.type} · {row.amount} LC · {row.created_at}
+                  {creditTypeLabelPt(row.type)} · {formatLc(Number(row.amount ?? 0))} ·{' '}
+                  {formatAdminDateTime(row.created_at)}
                 </li>
               );
             })}
@@ -81,7 +98,7 @@ export default function BackofficeUserDetailPage() {
               const row = r as { id?: string; title?: string; status?: string };
               return (
                 <li key={i}>
-                  {row.title} · {row.status}
+                  {row.title} · {requestStatusLabelPt(row.status)}
                 </li>
               );
             })}

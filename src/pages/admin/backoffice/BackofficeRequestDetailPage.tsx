@@ -4,7 +4,8 @@ import { useAuth } from '@/context/AuthContext';
 import { backofficeFetch, BackofficeApiError } from '@/backoffice/api/backofficeClient';
 import { parseBackofficeRequestDetail } from '@/backoffice/contracts/requestsContract';
 import { BackofficePageShell } from '@/backoffice/components/BackofficePageShell';
-import { BACKOFFICE_PT, formatBackofficeApiError } from '@/admin/fluxPtCopy';
+import { BACKOFFICE_PT, formatBackofficeApiError, serviceCategoryLabelPt } from '@/admin/fluxPtCopy';
+import { applicationStatusLabelPt, requestStatusLabelPt } from '@/admin/fluxFormat';
 import { ROUTES } from '@/utils/constants';
 
 export default function BackofficeRequestDetailPage() {
@@ -33,10 +34,20 @@ export default function BackofficeRequestDetailPage() {
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}
       <div className="grid gap-4 md:grid-cols-2">
         <section className="border border-white/10 bg-white/[0.02] p-4 text-sm text-slate-300">
-          <p>{BACKOFFICE_PT.colStatus}: <span className="text-white">{String(req?.status ?? '—')}</span></p>
-          <p className="mt-2">{BACKOFFICE_PT.colCategory}: {String(req?.category ?? '—')}</p>
-          <p className="mt-2">{BACKOFFICE_PT.colBudget}: {String(req?.budget ?? '—')}</p>
-          <p className="mt-2">{BACKOFFICE_PT.colLocation}: {String(req?.location ?? '—')}</p>
+          <p>
+            {BACKOFFICE_PT.colStatus}:{' '}
+            <span className="text-white">{requestStatusLabelPt(String(req?.status ?? ''))}</span>
+          </p>
+          <p className="mt-2">
+            {BACKOFFICE_PT.colCategory}:{' '}
+            {req?.category ? serviceCategoryLabelPt(String(req.category)) : '—'}
+          </p>
+          <p className="mt-2">
+            {BACKOFFICE_PT.colBudget}: {String(req?.budget ?? '—')}
+          </p>
+          <p className="mt-2">
+            {BACKOFFICE_PT.colLocation}: {String(req?.location ?? '—')}
+          </p>
         </section>
         <section className="border border-white/10 bg-white/[0.02] p-4 text-sm">
           <h3 className="font-black text-white">{BACKOFFICE_PT.colClient}</h3>
@@ -51,8 +62,8 @@ export default function BackofficeRequestDetailPage() {
             const row = a as { helper_name?: string; status?: string; is_exclusive?: boolean };
             return (
               <li key={i}>
-                {row.helper_name ?? 'Helper'} · {row.status}
-                {row.is_exclusive ? ' · VIP' : ''}
+                {row.helper_name ?? BACKOFFICE_PT.helpFallback} · {applicationStatusLabelPt(row.status)}
+                {row.is_exclusive ? ` · ${BACKOFFICE_PT.vipBadge}` : ''}
               </li>
             );
           })}

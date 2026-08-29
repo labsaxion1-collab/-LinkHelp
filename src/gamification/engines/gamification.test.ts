@@ -77,10 +77,10 @@ describe('computeClientScore — escala 0–1000', () => {
     expect(computeClientScore(maxedStats)).toBeLessThanOrEqual(1000);
   });
 
-  it('pedidos publicados aumentam o histórico positivo', () => {
+  it('publicar pedidos sozinho NÃO aumenta o score de confiança do cliente', () => {
     const sem = computeClientScore(baseStats);
     const com = computeClientScore({ ...baseStats, publishedOrdersCount: 3 });
-    expect(com).toBeGreaterThan(sem);
+    expect(com).toBe(sem);
   });
 });
 
@@ -131,9 +131,19 @@ describe('determineLevel — helper: score mínimo E requisitos', () => {
 });
 
 describe('determineLevel — cliente', () => {
-  it('score 100 + perfil 80% + 1 pedido publicado = confiável', () => {
-    const stats = { ...baseStats, profilePct: 80, publishedOrdersCount: 1 };
+  it('score 100 + perfil 80% + 1 pedido publicado SEM conclusão permanece novo', () => {
+    const stats = { ...baseStats, profilePct: 80, publishedOrdersCount: 1, totalCompleted: 0 };
+    expect(determineLevel('client', 100, stats)).toBe('novo');
+  });
+
+  it('score 100 + perfil 80% + 1 serviço concluído = confiável', () => {
+    const stats = { ...baseStats, profilePct: 80, publishedOrdersCount: 1, totalCompleted: 1 };
     expect(determineLevel('client', 100, stats)).toBe('confiavel');
+  });
+
+  it('cadastro/perfil completo sem conclusão permanece novo mesmo com score 100', () => {
+    const stats = { ...baseStats, profilePct: 100, publishedOrdersCount: 0, totalCompleted: 0 };
+    expect(determineLevel('client', 100, stats)).toBe('novo');
   });
 
   it('score 250 com 3 cancelamentos NÃO vira ouro', () => {

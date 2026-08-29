@@ -7,35 +7,67 @@ import type {
 } from '../types/gamification';
 import { determineSequentialLevel, getCurrentLevelConfig, getLevelsFor } from './levelEngine';
 
-export function listMissingRequirements(stats: GamificationStats, requirements: LevelRequirements): string[] {
+type TFn = (key: string, vars?: Record<string, string | number>) => string;
+
+/** Missing requirement strings — pass `t` from the UI for PT/FR/EN. */
+export function listMissingRequirements(
+  stats: GamificationStats,
+  requirements: LevelRequirements,
+  t?: TFn,
+): string[] {
   const missing: string[] = [];
 
   if (requirements.minProfilePct !== undefined && stats.profilePct < requirements.minProfilePct) {
-    missing.push(`Perfil ${requirements.minProfilePct}% completo`);
+    missing.push(
+      t
+        ? t('gamification.req_profile_pct', { pct: requirements.minProfilePct })
+        : `Perfil ${requirements.minProfilePct}% completo`,
+    );
   }
   if (requirements.minApplications !== undefined && stats.applicationsCount < requirements.minApplications) {
-    missing.push(`${requirements.minApplications - stats.applicationsCount} candidatura(s) restante(s)`);
+    const count = requirements.minApplications - stats.applicationsCount;
+    missing.push(
+      t ? t('gamification.req_applications_left', { count }) : `${count} candidatura(s) restante(s)`,
+    );
   }
   if (requirements.minPublishedOrders !== undefined && stats.publishedOrdersCount < requirements.minPublishedOrders) {
-    missing.push(`${requirements.minPublishedOrders - stats.publishedOrdersCount} pedido(s) publicado(s) restante(s)`);
+    const count = requirements.minPublishedOrders - stats.publishedOrdersCount;
+    missing.push(
+      t ? t('gamification.req_published_left', { count }) : `${count} pedido(s) publicado(s) restante(s)`,
+    );
   }
   if (requirements.minTotalCompleted !== undefined && stats.totalCompleted < requirements.minTotalCompleted) {
-    missing.push(`${requirements.minTotalCompleted - stats.totalCompleted} serviço(s) restante(s)`);
+    const count = requirements.minTotalCompleted - stats.totalCompleted;
+    missing.push(
+      t ? t('gamification.req_services_left', { count }) : `${count} serviço(s) restante(s)`,
+    );
   }
   if (requirements.minAvgRating !== undefined && stats.avgRating < requirements.minAvgRating) {
-    missing.push(`Nota mínima ${requirements.minAvgRating}`);
+    missing.push(
+      t
+        ? t('gamification.req_min_rating', { rating: requirements.minAvgRating })
+        : `Nota mínima ${requirements.minAvgRating}`,
+    );
   }
   if (requirements.minResponseRate !== undefined && stats.responseRate < requirements.minResponseRate) {
-    missing.push(`Taxa de resposta ${requirements.minResponseRate}%`);
+    missing.push(
+      t
+        ? t('gamification.req_response_rate', { pct: requirements.minResponseRate })
+        : `Taxa de resposta ${requirements.minResponseRate}%`,
+    );
   }
   if (requirements.minHireRate !== undefined && stats.hireRate < requirements.minHireRate) {
-    missing.push(`Taxa de contratação ${requirements.minHireRate}%`);
+    missing.push(
+      t
+        ? t('gamification.req_hire_rate', { pct: requirements.minHireRate })
+        : `Taxa de contratação ${requirements.minHireRate}%`,
+    );
   }
   if (requirements.maxComplaints !== undefined && stats.complaintCount > requirements.maxComplaints) {
-    missing.push('Reduzir reclamações');
+    missing.push(t ? t('gamification.req_reduce_complaints') : 'Reduzir reclamações');
   }
   if (requirements.maxCancels !== undefined && stats.cancelCount > requirements.maxCancels) {
-    missing.push('Reduzir cancelamentos');
+    missing.push(t ? t('gamification.req_reduce_cancels') : 'Reduzir cancelamentos');
   }
 
   return missing;
@@ -50,6 +82,7 @@ export function getProgressToNextLevel(
   score: number,
   stats: GamificationStats,
   currentLevelKey: LevelKey = 'novo',
+  t?: TFn,
 ): ProgressToNextLevel {
   const levels = getLevelsFor(userType);
   const currentKey = determineSequentialLevel(userType, currentLevelKey, score, stats);
@@ -72,7 +105,7 @@ export function getProgressToNextLevel(
   const rawPercent = Math.round(((score - rangeStart) / (rangeEnd - rangeStart)) * 100);
   const progressPercent = Math.min(99, Math.max(0, rawPercent));
   const pointsToNext = Math.max(0, rangeEnd - score);
-  const missingRequirements = listMissingRequirements(stats, nextLevel.requirements);
+  const missingRequirements = listMissingRequirements(stats, nextLevel.requirements, t);
 
   return {
     currentLevel,
@@ -87,16 +120,22 @@ export function getProgressToNextLevel(
 export function formatProgressSubtitle(
   progress: Pick<ProgressToNextLevel, 'pointsToNext' | 'missingRequirements'>,
   variant: 'hero' | 'card' = 'hero',
+  t?: TFn,
 ): string {
   const { pointsToNext, missingRequirements } = progress;
 
   if (pointsToNext === 0 && missingRequirements.length > 0) {
-    return `Pontos ok — falta: ${missingRequirements.join(', ')}`;
+    const details = missingRequirements.join(', ');
+    return t
+      ? t('gamification.points_ok_missing', { details })
+      : `Pontos ok — falta: ${details}`;
   }
 
   if (variant === 'card') {
-    return `${pointsToNext} pts restantes`;
+    return t ? t('gamification.pts_remaining', { count: pointsToNext }) : `${pointsToNext} pts restantes`;
   }
 
-  return `Mais ${pointsToNext} pontos para alcançar o próximo nível`;
+  return t
+    ? t('gamification.more_points_next', { count: pointsToNext })
+    : `Mais ${pointsToNext} pontos para alcançar o próximo nível`;
 }

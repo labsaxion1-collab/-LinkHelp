@@ -110,6 +110,86 @@
   background-color: var(--medal-primary-light);
 }
 
+@keyframes lhRankCompactMedalFloat {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.03);
+  }
+}
+
+.lh-rank-compact-medal {
+  animation: lhRankCompactMedalFloat 4.5s ease-in-out infinite;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Optical clip only — never put the float animation on this node. */
+.lh-rank-compact-medal-viewport {
+  pointer-events: none;
+}
+
+/**
+ * Medal PNGs ship with uneven transparent/black padding (~46–71% fill).
+ * Scale the glyph on a SEPARATE element from `.lh-rank-compact-medal`
+ * so float keyframes (transform) never fight the optical size boost.
+ * --lh-compact-emblem-scale / --lh-compact-emblem-origin come per heroKey
+ * from compactRankHeroVisual (never a single global scale).
+ */
+.lh-rank-compact-medal-glyph {
+  transform: translateY(var(--lh-compact-emblem-offset-y, 0px))
+    scale(var(--lh-compact-emblem-scale, 1));
+  transform-origin: var(--lh-compact-emblem-origin, center 41%);
+  will-change: transform;
+}
+
+/**
+ * Pedestal PNGs also ship with large transparent margins (fill ≈ 57–73% W,
+ * 26–40% H). Scale the glyph separately from the viewport box so optical
+ * size tracks fillW/fillH per heroKey — never a single global CSS enlarge.
+ */
+.lh-rank-compact-pedestal-viewport {
+  pointer-events: none;
+}
+
+.lh-rank-compact-pedestal-glyph {
+  transform: scale(var(--lh-compact-pedestal-scale, 1));
+  transform-origin: var(--lh-compact-pedestal-origin, center 78%);
+  will-change: transform;
+}
+
+/* clientHome only: lower medal+pedestal as one unit (Profile / Help untouched). */
+.lh-compact-rank-stage--client-home {
+  transform: translateY(var(--lh-compact-client-home-stage-offset-y, 10px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lh-rank-compact-medal {
+    animation: none;
+  }
+}
+
+/* Compact rank: break out of page padding to viewport edges on mobile.
+   Uses margin-inline vs 50dvw — not left/transform — so ancestor padding
+   cannot shift the strip off the viewport center. */
+.lh-compact-rank-bleed {
+  position: relative;
+  box-sizing: border-box;
+  width: auto;
+  max-width: none;
+  margin-inline: calc(50% - 50dvw);
+}
+
+@media (min-width: 1024px) {
+  .lh-compact-rank-bleed {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+  }
+}
+
 .lh-medal-card-active {
   border-color: var(--medal-border);
   box-shadow: var(--medal-glow);

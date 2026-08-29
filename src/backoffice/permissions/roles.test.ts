@@ -7,9 +7,15 @@ import {
 } from './roles';
 
 describe('backoffice RBAC roles', () => {
-  it('defines five roles and eleven permissions', () => {
+  it('defines five roles and twelve permissions including admins.manage', () => {
     expect(BACKOFFICE_ROLES).toHaveLength(5);
-    expect(BACKOFFICE_PERMISSIONS).toHaveLength(11);
+    expect(BACKOFFICE_PERMISSIONS).toHaveLength(12);
+    expect(BACKOFFICE_PERMISSIONS).toContain('admins.manage');
+  });
+
+  it('grants admins.manage only via super_admin matrix', () => {
+    expect(roleGrantsPermission('super_admin', 'admins.manage')).toBe(true);
+    expect(roleGrantsPermission('operations_admin', 'admins.manage')).toBe(false);
   });
 
   it('treats admin and flux_admin JWT roles as legacy admins', () => {

@@ -21,17 +21,20 @@ const clientPublicPath = 'src/components/features/ClientPublicProfileView.tsx';
 const spokenPath = 'src/data/spokenLanguages.ts';
 
 describe('P2.4.5 spoken language icons', () => {
-  it('1–4. normal state icons-only; names in picker; + adds language', async () => {
+  it('1–4. normal state icons-only; multi-select picker with confirm', async () => {
     const src = await readFile(resolve(editPath), 'utf8');
     expect(src).toContain('data-testid="public-edit-spoken-languages"');
     expect(src).toContain('data-icons-only="true"');
     expect(src).toContain('public-edit-add-language');
     expect(src).toContain('public-edit-language-picker');
+    expect(src).toContain('public-edit-confirm-languages');
     expect(src).toContain('data-language-code={code}');
     expect(src).toContain('code.toUpperCase()');
     expect(src).toContain('getSpokenLanguageLabel(option.code, t)');
-    expect(src).toContain('addLanguage');
-    expect(src).not.toContain('toggleLanguage');
+    expect(src).toContain('toggleLanguageDraft');
+    expect(src).toContain('confirmLanguageDraft');
+    expect(src).not.toContain('addLanguage');
+    expect(src).toContain('ProfileMultiSelectSheet');
     expect(src).not.toContain('grid grid-cols-2 gap-2 sm:grid-cols-3');
   });
 

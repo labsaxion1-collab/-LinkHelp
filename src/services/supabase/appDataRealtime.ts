@@ -1,3 +1,4 @@
+import { isBaselineFinanceEnabled } from '@/config/baselineFinance';
 import { getSupabase } from '@/lib/supabase';
 import { measureLocalOperation } from '@/lib/dev/supabaseMetrics';
 import type { Application } from '@/types/application';
@@ -8,6 +9,7 @@ import type { UpcomingJob } from '@/types/upcoming';
 import { applicationRowToApp, requestRowToJob, upcomingRowToUpcoming } from './mappers';
 import { reviewRowToServiceReview } from './reviewsRemote';
 import { fetchProfilesAsMapperMap } from './fetchUserViews';
+import { omittedRequestColumnsForTests } from './optionalBootstrapSelect';
 
 export type AppDataTable = 'requests' | 'applications' | 'upcoming_jobs' | 'reviews';
 export type AppDataEventType = 'INSERT' | 'UPDATE' | 'DELETE';
@@ -52,8 +54,22 @@ function hasFields(row: Record<string, unknown>, fields: readonly string[]): boo
   return fields.every((field) => Object.prototype.hasOwnProperty.call(row, field));
 }
 
-const REQUEST_FIELDS = ['id', 'client_id', 'title', 'description', 'category', 'subcategory', 'urgency', 'budget', 'location', 'address', 'city', 'region', 'postal_code', 'latitude', 'longitude', 'preferred_date', 'preferred_time_window', 'preferred_time', 'budget_type', 'budget_amount', 'currency', 'budget_min', 'budget_max', 'accepted_amount', 'application_count', 'exclusive_helper_id', 'status', 'created_at', 'updated_at'] as const;
-const APPLICATION_FIELDS = ['id', 'request_id', 'helper_id', 'client_id', 'status', 'message', 'proposed_amount', 'is_exclusive', 'created_at', 'updated_at'] as const;
+const REQUEST_FIELDS_BASE = ['id', 'client_id', 'title', 'description', 'category', 'subcategory', 'urgency', 'budget', 'location', 'address', 'city', 'region', 'postal_code', 'latitude', 'longitude', 'preferred_date', 'preferred_time_window', 'preferred_time', 'budget_type', 'budget_amount', 'currency', 'budget_min', 'budget_max', 'accepted_amount', 'exclusive_helper_id', 'status', 'expires_at', 'created_at', 'updated_at'] as const;
+const APPLICATION_FIELDS_BASE = ['id', 'request_id', 'helper_id', 'client_id', 'status', 'message', 'proposed_amount', 'is_exclusive', 'created_at', 'updated_at'] as const;
+
+function requestFields(): readonly string[] {
+  const base = isBaselineFinanceEnabled()
+    ? [...REQUEST_FIELDS_BASE, 'service_mode']
+    : REQUEST_FIELDS_BASE;
+  const omitted = omittedRequestColumnsForTests();
+  return base.filter((column) => !omitted.has(column));
+}
+
+function applicationFields(): readonly string[] {
+  return isBaselineFinanceEnabled()
+    ? [...APPLICATION_FIELDS_BASE, 'lead_total_lc', 'lead_debit_lc', 'lead_service_mode']
+    : APPLICATION_FIELDS_BASE;
+}
 const UPCOMING_FIELDS = ['id', 'request_id', 'helper_id', 'client_name', 'client_avatar', 'title', 'category', 'description', 'location', 'value_hint', 'urgency', 'scheduled_at', 'workflow_status', 'completion_requested_at', 'review_window_ends_at', 'created_at'] as const;
 const REVIEW_FIELDS = ['id', 'request_id', 'reviewer_id', 'target_user_id', 'rating', 'comment', 'criteria_scores', 'reviewer_role', 'created_at'] as const;
 
@@ -75,8 +91,8 @@ async function profileFor(id: string): Promise<MapperProfile> {
 export async function resolveRequestEvent(event: AppDataRealtimeEvent, current?: Job): Promise<GranularResult<Job>> {
   const id = eventRowId(event);
   if (event.eventType === 'DELETE' || !id) return { item: null, id, usedPayload: true, queries: [] };
-  const complete = hasFields(event.newRow, REQUEST_FIELDS);
-  const row = complete ? event.newRow as RequestRow : await selectOne<RequestRow>('requests', REQUEST_FIELDS, id);
+  const complete = hasFields(event.newRow, requestFields());
+  const row = complete ? event.newRow as RequestRow : await selectOne<RequestRow>('requests', requestFields(), id);
   const queries = complete ? [] : ['requests:id'];
   if (!row) return { item: null, id, usedPayload: complete, queries };
   const profile = current ? { ...EMPTY_PROFILE, name: current.clientName, avatar_url: current.clientAvatar, rating: current.clientRating ?? null } : await profileFor(row.client_id);
@@ -87,8 +103,8 @@ export async function resolveRequestEvent(event: AppDataRealtimeEvent, current?:
 export async function resolveApplicationEvent(event: AppDataRealtimeEvent, current?: Application): Promise<GranularResult<Application>> {
   const id = eventRowId(event);
   if (event.eventType === 'DELETE' || !id) return { item: null, id, usedPayload: true, queries: [] };
-  const complete = hasFields(event.newRow, APPLICATION_FIELDS);
-  const row = complete ? event.newRow as ApplicationRow : await selectOne<ApplicationRow>('applications', APPLICATION_FIELDS, id);
+  const complete = hasFields(event.newRow, applicationFields());
+  const row = complete ? event.newRow as ApplicationRow : await selectOne<ApplicationRow>('applications', applicationFields(), id);
   const queries = complete ? [] : ['applications:id'];
   if (!row) return { item: null, id, usedPayload: complete, queries };
   const profile = current

@@ -36,12 +36,42 @@ export function hideJobForUser(userId: string, jobId: string): void {
   localStorage.setItem(hiddenKey(userId), JSON.stringify([...set]));
 }
 
-/** Hide open jobs after preferred date has passed (client view). */
-export function isJobExpired(job: Pick<Job, 'preferredDate' | 'status'>): boolean {
-  if (job.status !== 'open' || !job.preferredDate) return false;
-  const end = new Date(job.preferredDate);
-  end.setHours(23, 59, 59, 999);
-  return Date.now() > end.getTime();
+type ExpirationFields = Pick<Job, 'preferredDate' | 'status' | 'expiresAt'>;
+
+/**
+ * Authoritative request listing expiration for UI presentation.
+ *
+ * Contract (migrations 0060 expires_at + 0062 status expired):
+ * 1. status === 'expired' → expired (even if expiresAt is missing)
+ * 2. expiresAt <= now → expired for presentation while cron has not flipped status yet
+ * 3. Legacy fallback only when expiresAt is absent: preferredDate day-end passed on open/paused
+ *
+ * preferredDate is the client's requested service day — NOT the 7-day listing TTL.
+ * open + past preferredDate + future expiresAt must stay active.
+ * Hired / completed / cancelled jobs are not reclassified as expired via dates.
+ */
+export function isJobExpired(job: ExpirationFields, now = Date.now()): boolean {
+  if (job.status === 'expired') return true;
+  if (
+    job.status === 'completed' ||
+    job.status === 'cancelled' ||
+    job.status === 'in_progress'
+  ) {
+    return false;
+  }
+
+  if (job.expiresAt != null && Number.isFinite(job.expiresAt)) {
+    return now >= job.expiresAt;
+  }
+
+  // Legacy pre-0060 rows without expires_at — preferredDate day end only.
+  if ((job.status === 'open' || job.status === 'paused') && job.preferredDate) {
+    const end = new Date(job.preferredDate);
+    end.setHours(23, 59, 59, 999);
+    return now > end.getTime();
+  }
+
+  return false;
 }
 
 export function isJobVisibleToClient(

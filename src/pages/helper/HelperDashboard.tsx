@@ -31,11 +31,11 @@ import { HelperProfileCompletionBar } from '@/components/helpers/portfolio/Helpe
 import { HelperCreditsWalletCard } from '@/components/helpers/HelperCreditsWalletCard';
 import { HelperStatsStrip, type HelperStatsStripModel } from '@/components/helpers/HelperStatsStrip';
 import { HelperOpportunityCard } from '@/components/opportunities/HelperOpportunityCard';
-import { HelperCategoryDropdown } from '@/components/helper/HelperCategoryDropdown';
 import { HelperInsufficientCreditsModal } from '@/components/modals/HelperInsufficientCreditsModal';
 import { getApplicationChargeLc } from '@/config/helperCreditCharge';
 import { getExclusiveApplicationChargeLc } from '@/utils/helperCreditDisplay';
 import { InsufficientCreditsError, leadCostsForJob } from '@/services/helperLeadCredits';
+import { formatBaselineFinanceError, isActiveCreditObligationError } from '@/utils/formatBaselineFinanceError';
 import { recordMarketSignal } from '@/services/marketSignals';
 import { persistLocalDismissedRequest } from '@/services/supabase/helperDismissedRemote';
 import { useHelperDismissedRequests } from '@/hooks/useHelperDismissedRequests';
@@ -71,13 +71,17 @@ import {
   getJobServiceCategoryId,
   sortJobsByHelperCategoryPreference,
 } from '@/utils/helperCategoryPreferences';
+import {
+  explainHelperFeedJobExclusion,
+  helperHasFeedCategories,
+  resolveHelperEmptyFeedKind,
+} from '@/utils/helperFeedEligibility';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { CreditsUsageDashboard } from '@/components/features/CreditsUsageDashboard';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { LhCard } from '@/components/design-system/LhCard';
-import { HelperDashboardHeroSlot } from '@/components/helper/HelperDashboardHeroSlot';
+import { GamificationCompactRankCard } from '@/gamification/components/GamificationCompactRankCard';
 import { GamificationProgressCard } from '@/gamification/components/GamificationProgressCard';
-import { useGamification } from '@/gamification/hooks/useGamification';
 import { useMarkHomeDashboardSurfaceReady } from '@/components/home/HomeDashboardShellContext';
 import { useDevRenderCount } from '@/utils/devRenderCount';
 import { useProgressiveReveal } from '@/hooks/useProgressiveReveal';
@@ -119,7 +123,6 @@ export default function HelperDashboard() {
   const [activeInfoSlide, setActiveInfoSlide] = useState(0);
   const [heroParallaxOffset, setHeroParallaxOffset] = useState(0);
   const feedTabsRef = React.useRef<HTMLDivElement | null>(null);
-  const helperGamification = useGamification('helper');
 
   // Modals state
   const [profileSettings, setProfileSettings] = useState<HelperProfileSettings>(() => loadHelperProfileSettings());
@@ -197,7 +200,7 @@ export default function HelperDashboard() {
     () => getHelperCategoryPreferences(profile, profileSettings.skillIds),
     [profile, profileSettings.skillIds],
   );
-  const hasCategories = profileSettings.skillIds.length > 0;
+  const hasCategories = helperHasFeedCategories(profileSettings.skillIds, categoryPrefs);
   const helperBaseCoords = useMemo(() => helperBaseCoordinates(profile), [profile]);
   const hasHelperBaseAddress = useMemo(() => helperHasBaseAddress(profile), [profile]);
   const hasExactBaseCoords = useMemo(() => helperHasExactBaseCoordinates(profile), [profile]);
@@ -281,7 +284,12 @@ export default function HelperDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [isConfigured, storageUserId]);
+  }, [
+    isConfigured,
+    storageUserId,
+    profile?.primary_category,
+    profile?.secondary_categories,
+  ]);
 
   const completionBreakdown = React.useMemo(
     () => computeHelperProfileCompletion(profileSettings, helperAvatarUrl),
@@ -631,16 +639,23 @@ export default function HelperDashboard() {
       setToastNotification({ message: t('helper_dashboard.toast_apply_success'), show: true });
       setTimeout(() => setToastNotification({ message: '', show: false }), 4000);
     } catch (err: unknown) {
-      if (err instanceof InsufficientCreditsError) {
-        openInsufficientCreditsModal(job);
-        return;
-      }
       const msg =
         err instanceof Error
           ? err.message
           : err && typeof err === 'object' && 'message' in err
             ? String((err as { message?: unknown }).message ?? '')
             : '';
+      if (err instanceof InsufficientCreditsError) {
+        openInsufficientCreditsModal(job);
+        return;
+      }
+      if (msg === 'ACTIVE_CREDIT_OBLIGATION' || isActiveCreditObligationError(err)) {
+        showToast(t('baseline_finance.active_credit_obligation_helper'), 'error');
+        if (UI_VISIBILITY.helperCreditPurchase) {
+          navigate(ROUTES.helperLinkCredits);
+        }
+        return;
+      }
       if (msg === 'ALREADY_APPLIED') {
         showToast(t('helper_dashboard.already_interested'), 'error');
         return;
@@ -653,13 +668,18 @@ export default function HelperDashboard() {
         showToast(t('helper_dashboard.exclusive_application_locked'), 'error');
         return;
       }
+      const mapped = formatBaselineFinanceError(err, t, 'helper_dashboard.toast_apply_error');
+      if (msg.toUpperCase().includes('LEAD_LOCATION_INCOMPLETE') || mapped === t('baseline_finance.location_incomplete')) {
+        showToast(t('baseline_finance.location_incomplete_action'), 'error');
+        navigate(`${ROUTES.settings}#helper-base-location`);
+        return;
+      }
       const friendlyMsg =
-        msg === 'APPLICATION_BACKEND_NOT_READY' ||
         msg.includes('helper_debit_application_interest') ||
         msg.includes('schema cache') ||
         msg.includes('APPLICATION_INSERT_FAILED')
           ? t('helper_dashboard.toast_apply_error')
-          : msg || t('helper_dashboard.toast_apply_error');
+          : mapped;
       showToast(friendlyMsg, 'error');
     } finally {
       setApplyingJobId(null);
@@ -712,7 +732,7 @@ export default function HelperDashboard() {
   );
 
   const displayedJobs = useMemo(() => {
-    if (profileSettings.skillIds.length === 0) return [];
+    if (!helperHasFeedCategories(profileSettings.skillIds, categoryPrefs)) return [];
     const viewerId = helperUserId ?? me?.id ?? '';
     let list = jobs.filter(
       (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== viewerId,
@@ -754,6 +774,69 @@ export default function HelperDashboard() {
     dismissedJobIds,
     me?.id,
     helperEngagedJobIds,
+  ]);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || !skillsLoaded) return;
+    if (displayedJobs.length > 0) return;
+    const viewerId = helperUserId ?? me?.id ?? '';
+    const sample = jobs.slice(0, 12).map((job) => ({
+      jobId: job.id,
+      category: job.category,
+      reason: explainHelperFeedJobExclusion({
+        job,
+        viewerId,
+        prefs: categoryPrefs,
+        skillIds: profileSettings.skillIds,
+        selectedCategoryFilters,
+        dismissedJobIds,
+        engagedJobIds: helperEngagedJobIds,
+        applications,
+      }),
+    }));
+    console.debug('[LinkHelp] helper feed empty diagnostic', {
+      hasCategories,
+      primary: categoryPrefs.primaryCategory,
+      secondary: categoryPrefs.secondaryCategories,
+      skillIds: profileSettings.skillIds,
+      sample,
+    });
+  }, [
+    skillsLoaded,
+    displayedJobs.length,
+    jobs,
+    helperUserId,
+    me?.id,
+    categoryPrefs,
+    profileSettings.skillIds,
+    selectedCategoryFilters,
+    dismissedJobIds,
+    helperEngagedJobIds,
+    applications,
+    hasCategories,
+  ]);
+
+  const emptyFeedKind = useMemo(() => {
+    if (!skillsLoaded) return 'loading' as const;
+    if (!hasCategories) return 'no_categories' as const;
+    if (displayedJobs.length > 0) return 'loading' as const;
+    const viewerId = helperUserId ?? me?.id ?? '';
+    const openEligible = jobs.filter(
+      (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== viewerId,
+    ).length;
+    return resolveHelperEmptyFeedKind({
+      skillsLoaded,
+      hasCategories,
+      openEligibleBeforeSoftFilters: openEligible,
+      displayedCount: displayedJobs.length,
+    });
+  }, [
+    skillsLoaded,
+    hasCategories,
+    displayedJobs.length,
+    jobs,
+    helperUserId,
+    me?.id,
   ]);
 
   const progressiveFeedJobs = useProgressiveReveal(displayedJobs, 3, 700);
@@ -1025,18 +1108,8 @@ export default function HelperDashboard() {
             </div>
           ) : null}
 
-          {/* Hero dinâmica: gamification.heroKey é a única fonte da verdade */}
-          <HelperDashboardHeroSlot
-            gamification={helperGamification.record}
-            gamificationLoading={helperGamification.loading}
-            gamificationError={helperGamification.error}
-            avatarUrl={helperAvatarUrl ?? me.avatar}
-            balance={walletBalance}
-            completedServices={helperMvpStats.completed}
-            satisfactionRate={helperMvpStats.responseRatePct}
-            rating={helperMvpStats.avgRating}
-            connectedProfessionals={helperMvpStats.accepted}
-          />
+          {/* Ranking compacto — mesma fonte de dados/cálculos da gamificação */}
+          <GamificationCompactRankCard userType="helper" className="mb-4" />
           <section
               className="relative isolate hidden mb-8 w-screen min-w-[100vw] max-w-none overflow-hidden pb-8 pt-0"
               style={{ marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)' }}
@@ -1146,40 +1219,6 @@ export default function HelperDashboard() {
 
           </section>
 
-          <section className="relative mb-8">
-              <div className="relative mb-3 flex items-center justify-between px-1 sm:px-2">
-                <h2 className="text-base font-black tracking-tight text-[#0B1220]">{t('helper_dashboard.categories_heading')}</h2>
-                {selectedCategoryFilters.length ? (
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black text-[#2563FF]">
-                    {t(
-                      selectedCategoryFilters.length === 1
-                        ? 'helper_dashboard.categories_selected_one'
-                        : 'helper_dashboard.categories_selected_other',
-                      { count: selectedCategoryFilters.length },
-                    )}
-                  </span>
-                ) : null}
-              </div>
-
-              <HelperCategoryDropdown
-                open
-                onToggle={() => undefined}
-                selectedIds={selectedCategoryFilters}
-                onToggleCategory={(categoryId) => {
-                  setSelectedCategoryFilters((current) =>
-                    current.includes(categoryId)
-                      ? current.filter((id) => id !== categoryId)
-                      : [...current, categoryId],
-                  );
-                  setActiveTab('match');
-                }}
-                onClear={() => setSelectedCategoryFilters([])}
-                t={t}
-                inline
-                className="relative mt-0"
-              />
-            </section>
-
           <div ref={feedTabsRef} className="relative mb-5 overflow-hidden rounded-[1.55rem] border border-white/45 bg-[#071D48]/92 p-1.5 shadow-[0_18px_42px_rgba(8,31,84,0.18)] backdrop-blur-xl">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(51,182,255,0.26),transparent_34%),linear-gradient(135deg,rgba(37,99,255,0.22),transparent_48%)]" />
             <div className="relative grid grid-cols-2 gap-1.5">
@@ -1268,7 +1307,7 @@ export default function HelperDashboard() {
                     </div>
               ))}
               </div>
-            ) : skillsLoaded && !hasCategories ? (
+            ) : emptyFeedKind === 'no_categories' ? (
               <div className="flex flex-col items-center justify-center rounded-[22px] border border-dashed border-[rgba(37,99,255,0.16)] bg-gradient-to-br from-white to-[#f4f7ff] px-6 py-14 text-center shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
                 <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 shadow-[0_8px_24px_rgba(37,99,255,0.12)]">
                   <Icons.Briefcase className="h-8 w-8 text-[#2563FF]" strokeWidth={1.75} />
@@ -1289,7 +1328,11 @@ export default function HelperDashboard() {
                   <Icons.SearchX className="h-8 w-8 text-[#2563FF]" strokeWidth={1.75} />
                 </span>
                 <p className="text-[15px] font-bold text-[#0B1220]">{t('helper_dashboard.empty_feed')}</p>
-                <p className="mt-1 text-[13px] font-medium text-[#94A3B8]">{t('helper_dashboard.empty_feed_sub')}</p>
+                <p className="mt-1 text-[13px] font-medium text-[#94A3B8]">
+                  {emptyFeedKind === 'all_filtered'
+                    ? t('helper_dashboard.empty_feed_filtered_sub')
+                    : t('helper_dashboard.empty_feed_sub')}
+                </p>
               </div>
             )}
           </div>

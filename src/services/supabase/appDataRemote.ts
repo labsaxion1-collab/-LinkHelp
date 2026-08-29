@@ -1,3 +1,4 @@
+import { isBaselineFinanceEnabled, type ServiceMode } from '@/config/baselineFinance';
 import { getSupabase } from '@/lib/supabase';
 import {
   recordRealtimeChannelCreated,
@@ -22,14 +23,46 @@ import { fetchProfilesAsMapperMap } from '@/services/supabase/fetchUserViews';
 import { ensureConversation } from '@/services/supabase/conversationEnsure';
 import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
 import { ROUTES } from '@/utils/constants';
+import {
+  buildApplicationSelectForEnv,
+  buildRequestSelectForEnv,
+  queryWithOptionalColumnFallback,
+} from '@/services/supabase/optionalBootstrapSelect';
+
+export {
+  isMissingApplicationCountColumnError,
+  markRequestsOmitApplicationCount,
+  resetRequestSelectApplicationCountCacheForTests,
+  requestsOmitApplicationCount,
+} from '@/services/supabase/optionalBootstrapSelect';
 
 /** Columns required by mappers — avoids select('*') egress on bootstrap. */
-export const REQUEST_SELECT =
-  'id, client_id, title, description, category, subcategory, urgency, budget, location, address, city, region, postal_code, latitude, longitude, preferred_date, preferred_time_window, preferred_time, budget_type, budget_amount, currency, budget_min, budget_max, accepted_amount, application_count, exclusive_helper_id, status, created_at';
+export const REQUEST_SELECT_CORE =
+  'id, client_id, title, description, category, subcategory, urgency, budget, location, address, city, region, postal_code, latitude, longitude, preferred_date, preferred_time_window, preferred_time, budget_type, budget_amount, currency, budget_min, budget_max, accepted_amount, exclusive_helper_id, status, expires_at, created_at';
+
+/** Optional denormalized counter — missing on some staging DBs (`apply_application_count_fix.sql`). */
+export const REQUEST_SELECT_WITH_APPLICATION_COUNT = `${REQUEST_SELECT_CORE}, application_count`;
+
+/** @deprecated Prefer REQUEST_SELECT_WITH_APPLICATION_COUNT / requestSelectForEnv */
+export const REQUEST_SELECT = REQUEST_SELECT_WITH_APPLICATION_COUNT;
+
+/** Includes pack 40 modality — only when baseline finance is enabled. */
+export const REQUEST_SELECT_BASELINE = `${REQUEST_SELECT_WITH_APPLICATION_COUNT}, service_mode`;
+export const REQUEST_SELECT_BASELINE_NO_APP_COUNT = `${REQUEST_SELECT_CORE}, service_mode`;
 
 export const APPLICATION_SELECT =
   'id, request_id, helper_id, client_id, status, message, proposed_amount, is_exclusive, created_at';
 
+export const APPLICATION_SELECT_BASELINE =
+  `${APPLICATION_SELECT}, lead_total_lc, lead_debit_lc, lead_service_mode`;
+
+export function requestSelectForEnv(): string {
+  return buildRequestSelectForEnv(isBaselineFinanceEnabled());
+}
+
+export function applicationSelectForEnv(): string {
+  return buildApplicationSelectForEnv(isBaselineFinanceEnabled());
+}
 export const UPCOMING_JOB_SELECT =
   'id, request_id, helper_id, client_name, client_avatar, title, category, description, location, value_hint, urgency, scheduled_at, workflow_status, completion_requested_at, review_window_ends_at, created_at';
 
@@ -97,23 +130,22 @@ export async function fetchRemoteAppDataBootstrap(): Promise<AppDataBootstrapRes
     };
   }
 
-  const [
-    { data: reqRows, error: reqErr },
-    { data: appRows, error: appErr },
-    { data: upRows },
-    { data: convRows },
-  ] = await Promise.all([
-    sb.from('requests').select(REQUEST_SELECT).order('created_at', { ascending: false }),
-    sb.from('applications').select(APPLICATION_SELECT).order('created_at', { ascending: false }),
-    sb.from('upcoming_jobs').select(UPCOMING_JOB_SELECT).order('scheduled_at', { ascending: true }),
-    sb.from('conversations').select('request_id, helper_id, contact_unlocked'),
-  ]);
+  const [{ data: reqRows, error: reqErr }, { data: appRows, error: appErr }, { data: upRows }, { data: convRows }] =
+    await Promise.all([
+      queryWithOptionalColumnFallback('requests', 'bootstrap requests', async (select) => {
+        const result = await sb.from('requests').select(select).order('created_at', { ascending: false });
+        return { data: result.data, error: result.error };
+      }),
+      queryWithOptionalColumnFallback('applications', 'bootstrap applications', async (select) => {
+        const result = await sb.from('applications').select(select).order('created_at', { ascending: false });
+        return { data: result.data, error: result.error };
+      }),
+      sb.from('upcoming_jobs').select(UPCOMING_JOB_SELECT).order('scheduled_at', { ascending: true }),
+      sb.from('conversations').select('request_id, helper_id, contact_unlocked'),
+    ]);
 
-  if (reqErr) console.error('[LinkHelp] bootstrap requests', reqErr);
-  if (appErr) console.error('[LinkHelp] bootstrap applications', appErr);
-
-  const requests = (reqRows ?? []) as RequestRow[];
-  const applicationsRaw = (appRows ?? []) as ApplicationRow[];
+  const requests = (reqRows ?? []) as unknown as RequestRow[];
+  const applicationsRaw = (appRows ?? []) as unknown as ApplicationRow[];
   const upcomingRaw = (upRows ?? []) as UpcomingJobRow[];
   const chatUnlockedKeys = buildChatUnlockedKeys(
     (convRows ?? []) as { request_id: string; helper_id: string; contact_unlocked: boolean }[],
@@ -351,6 +383,8 @@ export type RemoteCreateRequestInput = {
   clientId: string;
   category: string;
   subcategory?: string | null;
+  /** Canonical pack 40 values — only sent when baseline finance is enabled. */
+  serviceMode?: ServiceMode | null;
   title: string;
   description: string;
   urgency: string;
@@ -418,6 +452,11 @@ function buildRequestInsertPayload(input: RemoteCreateRequestInput, extended: bo
     status: 'open',
   };
 
+  // Only attach service_mode when baseline finance is active — avoids breaking historical publish.
+  if (isBaselineFinanceEnabled() && (input.serviceMode === 'remote' || input.serviceMode === 'in_person')) {
+    base.service_mode = input.serviceMode;
+  }
+
   if (!extended) return base;
 
   return {
@@ -445,6 +484,14 @@ export class InsufficientClientCreditsError extends Error {
 
   constructor() {
     super('INSUFFICIENT_CLIENT_CREDITS');
+  }
+}
+
+export class ActiveCreditObligationError extends Error {
+  readonly code = 'ACTIVE_CREDIT_OBLIGATION';
+
+  constructor() {
+    super('ACTIVE_CREDIT_OBLIGATION');
   }
 }
 
@@ -482,6 +529,9 @@ export async function remoteCreateRequest(input: RemoteCreateRequestInput): Prom
   if (error) {
     if (import.meta.env.DEV) {
       console.error('[LinkHelp] remoteCreateRequest failed', { code: error.code, message: error.message, details: error.details });
+    }
+    if (error.message?.includes('ACTIVE_CREDIT_OBLIGATION')) {
+      throw new ActiveCreditObligationError();
     }
     if (error.message?.includes('INSUFFICIENT_CLIENT_CREDITS')) {
       throw new InsufficientClientCreditsError();
@@ -618,7 +668,39 @@ export type RequestLifecycleRpcResult = {
   status?: string;
   expiredWhilePaused?: boolean;
   alreadyCancelled?: boolean;
+  feeLc?: number;
+  debitedLc?: number;
+  debtCreatedLc?: number;
+  normalHelpersCompensated?: number;
+  normalCompensationTotalLc?: number;
+  vipRefundLc?: number;
+  balanceAfter?: number;
 };
+
+function mapCancelRpcPayload(data: Record<string, unknown> | null): RequestLifecycleRpcResult {
+  if (!data) return {};
+  return {
+    requestId: typeof data.request_id === 'string' ? data.request_id : undefined,
+    status: typeof data.status === 'string' ? data.status : undefined,
+    alreadyCancelled: data.already_cancelled === true,
+    feeLc: typeof data.fee_lc === 'number' ? data.fee_lc : Number(data.fee_lc) || undefined,
+    debitedLc: typeof data.debited_lc === 'number' ? data.debited_lc : Number(data.debited_lc) || undefined,
+    debtCreatedLc:
+      typeof data.debt_created_lc === 'number' ? data.debt_created_lc : Number(data.debt_created_lc) || undefined,
+    normalHelpersCompensated:
+      typeof data.normal_helpers_compensated === 'number'
+        ? data.normal_helpers_compensated
+        : Number(data.normal_helpers_compensated) || undefined,
+    normalCompensationTotalLc:
+      typeof data.normal_compensation_total_lc === 'number'
+        ? data.normal_compensation_total_lc
+        : Number(data.normal_compensation_total_lc) || undefined,
+    vipRefundLc:
+      typeof data.vip_refund_lc === 'number' ? data.vip_refund_lc : Number(data.vip_refund_lc) || undefined,
+    balanceAfter:
+      typeof data.balance_after === 'number' ? data.balance_after : Number(data.balance_after) || undefined,
+  };
+}
 
 function mapLifecycleRpcError(error: { message?: string }): never {
   const msg = error.message ?? '';
@@ -661,12 +743,18 @@ export async function remoteResumeClientRequest(requestId: string): Promise<Requ
   return result;
 }
 
-/** Client cancels request with full helper credit refunds — RPC required. */
+/** Client cancels request — authoritative 7 LC fee + helper compensations (0065). */
 export async function remoteCancelClientRequest(requestId: string): Promise<RequestLifecycleRpcResult> {
-  return callLifecycleRpc('client_cancel_request', {
+  const sb = getSupabase();
+  if (!sb) throw new Error('NO_SUPABASE');
+  const { data, error } = await sb.rpc('client_cancel_request', {
     p_request_id: requestId,
-    p_reason: 'client_cancelled',
-  });
+  } as never);
+  if (error) {
+    if (isPostgrestMissingResource(error)) lifecycleBackendNotReady();
+    mapLifecycleRpcError(error);
+  }
+  return mapCancelRpcPayload((data ?? {}) as Record<string, unknown>);
 }
 
 /** Client rejects a candidate — uses RPC for VIP lock sync + helper notification. */

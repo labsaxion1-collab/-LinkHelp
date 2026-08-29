@@ -77,9 +77,9 @@ export default defineConfig(({ mode }) => {
             '**/brand/*.jpg',
             '**/brand/*.jpeg',
           ],
-          // Main JS chunk is ~1.05 MB; keep precache cap bounded (not unbounded).
+          // Main JS chunk is ~1.3 MB after recent staging features; keep precache capped (not unbounded).
           // Consider code-splitting if the bundle grows much beyond this limit.
-          maximumFileSizeToCacheInBytes: 1.25 * 1024 * 1024,
+          maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
           navigateFallback: '/index.html',
           navigateFallbackDenylist: [/^\/api\//],
           runtimeCaching: [

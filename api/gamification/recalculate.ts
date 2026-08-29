@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getAuthedUserId, getSupabaseAdmin } from '../stripe/supabaseAdmin.js';
+import { getAuthedUserId, getSupabaseAdmin } from '../_lib/stripe/supabaseAdmin.js';
 import {
   recalculateGamificationForUser,
   resolveGamificationUser,
-} from '../lib/gamification.server.mjs';
+} from '../_lib/gamification.server.mjs';
 import type { GamificationDb } from '../../src/gamification/services/gamificationStatsAdapter.js';
 
 type Body = {

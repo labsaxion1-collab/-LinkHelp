@@ -9,16 +9,24 @@ import { getCategoryIconById } from '@/utils/categoryIcons';
 import { formatScheduledClock, formatScheduledDay } from '@/utils/upcomingJobUtils';
 import { avatarUrlForName } from '@/utils/avatarUrl';
 import { LhCard } from '@/components/design-system/LhCard';
+import { LhCardOverlay } from '@/components/design-system/LhCardOverlay';
 import { getRequestDescriptionForViewer } from '@/utils/requestDescriptionDisplay';
 import type { AppLanguage } from '@/services/translationService';
 import {
-  clientFirstName,
   formatRelativeScheduleLabel,
   type HelperTaskAccordion,
   canShowCompleteWorkButton,
   canShowReviewButton,
 } from '@/utils/helperTaskCard';
 import { isAwaitingClientCompletion, shouldHideCompleteButton } from '@/utils/serviceWorkflow';
+import {
+  FEED_CARD_CONTENT_CLASS,
+  FEED_CARD_FIXED_HEIGHT_EXTRA_PX,
+  FEED_CARD_SHELL_CLASS,
+  FEED_CARD_STANDARD_CONTENT_HEIGHT_PX,
+  FEED_CARD_TOP_ACCENT_CLASS,
+  feedCardMinContentStyle,
+} from '@/utils/feedCardFixedHeight';
 
 type Props = {
   job: UpcomingJob;
@@ -33,6 +41,9 @@ type Props = {
   onOpenChat?: () => void;
   completeLoading?: boolean;
   hasPendingReview?: boolean;
+  reviewSubmitted?: boolean;
+  myReviewRating?: number | null;
+  historyMode?: boolean;
   requestJobStatus?: Job['status'];
 };
 
@@ -76,6 +87,9 @@ export function HelperAcceptedJobCard({
   onOpenChat,
   completeLoading = false,
   hasPendingReview = false,
+  reviewSubmitted = false,
+  myReviewRating = null,
+  historyMode = false,
   requestJobStatus = 'in_progress',
 }: Props) {
   const [now, setNow] = useState(() => Date.now());
@@ -89,7 +103,7 @@ export function HelperAcceptedJobCard({
   const CategoryIcon = getCategoryIconById(catId);
   const title = translateJobTitle(job.title, job.category, job.subcategory ?? null, t);
   const descriptionOpen = expandedAccordion === 'description';
-  const firstName = clientFirstName(job.clientName);
+  const clientName = job.clientName?.trim() || '?';
 
   const relativeSchedule = job.scheduledAt
     ? formatRelativeScheduleLabel(job.scheduledAt, now, locale, t)
@@ -108,50 +122,61 @@ export function HelperAcceptedJobCard({
   );
 
   const showComplete =
+    !historyMode &&
     onComplete &&
     !shouldHideCompleteButton(requestJobStatus, job.workflowStatus) &&
     canShowCompleteWorkButton(job.workflowStatus);
   const showReview =
     onReview &&
+    !reviewSubmitted &&
     canShowReviewButton(job.workflowStatus, requestJobStatus, hasPendingReview);
-  const awaitingClient = isAwaitingClientCompletion(job.workflowStatus);
+  const awaitingClient = !historyMode && isAwaitingClientCompletion(job.workflowStatus);
+  const clientRating = requestJob?.clientRating ?? null;
 
   return (
-    <LhCard
-      padding="none"
-      className={clsx(
-        'relative w-full max-w-full overflow-hidden rounded-[22px] border border-[rgba(15,23,42,0.08)] bg-white',
-        'shadow-[0_2px_12px_rgba(15,23,42,0.05),0_6px_28px_rgba(15,23,42,0.06)]',
-      )}
-    >
-      <div
-        className="h-[4px] w-full shrink-0 rounded-t-[22px]"
-        style={{
-          background: `linear-gradient(90deg, ${theme.iconColor} 0%, ${theme.iconColor}55 55%, transparent 100%)`,
-        }}
-        aria-hidden
-      />
+    <>
+      <LhCard
+        padding="none"
+        className={FEED_CARD_SHELL_CLASS}
+        data-testid="helper-accepted-job-card"
+        data-feed-card-min-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
+        data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
+      >
+        <div
+          className={FEED_CARD_TOP_ACCENT_CLASS}
+          style={{
+            background: `linear-gradient(90deg, ${theme.iconColor} 0%, ${theme.iconColor}55 55%, transparent 100%)`,
+          }}
+          aria-hidden
+        />
 
-      <div className="px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4">
-        <div className="flex min-w-0 items-start gap-3">
-          <div
-            className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl border sm:h-14 sm:w-14"
-            style={{
-              backgroundColor: theme.iconBg,
-              borderColor: `${theme.iconColor}28`,
-            }}
-          >
-            <CategoryIcon className="h-6 w-6" style={{ color: theme.iconColor }} strokeWidth={1.9} />
-          </div>
+        <div className={FEED_CARD_CONTENT_CLASS} style={feedCardMinContentStyle()}>
+          <div className="grid w-full min-w-0 grid-cols-[48px_minmax(0,1fr)_auto] gap-x-2 gap-y-1 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:gap-x-2.5">
+            <div
+              className="col-start-1 row-start-1 row-span-2 flex h-[48px] w-[48px] items-center justify-center self-start rounded-xl border sm:h-[52px] sm:w-[52px] sm:rounded-[16px]"
+              style={{
+                backgroundColor: theme.iconBg,
+                borderColor: `${theme.iconColor}28`,
+                boxShadow: `0 5px 14px ${theme.iconColor}16`,
+              }}
+            >
+              <CategoryIcon
+                className="h-[22px] w-[22px] sm:h-6 sm:w-6"
+                style={{ color: theme.iconColor }}
+                strokeWidth={1.9}
+              />
+            </div>
 
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <h3 className="min-w-0 flex-1 text-[15px] font-bold leading-snug text-[#0F172A] sm:text-[17px]">
+            <div className="col-start-2 row-start-1 min-w-0">
+              <h3 className="line-clamp-2 text-[15px] font-bold leading-[1.28] text-[#0F172A] sm:text-[17px] sm:leading-[1.3]">
                 {title}
               </h3>
+            </div>
+
+            <div className="col-start-3 row-start-1 shrink-0">
               <span
                 className={clsx(
-                  'shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+                  'inline-block max-w-[6.5rem] truncate rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
                   WORKFLOW_BADGE[job.workflowStatus] ?? 'border-slate-200 bg-slate-50 text-slate-500',
                 )}
               >
@@ -159,18 +184,7 @@ export function HelperAcceptedJobCard({
               </span>
             </div>
 
-            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-semibold text-slate-600">
-              <span className="inline-flex min-w-0 items-center gap-1.5">
-                <img
-                  src={job.clientAvatar || avatarUrlForName(job.clientName)}
-                  alt=""
-                  onError={(e) => {
-                    e.currentTarget.src = avatarUrlForName(job.clientName);
-                  }}
-                  className="h-5 w-5 shrink-0 rounded-full object-cover ring-1 ring-white"
-                />
-                <span className="truncate">{firstName}</span>
-              </span>
+            <div className="col-start-2 row-start-2 col-span-2 min-w-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-semibold text-slate-600">
               {relativeSchedule ? (
                 <span className="inline-flex items-center gap-1 text-slate-500">
                   <Icons.Clock className="h-3 w-3 shrink-0" />
@@ -190,123 +204,166 @@ export function HelperAcceptedJobCard({
                 </span>
               ) : null}
             </div>
+
+            <div className="col-span-3 col-start-1 mt-0.5 flex flex-col gap-1.5 border-t border-[rgba(15,23,42,0.06)] pt-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full py-0.5 pr-1">
+                  <img
+                    src={job.clientAvatar || avatarUrlForName(job.clientName)}
+                    alt=""
+                    onError={(e) => {
+                      e.currentTarget.src = avatarUrlForName(job.clientName);
+                    }}
+                    className="h-9 w-9 shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white"
+                  />
+                  <span className="min-w-0 truncate text-[12px] font-bold text-[#475569]">
+                    {clientName}
+                  </span>
+                  {clientRating != null && clientRating > 0 ? (
+                    <span className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-semibold text-slate-500">
+                      <Icons.Star className="h-3 w-3 fill-yellow-400 text-yellow-400" aria-hidden />
+                      {Number(clientRating).toFixed(1)}
+                    </span>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={onToggleDescription}
+                  aria-expanded={descriptionOpen}
+                  data-testid="helper-accepted-open-description"
+                  className="inline-flex min-h-[44px] w-[7.75rem] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[rgba(15,23,42,0.08)] bg-[#f8fafc] px-2.5 py-2 text-[12px] font-bold text-[#0F172A] transition hover:bg-slate-50 sm:w-[8.5rem]"
+                >
+                  <Icons.FileText className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
+                  <span className="truncate">{t('helper_tasks.description_toggle')}</span>
+                  <Icons.ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
+                </button>
+              </div>
+
+              {onOpenChat ? (
+                <button
+                  type="button"
+                  onClick={onOpenChat}
+                  className={clsx(actionBtn, 'border border-blue-200 bg-blue-50 text-blue-700')}
+                >
+                  <Icons.MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                  {t('upcoming_jobs.open_chat')}
+                </button>
+              ) : null}
+
+              {showComplete || showReview || reviewSubmitted || awaitingClient ? (
+                <div className="space-y-2">
+                  {showComplete ? (
+                    <button
+                      type="button"
+                      disabled={completeLoading}
+                      onClick={onComplete}
+                      className={clsx(
+                        actionBtn,
+                        'bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60',
+                      )}
+                    >
+                      {completeLoading ? (
+                        <Icons.Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Icons.CheckCircle2 className="h-4 w-4" />
+                      )}
+                      {t('upcoming_jobs.complete_work')}
+                    </button>
+                  ) : null}
+                  {showReview ? (
+                    <button
+                      type="button"
+                      onClick={onReview}
+                      data-testid="helper-review-client"
+                      className={clsx(
+                        actionBtn,
+                        'border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100',
+                      )}
+                    >
+                      <Icons.Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                      {t('service_review.rate_action')}
+                    </button>
+                  ) : null}
+                  {reviewSubmitted ? (
+                    <div
+                      data-testid="helper-review-submitted"
+                      className={clsx(
+                        actionBtn,
+                        'border border-emerald-200 bg-emerald-50 text-emerald-900',
+                      )}
+                    >
+                      <Icons.CheckCircle2 className="h-4 w-4" />
+                      {t('service_review.review_submitted')}
+                      {myReviewRating != null ? (
+                        <span className="inline-flex items-center gap-0.5">
+                          <Icons.Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                          {myReviewRating.toFixed(1)}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {awaitingClient && !showComplete && !showReview ? (
+                    <p className="text-center text-[11px] font-semibold text-blue-700">
+                      {t('upcoming_jobs.awaiting_client_note')}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
+      </LhCard>
 
-        <div className="mt-3 flex flex-wrap gap-2 border-t border-[rgba(15,23,42,0.06)] pt-3">
-          <button
-            type="button"
-            onClick={onToggleDescription}
-            aria-expanded={descriptionOpen}
-            className={clsx(
-              actionBtn,
-              'flex-1 border sm:flex-none sm:min-w-[140px]',
-              descriptionOpen
-                ? 'border-blue-300 bg-blue-50 text-blue-800'
-                : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50',
-            )}
-          >
-            {t('helper_tasks.description_toggle')}
-            <Icons.ChevronDown
-              className={clsx('h-3.5 w-3.5 shrink-0 transition-transform', descriptionOpen && 'rotate-180')}
-            />
-          </button>
-
-          {onOpenChat ? (
-            <button
-              type="button"
-              onClick={onOpenChat}
-              className={clsx(actionBtn, 'flex-1 border border-blue-200 bg-blue-50 text-blue-700 sm:flex-none')}
-            >
-              <Icons.MessageSquare className="h-3.5 w-3.5 shrink-0" />
-              {t('upcoming_jobs.open_chat')}
-            </button>
-          ) : null}
-        </div>
-
-        {descriptionOpen ? (
-          <div className="overflow-hidden border-t border-slate-200/80 bg-gradient-to-b from-slate-50/90 to-white px-1 py-3 sm:px-0">
-            <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-              {t('helper_tasks.observations_label')}
-            </p>
-            <p className="mt-2 min-h-[64px] max-h-36 overflow-y-auto whitespace-pre-wrap text-[13px] font-medium leading-relaxed text-slate-800">
-              {descriptionView.display || t('upcoming_jobs.no_observations')}
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-700">
-              <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                  {t('helper_tasks.date_label')}
-                </p>
-                <p className="mt-1">{dayLabel || '—'}</p>
-              </div>
-              <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                  {t('helper_tasks.time_label')}
-                </p>
-                <p className="mt-1">{clockLabel || '—'}</p>
-              </div>
-              <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                  {t('helper_tasks.distance_label')}
-                </p>
-                <p className="mt-1 truncate">{locationDisplay}</p>
-              </div>
-              <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                  {t('helper_tasks.agreed_payment_label')}
-                </p>
-                <p className="mt-1 text-emerald-700">{job.value || t('upcoming_jobs.payment_to_arrange')}</p>
-              </div>
-            </div>
-            <div className="mt-2 rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+      <LhCardOverlay
+        open={descriptionOpen}
+        onClose={onToggleDescription}
+        title={t('helper_tasks.description_toggle')}
+        subtitle={title}
+        testId="helper-accepted-description-overlay"
+      >
+        <div data-testid="helper-accepted-description-view">
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+            {t('helper_tasks.observations_label')}
+          </p>
+          <p className="mt-2 min-h-[64px] whitespace-pre-wrap text-[13px] font-medium leading-relaxed text-slate-800">
+            {descriptionView.display || t('upcoming_jobs.no_observations')}
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-700">
+            <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
               <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                {t('upcoming_jobs.status_label')}
+                {t('helper_tasks.date_label')}
               </p>
-              <p className="mt-1 font-bold">
-                {t(WORKFLOW_LABEL_KEY[job.workflowStatus] ?? 'upcoming_jobs.status_scheduled')}
+              <p className="mt-1">{dayLabel || '—'}</p>
+            </div>
+            <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                {t('helper_tasks.time_label')}
               </p>
+              <p className="mt-1">{clockLabel || '—'}</p>
+            </div>
+            <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                {t('helper_tasks.distance_label')}
+              </p>
+              <p className="mt-1 truncate">{locationDisplay}</p>
+            </div>
+            <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                {t('helper_tasks.agreed_payment_label')}
+              </p>
+              <p className="mt-1 text-emerald-700">{job.value || t('upcoming_jobs.payment_to_arrange')}</p>
             </div>
           </div>
-        ) : null}
-
-        {showComplete || showReview ? (
-          <div className="mt-3 space-y-2">
-            {showComplete ? (
-              <button
-                type="button"
-                disabled={completeLoading}
-                onClick={onComplete}
-                className={clsx(
-                  actionBtn,
-                  'bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60',
-                )}
-              >
-                {completeLoading ? (
-                  <Icons.Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Icons.CheckCircle2 className="h-4 w-4" />
-                )}
-                {t('upcoming_jobs.complete_work')}
-              </button>
-            ) : null}
-            {showReview ? (
-              <button
-                type="button"
-                onClick={onReview}
-                className={clsx(actionBtn, 'border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100')}
-              >
-                <Icons.Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                {t('helper_tasks.review_client')}
-              </button>
-            ) : null}
-            {awaitingClient && !showComplete && !showReview ? (
-              <p className="text-center text-[11px] font-semibold text-blue-700">
-                {t('upcoming_jobs.awaiting_client_note')}
-              </p>
-            ) : null}
+          <div className="mt-2 rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+            <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+              {t('upcoming_jobs.status_label')}
+            </p>
+            <p className="mt-1 font-bold">
+              {t(WORKFLOW_LABEL_KEY[job.workflowStatus] ?? 'upcoming_jobs.status_scheduled')}
+            </p>
           </div>
-        ) : null}
-      </div>
-    </LhCard>
+        </div>
+      </LhCardOverlay>
+    </>
   );
 }

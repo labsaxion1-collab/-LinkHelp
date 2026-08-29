@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/supabase';
+import { isBaselineFinanceEnabled } from '@/config/baselineFinance';
 import { InsufficientCreditsError, remoteDebitApplicationInterest } from '@/services/helperLeadCredits';
 import { isMissingColumnError, remoteApply } from '@/services/supabase/appDataRemote';
 import { isPostgrestMissingResource } from '@/utils/postgrestErrors';
@@ -33,7 +34,8 @@ type RpcSubmitPayload = {
   p_client_id: string;
   p_message: string | null;
   p_proposed_amount: number | null;
-  p_interest_amount: number;
+  /** Omit when baseline finance is on so the server is authoritative (pack 50). */
+  p_interest_amount?: number;
   p_is_exclusive?: boolean;
 };
 
@@ -115,6 +117,7 @@ function isRpcExclusiveParamUnsupported(error: { code?: string; message?: string
 
 function mapRpcError(error: { message?: string }, interestCost: number): never {
   const msg = error.message ?? '';
+  if (msg.includes('ACTIVE_CREDIT_OBLIGATION')) throw new Error('ACTIVE_CREDIT_OBLIGATION');
   if (msg.includes('INSUFFICIENT_CREDITS')) {
     throw new InsufficientCreditsError(Math.max(1, interestCost));
   }
@@ -123,6 +126,13 @@ function mapRpcError(error: { message?: string }, interestCost: number): never {
   if (msg.includes('REQUEST_NOT_OPEN')) throw new Error('JOB_NOT_OPEN');
   if (msg.includes('APPLICATION_LIMIT_REACHED')) throw new Error('APPLICATION_LIMIT_REACHED');
   if (msg.includes('EXCLUSIVE_APPLICATION_LOCKED')) throw new Error('EXCLUSIVE_APPLICATION_LOCKED');
+  if (msg.includes('INTEREST_AMOUNT_MISMATCH')) throw new Error('INTEREST_AMOUNT_MISMATCH');
+  if (msg.includes('SERVICE_MODE_REQUIRED')) throw new Error('SERVICE_MODE_REQUIRED');
+  if (msg.includes('SERVICE_MODE_NOT_ALLOWED')) throw new Error('SERVICE_MODE_NOT_ALLOWED');
+  if (msg.includes('SERVICE_MODE_POLICY_MISSING')) throw new Error('SERVICE_MODE_POLICY_MISSING');
+  if (msg.includes('LEAD_PRICING_VERSION_MISSING')) throw new Error('LEAD_PRICING_VERSION_MISSING');
+  if (msg.includes('LEAD_CATEGORY_PRICE_MISSING')) throw new Error('LEAD_CATEGORY_PRICE_MISSING');
+  if (msg.includes('LEAD_LOCATION_INCOMPLETE')) throw new Error('LEAD_LOCATION_INCOMPLETE');
   throw new Error(msg || 'APPLICATION_SUBMIT_FAILED');
 }
 
@@ -140,8 +150,14 @@ async function submitViaRpc(
     p_client_id: input.clientId,
     p_message: input.message ?? null,
     p_proposed_amount: input.proposedAmount ?? null,
-    p_interest_amount: interest,
   };
+
+  // Baseline pack 50: omit interest so server charges 4 / snap_total+4 authoritatively.
+  // Historical DB: keep sending the FE amount (coalesce default is 1 if omitted).
+  if (!isBaselineFinanceEnabled()) {
+    rpcPayload.p_interest_amount = interest;
+  }
+
   if (!options?.omitExclusiveParam) {
     rpcPayload.p_is_exclusive = input.isExclusive === true;
   }
@@ -216,6 +232,11 @@ export async function submitHelperApplication(
 
   const rpcResult = await submitViaRpc(input);
   if (rpcResult) return rpcResult;
+
+  // Baseline finance must not fall back to FE debit+insert (no snapshot / wrong amounts).
+  if (isBaselineFinanceEnabled()) {
+    throw new Error('APPLICATION_BACKEND_NOT_READY');
+  }
 
   try {
     return await submitViaLegacy(input);

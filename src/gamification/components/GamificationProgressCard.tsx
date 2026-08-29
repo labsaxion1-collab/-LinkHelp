@@ -3,13 +3,14 @@ import { clsx } from 'clsx';
 import { createPortal } from 'react-dom';
 import { TrendingUp, CheckCircle, AlertCircle, Loader2, HelpCircle, ShieldCheck } from 'lucide-react';
 import { LhCard } from '@/components/design-system/LhCard';
+import { useLanguage } from '@/context/LanguageContext';
 import { useGamification } from '@/gamification/hooks/useGamification';
 import { formatProgressSubtitle, getProgressToNextLevel } from '@/gamification/engines/progressEngine';
 import { EMPTY_GAMIFICATION_STATS } from '@/gamification/services/gamificationStatsAdapter';
 import type { UserType } from '@/gamification/types/gamification';
 import { MEDAL_MAP } from '@/gamification/config/gamificationMedals';
-import { GAMIFICATION_TUTORIAL_TITLE } from '@/gamification/config/gamificationTutorialContent';
 import { GamificationTutorialModal } from '@/gamification/components/GamificationTutorialModal';
+import { translateGamificationLevelName } from '@/utils/gamificationLevelI18n';
 
 /** Accentos da barra/progresso via CSS vars `--medal-*` (tema global da medalha). */
 const PROGRESS_MEDAL_ACCENT = {
@@ -58,6 +59,7 @@ export function GamificationLevelButton({
   label,
   badgeVariant = 'verde',
 }: GamificationLevelButtonProps) {
+  const { t } = useLanguage();
   const { record, loading, error } = useGamification(userType);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -69,12 +71,18 @@ export function GamificationLevelButton({
     record?.score ?? 0,
     record?.stats ?? EMPTY_GAMIFICATION_STATS,
     record?.levelKey ?? 'novo',
+    t,
   );
   const missingRequirements = [
-    ...(progress.pointsToNext > 0 ? [`Alcançar mais ${progress.pointsToNext} pontos`] : []),
+    ...(progress.pointsToNext > 0
+      ? [t('gamification.reach_more_points', { count: progress.pointsToNext })]
+      : []),
     ...progress.missingRequirements,
   ];
-
+  const displayLabel =
+    label.trim().length > 0
+      ? label
+      : translateGamificationLevelName(userType, record?.levelKey ?? 'novo', t);
   useLayoutEffect(() => {
     if (!expanded || !buttonRef.current) {
       setPanelStyle(null);
@@ -147,17 +155,17 @@ export function GamificationLevelButton({
               aria-hidden="true"
             />
             <p className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] lh-medal-primary">
-              O que falta para o próximo nível
+              {t('gamification.what_is_missing')}
             </p>
 
             {loading && !record ? (
               <div className="flex items-center gap-2 rounded-xl bg-white/[0.06] px-3 py-2.5 text-xs text-white/65">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Carregando seu progresso...
+                {t('gamification.loading_progress')}
               </div>
             ) : error || !record ? (
               <p className="rounded-xl bg-white/[0.06] px-3 py-2.5 text-xs text-white/65">
-                Progresso indisponível no momento.
+                {t('gamification.progress_unavailable')}
               </p>
             ) : missingRequirements.length > 0 ? (
               <ul className="space-y-1.5">
@@ -174,7 +182,7 @@ export function GamificationLevelButton({
             ) : (
               <div className="flex items-center gap-2 rounded-xl border border-emerald-300/10 bg-emerald-300/10 px-3 py-2.5">
                 <CheckCircle className="h-4 w-4 shrink-0 text-emerald-300" />
-                <p className="text-xs font-bold text-emerald-100">Todos os requisitos deste nível foram concluídos.</p>
+                <p className="text-xs font-bold text-emerald-100">{t('gamification.all_requirements_done')}</p>
               </div>
             )}
 
@@ -187,7 +195,7 @@ export function GamificationLevelButton({
               className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-black transition lh-medal-border lh-medal-soft-bg lh-medal-primary hover:opacity-90"
             >
               <HelpCircle className="h-4 w-4" />
-              {GAMIFICATION_TUTORIAL_TITLE}
+              {t('gamification.tutorial_cta')}
             </button>
           </div>,
           document.body,
@@ -204,7 +212,7 @@ export function GamificationLevelButton({
         aria-expanded={expanded}
         aria-controls="client-level-details"
       >
-        {label}
+        {displayLabel}
         <HelpCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
       </button>
 
@@ -215,6 +223,7 @@ export function GamificationLevelButton({
   );
 }
 export function GamificationProgressCard({ userType, className = '', variant = 'card' }: Props) {
+  const { t } = useLanguage();
   const { record, loading, error } = useGamification(userType);
   const [tutorialOpen, setTutorialOpen] = useState(false);
 
@@ -227,7 +236,7 @@ export function GamificationProgressCard({ userType, className = '', variant = '
     return (
       <LhCard className={`flex items-center justify-center gap-2 py-6 ${className}`}>
         <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
-        <span className="text-sm font-medium text-slate-400">Carregando progresso…</span>
+        <span className="text-sm font-medium text-slate-400">{t('gamification.loading_progress')}</span>
       </LhCard>
     );
   }
@@ -241,14 +250,14 @@ export function GamificationProgressCard({ userType, className = '', variant = '
             className
           }
         >
-          Progresso indisponível
+          {t('gamification.progress_unavailable')}
         </div>
       );
     }
 
     return (
       <LhCard className={`flex items-center justify-center py-6 text-sm font-medium text-slate-500 ${className}`}>
-        Não foi possível carregar seu progresso.
+        {t('gamification.progress_load_error')}
       </LhCard>
     );
   }
@@ -258,11 +267,16 @@ export function GamificationProgressCard({ userType, className = '', variant = '
     record!.score,
     record!.stats ?? EMPTY_GAMIFICATION_STATS,
     record!.levelKey,
+    t,
   );
   const heroKey = record!.heroKey;
   const medalSrc = MEDAL_MAP[heroKey] ?? MEDAL_MAP[`${userType}_novo`];
   const accentTheme = PROGRESS_MEDAL_ACCENT;
   const isMax = progress.nextLevel === null;
+  const currentLevelLabel = translateGamificationLevelName(userType, progress.currentLevel.key, t);
+  const nextLevelLabel = progress.nextLevel
+    ? translateGamificationLevelName(userType, progress.nextLevel.key, t)
+    : '';
 
   if (variant === 'hero') {
     return (
@@ -272,9 +286,11 @@ export function GamificationProgressCard({ userType, className = '', variant = '
             <ShieldCheck className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] text-white/65 sm:text-xs">{isMax ? 'Nível atual' : 'Próximo nível'}</p>
+            <p className="text-[10px] text-white/65 sm:text-xs">
+              {isMax ? t('gamification.current_level') : t('gamification.next_level')}
+            </p>
             <p className={clsx('truncate text-xs font-black uppercase sm:text-base', accentTheme.textClass)}>
-              {isMax ? progress.currentLevel.name : progress.nextLevel?.name}
+              {isMax ? currentLevelLabel : nextLevelLabel}
             </p>
           </div>
           <span className="text-lg font-black tabular-nums sm:text-xl">{progress.progressPercent}%</span>
@@ -287,11 +303,15 @@ export function GamificationProgressCard({ userType, className = '', variant = '
             aria-valuenow={progress.progressPercent}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label={isMax ? 'Nível máximo alcançado' : `Progresso para ${progress.nextLevel?.name}`}
+            aria-label={
+              isMax
+                ? t('gamification.max_level_reached')
+                : t('gamification.progress_to', { level: nextLevelLabel })
+            }
           />
         </div>
         <p className="mt-1.5 text-center text-[10px] text-white/55 sm:text-xs">
-          {isMax ? 'Nível máximo alcançado' : formatProgressSubtitle(progress, 'hero')}
+          {isMax ? t('gamification.max_level_reached') : formatProgressSubtitle(progress, 'hero', t)}
         </p>
       </div>
     );
@@ -303,17 +323,17 @@ export function GamificationProgressCard({ userType, className = '', variant = '
       <div className="flex items-center gap-3">
         <img
           src={medalSrc}
-          alt={progress.currentLevel.name}
+          alt={currentLevelLabel}
           className="h-12 w-12 shrink-0 object-contain drop-shadow-sm sm:h-14 sm:w-14"
           loading="lazy"
           decoding="async"
         />
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-            {userType === 'helper' ? 'Nível Helper' : 'Nível Cliente'}
+            {userType === 'helper' ? t('gamification.helper_level_eyebrow') : t('gamification.client_level_eyebrow')}
           </p>
           <p className="truncate whitespace-nowrap text-base font-black text-slate-950 sm:text-lg">
-            {progress.currentLevel.name}
+            {currentLevelLabel}
           </p>
         </div>
         <div className="shrink-0 text-right">
@@ -326,19 +346,17 @@ export function GamificationProgressCard({ userType, className = '', variant = '
       </div>
 
       {isMax ? (
-        /* Nível máximo */
         <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2.5">
           <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600" />
-          <p className="text-sm font-bold text-emerald-800">Você alcançou o nível máximo.</p>
+          <p className="text-sm font-bold text-emerald-800">{t('gamification.max_level_card')}</p>
         </div>
       ) : (
         <>
-          {/* Barra de progresso */}
           <div className="mt-4">
             <div className="mb-1.5 flex items-center justify-between gap-2">
               <span className="flex items-center gap-1 text-xs font-bold text-slate-500">
                 <TrendingUp className="h-3 w-3" />
-                Próximo: {progress.nextLevel?.name}
+                {t('gamification.next_prefix', { level: nextLevelLabel })}
               </span>
               <span className="tabular-nums text-xs font-black text-slate-700">
                 {progress.progressPercent}%
@@ -352,19 +370,18 @@ export function GamificationProgressCard({ userType, className = '', variant = '
                 aria-valuenow={progress.progressPercent}
                 aria-valuemin={0}
                 aria-valuemax={100}
-                aria-label={`Progresso para ${progress.nextLevel?.name}`}
+                aria-label={t('gamification.progress_to', { level: nextLevelLabel })}
               />
             </div>
             <p className="mt-1 text-right text-[11px] font-semibold text-slate-400">
-              {formatProgressSubtitle(progress, 'card')}
+              {formatProgressSubtitle(progress, 'card', t)}
             </p>
           </div>
 
-          {/* Requisitos faltantes */}
           {progress.missingRequirements.length > 0 && (
             <div className="mt-3">
               <p className="mb-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Faltam
+                {t('gamification.missing_heading')}
               </p>
               <ul className="space-y-1.5">
                 {progress.missingRequirements.map((req) => (
@@ -382,14 +399,13 @@ export function GamificationProgressCard({ userType, className = '', variant = '
         </>
       )}
 
-      {/* Tutorial: como subir de nível */}
       <button
         type="button"
         onClick={() => setTutorialOpen(true)}
         className={clsx('mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-black transition', accentTheme.tutorialButtonClass)}
       >
         <HelpCircle className="h-4 w-4" />
-        {GAMIFICATION_TUTORIAL_TITLE}
+        {t('gamification.tutorial_cta')}
       </button>
 
       <GamificationTutorialModal

@@ -109,7 +109,7 @@ describe('LinkCredits history polish — source contracts', () => {
       'utf8',
     );
     const charge = await readFile(resolve('src/config/helperCreditCharge.ts'), 'utf8');
-    const packages = await readFile(resolve('src/config/linkCreditPackages.ts'), 'utf8');
+    const packages = await readFile(resolve('shared/linkCreditCatalog.ts'), 'utf8');
     expect(webhook).toContain('checkout.session.completed');
     expect(createHelper).toContain('stripe.checkout.sessions.create');
     expect(createClient).toContain('stripe.checkout.sessions.create');

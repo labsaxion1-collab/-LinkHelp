@@ -8,7 +8,6 @@ export function isClientLinkCreditsPurchaseEnabled(): boolean {
 
 export type ClientLinkCreditCheckoutInput = {
   packageId: string;
-  priceId: string;
 };
 
 export async function startClientLinkCreditCheckout(
@@ -19,8 +18,8 @@ export async function startClientLinkCreditCheckout(
   }
 
   const pkg = getLinkCreditPackage(input.packageId);
-  if (!pkg || pkg.priceId !== input.priceId) {
-    throw new Error('PACKAGE_PRICE_MISMATCH');
+  if (!pkg) {
+    throw new Error('PACKAGE_NOT_FOUND');
   }
 
   const sb = getSupabase();
@@ -41,7 +40,6 @@ export async function startClientLinkCreditCheckout(
     },
     body: JSON.stringify({
       packageId: input.packageId,
-      priceId: input.priceId,
       returnOrigin,
     }),
   });

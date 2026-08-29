@@ -42,6 +42,7 @@ import {
   type NotificationRow,
 } from '@/services/supabase/appDataRemote';
 import {
+  fetchRequestRowById,
   resolveApplicationRowForPatch,
   resolveRequestRowForPatch,
   resolveReviewRowForPatch,
@@ -59,6 +60,11 @@ import { getHelperLeadCreditQuote } from '@/utils/helperLeadCreditQuote';
 import {
   fetchHelperBaseDistanceKm,
 } from '@/services/helperLeadCredits';
+import {
+  normalHireRemainderFromLeadTotal,
+  resolveHelperLeadCreditQuote,
+} from '@/services/leadQuoteRemote';
+import { isBaselineFinanceEnabled } from '@/config/baselineFinance';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import { markNotificationsCleared } from '@/utils/notificationVisibility';
 import { buildNotificationPayload } from '@/utils/notificationText';
@@ -128,12 +134,14 @@ interface AppDataContextData {
     requestId: string;
     upcomingJobId: string;
     role: 'client' | 'helper';
-  }) => Promise<void>;
+  }) => Promise<{ outcome: 'completed' | 'awaiting_client' }>;
   addNotification: (notification: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => void;
   markNotificationAsRead: (id: string) => void;
   markAllAsRead: () => void;
   clearAllNotifications: (userId: string) => Promise<void>;
   reviews: ServiceReview[];
+  /** False until the first reviews fetch for the current user finishes (success or failure). */
+  reviewsLoaded: boolean;
   pendingServiceReviews: PendingServiceReview[];
   submitServiceReview: (input: {
     requestId: string;
@@ -143,6 +151,7 @@ interface AppDataContextData {
     criteriaScores?: Record<string, number> | null;
     reviewerRole?: 'client' | 'helper';
   }) => Promise<void>;
+  refreshReviews: () => Promise<void>;
 }
 
 type AppDataActionMethods = Pick<
@@ -163,6 +172,7 @@ type AppDataActionMethods = Pick<
   | 'markAllAsRead'
   | 'clearAllNotifications'
   | 'submitServiceReview'
+  | 'refreshReviews'
 >;
 
 export type AppDataCoreState = Omit<AppDataContextData, keyof AppDataActionMethods | 'notifications'>;
@@ -218,11 +228,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [upcomingJobs, setUpcomingJobs] = useState<UpcomingJob[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [reviews, setReviews] = useState<ServiceReview[]>([]);
+  const [reviewsLoaded, setReviewsLoaded] = useState(() => !isSupabaseConfigured());
 
+  /** Drop cancelled only — keep completed/auto_completed for Help history. Active lists filter separately. */
   const filterUpcomingByRequestStatus = useCallback((rows: UpcomingJob[], jobRows: Job[]) => {
     const jobStatusById = new Map(jobRows.map((j) => [j.id, j.status]));
     return rows.filter((u) => {
-      if (u.workflowStatus === 'cancelled' || u.workflowStatus === 'completed') return false;
+      if (u.workflowStatus === 'cancelled') return false;
       const jobStatus = jobStatusById.get(u.jobId);
       return !jobStatus || !isJobCancelled({ status: jobStatus });
     });
@@ -252,6 +264,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     setUpcomingJobs([]);
     setNotifications([]);
     setReviews([]);
+    setReviewsLoaded(true);
     profilesCacheRef.current = new Map();
     chatUnlockedKeysRef.current = new Set();
     pendingRealtimePatchesRef.current = [];
@@ -335,10 +348,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     bootstrapLockRef.current = true;
     setDataLoading(true);
     try {
-      const [bootstrap, notifs, reviewRows] = await Promise.all([
+      const [bootstrap, notifs, reviewResult] = await Promise.all([
         fetchRemoteAppDataBootstrap(),
         fetchRemoteNotifications(userId),
-        fetchRemoteReviews(),
+        fetchRemoteReviews()
+          .then((rows) => ({ ok: true as const, rows }))
+          .catch((error) => {
+            console.error('[LinkHelp] refreshRemoteFull reviews', error);
+            return { ok: false as const };
+          }),
       ]);
       if (loadUserId !== userId) return;
       profilesCacheRef.current = bootstrap.profilesMap;
@@ -348,7 +366,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       setApplications(bootstrap.applications);
       setUpcomingJobs(filterUpcomingByRequestStatus(bootstrap.upcomingJobs, migratedJobs));
       setNotifications(notifs);
-      setReviews(reviewRows);
+      if (reviewResult.ok) {
+        setReviews(reviewResult.rows);
+      }
+      setReviewsLoaded(true);
     } finally {
       if (loadUserId === userId) {
         bootstrapLockRef.current = false;
@@ -556,15 +577,21 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!useRemote || !userId) return;
     let cancelled = false;
-    const cancelIdle = scheduleIdle(() => {
-      if (cancelled) return;
-      void fetchRemoteReviews().then((rows) => {
-        if (!cancelled) setReviews(rows);
+    setReviewsLoaded(false);
+    void fetchRemoteReviews()
+      .then((rows) => {
+        if (cancelled) return;
+        setReviews(rows);
+        setReviewsLoaded(true);
+      })
+      .catch((error) => {
+        console.error('[LinkHelp] fetch reviews on session', error);
+        if (cancelled) return;
+        // Keep any prior reviews — empty wipe would re-open the review modal.
+        setReviewsLoaded(true);
       });
-    }, 2000);
     return () => {
       cancelled = true;
-      cancelIdle();
     };
   }, [useRemote, userId]);
 
@@ -653,10 +680,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   const createJob = async (jobDetails: Omit<Job, 'id' | 'createdAt' | 'status'>) => {
     if (useRemote) {
-      await remoteCreateRequest({
+      const published = await remoteCreateRequest({
         clientId: jobDetails.clientId,
         category: jobDetails.category,
         subcategory: jobDetails.subcategory ?? null,
+        serviceMode: jobDetails.serviceMode ?? null,
         title: jobDetails.title,
         description: jobDetails.description,
         urgency: jobDetails.urgency,
@@ -681,6 +709,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         timezone: jobDetails.timezone ?? jobDetails.createdTimezone ?? null,
         createdTimezone: jobDetails.createdTimezone ?? jobDetails.timezone ?? null,
       });
+      // Refresh list/counters from DB before UI success — RPC alone does not patch local jobs.
+      await refreshRemoteBootstrap();
+      if (published.requestId && !jobsRef.current.some((j) => j.id === published.requestId)) {
+        // Bootstrap may race; ensure the just-published row is present when SELECT works.
+        const row = await fetchRequestRowById(published.requestId).catch(() => null);
+        if (row) {
+          await patchRequestRow(row);
+        }
+      }
       await refreshProfile();
       triggerGamificationRecalculate('request_published', 'client');
       return;
@@ -724,7 +761,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       throw new Error('APPLICATION_LIMIT_REACHED');
     }
 
-    const creditQuote = getHelperLeadCreditQuote(job, { distanceKm: options?.distanceKm ?? null });
+    const creditQuote = await resolveHelperLeadCreditQuote(job, helperId, {
+      distanceKm: options?.distanceKm ?? null,
+    });
     const interestCost = options?.isExclusive ? creditQuote.vipApplyLc : creditQuote.normalApplyLc;
 
     const sessionUserId = session?.user?.id ?? profile?.id ?? null;
@@ -737,6 +776,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         proposedAmount: proposedAmount ?? null,
         message: options?.message?.trim() || null,
         isExclusive: options?.isExclusive === true,
+        // When baseline finance is on, interestCost is only for wallet UI prechecks;
+        // submitHelperApplication omits p_interest_amount so the server is authoritative.
         interestCost:
           sessionUserId && helperId === sessionUserId ? interestCost : 0,
       });
@@ -1005,8 +1046,19 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     }
 
     const selectedDistanceKm = useRemote ? await fetchHelperBaseDistanceKm(helperId, jobSnapshot) : null;
-    const creditQuote = getHelperLeadCreditQuote(jobSnapshot, { distanceKm: selectedDistanceKm });
-    const chargeAmount = targetApp.isExclusive ? 0 : creditQuote.normalHireRemainderLc;
+    let chargeAmount = 0;
+    if (targetApp.isExclusive) {
+      chargeAmount = 0;
+    } else if (isBaselineFinanceEnabled()) {
+      const fromSnapshot = normalHireRemainderFromLeadTotal(targetApp.leadTotalLc);
+      if (fromSnapshot == null) {
+        throw new Error('LEAD_SNAPSHOT_MISSING');
+      }
+      chargeAmount = fromSnapshot;
+    } else {
+      const creditQuote = getHelperLeadCreditQuote(jobSnapshot, { distanceKm: selectedDistanceKm });
+      chargeAmount = creditQuote.normalHireRemainderLc;
+    }
 
     const applyOptimisticHire = () => {
       chatUnlockedKeysRef.current.add(`${requestId}:${helperId}`);
@@ -1270,7 +1322,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     requestId: string;
     upcomingJobId: string;
     role: 'client' | 'helper';
-  }) => {
+  }): Promise<{ outcome: 'completed' | 'awaiting_client' }> => {
     const { requestId, upcomingJobId, role } = input;
     if (isSupabaseConfigured() && !session) {
       throw new Error('AUTH_REQUIRED');
@@ -1283,7 +1335,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       try {
         await remoteFinalizeServiceCompletion(requestId);
         applyLocalServiceCompleted(requestId);
-        return;
+        return { outcome: 'completed' };
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg !== 'FINALIZE_RPC_NOT_DEPLOYED') {
@@ -1318,13 +1370,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             ...completionLink,
           });
         }
-        return;
+        return { outcome: 'awaiting_client' };
       }
 
       const awaiting = upcoming && isAwaitingClientCompletion(upcoming.workflowStatus);
       if (awaiting) {
         await confirmServiceCompleted(requestId);
-        return;
+        return { outcome: 'completed' };
       }
 
       throw new Error('CLIENT_COMPLETE_REQUIRES_FINALIZE_RPC');
@@ -1335,15 +1387,39 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     }
 
     applyLocalServiceCompleted(requestId);
+    return { outcome: 'completed' };
   };
 
   const pendingServiceReviews = useMemo(
     () =>
-      userId
-        ? buildPendingServiceReviews(userId, userRole as 'client' | 'helper', jobs, applications, reviews, upcomingJobs)
+      userId && reviewsLoaded
+        ? buildPendingServiceReviews(
+            userId,
+            userRole as 'client' | 'helper',
+            jobs,
+            applications,
+            reviews,
+            upcomingJobs,
+          )
         : [],
-    [userId, userRole, jobs, applications, reviews, upcomingJobs],
+    [userId, userRole, jobs, applications, reviews, upcomingJobs, reviewsLoaded],
   );
+
+  const refreshReviews = useCallback(async () => {
+    if (!useRemote || !userId) {
+      setReviewsLoaded(true);
+      return;
+    }
+    try {
+      const rows = await fetchRemoteReviews();
+      setReviews(rows);
+    } catch (error) {
+      console.error('[LinkHelp] refreshReviews', error);
+      // Do not wipe reviews on failure — pending queue would reopen.
+    } finally {
+      setReviewsLoaded(true);
+    }
+  }, [useRemote, userId]);
 
   const submitServiceReview = async (input: {
     requestId: string;
@@ -1364,7 +1440,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         criteriaScores: input.criteriaScores,
         reviewerRole: input.reviewerRole,
       });
-      setReviews((prev) => [row, ...prev.filter((r) => r.id !== row.id)]);
+      setReviews((prev) => [row, ...prev.filter((r) => r.id !== row.id && !(r.requestId === row.requestId && r.reviewerId === row.reviewerId))]);
+      setReviewsLoaded(true);
       triggerGamificationRecalculate(
         'review_received',
         resolveReviewTargetUserType(input.reviewerRole),
@@ -1382,7 +1459,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       reviewerRole: input.reviewerRole ?? null,
       createdAt: Date.now(),
     };
-    setReviews((prev) => [local, ...prev]);
+    setReviews((prev) => [local, ...prev.filter((r) => !(r.requestId === local.requestId && r.reviewerId === local.reviewerId))]);
+    setReviewsLoaded(true);
   };
 
   const upcomingJobsEnriched = useMemo(
@@ -1397,9 +1475,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       upcomingJobs: upcomingJobsEnriched,
       dataLoading,
       reviews,
+      reviewsLoaded,
       pendingServiceReviews,
     }),
-    [jobs, applications, upcomingJobsEnriched, dataLoading, reviews, pendingServiceReviews],
+    [jobs, applications, upcomingJobsEnriched, dataLoading, reviews, reviewsLoaded, pendingServiceReviews],
   );
 
   const actionsRef = useRef<AppDataActionMethods>(null!);
@@ -1420,6 +1499,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     markAllAsRead,
     clearAllNotifications,
     submitServiceReview,
+    refreshReviews,
   };
 
   return (

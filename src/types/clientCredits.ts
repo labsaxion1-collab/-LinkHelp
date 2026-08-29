@@ -5,6 +5,7 @@ export type ClientCreditLedgerType =
   | 'REQUEST_REFUND'
   | 'REQUEST_CANCEL_REFUND'
   | 'MANUAL_ADJUSTMENT'
+  | 'OBLIGATION_SETTLEMENT'
   | (string & {});
 
 export type ClientCreditLedgerEntry = {

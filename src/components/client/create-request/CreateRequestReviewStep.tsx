@@ -13,6 +13,8 @@ type Props = {
   budgetHint: string;
   translationFromLanguage: string;
   translationToLanguage: string;
+  translationServiceMode?: 'online' | 'in_person' | '';
+  serviceMode?: 'remote' | 'in_person' | '';
   requestAddress: RequestAddressValue;
   movePickupAddress: RequestAddressValue;
   moveDeliveryAddress: RequestAddressValue;
@@ -31,6 +33,8 @@ export function CreateRequestReviewStep({
   budgetHint,
   translationFromLanguage,
   translationToLanguage,
+  translationServiceMode = '',
+  serviceMode = '',
   requestAddress,
   movePickupAddress,
   preferredDateIso,
@@ -43,6 +47,20 @@ export function CreateRequestReviewStep({
   );
   const locationDisplay =
     selectedCategory === 'moving' ? movePickupAddress.display : requestAddress.display || t('jobs.remote');
+  const resolvedMode =
+    serviceMode === 'remote' || serviceMode === 'in_person'
+      ? serviceMode
+      : translationServiceMode === 'online'
+        ? 'remote'
+        : translationServiceMode === 'in_person'
+          ? 'in_person'
+          : '';
+  const modalityLabel =
+    resolvedMode === 'remote'
+      ? t('create_modal.service_mode_remote')
+      : resolvedMode === 'in_person'
+        ? t('create_modal.service_mode_in_person')
+        : '';
 
   return (
     <section>
@@ -65,11 +83,17 @@ export function CreateRequestReviewStep({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.location')}</dt>
-            <dd className="font-bold flex items-center gap-1">
-              <Icons.MapPin className="w-4 h-4" /> {locationDisplay}
-            </dd>
+            <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.service_mode_title')}</dt>
+            <dd className="font-bold text-gray-900">{modalityLabel || '—'}</dd>
           </div>
+          {resolvedMode === 'remote' ? null : (
+            <div>
+              <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.location')}</dt>
+              <dd className="font-bold flex items-center gap-1">
+                <Icons.MapPin className="w-4 h-4" /> {locationDisplay}
+              </dd>
+            </div>
+          )}
           <div>
             <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.preferred_date')}</dt>
             <dd className="font-bold">{scheduleLabel}</dd>
@@ -84,6 +108,16 @@ export function CreateRequestReviewStep({
         <div>
           <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('client_credits.publish_cost_label')}</dt>
           <dd className="font-bold text-gray-900">{t('client_credits.publish_cost_value')}</dd>
+        </div>
+
+        <div className="rounded-2xl border border-amber-100 bg-amber-50/90 p-4 text-xs leading-relaxed text-amber-950">
+          <p className="mb-2 font-bold">{t('create_modal.publish_finance_notice_title')}</p>
+          <ul className="list-disc space-y-1 pl-4">
+            <li>{t('create_modal.publish_finance_notice_publish_1lc')}</li>
+            <li>{t('create_modal.publish_finance_notice_cancel_7lc')}</li>
+            <li>{t('create_modal.publish_finance_notice_debt_blocks')}</li>
+            <li>{t('create_modal.publish_finance_notice_expires_7d')}</li>
+          </ul>
         </div>
 
         {selectedCategory === 'translation' ? (

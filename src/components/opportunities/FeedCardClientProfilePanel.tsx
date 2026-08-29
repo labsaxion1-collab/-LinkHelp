@@ -1,11 +1,11 @@
-import { Globe, MapPin, Medal, Star, UserRound } from 'lucide-react';
+import { Globe, MapPin, Star, UserRound } from 'lucide-react';
 import type { Job } from '@/types/job';
 import { useLanguage } from '@/context/LanguageContext';
 import { getSpokenLanguageLabel } from '@/data/spokenLanguages';
-import { getLevelsFor } from '@/gamification/engines/levelEngine';
-import { usePublicGamificationProfiles } from '@/gamification/hooks/usePublicGamificationProfile';
 import { usePublicReputationDossier } from '@/hooks/usePublicReputationDossier';
 import { usePublicProfileExtras } from '@/hooks/usePublicProfileExtras';
+import { LinkHelpRankBadge } from '@/components/ranking/LinkHelpRankBadge';
+import { CLIENT_RANKS } from '@/utils/linkHelpRanking';
 import {
   FEED_CARD_PREMIUM_CHIP_CLASS,
   FEED_CARD_PREMIUM_ICON_GOLD_CLASS,
@@ -29,21 +29,18 @@ function clientInitials(name: string): string {
 /**
  * Compact client public profile for the feed card PROFILE state.
  * Reuses P2.2/P2.3 public data hooks — never selects phone/email/street/postal/coords.
- * P3.3: premium visual only (light-on-navy); data/logic unchanged.
+ * Rank label uses official ranking.client.* keys + dossier rank (no PT hardcoded names).
  */
 export function FeedCardClientProfilePanel({ job }: Props) {
   const { t } = useLanguage();
   const extras = usePublicProfileExtras(job.clientId);
-  const { profiles } = usePublicGamificationProfiles([job.clientId], 'client');
-  const heroKey = profiles.get(job.clientId)?.heroKey ?? 'client_novo';
-  const levelName =
-    getLevelsFor('client').find((level) => level.heroKey === heroKey)?.name ??
-    getLevelsFor('client')[0].name;
   const dossier = usePublicReputationDossier({
     userId: job.clientId,
     role: 'client',
     averageRating: job.clientRating ?? null,
   });
+
+  const clientRank = dossier.rank ?? CLIENT_RANKS[0];
 
   const location =
     [job.city, job.region].filter(Boolean).join(', ') ||
@@ -79,10 +76,13 @@ export function FeedCardClientProfilePanel({ job }: Props) {
           </p>
           <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5">
             <span className={FEED_CARD_PREMIUM_LEVEL_BADGE_CLASS} data-testid="feed-card-level-badge">
-              <Medal className="h-3 w-3 shrink-0 text-amber-300" aria-hidden />
-              <span className="truncate">
-                {t('profile_page.public_level')}: {levelName}
-              </span>
+              <LinkHelpRankBadge
+                rank={clientRank}
+                role="client"
+                size="sm"
+                tone="onDark"
+                t={t}
+              />
             </span>
           </div>
         </div>

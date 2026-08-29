@@ -79,9 +79,14 @@ describe('Etapa 6 — progressão de níveis do cliente', () => {
     expect(score).toBe(0);
   });
 
-  it('7. cliente com score 100 e requisitos vira "confiavel"', () => {
-    const stats = { ...emptyStats, profilePct: 80, publishedOrdersCount: 1 };
+  it('7. cliente com score 100 e 1 serviço concluído vira "confiavel"', () => {
+    const stats = { ...emptyStats, profilePct: 80, publishedOrdersCount: 1, totalCompleted: 1 };
     expect(determineLevel('client', 100, stats)).toBe('confiavel');
+  });
+
+  it('7b. cliente com score 100 e só publicação permanece "novo"', () => {
+    const stats = { ...emptyStats, profilePct: 80, publishedOrdersCount: 1, totalCompleted: 0 };
+    expect(determineLevel('client', 100, stats)).toBe('novo');
   });
 
   it('8. cliente com score 250 e requisitos vira "ouro" (a partir de confiável)', () => {

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
@@ -19,6 +20,11 @@ import {
 import { emptyRequestAddress, type RequestAddressValue } from '@/components/client/create-request/RequestAddressInput';
 import { TRANSLATION_REQUEST_LANGUAGES, getSpokenLanguageLabel } from '@/data/spokenLanguages';
 import { isValidRequestAddress } from '@/utils/requestAddressValidation';
+import {
+  publishCoordinatesForMode,
+  publishRequiresCoordinates,
+  publishRequiresMapAddress,
+} from '@/utils/publishAddressPolicy';
 import { descriptionContainsContactInfo } from '@/utils/descriptionContactGuard';
 import {
   buildBudgetLabelFromRange,
@@ -49,8 +55,13 @@ import {
   saveCreateRequestDraft,
   type CreateRequestDraft,
 } from '@/utils/createRequestDraft';
-import { InsufficientClientCreditsError } from '@/services/supabase/appDataRemote';
+import { InsufficientClientCreditsError, ActiveCreditObligationError } from '@/services/supabase/appDataRemote';
 import { buildCanonicalJobTitle } from '@/utils/translateCategory';
+import { coerceServiceMode, isBaselineFinanceEnabled, type ServiceMode } from '@/config/baselineFinance';
+import { getServiceModePolicy } from '@/config/serviceModePolicy';
+import { formatBaselineFinanceError, isActiveCreditObligationError } from '@/utils/formatBaselineFinanceError';
+import { UI_VISIBILITY } from '@/config/uiVisibility';
+import { ROUTES } from '@/utils/constants';
 
 type ModalStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
 const STEPS: ModalStep[] = ['category', 'subcategory', 'description', 'confirm', 'review'];
@@ -69,6 +80,7 @@ type Props = {
 
 export function CreateRequestModal({ open, onClose, onPublished, initialCategory = '', initialSubcategory = '' }: Props) {
   const { t, language } = useLanguage();
+  const navigate = useNavigate();
   const { createJob } = useAppData();
   const { showToast } = useToast();
   const me = useSessionViewer();
@@ -83,6 +95,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const [translationFromLanguage, setTranslationFromLanguage] = useState('');
   const [translationToLanguage, setTranslationToLanguage] = useState('');
   const [translationServiceMode, setTranslationServiceMode] = useState<'online' | 'in_person' | ''>('');
+  /** Canonical modality for pack 40 — collected for all categories. */
+  const [serviceMode, setServiceMode] = useState<ServiceMode | ''>('');
   const [requestAddress, setRequestAddress] = useState<RequestAddressValue>(() => emptyRequestAddress());
   const [priority, setPriority] = useState<RequestPriority>('flexible');
   const [preferredDateIso, setPreferredDateIso] = useState('');
@@ -123,6 +137,16 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   );
 
   const detailsComplete = useMemo(() => {
+    const resolvedMode: ServiceMode | '' =
+      serviceMode ||
+      (translationServiceMode === 'online'
+        ? 'remote'
+        : translationServiceMode === 'in_person'
+          ? 'in_person'
+          : '');
+
+    if (isBaselineFinanceEnabled() && !resolvedMode) return false;
+
     if (selectedCategory === 'moving') {
       if (!isValidRequestAddress(movePickupAddress) || !isValidRequestAddress(moveDeliveryAddress)) return false;
       if (needsBuildingForMoving(selectedSubcategory)) {
@@ -135,14 +159,20 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       return Boolean(cleaningAptFloor && cleaningHasElevator);
     }
     if (selectedCategory === 'translation') {
-      if (!translationServiceMode) return false;
+      if (!translationServiceMode && !serviceMode) return false;
+      // Remote may omit precise coords on historical; baseline in_person requires coords.
+      if (isBaselineFinanceEnabled() && resolvedMode === 'in_person') {
+        return isValidRequestAddress(requestAddress);
+      }
+      if (resolvedMode === 'remote' && isBaselineFinanceEnabled()) return true;
       return isValidRequestAddress(requestAddress);
     }
+    if (isBaselineFinanceEnabled() && resolvedMode === 'remote') return true;
     return isValidRequestAddress(requestAddress);
   }, [
     selectedCategory, selectedSubcategory, movePropertyType, movePickupAddress, moveDeliveryAddress,
     movePickupFloor, movePickupElevator, moveDeliveryFloor, moveDeliveryElevator,
-    cleaningHouseFloors, cleaningAptFloor, cleaningHasElevator, translationServiceMode, requestAddress,
+    cleaningHouseFloors, cleaningAptFloor, cleaningHasElevator, translationServiceMode, serviceMode, requestAddress,
   ]);
 
   const descriptionBlocked = descriptionContainsContactInfo(postText);
@@ -172,6 +202,19 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     });
   }, [selectedCategory, selectedSubcategory, translationServiceMode]);
 
+  // Auto-fill modality when pack 40 policy leaves only one option.
+  useEffect(() => {
+    if (!isBaselineFinanceEnabled() || !selectedCategory || !selectedSubcategory) return;
+    const policy = getServiceModePolicy(selectedCategory, selectedSubcategory);
+    if (policy === 'in_person_only') {
+      setServiceMode('in_person');
+      if (selectedCategory === 'translation') setTranslationServiceMode('in_person');
+    } else if (policy === 'remote_only') {
+      setServiceMode('remote');
+      if (selectedCategory === 'translation') setTranslationServiceMode('online');
+    }
+  }, [selectedCategory, selectedSubcategory]);
+
   useEffect(() => {
     if (!open || draftDialog || !selectedCategory || !marketSuggestion) return;
     const key = `${selectedCategory}|${selectedSubcategory}|${translationServiceMode}`;
@@ -193,6 +236,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setTranslationFromLanguage('');
     setTranslationToLanguage('');
     setTranslationServiceMode('');
+    setServiceMode('');
     setRequestAddress(emptyRequestAddress());
     setPriority('flexible');
     setPreferredDateIso('');
@@ -226,6 +270,15 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setTranslationFromLanguage(draft.translationFromLanguage);
     setTranslationToLanguage(draft.translationToLanguage);
     setTranslationServiceMode(draft.translationServiceMode);
+    setServiceMode(
+      draft.serviceMode === 'remote' || draft.serviceMode === 'in_person'
+        ? draft.serviceMode
+        : draft.translationServiceMode === 'online'
+          ? 'remote'
+          : draft.translationServiceMode === 'in_person'
+            ? 'in_person'
+            : '',
+    );
     setRequestAddress(draft.requestAddress);
     setPriority(draft.priority);
     setPreferredDateIso(draft.preferredDateIso);
@@ -258,6 +311,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       translationFromLanguage,
       translationToLanguage,
       translationServiceMode,
+      serviceMode,
       requestAddress,
       priority,
       preferredDateIso,
@@ -285,6 +339,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     translationFromLanguage,
     translationToLanguage,
     translationServiceMode,
+    serviceMode,
     requestAddress,
     priority,
     preferredDateIso,
@@ -422,16 +477,33 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
 
   const handlePublish = async () => {
     if (publishing) return;
+    const resolvedServiceModeEarly: ServiceMode | null =
+      coerceServiceMode(serviceMode) ||
+      coerceServiceMode(translationServiceMode === 'online' ? 'remote' : translationServiceMode) ||
+      null;
+    const baselineOn = isBaselineFinanceEnabled();
+    const requiresAddress = publishRequiresMapAddress({
+      category: selectedCategory,
+      serviceMode: resolvedServiceModeEarly,
+      baselineFinanceEnabled: baselineOn,
+    });
     const needsAddress =
       selectedCategory === 'moving'
         ? !isValidRequestAddress(movePickupAddress) || !isValidRequestAddress(moveDeliveryAddress)
-        : !isValidRequestAddress(requestAddress);
+        : requiresAddress && !isValidRequestAddress(requestAddress);
     if (needsAddress) {
       showToast(t('create_modal.address_required'), 'error');
       return;
     }
     if (!rangeBudgetIsValid) {
       showToast(t('create_modal.budget_required'), 'error');
+      return;
+    }
+    if (!preferredDateIso || !preferredTimeSpecific.trim()) {
+      showToast(
+        !preferredDateIso ? t('create_modal.confirm_date_required') : t('create_modal.confirm_time_required'),
+        'error',
+      );
       return;
     }
     setPublishing(true);
@@ -462,18 +534,49 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       }
       if (lines.length) extra = '\n\n—\n' + lines.join('\n');
     } else if (selectedCategory === 'translation') {
+      const modeLabel =
+        (serviceMode || coerceServiceMode(translationServiceMode)) === 'remote' ? 'Online' : 'Presencial';
       const lines = [
         t('create_modal.translation_from_language') + ': ' + translationFromLanguage,
         t('create_modal.translation_to_language') + ': ' + translationToLanguage,
-        'Tipo de atendimento: ' + (translationServiceMode === 'online' ? 'Online' : 'Presencial'),
+        'Tipo de atendimento: ' + modeLabel,
       ];
       extra = '\n\n---\n' + lines.join('\n');
     }
     const fullDescription = postText.trim() + extra;
     const addr = selectedCategory === 'moving' ? movePickupAddress : requestAddress;
+    const resolvedServiceMode: ServiceMode | null = resolvedServiceModeEarly;
     const locationParts = [addr.display.trim(), addr.city, addr.region].filter(Boolean);
-    const locationLabel = locationParts.join(', ') || t('jobs.remote');
+    const locationLabel =
+      resolvedServiceMode === 'remote' && baselineOn
+        ? t('jobs.remote')
+        : locationParts.join(', ') || t('jobs.remote');
+    const coords = publishCoordinatesForMode(resolvedServiceMode, addr.latitude, addr.longitude);
     try {
+      if (baselineOn) {
+        if (!selectedSubcategory) {
+          showToast(t('baseline_finance.subcategory_required'), 'error');
+          setPublishing(false);
+          return;
+        }
+        if (!resolvedServiceMode) {
+          showToast(t('baseline_finance.service_mode_required'), 'error');
+          setPublishing(false);
+          return;
+        }
+        if (
+          publishRequiresCoordinates({
+            category: selectedCategory,
+            serviceMode: resolvedServiceMode,
+            baselineFinanceEnabled: true,
+          }) &&
+          (coords.latitude == null || coords.longitude == null)
+        ) {
+          showToast(t('baseline_finance.service_location_required'), 'error');
+          setPublishing(false);
+          return;
+        }
+      }
       await createJob({
         clientId: me.id,
         clientName: me.name,
@@ -482,13 +585,14 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
         description: fullDescription,
         category: selectedCategory,
         subcategory: selectedSubcategory || null,
+        serviceMode: resolvedServiceMode,
         location: locationLabel,
-        address: addr.address || addr.display.trim() || null,
-        city: addr.city || null,
-        region: addr.region || null,
-        postalCode: addr.postalCode?.trim() || null,
-        latitude: addr.latitude,
-        longitude: addr.longitude,
+        address: resolvedServiceMode === 'remote' ? null : addr.address || addr.display.trim() || null,
+        city: resolvedServiceMode === 'remote' ? null : addr.city || null,
+        region: resolvedServiceMode === 'remote' ? null : addr.region || null,
+        postalCode: resolvedServiceMode === 'remote' ? null : addr.postalCode?.trim() || null,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
         preferredDate: resolvePreferredDateIso(scheduleInput),
         preferredPeriod: null,
         preferredTimeWindow: null,
@@ -504,6 +608,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
         timezone: getBrowserTimezone(),
         createdTimezone: getBrowserTimezone(),
       });
+      showToast(t('create_modal.publish_success'), 'success');
       if (me.id) clearCreateRequestDraft(me.id);
       skipAutoSaveRef.current = true;
       applyFreshStart();
@@ -522,19 +627,34 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       }
       if (error instanceof InsufficientClientCreditsError) {
         showToast(t('client_credits.insufficient_to_publish'), 'error');
+      } else if (error instanceof ActiveCreditObligationError || isActiveCreditObligationError(error)) {
+        showToast(t('baseline_finance.active_credit_obligation_client'), 'error');
+        if (UI_VISIBILITY.clientCredits) {
+          navigate(ROUTES.clientCredits);
+        }
       } else {
-        showToast(t('create_modal.publish_error'), 'error');
+        showToast(formatBaselineFinanceError(error, t, 'create_modal.publish_error'), 'error');
       }
       setPublishing(false);
     }
   };
 
   const addressStepComplete = useMemo(() => {
+    const resolvedMode: ServiceMode | '' =
+      serviceMode ||
+      (translationServiceMode === 'online'
+        ? 'remote'
+        : translationServiceMode === 'in_person'
+          ? 'in_person'
+          : '');
     if (selectedCategory === 'moving') {
       return isValidRequestAddress(movePickupAddress) && isValidRequestAddress(moveDeliveryAddress);
     }
+    if (isBaselineFinanceEnabled() && resolvedMode === 'remote') return true;
     if (selectedCategory === 'translation') {
-      return Boolean(translationServiceMode) && isValidRequestAddress(requestAddress);
+      return Boolean(translationServiceMode || serviceMode) && (
+        resolvedMode === 'remote' || isValidRequestAddress(requestAddress)
+      );
     }
     return isValidRequestAddress(requestAddress);
   }, [
@@ -542,6 +662,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     movePickupAddress,
     moveDeliveryAddress,
     translationServiceMode,
+    serviceMode,
     requestAddress,
   ]);
 
@@ -572,6 +693,13 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       if (selectedCategory === 'translation' && !translationLanguagesComplete) {
         return t('create_modal.translation_languages_required');
       }
+      if (
+        isBaselineFinanceEnabled() &&
+        !serviceMode &&
+        !(selectedCategory === 'translation' && translationServiceMode)
+      ) {
+        return t('baseline_finance.service_mode_required');
+      }
       if (!addressStepComplete) return t('create_modal.address_required_continue');
       if (!categoryFieldsComplete) return t('create_modal.category_fields_required');
       if (!budgetStepComplete) return t('create_modal.budget_required_continue');
@@ -587,6 +715,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     descriptionBlocked,
     selectedCategory,
     translationLanguagesComplete,
+    serviceMode,
+    translationServiceMode,
     addressStepComplete,
     categoryFieldsComplete,
     budgetStepComplete,
@@ -767,7 +897,14 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                 cleaningHasElevator={cleaningHasElevator}
                 setCleaningHasElevator={setCleaningHasElevator}
                 translationServiceMode={translationServiceMode}
-                setTranslationServiceMode={setTranslationServiceMode}
+                setTranslationServiceMode={(mode) => {
+                  setTranslationServiceMode(mode);
+                  if (mode === 'online') setServiceMode('remote');
+                  else if (mode === 'in_person') setServiceMode('in_person');
+                }}
+                serviceMode={serviceMode}
+                setServiceMode={setServiceMode}
+                requireServiceMode={isBaselineFinanceEnabled()}
               />
               <div>
                 <label className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.budget_hint_label')}</label>
@@ -953,6 +1090,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               budgetHint={budgetLabel}
               translationFromLanguage={translationFromLanguage}
               translationToLanguage={translationToLanguage}
+              translationServiceMode={translationServiceMode}
+              serviceMode={serviceMode}
               requestAddress={requestAddress}
               movePickupAddress={movePickupAddress}
               moveDeliveryAddress={moveDeliveryAddress}

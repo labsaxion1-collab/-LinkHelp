@@ -4,6 +4,7 @@ import { backofficeFetch, BackofficeApiError } from '@/backoffice/api/backoffice
 import { buildEconomySnapshot, type EconomySnapshot } from '@/backoffice/economy/economySnapshot';
 import { BackofficePageShell } from '@/backoffice/components/BackofficePageShell';
 import { BACKOFFICE_PT, formatBackofficeApiError } from '@/admin/fluxPtCopy';
+import { formatCadAmount, formatLc, packageLabelPt } from '@/admin/fluxFormat';
 
 type EconomyApiResponse = EconomySnapshot & { dbPackages?: unknown[] };
 
@@ -37,15 +38,19 @@ export default function BackofficeEconomyPage() {
         <ul className="mt-3 space-y-2 text-sm text-slate-300">
           {data.packages.map((p) => (
             <li key={p.id}>
-              {p.id}: {p.credits} LC — CAD ${p.priceCad.toFixed(2)}
+              {packageLabelPt(p.id)}: {formatLc(p.credits)} — {formatCadAmount(p.priceCad)}
             </li>
           ))}
         </ul>
       </section>
       <section className="border border-white/10 bg-white/[0.02] p-4 text-sm text-slate-300">
         <h3 className="font-black text-white">{BACKOFFICE_PT.applyRulesSection}</h3>
-        <p className="mt-2">{BACKOFFICE_PT.normalApply}: {data.applyRules.normalApplyLc} LC</p>
-        <p>VIP: {data.applyRules.vipApplyFormula}</p>
+        <p className="mt-2">
+          {BACKOFFICE_PT.normalApply}: {formatLc(data.applyRules.normalApplyLc)}
+        </p>
+        <p className="mt-1">
+          {BACKOFFICE_PT.vipApply}: <code className="text-xs text-slate-400">{data.applyRules.vipApplyFormula}</code>
+        </p>
       </section>
     </BackofficePageShell>
   );

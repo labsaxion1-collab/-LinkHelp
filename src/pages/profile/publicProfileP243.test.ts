@@ -20,9 +20,10 @@ describe('P2.4.3 public helper category selection', () => {
     const src = await readFile(resolve(editPath), 'utf8');
     expect(util).not.toContain('MAX_PUBLIC_HELPER_CATEGORIES');
     expect(util).not.toContain('MAX_PUBLIC_HELPER_ADDITIONAL');
-    expect(src).toContain('canAddCategory');
-    expect(src).toContain('availableToAdd.length > 0');
+    expect(src).toContain('canOpenCategoryPicker');
     expect(src).toContain('public-edit-add-category');
+    expect(src).toContain('public-edit-confirm-categories');
+    expect(src).toContain('toggleCategoryDraft');
     expect(src).toContain('removePublicHelperCategory');
     expect(removePublicHelperCategory(['cleaning'], 'cleaning')).toEqual(['cleaning']);
     const four = addPublicHelperCategory(

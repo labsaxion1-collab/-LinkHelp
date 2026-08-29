@@ -13,7 +13,11 @@ import {
   WWW_HOSTNAME,
   resolveHostProfileFromHostname,
 } from '@/utils/linkhelpHosts';
-import { getOAuthRedirectToUrl, resolveOAuthReturnOrigin } from '@/utils/oauthRedirect';
+import {
+  getEmailAuthRedirectToUrl,
+  getOAuthRedirectToUrl,
+  resolveOAuthReturnOrigin,
+} from '@/utils/oauthRedirect';
 import { resolveAuthCallbackDestination } from '@/utils/fluxRedirect';
 import type { Session } from '@supabase/supabase-js';
 
@@ -43,6 +47,15 @@ describe('resolveOAuthReturnOrigin / getOAuthRedirectToUrl', () => {
     expect(url).not.toContain(`https://${WWW_HOSTNAME}`);
     expect(url).not.toContain(`https://${APEX_HOSTNAME}`);
     expect(url).not.toBe(`${APP_ORIGIN}${ROUTES.authCallback}`);
+    vi.unstubAllGlobals();
+  });
+
+  it('4b. email confirm redirect from teste uses teste callback (not localhost)', () => {
+    stubOrigin(STAGING_TEST_ORIGIN);
+    const url = getEmailAuthRedirectToUrl();
+    expect(url).toBe(`${STAGING_TEST_ORIGIN}${ROUTES.authCallback}`);
+    expect(url).not.toContain('localhost');
+    expect(url).not.toContain(':3000');
     vi.unstubAllGlobals();
   });
 

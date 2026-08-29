@@ -264,6 +264,10 @@ export default function ProfileDashboardPage() {
             myReviews: t('profile_page.shortcut_my_reviews'),
             portfolio: t('profile_page.shortcut_portfolio'),
             help: t('profile_page.shortcut_help'),
+            history: t('profile_page.shortcut_history'),
+            historyDesc: isHelper
+              ? t('profile_page.shortcut_history_desc')
+              : t('profile_page.shortcut_client_history_desc'),
             settings: t('profile_page.shortcut_settings'),
           }}
         />

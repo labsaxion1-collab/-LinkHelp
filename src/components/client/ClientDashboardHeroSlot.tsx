@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { DynamicHeroRenderer } from '@/gamification/components/DynamicHeroRenderer';
+import { GamificationCompactRankCard } from '@/gamification/components/GamificationCompactRankCard';
 import type { UserGamificationRecord } from '@/gamification/services/gamificationService';
 import { useDevRenderCount } from '@/utils/devRenderCount';
 
@@ -11,29 +11,15 @@ export type ClientDashboardHeroSlotProps = {
   balance: number | null;
 };
 
-function ClientDashboardHeroSlotInner({
-  gamification,
-  gamificationLoading,
-  gamificationError,
-  avatarUrl,
-  balance,
-}: ClientDashboardHeroSlotProps) {
+/**
+ * Client Home ranking strip — compact premium card (240–300px), not the full Remotion hero.
+ * Profile → Meu nível and frozen heroes remain untouched elsewhere.
+ */
+function ClientDashboardHeroSlotInner(_props: ClientDashboardHeroSlotProps) {
   useDevRenderCount('ClientDashboardHero');
 
   return (
-    <DynamicHeroRenderer
-      userType="client"
-      gamification={gamification}
-      gamificationLoading={gamificationLoading}
-      gamificationError={gamificationError}
-      avatarUrl={avatarUrl}
-      balance={balance}
-      completedServices={0}
-      satisfactionRate={0}
-      rating={0}
-      connectedProfessionals={0}
-    />
+    <GamificationCompactRankCard userType="client" density="clientHome" />
   );
 }
-
 export const ClientDashboardHeroSlot = memo(ClientDashboardHeroSlotInner);

@@ -4,11 +4,8 @@ import type { Job } from '@/types/job';
 import type { ApplicationRow, RequestRow, ReviewRow, UpcomingJobRow } from '@/types/database';
 import type { ServiceReview } from '@/types/review';
 import type { UpcomingJob } from '@/types/upcoming';
-import {
-  APPLICATION_SELECT,
-  REQUEST_SELECT,
-  UPCOMING_JOB_SELECT,
-} from '@/services/supabase/appDataRemote';
+import { queryWithOptionalColumnFallback } from '@/services/supabase/optionalBootstrapSelect';
+import { UPCOMING_JOB_SELECT } from '@/services/supabase/appDataRemote';
 import { resolveRequestStatusPatch } from '@/utils/statusNormalize';
 
 const REVIEW_SELECT =
@@ -97,6 +94,12 @@ export function mergeRequestRowWithJob(partial: Partial<RequestRow>, existing: J
     exclusive_helper_id:
       partial.exclusive_helper_id !== undefined ? partial.exclusive_helper_id : existing.exclusiveHelperId ?? null,
     status: resolveRequestStatusPatch(existing.status, (partial.status ?? existing.status) as Job['status']) as RequestRow['status'],
+    expires_at:
+      partial.expires_at !== undefined
+        ? partial.expires_at
+        : existing.expiresAt != null
+          ? new Date(existing.expiresAt).toISOString()
+          : null,
     created_at: partial.created_at ?? new Date(existing.createdAt).toISOString(),
     updated_at: partial.updated_at ?? new Date(existing.createdAt).toISOString(),
   };
@@ -176,23 +179,27 @@ export function mergeReviewRowWithReview(
 export async function fetchRequestRowById(id: string): Promise<RequestRow | null> {
   const sb = getSupabase();
   if (!sb) return null;
-  const { data, error } = await sb.from('requests').select(REQUEST_SELECT).eq('id', id).maybeSingle();
-  if (error || !data) {
-    if (error) console.warn('[LinkHelp] fetchRequestRowById', error.message);
-    return null;
-  }
-  return data as RequestRow;
+  const { data, error } = await queryWithOptionalColumnFallback('requests', 'fetchRequestRowById', async (select) => {
+    const result = await sb.from('requests').select(select).eq('id', id).maybeSingle();
+    return { data: result.data, error: result.error };
+  });
+  if (error || !data) return null;
+  return data as unknown as RequestRow;
 }
 
 export async function fetchApplicationRowById(id: string): Promise<ApplicationRow | null> {
   const sb = getSupabase();
   if (!sb) return null;
-  const { data, error } = await sb.from('applications').select(APPLICATION_SELECT).eq('id', id).maybeSingle();
-  if (error || !data) {
-    if (error) console.warn('[LinkHelp] fetchApplicationRowById', error.message);
-    return null;
-  }
-  return data as ApplicationRow;
+  const { data, error } = await queryWithOptionalColumnFallback(
+    'applications',
+    'fetchApplicationRowById',
+    async (select) => {
+      const result = await sb.from('applications').select(select).eq('id', id).maybeSingle();
+      return { data: result.data, error: result.error };
+    },
+  );
+  if (error || !data) return null;
+  return data as unknown as ApplicationRow;
 }
 
 export async function fetchUpcomingJobRowById(id: string): Promise<UpcomingJobRow | null> {

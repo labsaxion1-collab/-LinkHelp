@@ -1,4 +1,4 @@
-export type JobStatus = 'open' | 'paused' | 'in_progress' | 'completed' | 'cancelled';
+export type JobStatus = 'open' | 'paused' | 'in_progress' | 'completed' | 'cancelled' | 'expired';
 export type JobUrgency = 'normal' | 'high';
 
 export interface Job {
@@ -27,6 +27,8 @@ export interface Job {
   latitude?: number | null;
   longitude?: number | null;
   subcategory?: string | null;
+  /** Canonical modality from requests.service_mode (`remote` | `in_person`). */
+  serviceMode?: 'remote' | 'in_person' | null;
   value: string;
   budgetType?: 'fixed' | 'negotiable' | null;
   budgetAmount?: number | null;
@@ -37,6 +39,11 @@ export interface Job {
   acceptedAmount?: number | null;
   urgency: JobUrgency;
   status: JobStatus;
+  /**
+   * Listing TTL from requests.expires_at (publish = now + 7 days, migration 0060).
+   * Epoch ms. Absent on pre-0060 legacy rows.
+   */
+  expiresAt?: number | null;
   createdAt: number;
   /** IANA timezone captured at publish (e.g. America/Toronto). */
   timezone?: string | null;

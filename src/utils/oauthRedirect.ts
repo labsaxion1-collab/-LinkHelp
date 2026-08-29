@@ -69,3 +69,11 @@ export function getOAuthRedirectToUrl(nextPath?: string | null): string {
   const params = new URLSearchParams({ next: safeNext });
   return `${base}?${params.toString()}`;
 }
+
+/**
+ * Email confirmation / recovery links (`emailRedirectTo`).
+ * Must use the current host (staging → teste.linkhelp.app), never a localhost Site URL fallback.
+ */
+export function getEmailAuthRedirectToUrl(): string {
+  return getOAuthRedirectToUrl();
+}

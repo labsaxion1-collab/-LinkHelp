@@ -62,12 +62,22 @@ describe('shouldFallbackToDirectReviewInsert', () => {
       }),
     ).toBe(false);
   });
+
+  it('does not fall back for INVALID_REVIEW_TARGET', () => {
+    expect(
+      shouldFallbackToDirectReviewInsert({
+        code: 'P0001',
+        message: 'INVALID_REVIEW_TARGET',
+      }),
+    ).toBe(false);
+  });
 });
 
 describe('extractReviewErrorCode', () => {
   it('extracts known codes from postgres messages', () => {
     expect(extractReviewErrorCode('ERROR: ALREADY_REVIEWED')).toBe('ALREADY_REVIEWED');
     expect(extractReviewErrorCode('REQUEST_NOT_COMPLETED')).toBe('REQUEST_NOT_COMPLETED');
+    expect(extractReviewErrorCode('INVALID_REVIEW_TARGET')).toBe('INVALID_REVIEW_TARGET');
   });
 });
 

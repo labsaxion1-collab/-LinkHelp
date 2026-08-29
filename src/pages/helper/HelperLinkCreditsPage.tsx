@@ -98,7 +98,7 @@ export default function HelperLinkCreditsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleBuy = async (packageId: string, priceId: string) => {
+  const handleBuy = async (packageId: string) => {
     setError(null);
     setBusyId(packageId);
     try {
@@ -110,7 +110,7 @@ export default function HelperLinkCreditsPage() {
           packageId: pkg.id,
         });
       }
-      const { url } = await startLinkCreditCheckout({ packageId, priceId });
+      const { url } = await startLinkCreditCheckout({ packageId });
       window.location.href = url;
     } catch (e) {
       console.error('[LinkCredits checkout]', e);
@@ -228,7 +228,7 @@ export default function HelperLinkCreditsPage() {
                     <button
                       type="button"
                       disabled={busyId != null}
-                      onClick={() => void handleBuy(pkg.id, pkg.priceId)}
+                      onClick={() => void handleBuy(pkg.id)}
                       className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[1rem] bg-gradient-to-r from-[#071238] to-[#02102D] px-4 text-[13px] font-black text-white shadow-[0_10px_22px_rgba(7,18,56,0.20)] transition hover:scale-[1.02] hover:brightness-125 disabled:opacity-60 sm:min-h-[50px] sm:text-sm"
                     >
                       {busyId === pkg.id ? (

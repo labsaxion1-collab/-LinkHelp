@@ -69,6 +69,4 @@ export function parseAdminDashboardFinancialSummary(
   };
 }
 
-export function formatCadFromCents(cents: number): string {
-  return (cents / 100).toFixed(2);
-}
+export { formatCadFromCents, formatCadAmount, formatLc } from './fluxFormat';

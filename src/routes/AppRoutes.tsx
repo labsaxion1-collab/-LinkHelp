@@ -8,6 +8,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PublicOnlyRoute } from '@/components/auth/PublicOnlyRoute';
 import { RoleRoute } from '@/components/auth/RoleRoute';
 import { AdminProtectedRoute } from '@/components/admin/AdminProtectedRoute';
+import { AdminManageProtectedRoute } from '@/components/admin/AdminManageProtectedRoute';
 import { FluxAdminLayout } from '@/components/admin/FluxAdminLayout';
 import { LoginSplashGate } from '@/components/auth/LoginSplashGate';
 import { FluxHostGuard } from '@/components/auth/FluxHostGuard';
@@ -35,8 +36,10 @@ const ClientDashboard = lazyPage(() => import('@/pages/client/ClientDashboard'))
 const ClientCreditsPage = lazyPage(() => import('@/pages/client/ClientCreditsPage'));
 const ClientCreditsHistoryPage = lazyPage(() => import('@/pages/client/ClientCreditsHistoryPage'));
 const ClientCreditsSuccessPage = lazyPage(() => import('@/pages/client/ClientCreditsSuccessPage'));
+const ClientHistoryPage = lazyPage(() => import('@/pages/client/ClientHistoryPage'));
 const HelperDashboard = lazyPage(() => import('@/pages/helper/HelperDashboard'));
 const HelperUpcomingJobsPage = lazyPage(() => import('@/pages/helper/HelperUpcomingJobsPage'));
+const HelperHistoryPage = lazyPage(() => import('@/pages/helper/HelperHistoryPage'));
 const MessagesPage = lazyPage(() => import('@/pages/chat/MessagesPage'));
 const IdeasPage = lazyPage(() => import('@/pages/ideas/IdeasPage'));
 const NotificationsPage = lazyPage(() => import('@/pages/notifications/NotificationsPage'));
@@ -51,15 +54,16 @@ const PublicProfileEditPage = lazyPage(() => import('@/pages/profile/PublicProfi
 function AdminDashboardLoadError() {
   return (
     <div className="mx-auto max-w-lg rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
-      <p className="text-sm font-bold text-white">FLUX Admin unavailable</p>
+      <p className="text-sm font-bold text-white">FLUX Admin indisponível</p>
       <p className="mt-2 text-xs text-slate-500">
-        The admin dashboard module failed to load. Refresh the page or try again later.
+        Não foi possível carregar o módulo do painel. Atualize a página ou tente novamente mais tarde.
       </p>
     </div>
   );
 }
 
 const PushTestPage = lazyPage(() => import('@/pages/admin/PushTestPage'));
+const AdministratorsPage = lazyPage(() => import('@/pages/admin/administrators/AdministratorsPage'));
 const BackofficeUsersPage = lazyPage(() => import('@/pages/admin/backoffice/BackofficeUsersPage'));
 const BackofficeUserDetailPage = lazyPage(() => import('@/pages/admin/backoffice/BackofficeUserDetailPage'));
 const BackofficeRequestsPage = lazyPage(() => import('@/pages/admin/backoffice/BackofficeRequestsPage'));
@@ -140,6 +144,7 @@ export function AppRoutes() {
             <Route path="/client" element={<Navigate to={ROUTES.clientDashboard} replace />} />
             <Route path={ROUTES.clientDashboard} element={<ClientDashboard />} />
             <Route path={ROUTES.clientJobs} element={<ClientDashboard />} />
+            <Route path={ROUTES.clientHistory} element={<ClientHistoryPage />} />
             <Route path={ROUTES.clientCredits} element={<ClientCreditsPage />} />
             <Route path={ROUTES.clientCreditsHistory} element={<ClientCreditsHistoryPage />} />
             <Route path={ROUTES.clientCreditsSuccess} element={<ClientCreditsSuccessPage />} />
@@ -165,6 +170,7 @@ export function AppRoutes() {
             <Route path={ROUTES.helperOpportunities} element={<HelperDashboard />} />
             <Route path={ROUTES.helperPerformance} element={<HelperDashboard />} />
             <Route path={ROUTES.helperJobs} element={<HelperUpcomingJobsPage />} />
+            <Route path={ROUTES.helperHistory} element={<HelperHistoryPage />} />
             <Route path="/helper/jobs/upcoming" element={<Navigate to={ROUTES.helperJobs} replace />} />
           </Route>
 
@@ -179,6 +185,9 @@ export function AppRoutes() {
               <Route path={ROUTES.adminEconomy} element={<BackofficeEconomyPage />} />
               <Route path={ROUTES.adminAudit} element={<BackofficeAuditPage />} />
               <Route path={ROUTES.adminSupport} element={<BackofficeSupportPage />} />
+              <Route element={<AdminManageProtectedRoute />}>
+                <Route path={ROUTES.adminAdministrators} element={<AdministratorsPage />} />
+              </Route>
               <Route path={ROUTES.adminPushTest} element={<PushTestPage />} />
             </Route>
           </Route>

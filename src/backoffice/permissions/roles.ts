@@ -11,6 +11,7 @@ export const BACKOFFICE_PERMISSIONS = [
   'credits.write',
   'requests.write',
   'economy.write',
+  'admins.manage',
 ] as const;
 
 export type BackofficePermission = (typeof BACKOFFICE_PERMISSIONS)[number];

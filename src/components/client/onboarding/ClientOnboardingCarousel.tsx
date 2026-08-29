@@ -28,11 +28,17 @@ export function ClientOnboardingCarousel({ open, completing, t, onComplete, onSk
   }, [open]);
 
   const handleSkip = () => {
+    if (completing) return;
     if (onSkip) {
       void onSkip();
       return;
     }
     void onComplete('explore');
+  };
+
+  const handleComplete = (action: ClientOnboardingCompleteAction) => {
+    if (completing) return;
+    void onComplete(action);
   };
 
   const slides = useMemo(() => {
@@ -114,7 +120,7 @@ export function ClientOnboardingCarousel({ open, completing, t, onComplete, onSk
             <button
               type="button"
               disabled={completing}
-              onClick={() => onComplete('createRequest')}
+              onClick={() => handleComplete('createRequest')}
               className={clsx(
                 'inline-flex min-h-[62px] w-full items-center justify-center gap-2 rounded-[1.75rem] bg-gradient-to-r from-[#2563FF] via-[#1B8FFF] to-[#4F8CFF] px-6 text-base font-black text-white shadow-[0_18px_40px_rgba(37,99,255,0.32)] transition hover:brightness-105 disabled:opacity-70',
                 'lh-tutorial-celebration-cta-glow',
@@ -126,10 +132,19 @@ export function ClientOnboardingCarousel({ open, completing, t, onComplete, onSk
             <button
               type="button"
               disabled={completing}
-              onClick={() => onComplete('explore')}
+              onClick={() => handleComplete('explore')}
               className="inline-flex min-h-[48px] w-full items-center justify-center rounded-[1.25rem] text-sm font-black text-[#2563FF] transition hover:bg-[#2563FF]/5 disabled:opacity-70"
             >
               {t('client_onboarding.cta_explore')}
+            </button>
+            <button
+              type="button"
+              disabled={completing}
+              onClick={() => setStep((prev) => Math.max(prev - 1, 0))}
+              className="inline-flex min-h-[48px] w-full items-center justify-center gap-1 text-sm font-bold text-[#64748B] transition hover:text-[#0B1220]"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              {t('client_onboarding.cta_back')}
             </button>
           </>
         ) : (

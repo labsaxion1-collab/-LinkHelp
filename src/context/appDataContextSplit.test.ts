@@ -56,7 +56,7 @@ describe('AppDataContext split (performance)', () => {
     expect(src).toContain('useAppDataCore');
     expect(src).toContain('useAppDataActionsRef');
     expect(src).not.toMatch(/useAppData\s*\(/);
-    expect(src).toContain('HelperDashboardHeroSlot');
+    expect(src).toContain('GamificationCompactRankCard');
   });
 
   it('Hero slots não assinam AppDataContext', async () => {

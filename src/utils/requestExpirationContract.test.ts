@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { normalizeRequestStatus, resolveRequestStatusPatch } from '@/utils/statusNormalize';
 import { isJobExpired } from '@/utils/jobVisibility';
 import { requestRowToJob } from '@/services/supabase/mappers';
@@ -23,6 +23,15 @@ const helperId = 'helper-1';
 const NOW = new Date('2026-08-20T12:00:00Z').getTime();
 const FUTURE = NOW + 7 * 24 * 60 * 60 * 1000;
 const PAST = NOW - 24 * 60 * 60 * 1000;
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(NOW);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 const job = (overrides: Partial<Job> = {}): Job =>
   ({

@@ -64,6 +64,9 @@ import {
   helperHasBaseAddress,
   helperHasExactBaseCoordinates,
 } from '@/utils/helperBaseLocation';
+import { decideHelperApplyLocation } from '@/utils/helperApplicationLocationGate';
+import { storeHelperApplyReturnContext, consumeHelperApplyReturnContext } from '@/utils/helperApplyReturnContext';
+import type { HelperApplicationType } from '@/utils/helperOpportunityApply';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import {
   filterToPreferredCategoriesIfPossible,
@@ -371,12 +374,17 @@ export default function HelperDashboard() {
   const [applyExpandedJobId, setApplyExpandedJobId] = useState<string | null>(null);
 
   useEffect(() => {
-    const openJobId = (location.state as { openJobId?: string } | null)?.openJobId;
+    const st = location.state as { openJobId?: string; resumeApply?: boolean } | null;
+    const openJobId = st?.openJobId;
     if (!openJobId) return;
     const job = jobs.find((j) => j.id === openJobId);
     if (job) setApplyExpandedJobId(job.id);
+    if (st?.resumeApply) {
+      consumeHelperApplyReturnContext();
+      showToast(t('helper_dashboard.resume_apply_after_location'), 'info');
+    }
     navigate(location.pathname, { replace: true, state: null });
-  }, [location.state, jobs, navigate, location.pathname]);
+  }, [location.state, jobs, navigate, location.pathname, showToast, t]);
   const helperUserId = session?.user?.id ?? profile?.id ?? (me?.id && me.id !== 'guest' && me.id !== '…' ? me.id : null);
 
   const helperUpcomingList = React.useMemo(
@@ -591,8 +599,19 @@ export default function HelperDashboard() {
       showToast(t('auth.errors.not_signed_in'), 'error');
       return;
     }
-    const distanceKm = baseDistanceToJobKm(job);
     const isExclusive = proposalOptions?.isExclusive === true;
+    const locationDecision = decideHelperApplyLocation(job, profile);
+    if (!locationDecision.ok) {
+      showToast(t('helper_dashboard.apply_in_person_coords_required'), 'error');
+      storeHelperApplyReturnContext({
+        jobId: job.id,
+        applicationType: isExclusive ? 'exclusive' : 'normal',
+        returnPath: location.pathname,
+      });
+      navigate(`${ROUTES.settings}#helper-base-location`);
+      return;
+    }
+    const distanceKm = locationDecision.distanceKm;
     const requiredCredits = isExclusive
       ? getExclusiveApplicationChargeLc(leadCostsForJob(job, { distanceKm }))
       : interestCostForJob(job);
@@ -670,7 +689,12 @@ export default function HelperDashboard() {
       }
       const mapped = formatBaselineFinanceError(err, t, 'helper_dashboard.toast_apply_error');
       if (msg.toUpperCase().includes('LEAD_LOCATION_INCOMPLETE') || mapped === t('baseline_finance.location_incomplete')) {
-        showToast(t('baseline_finance.location_incomplete_action'), 'error');
+        showToast(t('helper_dashboard.apply_in_person_coords_required'), 'error');
+        storeHelperApplyReturnContext({
+          jobId: job.id,
+          applicationType: isExclusive ? 'exclusive' : 'normal',
+          returnPath: location.pathname,
+        });
         navigate(`${ROUTES.settings}#helper-base-location`);
         return;
       }
@@ -694,8 +718,19 @@ export default function HelperDashboard() {
         showToast(t('auth.errors.not_signed_in'), 'error');
         return;
       }
-      const distanceKm = baseDistanceToJobKm(job);
       const isExclusive = options.isExclusive === true;
+      const locationDecision = decideHelperApplyLocation(job, profile);
+      if (!locationDecision.ok) {
+        showToast(t('helper_dashboard.apply_in_person_coords_required'), 'error');
+        storeHelperApplyReturnContext({
+          jobId: job.id,
+          applicationType: (isExclusive ? 'exclusive' : 'normal') as HelperApplicationType,
+          returnPath: location.pathname,
+        });
+        navigate(`${ROUTES.settings}#helper-base-location`);
+        return;
+      }
+      const distanceKm = locationDecision.distanceKm;
       const requiredCredits = isExclusive
         ? getExclusiveApplicationChargeLc(leadCostsForJob(job, { distanceKm }))
         : interestCostForJob(job);
@@ -720,13 +755,15 @@ export default function HelperDashboard() {
     [
       appliedJobIds,
       helperUserId,
-      baseDistanceToJobKm,
+      profile,
+      location.pathname,
       interestCostForJob,
       walletLoading,
       walletBalance,
       openInsufficientCreditsModal,
       showToast,
       submitApply,
+      navigate,
       t,
     ],
   );

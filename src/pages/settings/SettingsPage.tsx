@@ -47,6 +47,7 @@ import {
   HelperBaseAddressLockedError,
   syncHelperBaseAddress,
 } from '@/services/supabase/helperBaseAddressRemote';
+import { peekHelperApplyReturnContext } from '@/utils/helperApplyReturnContext';
 import { PUSH_SUBSCRIPTIONS_TABLE } from '@/config/pushNotifications';
 import { clearStoredAppMode } from '@/utils/appModeStorage';
 import { extractErrorMessage, formatAuthFlowErrorMessage } from '@/utils/errorMessage';
@@ -285,10 +286,6 @@ export default function SettingsPage() {
           showToast(t('app_pages.settings_helper_base_required'), 'error');
           return;
         }
-        if (helperBaseValue.latitude == null || helperBaseValue.longitude == null) {
-          showToast(t('app_pages.settings_helper_base_coords_required'), 'error');
-          return;
-        }
         await syncHelperBaseAddress({
           address: helperBaseValue.address.trim() || null,
           city: helperBaseValue.city.trim() || null,
@@ -322,6 +319,18 @@ export default function SettingsPage() {
       if (refreshed && isHelper) setHelperBaseValue(helperBaseAddressFromProfile(refreshed));
       setInitialLanguage(language);
       showToast(t('app_pages.settings_saved'), 'success');
+      const pendingApply = peekHelperApplyReturnContext();
+      const savedLat = refreshed && isHelper
+        ? refreshed.helper_base_lat
+        : helperBaseValue.latitude;
+      const savedLng = refreshed && isHelper
+        ? refreshed.helper_base_lng
+        : helperBaseValue.longitude;
+      if (isHelper && pendingApply && savedLat != null && savedLng != null) {
+        navigate(pendingApply.returnPath || ROUTES.helperDashboard, {
+          state: { openJobId: pendingApply.jobId, resumeApply: true },
+        });
+      }
     } catch (e) {
       if (e instanceof HelperBaseAddressLockedError) {
         showToast(t('app_pages.settings_helper_base_lock_message'), 'error');
@@ -499,7 +508,7 @@ export default function SettingsPage() {
               <p className="mb-3 text-[11px] text-slate-400">{t('app_pages.settings_helper_base_hint')}</p>
               {helperBaseValue.latitude == null || helperBaseValue.longitude == null ? (
                 <p className="mb-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
-                  {t('app_pages.settings_helper_base_coords_required')}
+                  {t('helper_dashboard.apply_in_person_coords_required')}
                 </p>
               ) : null}
               {profile?.helper_base_change_unlocked_by_admin ? (
@@ -531,8 +540,17 @@ export default function SettingsPage() {
                 cityLabel={t('app_pages.settings_helper_base_city')}
                 provinceLabel={t('app_pages.settings_helper_base_province')}
                 postalCodeLabel={t('app_pages.settings_helper_base_postal_code')}
-                onLocationError={() => showToast(t('app_pages.settings_location_denied'), 'error')}
-                onLocationPartial={() => showToast(t('app_pages.settings_location_geocode_partial'), 'info')}
+                mapsUnavailableMessage={t('app_pages.settings_google_maps_unavailable')}
+                gpsHomeWarning={t('app_pages.settings_helper_base_gps_home_warning')}
+                onLocationError={(reason) =>
+                  showToast(
+                    reason === 'denied'
+                      ? t('app_pages.settings_location_denied')
+                      : t('app_pages.settings_location_unavailable'),
+                    'error',
+                  )
+                }
+                onLocationSuccess={() => showToast(t('app_pages.settings_helper_base_gps_success'), 'success')}
               />
             </div>
           ) : (

@@ -63,5 +63,23 @@ export function requestBrowserCoordinates(): Promise<Coordinates | null> {
   return requestBrowserCoordinatesDetailed().then((result) => (result.ok ? result.coords : null));
 }
 
+/** One-shot GPS for the helper home base. Does not watch position and does not use Google Maps. */
+export function requestHomeBaseGpsCoordinates(): Promise<BrowserCoordinatesResult> {
+  if (!('geolocation' in navigator)) {
+    return Promise.resolve({ ok: false, reason: 'unavailable' });
+  }
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ ok: true, coords: { lat: pos.coords.latitude, lng: pos.coords.longitude } }),
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) resolve({ ok: false, reason: 'denied' });
+        else if (err.code === err.TIMEOUT) resolve({ ok: false, reason: 'timeout' });
+        else resolve({ ok: false, reason: 'unavailable' });
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 },
+    );
+  });
+}
+
 /** Re-export for callers that need a safe default. */
 export const FALLBACK_MAP_CENTER = DEFAULT_MAP_CENTER;

@@ -907,6 +907,11 @@ export const en = {
     apply_type_label: 'Application type',
     apply_type_normal: 'Normal',
     apply_type_exclusive: 'VIP / Exclusive',
+    apply_remote_location_not_needed: 'Remote job: location is not required.',
+    apply_in_person_coords_required:
+      'Save your home coordinates to calculate the distance for this job.',
+    resume_apply_after_location:
+      'Coordinates saved. Review the job and confirm the application again.',
     apply_lc_cost: '{{count}}',
     apply_confirm_title: 'Confirm application?',
     apply_confirm_title_vip: 'Confirm VIP application?',
@@ -2247,7 +2252,12 @@ export const en = {
     settings_helper_base_save_error: 'Could not save base address',
     settings_helper_base_required: 'Enter at least a street address or city',
     settings_helper_base_coords_required:
-      'Pick the address from autocomplete or use current location to save valid coordinates.',
+      'Save your home coordinates to calculate distance for in-person jobs.',
+    settings_google_maps_unavailable:
+      'Google Maps is unavailable. Fill in the address manually or use GPS while at your home.',
+    settings_helper_base_gps_home_warning:
+      'Use GPS only when you are at home. This location will be the base for calculating distance and LinkCredits.',
+    settings_helper_base_gps_success: 'Home coordinates captured. Review the address and save.',
     settings_helper_base_no_changes: 'No changes to base address',
     settings_helper_base_setup_prompt: 'Set up your base address',
     settings_helper_base_configured: 'Base address set',
@@ -2259,7 +2269,9 @@ export const en = {
     settings_helper_base_use_location: 'Use current location',
     settings_helper_base_use_location_short: 'GPS',
     settings_helper_base_locating: 'Locating...',
-    settings_location_denied: 'Could not access your location.',
+    settings_location_denied:
+      'Location permission denied. Allow GPS or try again at your home.',
+    settings_location_unavailable: 'Could not read GPS. Try again at your home.',
     settings_location_geocode_partial: 'Location captured. Complete the address manually if needed.',
     settings_saved: 'Saved',
     settings_save: 'Save changes',
@@ -2953,7 +2965,7 @@ export const en = {
     pricing_missing: 'Lead pricing is not configured. Please try again later.',
     location_incomplete: 'Location data is incomplete for this lead quote.',
     location_incomplete_action:
-      'Complete your location (with coordinates) to apply. Opening settings…',
+      'Save your home coordinates to calculate the distance for this job.',
     snapshot_missing: 'Lead pricing snapshot is missing. Ask the helper to re-apply.',
     charge_mismatch: 'LinkCredits charge did not match the server quote. Refresh and try again.',
     exclusive_locked: 'This request already has an exclusive (VIP) application.',

@@ -911,6 +911,11 @@ export const fr = {
     apply_type_label: 'Type de candidature',
     apply_type_normal: 'Normal',
     apply_type_exclusive: 'VIP / Exclusive',
+    apply_remote_location_not_needed: "Mission à distance : la localisation n'est pas nécessaire.",
+    apply_in_person_coords_required:
+      'Enregistrez les coordonnées de votre domicile pour calculer la distance de cette mission.',
+    resume_apply_after_location:
+      'Coordonnées enregistrées. Vérifiez la mission et confirmez à nouveau la candidature.',
     apply_lc_cost: '{{count}}',
     apply_confirm_title: 'Confirmer la candidature ?',
     apply_confirm_title_vip: 'Confirmer la candidature VIP ?',
@@ -2257,7 +2262,13 @@ export const fr = {
     settings_helper_base_save_error: "Impossible d'enregistrer l'adresse de base",
     settings_helper_base_required: 'Indiquez au moins une adresse ou une ville',
     settings_helper_base_coords_required:
-      'Sélectionnez l’adresse via l’autocomplétion ou utilisez la position actuelle pour enregistrer des coordonnées valides.',
+      'Enregistrez les coordonnées de votre domicile pour calculer la distance des missions en personne.',
+    settings_google_maps_unavailable:
+      'Google Maps est indisponible. Saisissez l’adresse manuellement ou utilisez le GPS depuis votre domicile.',
+    settings_helper_base_gps_home_warning:
+      'Utilisez le GPS uniquement lorsque vous êtes à votre domicile. Cette localisation servira de base pour calculer la distance et les LinkCredits.',
+    settings_helper_base_gps_success:
+      'Coordonnées du domicile capturées. Vérifiez l’adresse et enregistrez.',
     settings_helper_base_no_changes: "Aucun changement sur l'adresse de base",
     settings_helper_base_setup_prompt: 'Configurez votre adresse de base',
     settings_helper_base_configured: 'Adresse de base définie',
@@ -2269,7 +2280,9 @@ export const fr = {
     settings_helper_base_use_location: 'Utiliser la position actuelle',
     settings_helper_base_use_location_short: 'GPS',
     settings_helper_base_locating: 'Localisation...',
-    settings_location_denied: 'Impossible d’accéder à votre localisation.',
+    settings_location_denied:
+      'Autorisation de localisation refusée. Autorisez le GPS ou réessayez depuis votre domicile.',
+    settings_location_unavailable: 'Impossible de lire le GPS. Réessayez depuis votre domicile.',
     settings_location_geocode_partial: 'Localisation capturée. Complétez l’adresse manuellement si nécessaire.',
     settings_save: 'Enregistrer',
     settings_logout: 'Se déconnecter',
@@ -2962,7 +2975,7 @@ export const fr = {
     pricing_missing: 'La tarification du lead n’est pas configurée. Réessayez plus tard.',
     location_incomplete: 'Données de localisation incomplètes pour le devis du lead.',
     location_incomplete_action:
-      'Complétez votre localisation (avec coordonnées) pour postuler. Ouverture des paramètres…',
+      'Enregistrez les coordonnées de votre domicile pour calculer la distance de cette mission.',
     snapshot_missing: 'Instantané de tarification manquant. Demandez au helper de postuler à nouveau.',
     charge_mismatch: 'Le débit LinkCredits ne correspond pas au devis serveur. Actualisez et réessayez.',
     exclusive_locked: 'Cette demande a déjà une candidature exclusive (VIP).',

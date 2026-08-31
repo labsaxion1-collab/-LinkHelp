@@ -914,6 +914,11 @@ export const pt = {
     apply_type_label: 'Tipo de candidatura',
     apply_type_normal: 'Normal',
     apply_type_exclusive: 'VIP / Exclusiva',
+    apply_remote_location_not_needed: 'Chamado remoto: localização não necessária.',
+    apply_in_person_coords_required:
+      'Cadastre as coordenadas da sua residência para calcular a distância deste chamado.',
+    resume_apply_after_location:
+      'Coordenadas salvas. Revise o chamado e confirme a candidatura novamente.',
     apply_lc_cost: '{{count}}',
     apply_confirm_title: 'Confirmar candidatura?',
     apply_confirm_title_vip: 'Confirmar candidatura VIP?',
@@ -2259,7 +2264,12 @@ export const pt = {
     settings_helper_base_save_error: 'Nao foi possivel salvar o endereco base',
     settings_helper_base_required: 'Informe pelo menos endereco ou cidade',
     settings_helper_base_coords_required:
-      'Selecione o endereço no autocomplete ou use a localização atual para salvar coordenadas válidas.',
+      'Cadastre as coordenadas da sua residência para calcular a distância dos chamados presenciais.',
+    settings_google_maps_unavailable:
+      'Google Maps indisponível. Preencha o endereço manualmente ou use o GPS estando em sua residência.',
+    settings_helper_base_gps_home_warning:
+      'Use o GPS somente quando estiver em sua residência. Essa localização será a base para calcular distância e LinkCredits.',
+    settings_helper_base_gps_success: 'Coordenadas da residência capturadas. Revise o endereço e salve.',
     settings_helper_base_no_changes: 'Nenhuma alteracao no endereco base',
     settings_helper_base_setup_prompt: 'Configure seu endereco base',
     settings_helper_base_configured: 'Endereco base definido',
@@ -2271,7 +2281,9 @@ export const pt = {
     settings_helper_base_use_location: 'Usar localizacao atual',
     settings_helper_base_use_location_short: 'GPS',
     settings_helper_base_locating: 'Localizando...',
-    settings_location_denied: 'Não foi possível acessar sua localização.',
+    settings_location_denied:
+      'Permissão de localização negada. Autorize o GPS ou tente novamente em sua residência.',
+    settings_location_unavailable: 'Não foi possível obter o GPS. Tente novamente em sua residência.',
     settings_location_geocode_partial: 'Localização capturada. Complete o endereço manualmente se necessário.',
     settings_saved: 'Salvo',
     settings_save: 'Salvar alterações',
@@ -2965,7 +2977,7 @@ export const pt = {
     pricing_missing: 'A precificação do lead não está configurada. Tente novamente mais tarde.',
     location_incomplete: 'Dados de localização incompletos para calcular o lead.',
     location_incomplete_action:
-      'Complete sua localização (com coordenadas) para se candidatar. Abrindo configurações…',
+      'Cadastre as coordenadas da sua residência para calcular a distância deste chamado.',
     snapshot_missing: 'Snapshot de precificação ausente. Peça ao helper para se candidatar novamente.',
     charge_mismatch: 'A cobrança de LinkCredits não bateu com a cotação do servidor. Atualize e tente de novo.',
     exclusive_locked: 'Este chamado já tem uma candidatura exclusiva (VIP).',

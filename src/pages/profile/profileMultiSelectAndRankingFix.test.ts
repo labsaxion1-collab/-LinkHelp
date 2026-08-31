@@ -89,9 +89,9 @@ describe('client ranking — publish does not promote', () => {
 
 describe('location incomplete copy', () => {
   it('exposes action-oriented PT/EN/FR messages', () => {
-    expect(resolveMessage({ en, pt, fr }, 'pt', 'baseline_finance.location_incomplete_action')).toMatch(/localização/i);
-    expect(resolveMessage({ en, pt, fr }, 'en', 'baseline_finance.location_incomplete_action')).toMatch(/location/i);
-    expect(resolveMessage({ en, pt, fr }, 'fr', 'baseline_finance.location_incomplete_action')).toMatch(/localisation/i);
+    expect(resolveMessage({ en, pt, fr }, 'pt', 'baseline_finance.location_incomplete_action')).toMatch(/coordenadas/i);
+    expect(resolveMessage({ en, pt, fr }, 'en', 'baseline_finance.location_incomplete_action')).toMatch(/coordinates/i);
+    expect(resolveMessage({ en, pt, fr }, 'fr', 'baseline_finance.location_incomplete_action')).toMatch(/coordonn/i);
     expect(resolveMessage({ en, pt, fr }, 'pt', 'app_pages.settings_helper_base_coords_required')).toMatch(/coordenadas/i);
   });
 });

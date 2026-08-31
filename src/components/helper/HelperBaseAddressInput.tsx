@@ -32,6 +32,9 @@ type Props = {
   postalCodeLabel: string;
   mapsUnavailableMessage?: string;
   gpsHomeWarning?: string;
+  gpsStatusPendingLabel?: string;
+  gpsStatusConfirmedLabel?: string;
+  emphasizeGpsButton?: boolean;
   onLocationError?: (reason?: GeolocationFailureReason) => void;
   onLocationPartial?: () => void;
   onLocationSuccess?: () => void;
@@ -104,7 +107,21 @@ export function helperBaseAddressFromManualField(
   field: 'city' | 'province' | 'postalCode',
   text: string,
 ): HelperBaseAddressValue {
-  return { ...prev, [field]: text };
+  return {
+    ...prev,
+    [field]: text,
+    latitude: null,
+    longitude: null,
+  };
+}
+
+export function helperBaseHasGpsConfirmation(value: HelperBaseAddressValue): boolean {
+  return (
+    typeof value.latitude === 'number' &&
+    Number.isFinite(value.latitude) &&
+    typeof value.longitude === 'number' &&
+    Number.isFinite(value.longitude)
+  );
 }
 
 /** Persist GPS as the official home base without rewriting typed address fields. */
@@ -196,6 +213,7 @@ function StreetRow({
   onGpsClick,
   onFocus,
   onBlur,
+  emphasizeGpsButton = false,
 }: {
   inputRef?: RefObject<HTMLInputElement | null>;
   draft: string;
@@ -209,6 +227,7 @@ function StreetRow({
   onGpsClick: () => void;
   onFocus: () => void;
   onBlur: () => void;
+  emphasizeGpsButton?: boolean;
 }) {
   return (
     <div className="relative">
@@ -229,7 +248,12 @@ function StreetRow({
         type="button"
         disabled={disabled || locating}
         onClick={onGpsClick}
-        className="absolute right-2 top-1/2 flex min-h-[36px] -translate-y-1/2 items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-[11px] font-bold text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+        className={`absolute right-2 top-1/2 flex min-h-[36px] -translate-y-1/2 items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-bold disabled:opacity-50 ${
+          emphasizeGpsButton
+            ? 'bg-amber-100 text-amber-900 ring-2 ring-amber-400 hover:bg-amber-200'
+            : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+        }`}
+        data-testid="helper-base-gps-button"
       >
         {locating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Navigation className="h-3.5 w-3.5" />}
         <span className="hidden sm:inline">{locating ? locatingLabel : currentLocationLabel}</span>
@@ -251,6 +275,7 @@ function PlacesStreetInner({
   currentLocationLabel,
   currentLocationShortLabel,
   placeholder,
+  emphasizeGpsButton = false,
 }: {
   value: HelperBaseAddressValue;
   onChange: (value: HelperBaseAddressValue) => void;
@@ -263,6 +288,7 @@ function PlacesStreetInner({
   currentLocationLabel: string;
   currentLocationShortLabel: string;
   placeholder: string;
+  emphasizeGpsButton?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const places = useMapsLibrary('places');
@@ -311,6 +337,7 @@ function PlacesStreetInner({
       onBlur={() => {
         focusedRef.current = false;
       }}
+      emphasizeGpsButton={emphasizeGpsButton}
     />
   );
 }
@@ -329,6 +356,9 @@ function HelperBaseAddressInputInner(props: Props) {
     postalCodeLabel,
     mapsUnavailableMessage,
     gpsHomeWarning,
+    gpsStatusPendingLabel,
+    gpsStatusConfirmedLabel,
+    emphasizeGpsButton = false,
     onLocationError,
     onLocationPartial,
     onLocationSuccess,
@@ -355,6 +385,7 @@ function HelperBaseAddressInputInner(props: Props) {
   const mapsConfigured = isGoogleMapsConfigured();
   const usePlaces = mapsConfigured && !mapsFailed;
   const showMapsUnavailable = Boolean(mapsUnavailableMessage) && (!mapsConfigured || mapsFailed);
+  const gpsConfirmed = helperBaseHasGpsConfirmation(value);
 
   const useGps = () => {
     if (disabled) return;
@@ -387,6 +418,18 @@ function HelperBaseAddressInputInner(props: Props) {
           {gpsHomeWarning}
         </p>
       ) : null}
+      {gpsStatusPendingLabel || gpsStatusConfirmedLabel ? (
+        <p
+          data-testid={gpsConfirmed ? 'helper-base-gps-status-confirmed' : 'helper-base-gps-status-pending'}
+          className={`rounded-xl border px-3 py-2 text-xs font-semibold ${
+            gpsConfirmed
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+              : 'border-amber-200 bg-amber-50 text-amber-900'
+          }`}
+        >
+          {gpsConfirmed ? gpsStatusConfirmedLabel : gpsStatusPendingLabel}
+        </p>
+      ) : null}
       {usePlaces ? (
         <APIProvider apiKey={getGoogleMapsApiKey()} version="weekly" libraries={['places']}>
           <PlacesStreetInner
@@ -401,6 +444,7 @@ function HelperBaseAddressInputInner(props: Props) {
             currentLocationLabel={currentLocationLabel}
             currentLocationShortLabel={currentLocationShortLabel}
             placeholder={placeholder}
+            emphasizeGpsButton={emphasizeGpsButton}
           />
         </APIProvider>
       ) : (
@@ -412,6 +456,7 @@ function HelperBaseAddressInputInner(props: Props) {
           locatingLabel={locatingLabel}
           currentLocationLabel={currentLocationLabel}
           currentLocationShortLabel={currentLocationShortLabel}
+          emphasizeGpsButton={emphasizeGpsButton}
           onDraftChange={(text) => {
             setDraft(text);
             onChange(helperBaseAddressFromTypedDisplay(value, text));

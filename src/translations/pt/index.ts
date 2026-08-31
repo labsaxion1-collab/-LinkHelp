@@ -2270,6 +2270,11 @@ export const pt = {
     settings_helper_base_gps_home_warning:
       'Use o GPS somente quando estiver em sua residência. Essa localização será a base para calcular distância e LinkCredits.',
     settings_helper_base_gps_success: 'Coordenadas da residência capturadas. Revise o endereço e salve.',
+    settings_helper_base_gps_status_pending: 'Localização da residência ainda não confirmada',
+    settings_helper_base_gps_status_confirmed: 'Localização da residência confirmada pelo GPS',
+    settings_helper_base_saved_need_gps:
+      'Endereço salvo. Confirme a localização pelo GPS para se candidatar a chamados presenciais.',
+    settings_helper_base_saved_returning: 'Endereço confirmado. Voltando ao chamado…',
     settings_helper_base_no_changes: 'Nenhuma alteracao no endereco base',
     settings_helper_base_setup_prompt: 'Configure seu endereco base',
     settings_helper_base_configured: 'Endereco base definido',
@@ -2278,7 +2283,7 @@ export const pt = {
       'Por seguranca e calculo justo de LinkCredits, o endereco base so pode ser alterado a cada 30 dias.',
     settings_helper_base_lock_days: 'Voce podera alterar novamente em {{count}} dias',
     settings_helper_base_can_change_now: 'Voce ja pode alterar seu endereco base novamente.',
-    settings_helper_base_use_location: 'Usar localizacao atual',
+    settings_helper_base_use_location: 'Confirmar localização por GPS',
     settings_helper_base_use_location_short: 'GPS',
     settings_helper_base_locating: 'Localizando...',
     settings_location_denied:

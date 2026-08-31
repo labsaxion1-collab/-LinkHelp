@@ -96,6 +96,8 @@ export type HelperOpportunityCardProps = {
   exclusiveLocked?: boolean;
   descriptionExpanded?: boolean;
   onDescriptionExpandedChange?: (expanded: boolean) => void;
+  resumeApplyType?: HelperApplicationType | null;
+  onResumeApplyHandled?: () => void;
 };
 
 function jobMatchTier(job: Job, activeTab: HelperOpportunityCardTab): 'urgent' | 'best' | 'normal' {
@@ -147,6 +149,8 @@ function HelperOpportunityCardInner({
   exclusiveLocked = false,
   descriptionExpanded = false,
   onDescriptionExpandedChange,
+  resumeApplyType = null,
+  onResumeApplyHandled,
 }: HelperOpportunityCardProps) {
   const [searchParams] = useSearchParams();
   const lcDebugEnabled = isLinkCreditsDebugEnabled(searchParams);
@@ -170,6 +174,7 @@ function HelperOpportunityCardInner({
   const [proposalAmountRaw, setProposalAmountRaw] = useState('');
   const [amountError, setAmountError] = useState('');
   const confirmSubmittedRef = useRef(false);
+  const resumeApplyHandledRef = useRef(false);
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const CategoryIcon = getCategoryIconById(job.category);
   const categoryTheme = getCategoryFeedTheme(job.category);
@@ -289,6 +294,41 @@ function HelperOpportunityCardInner({
     }
     setConfirmOpen(true);
   };
+
+  useEffect(() => {
+    if (!resumeApplyType || hasApplied || isApplying || interactionLocked || !canApply) return;
+    if (resumeApplyType === 'exclusive' && exclusiveLocked) return;
+    const charge =
+      resumeApplyType === 'exclusive'
+        ? balanceSummary.vip.charge
+        : balanceSummary.normal.charge;
+    if (walletBalance != null && walletBalance < charge) return;
+    if (resumeApplyHandledRef.current) return;
+    resumeApplyHandledRef.current = true;
+    setApplicationType(resumeApplyType);
+    if (shouldExpandDescriptionForAmountInput(showAmountInput, proposalAmountRaw)) {
+      openOverlay('description');
+      setAmountError(t('helper_proposal.error_required'));
+      onResumeApplyHandled?.();
+      return;
+    }
+    setConfirmOpen(true);
+    onResumeApplyHandled?.();
+  }, [
+    resumeApplyType,
+    hasApplied,
+    isApplying,
+    interactionLocked,
+    canApply,
+    exclusiveLocked,
+    walletBalance,
+    balanceSummary.normal.charge,
+    balanceSummary.vip.charge,
+    showAmountInput,
+    proposalAmountRaw,
+    onResumeApplyHandled,
+    t,
+  ]);
 
   const handleExternalNormalApply = () => {
     if (!canApply) return;
@@ -824,6 +864,7 @@ export const HelperOpportunityCard = memo(HelperOpportunityCardInner, (prev, nex
     prev.clientReviewCount === next.clientReviewCount &&
     prev.exclusiveLocked === next.exclusiveLocked &&
     prev.descriptionExpanded === next.descriptionExpanded &&
+    prev.resumeApplyType === next.resumeApplyType &&
     prev.language === next.language
   );
 });

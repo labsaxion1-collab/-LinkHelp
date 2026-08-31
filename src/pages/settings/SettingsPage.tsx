@@ -47,7 +47,9 @@ import {
   HelperBaseAddressLockedError,
   syncHelperBaseAddress,
 } from '@/services/supabase/helperBaseAddressRemote';
-import { peekHelperApplyReturnContext } from '@/utils/helperApplyReturnContext';
+import { peekHelperApplyReturnContext, consumeHelperApplyReturnContext } from '@/utils/helperApplyReturnContext';
+import { profileHasPersistedHomeCoordinates } from '@/utils/helperBaseAddressVerification';
+import { helperBaseHasGpsConfirmation } from '@/components/helper/HelperBaseAddressInput';
 import { PUSH_SUBSCRIPTIONS_TABLE } from '@/config/pushNotifications';
 import { clearStoredAppMode } from '@/utils/appModeStorage';
 import { extractErrorMessage, formatAuthFlowErrorMessage } from '@/utils/errorMessage';
@@ -84,6 +86,10 @@ export default function SettingsPage() {
   const hydratedProfileIdRef = useRef<string | null>(null);
 
   const isHelper = profile?.role === 'helper';
+  const pendingApplyContext = isHelper ? peekHelperApplyReturnContext() : null;
+  const emphasizeGpsForPendingApply = Boolean(
+    pendingApplyContext && !helperBaseHasGpsConfirmation(helperBaseValue),
+  );
 
   useEffect(() => {
     if (!profile) {
@@ -281,12 +287,13 @@ export default function SettingsPage() {
         setAvatarSelectedFile(null);
       }
 
+      let syncedBaseProfile: Awaited<ReturnType<typeof syncHelperBaseAddress>> | null = null;
       if (isHelper && baseHasPendingChanges) {
         if (!helperBaseValue.address.trim() && !helperBaseValue.city.trim()) {
           showToast(t('app_pages.settings_helper_base_required'), 'error');
           return;
         }
-        await syncHelperBaseAddress({
+        syncedBaseProfile = await syncHelperBaseAddress({
           address: helperBaseValue.address.trim() || null,
           city: helperBaseValue.city.trim() || null,
           province: helperBaseValue.province.trim() || null,
@@ -316,21 +323,34 @@ export default function SettingsPage() {
       }
 
       const refreshed = await refreshProfile();
-      if (refreshed && isHelper) setHelperBaseValue(helperBaseAddressFromProfile(refreshed));
-      setInitialLanguage(language);
-      showToast(t('app_pages.settings_saved'), 'success');
-      const pendingApply = peekHelperApplyReturnContext();
-      const savedLat = refreshed && isHelper
-        ? refreshed.helper_base_lat
-        : helperBaseValue.latitude;
-      const savedLng = refreshed && isHelper
-        ? refreshed.helper_base_lng
-        : helperBaseValue.longitude;
-      if (isHelper && pendingApply && savedLat != null && savedLng != null) {
-        navigate(pendingApply.returnPath || ROUTES.helperDashboard, {
-          state: { openJobId: pendingApply.jobId, resumeApply: true },
-        });
+      const effectiveProfile = refreshed ?? syncedBaseProfile ?? profile;
+      if (effectiveProfile && isHelper) {
+        setHelperBaseValue(helperBaseAddressFromProfile(effectiveProfile));
       }
+      setInitialLanguage(language);
+
+      const pendingApply = peekHelperApplyReturnContext();
+      const hasPersistedCoords =
+        isHelper && profileHasPersistedHomeCoordinates(effectiveProfile);
+
+      if (isHelper && pendingApply) {
+        if (hasPersistedCoords) {
+          consumeHelperApplyReturnContext();
+          showToast(t('app_pages.settings_helper_base_saved_returning'), 'success');
+          navigate(pendingApply.returnPath || ROUTES.helperDashboard, {
+            state: {
+              openJobId: pendingApply.jobId,
+              resumeApply: true,
+              resumeApplicationType: pendingApply.applicationType,
+            },
+          });
+          return;
+        }
+        showToast(t('app_pages.settings_helper_base_saved_need_gps'), 'info');
+        return;
+      }
+
+      showToast(t('app_pages.settings_saved'), 'success');
     } catch (e) {
       if (e instanceof HelperBaseAddressLockedError) {
         showToast(t('app_pages.settings_helper_base_lock_message'), 'error');
@@ -542,6 +562,9 @@ export default function SettingsPage() {
                 postalCodeLabel={t('app_pages.settings_helper_base_postal_code')}
                 mapsUnavailableMessage={t('app_pages.settings_google_maps_unavailable')}
                 gpsHomeWarning={t('app_pages.settings_helper_base_gps_home_warning')}
+                gpsStatusPendingLabel={t('app_pages.settings_helper_base_gps_status_pending')}
+                gpsStatusConfirmedLabel={t('app_pages.settings_helper_base_gps_status_confirmed')}
+                emphasizeGpsButton={emphasizeGpsForPendingApply}
                 onLocationError={(reason) =>
                   showToast(
                     reason === 'denied'

@@ -133,20 +133,21 @@ describe('helper apply location gate', () => {
 });
 
 describe('helper base address without Google Maps', () => {
-  it('5. Maps unavailable still allows manual city/province/postal edits', () => {
+  it('5. manual city/province/postal edits invalidate any prior coordinates', () => {
     const started = helperBaseAddressFromProfile({
       helper_base_address: '845 Rue Brunet',
-      helper_base_city: '',
-      helper_base_province: '',
-      helper_base_postal_code: '',
+      helper_base_city: 'Montreal',
+      helper_base_province: 'QC',
+      helper_base_postal_code: 'H2X 1Y4',
+      helper_base_lat: 45.5,
+      helper_base_lng: -73.6,
     });
-    const withCity = helperBaseAddressFromManualField(started, 'city', 'Montreal');
-    const withProvince = helperBaseAddressFromManualField(withCity, 'province', 'QC');
-    const withPostal = helperBaseAddressFromManualField(withProvince, 'postalCode', 'H2X 1Y4');
-    expect(withPostal.address).toBe('845 Rue Brunet');
-    expect(withPostal.city).toBe('Montreal');
-    expect(withPostal.province).toBe('QC');
-    expect(withPostal.postalCode).toBe('H2X 1Y4');
+    const withCity = helperBaseAddressFromManualField(started, 'city', 'Laval');
+    expect(withCity.latitude).toBeNull();
+    expect(withCity.longitude).toBeNull();
+    const withProvince = helperBaseAddressFromManualField(started, 'province', 'ON');
+    expect(withProvince.latitude).toBeNull();
+    const withPostal = helperBaseAddressFromManualField(started, 'postalCode', 'H2X 1Y4');
     expect(withPostal.latitude).toBeNull();
   });
 
@@ -206,8 +207,8 @@ describe('apply never uses live device GPS', () => {
   });
 });
 
-describe('return to the same job without auto-apply', () => {
-  it('10. profile return context preserves job and type without confirming', () => {
+describe('return to the same job after location save', () => {
+  it('10. profile return context preserves job and type for resume', () => {
     storeHelperApplyReturnContext({
       jobId: 'job-in-person',
       applicationType: 'exclusive',
@@ -238,6 +239,10 @@ describe('finance and copy stay intact', () => {
     for (const key of [
       'app_pages.settings_google_maps_unavailable',
       'app_pages.settings_helper_base_gps_home_warning',
+      'app_pages.settings_helper_base_gps_status_pending',
+      'app_pages.settings_helper_base_gps_status_confirmed',
+      'app_pages.settings_helper_base_saved_need_gps',
+      'app_pages.settings_helper_base_saved_returning',
       'app_pages.settings_location_denied',
       'helper_dashboard.apply_remote_location_not_needed',
       'helper_dashboard.apply_in_person_coords_required',

@@ -65,7 +65,7 @@ import {
   helperHasExactBaseCoordinates,
 } from '@/utils/helperBaseLocation';
 import { decideHelperApplyLocation } from '@/utils/helperApplicationLocationGate';
-import { storeHelperApplyReturnContext, consumeHelperApplyReturnContext } from '@/utils/helperApplyReturnContext';
+import { storeHelperApplyReturnContext } from '@/utils/helperApplyReturnContext';
 import type { HelperApplicationType } from '@/utils/helperOpportunityApply';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import {
@@ -372,15 +372,23 @@ export default function HelperDashboard() {
   const [upcomingModalJob, setUpcomingModalJob] = useState<UpcomingJob | null>(null);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
   const [applyExpandedJobId, setApplyExpandedJobId] = useState<string | null>(null);
+  const [resumeApplyPrompt, setResumeApplyPrompt] = useState<{
+    jobId: string;
+    applicationType: HelperApplicationType;
+  } | null>(null);
 
   useEffect(() => {
-    const st = location.state as { openJobId?: string; resumeApply?: boolean } | null;
+    const st = location.state as {
+      openJobId?: string;
+      resumeApply?: boolean;
+      resumeApplicationType?: HelperApplicationType;
+    } | null;
     const openJobId = st?.openJobId;
     if (!openJobId) return;
     const job = jobs.find((j) => j.id === openJobId);
     if (job) setApplyExpandedJobId(job.id);
-    if (st?.resumeApply) {
-      consumeHelperApplyReturnContext();
+    if (st?.resumeApply && st.resumeApplicationType) {
+      setResumeApplyPrompt({ jobId: openJobId, applicationType: st.resumeApplicationType });
       showToast(t('helper_dashboard.resume_apply_after_location'), 'info');
     }
     navigate(location.pathname, { replace: true, state: null });
@@ -1335,6 +1343,10 @@ export default function HelperDashboard() {
                           if (expanded) setApplyExpandedJobId(job.id);
                           else if (applyExpandedJobId === job.id) setApplyExpandedJobId(null);
                         }}
+                        resumeApplyType={
+                          resumeApplyPrompt?.jobId === job.id ? resumeApplyPrompt.applicationType : null
+                        }
+                        onResumeApplyHandled={() => setResumeApplyPrompt(null)}
                         walletBalance={walletBalance}
                         language={language}
                         t={t}

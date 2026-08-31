@@ -2269,6 +2269,11 @@ export const fr = {
       'Utilisez le GPS uniquement lorsque vous êtes à votre domicile. Cette localisation servira de base pour calculer la distance et les LinkCredits.',
     settings_helper_base_gps_success:
       'Coordonnées du domicile capturées. Vérifiez l’adresse et enregistrez.',
+    settings_helper_base_gps_status_pending: 'Localisation du domicile pas encore confirmée',
+    settings_helper_base_gps_status_confirmed: 'Localisation du domicile confirmée par GPS',
+    settings_helper_base_saved_need_gps:
+      'Adresse enregistrée. Confirmez la localisation par GPS pour postuler aux missions en personne.',
+    settings_helper_base_saved_returning: 'Adresse confirmée. Retour à la mission…',
     settings_helper_base_no_changes: "Aucun changement sur l'adresse de base",
     settings_helper_base_setup_prompt: 'Configurez votre adresse de base',
     settings_helper_base_configured: 'Adresse de base définie',
@@ -2277,7 +2282,7 @@ export const fr = {
       "Pour la sécurité et un calcul équitable des LinkCredits, l'adresse de base ne peut être modifiée que tous les 30 jours.",
     settings_helper_base_lock_days: 'Vous pourrez la modifier à nouveau dans {{count}} jours',
     settings_helper_base_can_change_now: 'Vous pouvez modifier votre adresse de base à nouveau.',
-    settings_helper_base_use_location: 'Utiliser la position actuelle',
+    settings_helper_base_use_location: 'Confirmer la localisation par GPS',
     settings_helper_base_use_location_short: 'GPS',
     settings_helper_base_locating: 'Localisation...',
     settings_location_denied:

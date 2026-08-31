@@ -2258,6 +2258,11 @@ export const en = {
     settings_helper_base_gps_home_warning:
       'Use GPS only when you are at home. This location will be the base for calculating distance and LinkCredits.',
     settings_helper_base_gps_success: 'Home coordinates captured. Review the address and save.',
+    settings_helper_base_gps_status_pending: 'Home location not confirmed yet',
+    settings_helper_base_gps_status_confirmed: 'Home location confirmed by GPS',
+    settings_helper_base_saved_need_gps:
+      'Address saved. Confirm your location with GPS to apply to in-person jobs.',
+    settings_helper_base_saved_returning: 'Address confirmed. Returning to the job…',
     settings_helper_base_no_changes: 'No changes to base address',
     settings_helper_base_setup_prompt: 'Set up your base address',
     settings_helper_base_configured: 'Base address set',
@@ -2266,7 +2271,7 @@ export const en = {
       'For security and fair LinkCredits pricing, your base address can only be changed every 30 days.',
     settings_helper_base_lock_days: 'You can change it again in {{count}} days',
     settings_helper_base_can_change_now: 'You can update your base address again now.',
-    settings_helper_base_use_location: 'Use current location',
+    settings_helper_base_use_location: 'Confirm location with GPS',
     settings_helper_base_use_location_short: 'GPS',
     settings_helper_base_locating: 'Locating...',
     settings_location_denied:

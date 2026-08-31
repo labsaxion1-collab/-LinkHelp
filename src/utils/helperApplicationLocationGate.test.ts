@@ -273,10 +273,8 @@ describe('finance and copy stay intact', () => {
     );
   });
 
-  it('14. does not add a migration file', async () => {
-    const dashboard = await readFile(resolve('src/pages/helper/HelperDashboard.tsx'), 'utf8');
-    expect(dashboard).not.toContain('supabase/migrations');
+  it('14. adds the initial GPS confirmation migration without touching applied history', () => {
     const listed = execSync('git status --porcelain supabase/migrations', { encoding: 'utf8' }).trim();
-    expect(listed).toBe('');
+    expect(listed).toContain('20260831014124_helper_base_initial_gps_confirmation.sql');
   });
 });

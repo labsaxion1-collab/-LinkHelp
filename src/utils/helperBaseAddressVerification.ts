@@ -1,6 +1,5 @@
 import type { HelperBaseAddressValue } from '@/components/helper/HelperBaseAddressInput';
 import type { ProfileRow } from '@/types/database';
-import { helperHasExactBaseCoordinates } from '@/utils/helperBaseLocation';
 
 export function helperBaseHasGpsConfirmation(value: HelperBaseAddressValue): boolean {
   return (
@@ -25,5 +24,12 @@ export function helperBaseSyncPayload(value: HelperBaseAddressValue) {
 export function profileHasPersistedHomeCoordinates(
   profile: Pick<ProfileRow, 'helper_base_lat' | 'helper_base_lng'> | null | undefined,
 ): boolean {
-  return helperHasExactBaseCoordinates(profile);
+  const lat = profile?.helper_base_lat;
+  const lng = profile?.helper_base_lng;
+  return (
+    typeof lat === 'number' &&
+    Number.isFinite(lat) &&
+    typeof lng === 'number' &&
+    Number.isFinite(lng)
+  );
 }

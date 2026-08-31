@@ -41,7 +41,11 @@ import {
 import {
   getHelperBaseChangeStatus,
   helperBaseFieldsChanged,
-  helperBaseIsConfigured,
+  helperBaseHasConfirmedCoordinates,
+  helperBaseCooldownDaysRemaining,
+  shouldBlockHelperBaseSaveDueToCooldown,
+  shouldShowHelperBaseCooldownMessage,
+  shouldShowHelperBaseTextNeedsGpsMessage,
 } from '@/utils/helperBaseAddressLock';
 import {
   HelperBaseAddressLockedError,
@@ -86,10 +90,6 @@ export default function SettingsPage() {
   const hydratedProfileIdRef = useRef<string | null>(null);
 
   const isHelper = profile?.role === 'helper';
-  const pendingApplyContext = isHelper ? peekHelperApplyReturnContext() : null;
-  const emphasizeGpsForPendingApply = Boolean(
-    pendingApplyContext && !helperBaseHasGpsConfirmation(helperBaseValue),
-  );
 
   useEffect(() => {
     if (!profile) {
@@ -179,9 +179,22 @@ export default function SettingsPage() {
   const addressLocked = addressLockDaysRemaining > 0;
 
   const baseChangeStatus = useMemo(() => getHelperBaseChangeStatus(profile), [profile]);
-  const baseConfigured = useMemo(() => helperBaseIsConfigured(profile), [profile]);
-  const baseFieldsLocked =
-    !baseChangeStatus.allowed && baseChangeStatus.reason === 'locked' && baseConfigured;
+  const baseNeedsGpsConfirmation = useMemo(
+    () => shouldShowHelperBaseTextNeedsGpsMessage(profile),
+    [profile],
+  );
+  const baseShowCooldownMessage = useMemo(
+    () => shouldShowHelperBaseCooldownMessage(profile, baseChangeStatus),
+    [profile, baseChangeStatus],
+  );
+  const baseFieldsLocked = baseShowCooldownMessage;
+  const pendingApplyContext = isHelper ? peekHelperApplyReturnContext() : null;
+  const emphasizeGpsForPendingApply = Boolean(
+    pendingApplyContext &&
+      (!helperBaseHasGpsConfirmation(helperBaseValue) ||
+        baseNeedsGpsConfirmation ||
+        !helperBaseHasConfirmedCoordinates(profile)),
+  );
   const baseHasPendingChanges = useMemo(
     () =>
       helperBaseFieldsChanged(profile, {
@@ -262,7 +275,7 @@ export default function SettingsPage() {
       return;
     }
 
-    if (isHelper && !baseChangeStatus.allowed && baseChangeStatus.reason === 'locked' && baseHasPendingChanges) {
+    if (shouldBlockHelperBaseSaveDueToCooldown(profile, baseChangeStatus, baseHasPendingChanges)) {
       showToast(t('app_pages.settings_helper_base_lock_message'), 'error');
       return;
     }
@@ -531,19 +544,27 @@ export default function SettingsPage() {
                   {t('helper_dashboard.apply_in_person_coords_required')}
                 </p>
               ) : null}
+              {baseNeedsGpsConfirmation ? (
+                <p
+                  data-testid="helper-base-text-needs-gps"
+                  className="mb-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-900"
+                >
+                  {t('app_pages.settings_helper_base_text_needs_gps')}
+                </p>
+              ) : null}
               {profile?.helper_base_change_unlocked_by_admin ? (
                 <p className="mb-3 rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-900">
                   {t('app_pages.settings_helper_base_admin_unlock')}
                 </p>
               ) : null}
-              {baseConfigured && baseChangeStatus.reason === 'locked' ? (
+              {baseShowCooldownMessage ? (
                 <p className="mb-3 flex gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
                   <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
                   <span>
                     {t('app_pages.settings_helper_base_lock_message')}
                     <span className="mt-1 block font-bold">
                       {t('app_pages.settings_helper_base_lock_days', {
-                        count: baseChangeStatus.daysUntilUnlock,
+                        count: helperBaseCooldownDaysRemaining(baseChangeStatus),
                       })}
                     </span>
                   </span>
@@ -564,7 +585,7 @@ export default function SettingsPage() {
                 gpsHomeWarning={t('app_pages.settings_helper_base_gps_home_warning')}
                 gpsStatusPendingLabel={t('app_pages.settings_helper_base_gps_status_pending')}
                 gpsStatusConfirmedLabel={t('app_pages.settings_helper_base_gps_status_confirmed')}
-                emphasizeGpsButton={emphasizeGpsForPendingApply}
+                emphasizeGpsButton={emphasizeGpsForPendingApply || baseNeedsGpsConfirmation}
                 onLocationError={(reason) =>
                   showToast(
                     reason === 'denied'

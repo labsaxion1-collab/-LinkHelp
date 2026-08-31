@@ -2270,6 +2270,8 @@ export const pt = {
     settings_helper_base_gps_home_warning:
       'Use o GPS somente quando estiver em sua residência. Essa localização será a base para calcular distância e LinkCredits.',
     settings_helper_base_gps_success: 'Coordenadas da residência capturadas. Revise o endereço e salve.',
+    settings_helper_base_text_needs_gps:
+      'Seu endereco esta preenchido, mas falta confirmar a residencia pelo GPS.',
     settings_helper_base_gps_status_pending: 'Localização da residência ainda não confirmada',
     settings_helper_base_gps_status_confirmed: 'Localização da residência confirmada pelo GPS',
     settings_helper_base_saved_need_gps:

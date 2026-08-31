@@ -2269,6 +2269,8 @@ export const fr = {
       'Utilisez le GPS uniquement lorsque vous êtes à votre domicile. Cette localisation servira de base pour calculer la distance et les LinkCredits.',
     settings_helper_base_gps_success:
       'Coordonnées du domicile capturées. Vérifiez l’adresse et enregistrez.',
+    settings_helper_base_text_needs_gps:
+      'Votre adresse est renseignée, mais il reste à confirmer le domicile par GPS.',
     settings_helper_base_gps_status_pending: 'Localisation du domicile pas encore confirmée',
     settings_helper_base_gps_status_confirmed: 'Localisation du domicile confirmée par GPS',
     settings_helper_base_saved_need_gps:

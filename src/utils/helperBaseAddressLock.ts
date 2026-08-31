@@ -3,6 +3,9 @@ import type { ProfileRow } from '@/types/database';
 export const HELPER_BASE_LOCK_DAYS = 30;
 const LOCK_MS = HELPER_BASE_LOCK_DAYS * 24 * 60 * 60 * 1000;
 
+/** ~11 m — GPS jitter must not count as a residence move. */
+export const HELPER_BASE_COORD_EPSILON = 0.0001;
+
 export type HelperBaseLockProfile = Pick<
   ProfileRow,
   | 'helper_base_address'
@@ -16,15 +19,50 @@ export type HelperBaseLockProfile = Pick<
 >;
 
 export type HelperBaseChangeStatus =
-  | { allowed: true; reason: 'first_setup' | 'admin_unlock' | 'cooldown_elapsed' | 'unchanged' }
+  | {
+      allowed: true;
+      reason:
+        | 'first_setup'
+        | 'pending_gps_confirmation'
+        | 'admin_unlock'
+        | 'cooldown_elapsed'
+        | 'unchanged';
+    }
   | { allowed: false; reason: 'locked'; daysUntilUnlock: number };
 
-export function helperBaseIsConfigured(profile: HelperBaseLockProfile | null | undefined): boolean {
+export function helperBaseHasConfirmedCoordinates(
+  profile: HelperBaseLockProfile | null | undefined,
+): boolean {
+  const lat = profile?.helper_base_lat;
+  const lng = profile?.helper_base_lng;
+  return (
+    typeof lat === 'number' &&
+    Number.isFinite(lat) &&
+    typeof lng === 'number' &&
+    Number.isFinite(lng)
+  );
+}
+
+export function helperBaseHasTextDraft(profile: HelperBaseLockProfile | null | undefined): boolean {
   return Boolean(
     profile?.helper_base_address?.trim() ||
       profile?.helper_base_city?.trim() ||
-      profile?.helper_base_updated_at,
+      profile?.helper_base_province?.trim() ||
+      profile?.helper_base_postal_code?.trim(),
   );
+}
+
+export function helperBaseIsConfigured(profile: HelperBaseLockProfile | null | undefined): boolean {
+  return helperBaseHasTextDraft(profile) || helperBaseHasConfirmedCoordinates(profile);
+}
+
+export function helperBaseCoordsNear(
+  a: number | null | undefined,
+  b: number | null | undefined,
+): boolean {
+  if (a == null && b == null) return true;
+  if (a == null || b == null) return false;
+  return Math.abs(a - b) < HELPER_BASE_COORD_EPSILON;
 }
 
 export function daysUntilHelperBaseUnlock(updatedAtIso: string | null | undefined): number {
@@ -41,8 +79,8 @@ export function getHelperBaseChangeStatus(
 ): HelperBaseChangeStatus {
   if (!profile) return { allowed: true, reason: 'first_setup' };
 
-  if (!helperBaseIsConfigured(profile)) {
-    return { allowed: true, reason: 'first_setup' };
+  if (!helperBaseHasConfirmedCoordinates(profile)) {
+    return { allowed: true, reason: 'pending_gps_confirmation' };
   }
 
   if (profile.helper_base_change_unlocked_by_admin) {
@@ -74,7 +112,42 @@ export function helperBaseFieldsChanged(
     norm(next.city) !== (profile?.helper_base_city?.trim() ?? '') ||
     norm(next.province) !== (profile?.helper_base_province?.trim() ?? '') ||
     norm(next.postalCode) !== (profile?.helper_base_postal_code?.trim() ?? '') ||
-    next.lat !== (profile?.helper_base_lat ?? null) ||
-    next.lng !== (profile?.helper_base_lng ?? null)
+    !helperBaseCoordsNear(next.lat, profile?.helper_base_lat ?? null) ||
+    !helperBaseCoordsNear(next.lng, profile?.helper_base_lng ?? null)
   );
+}
+
+export function shouldBlockHelperBaseSaveDueToCooldown(
+  profile: HelperBaseLockProfile | null | undefined,
+  status: HelperBaseChangeStatus,
+  hasPendingChanges: boolean,
+): boolean {
+  return (
+    hasPendingChanges &&
+    helperBaseHasConfirmedCoordinates(profile) &&
+    !status.allowed &&
+    status.reason === 'locked'
+  );
+}
+
+export function shouldShowHelperBaseCooldownMessage(
+  profile: HelperBaseLockProfile | null | undefined,
+  status: HelperBaseChangeStatus,
+): boolean {
+  return (
+    helperBaseHasConfirmedCoordinates(profile) &&
+    !status.allowed &&
+    status.reason === 'locked'
+  );
+}
+
+export function shouldShowHelperBaseTextNeedsGpsMessage(
+  profile: HelperBaseLockProfile | null | undefined,
+): boolean {
+  return helperBaseHasTextDraft(profile) && !helperBaseHasConfirmedCoordinates(profile);
+}
+
+export function helperBaseCooldownDaysRemaining(status: HelperBaseChangeStatus): number {
+  if (status.allowed || status.reason !== 'locked') return 0;
+  return status.daysUntilUnlock;
 }

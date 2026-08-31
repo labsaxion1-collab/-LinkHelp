@@ -2258,6 +2258,8 @@ export const en = {
     settings_helper_base_gps_home_warning:
       'Use GPS only when you are at home. This location will be the base for calculating distance and LinkCredits.',
     settings_helper_base_gps_success: 'Home coordinates captured. Review the address and save.',
+    settings_helper_base_text_needs_gps:
+      'Your address is filled in, but you still need to confirm your home location with GPS.',
     settings_helper_base_gps_status_pending: 'Home location not confirmed yet',
     settings_helper_base_gps_status_confirmed: 'Home location confirmed by GPS',
     settings_helper_base_saved_need_gps:

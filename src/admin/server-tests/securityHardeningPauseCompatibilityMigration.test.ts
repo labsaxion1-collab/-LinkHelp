@@ -53,7 +53,9 @@ describe('20260829015758 security hardening pause compatibility', () => {
     expect(numbered.at(-1)).toBe('0067_stripe_credit_purchase_obligation_settlement.sql');
     const all = allMigrationFiles();
     expect(all).toContain(migrationFile);
-    expect(all.at(-1)).toBe(migrationFile);
+    expect(all.indexOf(migrationFile)).toBeGreaterThan(
+      all.indexOf('0067_stripe_credit_purchase_obligation_settlement.sql'),
+    );
   });
 
   it('enables RLS on request_market_metrics without a public/authenticated SELECT policy', () => {

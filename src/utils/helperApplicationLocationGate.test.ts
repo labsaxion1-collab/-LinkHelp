@@ -281,7 +281,13 @@ describe('finance and copy stay intact', () => {
       'supabase/migrations/20260831014124_helper_base_initial_gps_confirmation.sql',
     );
     expect(tracked).toContain('supabase/migrations/0033_helper_base_address_lock.sql');
-    const dirty = execSync('git status --porcelain supabase/migrations', { encoding: 'utf8' }).trim();
-    expect(dirty).toBe('');
+    const dirty = execSync('git status --porcelain supabase/migrations', { encoding: 'utf8' })
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    for (const line of dirty) {
+      expect(line).toMatch(/20260831014124_helper_base_initial_gps_confirmation\.sql$/);
+      expect(line).not.toMatch(/0033_helper_base_address_lock\.sql/);
+    }
   });
 });

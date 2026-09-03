@@ -2,18 +2,27 @@
 -- Text-only drafts must not start or extend the 30-day lock.
 
 -- Legacy fix: profiles with address text but no coordinates were backfilled into cooldown by 0033.
-update public.profiles
-set helper_base_updated_at = null
-where role = 'helper'
-  and helper_base_updated_at is not null
-  and (
-    helper_base_lat is null
-    or helper_base_lng is null
-    or helper_base_lat < -90
-    or helper_base_lat > 90
-    or helper_base_lng < -180
-    or helper_base_lng > 180
-  );
+-- The 0033 trigger requires a transaction-local allow flag before any direct helper_base_* UPDATE.
+do $$
+begin
+  perform set_config('linkhelp.allow_helper_base_update', '1', true);
+
+  update public.profiles
+  set helper_base_updated_at = null
+  where role = 'helper'
+    and helper_base_updated_at is not null
+    and (
+      helper_base_lat is null
+      or helper_base_lng is null
+      or helper_base_lat < -90
+      or helper_base_lat > 90
+      or helper_base_lng < -180
+      or helper_base_lng > 180
+    );
+
+  perform set_config('linkhelp.allow_helper_base_update', '0', true);
+end;
+$$;
 
 create or replace function public.update_helper_base_address(
   p_address text,

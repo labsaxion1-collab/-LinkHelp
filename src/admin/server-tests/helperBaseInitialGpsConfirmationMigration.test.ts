@@ -19,12 +19,57 @@ function functionBody(source: string, marker: string): string {
 }
 
 const rpcBody = functionBody(sql, 'create or replace function public.update_helper_base_address(');
+const lockSql = readFileSync(
+  new URL('0033_helper_base_address_lock.sql', migrationsDir),
+  'utf8',
+);
+
+function cleanupBlock(source: string): string {
+  const start = source.indexOf('do $$');
+  expect(start).toBeGreaterThan(-1);
+  const end = source.indexOf('$$;', start);
+  expect(end).toBeGreaterThan(start);
+  return source.slice(start, end + 3);
+}
+
+const cleanupSql = cleanupBlock(sql);
 
 describe('20260831014124 helper base initial GPS confirmation migration', () => {
-  it('clears legacy cooldown timestamps for helpers without confirmed coordinates', () => {
-    expect(sql).toContain('set helper_base_updated_at = null');
-    expect(sql).toContain('helper_base_lat is null');
-    expect(sql).toContain('helper_base_lng is null');
+  it('authorizes legacy cleanup with transaction-local allow flag before UPDATE', () => {
+    expect(cleanupSql).toMatch(
+      /perform set_config\(\s*'linkhelp\.allow_helper_base_update',\s*'1',\s*true\s*\)/,
+    );
+    const allowIdx = cleanupSql.search(
+      /perform set_config\(\s*'linkhelp\.allow_helper_base_update',\s*'1',\s*true\s*\)/,
+    );
+    const updateIdx = cleanupSql.indexOf('update public.profiles');
+    const resetIdx = cleanupSql.search(
+      /perform set_config\(\s*'linkhelp\.allow_helper_base_update',\s*'0',\s*true\s*\)/,
+    );
+    expect(allowIdx).toBeGreaterThan(-1);
+    expect(updateIdx).toBeGreaterThan(allowIdx);
+    expect(resetIdx).toBeGreaterThan(updateIdx);
+  });
+
+  it('does not disable or drop the helper-base protection trigger', () => {
+    expect(sql.toLowerCase()).not.toContain('drop trigger');
+    expect(sql.toLowerCase()).not.toContain('disable trigger');
+    expect(sql.toLowerCase()).not.toContain('session_replication_role');
+    expect(lockSql).toContain('create trigger profiles_protect_helper_base_fields');
+    expect(lockSql).toContain("current_setting('linkhelp.allow_helper_base_update'");
+  });
+
+  it('clears legacy cooldown timestamps only for helpers without valid coordinates', () => {
+    expect(cleanupSql).toContain('set helper_base_updated_at = null');
+    expect(cleanupSql).toContain("role = 'helper'");
+    expect(cleanupSql).toContain('helper_base_updated_at is not null');
+    expect(cleanupSql).toContain('helper_base_lat is null');
+    expect(cleanupSql).toContain('helper_base_lng is null');
+    expect(cleanupSql).toContain('helper_base_lat < -90');
+    expect(cleanupSql).toContain('helper_base_lng > 180');
+    expect(cleanupSql).not.toMatch(
+      /set helper_base_updated_at = null[\s\S]*helper_base_lat is not null/,
+    );
   });
 
   it('2. first GPS confirmation starts cooldown only when incoming coords are valid', () => {

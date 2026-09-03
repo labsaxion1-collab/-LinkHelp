@@ -274,7 +274,14 @@ describe('finance and copy stay intact', () => {
   });
 
   it('14. adds the initial GPS confirmation migration without touching applied history', () => {
-    const listed = execSync('git status --porcelain supabase/migrations', { encoding: 'utf8' }).trim();
-    expect(listed).toContain('20260831014124_helper_base_initial_gps_confirmation.sql');
+    const tracked = execSync('git ls-files supabase/migrations', { encoding: 'utf8' })
+      .split(/\r?\n/)
+      .filter(Boolean);
+    expect(tracked).toContain(
+      'supabase/migrations/20260831014124_helper_base_initial_gps_confirmation.sql',
+    );
+    expect(tracked).toContain('supabase/migrations/0033_helper_base_address_lock.sql');
+    const dirty = execSync('git status --porcelain supabase/migrations', { encoding: 'utf8' }).trim();
+    expect(dirty).toBe('');
   });
 });

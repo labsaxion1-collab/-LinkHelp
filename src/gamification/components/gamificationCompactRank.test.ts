@@ -92,7 +92,9 @@ describe('compact gamification rank on helper dashboard', () => {
     expect(presentation).toContain('--lh-compact-pedestal-scale');
     expect(presentation).toContain('heroVisual.pedestalScale');
     expect(presentation).toContain('heroVisual.pedestalOrigin');
-    expect(presentation).toContain('heroVisual.emblemOffsetY');
+    expect(presentation).toContain('resolveCompactEmblemOffsetYPx');
+    expect(presentation).toContain('emblemOffsetYPx');
+    expect(presentation).toContain('--lh-compact-emblem-offset-y');
     expect(presentation).toContain('COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS');
     expect(presentation).toContain('lh-compact-rank-stage--client-home');
     expect(presentation).toContain('COMPACT_RANK_CLIENT_HOME_STAGE_OFFSET_Y_PX');
@@ -123,6 +125,7 @@ describe('compact gamification rank on helper dashboard', () => {
       COMPACT_RANK_EMBLEM_TARGET_VISIBLE_PX,
       COMPACT_RANK_PEDESTAL_TARGET_VISIBLE_PX,
       COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS,
+      CLIENT_HOME_NOVO_EMBLEM_OFFSET_Y_PX,
       compactPedestalVisibleWidthPx,
       resolveCompactRankHeroVisual,
     } = await import('@/gamification/config/compactRankHeroVisual');
@@ -186,7 +189,40 @@ describe('compact gamification rank on helper dashboard', () => {
     expect(helperConfiavel.emblemOffsetY - 3).toBeGreaterThanOrEqual(0);
     // Other keys keep zero offset (no global vertical shift).
     expect(COMPACT_RANK_BY_HERO_KEY.helper_novo.emblemOffsetY).toBe(0);
-    expect(COMPACT_RANK_BY_HERO_KEY.client_novo.emblemOffsetY).toBe(0);
+    expect(COMPACT_RANK_BY_HERO_KEY.client_novo.emblemOffsetY).toBe(CLIENT_HOME_NOVO_EMBLEM_OFFSET_Y_PX);
+  });
+
+  it('applies client_novo emblemOffsetY only under clientHome density', async () => {
+    const {
+      COMPACT_RANK_BY_HERO_KEY,
+      CLIENT_HOME_NOVO_EMBLEM_OFFSET_Y_PX,
+      resolveCompactEmblemOffsetYPx,
+    } = await import('@/gamification/config/compactRankHeroVisual');
+    const visual = COMPACT_RANK_BY_HERO_KEY.client_novo;
+    expect(
+      resolveCompactEmblemOffsetYPx({
+        density: 'clientHome',
+        userType: 'client',
+        heroKey: 'client_novo',
+        visual,
+      }),
+    ).toBe(CLIENT_HOME_NOVO_EMBLEM_OFFSET_Y_PX);
+    expect(
+      resolveCompactEmblemOffsetYPx({
+        density: 'default',
+        userType: 'client',
+        heroKey: 'client_novo',
+        visual,
+      }),
+    ).toBe(0);
+    expect(
+      resolveCompactEmblemOffsetYPx({
+        density: 'clientHome',
+        userType: 'client',
+        heroKey: 'client_confiavel',
+        visual: COMPACT_RANK_BY_HERO_KEY.client_confiavel,
+      }),
+    ).toBe(0);
   });
 
   it('helper insight chips use real next-level metrics without hardcoding', () => {

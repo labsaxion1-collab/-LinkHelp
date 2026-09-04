@@ -17,6 +17,7 @@ import type { UserType } from '@/gamification/types/gamification';
 import { translateGamificationLevelName } from '@/utils/gamificationLevelI18n';
 import {
   resolveCompactRankHeroVisual,
+  resolveCompactEmblemOffsetYPx,
   COMPACT_RANK_PEDESTAL_BOX,
   COMPACT_RANK_MEDAL_PEDESTAL_OVERLAP_CLASS,
   COMPACT_RANK_CLIENT_HOME_STAGE_OFFSET_Y_PX,
@@ -185,6 +186,12 @@ export function GamificationCompactRankCardSurface({
   const { t } = useLanguage();
   const { medalSrc, currentLevelLabel, nextLevelLabel, progress, isMax, record } = model;
   const heroVisual = resolveCompactRankHeroVisual(userType, record.heroKey);
+  const emblemOffsetYPx = resolveCompactEmblemOffsetYPx({
+    density,
+    userType,
+    heroKey: record.heroKey,
+    visual: heroVisual,
+  });
   const medalTheme = resolveMedalTheme(record.heroKey ?? record.levelKey, userType);
   const heightClass = COMPACT_RANK_HEIGHT[density];
   const isClientHome = density === 'clientHome';
@@ -269,7 +276,7 @@ export function GamificationCompactRankCardSurface({
                 {
                   '--lh-compact-emblem-scale': String(heroVisual.emblemScale),
                   '--lh-compact-emblem-origin': heroVisual.emblemOrigin,
-                  '--lh-compact-emblem-offset-y': `${heroVisual.emblemOffsetY}px`,
+                  '--lh-compact-emblem-offset-y': `${emblemOffsetYPx}px`,
                 } as CSSProperties
               }
               loading="lazy"

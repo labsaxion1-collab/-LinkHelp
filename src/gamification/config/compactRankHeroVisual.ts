@@ -19,6 +19,9 @@ import { clientConfiavelPrimarySrc, CLIENT_CONFIAVEL_HERO_MEDIA } from '@/gamifi
 import { DEFAULT_HERO_KEY, resolveHeroKey } from '@/gamification/config/heroKeys';
 import type { UserType } from '@/gamification/types/gamification';
 
+/** clientHome + client_novo only — optical glyph nudge (px, positive = down). */
+export const CLIENT_HOME_NOVO_EMBLEM_OFFSET_Y_PX = 6;
+
 export type CompactRankHeroVisual = {
   background: string;
   pedestal: string;
@@ -205,7 +208,7 @@ const CLIENT_NOVO: CompactRankHeroVisual = {
   scrim: HELPER_NOVO.scrim,
   emblemScale: 1.843,
   emblemOrigin: 'center 41.5%',
-  emblemOffsetY: 0,
+  emblemOffsetY: CLIENT_HOME_NOVO_EMBLEM_OFFSET_Y_PX,
   pedestalFillW: PEDESTAL_OPTICS.verde.fillW,
   pedestalFillH: PEDESTAL_OPTICS.verde.fillH,
   pedestalScale: PEDESTAL_OPTICS.verde.scale,
@@ -290,4 +293,23 @@ export function resolveCompactRankHeroVisual(
 ): CompactRankHeroVisual {
   const resolved = resolveHeroKey(userType, heroKey ?? DEFAULT_HERO_KEY[userType]);
   return COMPACT_RANK_BY_HERO_KEY[resolved] ?? COMPACT_RANK_BY_HERO_KEY[DEFAULT_HERO_KEY[userType]];
+}
+
+/**
+ * Glyph Y offset applied at render time.
+ * `client_novo` optical offset is gated to `density=clientHome` only (Home card),
+ * so Perfil → Meu nível and other densities stay at 0 for that hero.
+ * Other heroes keep their typed offsets (e.g. helper_confiavel) on every density.
+ */
+export function resolveCompactEmblemOffsetYPx(args: {
+  density: 'default' | 'clientHome';
+  userType: UserType;
+  heroKey?: string | null;
+  visual: CompactRankHeroVisual;
+}): number {
+  const resolved = resolveHeroKey(args.userType, args.heroKey ?? DEFAULT_HERO_KEY[args.userType]);
+  if (resolved === 'client_novo') {
+    return args.density === 'clientHome' ? CLIENT_HOME_NOVO_EMBLEM_OFFSET_Y_PX : 0;
+  }
+  return args.visual.emblemOffsetY;
 }

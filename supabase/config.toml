@@ -4,5 +4,17 @@ project_id = "mttjbaiiaeiqqmnwnzwr"
 [db]
 major_version = 15
 
+# Passkeys (WebAuthn) — official Supabase Auth.
+# Keep enabled=false in this repo file until Staging Dashboard/Management API
+# is deliberately configured for the linked project (kqwlgpnmjpohzjsrnnih).
+# Client already opts in via auth.experimental.passkey; server must also enable.
+[auth.passkey]
+enabled = false
+
+[auth.webauthn]
+rp_display_name = "Link Help"
+rp_id = "linkhelp.app"
+rp_origins = ["https://teste.linkhelp.app", "https://linkhelp.app", "http://localhost:5173", "http://127.0.0.1:5173"]
+
 [functions.waitlist-signup]
 verify_jwt = false

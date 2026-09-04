@@ -26,6 +26,7 @@ import { cropSquareAvatarFromFile } from '@/utils/avatarMediaProcessing';
 import { CityRegionAutocomplete } from '@/components/common/CityRegionAutocomplete';
 import { ProfilePhoneField } from '@/components/profile/ProfilePhoneField';
 import { SettingsSection } from '@/components/profile/SettingsSection';
+import { PasskeySecurityPanel } from '@/components/auth/PasskeySecurityPanel';
 import { profileInitials } from '@/components/profile/profileDisplay';
 import type { QuebecPlace } from '@/data/quebecRegions';
 import { parseStoredPhone, validatePhoneNumber } from '@/utils/phoneFormat';
@@ -669,12 +670,15 @@ export default function SettingsPage() {
           title={t('app_pages.settings_security')}
           description={t('profile_form.phone_privacy_hint')}
         >
-          <Link
-            to={ROUTES.profilePublicEdit}
-            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 transition hover:bg-white"
-          >
-            {t('profile_page.edit_public')}
-          </Link>
+          <div className="space-y-3">
+            <PasskeySecurityPanel />
+            <Link
+              to={ROUTES.profilePublicEdit}
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 transition hover:bg-white"
+            >
+              {t('profile_page.edit_public')}
+            </Link>
+          </div>
         </SettingsSection>
 
         {isHelper && UI_VISIBILITY.training ? (

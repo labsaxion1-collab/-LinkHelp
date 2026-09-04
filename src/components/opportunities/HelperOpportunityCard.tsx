@@ -60,7 +60,7 @@ import {
   FEED_CARD_SHELL_CLASS,
   FEED_CARD_STANDARD_CONTENT_HEIGHT_PX,
   FEED_CARD_TOP_ACCENT_CLASS,
-  feedCardLockedContentStyle,
+  feedCardMinContentStyle,
 } from '@/utils/feedCardFixedHeight';
 
 export type { FeedCardView } from '@/utils/feedCardView';
@@ -142,7 +142,7 @@ function HelperOpportunityCardInner({
   distanceFromBase = false,
   needsBaseAddress = false,
   baseAddressPendingCoords = false,
-  applicationsCount = 0,
+  applicationsCount,
   clientReviewCount = 0,
   walletBalance = null,
   language = 'pt',
@@ -178,7 +178,6 @@ function HelperOpportunityCardInner({
   const title = translateJobTitle(job.title, job.category, job.subcategory, t);
   const CategoryIcon = getCategoryIconById(job.category);
   const categoryTheme = getCategoryFeedTheme(job.category);
-  const showCategoryLine = !title.startsWith(`${category}:`);
   const metaParts = buildOpportunityCardMetaParts(job, t, distanceKm);
   const metaLine = formatOpportunityCardMetaLine(metaParts);
   const creditQuote = getApplicationCreditQuote(job, distanceKm);
@@ -379,7 +378,7 @@ function HelperOpportunityCardInner({
     );
     const vipBtn = clsx(
       ctaBase,
-      'w-[5.25rem] shrink-0 border border-amber-200/90 bg-gradient-to-br from-amber-50 to-white text-amber-900 shadow-[0_4px_14px_rgba(245,158,11,0.14)] sm:w-[5.75rem]',
+      'min-w-[5.5rem] shrink-0 border border-amber-200/90 bg-gradient-to-br from-amber-50 to-white px-2.5 text-amber-900 shadow-[0_4px_14px_rgba(245,158,11,0.14)] sm:min-w-[6rem]',
       'hover:border-amber-300 hover:from-amber-100 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50',
     );
 
@@ -522,12 +521,14 @@ function HelperOpportunityCardInner({
                 </span>
               </div>
             ) : null}
-            <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-white/85">
-              <Icons.Users className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
-              <span className="truncate">
-                {t('helper_dashboard.feed_card_interested', { count: applicationsCount })}
-              </span>
-            </div>
+            {typeof applicationsCount === 'number' && applicationsCount > 0 ? (
+              <div className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold text-white/85">
+                <Icons.Users className={FEED_CARD_PREMIUM_ICON_WHITE_CLASS} aria-hidden />
+                <span className="truncate">
+                  {t('helper_dashboard.feed_card_interested', { count: applicationsCount })}
+                </span>
+              </div>
+            ) : null}
           </div>
 
           {quoteAvailable ? (
@@ -626,86 +627,79 @@ function HelperOpportunityCardInner({
   );
 
   const renderPremiumMetaLine = () => (
-    <div className="min-w-0 text-[12px] leading-[1.35] line-clamp-2 sm:line-clamp-1 sm:text-[12px]">
-      <span
-        className="inline-flex max-w-full items-center gap-1 font-bold"
-        style={{ color: categoryTheme.budgetColor }}
-      >
-        <Icons.Link2 className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
-        <span>{metaParts.budget}</span>
-      </span>
+    <div className="flex min-w-0 flex-wrap items-center gap-x-0 gap-y-1 text-[12px] leading-[1.35]">
       {metaParts.distance ? (
-        <>
-          <PremiumMetaDot />
-          <span className="inline-flex items-center gap-1 font-semibold text-[#64748B]">
-            <Icons.MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-            <span>{metaParts.distance}</span>
-          </span>
-        </>
+        <span className="inline-flex max-w-full items-center gap-1 font-semibold text-[#64748B]">
+          <Icons.MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+          <span className="truncate whitespace-nowrap">{metaParts.distance}</span>
+        </span>
       ) : null}
+      {metaParts.distance && metaParts.modality ? <PremiumMetaDot /> : null}
       {metaParts.modality ? (
-        <>
-          <PremiumMetaDot />
-          <span className="inline-flex items-center gap-1 font-semibold text-[#64748B]">
-            <Icons.Laptop className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-            <span>{metaParts.modality}</span>
-          </span>
-        </>
+        <span className="inline-flex max-w-full items-center gap-1 font-semibold text-[#64748B]">
+          <Icons.Laptop className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+          <span className="truncate whitespace-nowrap">{metaParts.modality}</span>
+        </span>
       ) : null}
+      {(metaParts.distance || metaParts.modality) && metaParts.schedule ? <PremiumMetaDot /> : null}
       {metaParts.schedule ? (
-        <>
-          <PremiumMetaDot />
-          <span className="inline-flex items-center gap-1 font-semibold text-[#64748B]">
-            <Icons.Calendar className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-            <span>{metaParts.schedule}</span>
-          </span>
-        </>
+        <span className="inline-flex max-w-full items-center gap-1 font-semibold text-[#64748B]">
+          <Icons.Calendar className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+          <span className="truncate whitespace-nowrap">{metaParts.schedule}</span>
+        </span>
       ) : null}
     </div>
   );
 
+  const showInterestedRing =
+    typeof applicationsCount === 'number' && Number.isFinite(applicationsCount) && applicationsCount > 0;
+
   const feedBody = (
-    <div className="grid w-full min-w-0 grid-cols-[48px_minmax(0,1fr)_68px] grid-rows-[auto_auto_auto] gap-x-2 gap-y-1 sm:grid-cols-[56px_minmax(0,1fr)_68px] sm:gap-x-2.5 sm:gap-y-1">
-      <div
-        className="col-start-1 row-start-1 row-span-2 flex h-[48px] w-[48px] items-center justify-center self-start rounded-xl border sm:h-[52px] sm:w-[52px] sm:rounded-[16px]"
-        style={{
-          backgroundColor: categoryTheme.iconBg,
-          borderColor: `${categoryTheme.iconColor}28`,
-          boxShadow: `0 5px 14px ${categoryTheme.iconColor}16`,
-        }}
-      >
-        <CategoryIcon
-          className="h-[22px] w-[22px] sm:h-6 sm:w-6"
-          style={{ color: categoryTheme.iconColor }}
-          strokeWidth={1.9}
-          aria-hidden
-        />
-      </div>
+    <div className="flex w-full min-w-0 flex-col gap-2">
+      <div className="grid w-full min-w-0 grid-cols-[48px_minmax(0,1fr)_auto] items-start gap-x-2 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:gap-x-2.5">
+        <div
+          className="flex h-[48px] w-[48px] items-center justify-center rounded-xl border sm:h-[52px] sm:w-[52px] sm:rounded-[16px]"
+          style={{
+            backgroundColor: categoryTheme.iconBg,
+            borderColor: `${categoryTheme.iconColor}28`,
+            boxShadow: `0 5px 14px ${categoryTheme.iconColor}16`,
+          }}
+        >
+          <CategoryIcon
+            className="h-[22px] w-[22px] sm:h-6 sm:w-6"
+            style={{ color: categoryTheme.iconColor }}
+            strokeWidth={1.9}
+            aria-hidden
+          />
+        </div>
 
-      <div className="col-start-2 row-start-1 min-w-0 pr-0.5">
-        <h3 className="line-clamp-2 text-[15px] font-bold leading-[1.28] text-[#0F172A] sm:text-[17px] sm:leading-[1.3]">
-          {title}
-        </h3>
-      </div>
+        <div className="min-w-0">
+          <p className="truncate text-left text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">
+            {category}
+          </p>
+          <h3 className="mt-0.5 line-clamp-2 break-words text-left text-[15px] font-bold leading-[1.28] text-[#0F172A] sm:text-[17px] sm:leading-[1.3]">
+            {title}
+          </h3>
+          <p
+            className="mt-1 truncate whitespace-nowrap text-left text-[13px] font-bold sm:text-[14px]"
+            style={{ color: categoryTheme.budgetColor }}
+          >
+            <Icons.Link2 className="mr-1 inline h-3.5 w-3.5 align-[-2px]" strokeWidth={2.25} aria-hidden />
+            {metaParts.budget}
+          </p>
+          <div className="mt-1">{renderPremiumMetaLine()}</div>
+        </div>
 
-      <div className="col-start-2 row-start-2 min-w-0 self-start">
-        {showCategoryLine ? (
-          <div className="mb-0.5 flex min-w-0 items-center gap-1.5">
-            <span
-              className="h-[6px] w-[6px] shrink-0 rounded-full"
-              style={{ backgroundColor: categoryTheme.dotColor }}
-            />
-            <span className="truncate text-[11px] font-medium text-[#94A3B8]">{category}</span>
+        {showInterestedRing ? (
+          <div className="flex shrink-0 items-start justify-center pt-0.5">
+            <InterestedRing interestedCount={applicationsCount} label={interestRingLabel} size={OPPORTUNITY_RING_SIZE} />
           </div>
-        ) : null}
-        {renderPremiumMetaLine()}
+        ) : (
+          <div className="w-0 shrink-0" aria-hidden />
+        )}
       </div>
 
-      <div className="col-start-3 row-start-1 row-span-2 flex shrink-0 items-center justify-center self-center pt-0.5">
-        <InterestedRing interestedCount={applicationsCount} label={interestRingLabel} size={OPPORTUNITY_RING_SIZE} />
-      </div>
-
-      <div className="relative col-span-3 col-start-1 row-start-3 mt-0.5 flex flex-col gap-1.5 border-t border-[rgba(15,23,42,0.06)] pt-2">
+      <div className="relative flex flex-col gap-1.5 border-t border-[rgba(15,23,42,0.06)] pt-2">
         <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
@@ -737,7 +731,7 @@ function HelperOpportunityCardInner({
                 {clientInitials(job.clientName)}
               </div>
             )}
-            <span className="min-w-0 truncate text-[11px] font-bold text-[#64748B]">
+            <span className="min-w-0 truncate whitespace-nowrap text-[11px] font-bold text-[#64748B]">
               {job.clientName}
             </span>
           </button>
@@ -757,7 +751,7 @@ function HelperOpportunityCardInner({
           </button>
         </div>
 
-        <div className="relative z-40">{renderApplyActionRow()}</div>
+        <div className="relative z-40 w-full">{renderApplyActionRow()}</div>
       </div>
 
       <div className="sr-only">
@@ -794,11 +788,11 @@ function HelperOpportunityCardInner({
         {topAccent}
         <div
           data-feed-card-view="summary"
-          data-feed-card-height-locked="true"
+          data-feed-card-height-locked="false"
           data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
           data-feed-card-standard-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
           className={FEED_CARD_CONTENT_CLASS}
-          style={feedCardLockedContentStyle()}
+          style={feedCardMinContentStyle()}
         >
           {feedBody}
         </div>

@@ -275,8 +275,9 @@ describe('helper feed card overlays', () => {
 
   it('still shows category on closed feed card', () => {
     const card = read('src/components/opportunities/HelperOpportunityCard.tsx');
-    expect(card).toContain('showCategoryLine');
+    expect(card).toContain('{category}');
     expect(card).toContain('CategoryIcon');
+    expect(card).toContain('truncate text-left text-[11px] font-semibold uppercase');
   });
 });
 

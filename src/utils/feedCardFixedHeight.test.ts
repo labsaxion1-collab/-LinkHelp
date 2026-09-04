@@ -42,7 +42,7 @@ describe('P3.4 / shared opportunity card shell height', () => {
       'utf8',
     );
     expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
-    expect(src).toContain('feedCardLockedContentStyle');
+    expect(src).toContain('feedCardMinContentStyle');
     expect(src).toContain('FEED_CARD_SHELL_CLASS');
     expect(src).toContain('FEED_CARD_CONTENT_CLASS');
     expect(src).toContain('data-feed-card-height-locked');

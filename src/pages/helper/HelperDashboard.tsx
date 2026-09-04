@@ -1382,7 +1382,7 @@ export default function HelperDashboard() {
                         distanceFromBase={hasExactBaseCoords}
                         needsBaseAddress={!hasHelperBaseAddress}
                         baseAddressPendingCoords={baseAddressPendingCoords}
-                        applicationsCount={job.applicantCount ?? 0}
+                        applicationsCount={job.applicantCount ?? undefined}
                         clientReviewCount={reviewCountByUserId.get(job.clientId) ?? 0}
                         onSubmitApply={handleCardSubmitApply}
                         exclusiveLocked={

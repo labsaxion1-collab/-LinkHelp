@@ -917,6 +917,7 @@ export const pt = {
     apply_remote_location_not_needed: 'Chamado remoto: localização não necessária.',
     apply_in_person_coords_required:
       'Cadastre as coordenadas da sua residência para calcular a distância deste chamado.',
+    apply_request_expired: 'Este chamado acabou de expirar e foi removido do feed.',
     resume_apply_after_location:
       'Coordenadas salvas. Revise o chamado e confirme a candidatura novamente.',
     apply_lc_cost: '{{count}}',

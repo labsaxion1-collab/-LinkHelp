@@ -23,7 +23,7 @@ import {
   sortOpportunitiesForHelper,
 } from '@/utils/locationMatching';
 import { isRemoteJob } from '@/utils/calculateHelperLeadCreditCost';
-import { isJobCancelled } from '@/utils/jobVisibility';
+import { isJobCancelled, isJobExpired } from '@/utils/jobVisibility';
 import {
   isJobInterestFull,
   isRequestExclusiveLockedForViewer,
@@ -110,6 +110,7 @@ export default function HelperLiveMapPage() {
         (j) =>
           j.status === 'open' &&
           !isJobCancelled(j) &&
+          !isJobExpired(j) &&
           j.clientId !== me.id &&
           !dismissedIds.has(j.id) &&
           !isRequestExclusiveLockedForViewer(j, applications, me.id) &&

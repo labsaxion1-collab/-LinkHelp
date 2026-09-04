@@ -8,6 +8,24 @@ import {
 } from '@/utils/helperCategoryPreferences';
 import { resolveCategoryId } from '@/utils/translateCategory';
 
+export function isHelperFeedRequestActive(job: Pick<Job, 'status' | 'preferredDate' | 'expiresAt' | 'clientId'>, viewerId: string, now = Date.now()): boolean {
+  if (job.status !== 'open') return false;
+  if (isJobCancelled(job)) return false;
+  if (isJobExpired(job, now)) return false;
+  if (viewerId && job.clientId === viewerId) return false;
+  return true;
+}
+
+export function isRequestExpiredApplyError(err: unknown): boolean {
+  const msg =
+    err instanceof Error
+      ? err.message
+      : err && typeof err === 'object' && 'message' in err
+        ? String((err as { message?: unknown }).message ?? '')
+        : String(err ?? '');
+  return /REQUEST_EXPIRED/i.test(msg);
+}
+
 /** Dev/test diagnostic reasons — never show raw codes to end users. */
 export type HelperFeedExclusionReason =
   | 'kept'

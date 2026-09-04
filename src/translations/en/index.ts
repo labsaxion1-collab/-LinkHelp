@@ -910,6 +910,7 @@ export const en = {
     apply_remote_location_not_needed: 'Remote job: location is not required.',
     apply_in_person_coords_required:
       'Save your home coordinates to calculate the distance for this job.',
+    apply_request_expired: 'This request just expired and was removed from the feed.',
     resume_apply_after_location:
       'Coordinates saved. Review the job and confirm the application again.',
     apply_lc_cost: '{{count}}',

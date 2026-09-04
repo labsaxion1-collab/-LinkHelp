@@ -914,6 +914,7 @@ export const fr = {
     apply_remote_location_not_needed: "Mission à distance : la localisation n'est pas nécessaire.",
     apply_in_person_coords_required:
       'Enregistrez les coordonnées de votre domicile pour calculer la distance de cette mission.',
+    apply_request_expired: 'Cette mission vient d’expirer et a été retirée du fil.',
     resume_apply_after_location:
       'Coordonnées enregistrées. Vérifiez la mission et confirmez à nouveau la candidature.',
     apply_lc_cost: '{{count}}',

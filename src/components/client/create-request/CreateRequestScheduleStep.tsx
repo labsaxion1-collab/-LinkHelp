@@ -105,8 +105,17 @@ export function CreateRequestScheduleStep(props: Props) {
         value={value}
         onChange={onChange}
         placeholder={t('create_modal.location_placeholder')}
-        currentLocationLabel={t('create_modal.current_location')}
+        currentLocationLabel={t('create_modal.use_current_location')}
         currentLocationShortLabel={t('create_modal.current_location_short')}
+        otherAddressLabel={t('create_modal.other_address')}
+        mapsUnavailableLabel={t('create_modal.maps_unavailable')}
+        coordsRequiredLabel={t('create_modal.coords_required')}
+        manualStreetLabel={t('create_modal.manual_street')}
+        manualNumberLabel={t('create_modal.manual_number')}
+        manualComplementLabel={t('create_modal.manual_complement')}
+        manualCityLabel={t('create_modal.manual_city')}
+        manualRegionLabel={t('create_modal.manual_region')}
+        manualPostalLabel={t('create_modal.manual_postal')}
         locatingLabel={t('create_modal.locating')}
       />
     </div>

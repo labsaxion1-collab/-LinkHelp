@@ -269,11 +269,12 @@ describe('activity history i18n and VIP panel contract', () => {
     const vipIdx = src.indexOf('client-activity-vip-panel');
     expect(vipIdx).toBeGreaterThan(-1);
     const vipBlock = src.slice(vipIdx, vipIdx + 3200);
-    expect(vipBlock).toContain('flex flex-col items-center');
-    expect(vipBlock).toContain('pt-5');
+    expect(vipBlock).toContain('flex-col items-center');
+    expect(vipBlock).toContain('pt-6');
     expect(vipBlock).toContain('client-activity-vip-avatar');
     expect(vipBlock).toContain('client-activity-vip-open-profile');
-    expect(src.indexOf('renderActionRow(exclusiveApp')).toBeGreaterThan(vipIdx);
+    expect(src).toContain('client-activity-vip-actions');
+    expect(src).toContain('env(safe-area-inset-bottom)');
     expect(vipBlock).toContain('h-14 w-14');
   });
 

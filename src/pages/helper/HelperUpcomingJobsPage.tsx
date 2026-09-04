@@ -22,6 +22,7 @@ import {
   type HelperTaskAccordion,
 } from '@/utils/helperTaskCard';
 import { partitionHelperHistory } from '@/utils/helperHistoryBuckets';
+import { formatCompleteWorkError } from '@/utils/formatCompleteWorkError';
 import { clsx } from 'clsx';
 
 type TasksTab = 'applications' | 'accepted';
@@ -123,6 +124,7 @@ export default function HelperUpcomingJobsPage() {
   };
 
   const handleCompleteWork = async (job: UpcomingJob) => {
+    if (completeBusyId) return;
     setCompleteBusyId(job.id);
     try {
       const result = await finalizeServiceCompletion({
@@ -131,15 +133,22 @@ export default function HelperUpcomingJobsPage() {
         role: 'helper',
       });
       if (result.outcome === 'completed') {
-        showToast(t('upcoming_jobs.complete_work_success'), 'success');
+        showToast(
+          result.alreadyCompleted
+            ? t('upcoming_jobs.complete_work_already_done')
+            : t('upcoming_jobs.complete_work_success'),
+          'success',
+        );
         navigate(ROUTES.helperHistory, { state: { historyTab: 'completed' } });
-        window.setTimeout(() => openReviewByRequestId(job.jobId), 400);
+        if (!result.alreadyCompleted) {
+          window.setTimeout(() => openReviewByRequestId(job.jobId), 400);
+        }
       } else {
         showToast(t('upcoming_jobs.awaiting_client_note'), 'info');
       }
     } catch (e) {
       console.error('[LinkHelp] complete work', e);
-      showToast(t('upcoming_jobs.complete_work_error'), 'error');
+      showToast(formatCompleteWorkError(e, t), 'error');
     } finally {
       setCompleteBusyId(null);
     }

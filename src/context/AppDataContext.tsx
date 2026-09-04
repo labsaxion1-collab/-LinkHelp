@@ -134,7 +134,7 @@ interface AppDataContextData {
     requestId: string;
     upcomingJobId: string;
     role: 'client' | 'helper';
-  }) => Promise<{ outcome: 'completed' | 'awaiting_client' }>;
+  }) => Promise<{ outcome: 'completed' | 'awaiting_client'; alreadyCompleted?: boolean }>;
   addNotification: (notification: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => void;
   markNotificationAsRead: (id: string) => void;
   markAllAsRead: () => void;
@@ -1333,7 +1333,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     requestId: string;
     upcomingJobId: string;
     role: 'client' | 'helper';
-  }): Promise<{ outcome: 'completed' | 'awaiting_client' }> => {
+  }): Promise<{ outcome: 'completed' | 'awaiting_client'; alreadyCompleted?: boolean }> => {
     const { requestId, upcomingJobId, role } = input;
     if (isSupabaseConfigured() && !session) {
       throw new Error('AUTH_REQUIRED');
@@ -1344,9 +1344,28 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
     if (useRemote) {
       try {
-        await remoteFinalizeServiceCompletion(requestId);
+        const remote = await remoteFinalizeServiceCompletion(requestId);
+        // Always sync local state from remote authority; skip double gamification on idempotent replay.
+        if (remote.alreadyCompleted) {
+          setJobs((prev) =>
+            prev.map((job) => (job.id === requestId ? { ...job, status: 'completed' as JobStatus } : job)),
+          );
+          setUpcomingJobs((prev) =>
+            prev.map((u) =>
+              u.jobId === requestId ? { ...u, workflowStatus: 'completed' as UpcomingWorkflowStatus } : u,
+            ),
+          );
+          setApplications((prev) =>
+            prev.map((app) =>
+              app.jobId === requestId && (app.status === 'accepted' || app.status === 'completed')
+                ? { ...app, status: 'completed' as ApplicationStatus }
+                : app,
+            ),
+          );
+          return { outcome: 'completed', alreadyCompleted: true };
+        }
         applyLocalServiceCompleted(requestId);
-        return { outcome: 'completed' };
+        return { outcome: 'completed', alreadyCompleted: false };
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg !== 'FINALIZE_RPC_NOT_DEPLOYED') {
@@ -1355,7 +1374,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (role === 'helper') {
-        await remoteMarkServiceAwaitingConfirmation(upcomingJobId);
+        try {
+          await remoteMarkServiceAwaitingConfirmation(upcomingJobId);
+        } catch (markErr) {
+          const markMsg = markErr instanceof Error ? markErr.message : String(markErr);
+          if (markMsg === 'MARK_AWAITING_RPC_NOT_DEPLOYED') {
+            throw new Error('COMPLETION_BACKEND_NOT_READY');
+          }
+          throw markErr;
+        }
         setUpcomingJobs((prev) =>
           prev.map((u) =>
             u.id === upcomingJobId

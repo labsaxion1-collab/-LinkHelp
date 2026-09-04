@@ -36,7 +36,8 @@ export type ClientActivityCandidateRingProps = {
   size?: number;
   count?: number;
   ariaLabel: string;
-  onActivate: () => void;
+  /** Optional secondary activate — omit to render a non-interactive status indicator. */
+  onActivate?: () => void;
   className?: string;
   disabled?: boolean;
 };
@@ -63,25 +64,9 @@ export function ClientActivityCandidateRing({
   const isExclusive = Boolean(exclusiveFullColor);
   const displayCount = Math.max(0, Math.min(MAX_JOB_INTERESTED, count));
   const glowColor = exclusiveFullColor ?? segmentColors.find((c) => c != null) ?? null;
+  const interactive = typeof onActivate === 'function' && !disabled;
 
-  return (
-    <button
-      type="button"
-      data-testid="client-activity-candidate-ring"
-      data-ring-mode={isExclusive ? 'exclusive' : 'segments'}
-      aria-label={ariaLabel}
-      disabled={disabled}
-      onClick={(e) => {
-        e.stopPropagation();
-        onActivate();
-      }}
-      className={clsx(
-        'inline-flex shrink-0 items-center justify-center rounded-full transition-opacity',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2',
-        disabled ? 'cursor-default opacity-70' : 'cursor-pointer hover:opacity-95 active:scale-[0.98]',
-        className,
-      )}
-    >
+  const ringVisual = (
       <div
         className="relative shrink-0 rounded-full"
         style={{
@@ -189,6 +174,43 @@ export function ClientActivityCandidateRing({
           )}
         </div>
       </div>
+  );
+
+  if (!interactive) {
+    return (
+      <div
+        data-testid="client-activity-candidate-ring"
+        data-ring-mode={isExclusive ? 'exclusive' : 'segments'}
+        data-ring-interactive="false"
+        role="img"
+        aria-label={ariaLabel}
+        className={clsx('inline-flex shrink-0 items-center justify-center rounded-full', className)}
+      >
+        {ringVisual}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      data-testid="client-activity-candidate-ring"
+      data-ring-mode={isExclusive ? 'exclusive' : 'segments'}
+      data-ring-interactive="true"
+      aria-label={ariaLabel}
+      disabled={disabled}
+      onClick={(e) => {
+        e.stopPropagation();
+        onActivate?.();
+      }}
+      className={clsx(
+        'inline-flex shrink-0 items-center justify-center rounded-full transition-opacity',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2',
+        'cursor-pointer hover:opacity-95 active:scale-[0.98]',
+        className,
+      )}
+    >
+      {ringVisual}
     </button>
   );
 }

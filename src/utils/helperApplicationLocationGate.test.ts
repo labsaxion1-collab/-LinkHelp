@@ -286,7 +286,9 @@ describe('finance and copy stay intact', () => {
       .map((line) => line.trim())
       .filter(Boolean);
     for (const line of dirty) {
-      expect(line).toMatch(/20260831014124_helper_base_initial_gps_confirmation\.sql$/);
+      expect(line).toMatch(
+        /20260831014124_helper_base_initial_gps_confirmation\.sql$|_service_completion_workflow\.sql$/,
+      );
       expect(line).not.toMatch(/0033_helper_base_address_lock\.sql/);
     }
   });

@@ -17,6 +17,7 @@ import { ROUTES } from '@/utils/constants';
 import { clsx } from 'clsx';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
 import { canHelperRequestCompletion, isAwaitingClientCompletion } from '@/utils/serviceWorkflow';
+import { formatCompleteWorkError } from '@/utils/formatCompleteWorkError';
 
 interface UpcomingJobDetailModalProps {
   job: UpcomingJob | null;
@@ -193,14 +194,21 @@ export function UpcomingJobDetailModal({
         role: 'helper',
       });
       if (result.outcome === 'completed') {
-        showToast(t('upcoming_jobs.complete_work_success'), 'success');
-        window.setTimeout(() => openReviewByRequestId(job.jobId), 400);
+        showToast(
+          result.alreadyCompleted
+            ? t('upcoming_jobs.complete_work_already_done')
+            : t('upcoming_jobs.complete_work_success'),
+          'success',
+        );
+        if (!result.alreadyCompleted) {
+          window.setTimeout(() => openReviewByRequestId(job.jobId), 400);
+        }
       } else {
         showToast(t('upcoming_jobs.awaiting_client_note'), 'info');
       }
     } catch (e) {
       console.error('[LinkHelp] complete work', e);
-      showToast(t('upcoming_jobs.complete_work_error'), 'error');
+      showToast(formatCompleteWorkError(e, t), 'error');
     } finally {
       setCompleteLoading(false);
     }

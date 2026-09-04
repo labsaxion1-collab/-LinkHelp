@@ -301,11 +301,11 @@ export function ClientActivityOpenRequestCard({
         </div>
       </div>
 
-      <div className="mt-1.5 min-h-0 flex-1 overflow-hidden">
+      <div className="mt-1.5 shrink-0 space-y-0.5 overflow-hidden">
         <h3 className="line-clamp-2 text-[15px] font-bold leading-[1.25] text-[#0F172A] sm:text-[16px]">
           {title}
         </h3>
-        <div className="mt-1 flex min-w-0 items-center gap-1.5">
+        <div className="flex min-w-0 items-center gap-1.5">
           <span
             className="h-[6px] w-[6px] shrink-0 rounded-full"
             style={{ backgroundColor: categoryTheme.dotColor }}
@@ -313,20 +313,20 @@ export function ClientActivityOpenRequestCard({
           <span className="truncate text-[11px] font-medium text-[#94A3B8]">{category}</span>
         </div>
         <p
-          className="mt-1 truncate text-[13px] font-black tabular-nums"
+          className="truncate whitespace-nowrap text-[13px] font-black tabular-nums"
           style={{ color: categoryTheme.budgetColor }}
           data-testid="client-activity-summary-budget"
         >
           {budgetAmount}
         </p>
         {schedule ? (
-          <p className="mt-0.5 truncate text-[11px] font-semibold text-[#64748B]">
+          <p className="truncate text-[11px] font-semibold text-[#64748B]">
             <Icons.Calendar className="mr-1 inline h-3 w-3 align-[-1px] text-[#94A3B8]" aria-hidden />
             {schedule}
           </p>
         ) : null}
         {locationLabel ? (
-          <p className="mt-0.5 truncate text-[11px] font-semibold text-[#64748B]">
+          <p className="truncate text-[11px] font-semibold text-[#64748B]">
             <Icons.MapPin className="mr-1 inline h-3 w-3 align-[-1px] text-[#94A3B8]" aria-hidden />
             {locationLabel}
           </p>
@@ -345,9 +345,12 @@ export function ClientActivityOpenRequestCard({
                 ? 'client-activity-view-vip-cta'
                 : 'client-activity-choose-help-cta'
             }
-            onClick={openCandidatesPanel}
+            onClick={(e) => {
+              e.stopPropagation();
+              openCandidatesPanel();
+            }}
             className={clsx(
-              'inline-flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-xl px-3 text-[12px] font-black transition',
+              'relative z-10 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl px-3 text-[12px] font-black transition',
               exclusiveApp != null
                 ? 'border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100'
                 : 'border border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100',
@@ -373,13 +376,16 @@ export function ClientActivityOpenRequestCard({
               size={BOTTOM_RING_SIZE_PX}
               count={candidateCount}
               ariaLabel={ringAriaLabel}
-              onActivate={openCandidatesPanel}
+              onActivate={candidateCount > 0 ? undefined : openCandidatesPanel}
             />
           </div>
           <button
             type="button"
             data-testid="client-activity-open-description"
-            onClick={() => setOverlay('description')}
+            onClick={(e) => {
+              e.stopPropagation();
+              setOverlay('description');
+            }}
             className="ml-auto inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[rgba(15,23,42,0.08)] bg-[#f8fafc] px-3 py-2 text-[12px] font-bold text-[#0F172A] transition hover:bg-slate-50"
             aria-expanded={overlay === 'description'}
           >
@@ -438,10 +444,15 @@ export function ClientActivityOpenRequestCard({
           data-testid="client-activity-candidates-view"
           data-candidates-mode="exclusive"
         >
-          <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-3')}>
+          <div
+            className={clsx(
+              FEED_CARD_PREMIUM_SCROLL_CLASS,
+              'flex max-h-[min(70vh,32rem)] flex-col space-y-3 pb-[max(1rem,env(safe-area-inset-bottom))]',
+            )}
+          >
             <div
               data-testid="client-activity-vip-panel"
-              className="flex flex-col items-center rounded-2xl border border-amber-300/45 bg-gradient-to-b from-amber-400/20 to-amber-500/5 px-3 pb-3 pt-5 text-center"
+              className="mx-auto flex w-full max-w-sm flex-col items-center rounded-2xl border border-amber-300/45 bg-gradient-to-b from-amber-400/20 to-amber-500/5 px-3 pb-5 pt-6 text-center"
             >
               <Icons.Crown
                 className="h-7 w-7 text-amber-300"
@@ -487,7 +498,12 @@ export function ClientActivityOpenRequestCard({
                 {t('candidate_profile.toggle_label')}
               </button>
             </div>
-            {renderActionRow(exclusiveApp, 'border-amber-200/80')}
+            <div
+              className="sticky bottom-0 z-10 shrink-0 bg-gradient-to-t from-[#0B1220] via-[#0B1220]/95 to-transparent pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2"
+              data-testid="client-activity-vip-actions"
+            >
+              {renderActionRow(exclusiveApp, 'border-amber-200/80')}
+            </div>
           </div>
         </div>
       );
@@ -499,14 +515,26 @@ export function ClientActivityOpenRequestCard({
         data-testid="client-activity-candidates-view"
         data-candidates-mode="normal"
       >
-        <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-2')}>
+        <div
+          className={clsx(
+            FEED_CARD_PREMIUM_SCROLL_CLASS,
+            'max-h-[min(70vh,32rem)] space-y-2 pb-[max(1rem,env(safe-area-inset-bottom))]',
+          )}
+        >
           <p className={FEED_CARD_PREMIUM_EYEBROW_CLASS}>{t('client_dashboard.candidates_panel_title')}</p>
           {displayCandidates.length === 0 ? (
             <p className={FEED_CARD_PREMIUM_MUTED_CLASS} data-testid="client-activity-candidates-empty">
               {t('client_dashboard.candidates_empty_hint')}
             </p>
           ) : (
-            displayCandidates.map((app) => renderActionRow(app))
+            displayCandidates.map((app, index) => (
+              <div key={app.id} className="space-y-1">
+                <p className="px-0.5 text-[10px] font-black uppercase tracking-wide text-white/55">
+                  {t('client_dashboard.candidate_index_label', { index: index + 1 })}
+                </p>
+                {renderActionRow(app)}
+              </div>
+            ))
           )}
         </div>
       </div>

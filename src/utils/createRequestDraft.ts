@@ -4,7 +4,12 @@ import type { ServiceMode } from '@/config/baselineFinance';
 import type { BudgetMode } from '@/utils/formatJobBudget';
 import type { RequestPriority } from '@/utils/requestSchedule';
 
+/** Legacy drafts may still contain `subcategory`; loaders remap it to `description`. */
 export type CreateRequestDraftStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
+
+export function normalizeCreateRequestDraftStep(step: CreateRequestDraftStep): Exclude<CreateRequestDraftStep, 'subcategory'> {
+  return step === 'subcategory' ? 'description' : step;
+}
 
 export type CreateRequestDraft = {
   version: 1;
@@ -74,7 +79,7 @@ function parseDraft(raw: string): CreateRequestDraft | null {
     return {
       version: DRAFT_VERSION,
       updatedAt: typeof data.updatedAt === 'number' ? data.updatedAt : Date.now(),
-      step: data.step,
+      step: normalizeCreateRequestDraftStep(data.step),
       selectedCategory: typeof data.selectedCategory === 'string' ? data.selectedCategory : '',
       selectedSubcategory: typeof data.selectedSubcategory === 'string' ? data.selectedSubcategory : '',
       postText: typeof data.postText === 'string' ? data.postText : '',

@@ -59,12 +59,19 @@ import { InsufficientClientCreditsError, ActiveCreditObligationError } from '@/s
 import { buildCanonicalJobTitle } from '@/utils/translateCategory';
 import { coerceServiceMode, isBaselineFinanceEnabled, type ServiceMode } from '@/config/baselineFinance';
 import { getServiceModePolicy } from '@/config/serviceModePolicy';
+import { getDefaultSubcategoryForCategory } from '@/config/createRequestDefaultSubcategory';
 import { formatBaselineFinanceError, isActiveCreditObligationError } from '@/utils/formatBaselineFinanceError';
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
 
-type ModalStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
-const STEPS: ModalStep[] = ['category', 'subcategory', 'description', 'confirm', 'review'];
+type ModalStep = 'category' | 'description' | 'confirm' | 'review';
+const STEPS: ModalStep[] = ['category', 'description', 'confirm', 'review'];
+
+function resolveInternalSubcategory(categoryId: string, preferred?: string): string {
+  const preferredTrim = (preferred ?? '').trim();
+  if (preferredTrim) return preferredTrim;
+  return getDefaultSubcategoryForCategory(categoryId) ?? '';
+}
 
 function needsBuildingForMoving(subKey: string) {
   return movingNeedsBuildingDetails(subKey);
@@ -226,9 +233,12 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   }, [open, draftDialog, selectedCategory, selectedSubcategory, translationServiceMode, marketSuggestion]);
 
   const applyFreshStart = useCallback(() => {
-    setStep(initialCategory && initialSubcategory ? 'description' : initialCategory ? 'subcategory' : 'category');
+    const nextSub = initialCategory
+      ? resolveInternalSubcategory(initialCategory, initialSubcategory)
+      : '';
+    setStep(initialCategory ? 'description' : 'category');
     setSelectedCategory(initialCategory);
-    setSelectedSubcategory(initialSubcategory);
+    setSelectedSubcategory(nextSub);
     setPostText('');
     setBudgetType('unset');
     setBudgetMin('');
@@ -242,9 +252,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setPreferredDateIso('');
     setPreferredTimeSpecific('');
     setMovePropertyType(
-      initialCategory === 'moving' && initialSubcategory
-        ? movingPropertyTypeFromSubKey(initialSubcategory)
-        : '',
+      initialCategory === 'moving' && nextSub ? movingPropertyTypeFromSubKey(nextSub) : '',
     );
     setMovePickupAddress(emptyRequestAddress());
     setMoveDeliveryAddress(emptyRequestAddress());
@@ -260,9 +268,14 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   }, [initialCategory, initialSubcategory]);
 
   const applyDraft = useCallback((draft: CreateRequestDraft) => {
-    setStep(draft.step);
-    setSelectedCategory(draft.selectedCategory);
-    setSelectedSubcategory(draft.selectedSubcategory);
+    const draftStep = draft.step === 'subcategory' ? 'description' : draft.step;
+    const category = draft.selectedCategory;
+    const subcategory = category
+      ? resolveInternalSubcategory(category, draft.selectedSubcategory)
+      : draft.selectedSubcategory;
+    setStep(draftStep);
+    setSelectedCategory(category);
+    setSelectedSubcategory(subcategory);
     setPostText(draft.postText);
     setBudgetType(draft.budgetType);
     setBudgetMin(draft.budgetMin);
@@ -554,7 +567,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     const coords = publishCoordinatesForMode(resolvedServiceMode, addr.latitude, addr.longitude);
     try {
       if (baselineOn) {
-        if (!selectedSubcategory) {
+        if (!selectedSubcategory && !getDefaultSubcategoryForCategory(selectedCategory)) {
           showToast(t('baseline_finance.subcategory_required'), 'error');
           setPublishing(false);
           return;
@@ -577,14 +590,16 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
           return;
         }
       }
+      const publishSubcategory =
+        selectedSubcategory || getDefaultSubcategoryForCategory(selectedCategory) || null;
       await createJob({
         clientId: me.id,
         clientName: me.name,
         clientAvatar: me.avatar,
-        title: buildCanonicalJobTitle(selectedCategory, selectedSubcategory || null),
+        title: buildCanonicalJobTitle(selectedCategory, publishSubcategory),
         description: fullDescription,
         category: selectedCategory,
-        subcategory: selectedSubcategory || null,
+        subcategory: publishSubcategory,
         serviceMode: resolvedServiceMode,
         location: locationLabel,
         address: resolvedServiceMode === 'remote' ? null : addr.address || addr.display.trim() || null,
@@ -735,10 +750,21 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const stepIndex = STEPS.indexOf(step);
   const stepIcons: Record<ModalStep, React.ComponentType<{ className?: string }>> = {
     category: Icons.Grid,
-    subcategory: Icons.ListChecks,
     description: Icons.Type,
     confirm: Icons.CalendarCheck,
     review: Icons.CheckCircle2,
+  };
+
+  const selectPrimaryCategory = (categoryId: string) => {
+    const sub = resolveInternalSubcategory(categoryId);
+    setSelectedCategory(categoryId);
+    setSelectedSubcategory(sub);
+    if (categoryId === 'moving') {
+      setMovePropertyType(movingPropertyTypeFromSubKey(sub));
+    } else {
+      setMovePropertyType('');
+    }
+    setStep('description');
   };
   const activeCat = SERVICE_CATEGORIES.find((c) => c.id === selectedCategory);
 
@@ -770,7 +796,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
           <CloseToHomeButton onBeforeNavigate={performClose} />
         </div>
         <div className="px-4 sm:px-6 pt-4 pb-2 shrink-0 min-w-0">
-          <div className="relative grid w-full max-w-full grid-cols-5 gap-1">
+          <div className="relative grid w-full max-w-full grid-cols-4 gap-1">
             <div className="pointer-events-none absolute top-1/2 left-[10%] right-[10%] h-0.5 -translate-y-1/2 rounded-full bg-gray-100" />
             <div
               className="pointer-events-none absolute top-1/2 left-[10%] z-0 h-0.5 -translate-y-1/2 rounded-full bg-blue-600 transition-all duration-500"
@@ -820,7 +846,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                     <button
                       key={cat.id}
                       type="button"
-                      onClick={() => { setSelectedCategory(cat.id); setSelectedSubcategory(''); setStep('subcategory'); }}
+                      onClick={() => selectPrimaryCategory(cat.id)}
                       className={clsx(
                         'flex h-[132px] w-[126px] shrink-0 flex-col items-center justify-center rounded-2xl border-2 bg-white p-4 transition-all hover:shadow-md sm:w-[142px]',
                         accent.cardBorder,
@@ -835,34 +861,6 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                   );
                 })}
                 </div>
-              </div>
-            </div>
-          )}
-          {step === 'subcategory' && (
-            <div className="animate-in fade-in duration-300">
-              <button type="button" onClick={() => setStep('category')} className="text-sm font-bold text-blue-600 mb-4">
-                {t('create_modal.change_category')}
-              </button>
-              <h4 className="text-2xl font-bold text-gray-900 mb-2">{t('create_modal.select_sub')}</h4>
-              <p className="text-gray-500 text-sm mb-6">{t('create_modal.select_sub_desc', { category: activeCat ? t('categories.' + activeCat.id) : '' })}</p>
-              <div className="space-y-3 w-full max-w-full min-w-0">
-                {activeCat?.subKeys.map((subKey) => (
-                  <button
-                    key={subKey}
-                    type="button"
-                    onClick={() => {
-                      setSelectedSubcategory(subKey);
-                      if (selectedCategory === 'moving') {
-                        setMovePropertyType(movingPropertyTypeFromSubKey(subKey));
-                      }
-                      setStep('description');
-                    }}
-                    className="w-full max-w-full min-w-0 flex items-center justify-between gap-2 p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 bg-white text-left"
-                  >
-                    <span className="min-w-0 flex-1 truncate font-bold text-gray-900">{t('service_subs.' + activeCat.id + '.' + subKey)}</span>
-                    <Icons.ChevronRight className="w-5 h-5 text-gray-400" />
-                  </button>
-                ))}
               </div>
             </div>
           )}
@@ -1121,7 +1119,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               {publishing ? <Icons.Loader2 className="w-5 h-5 animate-spin" /> : <Icons.Rocket className="w-5 h-5" />}
               Publicar pedido
             </button>
-          ) : step === 'category' || step === 'subcategory' ? (
+          ) : step === 'category' ? (
             <span />
           ) : (
             <div className="ml-auto flex min-w-0 max-w-full flex-col items-end gap-2">

@@ -279,8 +279,14 @@ export function ClientCompletedHistoryCard({
           <div className="overflow-hidden rounded-2xl bg-white/95">
             <CandidateHelperProfileExpand
               helperId={hiredApplication.helperId}
+              helperName={hiredApplication.helperName}
+              helperAvatar={hiredApplication.helperAvatar}
               helperRating={hiredApplication.helperRating}
               helperJobs={hiredApplication.helperJobs}
+              isExclusive={Boolean(hiredApplication.isExclusive || job.exclusiveHelperId)}
+              proposedAmount={hiredApplication.proposedAmount}
+              currency={job.currency || 'CAD'}
+              formatMoneyAmount={formatMoneyAmount}
             />
           </div>
         </div>

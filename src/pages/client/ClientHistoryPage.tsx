@@ -135,6 +135,7 @@ export default function ClientHistoryPage() {
                     key={job.id}
                     job={job}
                     t={t}
+                    hiredApplication={findHiredApplicationForJob(job, applications, upcomingJobs)}
                   />
                 ))
               )

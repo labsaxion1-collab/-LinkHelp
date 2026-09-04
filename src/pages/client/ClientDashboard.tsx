@@ -1018,8 +1018,14 @@ export default function ClientDashboard() {
                   >
                     <CandidateHelperProfileExpand
                       helperId={profileApp.helperId}
+                      helperName={profileApp.helperName}
+                      helperAvatar={profileApp.helperAvatar}
                       helperRating={profileApp.helperRating}
                       helperJobs={profileApp.helperJobs}
+                      isExclusive={Boolean(profileApp.isExclusive)}
+                      proposedAmount={profileApp.proposedAmount}
+                      currency={detailJob.currency || 'CAD'}
+                      formatMoneyAmount={formatMoneyAmount}
                     />
                   </LhCardOverlay>
                 );
@@ -1926,8 +1932,14 @@ export default function ClientDashboard() {
                                       >
                                         <CandidateHelperProfileExpand
                                           helperId={profileApp.helperId}
+                                          helperName={profileApp.helperName}
+                                          helperAvatar={profileApp.helperAvatar}
                                           helperRating={profileApp.helperRating}
                                           helperJobs={profileApp.helperJobs}
+                                          isExclusive={Boolean(profileApp.isExclusive)}
+                                          proposedAmount={profileApp.proposedAmount}
+                                          currency={job.currency || 'CAD'}
+                                          formatMoneyAmount={formatMoneyAmount}
                                         />
                                       </LhCardOverlay>
                                     );

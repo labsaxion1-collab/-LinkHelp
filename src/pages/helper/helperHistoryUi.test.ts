@@ -185,7 +185,7 @@ describe('helper history i18n pt/en/fr-CA', () => {
       'Você cancelou esta candidatura.',
     );
     expect(resolveMessage({ en, pt, fr }, 'pt', 'helper_tasks.waiting_client_title')).toBe(
-      'Aguardando resposta do cliente',
+      'Aguardando decisão do cliente',
     );
     expect(resolveMessage({ en, pt, fr }, 'pt', 'helper_tasks.rejected_banner_no_extra_charge')).toBe(
       'Nenhum crédito adicional será cobrado.',

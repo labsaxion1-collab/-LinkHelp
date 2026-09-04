@@ -239,11 +239,13 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(src).not.toContain('justify-self-end');
     // Description must not be a lone full-width flex-1 footer action.
     const footerIdx = src.indexOf('client-activity-summary-footer');
-    const footerBlock = src.slice(footerIdx, footerIdx + 1200);
+    const footerBlock = src.slice(footerIdx, footerIdx + 2800);
     expect(footerBlock).toContain('client-activity-footer-ring');
     expect(footerBlock).toContain('client-activity-open-description');
     expect(footerBlock).toContain('ml-auto');
     expect(footerBlock).not.toMatch(/client-activity-open-description[\s\S]*flex-1/);
+    expect(footerBlock).toContain('client-activity-choose-help-cta');
+    expect(footerBlock).toContain('client-activity-view-vip-cta');
   });
 
   it('keeps profile without duplicate Accept/Reject actions', async () => {

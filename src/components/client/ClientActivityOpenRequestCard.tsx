@@ -334,30 +334,60 @@ export function ClientActivityOpenRequestCard({
       </div>
 
       <div
-        className="mt-auto flex shrink-0 items-center gap-2 border-t border-[rgba(15,23,42,0.06)] pt-2"
+        className="mt-auto flex shrink-0 flex-col gap-2 border-t border-[rgba(15,23,42,0.06)] pt-2"
         data-testid="client-activity-summary-footer"
       >
-        <div className="shrink-0" data-testid="client-activity-footer-ring">
-          <ClientActivityCandidateRing
-            segmentColors={segmentColors}
-            exclusiveFullColor={exclusiveFullColor}
-            size={BOTTOM_RING_SIZE_PX}
-            count={candidateCount}
-            ariaLabel={ringAriaLabel}
-            onActivate={openCandidatesPanel}
-          />
+        {candidateCount > 0 ? (
+          <button
+            type="button"
+            data-testid={
+              exclusiveApp != null
+                ? 'client-activity-view-vip-cta'
+                : 'client-activity-choose-help-cta'
+            }
+            onClick={openCandidatesPanel}
+            className={clsx(
+              'inline-flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-xl px-3 text-[12px] font-black transition',
+              exclusiveApp != null
+                ? 'border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100'
+                : 'border border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100',
+            )}
+          >
+            {exclusiveApp != null ? (
+              <Icons.Crown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            ) : (
+              <Icons.Users className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            )}
+            <span>
+              {exclusiveApp != null
+                ? t('client_dashboard.view_vip_application_cta')
+                : t('client_dashboard.choose_help_cta')}
+            </span>
+          </button>
+        ) : null}
+        <div className="flex items-center gap-2">
+          <div className="shrink-0" data-testid="client-activity-footer-ring">
+            <ClientActivityCandidateRing
+              segmentColors={segmentColors}
+              exclusiveFullColor={exclusiveFullColor}
+              size={BOTTOM_RING_SIZE_PX}
+              count={candidateCount}
+              ariaLabel={ringAriaLabel}
+              onActivate={openCandidatesPanel}
+            />
+          </div>
+          <button
+            type="button"
+            data-testid="client-activity-open-description"
+            onClick={() => setOverlay('description')}
+            className="ml-auto inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[rgba(15,23,42,0.08)] bg-[#f8fafc] px-3 py-2 text-[12px] font-bold text-[#0F172A] transition hover:bg-slate-50"
+            aria-expanded={overlay === 'description'}
+          >
+            <Icons.FileText className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
+            <span>{t('client_dashboard.view_description')}</span>
+            <Icons.ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
+          </button>
         </div>
-        <button
-          type="button"
-          data-testid="client-activity-open-description"
-          onClick={() => setOverlay('description')}
-          className="ml-auto inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[rgba(15,23,42,0.08)] bg-[#f8fafc] px-3 py-2 text-[12px] font-bold text-[#0F172A] transition hover:bg-slate-50"
-          aria-expanded={overlay === 'description'}
-        >
-          <Icons.FileText className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
-          <span>{t('client_dashboard.view_description')}</span>
-          <Icons.ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#64748B]" aria-hidden />
-        </button>
       </div>
     </div>
   );
@@ -408,24 +438,29 @@ export function ClientActivityOpenRequestCard({
           data-testid="client-activity-candidates-view"
           data-candidates-mode="exclusive"
         >
-          <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-2')}>
-            {renderActionRow(exclusiveApp, 'border-amber-200/80')}
+          <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-3')}>
             <div
               data-testid="client-activity-vip-panel"
-              className="rounded-2xl border border-amber-300/45 bg-gradient-to-b from-amber-400/20 to-amber-500/5 px-3 py-3 text-center"
+              className="flex flex-col items-center rounded-2xl border border-amber-300/45 bg-gradient-to-b from-amber-400/20 to-amber-500/5 px-3 pb-3 pt-5 text-center"
             >
               <Icons.Crown
-                className="mx-auto h-8 w-8 text-amber-300"
+                className="h-7 w-7 text-amber-300"
                 style={{ filter: 'drop-shadow(0 0 8px rgba(245,158,11,0.55))' }}
                 aria-hidden
               />
-              <p className="mt-1.5 text-[12px] font-black tracking-wide text-amber-100">
+              <p className="mt-2 text-[11px] font-black tracking-wide text-amber-100">
                 {t('client_dashboard.vip_candidate_label')}
               </p>
-              <p className="mt-0.5 truncate text-[14px] font-bold text-white">
+              <img
+                src={exclusiveApp.helperAvatar}
+                alt=""
+                className="mt-3 h-14 w-14 rounded-full object-cover ring-2 ring-amber-200/80"
+                data-testid="client-activity-vip-avatar"
+              />
+              <p className="mt-2 max-w-full truncate text-[15px] font-bold text-white">
                 {firstNameFromHelperName(exclusiveApp.helperName)}
               </p>
-              <div className="mt-1.5 flex justify-center">
+              <div className="mt-2 flex justify-center">
                 <LinkHelpRankBadgeFromStats
                   completedCount={exclusiveApp.helperJobs}
                   averageRating={exclusiveApp.helperRating}
@@ -438,7 +473,21 @@ export function ClientActivityOpenRequestCard({
               <p className="mt-1 text-[10px] font-semibold" style={{ color: rank.accent }}>
                 {t(`ranking.helper.${rank.tier}`)}
               </p>
+              <p className="mt-2 text-[12px] font-black tabular-nums text-white">
+                {exclusiveApp.proposedAmount != null
+                  ? formatMoneyAmount(exclusiveApp.proposedAmount, job.currency || 'CAD')
+                  : t('client_dashboard.helper_proposal_negotiable_short')}
+              </p>
+              <button
+                type="button"
+                data-testid="client-activity-vip-open-profile"
+                onClick={() => openProfile(exclusiveApp.id)}
+                className="mt-3 inline-flex min-h-[36px] items-center justify-center rounded-xl border border-white/25 bg-white/10 px-3 text-[11px] font-bold text-white hover:bg-white/15"
+              >
+                {t('candidate_profile.toggle_label')}
+              </button>
             </div>
+            {renderActionRow(exclusiveApp, 'border-amber-200/80')}
           </div>
         </div>
       );
@@ -495,8 +544,14 @@ export function ClientActivityOpenRequestCard({
           <div className="overflow-hidden rounded-2xl bg-white/95">
             <CandidateHelperProfileExpand
               helperId={profileApp.helperId}
+              helperName={profileApp.helperName}
+              helperAvatar={profileApp.helperAvatar}
               helperRating={profileApp.helperRating}
               helperJobs={profileApp.helperJobs}
+              isExclusive={Boolean(profileApp.isExclusive)}
+              proposedAmount={profileApp.proposedAmount}
+              currency={job.currency || 'CAD'}
+              formatMoneyAmount={formatMoneyAmount}
             />
           </div>
         </div>

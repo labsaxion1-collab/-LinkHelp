@@ -188,7 +188,9 @@ function upsertJob(list: Job[], job: Job): Job[] {
 }
 
 function upsertApplication(list: Application[], app: Application): Application[] {
-  const next = list.filter((a) => a.id !== app.id);
+  const next = list.filter(
+    (a) => a.id !== app.id && !(a.jobId === app.jobId && a.helperId === app.helperId),
+  );
   next.unshift(app);
   return next.sort((a, b) => b.createdAt - a.createdAt);
 }
@@ -769,7 +771,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const sessionUserId = session?.user?.id ?? profile?.id ?? null;
 
     if (useRemote) {
-      await submitHelperApplication({
+      const submitResult = await submitHelperApplication({
         requestId: jobId,
         helperId,
         clientId: job.clientId,
@@ -781,6 +783,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         interestCost:
           sessionUserId && helperId === sessionUserId ? interestCost : 0,
       });
+      // Remote apply used to return without upserting applications local state, so
+      // "Minhas candidaturas" stayed empty until a full bootstrap/realtime race.
+      // Always hydrate the just-created row (and VIP lock on the request) immediately.
+      if (submitResult?.applicationId) {
+        await patchApplicationRow({ id: submitResult.applicationId });
+      }
+      if (options?.isExclusive) {
+        await patchRequestRow({ id: jobId });
+      }
       const helperName = profile?.name?.trim() || 'Helper';
       const title = 'Nova candidatura recebida';
       const proposalText =

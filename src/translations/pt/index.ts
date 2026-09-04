@@ -2363,6 +2363,23 @@ export const pt = {
     settings_email_oauth_hint: 'E-mail vinculado à sua conta Google. Não é possível alterar aqui.',
     settings_address_section: 'Endereço',
   },
+  app_unlock: {
+    pref_label: 'Exigir digital ao abrir o LinkHelp',
+    pref_help:
+      'Ao fechar ou deixar o app, o conteúdo fica bloqueado neste aparelho. A sessão continua conectada. Digital, rosto ou PIN ficam só no dispositivo — o LinkHelp não recebe nem armazena biometria.',
+    pref_enabled: 'Bloqueio ao abrir ativado.',
+    pref_disabled: 'Bloqueio ao abrir desativado.',
+    pref_needs_passkey: 'Cadastre uma passkey antes de exigir digital ao abrir.',
+    title: 'LinkHelp bloqueado',
+    body: 'Confirme sua identidade para continuar. Sua conta permanece conectada.',
+    unlock_cta: 'Desbloquear com digital',
+    other_method: 'Usar outro método',
+    cancelled: 'Confirmação cancelada. Tente novamente quando quiser.',
+    wrong_account: 'A passkey pertence a outra conta. Entre novamente com segurança.',
+    error_expired: 'O desafio da passkey expirou. Tente novamente.',
+    error_credential: 'Passkey não encontrada neste aparelho. Cadastre novamente em Segurança.',
+    error_network: 'Sem conexão. Verifique a internet e tente desbloquear de novo.',
+  },
   profile_page: {
     section_public_title: 'Perfil público',
     section_public_subtitle: 'Visível para clientes ao ver sua candidatura.',

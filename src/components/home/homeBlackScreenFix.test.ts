@@ -118,9 +118,11 @@ describe('home shell black-screen guards', () => {
 });
 
 describe('black-screen source contracts', () => {
-  it('sessionConfirmed libera Outlet; profileKick não depende de sessionConfirmed', async () => {
+  it('sessionConfirmed libera via AppUnlockGate; profileKick não depende de sessionConfirmed', async () => {
     const src = await readFile(resolve('src/components/auth/ProtectedRoute.tsx'), 'utf8');
-    expect(src).toContain('return <Outlet />');
+    expect(src).toContain('return <AppUnlockGate />');
+    const gate = await readFile(resolve('src/components/auth/AppUnlockGate.tsx'), 'utf8');
+    expect(gate).toContain('return <Outlet />');
     expect(src).toMatch(/if \(!authBootstrapped \|\| authLoading \|\| !session\?\.user \|\| profile\) return/);
   });
 

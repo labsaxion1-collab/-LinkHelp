@@ -2351,6 +2351,23 @@ export const en = {
     settings_email_oauth_hint: 'Email linked to your Google account. Cannot be changed here.',
     settings_address_section: 'Address',
   },
+  app_unlock: {
+    pref_label: 'Require biometrics to open LinkHelp',
+    pref_help:
+      'Closing or leaving the app locks content on this device. Your session stays signed in. Fingerprint, face, or PIN stay on the device — LinkHelp never receives or stores biometrics.',
+    pref_enabled: 'Open-app lock enabled.',
+    pref_disabled: 'Open-app lock disabled.',
+    pref_needs_passkey: 'Register a passkey before requiring biometrics on open.',
+    title: 'LinkHelp is locked',
+    body: 'Confirm your identity to continue. Your account stays signed in.',
+    unlock_cta: 'Unlock with biometrics',
+    other_method: 'Use another method',
+    cancelled: 'Confirmation cancelled. Try again whenever you are ready.',
+    wrong_account: 'That passkey belongs to another account. Sign in again safely.',
+    error_expired: 'The passkey challenge expired. Try again.',
+    error_credential: 'Passkey not found on this device. Register again in Security.',
+    error_network: 'No connection. Check the internet and try unlocking again.',
+  },
   profile_page: {
     section_public_title: 'Public profile',
     section_public_subtitle: 'Visible to clients when they view your application.',

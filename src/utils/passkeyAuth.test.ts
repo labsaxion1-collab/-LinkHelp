@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { isWebAuthnSupported, passkeyErrorMessageKey } from '@/utils/passkeyAuth';
+import { isWebAuthnSupported, mapPasskeyError, passkeyErrorMessageKey } from '@/utils/passkeyAuth';
 
 describe('passkeyAuth helpers', () => {
   it('maps error codes to i18n keys without exposing secrets', () => {
@@ -9,6 +9,8 @@ describe('passkeyAuth helpers', () => {
     expect(passkeyErrorMessageKey('cancelled')).toContain('cancelled');
     expect(passkeyErrorMessageKey('disabled')).toContain('disabled_server');
     expect(passkeyErrorMessageKey('error')).toContain('error');
+    expect(passkeyErrorMessageKey('network')).toBe('app_unlock.error_network');
+    expect(mapPasskeyError({ message: 'offline' })).toBe('network');
   });
 
   it('does not claim WebAuthn support in node test env', () => {
@@ -26,6 +28,7 @@ describe('passkeyAuth helpers', () => {
     const src = readFileSync(resolve(process.cwd(), 'src/utils/passkeyAuth.ts'), 'utf8');
     expect(src).toContain('registerPasskey');
     expect(src).toContain('signInWithPasskey');
+    expect(src).toContain('!session || !user?.id');
     expect(src).not.toMatch(/localStorage\.setItem\(['"]passkey/);
     expect(src).not.toMatch(/biometric|fingerprintData|faceId/);
   });

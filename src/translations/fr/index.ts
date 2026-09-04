@@ -2361,6 +2361,23 @@ export const fr = {
     settings_email_oauth_hint: "E-mail lié à votre compte Google. Impossible de le modifier ici.",
     settings_address_section: "Adresse",
   },
+  app_unlock: {
+    pref_label: 'Exiger la biométrie pour ouvrir LinkHelp',
+    pref_help:
+      'Fermer ou quitter l’app verrouille le contenu sur cet appareil. La session reste connectée. Empreinte, visage ou code restent sur l’appareil — LinkHelp ne reçoit ni ne stocke de biométrie.',
+    pref_enabled: 'Verrouillage à l’ouverture activé.',
+    pref_disabled: 'Verrouillage à l’ouverture désactivé.',
+    pref_needs_passkey: 'Enregistrez une passkey avant d’exiger la biométrie à l’ouverture.',
+    title: 'LinkHelp verrouillé',
+    body: 'Confirmez votre identité pour continuer. Votre compte reste connecté.',
+    unlock_cta: 'Déverrouiller avec biométrie',
+    other_method: 'Utiliser une autre méthode',
+    cancelled: 'Confirmation annulée. Réessayez quand vous voulez.',
+    wrong_account: 'Cette passkey appartient à un autre compte. Reconnectez-vous en toute sécurité.',
+    error_expired: 'Le défi passkey a expiré. Réessayez.',
+    error_credential: 'Passkey introuvable sur cet appareil. Réenregistrez-la dans Sécurité.',
+    error_network: 'Pas de connexion. Vérifiez Internet et réessayez de déverrouiller.',
+  },
   profile_page: {
     section_public_title: 'Profil public',
     section_public_subtitle: "Visible par les clients lorsqu'ils consultent votre candidature.",

@@ -2,32 +2,47 @@ import { useCallback, useEffect, useState } from 'react';
 import { Fingerprint, Loader2, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
+import {
+  clearAppUnlockPreference,
+  readAppUnlockPreference,
+  writeAppUnlockPreference,
+} from '@/utils/appUnlockStorage';
 import {
   isWebAuthnSupported,
   listDevicePasskeys,
   passkeyErrorMessageKey,
   registerDevicePasskey,
   revokeDevicePasskey,
+  signInWithDevicePasskey,
   type PasskeyListItem,
 } from '@/utils/passkeyAuth';
 
 export function PasskeySecurityPanel() {
   const { t } = useLanguage();
   const { showToast } = useToast();
+  const { session } = useAuth();
+  const userId = session?.user?.id ?? null;
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [passkeys, setPasskeys] = useState<PasskeyListItem[]>([]);
+  const [requireUnlock, setRequireUnlock] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     const result = await listDevicePasskeys();
     if (result.ok) {
       setPasskeys(result.data);
+      if (result.data.length === 0 && userId) {
+        clearAppUnlockPreference(userId);
+        setRequireUnlock(false);
+      }
     } else {
       setPasskeys([]);
     }
+    if (userId) setRequireUnlock(readAppUnlockPreference(userId));
     setLoading(false);
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     void refresh();
@@ -59,6 +74,38 @@ export function PasskeySecurityPanel() {
     }
     showToast(t('app_pages.settings_passkey_revoked'), 'success');
     await refresh();
+  };
+
+  const onToggleRequireUnlock = async (next: boolean) => {
+    if (!userId) return;
+    if (!next) {
+      writeAppUnlockPreference(userId, false);
+      setRequireUnlock(false);
+      showToast(t('app_unlock.pref_disabled'), 'success');
+      return;
+    }
+    if (passkeys.length === 0) {
+      showToast(t('app_unlock.pref_needs_passkey'), 'error');
+      return;
+    }
+    if (!isWebAuthnSupported()) {
+      showToast(t('app_pages.settings_passkey_unsupported'), 'error');
+      return;
+    }
+    setBusy(true);
+    const confirm = await signInWithDevicePasskey();
+    setBusy(false);
+    if (confirm.ok === false) {
+      showToast(t(passkeyErrorMessageKey(confirm.code)), 'error');
+      return;
+    }
+    if (confirm.data.userId && confirm.data.userId !== userId) {
+      showToast(t('app_unlock.wrong_account'), 'error');
+      return;
+    }
+    writeAppUnlockPreference(userId, true);
+    setRequireUnlock(true);
+    showToast(t('app_unlock.pref_enabled'), 'success');
   };
 
   return (
@@ -122,6 +169,23 @@ export function PasskeySecurityPanel() {
           </ul>
         )}
       </div>
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
+        <input
+          type="checkbox"
+          className="mt-1 h-4 w-4 rounded border-slate-300"
+          checked={requireUnlock}
+          disabled={busy || loading || passkeys.length === 0}
+          onChange={(e) => void onToggleRequireUnlock(e.target.checked)}
+          data-testid="app-unlock-pref-toggle"
+        />
+        <span className="min-w-0">
+          <span className="block text-sm font-bold text-slate-900">{t('app_unlock.pref_label')}</span>
+          <span className="mt-1 block text-xs font-medium leading-relaxed text-slate-600">
+            {t('app_unlock.pref_help')}
+          </span>
+        </span>
+      </label>
     </div>
   );
 }

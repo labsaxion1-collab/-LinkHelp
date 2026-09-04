@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { AuthSessionBootstrapFallback } from '@/components/home/AuthSessionBootstrapFallback';
 import {
   HomeDashboardRoutePlaceholder,
@@ -14,6 +14,8 @@ import { isAuthCallbackPath } from '@/utils/authStorage';
 import { isAppShellPath } from '@/utils/navigation';
 import { isAuthenticatedHomeDashboardPath } from '@/utils/homeDashboardPaths';
 import { getAuthLoginPathForRoute, sanitizeReturnTo } from '@/utils/fluxRedirect';
+import { readAppUnlockPreference } from '@/utils/appUnlockStorage';
+import { AppUnlockGate } from '@/components/auth/AppUnlockGate';
 import type { ReactNode } from 'react';
 
 function protectedRoutePlaceholder(pathname: string, hasSession: boolean): ReactNode {
@@ -139,6 +141,11 @@ export function ProtectedRoute() {
   const onHomeDashboard = isAuthenticatedHomeDashboardPath(location.pathname);
 
   if (snapshotVisible && !sessionConfirmed && onHomeDashboard) {
+    const hintUserId = session?.user?.id;
+    if (hintUserId && readAppUnlockPreference(hintUserId)) {
+      // Avoid flashing private home snapshot before the unlock gate mounts.
+      return protectedRoutePlaceholder(location.pathname, true);
+    }
     return <SnapshotHomeRoutePaint />;
   }
 
@@ -228,5 +235,5 @@ export function ProtectedRoute() {
     );
   }
 
-  return <Outlet />;
+  return <AppUnlockGate />;
 }

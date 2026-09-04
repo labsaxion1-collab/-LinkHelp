@@ -14,6 +14,8 @@ export type PasskeyErrorCode =
   | 'cancelled'
   | 'duplicate'
   | 'expired'
+  | 'credential_not_found'
+  | 'network'
   | 'auth_required'
   | 'error';
 
@@ -25,12 +27,28 @@ export type PasskeyResult<T> =
       message: string;
     };
 
-function mapPasskeyError(error: { message?: string; code?: string } | null | undefined): PasskeyErrorCode {
+/** Exported for unit tests — maps WebAuthn/Supabase errors to stable codes. */
+export function mapPasskeyError(error: { message?: string; code?: string } | null | undefined): PasskeyErrorCode {
   const code = (error?.code ?? '').toLowerCase();
   const message = (error?.message ?? '').toLowerCase();
   if (code.includes('passkey_disabled') || message.includes('passkey_disabled')) return 'disabled';
   if (code.includes('webauthn_credential_exists') || message.includes('already')) return 'duplicate';
   if (code.includes('webauthn_challenge_expired') || message.includes('expired')) return 'expired';
+  if (
+    code.includes('webauthn_credential_not_found') ||
+    message.includes('credential_not_found') ||
+    message.includes('not_found')
+  ) {
+    return 'credential_not_found';
+  }
+  if (
+    message.includes('failed to fetch') ||
+    message.includes('network') ||
+    message.includes('offline') ||
+    code.includes('network')
+  ) {
+    return 'network';
+  }
   if (
     code.includes('cancel') ||
     message.includes('cancel') ||
@@ -94,8 +112,17 @@ export async function signInWithDevicePasskey(): Promise<PasskeyResult<{ userId?
   if (error) {
     return { ok: false, code: mapPasskeyError(error), message: error.message ?? 'sign-in failed' };
   }
+  const session = data?.session;
   const user = data?.user as { id?: string } | undefined;
-  return { ok: true, data: { userId: user?.id } };
+  // Real unlock requires a verified Supabase session + user (never local UI alone).
+  if (!session || !user?.id) {
+    return {
+      ok: false,
+      code: 'error',
+      message: 'Passkey verification did not return session and user',
+    };
+  }
+  return { ok: true, data: { userId: user.id } };
 }
 
 export async function listDevicePasskeys(): Promise<PasskeyResult<PasskeyListItem[]>> {
@@ -131,6 +158,12 @@ export function passkeyErrorMessageKey(code: PasskeyErrorCode): string {
     case 'disabled':
     case 'not_configured':
       return 'app_pages.settings_passkey_disabled_server';
+    case 'expired':
+      return 'app_unlock.error_expired';
+    case 'credential_not_found':
+      return 'app_unlock.error_credential';
+    case 'network':
+      return 'app_unlock.error_network';
     default:
       return 'app_pages.settings_passkey_error';
   }

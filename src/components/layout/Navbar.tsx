@@ -11,6 +11,7 @@ import { ROUTES } from '@/utils/constants';
 import { useToast } from '@/context/ToastContext';
 import { isAppShellPath } from '@/utils/navigation';
 import { NotificationsDropdown } from './NotificationsDropdown';
+import { HelperNavbarLinkCreditsChip } from '@/components/layout/HelperNavbarLinkCreditsChip';
 import { useMobileProfileMenu } from '@/context/MobileProfileMenuContext';
 import { useTutorial } from '@/context/TutorialContext';
 import { clsx } from 'clsx';
@@ -270,7 +271,8 @@ export default function Navbar() {
                   </button>
                 </div>
 
-                <div className={clsx('flex items-center space-x-4 pl-4', usePremiumNav ? 'border-l border-white/15' : 'border-l border-gray-200')}>
+                <div className={clsx('flex items-center pl-4', usePremiumNav ? 'border-l border-white/15' : 'border-l border-gray-200', isHelperNav ? 'gap-2' : 'space-x-4')}>
+                  {isHelperNav ? <HelperNavbarLinkCreditsChip /> : null}
                   <NotificationsDropdown userId={userId} />
                   {isConfigured && session ? (
                     <div className="relative">
@@ -357,6 +359,7 @@ export default function Navbar() {
                 <GraduationCap className="h-4 w-4" />
               </button>
             ) : null}
+            {isConnected && isHelperNav ? <HelperNavbarLinkCreditsChip compact /> : null}
             {isConnected ? <NotificationsDropdown userId={userId} compact /> : null}
             <button
               type="button"

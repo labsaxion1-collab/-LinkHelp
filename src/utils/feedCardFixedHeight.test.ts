@@ -42,7 +42,7 @@ describe('P3.4 / shared opportunity card shell height', () => {
       'utf8',
     );
     expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
-    expect(src).toContain('feedCardLockedContentStyle');
+    expect(src).toContain('feedCardMinContentStyle');
     expect(src).toContain('FEED_CARD_SHELL_CLASS');
     expect(src).toContain('FEED_CARD_CONTENT_CLASS');
     expect(src).toContain('data-feed-card-height-locked');
@@ -52,15 +52,17 @@ describe('P3.4 / shared opportunity card shell height', () => {
     expect(src).not.toContain('setLockedHeight');
   });
 
-  it('wires the same shell tokens into ClientActivityOpenRequestCard', async () => {
+  it('wires growable shell tokens into ClientActivityOpenRequestCard (no locked clip)', async () => {
     const src = await readFile(
       resolve('src/components/client/ClientActivityOpenRequestCard.tsx'),
       'utf8',
     );
     expect(src).toContain('FEED_CARD_SHELL_CLASS');
     expect(src).toContain('FEED_CARD_CONTENT_CLASS');
-    expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
-    expect(src).toContain('feedCardLockedContentStyle');
+    expect(src).toContain('activityApplicationCardMinContentStyle');
+    expect(src).toContain('ACTIVITY_APPLICATION_CARD_MIN_CONTENT_HEIGHT_PX');
+    expect(src).toContain('data-feed-card-height-locked="false"');
+    expect(src).not.toContain('feedCardLockedContentStyle');
     expect(src).toContain('FEED_CARD_TOP_ACCENT_CLASS');
     expect(src).toContain('LhCardOverlay');
     expect(src).not.toContain('rounded-[1.35rem]');

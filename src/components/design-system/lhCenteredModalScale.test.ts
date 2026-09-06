@@ -4,6 +4,7 @@ import {
   COMPACT_RANK_FULL_BLEED_CLASS,
   compactRankBleedMetrics,
   LH_CENTERED_MODAL_APPLY_PANEL_CLASS,
+  LH_CENTERED_MODAL_FIT_PANEL_CLASS,
   LH_CENTERED_MODAL_MAX_HEIGHT_CLASS,
   LH_CENTERED_MODAL_MIN_HEIGHT_CLASS,
   LH_CENTERED_MODAL_STANDARD_PANEL_CLASS,
@@ -39,6 +40,16 @@ describe('shared centered modal scale', () => {
     expect(apply).toContain('apply_confirm_yes_vip');
     expect(apply).toContain('LhPremiumCloseButton');
     expect(apply).toContain('helper-apply-confirm-close');
+  });
+
+  it('VIP fit panel shares width/max-height without forced min-height', () => {
+    expect(LH_CENTERED_MODAL_FIT_PANEL_CLASS).toContain(LH_CENTERED_MODAL_WIDTH_CLASS);
+    expect(LH_CENTERED_MODAL_FIT_PANEL_CLASS).toContain(LH_CENTERED_MODAL_MAX_HEIGHT_CLASS);
+    expect(LH_CENTERED_MODAL_FIT_PANEL_CLASS).not.toContain(LH_CENTERED_MODAL_MIN_HEIGHT_CLASS);
+    const overlay = read('src/components/design-system/LhCardOverlay.tsx');
+    expect(overlay).toContain('LH_CENTERED_MODAL_FIT_PANEL_CLASS');
+    expect(overlay).toContain("size = 'standard'");
+    expect(overlay).toContain("size === 'fit'");
   });
 
   it('feed description and profile overlays share the standard panel', () => {

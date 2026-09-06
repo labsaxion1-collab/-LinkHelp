@@ -29,7 +29,7 @@ export function ProfileLinkCreditsCard({
   const lcUnit = t('credits.lc_unit');
 
   return (
-    <section>
+    <section id="profile-linkcredits" data-testid="profile-linkcredits-section">
       <ProfileSectionHeader title={t('profile_page.section_credits')} />
       <div className="rounded-[1.5rem] border border-slate-200/90 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.055)]">
         <div className="flex items-start gap-3">

@@ -26,6 +26,7 @@ import { cropSquareAvatarFromFile } from '@/utils/avatarMediaProcessing';
 import { CityRegionAutocomplete } from '@/components/common/CityRegionAutocomplete';
 import { ProfilePhoneField } from '@/components/profile/ProfilePhoneField';
 import { SettingsSection } from '@/components/profile/SettingsSection';
+import { PasskeySecurityPanel } from '@/components/auth/PasskeySecurityPanel';
 import { profileInitials } from '@/components/profile/profileDisplay';
 import type { QuebecPlace } from '@/data/quebecRegions';
 import { parseStoredPhone, validatePhoneNumber } from '@/utils/phoneFormat';
@@ -41,12 +42,19 @@ import {
 import {
   getHelperBaseChangeStatus,
   helperBaseFieldsChanged,
-  helperBaseIsConfigured,
+  helperBaseHasConfirmedCoordinates,
+  helperBaseCooldownDaysRemaining,
+  shouldBlockHelperBaseSaveDueToCooldown,
+  shouldShowHelperBaseCooldownMessage,
+  shouldShowHelperBaseTextNeedsGpsMessage,
 } from '@/utils/helperBaseAddressLock';
 import {
   HelperBaseAddressLockedError,
   syncHelperBaseAddress,
 } from '@/services/supabase/helperBaseAddressRemote';
+import { peekHelperApplyReturnContext, consumeHelperApplyReturnContext } from '@/utils/helperApplyReturnContext';
+import { profileHasPersistedHomeCoordinates } from '@/utils/helperBaseAddressVerification';
+import { helperBaseHasGpsConfirmation } from '@/components/helper/HelperBaseAddressInput';
 import { PUSH_SUBSCRIPTIONS_TABLE } from '@/config/pushNotifications';
 import { clearStoredAppMode } from '@/utils/appModeStorage';
 import { extractErrorMessage, formatAuthFlowErrorMessage } from '@/utils/errorMessage';
@@ -172,9 +180,22 @@ export default function SettingsPage() {
   const addressLocked = addressLockDaysRemaining > 0;
 
   const baseChangeStatus = useMemo(() => getHelperBaseChangeStatus(profile), [profile]);
-  const baseConfigured = useMemo(() => helperBaseIsConfigured(profile), [profile]);
-  const baseFieldsLocked =
-    !baseChangeStatus.allowed && baseChangeStatus.reason === 'locked' && baseConfigured;
+  const baseNeedsGpsConfirmation = useMemo(
+    () => shouldShowHelperBaseTextNeedsGpsMessage(profile),
+    [profile],
+  );
+  const baseShowCooldownMessage = useMemo(
+    () => shouldShowHelperBaseCooldownMessage(profile, baseChangeStatus),
+    [profile, baseChangeStatus],
+  );
+  const baseFieldsLocked = baseShowCooldownMessage;
+  const pendingApplyContext = isHelper ? peekHelperApplyReturnContext() : null;
+  const emphasizeGpsForPendingApply = Boolean(
+    pendingApplyContext &&
+      (!helperBaseHasGpsConfirmation(helperBaseValue) ||
+        baseNeedsGpsConfirmation ||
+        !helperBaseHasConfirmedCoordinates(profile)),
+  );
   const baseHasPendingChanges = useMemo(
     () =>
       helperBaseFieldsChanged(profile, {
@@ -255,7 +276,7 @@ export default function SettingsPage() {
       return;
     }
 
-    if (isHelper && !baseChangeStatus.allowed && baseChangeStatus.reason === 'locked' && baseHasPendingChanges) {
+    if (shouldBlockHelperBaseSaveDueToCooldown(profile, baseChangeStatus, baseHasPendingChanges)) {
       showToast(t('app_pages.settings_helper_base_lock_message'), 'error');
       return;
     }
@@ -280,16 +301,13 @@ export default function SettingsPage() {
         setAvatarSelectedFile(null);
       }
 
+      let syncedBaseProfile: Awaited<ReturnType<typeof syncHelperBaseAddress>> | null = null;
       if (isHelper && baseHasPendingChanges) {
         if (!helperBaseValue.address.trim() && !helperBaseValue.city.trim()) {
           showToast(t('app_pages.settings_helper_base_required'), 'error');
           return;
         }
-        if (helperBaseValue.latitude == null || helperBaseValue.longitude == null) {
-          showToast(t('app_pages.settings_helper_base_coords_required'), 'error');
-          return;
-        }
-        await syncHelperBaseAddress({
+        syncedBaseProfile = await syncHelperBaseAddress({
           address: helperBaseValue.address.trim() || null,
           city: helperBaseValue.city.trim() || null,
           province: helperBaseValue.province.trim() || null,
@@ -319,8 +337,33 @@ export default function SettingsPage() {
       }
 
       const refreshed = await refreshProfile();
-      if (refreshed && isHelper) setHelperBaseValue(helperBaseAddressFromProfile(refreshed));
+      const effectiveProfile = refreshed ?? syncedBaseProfile ?? profile;
+      if (effectiveProfile && isHelper) {
+        setHelperBaseValue(helperBaseAddressFromProfile(effectiveProfile));
+      }
       setInitialLanguage(language);
+
+      const pendingApply = peekHelperApplyReturnContext();
+      const hasPersistedCoords =
+        isHelper && profileHasPersistedHomeCoordinates(effectiveProfile);
+
+      if (isHelper && pendingApply) {
+        if (hasPersistedCoords) {
+          consumeHelperApplyReturnContext();
+          showToast(t('app_pages.settings_helper_base_saved_returning'), 'success');
+          navigate(pendingApply.returnPath || ROUTES.helperDashboard, {
+            state: {
+              openJobId: pendingApply.jobId,
+              resumeApply: true,
+              resumeApplicationType: pendingApply.applicationType,
+            },
+          });
+          return;
+        }
+        showToast(t('app_pages.settings_helper_base_saved_need_gps'), 'info');
+        return;
+      }
+
       showToast(t('app_pages.settings_saved'), 'success');
     } catch (e) {
       if (e instanceof HelperBaseAddressLockedError) {
@@ -499,7 +542,15 @@ export default function SettingsPage() {
               <p className="mb-3 text-[11px] text-slate-400">{t('app_pages.settings_helper_base_hint')}</p>
               {helperBaseValue.latitude == null || helperBaseValue.longitude == null ? (
                 <p className="mb-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
-                  {t('app_pages.settings_helper_base_coords_required')}
+                  {t('helper_dashboard.apply_in_person_coords_required')}
+                </p>
+              ) : null}
+              {baseNeedsGpsConfirmation ? (
+                <p
+                  data-testid="helper-base-text-needs-gps"
+                  className="mb-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-900"
+                >
+                  {t('app_pages.settings_helper_base_text_needs_gps')}
                 </p>
               ) : null}
               {profile?.helper_base_change_unlocked_by_admin ? (
@@ -507,14 +558,14 @@ export default function SettingsPage() {
                   {t('app_pages.settings_helper_base_admin_unlock')}
                 </p>
               ) : null}
-              {baseConfigured && baseChangeStatus.reason === 'locked' ? (
+              {baseShowCooldownMessage ? (
                 <p className="mb-3 flex gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
                   <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
                   <span>
                     {t('app_pages.settings_helper_base_lock_message')}
                     <span className="mt-1 block font-bold">
                       {t('app_pages.settings_helper_base_lock_days', {
-                        count: baseChangeStatus.daysUntilUnlock,
+                        count: helperBaseCooldownDaysRemaining(baseChangeStatus),
                       })}
                     </span>
                   </span>
@@ -531,8 +582,20 @@ export default function SettingsPage() {
                 cityLabel={t('app_pages.settings_helper_base_city')}
                 provinceLabel={t('app_pages.settings_helper_base_province')}
                 postalCodeLabel={t('app_pages.settings_helper_base_postal_code')}
-                onLocationError={() => showToast(t('app_pages.settings_location_denied'), 'error')}
-                onLocationPartial={() => showToast(t('app_pages.settings_location_geocode_partial'), 'info')}
+                mapsUnavailableMessage={t('app_pages.settings_google_maps_unavailable')}
+                gpsHomeWarning={t('app_pages.settings_helper_base_gps_home_warning')}
+                gpsStatusPendingLabel={t('app_pages.settings_helper_base_gps_status_pending')}
+                gpsStatusConfirmedLabel={t('app_pages.settings_helper_base_gps_status_confirmed')}
+                emphasizeGpsButton={emphasizeGpsForPendingApply || baseNeedsGpsConfirmation}
+                onLocationError={(reason) =>
+                  showToast(
+                    reason === 'denied'
+                      ? t('app_pages.settings_location_denied')
+                      : t('app_pages.settings_location_unavailable'),
+                    'error',
+                  )
+                }
+                onLocationSuccess={() => showToast(t('app_pages.settings_helper_base_gps_success'), 'success')}
               />
             </div>
           ) : (
@@ -607,12 +670,15 @@ export default function SettingsPage() {
           title={t('app_pages.settings_security')}
           description={t('profile_form.phone_privacy_hint')}
         >
-          <Link
-            to={ROUTES.profilePublicEdit}
-            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 transition hover:bg-white"
-          >
-            {t('profile_page.edit_public')}
-          </Link>
+          <div className="space-y-3">
+            <PasskeySecurityPanel />
+            <Link
+              to={ROUTES.profilePublicEdit}
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 transition hover:bg-white"
+            >
+              {t('profile_page.edit_public')}
+            </Link>
+          </div>
         </SettingsSection>
 
         {isHelper && UI_VISIBILITY.training ? (

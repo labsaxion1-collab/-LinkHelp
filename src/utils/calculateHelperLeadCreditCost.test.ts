@@ -48,6 +48,14 @@ describe('calculateHelperLeadCreditCost', () => {
     expect(cleaning.estimatedTotal).toBeGreaterThan(translation.estimatedTotal);
   });
 
+  it('keeps remote distance cost at zero regardless of a numeric km hint', () => {
+    const remote = calculateHelperLeadCreditCost(
+      baseJob({ serviceMode: 'remote', location: 'Remote' }),
+      { distanceKm: 40 },
+    );
+    expect(remote.distanceCost).toBe(0);
+  });
+
   it('adds distance surcharge beyond 5km', () => {
     const near = calculateHelperLeadCreditCost(baseJob({ budgetMin: 200, budgetMax: 250, budgetType: 'fixed' }), {
       distanceKm: 4,

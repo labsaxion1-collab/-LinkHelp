@@ -78,15 +78,20 @@ export function ClientCandidateCard({
         <p className="truncate text-sm font-black text-slate-950">{app.helperName}</p>
 
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] font-bold text-slate-600">
-          <span className="inline-flex items-center gap-1">
-            <Icons.Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden />
-            <span>{Number(app.helperRating ?? 0).toFixed(1)}</span>
-          </span>
-          {trustScore > 0 ? (
-            <span className="tabular-nums text-slate-700">
-              {t('candidate_profile.score_of_max', { score: trustScore })}
+          {reviewCount > 0 ? (
+            <span className="inline-flex items-center gap-1">
+              <Icons.Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden />
+              <span>{Number(app.helperRating ?? 0).toFixed(1)}</span>
+              <span className="font-semibold text-slate-400">({reviewCount})</span>
             </span>
-          ) : null}
+          ) : (
+            <span className="font-semibold text-slate-500" data-testid="candidate-card-no-reviews">
+              {t('candidate_profile.no_reviews_yet')}
+            </span>
+          )}
+          <span className="tabular-nums text-slate-700">
+            {t('candidate_profile.score_of_max', { score: trustScore })}
+          </span>
         </div>
         <div className="mt-1">
           <LinkHelpRankBadgeFromStats
@@ -188,8 +193,14 @@ export function ClientCandidateCard({
             {profileExpanded ? (
               <CandidateHelperProfileExpand
                 helperId={app.helperId}
+                helperName={app.helperName}
+                helperAvatar={app.helperAvatar}
                 helperRating={app.helperRating}
                 helperJobs={app.helperJobs}
+                isExclusive={Boolean(app.isExclusive)}
+                proposedAmount={app.proposedAmount}
+                currency={job.currency || 'CAD'}
+                formatMoneyAmount={formatMoneyAmount}
               />
             ) : null}
           </div>

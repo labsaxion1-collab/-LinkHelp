@@ -581,10 +581,12 @@ export default function ClientDashboard() {
     };
     const onScrollClose = () => setActivityMenuJobId(null);
     document.addEventListener('mousedown', onPointerDown);
-    window.addEventListener('scroll', onScrollClose, true);
+    const scrollRoot =
+      document.querySelector('[data-testid="app-main-scroll"]') ?? window;
+    scrollRoot.addEventListener('scroll', onScrollClose, { passive: true });
     return () => {
       document.removeEventListener('mousedown', onPointerDown);
-      window.removeEventListener('scroll', onScrollClose, true);
+      scrollRoot.removeEventListener('scroll', onScrollClose);
     };
   }, [activityMenuJobId]);
 
@@ -1018,8 +1020,14 @@ export default function ClientDashboard() {
                   >
                     <CandidateHelperProfileExpand
                       helperId={profileApp.helperId}
+                      helperName={profileApp.helperName}
+                      helperAvatar={profileApp.helperAvatar}
                       helperRating={profileApp.helperRating}
                       helperJobs={profileApp.helperJobs}
+                      isExclusive={Boolean(profileApp.isExclusive)}
+                      proposedAmount={profileApp.proposedAmount}
+                      currency={detailJob.currency || 'CAD'}
+                      formatMoneyAmount={formatMoneyAmount}
                     />
                   </LhCardOverlay>
                 );
@@ -1582,7 +1590,7 @@ export default function ClientDashboard() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+              <div className="mx-auto grid w-full max-w-lg grid-cols-1 gap-5 xl:mx-0 xl:max-w-none xl:grid-cols-2">
                 {activityTabJobs.length > 0 ? (
                   progressiveActivityJobs.map((job) => {
                     const isHiredActivity = isHiredActivityJob(job.status);
@@ -1926,8 +1934,14 @@ export default function ClientDashboard() {
                                       >
                                         <CandidateHelperProfileExpand
                                           helperId={profileApp.helperId}
+                                          helperName={profileApp.helperName}
+                                          helperAvatar={profileApp.helperAvatar}
                                           helperRating={profileApp.helperRating}
                                           helperJobs={profileApp.helperJobs}
+                                          isExclusive={Boolean(profileApp.isExclusive)}
+                                          proposedAmount={profileApp.proposedAmount}
+                                          currency={job.currency || 'CAD'}
+                                          formatMoneyAmount={formatMoneyAmount}
                                         />
                                       </LhCardOverlay>
                                     );

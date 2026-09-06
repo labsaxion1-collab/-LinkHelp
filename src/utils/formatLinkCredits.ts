@@ -53,6 +53,33 @@ export function formatLinkCredits(amount: number, language: AppLanguage = 'pt'):
   return `${coerceLegacyLinkCreditsDisplay(amount)} LC`;
 }
 
+/**
+ * Compact navbar label. Abbreviates only when the full integer would crowd the header (≥1000).
+ * Full amount always available via aria/tooltip callers.
+ */
+export function formatCompactNavbarLinkCredits(
+  amount: number,
+  language: AppLanguage = 'pt',
+): { shortLabel: string; fullAmount: number } {
+  const fullAmount = coerceLegacyLinkCreditsDisplay(amount);
+  if (fullAmount < 1000) {
+    return { shortLabel: `${fullAmount} LC`, fullAmount };
+  }
+  const thousands = fullAmount / 1000;
+  const rounded = Math.round(thousands * 10) / 10;
+  const num =
+    language === 'en'
+      ? String(rounded).replace('.', '.')
+      : String(rounded).replace('.', ',');
+  if (language === 'en') {
+    return { shortLabel: `${num}k LC`, fullAmount };
+  }
+  if (language === 'fr') {
+    return { shortLabel: `${num} k LC`, fullAmount };
+  }
+  return { shortLabel: `${num} mil LC`, fullAmount };
+}
+
 export function formatLinkCreditsLabel(language: AppLanguage = 'pt'): string {
   if (language === 'fr') return 'LinkCrédits';
   return 'LinkCredits';

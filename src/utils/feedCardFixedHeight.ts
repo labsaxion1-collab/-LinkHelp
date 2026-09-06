@@ -93,3 +93,14 @@ export function feedCardLockedContentStyle(): {
 export function feedCardMinContentStyle(): { minHeight: number } {
   return { minHeight: FEED_CARD_STANDARD_CONTENT_HEIGHT_PX };
 }
+
+/**
+ * Helper “Minhas candidaturas” cards no longer reserve the interessados ring.
+ * Slightly tighter min-height keeps touch targets while reducing empty vertical space.
+ */
+export const ACTIVITY_APPLICATION_CARD_MIN_CONTENT_HEIGHT_PX =
+  FEED_CARD_STANDARD_CONTENT_HEIGHT_PX - FEED_CARD_RING_SIZE_PX + 36;
+
+export function activityApplicationCardMinContentStyle(): { minHeight: number } {
+  return { minHeight: ACTIVITY_APPLICATION_CARD_MIN_CONTENT_HEIGHT_PX };
+}

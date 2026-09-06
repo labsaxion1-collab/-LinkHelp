@@ -95,10 +95,12 @@ describe('helper history page and shortcut', () => {
 });
 
 describe('pending application card refinement', () => {
-  it('shows full status, full budget, wait strip and anchored footer', () => {
+  it('shows full budget, wait strip and anchored footer without duplicate wait badge', () => {
     const src = read('src/components/helpers/HelperApplicationCard.tsx');
+    expect(src).toContain('helper-application-title');
+    expect(src).toContain('line-clamp-2');
+    expect(src).toContain('!showWaitStrip');
     expect(src).toContain('helper-application-status');
-    expect(src).toContain('whitespace-nowrap');
     expect(src).not.toContain("max-w-[4.75rem] truncate");
     expect(src).toContain('helper-application-budget');
     expect(src).toContain('formatJobBudgetAmount');
@@ -114,6 +116,7 @@ describe('pending application card refinement', () => {
     expect(src).toContain('helper-application-cancel-menu-item');
     expect(src).not.toContain('helper_tasks.cancel_short');
     expect(src).toContain('flex min-w-0 flex-1');
+    expect(src).not.toContain('InterestedRing');
   });
 
   it('uses specific banners for rejected, cancelled and expired history cards', () => {
@@ -185,7 +188,7 @@ describe('helper history i18n pt/en/fr-CA', () => {
       'Você cancelou esta candidatura.',
     );
     expect(resolveMessage({ en, pt, fr }, 'pt', 'helper_tasks.waiting_client_title')).toBe(
-      'Aguardando resposta do cliente',
+      'Aguardando decisão do cliente',
     );
     expect(resolveMessage({ en, pt, fr }, 'pt', 'helper_tasks.rejected_banner_no_extra_charge')).toBe(
       'Nenhum crédito adicional será cobrado.',

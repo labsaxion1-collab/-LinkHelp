@@ -27,9 +27,10 @@ describe('helper activity cards align with feed geometry', () => {
     expect(src).toContain('FEED_CARD_SHELL_CLASS');
     expect(src).toContain('FEED_CARD_CONTENT_CLASS');
     expect(src).toContain('FEED_CARD_TOP_ACCENT_CLASS');
-    expect(src).toContain('feedCardMinContentStyle');
-    expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
-    expect(src).toContain(`size={FEED_CARD_RING_SIZE_PX}`);
+    expect(src).toContain('activityApplicationCardMinContentStyle');
+    expect(src).toContain('ACTIVITY_APPLICATION_CARD_MIN_CONTENT_HEIGHT_PX');
+    expect(src).not.toContain(`size={FEED_CARD_RING_SIZE_PX}`);
+    expect(src).not.toContain('InterestedRing');
     expect(src).toContain('helper-application-open-profile');
     expect(src).toContain('helper-application-open-description');
     expect(src).toContain('LhCardOverlay');

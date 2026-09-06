@@ -11,6 +11,7 @@ import { ROUTES } from '@/utils/constants';
 import { useToast } from '@/context/ToastContext';
 import { isAppShellPath } from '@/utils/navigation';
 import { NotificationsDropdown } from './NotificationsDropdown';
+import { NavbarLinkCreditsChip } from '@/components/layout/NavbarLinkCreditsChip';
 import { useMobileProfileMenu } from '@/context/MobileProfileMenuContext';
 import { useTutorial } from '@/context/TutorialContext';
 import { clsx } from 'clsx';
@@ -100,22 +101,28 @@ export default function Navbar() {
   useEffect(() => {
     if (!isLangMenuOpen) return;
     updateLangPanelPosition();
+    const mainScroll = document.querySelector('[data-testid="app-main-scroll"]');
     window.addEventListener('resize', updateLangPanelPosition);
     window.addEventListener('scroll', updateLangPanelPosition, true);
+    mainScroll?.addEventListener('scroll', updateLangPanelPosition, { passive: true });
     return () => {
       window.removeEventListener('resize', updateLangPanelPosition);
       window.removeEventListener('scroll', updateLangPanelPosition, true);
+      mainScroll?.removeEventListener('scroll', updateLangPanelPosition);
     };
   }, [isLangMenuOpen, updateLangPanelPosition]);
 
   useEffect(() => {
     if (!profileOpen) return;
     updateProfilePanelPosition();
+    const mainScroll = document.querySelector('[data-testid="app-main-scroll"]');
     window.addEventListener('resize', updateProfilePanelPosition);
     window.addEventListener('scroll', updateProfilePanelPosition, true);
+    mainScroll?.addEventListener('scroll', updateProfilePanelPosition, { passive: true });
     return () => {
       window.removeEventListener('resize', updateProfilePanelPosition);
       window.removeEventListener('scroll', updateProfilePanelPosition, true);
+      mainScroll?.removeEventListener('scroll', updateProfilePanelPosition);
     };
   }, [profileOpen, updateProfilePanelPosition]);
 
@@ -160,7 +167,13 @@ export default function Navbar() {
 
   return (
     <>
-    <nav className={`sticky top-0 z-50 ${usePremiumNav ? 'lh-nav-premium' : 'border-b bg-white border-gray-100 backdrop-blur-xl'}`}>
+    <nav
+      className={clsx(
+        'relative z-50 w-full',
+        usePremiumNav ? 'lh-nav-premium' : 'border-b border-gray-100 bg-white backdrop-blur-xl',
+      )}
+      data-testid="app-navbar"
+    >
       {usePremiumNav ? (
         <>
           <div
@@ -270,7 +283,8 @@ export default function Navbar() {
                   </button>
                 </div>
 
-                <div className={clsx('flex items-center space-x-4 pl-4', usePremiumNav ? 'border-l border-white/15' : 'border-l border-gray-200')}>
+                <div className={clsx('flex items-center pl-4', usePremiumNav ? 'border-l border-white/15' : 'border-l border-gray-200', 'gap-2')}>
+                  <NavbarLinkCreditsChip />
                   <NotificationsDropdown userId={userId} />
                   {isConfigured && session ? (
                     <div className="relative">
@@ -357,6 +371,7 @@ export default function Navbar() {
                 <GraduationCap className="h-4 w-4" />
               </button>
             ) : null}
+            {isConnected ? <NavbarLinkCreditsChip compact /> : null}
             {isConnected ? <NotificationsDropdown userId={userId} compact /> : null}
             <button
               type="button"

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
-import { Mail, Lock, ArrowLeft, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, ArrowLeft, ArrowRight, Eye, EyeOff, ShieldCheck, Fingerprint } from 'lucide-react';
 
 import { ByFluxBadge } from '@/components/brand/ByFluxBadge';
 import { BRAND } from '@/utils/brandAssets';
@@ -18,6 +18,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+
+import {
+  isWebAuthnSupported,
+  passkeyErrorMessageKey,
+  signInWithDevicePasskey,
+} from '@/utils/passkeyAuth';
+import { markPasskeyInviteEligibleAfterLogin } from '@/utils/passkeyInviteStorage';
 
 import { oauthErrorMessageKey, type OAuthCallbackErrorCode } from '@/utils/parseOAuthCallbackError';
 
@@ -94,6 +101,8 @@ export default function LoginPage() {
   const [resetSubmitting, setResetSubmitting] = useState(false);
 
 
+
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
 
   const from = (location.state as { from?: string } | null)?.from;
 
@@ -242,11 +251,38 @@ export default function LoginPage() {
       window.scrollTo(0, 0);
     }
 
+    markPasskeyInviteEligibleAfterLogin();
     goAfterLogin(recovered?.id ?? user?.id, recovered);
 
   };
 
-
+  const handlePasskey = async () => {
+    setError(null);
+    if (!isConfigured) {
+      showToast(t('auth.errors.env_not_ready'), 'info');
+      return;
+    }
+    if (!isWebAuthnSupported()) {
+      showToast(t('app_pages.settings_passkey_unsupported'), 'error');
+      return;
+    }
+    writeKeepSignedIn(true);
+    setPasskeyLoading(true);
+    const result = await signInWithDevicePasskey();
+    setPasskeyLoading(false);
+    if (result.ok === false) {
+      setError(t(passkeyErrorMessageKey(result.code)));
+      showToast(t('login_page.passkey_error'), 'error');
+      return;
+    }
+    const sb = getSupabase();
+    const { data } = sb ? await sb.auth.getSession() : { data: { session: null } };
+    const user = data.session?.user ?? null;
+    const recovered = user ? await refreshProfile(user) : null;
+    if (typeof window !== 'undefined') window.scrollTo(0, 0);
+    markPasskeyInviteEligibleAfterLogin();
+    goAfterLogin(recovered?.id ?? user?.id, recovered);
+  };
 
   const handleGoogle = async () => {
 
@@ -658,13 +694,23 @@ export default function LoginPage() {
 
 
 
+              <button
+                type="button"
+                disabled={submitting || googleLoading || passkeyLoading}
+                onClick={() => void handlePasskey()}
+                className="mt-5 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 shadow-[0_4px_14px_rgba(15,23,42,0.04)] hover:border-slate-300 disabled:opacity-50"
+              >
+                <Fingerprint className="h-4 w-4 text-[#2563FF]" aria-hidden />
+                {passkeyLoading ? '…' : t('login_page.passkey')}
+              </button>
+
               <GoogleSignInButton
 
-                className="mt-5 rounded-xl border-slate-200 shadow-[0_4px_14px_rgba(15,23,42,0.04)] hover:border-slate-300"
+                className="mt-3 rounded-xl border-slate-200 shadow-[0_4px_14px_rgba(15,23,42,0.04)] hover:border-slate-300"
 
                 loading={googleLoading}
 
-                disabled={submitting}
+                disabled={submitting || passkeyLoading}
 
                 onClick={() => void handleGoogle()}
 

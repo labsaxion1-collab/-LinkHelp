@@ -22,6 +22,7 @@ import {
   markOAuthCallbackActive,
 } from '@/utils/authStorage';
 import { parseOAuthCallbackError, userNeedsRoleSelection } from '@/utils/parseOAuthCallbackError';
+import { markPasskeyInviteEligibleAfterLogin } from '@/utils/passkeyInviteStorage';
 
 async function waitForSessionFromClient(sb: SupabaseClient, maxMs: number): Promise<import('@supabase/supabase-js').Session | null> {
   const deadline = Date.now() + maxMs;
@@ -230,6 +231,7 @@ export default function AuthCallbackPage() {
         clearAdminOAuthState();
         clearOAuthCallbackActive();
         clearOAuthRedirectPending();
+        markPasskeyInviteEligibleAfterLogin();
         navigate(dest, { replace: true });
       } catch (e) {
         console.error('[LinkHelp AuthCallback] error', e);

@@ -1091,7 +1091,12 @@ export async function remoteMarkServiceAwaitingConfirmation(upcomingJobId: strin
   const { error } = await sb.rpc('helper_mark_service_awaiting_confirmation', {
     p_upcoming_job_id: upcomingJobId,
   });
-  if (error) throw new Error(error.message || 'MARK_COMPLETED_FAILED');
+  if (error) {
+    if (isPostgrestMissingResource(error)) {
+      throw new Error('MARK_AWAITING_RPC_NOT_DEPLOYED');
+    }
+    throw new Error(error.message || 'MARK_COMPLETED_FAILED');
+  }
 }
 
 export async function remoteConfirmServiceCompleted(requestId: string): Promise<void> {
@@ -1100,33 +1105,43 @@ export async function remoteConfirmServiceCompleted(requestId: string): Promise<
   const { error } = await sb.rpc('client_confirm_service_completed', {
     p_request_id: requestId,
   });
-  if (error) throw new Error(error.message || 'CONFIRM_SERVICE_FAILED');
+  if (error) {
+    if (isPostgrestMissingResource(error)) {
+      throw new Error('FINALIZE_RPC_NOT_DEPLOYED');
+    }
+    throw new Error(error.message || 'CONFIRM_SERVICE_FAILED');
+  }
 }
 
 /**
  * First-side completion — completes active job immediately when RPC is deployed.
  * Falls back to role-specific legacy flow when function is missing.
+ * Idempotent: already-completed returns { alreadyCompleted: true }.
  */
-export async function remoteFinalizeServiceCompletion(requestId: string): Promise<{ completed: boolean }> {
+export async function remoteFinalizeServiceCompletion(
+  requestId: string,
+): Promise<{ completed: boolean; alreadyCompleted: boolean }> {
   const sb = getSupabase();
   if (!sb) throw new Error('NO_SUPABASE');
-  // RPC typed after manual deploy of apply_service_first_completion.sql
-  const { error } = await (
+  const { data, error } = await (
     sb as unknown as {
       rpc: (
         fn: string,
         args: Record<string, string>,
-      ) => Promise<{ error: { message?: string } | null }>;
+      ) => Promise<{ data: unknown; error: { message?: string; code?: string } | null }>;
     }
   ).rpc('finalize_service_completion', { p_request_id: requestId });
   if (error) {
-    const msg = error.message || '';
-    if (/Could not find the function|42883|PGRST202/i.test(msg)) {
+    if (isPostgrestMissingResource(error) || /Could not find the function|42883|PGRST202/i.test(error.message || '')) {
       throw new Error('FINALIZE_RPC_NOT_DEPLOYED');
     }
-    throw new Error(msg || 'FINALIZE_SERVICE_FAILED');
+    throw new Error(error.message || 'FINALIZE_SERVICE_FAILED');
   }
-  return { completed: true };
+  const row = (data ?? {}) as { alreadyCompleted?: boolean };
+  return {
+    completed: true,
+    alreadyCompleted: row.alreadyCompleted === true,
+  };
 }
 
 const AWAITING_COMPLETION_STATUSES = ['completion_requested', 'awaiting_client_confirmation'] as const;

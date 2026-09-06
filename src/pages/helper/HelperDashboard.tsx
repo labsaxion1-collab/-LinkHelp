@@ -64,6 +64,9 @@ import {
   helperHasBaseAddress,
   helperHasExactBaseCoordinates,
 } from '@/utils/helperBaseLocation';
+import { decideHelperApplyLocation } from '@/utils/helperApplicationLocationGate';
+import { storeHelperApplyReturnContext } from '@/utils/helperApplyReturnContext';
+import type { HelperApplicationType } from '@/utils/helperOpportunityApply';
 import { isJobCancelled } from '@/utils/jobVisibility';
 import {
   filterToPreferredCategoriesIfPossible,
@@ -74,6 +77,8 @@ import {
 import {
   explainHelperFeedJobExclusion,
   helperHasFeedCategories,
+  isHelperFeedRequestActive,
+  isRequestExpiredApplyError,
   resolveHelperEmptyFeedKind,
 } from '@/utils/helperFeedEligibility';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
@@ -117,6 +122,8 @@ export default function HelperDashboard() {
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const isSubmittingApplyRef = React.useRef(false);
   const [exitingJobIds, setExitingJobIds] = useState<Set<string>>(() => new Set());
+  const [serverExpiredJobIds, setServerExpiredJobIds] = useState<Set<string>>(() => new Set());
+  const [feedNowMs, setFeedNowMs] = useState(() => Date.now());
   const [toastNotification, setToastNotification] = useState<{message: string, show: boolean}>({message: '', show: false});
   const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
   const [insufficientCreditsLc, setInsufficientCreditsLc] = useState<number | null>(null);
@@ -256,19 +263,24 @@ export default function HelperDashboard() {
   useEffect(() => {
     let frameId = 0;
 
+    const scrollRoot = document.querySelector('[data-testid="app-main-scroll"]');
+    const readScrollY = () =>
+      scrollRoot instanceof HTMLElement ? scrollRoot.scrollTop : window.scrollY;
+
     const updateHeroParallax = () => {
       window.cancelAnimationFrame(frameId);
       frameId = window.requestAnimationFrame(() => {
-        setHeroParallaxOffset(Math.min(window.scrollY * 0.18, 42));
+        setHeroParallaxOffset(Math.min(readScrollY() * 0.18, 42));
       });
     };
 
     updateHeroParallax();
-    window.addEventListener('scroll', updateHeroParallax, { passive: true });
+    const target: EventTarget = scrollRoot ?? window;
+    target.addEventListener('scroll', updateHeroParallax, { passive: true });
 
     return () => {
       window.cancelAnimationFrame(frameId);
-      window.removeEventListener('scroll', updateHeroParallax);
+      target.removeEventListener('scroll', updateHeroParallax);
     };
   }, []);
 
@@ -357,6 +369,11 @@ export default function HelperDashboard() {
   );
 
   useEffect(() => {
+    const tick = window.setInterval(() => setFeedNowMs(Date.now()), 15_000);
+    return () => window.clearInterval(tick);
+  }, []);
+
+  useEffect(() => {
     if (location.pathname === ROUTES.helperOpportunities) {
       setActiveTab('match');
       setSelectedCategoryFilters([]);
@@ -369,14 +386,27 @@ export default function HelperDashboard() {
   const [upcomingModalJob, setUpcomingModalJob] = useState<UpcomingJob | null>(null);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
   const [applyExpandedJobId, setApplyExpandedJobId] = useState<string | null>(null);
+  const [resumeApplyPrompt, setResumeApplyPrompt] = useState<{
+    jobId: string;
+    applicationType: HelperApplicationType;
+  } | null>(null);
 
   useEffect(() => {
-    const openJobId = (location.state as { openJobId?: string } | null)?.openJobId;
+    const st = location.state as {
+      openJobId?: string;
+      resumeApply?: boolean;
+      resumeApplicationType?: HelperApplicationType;
+    } | null;
+    const openJobId = st?.openJobId;
     if (!openJobId) return;
     const job = jobs.find((j) => j.id === openJobId);
     if (job) setApplyExpandedJobId(job.id);
+    if (st?.resumeApply && st.resumeApplicationType) {
+      setResumeApplyPrompt({ jobId: openJobId, applicationType: st.resumeApplicationType });
+      showToast(t('helper_dashboard.resume_apply_after_location'), 'info');
+    }
     navigate(location.pathname, { replace: true, state: null });
-  }, [location.state, jobs, navigate, location.pathname]);
+  }, [location.state, jobs, navigate, location.pathname, showToast, t]);
   const helperUserId = session?.user?.id ?? profile?.id ?? (me?.id && me.id !== 'guest' && me.id !== '…' ? me.id : null);
 
   const helperUpcomingList = React.useMemo(
@@ -524,6 +554,26 @@ export default function HelperDashboard() {
       job.workflowStatus !== 'completion_requested',
   );
 
+  const removeExpiredRequestFromFeed = React.useCallback((jobId: string) => {
+    setServerExpiredJobIds((prev) => {
+      if (prev.has(jobId)) return prev;
+      const next = new Set(prev);
+      next.add(jobId);
+      return next;
+    });
+    setExitingJobIds((prev) => new Set(prev).add(jobId));
+    setApplyingJobId(null);
+    setApplyExpandedJobId(null);
+    setResumeApplyPrompt((prev) => (prev?.jobId === jobId ? null : prev));
+    window.setTimeout(() => {
+      setExitingJobIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+    }, 420);
+  }, []);
+
   const dismissJobWithAnimation = React.useCallback(
     (jobId: string, job?: Job) => {
       if (job) {
@@ -591,8 +641,24 @@ export default function HelperDashboard() {
       showToast(t('auth.errors.not_signed_in'), 'error');
       return;
     }
-    const distanceKm = baseDistanceToJobKm(job);
     const isExclusive = proposalOptions?.isExclusive === true;
+    if (!isHelperFeedRequestActive(job, helperUserId ?? '', feedNowMs) || serverExpiredJobIds.has(job.id)) {
+      showToast(t('helper_dashboard.apply_request_expired'), 'info');
+      removeExpiredRequestFromFeed(job.id);
+      return;
+    }
+    const locationDecision = decideHelperApplyLocation(job, profile);
+    if (!locationDecision.ok) {
+      showToast(t('helper_dashboard.apply_in_person_coords_required'), 'error');
+      storeHelperApplyReturnContext({
+        jobId: job.id,
+        applicationType: isExclusive ? 'exclusive' : 'normal',
+        returnPath: location.pathname,
+      });
+      navigate(`${ROUTES.settings}#helper-base-location`);
+      return;
+    }
+    const distanceKm = locationDecision.distanceKm;
     const requiredCredits = isExclusive
       ? getExclusiveApplicationChargeLc(leadCostsForJob(job, { distanceKm }))
       : interestCostForJob(job);
@@ -668,9 +734,19 @@ export default function HelperDashboard() {
         showToast(t('helper_dashboard.exclusive_application_locked'), 'error');
         return;
       }
+      if (isRequestExpiredApplyError(err) || msg === 'REQUEST_EXPIRED') {
+        showToast(t('helper_dashboard.apply_request_expired'), 'info');
+        removeExpiredRequestFromFeed(job.id);
+        return;
+      }
       const mapped = formatBaselineFinanceError(err, t, 'helper_dashboard.toast_apply_error');
       if (msg.toUpperCase().includes('LEAD_LOCATION_INCOMPLETE') || mapped === t('baseline_finance.location_incomplete')) {
-        showToast(t('baseline_finance.location_incomplete_action'), 'error');
+        showToast(t('helper_dashboard.apply_in_person_coords_required'), 'error');
+        storeHelperApplyReturnContext({
+          jobId: job.id,
+          applicationType: isExclusive ? 'exclusive' : 'normal',
+          returnPath: location.pathname,
+        });
         navigate(`${ROUTES.settings}#helper-base-location`);
         return;
       }
@@ -694,8 +770,24 @@ export default function HelperDashboard() {
         showToast(t('auth.errors.not_signed_in'), 'error');
         return;
       }
-      const distanceKm = baseDistanceToJobKm(job);
       const isExclusive = options.isExclusive === true;
+      if (!isHelperFeedRequestActive(job, helperUserId, feedNowMs) || serverExpiredJobIds.has(job.id)) {
+        showToast(t('helper_dashboard.apply_request_expired'), 'info');
+        removeExpiredRequestFromFeed(job.id);
+        return;
+      }
+      const locationDecision = decideHelperApplyLocation(job, profile);
+      if (!locationDecision.ok) {
+        showToast(t('helper_dashboard.apply_in_person_coords_required'), 'error');
+        storeHelperApplyReturnContext({
+          jobId: job.id,
+          applicationType: (isExclusive ? 'exclusive' : 'normal') as HelperApplicationType,
+          returnPath: location.pathname,
+        });
+        navigate(`${ROUTES.settings}#helper-base-location`);
+        return;
+      }
+      const distanceKm = locationDecision.distanceKm;
       const requiredCredits = isExclusive
         ? getExclusiveApplicationChargeLc(leadCostsForJob(job, { distanceKm }))
         : interestCostForJob(job);
@@ -720,14 +812,19 @@ export default function HelperDashboard() {
     [
       appliedJobIds,
       helperUserId,
-      baseDistanceToJobKm,
+      profile,
+      location.pathname,
       interestCostForJob,
       walletLoading,
       walletBalance,
       openInsufficientCreditsModal,
       showToast,
       submitApply,
+      navigate,
       t,
+      feedNowMs,
+      serverExpiredJobIds,
+      removeExpiredRequestFromFeed,
     ],
   );
 
@@ -735,7 +832,8 @@ export default function HelperDashboard() {
     if (!helperHasFeedCategories(profileSettings.skillIds, categoryPrefs)) return [];
     const viewerId = helperUserId ?? me?.id ?? '';
     let list = jobs.filter(
-      (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== viewerId,
+      (j) =>
+        isHelperFeedRequestActive(j, viewerId, feedNowMs) && !serverExpiredJobIds.has(j.id),
     );
     if (activeTab === 'emergencia') {
       list = list.filter((j) => j.urgency === 'high');
@@ -774,6 +872,8 @@ export default function HelperDashboard() {
     dismissedJobIds,
     me?.id,
     helperEngagedJobIds,
+    feedNowMs,
+    serverExpiredJobIds,
   ]);
 
   useEffect(() => {
@@ -822,7 +922,7 @@ export default function HelperDashboard() {
     if (displayedJobs.length > 0) return 'loading' as const;
     const viewerId = helperUserId ?? me?.id ?? '';
     const openEligible = jobs.filter(
-      (j) => j.status === 'open' && !isJobCancelled(j) && j.clientId !== viewerId,
+      (j) => isHelperFeedRequestActive(j, viewerId, feedNowMs) && !serverExpiredJobIds.has(j.id),
     ).length;
     return resolveHelperEmptyFeedKind({
       skillsLoaded,
@@ -837,6 +937,8 @@ export default function HelperDashboard() {
     jobs,
     helperUserId,
     me?.id,
+    feedNowMs,
+    serverExpiredJobIds,
   ]);
 
   const progressiveFeedJobs = useProgressiveReveal(displayedJobs, 3, 700);
@@ -1285,7 +1387,7 @@ export default function HelperDashboard() {
                         distanceFromBase={hasExactBaseCoords}
                         needsBaseAddress={!hasHelperBaseAddress}
                         baseAddressPendingCoords={baseAddressPendingCoords}
-                        applicationsCount={job.applicantCount ?? 0}
+                        applicationsCount={job.applicantCount ?? undefined}
                         clientReviewCount={reviewCountByUserId.get(job.clientId) ?? 0}
                         onSubmitApply={handleCardSubmitApply}
                         exclusiveLocked={
@@ -1298,6 +1400,10 @@ export default function HelperDashboard() {
                           if (expanded) setApplyExpandedJobId(job.id);
                           else if (applyExpandedJobId === job.id) setApplyExpandedJobId(null);
                         }}
+                        resumeApplyType={
+                          resumeApplyPrompt?.jobId === job.id ? resumeApplyPrompt.applicationType : null
+                        }
+                        onResumeApplyHandled={() => setResumeApplyPrompt(null)}
                         walletBalance={walletBalance}
                         language={language}
                         t={t}

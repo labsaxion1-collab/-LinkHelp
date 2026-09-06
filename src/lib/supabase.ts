@@ -128,6 +128,12 @@ export function getSupabase(): SupabaseClient<Database> | null {
       /** PKCE (default). Set `VITE_SUPABASE_AUTH_FLOW=implicit` if PKCE storage cannot be stabilized (tokens in URL hash). */
       flowType: getAuthFlowType(),
       lock: browserAuthLock,
+      /**
+       * Official Supabase Auth passkeys (WebAuthn) — experimental opt-in.
+       * Challenges and public keys stay on Auth; no biometrics leave the device.
+       * Requires Dashboard/CLI: auth.passkey.enabled + webauthn RP settings.
+       */
+      experimental: { passkey: true },
     },
   });
   return browserClient;

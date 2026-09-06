@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AppPageShell } from '@/components/design-system/AppPageShell';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
 import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
@@ -25,17 +25,27 @@ import {
   countCompletedForClient,
   countCompletedForHelper,
 } from '@/utils/linkHelpRanking';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { Job } from '@/types/job';
 
 export default function ProfileDashboardPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const { profile, session, authLoading } = useAuth();
   const { jobs, applications, reviews } = useAppData();
   const { balance, loading: walletLoading } = useWalletBalance();
   const [publicOpen, setPublicOpen] = useState(false);
   const [usedThisMonth, setUsedThisMonth] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (location.hash !== '#profile-linkcredits') return;
+    const el = document.getElementById('profile-linkcredits');
+    if (!el) return;
+    window.requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [location.hash, profile?.id]);
 
   const isHelper = profile?.role === 'helper';
   const userType = isHelper ? 'helper' : 'client';

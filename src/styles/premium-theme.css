@@ -325,10 +325,12 @@
     margin-right: calc(50% - 50vw);
     overflow: hidden;
     border-bottom: 0;
-    background: rgb(2 8 24 / 0.94);
+    /* Opaque so scrolling page content never shows through the pinned bar. */
+    background: #020818;
     box-shadow: 0 22px 60px rgb(0 0 0 / 0.34), 0 0 38px rgb(0 132 255 / 0.2);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   @media (max-width: 767px) {

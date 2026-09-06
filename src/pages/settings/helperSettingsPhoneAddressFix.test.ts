@@ -110,24 +110,25 @@ describe('settings form contracts', () => {
     expect(src).toContain("inputMode=\"numeric\"");
   });
 
-  it('address search keeps local draft; city/province/postal are read-only derived', async () => {
+  it('address search keeps local draft; city/province/postal stay manually editable', async () => {
     const src = await readFile(resolve('src/components/helper/HelperBaseAddressInput.tsx'), 'utf8');
     expect(src).toContain('helperBaseAddressFromTypedDisplay');
+    expect(src).toContain('helperBaseAddressFromManualField');
     expect(src).toContain('const [draft, setDraft]');
     expect(src).toContain('focusedRef');
-    expect(src).toContain('readOnly');
-    expect(src).toContain('DerivedFields');
+    expect(src).toContain('EditableRegionFields');
     expect(src).toContain('latitude: null');
     expect(src).toContain('longitude: null');
+    expect(src).not.toContain('readOnly');
   });
 
-  it('preserves LEAD_LOCATION_INCOMPLETE and coords-required save gate', async () => {
+  it('preserves LEAD_LOCATION_INCOMPLETE mapping and allows saving address without coords', async () => {
     const finance = await readFile(resolve('src/utils/formatBaselineFinanceError.ts'), 'utf8');
     const settings = await readFile(resolve('src/pages/settings/SettingsPage.tsx'), 'utf8');
     const apply = await readFile(resolve('src/services/supabase/helperApplicationService.ts'), 'utf8');
     expect(finance).toContain('LEAD_LOCATION_INCOMPLETE');
     expect(apply).toContain('LEAD_LOCATION_INCOMPLETE');
-    expect(settings).toContain('settings_helper_base_coords_required');
-    expect(settings).toMatch(/latitude == null \|\| helperBaseValue\.longitude == null/);
+    expect(settings).toContain('syncHelperBaseAddress');
+    expect(settings).not.toMatch(/showToast\(t\('app_pages\.settings_helper_base_coords_required'\)/);
   });
 });

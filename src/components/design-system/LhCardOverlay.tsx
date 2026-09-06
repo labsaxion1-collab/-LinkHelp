@@ -31,6 +31,8 @@ export type LhCardOverlayProps = {
    * normal mobile content should not need scroll; scroll remains for a11y/short viewports.
    */
   bodyScroll?: 'always' | 'fallback';
+  /** Drop body padding so a light full-bleed page can fill the modal shell. */
+  flushBody?: boolean;
   testId?: string;
 };
 
@@ -59,6 +61,7 @@ export function LhCardOverlay({
   presentation = 'centered',
   size = 'standard',
   bodyScroll = 'always',
+  flushBody = false,
   testId,
 }: LhCardOverlayProps) {
   const { t } = useLanguage();
@@ -205,12 +208,16 @@ export function LhCardOverlay({
 
         <div
           className={clsx(
-            'min-h-0 overscroll-contain px-4 sm:px-5',
-            isFit ? 'flex-none py-3' : 'flex-1 py-4',
+            'min-h-0 overscroll-contain',
+            flushBody ? 'px-0 py-0' : 'px-4 sm:px-5',
+            isFit ? 'flex-none' : 'flex-1',
+            !flushBody && (isFit ? 'py-3' : 'py-4'),
             /* Accessibility / short-viewport fallback — normal VIP content should fit without scrolling. */
             'overflow-y-auto',
+            'overflow-x-hidden',
           )}
           data-overlay-body-scroll={bodyScroll}
+          data-overlay-flush-body={flushBody ? 'true' : 'false'}
         >
           {children}
         </div>

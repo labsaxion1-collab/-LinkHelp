@@ -653,44 +653,24 @@ export function ClientActivityOpenRequestCard({
     if (!profileApp) return null;
     return (
       <div
-        className={clsx(FEED_CARD_PREMIUM_SHELL_CLASS, 'rounded-2xl p-1')}
+        key={profileApp.id}
         data-testid="client-activity-profile-view"
+        data-profile-surface="light"
+        data-profile-scroll="vertical"
+        className="w-full max-w-none bg-[#F8FAFC] pb-[max(1.25rem,env(safe-area-inset-bottom))]"
       >
-        <div className={clsx(FEED_CARD_PREMIUM_SCROLL_CLASS, 'space-y-2')}>
-          <div className="flex items-start gap-3">
-            <img
-              src={profileApp.helperAvatar}
-              alt=""
-              className="h-11 w-11 rounded-full object-cover ring-2 ring-white/40"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-bold text-white">{profileApp.helperName}</p>
-              <div className="mt-1">
-                <LinkHelpRankBadgeFromStats
-                  completedCount={profileApp.helperJobs}
-                  averageRating={profileApp.helperRating}
-                  role="helper"
-                  size="sm"
-                  showLabel
-                  t={t}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="overflow-hidden rounded-2xl bg-white/95">
-            <CandidateHelperProfileExpand
-              helperId={profileApp.helperId}
-              helperName={profileApp.helperName}
-              helperAvatar={profileApp.helperAvatar}
-              helperRating={profileApp.helperRating}
-              helperJobs={profileApp.helperJobs}
-              isExclusive={Boolean(profileApp.isExclusive)}
-              proposedAmount={profileApp.proposedAmount}
-              currency={job.currency || 'CAD'}
-              formatMoneyAmount={formatMoneyAmount}
-            />
-          </div>
-        </div>
+        <CandidateHelperProfileExpand
+          surface="page"
+          helperId={profileApp.helperId}
+          helperName={profileApp.helperName}
+          helperAvatar={profileApp.helperAvatar}
+          helperRating={profileApp.helperRating}
+          helperJobs={profileApp.helperJobs}
+          isExclusive={Boolean(profileApp.isExclusive)}
+          proposedAmount={profileApp.proposedAmount}
+          currency={job.currency || 'CAD'}
+          formatMoneyAmount={formatMoneyAmount}
+        />
       </div>
     );
   };
@@ -767,6 +747,10 @@ export function ClientActivityOpenRequestCard({
         onBack={backFromProfile}
         title={profileApp?.helperName ?? t('client_dashboard.candidates_panel_title')}
         subtitle={title}
+        size="standard"
+        bodyScroll="always"
+        flushBody
+        layer="elevated"
         testId="client-activity-profile-overlay"
       >
         {renderProfileContent()}

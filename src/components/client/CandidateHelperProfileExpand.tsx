@@ -29,6 +29,8 @@ type Props = {
   currency?: string;
   distanceKm?: number | null;
   formatMoneyAmount?: (amount: number, currency: string) => string;
+  /** embedded = bordered strip inside a card; page = full light modal body */
+  surface?: 'embedded' | 'page';
   className?: string;
 };
 
@@ -53,6 +55,7 @@ export function CandidateHelperProfileExpand({
   currency = 'CAD',
   distanceKm = null,
   formatMoneyAmount,
+  surface = 'embedded',
   className,
 }: Props) {
   const { t, language } = useLanguage();
@@ -105,10 +108,14 @@ export function CandidateHelperProfileExpand({
   return (
     <div
       className={clsx(
-        'overflow-hidden border-t border-slate-200/80 bg-gradient-to-b from-slate-50/90 to-white px-3 py-3',
+        'overflow-hidden',
+        surface === 'page'
+          ? 'bg-white px-4 py-3 sm:px-5'
+          : 'border-t border-slate-200/80 bg-gradient-to-b from-slate-50/90 to-white px-3 py-3',
         className,
       )}
       data-testid="candidate-helper-profile-expand"
+      data-profile-surface={surface}
     >
       {showIdentity ? (
         <div className="mb-3 flex items-start gap-2.5" data-testid="candidate-profile-identity">

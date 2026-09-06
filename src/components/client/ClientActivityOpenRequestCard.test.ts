@@ -196,9 +196,15 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(src).toContain('onBack={backFromProfile}');
     expect(src).toContain('closeOverlay');
     expect(src).toContain('setProfileAppId(null)');
-    expect(src).toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
+    expect(src).toContain('ACTIVITY_APPLICATION_CARD_MIN_CONTENT_HEIGHT_PX');
     expect(src).toContain('FEED_CARD_SHELL_CLASS');
-    expect(src).toContain('feedCardLockedContentStyle');
+    expect(src).toContain('activityApplicationCardMinContentStyle');
+    expect(src).toContain('data-feed-card-height-locked="false"');
+    expect(src).toContain('!h-auto');
+    expect(src).toContain('overflow-visible');
+    expect(src).toContain('mx-auto w-full max-w-lg');
+    expect(src).not.toContain('feedCardLockedContentStyle');
+    expect(src).not.toContain('FEED_CARD_STANDARD_CONTENT_HEIGHT_PX');
     expect(src).not.toContain('HelperOpportunityCard');
     expect(src).not.toContain('InterestedRing');
     expect(src).not.toContain('client-activity-candidates-count');
@@ -207,6 +213,22 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(src).not.toContain('min-h-[280px]');
     expect(src).not.toContain('measureFeedCardNaturalHeight');
     expect(src).not.toContain('rounded-[1.35rem]');
+  });
+
+  it('keeps VIP and normal cards on the same centered width contract', async () => {
+    const src = await readFile(
+      resolve('src/components/client/ClientActivityOpenRequestCard.tsx'),
+      'utf8',
+    );
+    expect(src).toContain('client-activity-open-card-shell');
+    expect(src).toContain('max-w-lg');
+    expect(src).toContain('client-activity-view-vip-cta');
+    expect(src).toContain('client-activity-choose-help-cta');
+    expect(src).toContain('client-activity-footer-ring');
+    expect(src).toContain('client-activity-summary-footer');
+    // Locked height must not clip the ring / CTA row.
+    expect(src).not.toContain('feedCardLockedContentStyle');
+    expect(src).not.toContain('maxHeight');
   });
 
   it('places candidate arc and Description on the same bottom row', async () => {

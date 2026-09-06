@@ -1588,7 +1588,7 @@ export default function ClientDashboard() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+              <div className="mx-auto grid w-full max-w-lg grid-cols-1 gap-5 xl:mx-0 xl:max-w-none xl:grid-cols-2">
                 {activityTabJobs.length > 0 ? (
                   progressiveActivityJobs.map((job) => {
                     const isHiredActivity = isHiredActivityJob(job.status);

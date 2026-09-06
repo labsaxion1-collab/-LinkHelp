@@ -136,14 +136,15 @@ describe('helper feed category gate', () => {
 });
 
 describe('client activity fixed height wiring', () => {
-  it('keeps summary mounted and locks height like feed (no min-h 280 panel)', async () => {
+  it('keeps summary mounted and grows with content (no locked feed height clip)', async () => {
     expect(CLIENT_ACTIVITY_PANEL_CLASS).toContain('h-full');
     expect(CLIENT_ACTIVITY_PANEL_CLASS).not.toContain('min-h-[280px]');
     const src = await readFile(
       resolve('src/components/client/ClientActivityOpenRequestCard.tsx'),
       'utf8',
     );
-    expect(src).toContain('feedCardLockedContentStyle');
+    expect(src).toContain('activityApplicationCardMinContentStyle');
+    expect(src).not.toContain('feedCardLockedContentStyle');
     expect(src).toContain('LhCardOverlay');
     expect(src).toContain('FEED_CARD_PREMIUM_SHELL_CLASS');
     expect(src).not.toContain('invisible pointer-events-none');

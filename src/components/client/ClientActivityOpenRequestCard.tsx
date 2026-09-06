@@ -37,12 +37,12 @@ import {
   resolveExclusiveCandidate,
 } from '@/utils/clientActivityCandidateRing';
 import {
+  ACTIVITY_APPLICATION_CARD_MIN_CONTENT_HEIGHT_PX,
   FEED_CARD_CONTENT_CLASS,
   FEED_CARD_FIXED_HEIGHT_EXTRA_PX,
   FEED_CARD_SHELL_CLASS,
-  FEED_CARD_STANDARD_CONTENT_HEIGHT_PX,
   FEED_CARD_TOP_ACCENT_CLASS,
-  feedCardLockedContentStyle,
+  activityApplicationCardMinContentStyle,
 } from '@/utils/feedCardFixedHeight';
 
 /** Bottom-row ring — slightly smaller so arc + Description share one footer line. */
@@ -257,7 +257,7 @@ export function ClientActivityOpenRequestCard({
 
   const renderSummary = () => (
     <div
-      className="relative z-0 flex h-full min-h-0 flex-col"
+      className="relative z-0 flex min-h-0 flex-col"
       data-testid="client-activity-card-summary"
     >
       <div className="flex shrink-0 items-start gap-2">
@@ -595,16 +595,24 @@ export function ClientActivityOpenRequestCard({
     <>
       <div
         ref={cardShellRef}
-        className={clsx('relative', activityMenuOpen ? 'z-40' : 'z-0')}
+        className={clsx(
+          'relative mx-auto w-full max-w-lg',
+          activityMenuOpen ? 'z-40' : 'z-0',
+        )}
+        data-testid="client-activity-open-card-shell"
       >
         <LhCard
           padding="none"
-          className={clsx(FEED_CARD_SHELL_CLASS, activityMenuOpen && '!overflow-visible')}
+          className={clsx(
+            FEED_CARD_SHELL_CLASS,
+            '!h-auto overflow-visible',
+            activityMenuOpen && '!overflow-visible',
+          )}
           data-testid="client-activity-open-card"
           data-client-activity-overlay={overlay ?? 'summary'}
-          data-feed-card-height-locked="true"
+          data-feed-card-height-locked="false"
           data-feed-card-height-extra={FEED_CARD_FIXED_HEIGHT_EXTRA_PX}
-          data-feed-card-standard-height={FEED_CARD_STANDARD_CONTENT_HEIGHT_PX}
+          data-feed-card-min-height={ACTIVITY_APPLICATION_CARD_MIN_CONTENT_HEIGHT_PX}
         >
           <div
             className={FEED_CARD_TOP_ACCENT_CLASS}
@@ -614,8 +622,8 @@ export function ClientActivityOpenRequestCard({
             aria-hidden
           />
           <div
-            className={clsx(FEED_CARD_CONTENT_CLASS, activityMenuOpen && '!overflow-visible')}
-            style={feedCardLockedContentStyle()}
+            className={clsx(FEED_CARD_CONTENT_CLASS, 'overflow-visible', activityMenuOpen && '!overflow-visible')}
+            style={activityApplicationCardMinContentStyle()}
           >
             {renderSummary()}
           </div>

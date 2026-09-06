@@ -2381,6 +2381,12 @@ export const pt = {
     error_credential: 'Passkey não encontrada neste aparelho. Cadastre novamente em Segurança.',
     error_network: 'Sem conexão. Verifique a internet e tente desbloquear de novo.',
   },
+  passkey_invite: {
+    title: 'Quer entrar com digital?',
+    body: 'Você também pode usar o rosto ou o PIN do aparelho. A biometria fica só no seu dispositivo — o LinkHelp não recebe nem armazena dados biométricos.',
+    enable: 'Ativar entrada com digital',
+    later: 'Agora não',
+  },
   profile_page: {
     section_public_title: 'Perfil público',
     section_public_subtitle: 'Visível para clientes ao ver sua candidatura.',

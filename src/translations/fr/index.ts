@@ -2379,6 +2379,12 @@ export const fr = {
     error_credential: 'Passkey introuvable sur cet appareil. Réenregistrez-la dans Sécurité.',
     error_network: 'Pas de connexion. Vérifiez Internet et réessayez de déverrouiller.',
   },
+  passkey_invite: {
+    title: 'Voulez-vous vous connecter avec la biométrie?',
+    body: 'Vous pouvez aussi utiliser le visage ou le code de l’appareil. La biométrie reste sur votre appareil — LinkHelp ne reçoit ni ne stocke de données biométriques.',
+    enable: 'Activer la connexion biométrique',
+    later: 'Pas maintenant',
+  },
   profile_page: {
     section_public_title: 'Profil public',
     section_public_subtitle: "Visible par les clients lorsqu'ils consultent votre candidature.",

@@ -19,6 +19,7 @@ import {
   passkeyErrorMessageKey,
   signInWithDevicePasskey,
 } from '@/utils/passkeyAuth';
+import { PasskeyInvitePrompt } from '@/components/auth/PasskeyInvitePrompt';
 
 /**
  * Local privacy gate: keeps the Supabase session, hides private UI until
@@ -196,7 +197,12 @@ export function AppUnlockGate() {
   }
 
   if (state === 'unlocked') {
-    return <Outlet />;
+    return (
+      <>
+        <PasskeyInvitePrompt />
+        <Outlet />
+      </>
+    );
   }
 
   return (

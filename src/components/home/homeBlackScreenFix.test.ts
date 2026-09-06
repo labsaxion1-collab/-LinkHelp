@@ -122,7 +122,8 @@ describe('black-screen source contracts', () => {
     const src = await readFile(resolve('src/components/auth/ProtectedRoute.tsx'), 'utf8');
     expect(src).toContain('return <AppUnlockGate />');
     const gate = await readFile(resolve('src/components/auth/AppUnlockGate.tsx'), 'utf8');
-    expect(gate).toContain('return <Outlet />');
+    expect(gate).toContain('<Outlet />');
+    expect(gate).toContain('PasskeyInvitePrompt');
     expect(src).toMatch(/if \(!authBootstrapped \|\| authLoading \|\| !session\?\.user \|\| profile\) return/);
   });
 

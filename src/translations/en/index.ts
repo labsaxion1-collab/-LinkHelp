@@ -2369,6 +2369,12 @@ export const en = {
     error_credential: 'Passkey not found on this device. Register again in Security.',
     error_network: 'No connection. Check the internet and try unlocking again.',
   },
+  passkey_invite: {
+    title: 'Want to sign in with biometrics?',
+    body: 'You can also use face unlock or your device PIN. Biometrics stay on your device — LinkHelp never receives or stores biometric data.',
+    enable: 'Enable biometric sign-in',
+    later: 'Not now',
+  },
   profile_page: {
     section_public_title: 'Public profile',
     section_public_subtitle: 'Visible to clients when they view your application.',

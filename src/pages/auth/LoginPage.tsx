@@ -24,6 +24,7 @@ import {
   passkeyErrorMessageKey,
   signInWithDevicePasskey,
 } from '@/utils/passkeyAuth';
+import { markPasskeyInviteEligibleAfterLogin } from '@/utils/passkeyInviteStorage';
 
 import { oauthErrorMessageKey, type OAuthCallbackErrorCode } from '@/utils/parseOAuthCallbackError';
 
@@ -250,6 +251,7 @@ export default function LoginPage() {
       window.scrollTo(0, 0);
     }
 
+    markPasskeyInviteEligibleAfterLogin();
     goAfterLogin(recovered?.id ?? user?.id, recovered);
 
   };
@@ -278,6 +280,7 @@ export default function LoginPage() {
     const user = data.session?.user ?? null;
     const recovered = user ? await refreshProfile(user) : null;
     if (typeof window !== 'undefined') window.scrollTo(0, 0);
+    markPasskeyInviteEligibleAfterLogin();
     goAfterLogin(recovered?.id ?? user?.id, recovered);
   };
 

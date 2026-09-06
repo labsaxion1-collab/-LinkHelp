@@ -134,7 +134,8 @@ describe('AppUnlockGate contracts', () => {
 
   it('4) private content is Outlet only after unlock — locked UI has no Outlet', () => {
     expect(gate).toContain("if (state === 'unlocked')");
-    expect(gate).toContain('return <Outlet />');
+    expect(gate).toContain('<Outlet />');
+    expect(gate).toContain('PasskeyInvitePrompt');
     expect(gate).toContain('data-testid="app-unlock-locked"');
     expect(gate).toContain('data-testid="app-unlock-checking"');
     // Locked branch must not mount private routes.

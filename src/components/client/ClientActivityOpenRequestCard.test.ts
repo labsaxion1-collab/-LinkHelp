@@ -302,7 +302,8 @@ describe('ClientActivityOpenRequestCard wiring', () => {
     expect(dash).toContain('ClientActivityOpenRequestCard');
     expect(dash).toContain('onReject');
     expect(dash).toContain('isPreHireActivity');
-    expect(dash).toContain("window.addEventListener('scroll', onScrollClose, true)");
+    expect(dash).toContain("querySelector('[data-testid=\"app-main-scroll\"]')");
+    expect(dash).toContain("scrollRoot.addEventListener('scroll', onScrollClose");
   });
 
   it('ships dedicated candidate ring with exclusive gold center', async () => {

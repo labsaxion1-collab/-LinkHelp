@@ -263,19 +263,24 @@ export default function HelperDashboard() {
   useEffect(() => {
     let frameId = 0;
 
+    const scrollRoot = document.querySelector('[data-testid="app-main-scroll"]');
+    const readScrollY = () =>
+      scrollRoot instanceof HTMLElement ? scrollRoot.scrollTop : window.scrollY;
+
     const updateHeroParallax = () => {
       window.cancelAnimationFrame(frameId);
       frameId = window.requestAnimationFrame(() => {
-        setHeroParallaxOffset(Math.min(window.scrollY * 0.18, 42));
+        setHeroParallaxOffset(Math.min(readScrollY() * 0.18, 42));
       });
     };
 
     updateHeroParallax();
-    window.addEventListener('scroll', updateHeroParallax, { passive: true });
+    const target: EventTarget = scrollRoot ?? window;
+    target.addEventListener('scroll', updateHeroParallax, { passive: true });
 
     return () => {
       window.cancelAnimationFrame(frameId);
-      window.removeEventListener('scroll', updateHeroParallax);
+      target.removeEventListener('scroll', updateHeroParallax);
     };
   }, []);
 

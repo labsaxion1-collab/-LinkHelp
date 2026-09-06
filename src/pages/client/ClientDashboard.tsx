@@ -581,10 +581,12 @@ export default function ClientDashboard() {
     };
     const onScrollClose = () => setActivityMenuJobId(null);
     document.addEventListener('mousedown', onPointerDown);
-    window.addEventListener('scroll', onScrollClose, true);
+    const scrollRoot =
+      document.querySelector('[data-testid="app-main-scroll"]') ?? window;
+    scrollRoot.addEventListener('scroll', onScrollClose, { passive: true });
     return () => {
       document.removeEventListener('mousedown', onPointerDown);
-      window.removeEventListener('scroll', onScrollClose, true);
+      scrollRoot.removeEventListener('scroll', onScrollClose);
     };
   }, [activityMenuJobId]);
 

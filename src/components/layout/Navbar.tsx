@@ -101,22 +101,28 @@ export default function Navbar() {
   useEffect(() => {
     if (!isLangMenuOpen) return;
     updateLangPanelPosition();
+    const mainScroll = document.querySelector('[data-testid="app-main-scroll"]');
     window.addEventListener('resize', updateLangPanelPosition);
     window.addEventListener('scroll', updateLangPanelPosition, true);
+    mainScroll?.addEventListener('scroll', updateLangPanelPosition, { passive: true });
     return () => {
       window.removeEventListener('resize', updateLangPanelPosition);
       window.removeEventListener('scroll', updateLangPanelPosition, true);
+      mainScroll?.removeEventListener('scroll', updateLangPanelPosition);
     };
   }, [isLangMenuOpen, updateLangPanelPosition]);
 
   useEffect(() => {
     if (!profileOpen) return;
     updateProfilePanelPosition();
+    const mainScroll = document.querySelector('[data-testid="app-main-scroll"]');
     window.addEventListener('resize', updateProfilePanelPosition);
     window.addEventListener('scroll', updateProfilePanelPosition, true);
+    mainScroll?.addEventListener('scroll', updateProfilePanelPosition, { passive: true });
     return () => {
       window.removeEventListener('resize', updateProfilePanelPosition);
       window.removeEventListener('scroll', updateProfilePanelPosition, true);
+      mainScroll?.removeEventListener('scroll', updateProfilePanelPosition);
     };
   }, [profileOpen, updateProfilePanelPosition]);
 

@@ -69,23 +69,35 @@ export default function Layout() {
     <MobileProfileMenuProvider>
     <div
       className={clsx(
-        'relative min-h-dvh flex flex-col font-sans w-full max-w-full',
+        'relative flex flex-col font-sans w-full max-w-full',
+        /* App shell: pin blue header by making <main> the only vertical scrollport (PWA-safe). */
+        isAppShell ? 'h-dvh max-h-dvh overflow-hidden' : 'min-h-dvh',
         isAdmin ? 'bg-[#060912]' : isAppShell ? 'lh-app-bg text-[#0D1B2A]' : 'bg-[#050816] text-[#F2F4F7]',
       )}
+      data-app-shell={isAppShell ? 'pinned-header' : undefined}
     >
       {!isAdmin && !isLanding ? (
         <header
-          className="sticky top-0 z-50 shrink-0"
+          className={clsx(
+            'z-50 shrink-0',
+            /* Only the blue navbar stays put; alerts/rank/tabs live in <main> and scroll. */
+            isAppShell ? 'relative' : 'sticky top-0',
+          )}
           data-testid="app-authenticated-header"
+          data-header-pin={isAppShell ? 'shell' : 'sticky'}
         >
           <Navbar />
         </header>
       ) : null}
       <main
         className={clsx(
-          'relative z-10 flex flex-1 flex-col min-h-0 w-full max-w-full overflow-x-hidden',
+          'relative z-10 flex flex-1 flex-col min-h-0 w-full max-w-full',
+          isAppShell
+            ? 'overflow-x-hidden overflow-y-auto overscroll-y-contain'
+            : 'overflow-x-hidden',
           showMobileChrome && 'pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0',
         )}
+        data-testid={isAppShell ? 'app-main-scroll' : undefined}
       >
         <ScrollToTop />
         <AppErrorBoundary

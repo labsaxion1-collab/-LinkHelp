@@ -69,14 +69,17 @@ export default function Layout() {
     <MobileProfileMenuProvider>
     <div
       className={clsx(
-        'relative min-h-dvh flex flex-col font-sans w-full max-w-full overflow-x-hidden',
+        'relative min-h-dvh flex flex-col font-sans w-full max-w-full',
         isAdmin ? 'bg-[#060912]' : isAppShell ? 'lh-app-bg text-[#0D1B2A]' : 'bg-[#050816] text-[#F2F4F7]',
       )}
     >
       {!isAdmin && !isLanding ? (
-        <div className="relative z-50">
+        <header
+          className="sticky top-0 z-50 shrink-0"
+          data-testid="app-authenticated-header"
+        >
           <Navbar />
-        </div>
+        </header>
       ) : null}
       <main
         className={clsx(

@@ -329,6 +329,7 @@
     box-shadow: 0 22px 60px rgb(0 0 0 / 0.34), 0 0 38px rgb(0 132 255 / 0.2);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   @media (max-width: 767px) {

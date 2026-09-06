@@ -168,13 +168,17 @@ export function HelperAcceptedJobCard({
             </div>
 
             <div className="col-start-2 row-start-1 min-w-0">
-              <h3 className="line-clamp-2 text-[15px] font-bold leading-[1.28] text-[#0F172A] sm:text-[17px] sm:leading-[1.3]">
+              <h3
+                data-testid="helper-accepted-title"
+                className="line-clamp-2 text-[15px] font-bold leading-[1.28] text-[#0F172A] sm:text-[17px] sm:leading-[1.3]"
+              >
                 {title}
               </h3>
             </div>
 
             <div className="col-start-3 row-start-1 shrink-0">
               <span
+                data-testid="helper-accepted-status"
                 className={clsx(
                   'inline-block max-w-[6.5rem] truncate rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
                   WORKFLOW_BADGE[job.workflowStatus] ?? 'border-slate-200 bg-slate-50 text-slate-500',
@@ -191,14 +195,31 @@ export function HelperAcceptedJobCard({
                   {relativeSchedule}
                 </span>
               ) : null}
+              {dayLabel || clockLabel ? (
+                <span
+                  data-testid="helper-accepted-schedule"
+                  className="inline-flex max-w-full items-center gap-1 text-slate-500"
+                >
+                  <Icons.Calendar className="h-3 w-3 shrink-0" />
+                  <span className="truncate">
+                    {[dayLabel, clockLabel].filter(Boolean).join(' · ')}
+                  </span>
+                </span>
+              ) : null}
               {job.value ? (
-                <span className="inline-flex items-center gap-1 text-emerald-700">
+                <span
+                  data-testid="helper-accepted-value"
+                  className="inline-flex items-center gap-1 text-emerald-700"
+                >
                   <Icons.Banknote className="h-3 w-3 shrink-0" />
                   {job.value}
                 </span>
               ) : null}
               {locationDisplay ? (
-                <span className="inline-flex max-w-full items-center gap-1 text-slate-500">
+                <span
+                  data-testid="helper-accepted-location"
+                  className="inline-flex max-w-full items-center gap-1 text-slate-500"
+                >
                   <Icons.MapPin className="h-3 w-3 shrink-0" />
                   <span className="truncate">{locationDisplay}</span>
                 </span>

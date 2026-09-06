@@ -1638,6 +1638,7 @@ export const fr = {
     request_expired_banner: 'Cette demande a expiré.',
     you_cancelled_banner: 'Vous avez annulé cette candidature.',
     waiting_client_title: 'En attente de la décision du client',
+    exclusive_application_note: 'Candidature exclusive',
     applied_ago_minutes: 'Candidature envoyée il y a {{count}} min',
     applied_ago_hours: 'Candidature envoyée il y a {{count}} h',
     applied_ago_days: 'Candidature envoyée il y a {{count}} j',

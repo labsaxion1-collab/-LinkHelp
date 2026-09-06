@@ -1641,6 +1641,7 @@ export const pt = {
     request_expired_banner: 'Este pedido expirou.',
     you_cancelled_banner: 'Você cancelou esta candidatura.',
     waiting_client_title: 'Aguardando decisão do cliente',
+    exclusive_application_note: 'Candidatura exclusiva',
     applied_ago_minutes: 'Candidatura enviada há {{count}} min',
     applied_ago_hours: 'Candidatura enviada há {{count}} h',
     applied_ago_days: 'Candidatura enviada há {{count}} d',

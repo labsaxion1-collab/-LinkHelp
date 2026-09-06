@@ -1632,6 +1632,7 @@ export const en = {
     request_expired_banner: 'This request has expired.',
     you_cancelled_banner: 'You cancelled this application.',
     waiting_client_title: 'Waiting for the client’s decision',
+    exclusive_application_note: 'Exclusive application',
     applied_ago_minutes: 'Application sent {{count}} min ago',
     applied_ago_hours: 'Application sent {{count}} h ago',
     applied_ago_days: 'Application sent {{count}} d ago',

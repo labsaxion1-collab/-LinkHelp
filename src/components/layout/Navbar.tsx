@@ -11,7 +11,7 @@ import { ROUTES } from '@/utils/constants';
 import { useToast } from '@/context/ToastContext';
 import { isAppShellPath } from '@/utils/navigation';
 import { NotificationsDropdown } from './NotificationsDropdown';
-import { HelperNavbarLinkCreditsChip } from '@/components/layout/HelperNavbarLinkCreditsChip';
+import { NavbarLinkCreditsChip } from '@/components/layout/NavbarLinkCreditsChip';
 import { useMobileProfileMenu } from '@/context/MobileProfileMenuContext';
 import { useTutorial } from '@/context/TutorialContext';
 import { clsx } from 'clsx';
@@ -161,7 +161,13 @@ export default function Navbar() {
 
   return (
     <>
-    <nav className={`sticky top-0 z-50 ${usePremiumNav ? 'lh-nav-premium' : 'border-b bg-white border-gray-100 backdrop-blur-xl'}`}>
+    <nav
+      className={clsx(
+        'relative z-50 w-full',
+        usePremiumNav ? 'lh-nav-premium' : 'border-b border-gray-100 bg-white backdrop-blur-xl',
+      )}
+      data-testid="app-navbar"
+    >
       {usePremiumNav ? (
         <>
           <div
@@ -271,8 +277,8 @@ export default function Navbar() {
                   </button>
                 </div>
 
-                <div className={clsx('flex items-center pl-4', usePremiumNav ? 'border-l border-white/15' : 'border-l border-gray-200', isHelperNav ? 'gap-2' : 'space-x-4')}>
-                  {isHelperNav ? <HelperNavbarLinkCreditsChip /> : null}
+                <div className={clsx('flex items-center pl-4', usePremiumNav ? 'border-l border-white/15' : 'border-l border-gray-200', 'gap-2')}>
+                  <NavbarLinkCreditsChip />
                   <NotificationsDropdown userId={userId} />
                   {isConfigured && session ? (
                     <div className="relative">
@@ -359,7 +365,7 @@ export default function Navbar() {
                 <GraduationCap className="h-4 w-4" />
               </button>
             ) : null}
-            {isConnected && isHelperNav ? <HelperNavbarLinkCreditsChip compact /> : null}
+            {isConnected ? <NavbarLinkCreditsChip compact /> : null}
             {isConnected ? <NotificationsDropdown userId={userId} compact /> : null}
             <button
               type="button"

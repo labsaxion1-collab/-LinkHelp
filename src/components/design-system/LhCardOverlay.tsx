@@ -2,7 +2,10 @@ import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
 import { useLanguage } from '@/context/LanguageContext';
-import { LH_CENTERED_MODAL_STANDARD_PANEL_CLASS } from '@/components/design-system/lhCenteredModalScale';
+import {
+  LH_CENTERED_MODAL_FIT_PANEL_CLASS,
+  LH_CENTERED_MODAL_STANDARD_PANEL_CLASS,
+} from '@/components/design-system/lhCenteredModalScale';
 import { LhPremiumCloseButton } from '@/components/design-system/LhPremiumCloseButton';
 
 export type LhCardOverlayPresentation = 'centered' | 'sheet';
@@ -20,8 +23,14 @@ export type LhCardOverlayProps = {
   layer?: 'default' | 'elevated';
   /** centered = same shell as HelperApplyConfirmModal; sheet = legacy bottom sheet */
   presentation?: LhCardOverlayPresentation;
-  /** standard = apply-modal width + useful min-height */
-  size?: 'standard';
+  /** standard = width + useful min-height; fit = width + max-height only (no forced min-height) */
+  size?: 'standard' | 'fit';
+  /**
+   * always = body scrolls whenever content overflows (default).
+   * fallback = same overflow rule, but intended for compact fit panels where
+   * normal mobile content should not need scroll; scroll remains for a11y/short viewports.
+   */
+  bodyScroll?: 'always' | 'fallback';
   testId?: string;
 };
 
@@ -49,6 +58,7 @@ export function LhCardOverlay({
   layer = 'elevated',
   presentation = 'centered',
   size = 'standard',
+  bodyScroll = 'always',
   testId,
 }: LhCardOverlayProps) {
   const { t } = useLanguage();
@@ -102,7 +112,11 @@ export function LhCardOverlay({
   if (!open) return null;
 
   const isCentered = presentation === 'centered';
+  const isFit = size === 'fit';
   const nestedBackLabel = backActionLabel ?? t('client_dashboard.back_to_candidates');
+  const centeredPanelClass = isFit
+    ? LH_CENTERED_MODAL_FIT_PANEL_CLASS
+    : LH_CENTERED_MODAL_STANDARD_PANEL_CLASS;
 
   return createPortal(
     <div
@@ -117,6 +131,7 @@ export function LhCardOverlay({
       role="presentation"
       data-testid={testId ? `${testId}-backdrop` : undefined}
       data-overlay-presentation={presentation}
+      data-overlay-layer={layer}
     >
       <div
         ref={dialogRef}
@@ -129,7 +144,7 @@ export function LhCardOverlay({
           'flex flex-col overflow-hidden border border-slate-100 bg-white outline-none',
           isCentered
             ? clsx(
-                LH_CENTERED_MODAL_STANDARD_PANEL_CLASS,
+                centeredPanelClass,
                 'motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:fade-in motion-safe:duration-200',
               )
             : clsx(
@@ -143,6 +158,7 @@ export function LhCardOverlay({
         onClick={(e) => e.stopPropagation()}
         data-testid={testId}
         data-modal-size={size}
+        data-body-scroll={bodyScroll}
       >
         <LhPremiumCloseButton
           buttonRef={closeButtonRef}
@@ -158,16 +174,46 @@ export function LhCardOverlay({
           </div>
         ) : null}
 
-        <header className="sticky top-0 z-10 shrink-0 border-b border-slate-100 bg-white/95 px-4 pb-3 pt-3 pr-14 backdrop-blur-sm sm:px-5 sm:pt-4 sm:pr-14">
-          <h2 id={titleId} className="truncate text-base font-black leading-snug text-slate-950 sm:text-lg">
+        <header
+          className={clsx(
+            'sticky top-0 z-10 shrink-0 border-b border-slate-100 bg-white/95 px-4 pr-14 backdrop-blur-sm sm:px-5 sm:pr-14',
+            isFit
+              ? 'pb-2 pt-2.5 sm:pb-2.5 sm:pt-3'
+              : 'pb-3 pt-3 sm:pt-4',
+          )}
+        >
+          <h2
+            id={titleId}
+            className={clsx(
+              'font-black leading-snug text-slate-950',
+              isFit ? 'line-clamp-1 text-[15px] sm:text-base' : 'truncate text-base sm:text-lg',
+            )}
+          >
             {title}
           </h2>
           {subtitle ? (
-            <p className="mt-0.5 truncate text-xs font-semibold text-slate-500">{subtitle}</p>
+            <p
+              className={clsx(
+                'mt-0.5 text-xs font-semibold text-slate-500',
+                isFit ? 'line-clamp-2' : 'truncate',
+              )}
+            >
+              {subtitle}
+            </p>
           ) : null}
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">{children}</div>
+        <div
+          className={clsx(
+            'min-h-0 overscroll-contain px-4 sm:px-5',
+            isFit ? 'flex-none py-3' : 'flex-1 py-4',
+            /* Accessibility / short-viewport fallback — normal VIP content should fit without scrolling. */
+            'overflow-y-auto',
+          )}
+          data-overlay-body-scroll={bodyScroll}
+        >
+          {children}
+        </div>
 
         {onBack || footer ? (
           <footer className="shrink-0 space-y-2 border-t border-slate-100 px-4 py-3 sm:px-5">

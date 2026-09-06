@@ -1462,7 +1462,8 @@ export const pt = {
     budget_total_label: 'Orçamento total',
     owner_no_extra_details: 'Você não informou detalhes adicionais.',
     reject_confirm: 'Recusar este Help do chamado?',
-    reject_confirm_vip: 'Recusar esta candidatura VIP exclusiva? O chamado voltará a aceitar outros Helps.',
+    reject_confirm_vip:
+      'Ao recusar esta candidatura VIP, o pedido voltará a receber candidaturas normais.',
     created_at_label: 'Criado em',
     hired_slots: '{{hired}}/{{max}} contratados',
     team_complete: 'Equipe completa',
@@ -1479,6 +1480,8 @@ export const pt = {
     application_accepted_toast: 'Candidatura de {{name}} aceita. Conversa liberada.',
     accept_helper: 'Aceitar {{name}}',
     accept_short: 'Aceitar',
+    accept_application_cta: 'Aceitar candidatura',
+    accept_confirm_hire: 'Deseja contratar {{name}} por {{amount}}?',
     accept_proposal: 'Aceitar proposta',
     helper_proposal_amount: 'Proposta: {{amount}}',
     helper_proposal_negotiable: 'Proposta: A combinar',

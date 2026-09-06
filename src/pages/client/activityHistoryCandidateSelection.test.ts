@@ -264,18 +264,21 @@ describe('activity history i18n and VIP panel contract', () => {
     );
   });
 
-  it('13. VIP panel alignment contract keeps avatar centered and actions accessible', () => {
+  it('13. VIP panel fit contract keeps essentials visible without inner scroll', () => {
     const src = read('src/components/client/ClientActivityOpenRequestCard.tsx');
-    const vipIdx = src.indexOf('client-activity-vip-panel');
+    const vipIdx = src.indexOf('data-vip-layout="fit-no-inner-scroll"');
     expect(vipIdx).toBeGreaterThan(-1);
-    const vipBlock = src.slice(vipIdx, vipIdx + 3200);
-    expect(vipBlock).toContain('flex-col items-center');
-    expect(vipBlock).toContain('pt-6');
+    const vipBlock = src.slice(vipIdx, vipIdx + 6500);
     expect(vipBlock).toContain('client-activity-vip-avatar');
     expect(vipBlock).toContain('client-activity-vip-open-profile');
+    expect(vipBlock).toContain('client-activity-vip-accept');
+    expect(vipBlock).toContain('client-activity-vip-reject');
     expect(src).toContain('client-activity-vip-actions');
     expect(src).toContain('env(safe-area-inset-bottom)');
-    expect(vipBlock).toContain('h-14 w-14');
+    expect(src).toContain('data-vip-layout="fit-no-inner-scroll"');
+    expect(vipBlock).toContain('h-12 w-12');
+    expect(vipBlock).not.toContain('flex-col items-center');
+    expect(vipBlock).not.toContain('FEED_CARD_PREMIUM_SCROLL_CLASS');
   });
 
   it('keeps exactly six Vercel API route handlers', () => {

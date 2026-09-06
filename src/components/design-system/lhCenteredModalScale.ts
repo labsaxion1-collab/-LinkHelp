@@ -28,6 +28,20 @@ export const LH_CENTERED_MODAL_STANDARD_PANEL_CLASS = [
   'overflow-hidden',
 ].join(' ');
 
+/**
+ * Fit-to-content centered panel (VIP decision modal).
+ * Same width/radius as standard, but no forced min-height — content defines height.
+ * max-height + outer overflow remain for accessibility / short viewports only.
+ */
+export const LH_CENTERED_MODAL_FIT_PANEL_CLASS = [
+  'relative',
+  LH_CENTERED_MODAL_WIDTH_CLASS,
+  LH_CENTERED_MODAL_MAX_HEIGHT_CLASS,
+  LH_CENTERED_MODAL_RADIUS_CLASS,
+  LH_CENTERED_MODAL_SHADOW_CLASS,
+  'overflow-hidden',
+].join(' ');
+
 export const COMPACT_RANK_FULL_BLEED_CLASS =
   'lh-compact-rank-bleed relative isolate overflow-hidden';
 

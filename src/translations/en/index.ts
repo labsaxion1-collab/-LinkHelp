@@ -1453,7 +1453,8 @@ export const en = {
     budget_total_label: 'Total budget',
     owner_no_extra_details: 'You did not add further details.',
     reject_confirm: 'Reject this helper from the request?',
-    reject_confirm_vip: 'Reject this VIP exclusive application? The request will open to other helpers again.',
+    reject_confirm_vip:
+      'Rejecting this VIP application will open the request to normal applications again.',
     created_at_label: 'Created',
     hired_slots: '{{hired}}/{{max}} hired',
     team_complete: 'Team complete',
@@ -1470,6 +1471,8 @@ export const en = {
     application_accepted_toast: '{{name}} was accepted. Chat is open.',
     accept_helper: 'Accept {{name}}',
     accept_short: 'Accept',
+    accept_application_cta: 'Accept application',
+    accept_confirm_hire: 'Do you want to hire {{name}} for {{amount}}?',
     accept_proposal: 'Accept proposal',
     helper_proposal_amount: 'Proposal: {{amount}}',
     helper_proposal_negotiable: 'Proposal: To be agreed',

@@ -172,17 +172,20 @@ describe('candidate choose CTA composition', () => {
     );
   });
 
-  it('VIP panel stays flex-centered with safe-area padding and sticky actions', () => {
+  it('VIP panel stays compact with safe-area padding and full decision actions', () => {
     const card = read('src/components/client/ClientActivityOpenRequestCard.tsx');
-    const vipIdx = card.indexOf('client-activity-vip-panel');
-    const vip = card.slice(vipIdx, vipIdx + 2800);
-    expect(vip).toContain('flex-col items-center');
-    expect(vip).toContain('pb-5');
+    const vipIdx = card.indexOf('data-vip-layout="fit-no-inner-scroll"');
+    const vip = card.slice(vipIdx, vipIdx + 6500);
     expect(vip).toContain('client-activity-vip-avatar');
+    expect(vip).toContain('client-activity-vip-accept');
+    expect(vip).toContain('client-activity-vip-reject');
     expect(card).toContain('client-activity-vip-actions');
     expect(card).toContain('env(safe-area-inset-bottom)');
     expect(card).toContain('candidate_index_label');
-    expect(card).toContain('max-h-[min(70vh,32rem)]');
+    expect(card).toContain('data-vip-layout="fit-no-inner-scroll"');
+    expect(vip).not.toContain('flex-col items-center');
+    expect(vip).not.toContain('max-h-[min(70vh,32rem)]');
+    expect(vip).not.toContain('FEED_CARD_PREMIUM_SCROLL_CLASS');
   });
 
   it('exposes completion and CTA i18n in PT/EN/FR', () => {

@@ -2324,7 +2324,16 @@ export const pt = {
       'Google Maps indisponível. Preencha o endereço manualmente ou use o GPS estando em sua residência.',
     settings_helper_base_gps_home_warning:
       'Use o GPS somente quando estiver em sua residência. Essa localização será a base para calcular distância e LinkCredits.',
-    settings_helper_base_gps_success: 'Coordenadas da residência capturadas. Revise o endereço e salve.',
+    settings_helper_base_gps_success:
+      'Localização encontrada. Revise o endereço e toque em Salvar alterações.',
+    settings_helper_base_gps_address_filled:
+      'Localização encontrada. Revise o endereço e toque em Salvar alterações.',
+    settings_helper_base_gps_address_partial:
+      'Localização encontrada parcialmente. Complete o endereço e salve.',
+    settings_helper_base_gps_geocode_failed:
+      'Capturamos sua localização, mas não conseguimos preencher o endereço. Digite-o manualmente e salve.',
+    settings_helper_base_gps_manual_preserved:
+      'Coordenadas atualizadas. O endereço digitado foi preservado.',
     settings_helper_base_text_needs_gps:
       'Seu endereco esta preenchido, mas falta confirmar a residencia pelo GPS.',
     settings_helper_base_gps_status_pending: 'Localização da residência ainda não confirmada',
@@ -2346,7 +2355,8 @@ export const pt = {
     settings_location_denied:
       'Permissão de localização negada. Autorize o GPS ou tente novamente em sua residência.',
     settings_location_unavailable: 'Não foi possível obter o GPS. Tente novamente em sua residência.',
-    settings_location_geocode_partial: 'Localização capturada. Complete o endereço manualmente se necessário.',
+    settings_location_geocode_partial:
+      'Localização encontrada parcialmente. Complete o endereço e salve.',
     settings_saved: 'Salvo',
     settings_save: 'Salvar alterações',
     settings_logout: 'Sair da conta',

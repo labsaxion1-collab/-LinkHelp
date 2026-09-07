@@ -2323,7 +2323,15 @@ export const fr = {
     settings_helper_base_gps_home_warning:
       'Utilisez le GPS uniquement lorsque vous êtes à votre domicile. Cette localisation servira de base pour calculer la distance et les LinkCredits.',
     settings_helper_base_gps_success:
-      'Coordonnées du domicile capturées. Vérifiez l’adresse et enregistrez.',
+      'Localisation trouvée. Vérifiez l’adresse et appuyez sur Enregistrer les modifications.',
+    settings_helper_base_gps_address_filled:
+      'Localisation trouvée. Vérifiez l’adresse et appuyez sur Enregistrer les modifications.',
+    settings_helper_base_gps_address_partial:
+      'Localisation trouvée en partie. Complétez l’adresse et enregistrez.',
+    settings_helper_base_gps_geocode_failed:
+      'Nous avons capturé votre localisation, mais n’avons pas pu remplir l’adresse. Saisissez-la manuellement et enregistrez.',
+    settings_helper_base_gps_manual_preserved:
+      'Coordonnées mises à jour. L’adresse saisie a été conservée.',
     settings_helper_base_text_needs_gps:
       'Votre adresse est renseignée, mais il reste à confirmer le domicile par GPS.',
     settings_helper_base_gps_status_pending: 'Localisation du domicile pas encore confirmée',
@@ -2345,7 +2353,8 @@ export const fr = {
     settings_location_denied:
       'Autorisation de localisation refusée. Autorisez le GPS ou réessayez depuis votre domicile.',
     settings_location_unavailable: 'Impossible de lire le GPS. Réessayez depuis votre domicile.',
-    settings_location_geocode_partial: 'Localisation capturée. Complétez l’adresse manuellement si nécessaire.',
+    settings_location_geocode_partial:
+      'Localisation trouvée en partie. Complétez l’adresse et enregistrez.',
     settings_save: 'Enregistrer',
     settings_logout: 'Se déconnecter',
     settings_toast_reset: 'Vérifiez votre e-mail pour le lien de réinitialisation.',

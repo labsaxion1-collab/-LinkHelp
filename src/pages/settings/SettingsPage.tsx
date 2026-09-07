@@ -595,7 +595,21 @@ export default function SettingsPage() {
                     'error',
                   )
                 }
-                onLocationSuccess={() => showToast(t('app_pages.settings_helper_base_gps_success'), 'success')}
+                onLocationSuccess={(outcome) => {
+                  if (outcome === 'address_filled') {
+                    showToast(t('app_pages.settings_helper_base_gps_address_filled'), 'success');
+                    return;
+                  }
+                  if (outcome === 'address_partial') {
+                    showToast(t('app_pages.settings_helper_base_gps_address_partial'), 'info');
+                    return;
+                  }
+                  if (outcome === 'manual_preserved') {
+                    showToast(t('app_pages.settings_helper_base_gps_manual_preserved'), 'success');
+                    return;
+                  }
+                  showToast(t('app_pages.settings_helper_base_gps_geocode_failed'), 'info');
+                }}
               />
             </div>
           ) : (

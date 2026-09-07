@@ -2312,7 +2312,16 @@ export const en = {
       'Google Maps is unavailable. Fill in the address manually or use GPS while at your home.',
     settings_helper_base_gps_home_warning:
       'Use GPS only when you are at home. This location will be the base for calculating distance and LinkCredits.',
-    settings_helper_base_gps_success: 'Home coordinates captured. Review the address and save.',
+    settings_helper_base_gps_success:
+      'Location found. Review the address and tap Save changes.',
+    settings_helper_base_gps_address_filled:
+      'Location found. Review the address and tap Save changes.',
+    settings_helper_base_gps_address_partial:
+      'Location found partially. Complete the address and save.',
+    settings_helper_base_gps_geocode_failed:
+      'We captured your location, but could not fill the address. Enter it manually and save.',
+    settings_helper_base_gps_manual_preserved:
+      'Coordinates updated. Your typed address was preserved.',
     settings_helper_base_text_needs_gps:
       'Your address is filled in, but you still need to confirm your home location with GPS.',
     settings_helper_base_gps_status_pending: 'Home location not confirmed yet',
@@ -2334,7 +2343,8 @@ export const en = {
     settings_location_denied:
       'Location permission denied. Allow GPS or try again at your home.',
     settings_location_unavailable: 'Could not read GPS. Try again at your home.',
-    settings_location_geocode_partial: 'Location captured. Complete the address manually if needed.',
+    settings_location_geocode_partial:
+      'Location found partially. Complete the address and save.',
     settings_saved: 'Saved',
     settings_save: 'Save changes',
     settings_logout: 'Sign out',

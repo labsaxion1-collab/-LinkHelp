@@ -8,6 +8,7 @@ import {
 } from '@/utils/googleMapsConfig';
 import { requestHomeBaseGpsCoordinates, type GeolocationFailureReason } from '@/utils/geocodeLocation';
 import { parsePlaceResult, type ParsedPlace } from '@/utils/parseGooglePlace';
+import { reverseGeocodeCoordinates } from '@/utils/reverseGeocodeCoordinates';
 
 export type HelperBaseAddressValue = {
   address: string;
@@ -18,6 +19,13 @@ export type HelperBaseAddressValue = {
   longitude: number | null;
   display: string;
 };
+
+/** Outcome of helper-base GPS after optional reverse geocoding (never auto-saves). */
+export type HelperBaseGpsOutcome =
+  | 'address_filled'
+  | 'address_partial'
+  | 'geocode_failed'
+  | 'manual_preserved';
 
 type Props = {
   value: HelperBaseAddressValue;
@@ -37,7 +45,7 @@ type Props = {
   emphasizeGpsButton?: boolean;
   onLocationError?: (reason?: GeolocationFailureReason) => void;
   onLocationPartial?: () => void;
-  onLocationSuccess?: () => void;
+  onLocationSuccess?: (outcome: HelperBaseGpsOutcome) => void;
 };
 
 export function emptyHelperBaseAddress(display = ''): HelperBaseAddressValue {
@@ -136,15 +144,96 @@ export function applyCapturedGpsToHelperBase(
   };
 }
 
+function fieldFilled(value: string | null | undefined): boolean {
+  return Boolean(value?.trim());
+}
+
+function allAddressTextFieldsFilled(value: HelperBaseAddressValue): boolean {
+  return (
+    fieldFilled(value.address) &&
+    fieldFilled(value.city) &&
+    fieldFilled(value.province) &&
+    fieldFilled(value.postalCode)
+  );
+}
+
+function rebuildHelperBaseDisplay(value: HelperBaseAddressValue): string {
+  return [value.address, value.city, value.province, value.postalCode]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(', ');
+}
+
+/**
+ * Merge reverse-geocode result into helper base draft.
+ * Rule: fill only empty text fields; never silently overwrite user-typed values.
+ * GPS coordinates always win over geocoder lat/lng.
+ */
+export function mergeReverseGeocodeIntoHelperBase(
+  prev: HelperBaseAddressValue,
+  coords: { lat: number; lng: number },
+  parsed: ParsedPlace | null,
+): { value: HelperBaseAddressValue; outcome: HelperBaseGpsOutcome } {
+  const withCoords = applyCapturedGpsToHelperBase(prev, coords);
+
+  if (allAddressTextFieldsFilled(prev)) {
+    return { value: withCoords, outcome: 'manual_preserved' };
+  }
+
+  if (!parsed) {
+    return { value: withCoords, outcome: 'geocode_failed' };
+  }
+
+  const geocodeHadAnything =
+    fieldFilled(parsed.address) ||
+    fieldFilled(parsed.city) ||
+    fieldFilled(parsed.region) ||
+    fieldFilled(parsed.postalCode);
+
+  if (!geocodeHadAnything) {
+    return { value: withCoords, outcome: 'geocode_failed' };
+  }
+
+  const next: HelperBaseAddressValue = {
+    ...withCoords,
+    address: fieldFilled(prev.address) ? prev.address : parsed.address.trim(),
+    city: fieldFilled(prev.city) ? prev.city : parsed.city.trim(),
+    province: fieldFilled(prev.province) ? prev.province : parsed.region.trim(),
+    postalCode: fieldFilled(prev.postalCode) ? prev.postalCode : parsed.postalCode.trim(),
+    latitude: coords.lat,
+    longitude: coords.lng,
+    display: '',
+  };
+  next.display = rebuildHelperBaseDisplay(next);
+
+  if (allAddressTextFieldsFilled(next)) {
+    return { value: next, outcome: 'address_filled' };
+  }
+  return { value: next, outcome: 'address_partial' };
+}
+
 export async function captureHomeBaseGps(
   prev: HelperBaseAddressValue,
 ): Promise<
-  | { ok: true; value: HelperBaseAddressValue }
+  | { ok: true; value: HelperBaseAddressValue; outcome: HelperBaseGpsOutcome }
   | { ok: false; reason: GeolocationFailureReason }
 > {
   const geo = await requestHomeBaseGpsCoordinates();
   if (geo.ok === false) return { ok: false, reason: geo.reason };
-  return { ok: true, value: applyCapturedGpsToHelperBase(prev, geo.coords) };
+
+  let parsed: ParsedPlace | null = null;
+  try {
+    parsed = await reverseGeocodeCoordinates(geo.coords);
+  } catch (err) {
+    if (import.meta.env.DEV && !import.meta.env.VITEST) {
+      const category = err instanceof Error ? err.name : 'unknown';
+      console.warn('[helper-base-gps] reverse geocode error category:', category);
+    }
+    parsed = null;
+  }
+
+  const { value, outcome } = mergeReverseGeocodeIntoHelperBase(prev, geo.coords, parsed);
+  return { ok: true, value, outcome };
 }
 
 const fieldClass =
@@ -370,6 +459,15 @@ function HelperBaseAddressInputInner(props: Props) {
   const focusedRef = useRef(false);
   const valueRef = useRef(value);
   valueRef.current = value;
+  const locatingRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (focusedRef.current) return;
@@ -388,19 +486,27 @@ function HelperBaseAddressInputInner(props: Props) {
   const gpsConfirmed = helperBaseHasGpsConfirmation(value);
 
   const useGps = () => {
-    if (disabled) return;
+    if (disabled || locatingRef.current) return;
+    locatingRef.current = true;
     setLocating(true);
     void captureHomeBaseGps(valueRef.current)
       .then((result) => {
+        if (!mountedRef.current) return;
         if (result.ok === false) {
           onLocationError?.(result.reason);
           return;
         }
         onChange(result.value);
-        onLocationSuccess?.();
-        onLocationPartial?.();
+        setDraft(result.value.display);
+        onLocationSuccess?.(result.outcome);
+        if (result.outcome === 'address_partial') {
+          onLocationPartial?.();
+        }
       })
-      .finally(() => setLocating(false));
+      .finally(() => {
+        locatingRef.current = false;
+        if (mountedRef.current) setLocating(false);
+      });
   };
 
   return (

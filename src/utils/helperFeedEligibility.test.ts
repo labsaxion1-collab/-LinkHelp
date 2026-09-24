@@ -167,8 +167,8 @@ describe('public profile category confirm wiring', () => {
     expect(src).toContain('toggleCategoryDraft');
     expect(src).toContain('syncHelperSkills');
     expect(src).toContain('defaultSkillKeysForServiceCategories');
-    expect(src).toContain('data-picker-category-id');
-    expect(src).not.toMatch(/data-picker-category-id[\s\S]{0,120}disabled=\{selected\}/);
+    expect(src).toContain('data-picker-category-group-id');
+    expect(src).not.toMatch(/data-picker-category-group-id[\s\S]{0,120}disabled=\{selected\}/);
     const dash = await readFile(resolve('src/pages/helper/HelperDashboard.tsx'), 'utf8');
     expect(dash).toContain('helperHasFeedCategories');
     expect(dash).toContain('explainHelperFeedJobExclusion');

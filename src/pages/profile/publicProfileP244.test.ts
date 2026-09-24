@@ -28,7 +28,8 @@ describe('P2.4.4 icon-only helper categories (unlimited)', () => {
     expect(src).toContain('overflow-x-auto');
     expect(src).toContain('public-edit-category-picker');
     expect(src).toContain('public-edit-add-category');
-    expect(src).toContain('translateCategory(cat.id, t)');
+    expect(src).toContain('request_groups.');
+    expect(src).toContain('HELPER_CATEGORY_GROUPS.map');
     expect(src).toContain('data-picker-selected');
     // Chip name label removed from normal strip (picker still translates).
     expect(src).not.toMatch(/max-w-\[7\.5rem\].*translateCategory\(categoryId/);

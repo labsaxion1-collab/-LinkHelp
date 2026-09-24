@@ -34,8 +34,8 @@ describe('P2.4.1 public profile edit polish', () => {
     const src = await readFile(resolve(editPath), 'utf8');
     expect(src).toContain('primary_category: primaryCategory');
     expect(src).toContain('secondary_categories: additionalCategories');
-    expect(src).toContain('data-category-id={categoryId}');
-    expect(src).toContain('translateCategory(categoryId, t)');
+    expect(src).toContain('data-category-group-id={group.id}');
+    expect(src).toContain('defaultSkillKeysForServiceCategories');
     expect(src).not.toMatch(/primary_category:\s*translateCategory/);
     expect(SERVICE_CATEGORIES.some((c) => c.id === 'cleaning')).toBe(true);
   });
@@ -86,7 +86,8 @@ describe('P2.4.1 public profile edit polish', () => {
     const src = await readFile(resolve(editPath), 'utf8');
     expect(src).toContain('public-edit-add-category');
     expect(src).toContain('public-edit-category-picker');
-    expect(src).toContain('togglePublicHelperCategoryDraft');
+    expect(src).toContain('toggleHelperCategoryGroup');
+    expect(src).toContain('HELPER_CATEGORY_GROUPS');
     expect(src).toContain('data-icons-only="true"');
     expect(src).toContain('overflow-x-auto');
     expect(src).not.toContain('MAX_PUBLIC_HELPER_CATEGORIES');

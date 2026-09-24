@@ -68,7 +68,8 @@ describe('P2.4 public profile edit simplification', () => {
   it('5–7. Helper primary category only; Client has no helper categories', async () => {
     const src = await readFile(resolve(editPath), 'utf8');
     expect(src).toContain('helper_categories.primary_label');
-    expect(src).toContain('data-category-id={categoryId}');
+    expect(src).toContain('data-category-group-id={group.id}');
+    expect(src).toContain('HELPER_CATEGORY_GROUPS');
     expect(src).toContain('isHelper ?');
     expect(src).not.toContain('HelperCategoriesManager');
     expect(src).toContain('secondary_categories: additionalCategories');

@@ -24,7 +24,8 @@ describe('P2.4.3 public helper category selection', () => {
     expect(src).toContain('public-edit-add-category');
     expect(src).toContain('public-edit-confirm-categories');
     expect(src).toContain('toggleCategoryDraft');
-    expect(src).toContain('removePublicHelperCategory');
+    expect(src).toContain('removeHelperCategoryGroup');
+    expect(src).toContain('HELPER_CATEGORY_GROUPS');
     expect(removePublicHelperCategory(['cleaning'], 'cleaning')).toEqual(['cleaning']);
     const four = addPublicHelperCategory(
       addPublicHelperCategory(addPublicHelperCategory(['cleaning'], 'moving'), 'beauty'),

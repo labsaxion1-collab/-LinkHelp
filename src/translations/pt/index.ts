@@ -1,6 +1,36 @@
 import { helperSkillsPt } from '../helperSkillsBlocks';
 
 export const pt = {
+  request_groups: {
+  "cleaning": "Limpeza",
+  "repairs": "Reparos e Instalações",
+  "moving": "Mudanças e Entregas",
+  "home_outdoor": "Casa e Área Externa",
+  "automotive": "Automotivo",
+  "pets": "Pets",
+  "digital": "Tecnologia e Serviços Digitais",
+  "personal": "Serviços Pessoais",
+  "other": "Outro serviço"
+},
+  request_flow: {
+  "category_title": "Do que você precisa?",
+  "service_title": "Qual serviço você precisa?",
+  "other_label": "Que tipo de ajuda você precisa?",
+  "other_hint": "Até 80 caracteres. Não inclua telefone, e-mail ou links.",
+  "other_required": "Informe o tipo de ajuda, sem dados de contato (até 80 caracteres).",
+  "category_required": "Escolha uma categoria e um serviço para continuar.",
+  "service_type": "Tipo de ajuda",
+  "review_title": "Revise seu pedido",
+  "category": "Categoria",
+  "service": "Serviço",
+  "details": "Detalhes",
+  "review": "Revisão",
+  "edit_category": "Alterar categoria e serviço",
+  "edit_details": "Editar detalhes",
+  "edit_schedule": "Editar data e horário",
+  "publish": "Publicar pedido",
+  "publishing": "Publicando pedido…"
+},
   common: {
     loading: 'Carregando...',
     search: 'Buscar...',

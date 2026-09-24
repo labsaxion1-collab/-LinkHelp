@@ -9,6 +9,10 @@ type DialogProps = {
 export function CreateRequestResumeDraftDialog({ t, onContinue, onDiscard }: DialogProps) {
   return (
     <PremiumResponsiveModal
+      layer="elevated"
+      manageFocus
+      closeToHome={false}
+      closeLabel={t('common.close')}
       open
       onClose={onDiscard}
       title={t('create_modal.draft_resume_title')}
@@ -39,6 +43,10 @@ export function CreateRequestResumeDraftDialog({ t, onContinue, onDiscard }: Dia
 export function CreateRequestSaveDraftDialog({ t, onSave, onDiscard }: DialogProps & { onSave: () => void }) {
   return (
     <PremiumResponsiveModal
+      layer="elevated"
+      manageFocus
+      closeToHome={false}
+      closeLabel={t('common.close')}
       open
       onClose={onDiscard}
       title={t('create_modal.draft_close_title')}

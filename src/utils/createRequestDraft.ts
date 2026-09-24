@@ -7,8 +7,8 @@ import type { RequestPriority } from '@/utils/requestSchedule';
 /** Legacy drafts may still contain `subcategory`; loaders remap it to `description`. */
 export type CreateRequestDraftStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
 
-export function normalizeCreateRequestDraftStep(step: CreateRequestDraftStep): Exclude<CreateRequestDraftStep, 'subcategory'> {
-  return step === 'subcategory' ? 'description' : step;
+export function normalizeCreateRequestDraftStep(step: CreateRequestDraftStep): CreateRequestDraftStep {
+  return step;
 }
 
 export type CreateRequestDraft = {
@@ -17,6 +17,8 @@ export type CreateRequestDraft = {
   step: CreateRequestDraftStep;
   selectedCategory: string;
   selectedSubcategory: string;
+  selectedDisplayGroup?: string;
+  otherServiceType?: string;
   postText: string;
   budgetType: BudgetMode;
   budgetMin: string;
@@ -82,6 +84,8 @@ function parseDraft(raw: string): CreateRequestDraft | null {
       step: normalizeCreateRequestDraftStep(data.step),
       selectedCategory: typeof data.selectedCategory === 'string' ? data.selectedCategory : '',
       selectedSubcategory: typeof data.selectedSubcategory === 'string' ? data.selectedSubcategory : '',
+      selectedDisplayGroup: typeof data.selectedDisplayGroup === 'string' ? data.selectedDisplayGroup : '',
+      otherServiceType: typeof data.otherServiceType === 'string' ? data.otherServiceType : '',
       postText: typeof data.postText === 'string' ? data.postText : '',
       budgetType:
         data.budgetType === 'fixed' || data.budgetType === 'negotiable' || data.budgetType === 'unset'
@@ -167,6 +171,8 @@ export function clearCreateRequestDraft(userId: string): void {
 export function hasMeaningfulCreateRequestDraft(draft: CreateRequestDraft): boolean {
   return Boolean(
     draft.selectedCategory ||
+      draft.selectedDisplayGroup ||
+      draft.otherServiceType?.trim() ||
       draft.selectedSubcategory ||
       draft.postText.trim() ||
       draft.budgetMin ||

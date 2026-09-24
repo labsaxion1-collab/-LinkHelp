@@ -1,6 +1,36 @@
 import { helperSkillsFr } from '../helperSkillsBlocks';
 
 export const fr = {
+  request_groups: {
+  "cleaning": "Nettoyage",
+  "repairs": "Réparations et installations",
+  "moving": "Déménagement et livraisons",
+  "home_outdoor": "Maison et extérieur",
+  "automotive": "Automobile",
+  "pets": "Animaux",
+  "digital": "Technologie et services numériques",
+  "personal": "Services personnels",
+  "other": "Autre service"
+},
+  request_flow: {
+  "category_title": "De quoi avez-vous besoin ?",
+  "service_title": "Quel service vous faut-il ?",
+  "other_label": "De quel type d’aide avez-vous besoin ?",
+  "other_hint": "80 caractères maximum. Sans téléphone, courriel ni liens.",
+  "other_required": "Précisez le type d’aide sans coordonnées (80 caractères maximum).",
+  "category_required": "Choisissez une catégorie et un service pour continuer.",
+  "service_type": "Type d’aide",
+  "review_title": "Vérifiez votre demande",
+  "category": "Catégorie",
+  "service": "Service",
+  "details": "Détails",
+  "review": "Vérification",
+  "edit_category": "Modifier la catégorie et le service",
+  "edit_details": "Modifier les détails",
+  "edit_schedule": "Modifier la date et l’heure",
+  "publish": "Publier la demande",
+  "publishing": "Publication en cours…"
+},
   common: {
     loading: 'Chargement...',
     search: 'Rechercher...',

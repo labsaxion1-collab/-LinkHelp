@@ -7,6 +7,11 @@ import { formatTranslationRequestLanguage } from '@/data/spokenLanguages';
 
 type Props = {
   t: (key: string, vars?: Record<string, string | number>) => string;
+  displayGroup?: string;
+  otherServiceType?: string;
+  additionalDetails?: { label: string; value: string }[];
+  onEdit?: (step: 'category' | 'description' | 'confirm') => void;
+  disabled?: boolean;
   selectedCategory: string;
   selectedSubcategory: string;
   postText: string;
@@ -27,6 +32,11 @@ type Props = {
 
 export function CreateRequestReviewStep({
   t,
+  displayGroup,
+  otherServiceType,
+  additionalDetails = [],
+  onEdit,
+  disabled = false,
   selectedCategory,
   selectedSubcategory,
   postText,
@@ -66,47 +76,59 @@ export function CreateRequestReviewStep({
     <section>
       <h4 className="text-2xl font-bold text-gray-900 mb-5 flex items-center gap-2">
         <Icons.CheckCircle2 className="w-7 h-7 text-green-500" />
-        {t('create_modal.review')}
+        {t('request_flow.review_title')}
       </h4>
+      {onEdit && <div className="mb-4 flex flex-wrap gap-2">
+        {(['category', 'details', 'schedule'] as const).map((section) => <button key={section} type="button" disabled={disabled}
+          onClick={() => onEdit(section === 'category' ? 'category' : section === 'schedule' ? 'confirm' : 'description')}
+          className="min-h-[44px] rounded-xl border border-blue-200 px-3 py-2 text-sm font-bold text-blue-700 focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-50">
+          {t('request_flow.edit_' + section)}
+        </button>)}
+      </div>}
       <dl className="bg-gray-50 rounded-3xl p-5 sm:p-6 border border-gray-100 space-y-4 text-sm">
         <div>
-          <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.service_category')}</dt>
+          <dt className="text-xs font-bold text-gray-500 uppercase mb-1">{t('create_modal.service_category')}</dt>
+          {displayGroup && <dd className="mb-1 font-bold text-blue-700">{t('request_groups.' + displayGroup)}</dd>}
           <dd className="font-bold text-gray-900">
             {t(`categories.${selectedCategory}`)} - {t(`service_subs.${selectedCategory}.${selectedSubcategory}`)}
           </dd>
         </div>
 
+        {selectedCategory === 'other' && otherServiceType && <div>
+          <dt className="text-xs font-bold text-gray-500 uppercase mb-1">{t('request_flow.service_type')}</dt>
+          <dd className="font-bold text-gray-900 break-words">{otherServiceType}</dd>
+        </div>}
         <div>
-          <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.description')}</dt>
+          <dt className="text-xs font-bold text-gray-500 uppercase mb-1">{t('create_modal.description')}</dt>
           <dd className="text-gray-800 whitespace-pre-wrap font-medium">{postText}</dd>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.service_mode_title')}</dt>
+            <dt className="text-xs font-bold text-gray-500 uppercase mb-1">{t('create_modal.service_mode_title')}</dt>
             <dd className="font-bold text-gray-900">{modalityLabel || '—'}</dd>
           </div>
           {resolvedMode === 'remote' ? null : (
             <div>
-              <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.location')}</dt>
+              <dt className="text-xs font-bold text-gray-500 uppercase mb-1">{t('create_modal.location')}</dt>
               <dd className="font-bold flex items-center gap-1">
                 <Icons.MapPin className="w-4 h-4" /> {locationDisplay}
               </dd>
             </div>
           )}
           <div>
-            <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.preferred_date')}</dt>
+            <dt className="text-xs font-bold text-gray-500 uppercase mb-1">{t('create_modal.preferred_date')}</dt>
             <dd className="font-bold">{scheduleLabel}</dd>
           </div>
         </div>
 
         <div>
-          <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.budget_hint_label')}</dt>
+          <dt className="text-xs font-bold text-gray-500 uppercase mb-1">{t('create_modal.budget_hint_label')}</dt>
           <dd className="font-bold text-gray-900">{budgetHint.trim() || t('jobs.value_negotiable')}</dd>
         </div>
 
         <div>
-          <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('client_credits.publish_cost_label')}</dt>
+          <dt className="text-xs font-bold text-gray-500 uppercase mb-1">{t('client_credits.publish_cost_label')}</dt>
           <dd className="font-bold text-gray-900">{t('client_credits.publish_cost_value')}</dd>
         </div>
 
@@ -120,14 +142,18 @@ export function CreateRequestReviewStep({
           </ul>
         </div>
 
+        {additionalDetails.map(({ label, value }) => <div key={label}>
+          <dt className="text-xs font-bold text-gray-500 uppercase mb-1">{label}</dt>
+          <dd className="font-bold text-gray-900 break-words">{value || '—'}</dd>
+        </div>)}
         {selectedCategory === 'translation' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.translation_from_language')}</dt>
+              <dt className="text-xs font-bold text-gray-500 uppercase mb-1">{t('create_modal.translation_from_language')}</dt>
               <dd className="font-bold text-gray-900">{translationFromLanguage ? formatTranslationRequestLanguage(translationFromLanguage, t) : '---'}</dd>
             </div>
             <div>
-              <dt className="text-xs font-bold text-gray-400 uppercase mb-1">{t('create_modal.translation_to_language')}</dt>
+              <dt className="text-xs font-bold text-gray-500 uppercase mb-1">{t('create_modal.translation_to_language')}</dt>
               <dd className="font-bold text-gray-900">{translationToLanguage ? formatTranslationRequestLanguage(translationToLanguage, t) : '---'}</dd>
             </div>
           </div>

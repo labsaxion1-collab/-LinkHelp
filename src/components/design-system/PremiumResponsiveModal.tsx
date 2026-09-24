@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
 import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
@@ -13,6 +13,10 @@ type Props = {
   variant?: 'default' | 'danger';
   /** Camada do overlay — use "elevated" para ficar acima de heroes/composições */
   layer?: 'default' | 'elevated';
+  /** Opt-in for nested forms that must retain keyboard focus and close locally. */
+  manageFocus?: boolean;
+  closeToHome?: boolean;
+  closeLabel?: string;
 };
 
 const OVERLAY_LAYER_CLASS = {
@@ -28,7 +32,18 @@ export function PremiumResponsiveModal({
   footer,
   variant = 'default',
   layer = 'default',
+  manageFocus = false,
+  closeToHome = true,
+  closeLabel = 'Close',
 }: Props) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  useEffect(() => {
+    if (!open || !manageFocus) return;
+    const previous = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+    return () => previous?.focus();
+  }, [open, manageFocus]);
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -50,10 +65,26 @@ export function PremiumResponsiveModal({
       role="presentation"
     >
       <div
+        ref={dialogRef}
+        tabIndex={manageFocus ? -1 : undefined}
+        aria-labelledby={titleId}
+        onKeyDown={(event) => {
+          if (!manageFocus) return;
+          if (event.key === 'Escape') { event.stopPropagation(); onClose(); }
+          if (event.key !== 'Tab') return;
+          const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href]') ?? []);
+          const first = controls[0], last = controls[controls.length - 1];
+          if (!first) { event.preventDefault(); return; }
+          if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) {
+            event.preventDefault(); last?.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault(); first.focus();
+          }
+        }}
         role="dialog"
         aria-modal="true"
         className={clsx(
-          'relative w-full max-w-[480px] bg-white shadow-[0_-8px_40px_rgba(15,23,42,0.18)]',
+          'outline-none motion-reduce:animate-none relative w-full max-w-[480px] bg-white shadow-[0_-8px_40px_rgba(15,23,42,0.18)]',
           'rounded-t-[1.75rem] md:rounded-[1.75rem]',
           'max-h-[min(92dvh,640px)] flex flex-col',
           'pb-[max(env(safe-area-inset-bottom),0.75rem)] md:pb-0',
@@ -67,12 +98,12 @@ export function PremiumResponsiveModal({
 
         <header className="flex items-start gap-3 border-b border-slate-100 px-5 pb-4 pt-2 md:pt-5">
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-black leading-snug text-slate-950">{title}</h2>
+            <h2 id={titleId} className="text-lg font-black leading-snug text-slate-950">{title}</h2>
           </div>
-          <CloseToHomeButton
+          {closeToHome ? <CloseToHomeButton
             onBeforeNavigate={onClose}
             className="border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:text-slate-800"
-          />
+          /> : <button type="button" onClick={onClose} aria-label={closeLabel} className="min-h-[44px] min-w-[44px] rounded-xl border border-slate-200 text-xl focus-visible:ring-2 focus-visible:ring-blue-600">×</button>}
         </header>
 
         <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>

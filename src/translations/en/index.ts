@@ -1,6 +1,36 @@
 import { helperSkillsEn } from '../helperSkillsBlocks';
 
 export const en = {
+  request_groups: {
+  "cleaning": "Cleaning",
+  "repairs": "Repairs & Installations",
+  "moving": "Moves & Deliveries",
+  "home_outdoor": "Home & Outdoors",
+  "automotive": "Automotive",
+  "pets": "Pets",
+  "digital": "Technology & Digital Services",
+  "personal": "Personal Services",
+  "other": "Other service"
+},
+  request_flow: {
+  "category_title": "What do you need?",
+  "service_title": "Which service do you need?",
+  "other_label": "What kind of help do you need?",
+  "other_hint": "Up to 80 characters. Do not include phone numbers, email or links.",
+  "other_required": "Enter the type of help without contact details (up to 80 characters).",
+  "category_required": "Choose a category and service to continue.",
+  "service_type": "Type of help",
+  "review_title": "Review your request",
+  "category": "Category",
+  "service": "Service",
+  "details": "Details",
+  "review": "Review",
+  "edit_category": "Change category and service",
+  "edit_details": "Edit details",
+  "edit_schedule": "Edit date and time",
+  "publish": "Publish request",
+  "publishing": "Publishing request…"
+},
   common: {
     loading: 'Loading...',
     search: 'Search...',

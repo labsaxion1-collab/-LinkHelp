@@ -1,0 +1,43 @@
+import { test, expect } from '@playwright/test';
+test('group selection, draft resume, review and simulated publish', async ({ page }, testInfo) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Do que você precisa?' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('categories.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Reparos e Instalações', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Móveis IKEA', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Hidráulica', exact: true })).toBeAttached();
+  await page.getByRole('button', { name: 'Móveis IKEA', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Descricao da atividade' }).fill('Montar os móveis');
+  await page.getByRole('button', { name: 'Voltar', exact: true }).last().click();
+  await page.getByRole('button', { name: 'Voltar', exact: true }).last().click();
+  await page.getByRole('button', { name: 'Outro serviço', exact: true }).click();
+  await page.getByLabel('Que tipo de ajuda você precisa?').fill('Organizar livros');
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('linkhelp_create_request_draft:browser-test-client') || '{}').otherServiceType)).toBe('Organizar livros');
+  await page.reload();
+  await page.getByRole('button', { name: 'Continuar rascunho', exact: true }).click();
+  await expect(page.getByLabel('Que tipo de ajuda você precisa?')).toHaveValue('Organizar livros');
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'Descricao da atividade' })).toHaveValue('Montar os móveis');
+  // Fill the existing draft's environment-dependent map/date data without contacting a backend.
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('linkhelp_create_request_draft:browser-test-client') || '{}').selectedCategory)).toBe('other');
+  await page.evaluate(() => {
+    const key = 'linkhelp_create_request_draft:browser-test-client';
+    const draft = JSON.parse(localStorage.getItem(key)!);
+    Object.assign(draft, { step: 'review', serviceMode: 'remote', budgetType: 'fixed', budgetMin: '100', budgetMax: '150', preferredDateIso: '2099-10-20', preferredTimeSpecific: '10:00' });
+    localStorage.setItem(key, JSON.stringify(draft));
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Continuar rascunho', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Revise seu pedido' })).toBeVisible();
+  await expect(page.getByText('Organizar livros', { exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('review.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Publicar pedido', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => document.body.dataset.published)).toBe('true');
+  const payload = await page.evaluate(() => JSON.parse(document.body.dataset.payload!));
+  expect(payload).toMatchObject({ category: 'other', subcategory: 'other', title: 'other:other' });
+  expect(payload.description).toContain('Tipo de ajuda: Organizar livros');
+  expect(errors).toEqual([]);
+});

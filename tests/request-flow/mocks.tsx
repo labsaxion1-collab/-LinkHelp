@@ -1,0 +1,13 @@
+import React from 'react';
+import { pt } from '../../src/translations/pt';
+export const t = (key: string) => key.split('.').reduce<any>((value, part) => value?.[part], pt) ?? key;
+export const useLanguage = () => ({ t, language: 'pt' });
+export const useAppData = () => ({ createJob: async (payload: unknown) => { document.body.dataset.payload = JSON.stringify(payload); } });
+export const useToast = () => ({ showToast: (message: string) => { document.body.dataset.error = message; } });
+export const useSessionViewer = () => ({ id: 'browser-test-client', name: 'Test client', avatar: '' });
+export const getSupabase = () => null;
+export const isSupabaseConfigured = () => false;
+export const useAppMode = () => ({ isHelperMode: false });
+export const CloseToHomeButton = ({ onBeforeNavigate }: { onBeforeNavigate?: () => void }) => <button aria-label="Fechar rascunho" onClick={onBeforeNavigate}>×</button>;
+export const emptyRequestAddress = () => ({ address: '', city: '', region: '', postalCode: '', latitude: null, longitude: null, display: '' });
+export const RequestAddressInput = () => <span>Endereço do ambiente de teste</span>;

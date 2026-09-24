@@ -16,16 +16,20 @@ import {
   mergeSpokenLanguagesForSave,
   PUBLIC_PROFILE_SPOKEN_LANGUAGES,
 } from '@/data/spokenLanguages';
-import { SERVICE_CATEGORIES, type ServiceCategoryId } from '@/data/serviceCategories';
-import { translateCategory } from '@/utils/translateCategory';
+import { type ServiceCategoryId } from '@/data/serviceCategories';
+import {
+  HELPER_CATEGORY_GROUPS,
+  helperCategoryGroupIdsFromCategories,
+  removeHelperCategoryGroup,
+  toggleHelperCategoryGroup,
+  type HelperCategoryGroupId,
+} from '@/data/helperRequestCategoryGroups';
 import { getCategoryFeedTheme } from '@/utils/categoryFeedTheme';
-import { getCategoryIconById } from '@/utils/categoryIcons';
+import { getCategoryLucideIcon } from '@/utils/categoryIcons';
 import {
   defaultSkillKeysForServiceCategories,
   normalizePublicHelperCategorySelection,
-  removePublicHelperCategory,
   splitPublicHelperCategories,
-  togglePublicHelperCategoryDraft,
 } from '@/utils/publicHelperCategories';
 import { extractErrorMessage, formatAuthFlowErrorMessage } from '@/utils/errorMessage';
 import { fileFromDataUrl, formatStorageError, uploadAvatarImage } from '@/lib/storageUpload';
@@ -83,6 +87,14 @@ export default function PublicProfileEditPage() {
   const { primary: primaryCategory, additional: additionalCategories } = useMemo(
     () => splitPublicHelperCategories(selectedCategories),
     [selectedCategories],
+  );
+  const selectedCategoryGroups = useMemo(
+    () => helperCategoryGroupIdsFromCategories(selectedCategories),
+    [selectedCategories],
+  );
+  const selectedDraftGroups = useMemo(
+    () => helperCategoryGroupIdsFromCategories(categoryDraft),
+    [categoryDraft],
   );
   const canOpenCategoryPicker = true;
   const canAddLanguage = PUBLIC_PROFILE_SPOKEN_LANGUAGES.length > 0;
@@ -166,8 +178,8 @@ export default function PublicProfileEditPage() {
     );
   };
 
-  const toggleCategoryDraft = (id: ServiceCategoryId) => {
-    setCategoryDraft((prev) => togglePublicHelperCategoryDraft(prev, id));
+  const toggleCategoryDraft = (id: HelperCategoryGroupId) => {
+    setCategoryDraft((prev) => toggleHelperCategoryGroup(prev, id));
   };
 
   const persistHelperCategories = async (categories: ServiceCategoryId[]) => {
@@ -246,8 +258,8 @@ export default function PublicProfileEditPage() {
     logMediaPicker('PREVIEW CREATED', preview);
   };
 
-  const removeCategory = (id: ServiceCategoryId) => {
-    setSelectedCategories((prev) => removePublicHelperCategory(prev, id));
+  const removeCategory = (id: HelperCategoryGroupId) => {
+    setSelectedCategories((prev) => removeHelperCategoryGroup(prev, id));
   };
 
   const clearLongPressTimer = () => {
@@ -513,24 +525,25 @@ export default function PublicProfileEditPage() {
               data-testid="public-edit-primary-category"
               data-icons-only="true"
             >
-              {selectedCategories.map((categoryId, index) => {
-                const theme = getCategoryFeedTheme(categoryId);
-                const Icon = getCategoryIconById(categoryId);
-                const isPrimary = index === 0;
-                const canRemove = categoryIconsEditMode && selectedCategories.length > 1;
+              {selectedCategoryGroups.map((groupId) => {
+                const group = HELPER_CATEGORY_GROUPS.find((candidate) => candidate.id === groupId)!;
+                const theme = getCategoryFeedTheme(group.categories[0]);
+                const Icon = getCategoryLucideIcon(group.icon);
+                const isPrimary = group.categories.includes(selectedCategories[0]);
+                const canRemove = categoryIconsEditMode && selectedCategoryGroups.length > 1;
                 return (
-                  <div key={categoryId} className="relative shrink-0">
+                  <div key={group.id} className="relative shrink-0">
                     <button
                       type="button"
-                      data-category-id={categoryId}
+                      data-category-group-id={group.id}
                       data-primary={isPrimary ? 'true' : 'false'}
-                      aria-label={translateCategory(categoryId, t)}
+                      aria-label={t(`request_groups.${group.id}`)}
                       onPointerDown={startCategoryLongPress}
                       onPointerUp={clearLongPressTimer}
                       onPointerLeave={clearLongPressTimer}
                       onPointerCancel={clearLongPressTimer}
                       onClick={() => {
-                        if (canRemove) removeCategory(categoryId);
+                        if (canRemove) removeCategory(group.id);
                       }}
                       className={clsx(
                         'flex h-8 w-8 items-center justify-center rounded-full border transition sm:h-[30px] sm:w-[30px]',
@@ -665,7 +678,7 @@ export default function PublicProfileEditPage() {
         open={categoryPickerOpen}
         onClose={closeCategoryPicker}
         title={t('helper_categories.picker_title')}
-        subtitle={t('helper_categories.selected_count', { count: categoryDraft.length })}
+        subtitle={t('helper_categories.selected_count', { count: selectedDraftGroups.length })}
         closeLabel={t('common.cancel')}
         testId="public-edit-category-picker"
         busy={categoryConfirming}
@@ -688,37 +701,38 @@ export default function PublicProfileEditPage() {
         }
       >
         <ul className="space-y-1">
-          {SERVICE_CATEGORIES.map((cat) => {
-            const theme = getCategoryFeedTheme(cat.id);
-            const Icon = getCategoryIconById(cat.id);
-            const selected = categoryDraft.includes(cat.id);
+          {HELPER_CATEGORY_GROUPS.map((group) => {
+            const theme = getCategoryFeedTheme(group.categories[0]);
+            const Icon = getCategoryLucideIcon(group.icon);
+            const selected = selectedDraftGroups.includes(group.id);
             return (
-              <li key={cat.id}>
+              <li key={group.id}>
                 <button
                   type="button"
-                  data-picker-category-id={cat.id}
+                  data-picker-category-group-id={group.id}
                   data-picker-selected={selected ? 'true' : 'false'}
-                  onClick={() => toggleCategoryDraft(cat.id)}
+                  aria-pressed={selected}
+                  onClick={() => toggleCategoryDraft(group.id)}
                   className={clsx(
-                    'flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition',
+                    'flex min-h-[52px] w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition',
                     selected
                       ? 'bg-blue-50/90 ring-1 ring-inset ring-[#2563FF]/25'
                       : 'hover:bg-slate-50',
                   )}
                 >
                   <span
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
                     style={{ backgroundColor: theme.iconBg, color: theme.iconColor }}
                   >
-                    <Icon className="h-4 w-4" aria-hidden />
+                    <Icon className="h-5 w-5" aria-hidden />
                   </span>
                   <span
                     className={clsx(
-                      'min-w-0 flex-1 truncate text-sm font-bold',
+                      'min-w-0 flex-1 text-sm font-bold',
                       selected ? 'text-[#2563FF]' : 'text-slate-900',
                     )}
                   >
-                    {translateCategory(cat.id, t)}
+                    {t(`request_groups.${group.id}`)}
                   </span>
                   {selected ? <Check className="h-4 w-4 shrink-0 text-[#2563FF]" aria-hidden /> : null}
                 </button>

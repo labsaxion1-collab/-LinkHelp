@@ -8,12 +8,12 @@ describe('create request primary category flow', () => {
     'utf8',
   );
 
-  it('removes the Atalhos rápidos / subcategory wizard step from the live flow', () => {
-    expect(modal).toContain("STEPS: ModalStep[] = ['category', 'description', 'confirm', 'review']");
-    expect(modal).not.toMatch(/setStep\('subcategory'\)/);
-    expect(modal).not.toContain("t('create_modal.select_sub')");
-    expect(modal).toContain('selectPrimaryCategory');
-    expect(modal).toContain('getDefaultSubcategoryForCategory');
+  it('uses grouped navigation while preserving explicit service selection', () => {
+    expect(modal).toContain("STEPS: ModalStep[] = ['category', 'subcategory', 'description', 'confirm', 'review']");
+    expect(modal).toMatch(/setStep\('subcategory'\)/);
+    expect(modal).toContain('CreateRequestCategoryStep');
+    expect(modal).toContain('CreateRequestServiceStep');
+    expect(modal).toContain('isOfficialServiceSubcategory');
   });
 
   it('still publishes an internal subcategory for finance compatibility', () => {

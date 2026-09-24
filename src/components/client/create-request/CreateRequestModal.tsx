@@ -5,12 +5,12 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAppData } from '@/context/AppDataContext';
 import { useToast } from '@/context/ToastContext';
 import { useSessionViewer } from '@/hooks/useSessionViewer';
-import { SERVICE_CATEGORIES } from '@/data/serviceCategories';
-import { getCategoryLucideIcon } from '@/utils/categoryIcons';
-import { getCategoryAccent } from '@/utils/categoryFeedTheme';
+import { SERVICE_CATEGORIES, isOfficialServiceSubcategory, type ServiceCategoryId } from '@/data/serviceCategories';
+import { getRequestCategoryGroup, isRequestCategoryGroupId, type RequestCategoryGroupId } from '@/data/requestCategoryGroups';
+import { CreateRequestCategoryStep, CreateRequestServiceStep } from './CreateRequestCategorySteps';
+import { appendOtherServiceType, isOtherServiceTypeValid } from '@/utils/requestOtherService';
 import { clsx } from 'clsx';
 import { DesktopBackButton } from '@/components/layout/DesktopBackButton';
-import { CloseToHomeButton } from '@/components/layout/CloseToHomeButton';
 import { CreateRequestScheduleStep, type MovePropertyType } from '@/components/client/create-request/CreateRequestScheduleStep';
 import { CreateRequestReviewStep } from '@/components/client/create-request/CreateRequestReviewStep';
 import {
@@ -64,8 +64,8 @@ import { formatBaselineFinanceError, isActiveCreditObligationError } from '@/uti
 import { UI_VISIBILITY } from '@/config/uiVisibility';
 import { ROUTES } from '@/utils/constants';
 
-type ModalStep = 'category' | 'description' | 'confirm' | 'review';
-const STEPS: ModalStep[] = ['category', 'description', 'confirm', 'review'];
+type ModalStep = 'category' | 'subcategory' | 'description' | 'confirm' | 'review';
+const STEPS: ModalStep[] = ['category', 'subcategory', 'description', 'confirm', 'review'];
 
 function resolveInternalSubcategory(categoryId: string, preferred?: string): string {
   const preferredTrim = (preferred ?? '').trim();
@@ -95,6 +95,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const [step, setStep] = useState<ModalStep>('category');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
+  const [selectedDisplayGroup, setSelectedDisplayGroup] = useState<RequestCategoryGroupId | ''>('');
+  const [otherServiceType, setOtherServiceType] = useState('');
   const [postText, setPostText] = useState('');
   const [budgetType, setBudgetType] = useState<BudgetMode>('unset');
   const [budgetMin, setBudgetMin] = useState('');
@@ -121,6 +123,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   const [publishing, setPublishing] = useState(false);
   const [draftDialog, setDraftDialog] = useState<'resume' | 'close' | null>(null);
   const scrollBodyRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const publishInFlightRef = useRef(false);
   const lastBudgetSuggestionKey = useRef('');
   const skipAutoSaveRef = useRef(false);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -228,8 +232,9 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     if (lastBudgetSuggestionKey.current === key) return;
     lastBudgetSuggestionKey.current = key;
     setBudgetType('fixed');
-    setBudgetMin(String(marketSuggestion.min));
-    setBudgetMax(String(marketSuggestion.max));
+    // Preserve user input when selecting another service.
+    setBudgetMin((value) => value || String(marketSuggestion.min));
+    setBudgetMax((value) => value || String(marketSuggestion.max));
   }, [open, draftDialog, selectedCategory, selectedSubcategory, translationServiceMode, marketSuggestion]);
 
   const applyFreshStart = useCallback(() => {
@@ -238,7 +243,9 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       : '';
     setStep(initialCategory ? 'description' : 'category');
     setSelectedCategory(initialCategory);
-    setSelectedSubcategory(nextSub);
+    setSelectedSubcategory(initialSubcategory);
+    setSelectedDisplayGroup(initialCategory ? getRequestCategoryGroup(initialCategory) : '');
+    setOtherServiceType('');
     setPostText('');
     setBudgetType('unset');
     setBudgetMin('');
@@ -268,14 +275,12 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   }, [initialCategory, initialSubcategory]);
 
   const applyDraft = useCallback((draft: CreateRequestDraft) => {
-    const draftStep = draft.step === 'subcategory' ? 'description' : draft.step;
-    const category = draft.selectedCategory;
-    const subcategory = category
-      ? resolveInternalSubcategory(category, draft.selectedSubcategory)
-      : draft.selectedSubcategory;
-    setStep(draftStep);
-    setSelectedCategory(category);
-    setSelectedSubcategory(subcategory);
+    setStep(draft.step);
+    setSelectedCategory(draft.selectedCategory);
+    setSelectedSubcategory(draft.selectedSubcategory);
+    setSelectedDisplayGroup(isRequestCategoryGroupId(draft.selectedDisplayGroup)
+      ? draft.selectedDisplayGroup : draft.selectedCategory ? getRequestCategoryGroup(draft.selectedCategory) : '');
+    setOtherServiceType(draft.otherServiceType ?? '');
     setPostText(draft.postText);
     setBudgetType(draft.budgetType);
     setBudgetMin(draft.budgetMin);
@@ -317,6 +322,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       step,
       selectedCategory,
       selectedSubcategory,
+      selectedDisplayGroup,
+      otherServiceType,
       postText,
       budgetType,
       budgetMin,
@@ -345,6 +352,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     step,
     selectedCategory,
     selectedSubcategory,
+    selectedDisplayGroup,
+    otherServiceType,
     postText,
     budgetType,
     budgetMin,
@@ -489,7 +498,18 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
   }, [step, open, scrollModalToTop]);
 
   const handlePublish = async () => {
-    if (publishing) return;
+    if (publishing || publishInFlightRef.current) return;
+    if (!isOfficialServiceSubcategory(selectedCategory, selectedSubcategory)) {
+      showToast(t('request_flow.category_required'), 'error');
+      setStep('category');
+      return;
+    }
+    if (selectedCategory === 'other' && !isOtherServiceTypeValid(otherServiceType)) {
+      showToast(t('request_flow.other_required'), 'error');
+      setStep('subcategory');
+      return;
+    }
+    if (!descriptionComplete) { setStep('description'); return; }
     const resolvedServiceModeEarly: ServiceMode | null =
       coerceServiceMode(serviceMode) ||
       coerceServiceMode(translationServiceMode === 'online' ? 'remote' : translationServiceMode) ||
@@ -520,6 +540,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       return;
     }
     setPublishing(true);
+    publishInFlightRef.current = true;
     const yn = (v: string) => (v === 'yes' ? t('create_modal.moving_yes') : v === 'no' ? t('create_modal.moving_no') : '—');
     let extra = '';
     if (selectedCategory === 'moving') {
@@ -556,7 +577,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
       ];
       extra = '\n\n---\n' + lines.join('\n');
     }
-    const fullDescription = postText.trim() + extra;
+    const fullDescription = appendOtherServiceType(postText.trim() + extra, selectedCategory, otherServiceType, t('request_flow.service_type'));
     const addr = selectedCategory === 'moving' ? movePickupAddress : requestAddress;
     const resolvedServiceMode: ServiceMode | null = resolvedServiceModeEarly;
     const locationParts = [addr.display.trim(), addr.city, addr.region].filter(Boolean);
@@ -651,6 +672,8 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
         showToast(formatBaselineFinanceError(error, t, 'create_modal.publish_error'), 'error');
       }
       setPublishing(false);
+    } finally {
+      publishInFlightRef.current = false;
     }
   };
 
@@ -745,11 +768,25 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     (step === 'description' && (!descriptionComplete || !budgetStepComplete || rangeBudgetIsInvalid)) ||
     (step === 'confirm' && !isConfirmStepComplete(preferredDateIso, preferredTimeSpecific));
 
+
+  useEffect(() => {
+    if (!open || draftDialog) return;
+    const frame = requestAnimationFrame(() => dialogRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [open, step, draftDialog]);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    return () => previousFocus?.focus();
+  }, [open]);
+
   if (!open) return null;
 
   const stepIndex = STEPS.indexOf(step);
   const stepIcons: Record<ModalStep, React.ComponentType<{ className?: string }>> = {
     category: Icons.Grid,
+    subcategory: Icons.ListChecks,
     description: Icons.Type,
     confirm: Icons.CalendarCheck,
     review: Icons.CheckCircle2,
@@ -767,6 +804,49 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
     setStep('description');
   };
   const activeCat = SERVICE_CATEGORIES.find((c) => c.id === selectedCategory);
+  const displaySteps = ['category', 'subcategory', 'description', 'review'] as const;
+  const displayStepIndex = step === 'confirm' ? 2 : displaySteps.indexOf(step);
+  const displayStepLabels = ['category', 'service', 'details', 'review'];
+  const activeGroup = selectedDisplayGroup || getRequestCategoryGroup(selectedCategory);
+
+  const selectGroup = (group: RequestCategoryGroupId) => {
+    setSelectedDisplayGroup(group);
+    if (selectedCategory && getRequestCategoryGroup(selectedCategory) !== group) {
+      setSelectedCategory('');
+      setSelectedSubcategory('');
+    }
+    setStep('subcategory');
+  };
+
+  const selectService = (category: ServiceCategoryId, subcategory: string) => {
+    setSelectedCategory(category);
+    setSelectedSubcategory(subcategory);
+    if (category === 'moving') setMovePropertyType(movingPropertyTypeFromSubKey(subcategory));
+    setStep('description');
+  };
+
+  const yesNo = (value: string) => value === 'yes' ? t('create_modal.moving_yes') : value === 'no' ? t('create_modal.moving_no') : '—';
+  const reviewDetails: { label: string; value: string }[] = [];
+  if (selectedCategory === 'moving') {
+    reviewDetails.push({ label: t('create_modal.moving_delivery_address'), value: moveDeliveryAddress.display });
+    if (needsBuildingForMoving(selectedSubcategory)) {
+      reviewDetails.push(
+        { label: t('create_modal.moving_floor_pickup'), value: movePickupFloor },
+        { label: t('create_modal.moving_elevator_label'), value: yesNo(movePickupElevator) },
+        { label: t('create_modal.moving_floor_delivery'), value: moveDeliveryFloor },
+        { label: t('create_modal.moving_elevator_delivery'), value: yesNo(moveDeliveryElevator) },
+      );
+    }
+  }
+  if (selectedCategory === 'cleaning' && selectedSubcategory === 'house') {
+    reviewDetails.push({ label: t('create_modal.cleaning_house_floors'), value: cleaningHouseFloors });
+  }
+  if (selectedCategory === 'cleaning' && selectedSubcategory === 'apartment') {
+    reviewDetails.push(
+      { label: t('create_modal.cleaning_apt_floor'), value: cleaningAptFloor },
+      { label: t('create_modal.cleaning_elevator'), value: yesNo(cleaningHasElevator) },
+    );
+  }
 
   const goBack = () => {
     const idx = stepIndex;
@@ -780,41 +860,65 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
 
   return (
     <div
-      className="fixed inset-0 z-[1000] flex items-start justify-center overflow-y-auto lh-modal-overlay p-3 pt-[calc(env(safe-area-inset-top)+60px+0.75rem)] pb-[calc(env(safe-area-inset-bottom)+4.25rem+0.75rem)] animate-in fade-in duration-200 md:pt-[calc(env(safe-area-inset-top)+72px+0.75rem)] md:pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:items-center sm:p-6"
+      className="motion-reduce:animate-none fixed inset-0 z-[1000] flex items-start justify-center overflow-y-auto lh-modal-overlay p-3 pt-[calc(env(safe-area-inset-top)+60px+0.75rem)] pb-[calc(env(safe-area-inset-bottom)+4.25rem+0.75rem)] animate-in fade-in duration-200 md:pt-[calc(env(safe-area-inset-top)+72px+0.75rem)] md:pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:items-center sm:p-6"
       onClick={requestClose}
     >
       <div
-        className="lh-modal-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-60px-4.25rem-1.5rem)] md:max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-72px-1.5rem)] sm:max-h-[min(92dvh,900px)] min-w-0"
+        ref={dialogRef}
+        inert={Boolean(draftDialog)}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-request-title"
+        aria-busy={publishing}
+        tabIndex={-1}
+        onKeyDown={(event) => {
+          if (draftDialog) return;
+          if (event.key === 'Escape') { event.stopPropagation(); requestClose(); }
+          if (event.key !== 'Tab') return;
+          const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex="0"]') ?? [])
+            .filter((element) => !element.closest('[hidden]'));
+          const first = controls[0];
+          const last = controls[controls.length - 1];
+          if (!first) { event.preventDefault(); return; }
+          if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) {
+            event.preventDefault(); last?.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault(); first.focus();
+          }
+        }}
+        className="outline-none motion-reduce:animate-none motion-reduce:transition-none [&_*]:motion-reduce:animate-none [&_*]:motion-reduce:transition-none lh-modal-panel w-full max-w-[calc(100vw-1.5rem)] sm:max-w-2xl overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-60px-4.25rem-1.5rem)] md:max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-72px-1.5rem)] sm:max-h-[min(92dvh,900px)] min-w-0"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-2 sm:gap-3 bg-gray-50/50 shrink-0 min-w-0">
-          <DesktopBackButton alwaysVisible onClose={requestClose} className="shrink-0" />
-          <h3 className="min-w-0 flex-1 text-xl font-bold text-gray-900 font-display flex items-center gap-2">
+          <DesktopBackButton onClose={requestClose} className="shrink-0" />
+          <h3 id="create-request-title" className="min-w-0 flex-1 text-xl font-bold text-gray-900 font-display flex items-center gap-2">
             <Icons.PlusCircle className="w-5 h-5 text-blue-600 shrink-0" />
             <span className="truncate">{t('client_dashboard.create_order_title')}</span>
           </h3>
-          <CloseToHomeButton onBeforeNavigate={performClose} />
+          <button type="button" onClick={requestClose} disabled={publishing} aria-label={t('common.close')}
+            className="min-h-[44px] min-w-[44px] rounded-xl flex items-center justify-center focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-50"><Icons.X className="h-5 w-5" /></button>
         </div>
         <div className="px-4 sm:px-6 pt-4 pb-2 shrink-0 min-w-0">
           <div className="relative grid w-full max-w-full grid-cols-4 gap-1">
-            <div className="pointer-events-none absolute top-1/2 left-[10%] right-[10%] h-0.5 -translate-y-1/2 rounded-full bg-gray-100" />
+            <div className="pointer-events-none absolute top-4 left-[12.5%] right-[12.5%] h-0.5 -translate-y-1/2 rounded-full bg-gray-100" />
             <div
-              className="pointer-events-none absolute top-1/2 left-[10%] z-0 h-0.5 -translate-y-1/2 rounded-full bg-blue-600 transition-all duration-500"
-              style={{ width: `calc(${(stepIndex / Math.max(STEPS.length - 1, 1)) * 80}% + 10%)` }}
+              className="pointer-events-none absolute top-4 left-[12.5%] z-0 h-0.5 -translate-y-1/2 rounded-full bg-blue-600 transition-all duration-500"
+              style={{ width: `calc(${(displayStepIndex / 3) * 75}% + 0%)` }}
             />
-            {STEPS.map((s, idx) => {
+            {displaySteps.map((s, idx) => {
               const Icon = stepIcons[s];
-              const isActive = idx <= stepIndex;
+              const isActive = idx <= displayStepIndex;
               return (
-                <div key={s} className="relative z-10 flex flex-col items-center">
+                <div key={s} aria-current={idx === displayStepIndex ? 'step' : undefined} className="relative z-10 flex flex-col items-center gap-1">
                   <div
                     className={
                       'flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full text-sm ' +
                       (isActive ? 'bg-blue-600 text-white shadow-md' : 'bg-white border-2 border-gray-200 text-gray-400')
                     }
                   >
-                    {idx < stepIndex ? <Icons.Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                    {idx < displayStepIndex ? <Icons.Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                   </div>
+                  <span className="text-[11px] sm:text-xs font-bold text-gray-600">{t('request_flow.' + displayStepLabels[idx])}</span>
                 </div>
               );
             })}
@@ -825,44 +929,11 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
           className="p-4 sm:p-6 overflow-y-auto overflow-x-hidden overscroll-contain flex-1 min-h-0 min-w-0 ios-scroll w-full max-w-full"
         >
           {step === 'category' && (
-            <div className="animate-in fade-in duration-300">
-              <h4 className="text-2xl font-bold text-gray-900 mb-2">{t('create_modal.select_category')}</h4>
-              <p className="text-gray-500 text-sm mb-6">{t('create_modal.select_category_desc')}</p>
-              <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
-                <p className="text-sm font-bold text-blue-950 flex items-center gap-2">
-                  <Icons.Sparkles className="w-4 h-4 text-blue-600" />
-                  {t('create_modal.marketplace_tip_title')}
-                </p>
-                <p className="mt-1 text-xs font-medium leading-relaxed text-blue-900">
-                  {t('create_modal.marketplace_tip_body')}
-                </p>
-              </div>
-              <div className="-mx-4 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <div className="flex w-max gap-3">
-                {SERVICE_CATEGORIES.map((cat) => {
-                  const IconComponent = getCategoryLucideIcon(cat.icon);
-                  const accent = getCategoryAccent(cat.id);
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => selectPrimaryCategory(cat.id)}
-                      className={clsx(
-                        'flex h-[132px] w-[126px] shrink-0 flex-col items-center justify-center rounded-2xl border-2 bg-white p-4 transition-all hover:shadow-md sm:w-[142px]',
-                        accent.cardBorder,
-                        accent.cardHover,
-                      )}
-                    >
-                      <div className={clsx('mb-3 flex h-12 w-12 items-center justify-center rounded-xl', accent.icon)}>
-                        <IconComponent className="h-6 w-6" />
-                      </div>
-                      <span className="text-center text-sm font-bold text-gray-900">{t('categories.' + cat.id)}</span>
-                    </button>
-                  );
-                })}
-                </div>
-              </div>
-            </div>
+            <CreateRequestCategoryStep t={t} selectedGroup={selectedDisplayGroup} onSelect={selectGroup} />
+          )}
+          {step === 'subcategory' && (
+            <CreateRequestServiceStep t={t} group={activeGroup} category={selectedCategory} subcategory={selectedSubcategory}
+              otherServiceType={otherServiceType} onOtherServiceTypeChange={setOtherServiceType} onSelect={selectService} />
           )}
           {step === 'description' && (
             <div className="space-y-4 animate-in fade-in duration-300">
@@ -950,6 +1021,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                         autoComplete="off"
                         readOnly={budgetType === 'negotiable'}
                         tabIndex={budgetType === 'negotiable' ? -1 : 0}
+                        aria-label={t('create_modal.budget_min_label')}
                         value={budgetMin}
                         onFocus={() => {
                           if (budgetType === 'negotiable') return;
@@ -983,6 +1055,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                         autoComplete="off"
                         readOnly={budgetType === 'negotiable'}
                         tabIndex={budgetType === 'negotiable' ? -1 : 0}
+                        aria-label={t('create_modal.budget_max_label')}
                         value={budgetMax}
                         onFocus={() => {
                           if (budgetType === 'negotiable') return;
@@ -1054,6 +1127,7 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
                 <label className="mb-2 block text-sm font-bold text-gray-800">{t('create_modal.activity_description_label')}</label>
                 <p className="mb-2 text-xs font-medium text-slate-500">{t('create_modal.description_optional_hint')}</p>
                 <textarea
+                  aria-label={t('create_modal.activity_description_label')}
                   value={postText}
                   onChange={(e) => setPostText(e.target.value)}
                   placeholder={t('create_modal.placeholder')}
@@ -1082,6 +1156,11 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
           {step === 'review' && (
             <CreateRequestReviewStep
               t={t}
+              displayGroup={getRequestCategoryGroup(selectedCategory)}
+              otherServiceType={otherServiceType}
+              additionalDetails={reviewDetails}
+              onEdit={(target) => setStep(target)}
+              disabled={publishing}
               selectedCategory={selectedCategory}
               selectedSubcategory={selectedSubcategory}
               postText={postText}
@@ -1101,11 +1180,11 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
             />
           )}
         </div>
-        <div className="px-4 sm:px-6 py-3 sm:py-4 bg-white border-t border-gray-100 flex flex-wrap justify-between items-center gap-2 shrink-0 min-w-0 w-full max-w-full">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 bg-white border-t border-gray-100 flex justify-between items-center gap-2 shrink-0 min-w-0 w-full max-w-full">
           {step === 'category' ? (
             <span />
           ) : (
-            <button type="button" onClick={goBack} className="px-5 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-xl">
+            <button type="button" disabled={publishing} onClick={goBack} className="px-3 sm:px-5 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-xl">
               {t('common.back')}
             </button>
           )}
@@ -1114,12 +1193,12 @@ export function CreateRequestModal({ open, onClose, onPublished, initialCategory
               type="button"
               disabled={publishing}
               onClick={() => void handlePublish()}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-3.5 px-8 rounded-xl ml-auto flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-3.5 px-4 sm:px-8 rounded-xl ml-auto flex items-center gap-2"
             >
               {publishing ? <Icons.Loader2 className="w-5 h-5 animate-spin" /> : <Icons.Rocket className="w-5 h-5" />}
-              Publicar pedido
+              {publishing ? t('request_flow.publishing') : t('request_flow.publish')}
             </button>
-          ) : step === 'category' ? (
+          ) : step === 'category' || step === 'subcategory' ? (
             <span />
           ) : (
             <div className="ml-auto flex min-w-0 max-w-full flex-col items-end gap-2">
